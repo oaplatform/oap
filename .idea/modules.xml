@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/oap-application/oap-application.iml" filepath="$PROJECT_DIR$/oap-application/oap-application.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/oap-application-build.iml" filepath="$PROJECT_DIR$/.idea/modules/oap-application-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/oap-core.iml" filepath="$PROJECT_DIR$/.idea/modules/oap-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/oap-core-build.iml" filepath="$PROJECT_DIR$/.idea/modules/oap-core-build.iml" />
+    </modules>
+  </component>
+</project>
