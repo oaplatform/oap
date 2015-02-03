@@ -1,2 +1,1 @@
-# oap.core
-Open Application Platform / Core
+# Open Application Platform
