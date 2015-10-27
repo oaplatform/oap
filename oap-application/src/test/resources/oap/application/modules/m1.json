@@ -1,0 +1,12 @@
+{
+  "name": "m1",
+  "services": [
+    {
+      "implementation": "oap.application.ServiceOne",
+      "name": "ServiceOne",
+      "parameters": {
+        "i": 2
+      }
+    }
+  ]
+}

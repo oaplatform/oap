@@ -1,0 +1,18 @@
+{
+  "name": "oap-ws",
+  "services": [
+    {
+      "name": "oap-ws-server",
+      "implementation": "oap.ws.apache.Server",
+      "parameters": {
+        "port": 8880,
+        "workers": 500
+      },
+      "supervision": {
+        "supervise": true
+      },
+      "dependsOn": [
+      ]
+    }
+  ]
+}

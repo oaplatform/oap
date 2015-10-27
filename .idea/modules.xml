@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/oap-application/oap-application.iml" filepath="$PROJECT_DIR$/oap-application/oap-application.iml" />
+      <module fileurl="file://$PROJECT_DIR$/oap-cli/oap-cli.iml" filepath="$PROJECT_DIR$/oap-cli/oap-cli.iml" />
+      <module fileurl="file://$PROJECT_DIR$/oap-etl/oap-etl.iml" filepath="$PROJECT_DIR$/oap-etl/oap-etl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/oap-json/oap-json.iml" filepath="$PROJECT_DIR$/oap-json/oap-json.iml" />
+      <module fileurl="file://$PROJECT_DIR$/oap-logstream/oap-logstream.iml" filepath="$PROJECT_DIR$/oap-logstream/oap-logstream.iml" />
+      <module fileurl="file://$PROJECT_DIR$/oap-metrics/oap-metrics.iml" filepath="$PROJECT_DIR$/oap-metrics/oap-metrics.iml" />
+      <module fileurl="file://$PROJECT_DIR$/oap-replication/oap-replication.iml" filepath="$PROJECT_DIR$/oap-replication/oap-replication.iml" />
+      <module fileurl="file://$PROJECT_DIR$/oap-stdlib/oap-stdlib.iml" filepath="$PROJECT_DIR$/oap-stdlib/oap-stdlib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/oap-storage/oap-storage.iml" filepath="$PROJECT_DIR$/oap-storage/oap-storage.iml" />
+      <module fileurl="file://$PROJECT_DIR$/oap-ws/oap-ws.iml" filepath="$PROJECT_DIR$/oap-ws/oap-ws.iml" />
+      <module fileurl="file://$PROJECT_DIR$/project.iml" filepath="$PROJECT_DIR$/project.iml" />
+    </modules>
+  </component>
+</project>

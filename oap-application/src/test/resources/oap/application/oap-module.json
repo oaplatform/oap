@@ -1,0 +1,22 @@
+{
+  "name": "oap-test",
+  "dependsOn": [
+    "dep1",
+    "dep2"
+  ],
+  "services": [
+    {
+      "name": "test-service",
+      "implementation": "oap.application.TestService",
+      "parameters": {
+        "port": 8080,
+        "home": "${env:HOME}",
+        "os": "${os.name}",
+        "number": ${number}
+      },
+      "supervision": {
+        "supervise": true
+      }
+    }
+  ]
+}

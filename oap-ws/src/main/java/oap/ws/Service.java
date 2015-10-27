@@ -1,0 +1,262 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package oap.ws;
+
+import com.google.common.base.Throwables;
+import oap.json.Binder;
+import oap.metrics.Metrics;
+import oap.metrics.Name;
+import oap.reflect.Coercions;
+import oap.reflect.Reflect;
+import oap.reflect.ReflectException;
+import oap.reflect.Reflection;
+import oap.util.Optionals;
+import oap.util.Stream;
+import oap.util.Strings;
+import oap.ws.validate.Validators;
+import org.apache.http.entity.ContentType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.regex.Pattern;
+
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static org.apache.http.entity.ContentType.TEXT_PLAIN;
+
+public class Service implements RawService {
+
+    private final Object impl;
+    private final Logger logger;
+    private final Reflection reflection;
+    private final Coercions coercions = Coercions.basic()
+        .with( r -> true, ( r, value ) -> Binder.unmarshal( r.underlying,
+            value instanceof String ? (String) value :
+                new String( (byte[]) value, StandardCharsets.UTF_8 ) ) );
+    private final Validators validators = new Validators();
+    private HashMap<String, Pattern> compiledPaths = new HashMap<>();
+
+
+    public Service( Object impl ) {
+        this.impl = impl;
+        this.logger = LoggerFactory.getLogger( impl.getClass() );
+        this.reflection = Reflect.reflect( impl.getClass() );
+        this.reflection.methods.forEach( m -> m.findAnnotation( WsMethod.class )
+                .ifPresent( a -> compiledPaths.put( a.path(), ServiceUtil.compile( a.path() ) ) )
+        );
+    }
+
+    public void perform( Request request, Response response ) {
+        try {
+            Optionals.fork( reflection.method( method ->
+                methodMatches( request.requestLine(), request.httpMethod(), method ) ) )
+                .ifAbsent( () -> response.respond( WsResponse.NOT_FOUND ) )
+                .ifPresent(
+                    method -> {
+                        Name name = Metrics
+                            .name( "rest_timer" )
+                            .tag( "service", request.context().serviceName )
+                            .tag( "method", method.name() );
+
+                        Metrics.measureTimer( name, () -> {
+                            Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
+                            Object[] paramValues = new Object[method.paramerers.size()];
+                            List<String> paramErrors = new ArrayList<>();
+                            List<Reflection.Parameter> paramerers = method.paramerers;
+                            for( int i = 0; i < paramerers.size(); i++ ) {
+                                Reflection.Parameter parameter = paramerers.get( i );
+                                Object value = parameter.findAnnotation( WsParam.class )
+                                    .<Object>map( wsParam -> {
+                                        switch( wsParam.from() ) {
+                                            case REQUEST:
+                                                return request;
+                                            case HEADER:
+                                                return convert( parameter.name(), parameter.type(),
+                                                    request.header( parameter.name() ) );
+                                            case PATH:
+                                                return wsMethod.map( wsm -> convert( parameter.name(), parameter.type(),
+                                                    request.parameter( wsm.path(), parameter.name() ) ) )
+                                                    .orElseThrow( () -> new WsException(
+                                                        "path parameter " + parameter.name() + " without " +
+                                                            WsMethod.class.getName() + " annotation" ) );
+                                            case BODY:
+                                                return parameter.type().assignableFrom( byte[].class ) ?
+                                                    (parameter.type().isOptional() ? request.readBody() :
+                                                        request.readBody()
+                                                            .orElseThrow( () -> new WsClientException(
+                                                                "no body for " + parameter.name() ) )
+                                                    ) :
+                                                    convert( parameter.name(), parameter.type(), request.readBody() );
+                                            default:
+                                                return parameter.type().assignableTo( List.class ) ?
+                                                    convert( parameter.type(),
+                                                        request.parameters( parameter.name() ) ) :
+                                                    convert( parameter.name(), parameter.type(),
+                                                        request.parameter( parameter.name() ) );
+
+                                        }
+                                    } )
+                                    .orElseGet( () -> parameter.type().assignableTo( List.class ) ?
+                                            convert( parameter.type(), request.parameters( parameter.name() ) ) :
+                                            convert( parameter.name(), parameter.type(),
+                                                request.parameter( parameter.name() ) )
+                                    );
+
+                                paramErrors.addAll( validators.forParameter( parameter, impl )
+                                    .validate( value ) );
+
+                                paramValues[i] = value;
+                            }
+
+                            if( !paramErrors.isEmpty() )
+                                throw new WsClientException( "validation failed", paramErrors );
+
+                            List<String> methodErrors = validators.forMethod( method, impl )
+                                .validate( paramValues );
+
+                            if( !methodErrors.isEmpty() )
+                                throw new WsClientException( "validation failed", methodErrors );
+
+                            Object result = method.invoke( impl, paramValues );
+
+                            Boolean isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
+                            ContentType produces =
+                                wsMethod.map( wsm -> ContentType.create( wsm.produces() )
+                                    .withCharset( StandardCharsets.UTF_8 ) )
+                                    .orElse( ContentType.APPLICATION_JSON );
+                            if( method.isVoid() ) response.respond( WsResponse.NO_CONTENT );
+                            else if( result instanceof WsResponse ) response.respond( (WsResponse) result );
+                            else if( result instanceof Optional<?> ) {
+                                response.respond(
+                                    ((Optional<?>) result)
+                                        .map( r -> WsResponse.ok( result, isRaw, produces ) )
+                                        .orElseGet( () -> WsResponse.NOT_FOUND )
+                                );
+                            } else response.respond( WsResponse.ok( result, isRaw, produces ) );
+                        } );
+                    } );
+        } catch( Throwable e ) {
+            wsError( response, e );
+        }
+    }
+
+    private List<Object> convert( Reflection type, List<String> values ) {
+        try {
+            return Stream.of( values )
+                .map( v -> coercions.cast( type.typeParameters.get( 0 ), v ) )
+                .toList();
+        } catch( Exception e ) {
+            throw new WsClientException( e.getMessage(), e );
+        }
+    }
+
+    private Object convert( String name, Reflection type, Optional<?> value ) {
+        try {
+            Optional<Object> result = value.map( v -> coercions.cast( type.isOptional() ?
+                type.typeParameters.get( 0 ) : type, v ) );
+            return type.isOptional() ? result :
+                result.orElseThrow( () -> new WsClientException( name + " is required" ) );
+        } catch( Exception e ) {
+            throw new WsClientException( e.getMessage(), e );
+        }
+    }
+
+
+    private void wsError( Response response, Throwable e ) {
+        if( e instanceof ReflectException && e.getCause() != null )
+            wsError( response, e.getCause() );
+        else if( e instanceof InvocationTargetException )
+            wsError( response, ((InvocationTargetException) e).getTargetException() );
+        else if( e instanceof WsClientException ) {
+            WsClientException e1 = (WsClientException) e;
+            if( logger.isDebugEnabled() ) logger.debug( e.toString(), e );
+            WsResponse wsResponse = WsResponse.status( e1.code, e.getMessage() );
+            if( !e1.errors.isEmpty() ) wsResponse.withContent( String.join( "\n", e1.errors ),
+                TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ) );
+            response.respond( wsResponse );
+        } else {
+            logger.error( e.toString(), e );
+            response.respond( WsResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() )
+                .withContent( Throwables.getRootCause( e ).getMessage(),
+                    TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ) ) );
+        }
+    }
+
+    //    @SuppressWarnings( "unchecked" )
+//    private Either<List<String>, Object> validate( Reflection reflection,
+//        Class<? extends ParameterValidator>[] classes,
+//        String name,
+//        WsParam.From from,
+//        List<WsAttribute> attributes,
+//        Object value,
+//        boolean text ) {
+//        ArrayList<ParameterValidator> validators = new ArrayList<>();
+//        validators.add( new TypeConverterParameterValidator( reflection, text ) );
+//        validators.addAll( Stream.of( classes )
+//            .map( clazz -> parameterValidators.computeIfAbsent( clazz, Try.map( Class::newInstance ) ) )
+//            .toList() );
+//
+//
+//        validators.sort( ( l, r ) -> Boolean.compare( l.beforeTypeConverter(), r.beforeTypeConverter() ) * -1 );
+//
+//        return _validate( name, from, attributes, validators, Either.right( value ) );
+//    }
+//
+//    private Either<List<String>, Object> _validate(
+//        String name,
+//        WsParam.From from,
+//        List<WsAttribute> attributes,
+//        List<ParameterValidator> validators,
+//        Either<List<String>, Object> value ) {
+//        if( validators.isEmpty() ) return value;
+//
+//        return _validate(
+//            name,
+//            from,
+//            attributes,
+//            validators.subList( 1, validators.size() ),
+//            value.right().flatMap( r ->
+//                    r instanceof List<?> ?
+//                        validators.get( 0 ).validateParameters( name, from, attributes, r ) :
+//                        validators.get( 0 ).validateParameter( name, from, attributes, r )
+//            )
+//        );
+//    }
+//
+    private boolean methodMatches( String requestLine, Request.HttpMethod httpMethod, Reflection.Method m ) {
+        return m.findAnnotation( WsMethod.class )
+            .map( a -> oap.util.Arrays.contains( httpMethod, a.method() ) && (
+                    (Strings.isUndefined( a.path() ) && Objects.equals( requestLine, "/" + m.name() ))
+                        || compiledPaths.get( a.path() ).matcher( requestLine ).find()
+                )
+            ).orElse( m.isPublic() && Objects.equals( requestLine, "/" + m.name() ) );
+    }
+
+}

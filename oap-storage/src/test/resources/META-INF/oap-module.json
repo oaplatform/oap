@@ -1,0 +1,42 @@
+{
+  "name": "madberry-storage-test",
+  "dependsOn": [
+    "oap-ws"
+  ],
+  "services": [
+    {
+      "name": "master.test-storage",
+      "implementation": "oap.storage.TestBeanStorage",
+      "parameters": {
+        "path": "/tmp/test/bean-master"
+      },
+      "supervision": {
+        "supervise": true
+      }
+    },
+    {
+      "name": "test-storage",
+      "implementation": "oap.storage.TestBeanStorage",
+      "parameters": {
+        "path": "/tmp/test/bean-slave"
+      },
+      "supervision": {
+        "supervise": true
+      }
+    },
+    {
+      "name": "test-storage-replication",
+      "implementation": "oap.storage.StorageReplicationGetClient",
+      "parameters": {
+        "storage": "@service:test-storage",
+        "replicationUrl": "http://controller.madberry-services.net:8880/replication/",
+        "master": "master.test-storage"
+      },
+      "supervision": {
+        "supervise": true,
+        "schedule": true,
+        "delay": 10
+      }
+    }
+  ]
+}

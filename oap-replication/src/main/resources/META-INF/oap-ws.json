@@ -1,0 +1,8 @@
+{
+  "services": [
+    {
+      "context": "replication",
+      "service": "ws-replication"
+    }
+  ]
+}

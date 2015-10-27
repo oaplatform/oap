@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false">
+    <file url="file://$PROJECT_DIR$" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/oap-application" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/oap-cli" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/oap-etl" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/oap-json" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/oap-logstream" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/oap-metrics" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/oap-replication" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/oap-stdlib" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/oap-storage" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/oap-ws" charset="UTF-8" />
+    <file url="PROJECT" charset="UTF-8" />
+  </component>
+</project>

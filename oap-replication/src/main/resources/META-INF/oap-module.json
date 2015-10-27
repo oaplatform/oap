@@ -1,0 +1,17 @@
+{
+  "name": "oap-replication",
+  "dependsOn": [
+    "oap-ws"
+  ],
+  "services": [
+    {
+      "name": "ws-replication",
+      "implementation": "oap.replication.ReplicationWS",
+      "parameters": {
+      },
+      "supervision": {
+        "supervise": true
+      }
+    }
+  ]
+}
