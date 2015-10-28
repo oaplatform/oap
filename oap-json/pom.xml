@@ -19,7 +19,7 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
 
         <dependency>
@@ -63,7 +63,7 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
             <scope>test</scope>
             <type>test-jar</type>
         </dependency>

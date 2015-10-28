@@ -24,28 +24,28 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-metrics</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-json</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-application</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
         </dependency>
 
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
             <scope>test</scope>
             <type>test-jar</type>
         </dependency>
