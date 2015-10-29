@@ -50,19 +50,21 @@ public class StartupScriptsMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        Path functions = Files.path( destinationDirectory, "functions.sh" );
+        Properties properties = project.getProperties();
+        String serviceBin = properties.getOrDefault( "oap.service.home", "/opt/oap-service" ) + "bin";
+        Path functions = Files.path( destinationDirectory, serviceBin, "functions.sh" );
         Resources.readString( getClass(), "/bin/functions.sh" )
             .ifPresent( value -> Files.writeString( functions, value ) );
         PosixFilePermission[] permissions = { OWNER_EXECUTE, OWNER_READ, GROUP_READ, OTHERS_READ };
         Files.chmod( functions, permissions );
-        script( "/bin/oap.sh", ".sh", permissions );
-        script( "/bin/service.systemd", ".service" );
-        script( "/bin/service.sysvinit", "", permissions );
+        script( "/bin/oap.sh", serviceBin, ".sh", permissions );
+        script( "/bin/service.systemd", "usr/lib/systemd/system", ".service" );
+        script( "/bin/service.sysvinit", "etc/initd", "", permissions );
     }
 
-    private void script( String script, String suffix, PosixFilePermission... permissions ) {
+    private void script( String script, String preffix, String suffix, PosixFilePermission... permissions ) {
         Properties properties = project.getProperties();
-        Path path = Files.path( destinationDirectory,
+        Path path = Files.path( destinationDirectory, preffix,
             properties.getOrDefault( "oap.service.name", "oap-service" ) + suffix );
         Resources.readString( getClass(), script )
             .ifPresent( value -> Files.writeString( path,

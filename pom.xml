@@ -5,7 +5,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>parent</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
 
     <name>oap</name>
     <inceptionYear>2015</inceptionYear>

@@ -48,4 +48,10 @@ public class FilesTest extends AbstractTest {
                 Env.tmpPath( "/wildcard/b/1.txt" )
             ) );
     }
+
+    @Test
+    public void path() {
+        assertEquals( Files.path( "a", "b/c", "d" ), Files.path( "a", "b", "c", "d" ) );
+    }
+
 }
