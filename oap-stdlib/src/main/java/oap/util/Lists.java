@@ -38,7 +38,6 @@ import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
 
 public class Lists {
-    private static final ArrayList<Object> EMPTY = new ArrayList<>();
 
     public static <T> Pair<List<T>, List<T>> partition( List<T> list, Predicate<T> p ) {
         ArrayList<T> left = new ArrayList<>();
@@ -98,9 +97,8 @@ public class Lists {
         return list;
     }
 
-    @SuppressWarnings( "unchecked" )
     public static <T> ArrayList<T> empty() {
-        return (ArrayList<T>) EMPTY;
+        return new ArrayList<>();
     }
 
     public static class Collectors {

@@ -34,4 +34,8 @@ public class Sets {
         Collections.addAll( set, array );
         return set;
     }
+
+    public static <E> Set<E> empty() {
+        return Collections.emptySet();
+    }
 }
