@@ -23,6 +23,7 @@
  */
 package oap.io;
 
+import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.io.FileUtils;
@@ -39,6 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -157,4 +159,11 @@ public final class Files {
         }
     }
 
+    public static void chmod( Path path, PosixFilePermission... permissions ) {
+        try {
+            java.nio.file.Files.setPosixFilePermissions( path, Sets.of( permissions ) );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 }

@@ -34,7 +34,11 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.Properties;
+
+import static java.nio.file.attribute.PosixFilePermission.*;
 
 @Mojo( name = "startup-scripts", defaultPhase = LifecyclePhase.PREPARE_PACKAGE )
 public class StartupScriptsMojo extends AbstractMojo {
@@ -46,21 +50,23 @@ public class StartupScriptsMojo extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
+        Path functions = Files.path( destinationDirectory, "functions.sh" );
         Resources.readString( getClass(), "/bin/functions.sh" )
-            .ifPresent( value -> Files.writeString(
-                Files.path( destinationDirectory, "functions.sh" ), value ) );
-        script( "/bin/oap.sh", ".sh" );
+            .ifPresent( value -> Files.writeString( functions, value ) );
+        PosixFilePermission[] permissions = { OWNER_EXECUTE, OWNER_READ, GROUP_READ, OTHERS_READ };
+        Files.chmod( functions, permissions );
+        script( "/bin/oap.sh", ".sh", permissions );
         script( "/bin/service.systemd", ".service" );
-        script( "/bin/service.sysvinit", "" );
- }
+        script( "/bin/service.sysvinit", "", permissions );
+    }
 
-    private void script( String script, String suffix ) {
+    private void script( String script, String suffix, PosixFilePermission... permissions ) {
         Properties properties = project.getProperties();
+        Path path = Files.path( destinationDirectory,
+            properties.getOrDefault( "oap.service.name", "oap-service" ) + suffix );
         Resources.readString( getClass(), script )
-            .ifPresent( value ->
-                Files.writeString(
-                    Files.path( destinationDirectory,
-                        properties.getOrDefault( "oap.service.name", "oap-service" ) + suffix ),
-                    Strings.substitute( value, properties::getProperty ) ) );
+            .ifPresent( value -> Files.writeString( path,
+                Strings.substitute( value, properties::getProperty ) ) );
+        if( permissions.length > 0 ) Files.chmod( path, permissions );
     }
 }

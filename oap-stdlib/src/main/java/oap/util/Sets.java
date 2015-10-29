@@ -29,7 +29,7 @@ import java.util.Set;
 
 public class Sets {
     @SafeVarargs
-    public static <E> Set<E> set( E... array ) {
+    public static <E> Set<E> of( E... array ) {
         LinkedHashSet<E> set = new LinkedHashSet<>( array.length );
         Collections.addAll( set, array );
         return set;
