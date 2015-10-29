@@ -56,7 +56,6 @@ public class StartupScriptsMojo extends AbstractMojo {
         Resources.readString( getClass(), "/bin/functions.sh" )
             .ifPresent( value -> Files.writeString( functions, value ) );
         PosixFilePermission[] permissions = { OWNER_EXECUTE, OWNER_READ, OWNER_WRITE, GROUP_READ, OTHERS_READ };
-        Files.chmod( functions, permissions );
         script( "/bin/oap.sh", serviceBin, ".sh", permissions );
         script( "/bin/service.systemd", "usr/lib/systemd/system", ".service" );
         script( "/bin/service.sysvinit", "etc/initd", "", permissions );
