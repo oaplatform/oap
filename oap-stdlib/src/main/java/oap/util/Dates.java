@@ -63,8 +63,13 @@ public class Dates {
         return FORMAT_MILLIS.print( millis );
     }
 
-    public static long currentHour() {
-        long now = DateTimeUtils.currentTimeMillis();
-        return now / 1000 / 60 / 60;
+    public static void setTimeFixed( int year, int monthOfYear, int dayOfMonth, int hourOfDay,
+        int minuteOfHour, int secondOfMinute, int millisOfSecond ) {
+        setTimeFixed( new DateTime( year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, secondOfMinute,
+            millisOfSecond ).getMillis() );
+    }
+
+    public static void setTimeFixed( long millis ) {
+        DateTimeUtils.setCurrentMillisFixed( millis );
     }
 }

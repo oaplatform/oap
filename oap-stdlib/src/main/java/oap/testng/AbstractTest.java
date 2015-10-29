@@ -41,23 +41,6 @@ public abstract class AbstractTest {
 
     protected boolean CLEANUP_TEMP = true;
 
-    public static void setTimeCurrentMillisFixed(
-        int year,
-        int monthOfYear,
-        int dayOfMonth,
-        int hourOfDay,
-        int minuteOfHour,
-        int secondOfMinute,
-        int millisOfSecond ) {
-
-        setTimeCurrentMillisFixed( new DateTime( year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, secondOfMinute,
-            millisOfSecond ).getMillis() );
-    }
-
-    public static void setTimeCurrentMillisFixed( long millis ) {
-        DateTimeUtils.setCurrentMillisFixed( millis );
-    }
-
     @AfterSuite
     public void afterSuite() {
         if( CLEANUP_TEMP ) Files.delete( Env.tmp );
@@ -82,4 +65,4 @@ public abstract class AbstractTest {
         if( CLEANUP_TEMP && cleanup ) Files.delete( Env.tmpRoot );
         DateTimeUtils.setCurrentMillisSystem();
     }
- }
+}

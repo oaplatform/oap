@@ -3,47 +3,25 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <name>oap-replication</name>
+    <artifactId>oap-replication</artifactId>
 
     <parent>
         <groupId>oap</groupId>
         <artifactId>parent</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
     </parent>
-
-    <artifactId>oap-replication</artifactId>
-
-    <name>oap-replication</name>
-    <inceptionYear>2015</inceptionYear>
-
-    <build>
-        <plugins>
-        </plugins>
-    </build>
 
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.2</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-ws</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.2</version>
         </dependency>
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-application</artifactId>
-            <version>1.0.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-stdlib</artifactId>
-            <version>1.0.1</version>
-            <scope>test</scope>
-            <type>test-jar</type>
-        </dependency>
-    </dependencies>
-
+     </dependencies>
  </project>

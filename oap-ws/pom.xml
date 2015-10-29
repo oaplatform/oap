@@ -3,51 +3,35 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <name>oap-ws</name>
+    <artifactId>oap-ws</artifactId>
 
     <parent>
         <groupId>oap</groupId>
         <artifactId>parent</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.2</version>
     </parent>
-
-    <artifactId>oap-ws</artifactId>
-
-    <name>oap-ws</name>
-    <inceptionYear>2015</inceptionYear>
-
-    <build>
-        <plugins>
-        </plugins>
-    </build>
 
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.2</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-metrics</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.2</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-json</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.2</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-application</artifactId>
-            <version>1.0.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-stdlib</artifactId>
-            <version>1.0.1</version>
-            <scope>test</scope>
-            <type>test-jar</type>
+            <version>1.0.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -62,7 +46,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.16.6</version>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -71,5 +55,4 @@
             <version>4.5.1</version>
         </dependency>
     </dependencies>
-
 </project>

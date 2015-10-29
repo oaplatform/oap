@@ -59,7 +59,7 @@ public final class Metrics {
         }
     }
 
-    public static Timer.Context measureTimerForAspectj( String metric ) {
+    public static Timer.Context measureTimerCodehale( String metric ) {
         return registry.timer( name( metric ).line ).time();
     }
 

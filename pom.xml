@@ -5,7 +5,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>parent</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
 
     <name>oap</name>
     <inceptionYear>2015</inceptionYear>
@@ -48,10 +48,8 @@
         <httpcomponents.version>4.4.3</httpcomponents.version>
         <joda.version>2.8.2</joda.version>
         <metrics.version>3.1.2</metrics.version>
-        <aspectj.version>1.8.7</aspectj.version>
         <jackson.version>2.6.2</jackson.version>
-        <reflections.version>0.9.9-RC2</reflections.version>
-
+        <lombok.version>1.16.6</lombok.version>
         <rpm.version>2.1.2</rpm.version>
 
         <release.version>1.0.0</release.version>
@@ -146,11 +144,6 @@
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
             <version>${joda.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjrt</artifactId>
-            <version>${aspectj.version}</version>
         </dependency>
         <dependency>
             <groupId>it.unimi.dsi</groupId>

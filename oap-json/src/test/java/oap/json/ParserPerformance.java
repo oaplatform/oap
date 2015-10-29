@@ -36,8 +36,6 @@ import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
 import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
 import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
-import com.google.gson.Gson;
-import net.minidev.json.JSONValue;
 import oap.io.Resources;
 import oap.testng.AbstractPerformance;
 import oap.util.Dates;
@@ -59,8 +57,6 @@ public class ParserPerformance extends AbstractPerformance {
 
     @Test
     public void performance() {
-        benchmark( "mapParser-json-smart", 5000, 5, ( i ) -> JSONValue.toJSONString( JSONValue.parse( yearJson ) ) );
-
         final ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule( new Jdk8Module() );
         final JodaModule module = new JodaModule();
@@ -93,7 +89,5 @@ public class ParserPerformance extends AbstractPerformance {
         benchmark( "mapParser-jackson2", 5000, 5, i ->
                 mapper2.writeValueAsString( mapper2.readValue( yearJson, Map.class ) ) );
 
-        final Gson gson = new Gson();
-        benchmark( "mapParser-gson", 5000, 5, ( i ) -> gson.toJson( gson.fromJson( yearJson, Map.class ) ) );
     }
 }

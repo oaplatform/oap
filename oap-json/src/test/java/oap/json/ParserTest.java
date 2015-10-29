@@ -23,7 +23,6 @@
  */
 package oap.json;
 
-import net.minidev.json.JSONValue;
 import oap.io.Resources;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
@@ -53,20 +52,4 @@ public class ParserTest extends AbstractTest {
         System.out.println( Parser.<Object>parse( yearJson ) );
     }
 
-    @Test
-    public void parse2() {
-        assertEquals( JSONValue.parse( "true" ), Boolean.TRUE );
-        assertEquals( JSONValue.parse( "false" ), Boolean.FALSE );
-        assertNull( JSONValue.parse( "null" ) );
-        assertEquals( JSONValue.parse( "123" ), 123 );
-        assertEquals( JSONValue.parse( "123.5" ), 123.5 );
-        assertEquals( JSONValue.parse( "\"str\"" ), "str" );
-        assertEquals( Lists.of(), JSONValue.parse( "[]" ) );
-        assertEquals( Lists.of( 1, 2, 3 ), JSONValue.parse( "[1,2,3]" ) );
-        assertEquals( Lists.of( 1, Lists.of( 1, 2 ), 3 ), JSONValue.parse( "[1,[1,2],3]" ) );
-        assertEquals( Maps.of(), JSONValue.parse( "{}" ) );
-        assertEquals( Lists.of( Maps.of( __( "a", Lists.of( Maps.of() ) ) ) ),
-                JSONValue.parse( "[{\"a\":[{}]}]" ) );
-        System.out.println( JSONValue.parse( yearJson ) );
-    }
 }
