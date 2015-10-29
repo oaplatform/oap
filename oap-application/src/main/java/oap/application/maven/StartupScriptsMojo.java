@@ -51,7 +51,7 @@ public class StartupScriptsMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         Properties properties = project.getProperties();
-        String serviceBin = properties.getOrDefault( "oap.service.home", "/opt/oap-service" ) + "bin";
+        String serviceBin = properties.getOrDefault( "oap.service.home", "/opt/oap-service" ) + "/bin";
         Path functions = Files.path( destinationDirectory, serviceBin, "functions.sh" );
         Resources.readString( getClass(), "/bin/functions.sh" )
             .ifPresent( value -> Files.writeString( functions, value ) );
