@@ -54,6 +54,9 @@ public class Dates {
         }
     }
 
+    public static long currentTimeHour() {
+        return DateTimeUtils.currentTimeMillis() / 1000 / 60 / 60;
+    }
 
     public static String formatDateWihMillis( DateTime date ) {
         return FORMAT_MILLIS.print( date );
