@@ -45,6 +45,9 @@ public class StartupScriptsMojo extends AbstractMojo {
     @Parameter( defaultValue = "${project.build.directory}/oap/scripts" )
     private String destinationDirectory;
 
+    @Parameter( defaultValue = "false" )
+    private boolean failIfUnsupportedOperationException;
+
     @Parameter( defaultValue = "${project}", readonly = true, required = true )
     private MavenProject project;
 
@@ -68,6 +71,13 @@ public class StartupScriptsMojo extends AbstractMojo {
         Resources.readString( getClass(), script )
             .ifPresent( value -> Files.writeString( path,
                 Strings.substitute( value, properties::getProperty ) ) );
-        if( permissions.length > 0 ) Files.chmod( path, permissions );
+        if( permissions.length > 0 ) {
+            try {
+                Files.chmod( path, permissions );
+            } catch( UnsupportedOperationException e ) {
+                if( failIfUnsupportedOperationException ) throw e;
+                getLog().error( e.getMessage() );
+            }
+        }
     }
 }
