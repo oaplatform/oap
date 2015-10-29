@@ -26,7 +26,6 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="oap-replication" />
-    <orderEntry type="module" module-name="oap-stdlib" />
     <orderEntry type="module" module-name="oap-ws" />
     <orderEntry type="module" module-name="oap-metrics" />
     <orderEntry type="library" name="Maven: io.dropwizard.metrics:metrics-graphite:3.1.2" level="project" />
@@ -65,7 +64,7 @@
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient:4.5.1" level="project" />
     <orderEntry type="library" name="Maven: commons-logging:commons-logging:1.2" level="project" />
     <orderEntry type="library" name="Maven: commons-codec:commons-codec:1.9" level="project" />
-    <orderEntry type="module" module-name="oap-stdlib" scope="TEST" production-on-test="" />
+    <orderEntry type="module" module-name="oap-stdlib" />
     <orderEntry type="library" name="Maven: org.quartz-scheduler:quartz:2.2.1" level="project" />
     <orderEntry type="library" name="Maven: c3p0:c3p0:0.9.1.1" level="project" />
     <orderEntry type="library" name="Maven: com.google.guava:guava:18.0" level="project" />

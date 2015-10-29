@@ -22,9 +22,7 @@
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
             <version>1.0.2</version>
-            <scope>test</scope>
-            <type>test-jar</type>
-        </dependency>
+         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
