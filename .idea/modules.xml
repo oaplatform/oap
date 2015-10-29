@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/oap.iml" filepath="$PROJECT_DIR$/oap.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-application/oap-application.iml" filepath="$PROJECT_DIR$/oap-application/oap-application.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-cli/oap-cli.iml" filepath="$PROJECT_DIR$/oap-cli/oap-cli.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-etl/oap-etl.iml" filepath="$PROJECT_DIR$/oap-etl/oap-etl.iml" />
@@ -12,7 +13,6 @@
       <module fileurl="file://$PROJECT_DIR$/oap-stdlib/oap-stdlib.iml" filepath="$PROJECT_DIR$/oap-stdlib/oap-stdlib.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-storage/oap-storage.iml" filepath="$PROJECT_DIR$/oap-storage/oap-storage.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-ws/oap-ws.iml" filepath="$PROJECT_DIR$/oap-ws/oap-ws.iml" />
-      <module fileurl="file://$PROJECT_DIR$/project.iml" filepath="$PROJECT_DIR$/project.iml" />
     </modules>
   </component>
 </project>
