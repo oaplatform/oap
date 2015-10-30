@@ -9,7 +9,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>parent</artifactId>
-        <version>1.0.9</version>
+        <version>1.0.10</version>
     </parent>
 
     <build>
@@ -40,7 +40,7 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>1.0.9</version>
+            <version>1.0.10</version>
         </dependency>
         <dependency>
             <groupId>org.antlr</groupId>
