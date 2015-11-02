@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static oap.util.Lists.Collectors.toArrayList;
 
@@ -88,14 +89,17 @@ public class Model {
 
     public List<Object> convert( List<String> line ) {
         return Stream.of( fields )
-            .map( f -> {
+            .map(f -> {
                 try {
-                    return f.mapper.apply( line.get( f.index ) );
-                } catch( Exception e ) {
-                    throw new TsvException( "at column " + f.index + " " + e, e );
+                    return f.mapper.apply(line.get(f.index));
+                } catch (IndexOutOfBoundsException e) {
+                    String lineToPrint = "[" + Stream.of(line).collect(Collectors.joining("|")) + "]";
+                    throw new TsvException("line does not contain a column with index " + f.index + ": "+ lineToPrint, e);
+                } catch (Exception e) {
+                    throw new TsvException("at column " + f.index + " " + e, e);
                 }
-            } )
-            .collect( toArrayList() );
+            })
+            .collect(toArrayList());
     }
 
     public int size() {
