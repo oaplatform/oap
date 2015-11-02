@@ -23,50 +23,37 @@
  */
 package oap.application.supervision;
 
-import com.google.common.base.Throwables;
-import oap.reflect.Reflect;
-import oap.reflect.Reflection;
+import oap.concurrent.scheduler.Scheduled;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
+import static org.slf4j.LoggerFactory.getLogger;
 
-public class SupervisedService implements Supervised {
-    private final Logger logger;
-    private final Object supervised;
-    private boolean started;
+public abstract class ScheduledService implements Supervised, Runnable {
+    private static Logger logger = getLogger( ScheduledService.class );
+    protected final Runnable runnable;
+    private Scheduled scheduled;
 
-    public SupervisedService( Object supervised ) {
-        this.supervised = supervised;
-        this.logger = LoggerFactory.getLogger( supervised.getClass() );
+    public ScheduledService( Runnable runnable ) {
+        this.runnable = runnable;
     }
 
-    @Override
     public void start() {
-        try {
-            getControlMethod( "start" ).ifPresent( m -> m.invoke( supervised ) );
-            started = true;
-        } catch( Exception e ) {
-            logger.error( e.getMessage(), e );
-            Throwables.propagate( e );
-        }
+        this.scheduled = schedule();
     }
+
+    protected abstract Scheduled schedule();
 
     @Override
     public void stop() {
+        Scheduled.cancel( scheduled );
+    }
+
+    @Override
+    public void run() {
         try {
-            if( started ) getControlMethod( "stop" )
-                .ifPresent( m -> m.invoke( supervised ) );
+            this.runnable.run();
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
         }
     }
-
-    private Optional<Reflection.Method> getControlMethod( String name ) {
-        return Reflect.reflect( supervised.getClass() ).methods
-            .stream()
-            .filter( m -> name.equals( m.name() ) && m.paramerers.isEmpty() )
-            .findAny();
-    }
-
 }

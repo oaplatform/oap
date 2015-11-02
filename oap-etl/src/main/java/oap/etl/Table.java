@@ -84,7 +84,7 @@ public class Table {
         return this;
     }
 
-    public Table distinct( int[] fields, Accumulator... accumulators ) {
+    public Table groupBy( int[] fields, Accumulator... accumulators ) {
         PeekingIterator<List<Object>> iterator = Iterators.peekingIterator( sort( fields ).lines.iterator() );
         class DistinctIterator implements Iterator<List<Object>> {
 

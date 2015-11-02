@@ -58,7 +58,7 @@ public class TableTest {
             .get()
             .sort( new int[]{ 0, 1 } )
             .join( 1, join )
-            .distinct( new int[]{ 0, 1 }, Accumulator.count(), Accumulator.intSum( 2 ), Accumulator.intSum( 3 ) )
+            .groupBy( new int[]{ 0, 1 }, Accumulator.count(), Accumulator.intSum( 2 ), Accumulator.intSum( 3 ) )
             .export( export )
             .compute();
         assertEquals( export.toString(),

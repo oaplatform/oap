@@ -26,24 +26,16 @@ package oap.application.supervision;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 
-public class CronScheduledService implements Supervised {
-    private final Runnable runnable;
+public class CronScheduledService extends ScheduledService {
     private final String cron;
-    private Scheduled scheduled;
-
 
     public CronScheduledService( Runnable runnable, String cron ) {
-        this.runnable = runnable;
+        super( runnable );
         this.cron = cron;
     }
 
     @Override
-    public void start( ) {
-        this.scheduled = Scheduler.scheduleCron( cron, runnable );
-    }
-
-    @Override
-    public void stop() {
-        Scheduled.cancel( scheduled );
+    protected Scheduled schedule() {
+        return Scheduler.scheduleCron( cron, this );
     }
 }
