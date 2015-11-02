@@ -185,6 +185,7 @@
       <module name="madberry-rtb" target="1.8" />
       <module name="madberry-showroom" target="1.8" />
       <module name="madberry-showroom-rpm" target="1.8" />
+      <module name="oap" target="1.8" />
       <module name="oap-application" target="1.8" />
       <module name="oap-cli" target="1.8" />
       <module name="oap-etl" target="1.8" />

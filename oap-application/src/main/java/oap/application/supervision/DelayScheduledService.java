@@ -25,27 +25,25 @@ package oap.application.supervision;
 
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import org.slf4j.Logger;
 
 import java.util.concurrent.TimeUnit;
 
-public class DelayScheduledService implements Supervised {
-    private final Runnable runnable;
+import static org.slf4j.LoggerFactory.getLogger;
+
+public class DelayScheduledService extends ScheduledService {
     private final long delay;
     private final TimeUnit unit;
-    private Scheduled scheduled;
 
     public DelayScheduledService( Runnable runnable, long delay, TimeUnit unit ) {
-        this.runnable = runnable;
+        super( runnable );
         this.delay = delay;
         this.unit = unit;
     }
 
-    public void start() {
-        this.scheduled = Scheduler.scheduleWithFixedDelay( delay, unit, runnable );
+    @Override
+    protected Scheduled schedule() {
+        return Scheduler.scheduleWithFixedDelay( delay, unit, this );
     }
 
-    @Override
-    public void stop() {
-        Scheduled.cancel( scheduled );
-    }
 }

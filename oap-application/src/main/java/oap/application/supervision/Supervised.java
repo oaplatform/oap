@@ -26,6 +26,5 @@ package oap.application.supervision;
 interface Supervised {
     void start();
 
-    default void stop() {
-    }
+    void stop();
 }

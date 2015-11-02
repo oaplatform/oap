@@ -25,7 +25,6 @@
         <jarDirectory url="file://$MODULE_DIR$/../lib" recursive="false" type="SOURCES" />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="Maven: joda-time:joda-time:2.9" level="project" />
     <orderEntry type="module" module-name="oap-replication" />
     <orderEntry type="module" module-name="oap-ws" />
     <orderEntry type="module" module-name="oap-metrics" />

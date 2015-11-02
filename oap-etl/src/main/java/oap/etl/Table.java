@@ -37,7 +37,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 public class Table {
     private Stream<List<Object>> lines;
@@ -76,6 +78,14 @@ public class Table {
         return transform( export::line );
     }
 
+    public Table progress( long step, LongConsumer report ) {
+        AtomicLong total = new AtomicLong( 0 );
+        closeHandlers.add( () -> report.accept( total.get() ) );
+        return transform( l -> {
+            if( total.incrementAndGet() % step == 0 ) report.accept( total.get() );
+        } );
+    }
+
     public Table transform( Consumer<List<Object>> consumer ) {
         this.lines = this.lines.map( l -> {
             consumer.accept( l );
@@ -84,7 +94,7 @@ public class Table {
         return this;
     }
 
-    public Table distinct( int[] fields, Accumulator... accumulators ) {
+    public Table groupBy( int[] fields, Accumulator... accumulators ) {
         PeekingIterator<List<Object>> iterator = Iterators.peekingIterator( sort( fields ).lines.iterator() );
         class DistinctIterator implements Iterator<List<Object>> {
 

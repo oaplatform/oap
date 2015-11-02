@@ -29,16 +29,16 @@ import java.util.concurrent.Semaphore;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class SupervisedThread implements Runnable, Supervised {
+public class ThreadService implements Runnable, Supervised {
     private Thread thread = new Thread( this );
     private Runnable supervisee;
     private final Supervisor supervisor;
-    private static Logger logger = getLogger( SupervisedThread.class );
+    private static Logger logger = getLogger( ThreadService.class );
     private Semaphore semaphore = new Semaphore( 0 );
     private boolean stopped;
     private int maxFailures = 100;
 
-    public SupervisedThread( String name, Runnable supervisee, Supervisor supervisor ) {
+    public ThreadService( String name, Runnable supervisee, Supervisor supervisor ) {
         this.supervisee = supervisee;
         this.supervisor = supervisor;
         this.thread.setName( name );
