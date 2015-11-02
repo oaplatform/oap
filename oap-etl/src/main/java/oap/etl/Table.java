@@ -37,7 +37,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 public class Table {
     private Stream<List<Object>> lines;
@@ -74,6 +76,14 @@ public class Table {
     public Table export( Export export ) {
         closeHandlers.add( export::close );
         return transform( export::line );
+    }
+
+    public Table progress( long step, LongConsumer report ) {
+        AtomicLong total = new AtomicLong( 0 );
+        closeHandlers.add( () -> report.accept( total.get() ) );
+        return transform( l -> {
+            if( total.incrementAndGet() % step == 0 ) report.accept( total.get() );
+        } );
     }
 
     public Table transform( Consumer<List<Object>> consumer ) {

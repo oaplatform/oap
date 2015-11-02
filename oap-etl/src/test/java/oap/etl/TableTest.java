@@ -29,6 +29,9 @@ import oap.tsv.Model;
 import oap.util.Lists;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.testng.Assert.assertEquals;
 
 public class TableTest {
@@ -37,15 +40,18 @@ public class TableTest {
         CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
             getClass().getSimpleName() + "/2.tsv", 0 ).get();
         StringExport export = new StringExport();
+        List<Long> progress = new ArrayList<>();
         Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
             Model.withoutHeader().s( 1, 2, 3 ) )
             .get()
+            .progress( 2, progress::add )
             .sort( new int[]{ 0, 1 } )
             .transform( l -> l.addAll( join.on( (String) l.get( 1 ) ) ) )
             .export( export )
             .compute();
         assertEquals( export.toString(),
             Resources.readString( getClass(), getClass().getSimpleName() + "/sorted.tsv" ).get() );
+        assertEquals( progress, Lists.of( 2l, 4l, 6l, 7l ) );
     }
 
     @Test
@@ -69,7 +75,6 @@ public class TableTest {
     public void testJoined() {
         TableJoin join = TableJoin.fromResource( getClass(), getClass().getSimpleName() + "/2.tsv",
             0, Model.withoutHeader().s( 1, 2 ), Lists.of( "0", "x" ) ).get();
-        System.out.println( join );
         StringExport export = new StringExport();
         Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv", Model.withoutHeader().s( 1, 2, 3 ) )
             .get()
