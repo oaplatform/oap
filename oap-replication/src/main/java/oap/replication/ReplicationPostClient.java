@@ -62,7 +62,7 @@ public abstract class ReplicationPostClient<T> implements Runnable {
 
             switch( response.code ) {
                 case HTTP_OK:
-                    process( success( response.body ) );
+                    process( success( __( response.body, data ) ) );
                     break;
                 default:
                     process( Result.failure( __( response.body, data ) ) );
@@ -78,5 +78,5 @@ public abstract class ReplicationPostClient<T> implements Runnable {
 
     protected abstract T getData();
 
-    protected abstract void process( Result<String, Pair<String, T>> result );
+    protected abstract void process( Result<Pair<String, T>, Pair<String, T>> result );
 }
