@@ -24,6 +24,7 @@
 package oap.tsv;
 
 import oap.util.Stream;
+import oap.util.Strings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -91,6 +92,9 @@ public class Model {
             .map( f -> {
                 try {
                     return f.mapper.apply( line.get( f.index ) );
+                } catch( IndexOutOfBoundsException e ) {
+                    throw new TsvException( "line does not contain a column with index " + f.index + ": " +
+                        Strings.join( "|", line, "[", "]" ), e );
                 } catch( Exception e ) {
                     throw new TsvException( "at column " + f.index + " " + e, e );
                 }

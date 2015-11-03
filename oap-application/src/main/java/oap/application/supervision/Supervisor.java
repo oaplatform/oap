@@ -42,11 +42,11 @@ public class Supervisor {
     private boolean stopped = false;
 
     public void startSupervised( String name, Object service ) {
-        this.supervised.put( name, new SupervisedService( service ) );
+        this.supervised.put( name, new StartableService( service ) );
     }
 
     public void startThread( String name, Object instance ) {
-        this.supervised.put( name, new SupervisedThread( name, (Runnable) instance, this ) );
+        this.supervised.put( name, new ThreadService( name, (Runnable) instance, this ) );
     }
 
     public void scheduleWithFixedDelay( String name, Runnable service, long delay, TimeUnit unit ) {

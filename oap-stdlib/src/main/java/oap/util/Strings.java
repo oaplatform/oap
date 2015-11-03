@@ -128,22 +128,26 @@ public class Strings {
         return join( ",", list );
     }
 
-    public static void join( StringBuilder builder, Collection<?> list ) {
-        join( builder, ",", list );
+
+    public static String join( String delimiter, Collection<?> items ) {
+        return join( delimiter, items, "", "" );
     }
 
-    public static String join( String delimiter, Collection<?> list ) {
-        StringJoiner joiner = new StringJoiner( delimiter );
-        list.forEach( e -> joiner.add( String.valueOf( e ) ) );
+    public static String join( String delimiter, Collection<?> items, String prefix, String suffix ) {
+        StringJoiner joiner = new StringJoiner( delimiter, prefix, suffix );
+        items.forEach( e -> joiner.add( String.valueOf( e ) ) );
         return joiner.toString();
     }
 
-    public static void join( StringBuilder builder, String delimiter, Collection<?> list ) {
+    public static void join( StringBuilder builder, Collection<?> items ) {
+        join( builder, ",", items );
+    }
+
+    public static void join( StringBuilder builder, String delimiter, Collection<?> items ) {
         boolean first = true;
-        for( Object value : list ) {
+        for( Object value : items ) {
             if( first ) first = false;
             else builder.append( delimiter );
-
             builder.append( String.valueOf( value ) );
         }
     }
