@@ -29,7 +29,6 @@ import oap.ws.Uri;
 import oap.ws.apache.SimpleHttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.joda.time.DateTimeUtils;
-import org.slf4j.LoggerFactory;
 
 import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -39,13 +38,16 @@ import static oap.util.Result.success;
 /**
  * Created by Igor Petrenko on 06.10.2015.
  */
-public abstract class ReplicationGetClient implements Runnable {
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger( ReplicationGetClient.class );
+public abstract class ReplicationGet extends ReplicationClient {
+    private long lastSyncTime = -1;
 
-    public String replicationUrl;
-    protected long lastSyncTime = -1;
+    public ReplicationGet( String master, String replicationUrl ) {
+        super( master, replicationUrl );
+    }
 
-    protected abstract String getMasterServiceName();
+    public final long getLastSyncTime() {
+        return lastSyncTime;
+    }
 
     public final synchronized void run() {
         run2( lastSyncTime );
@@ -57,13 +59,13 @@ public abstract class ReplicationGetClient implements Runnable {
 
     private void run2( long syncTime ) {
         try {
-            if( replicationUrl == null ) throw new IllegalAccessError( "master is not configured" );
+            if( getReplicationUrl() == null ) throw new IllegalAccessError( "master is not configured" );
 
             final long now = DateTimeUtils.currentTimeMillis();
 
             SimpleHttpClient.Response response = SimpleHttpClient.execute(
-                new HttpGet( Uri.uri( replicationUrl, __( "lastSyncTime", syncTime ),
-                    __( "service", getMasterServiceName() ) ) ) );
+                new HttpGet( Uri.uri( getReplicationUrl(), __( "lastSyncTime", syncTime ),
+                    __( "service", getMaster() ) ) ) );
 
             switch( response.code ) {
                 case HTTP_NOT_MODIFIED:

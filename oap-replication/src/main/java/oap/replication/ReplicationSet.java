@@ -31,7 +31,8 @@ import oap.ws.apache.SimpleHttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.util.Pair.__;
@@ -40,43 +41,41 @@ import static oap.util.Result.success;
 /**
  * Created by Igor Petrenko on 06.10.2015.
  */
-public abstract class ReplicationPostClient<T> implements Runnable {
-    protected static final org.slf4j.Logger logger = LoggerFactory.getLogger( ReplicationPostClient.class );
-
-    public String replicationUrl;
-
-    protected abstract String getMasterServiceName();
-
-    public final synchronized void run() {
-        T data = getData();
-
-        try {
-            if( replicationUrl == null ) throw new IllegalAccessError( "master is not configured" );
-
-            final HttpPost post = new HttpPost( Uri.uri( replicationUrl,
-                __( "service", getMasterServiceName() ) ) );
-
-            post.setEntity( new StringEntity( data.toString(), ContentType.APPLICATION_JSON ) );
-
-            SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
-
-            switch( response.code ) {
-                case HTTP_OK:
-                    process( success( response.body ) );
-                    break;
-                default:
-                    process( Result.failure( __( response.body, data ) ) );
-                    logger.error( "code: {}, message: {}", response.code, response.body );
-
-            }
-        } catch( Exception e ) {
-            if( logger.isTraceEnabled() ) logger.trace( e.getMessage(), e );
-            else logger.error( e.getMessage() );
-            process( Result.failure( __( e.getMessage(), data ) ) );
-        }
+public abstract class ReplicationSet<T> extends ReplicationClient {
+    public ReplicationSet( String master, String replicationUrl ) {
+        super( master, replicationUrl );
     }
 
-    protected abstract T getData();
+    public final synchronized void run() {
+        getData().ifPresent( data -> {
 
-    protected abstract void process( Result<String, Pair<String, T>> result );
+            try {
+                if( getReplicationUrl() == null ) throw new IllegalAccessError( "master is not configured" );
+
+                final HttpPost post = new HttpPost( Uri.uri( getReplicationUrl(), __( "service", getMaster() ) ) );
+
+                post.setEntity( new StringEntity( data.toString(), ContentType.APPLICATION_JSON ) );
+
+                SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
+
+                switch( response.code ) {
+                    case HTTP_OK:
+                        process( success( __( response.body, data ) ) );
+                        break;
+                    default:
+                        process( Result.failure( __( response.body, data ) ) );
+                        logger.error( "code: {}, message: {}", response.code, response.body );
+
+                }
+            } catch( Exception e ) {
+                if( logger.isTraceEnabled() ) logger.trace( e.getMessage(), e );
+                else logger.error( e.getMessage() );
+                process( Result.failure( __( e.getMessage(), data ) ) );
+            }
+        } );
+    }
+
+    protected abstract Optional<T> getData();
+
+    protected abstract void process( Result<Pair<String, T>, Pair<String, T>> result );
 }
