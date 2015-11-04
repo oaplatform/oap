@@ -31,7 +31,8 @@ import oap.ws.apache.SimpleHttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.util.Pair.__;
@@ -46,34 +47,35 @@ public abstract class ReplicationSet<T> extends ReplicationClient {
     }
 
     public final synchronized void run() {
-        T data = getData();
+        getData().ifPresent( data -> {
 
-        try {
-            if( getReplicationUrl() == null ) throw new IllegalAccessError( "master is not configured" );
+            try {
+                if( getReplicationUrl() == null ) throw new IllegalAccessError( "master is not configured" );
 
-            final HttpPost post = new HttpPost( Uri.uri( getReplicationUrl(), __( "service", getMaster() ) ) );
+                final HttpPost post = new HttpPost( Uri.uri( getReplicationUrl(), __( "service", getMaster() ) ) );
 
-            post.setEntity( new StringEntity( data.toString(), ContentType.APPLICATION_JSON ) );
+                post.setEntity( new StringEntity( data.toString(), ContentType.APPLICATION_JSON ) );
 
-            SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
+                SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
 
-            switch( response.code ) {
-                case HTTP_OK:
-                    process( success( __( response.body, data ) ) );
-                    break;
-                default:
-                    process( Result.failure( __( response.body, data ) ) );
-                    logger.error( "code: {}, message: {}", response.code, response.body );
+                switch( response.code ) {
+                    case HTTP_OK:
+                        process( success( __( response.body, data ) ) );
+                        break;
+                    default:
+                        process( Result.failure( __( response.body, data ) ) );
+                        logger.error( "code: {}, message: {}", response.code, response.body );
 
+                }
+            } catch( Exception e ) {
+                if( logger.isTraceEnabled() ) logger.trace( e.getMessage(), e );
+                else logger.error( e.getMessage() );
+                process( Result.failure( __( e.getMessage(), data ) ) );
             }
-        } catch( Exception e ) {
-            if( logger.isTraceEnabled() ) logger.trace( e.getMessage(), e );
-            else logger.error( e.getMessage() );
-            process( Result.failure( __( e.getMessage(), data ) ) );
-        }
+        } );
     }
 
-    protected abstract T getData();
+    protected abstract Optional<T> getData();
 
     protected abstract void process( Result<Pair<String, T>, Pair<String, T>> result );
 }
