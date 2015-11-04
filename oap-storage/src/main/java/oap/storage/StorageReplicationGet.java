@@ -44,6 +44,10 @@ public class StorageReplicationGet<T> extends ReplicationGet {
         this.storage = storage;
     }
 
+    public final Storage<T> getStorage() {
+        return storage;
+    }
+
     @Override
     protected void process( Result<String, String> result ) {
         result.ifSuccess( r -> {
