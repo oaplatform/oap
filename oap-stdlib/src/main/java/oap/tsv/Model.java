@@ -26,7 +26,9 @@ package oap.tsv;
 import oap.util.Stream;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -35,8 +37,11 @@ import static oap.util.Lists.Collectors.toArrayList;
 
 public class Model {
     public boolean withHeader = false;
-    private List<Field> fields = new ArrayList<>();
-    private Predicate<List<String>> filter;
+    private Map<String, Version> versions;
+
+    private Model(){
+        versions = new HashMap<>();
+    }
 
     public static Model withHeader() {
         Model model = new Model();
@@ -44,75 +49,14 @@ public class Model {
         return model;
     }
 
-    public Model filtered( Predicate<List<String>> filter ) {
-        this.filter = this.filter == null ? filter : this.filter.and( filter );
-        return this;
-    }
-
-    public Model columns( int count ) {
-        return filtered( l -> l.size() == count );
-    }
 
     public static Model withoutHeader() {
         return new Model();
     }
 
-    public Model s( int[] indices ) {
-        return field( s -> s, indices );
-    }
-
-    public Model s( int index, int... more ) {
-        return field( s -> s, index, more );
-    }
-
-    public Model i( int index, int... more ) {
-        return field( Integer::parseInt, index, more );
-    }
-
-    public Model l( int index, int... more ) {
-        return field( Long::parseLong, index, more );
-    }
-
-    public Model d( int index, int... more ) {
-        return field( Double::parseDouble, index, more );
-    }
-
-    public Model field( Function<String, Object> mapper, int[] indices ) {
-        for( int i : indices ) this.fields.add( new Field( i, mapper ) );
-        return this;
-    }
-
-    public Model field( Function<String, Object> mapper, int index, int... more ) {
-        this.fields.add( new Field( index, mapper ) );
-        return field( mapper, more );
-    }
-
-    public List<Object> convert( List<String> line ) {
-        return Stream.of( fields )
-            .map(f -> {
-                try {
-                    return f.mapper.apply(line.get(f.index));
-                } catch (IndexOutOfBoundsException e) {
-                    String lineToPrint = "[" + Stream.of(line).collect(Collectors.joining("|")) + "]";
-                    throw new TsvException("line does not contain a column with index " + f.index + ": "+ lineToPrint, e);
-                } catch (Exception e) {
-                    throw new TsvException("at column " + f.index + " " + e, e);
-                }
-            })
-            .collect(toArrayList());
-    }
-
-    public int size() {
-        return fields.size();
-    }
-
-    public Model join( Model model ) {
-        this.fields.addAll( model.fields );
-        return this;
-    }
-
-    public Predicate<? super List<String>> filter() {
-        return this.filter == null ? l -> true : this.filter;
+    public Model.Version withVersion(String version) {
+        versions.putIfAbsent(version, new Version(this.withHeader));
+        return versions.get(version);
     }
 
     private class Field {
@@ -122,6 +66,84 @@ public class Model {
         public Field( int index, Function<String, Object> mapper ) {
             this.index = index;
             this.mapper = mapper;
+        }
+    }
+
+    public class Version {
+        public boolean withHeader;
+        private Predicate<List<String>> filter;
+        private List<Field> fields = new ArrayList<>();
+
+        public Version(boolean withHeader) {
+            this.withHeader = withHeader;
+        }
+
+        public Model.Version field( Function<String, Object> mapper, int index, int... more ) {
+            this.fields.add( new Field( index, mapper ) );
+            return field( mapper, more );
+        }
+
+        public List<Object> convert( List<String> line ) {
+            return Stream.of( fields )
+                    .map(f -> {
+                        try {
+                            return f.mapper.apply(line.get(f.index));
+                        } catch (IndexOutOfBoundsException e) {
+                            String lineToPrint = "[" + Stream.of(line).collect(Collectors.joining("|")) + "]";
+                            throw new TsvException("line does not contain a column with index " + f.index + ": "+ lineToPrint, e);
+                        } catch (Exception e) {
+                            throw new TsvException("at column " + f.index + " " + e, e);
+                        }
+                    })
+                    .collect(toArrayList());
+        }
+
+        public Model.Version field( Function<String, Object> mapper, int[] indices ) {
+            for( int i : indices ) this.fields.add( new Field( i, mapper ) );
+            return this;
+        }
+
+        public Model.Version s( int[] indices ) {
+            return field( s -> s, indices );
+        }
+
+        public Model.Version s( int index, int... more ) {
+            return field( s -> s, index, more );
+        }
+
+        public Model.Version i( int index, int... more ) {
+            return field( Integer::parseInt, index, more );
+        }
+
+        public Model.Version l( int index, int... more ) {
+            return field( Long::parseLong, index, more );
+        }
+
+        public Model.Version d( int index, int... more ) {
+            return field( Double::parseDouble, index, more );
+        }
+
+
+        public Model.Version filtered( Predicate<List<String>> filter ) {
+            this.filter = this.filter == null ? filter : this.filter.and( filter );
+            return this;
+        }
+
+        public Model.Version columns( int count ) {
+            return filtered( l -> l.size() == count );
+        }
+
+        public int size() {
+            return fields.size();
+        }
+
+        public Model.Version join( Model.Version model ) {
+            this.fields.addAll( model.fields );
+            return this;
+        }
+
+        public Predicate<? super List<String>> filter() {
+            return this.filter == null ? l -> true : this.filter;
         }
     }
 }

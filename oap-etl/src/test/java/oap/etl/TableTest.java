@@ -38,11 +38,11 @@ public class TableTest {
     @Test
     public void testSorted() {
         CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
-            getClass().getSimpleName() + "/2.tsv", 0 ).get();
+            getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().withVersion("defaultVersion").s(0) ).get();
         StringExport export = new StringExport();
         List<Long> progress = new ArrayList<>();
         Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
-            Model.withoutHeader().s( 1, 2, 3 ) )
+            Model.withoutHeader().withVersion("defaultVersion").s( 1, 2, 3 ) )
             .get()
             .progress( 2, progress::add )
             .sort( new int[]{ 0, 1 } )
@@ -57,10 +57,10 @@ public class TableTest {
     @Test
     public void testDistincted() {
         CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
-            getClass().getSimpleName() + "/2.tsv", 0 ).get();
+            getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().withVersion("defaultVersion").s( 0 ) ).get();
         StringExport export = new StringExport();
         Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
-            Model.withoutHeader().s( 1, 2 ).i( 3 ) )
+            Model.withoutHeader().withVersion("defaultVersion").s( 1, 2 ).i( 3 ) )
             .get()
             .sort( new int[]{ 0, 1 } )
             .join( 1, join )
@@ -74,9 +74,9 @@ public class TableTest {
     @Test
     public void testJoined() {
         TableJoin join = TableJoin.fromResource( getClass(), getClass().getSimpleName() + "/2.tsv",
-            0, Model.withoutHeader().s( 1, 2 ), Lists.of( "0", "x" ) ).get();
+            Model.withoutHeader().withVersion("defaultVersion").s( 1, 2, 0 ), Lists.of( "0", "x" ) ).get();
         StringExport export = new StringExport();
-        Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv", Model.withoutHeader().s( 1, 2, 3 ) )
+        Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv", Model.withoutHeader().withVersion("defaultVersion").s( 1, 2, 3 ) )
             .get()
             .sort( new int[]{ 0, 1 } )
             .join( 1, join )

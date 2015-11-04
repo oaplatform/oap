@@ -34,21 +34,23 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import static oap.io.Files.version;
+
 public class CountingKeyJoin implements Join {
     private LongMap map = new LongMap();
 
-    public static Optional<CountingKeyJoin> fromResource( Class<?> contextClass, String name, int field ) {
-        return Tsv.fromResource( contextClass, name, Model.withoutHeader().s( field ) )
+    public static Optional<CountingKeyJoin> fromResource( Class<?> contextClass, String name, Model.Version modelVersion ) {
+        return Tsv.fromResource( contextClass, name, modelVersion )
             .map( s -> s.foldLeft( new CountingKeyJoin(), ( l, list ) -> {
                 l.map.increment( (String) list.get( 0 ) );
                 return l;
             } ) );
     }
 
-    public static CountingKeyJoin fromFiles( List<Path> files, IoStreams.Encoding encoding, int field ) {
-        return Stream.of( files.stream() )
-            .foldLeft( new CountingKeyJoin(), ( l, file ) -> {
-                Tsv.fromPath( file, encoding, Model.withoutHeader().s( field ) )
+    public static CountingKeyJoin fromFiles( List<Path> paths, IoStreams.Encoding encoding, Model model ) {
+        return Stream.of( paths.stream() )
+            .foldLeft( new CountingKeyJoin(), ( l, path ) -> {
+                Tsv.fromPath( path, encoding, model.withVersion(version(path)) )
                     .forEach( list -> l.map.increment( (String) list.get( 0 ) ) );
                 return l;
             } );

@@ -41,6 +41,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import static oap.io.Files.version;
+
 public class Table {
     private Stream<List<Object>> lines;
     private List<Runnable> closeHandlers = new ArrayList<>();
@@ -49,12 +51,12 @@ public class Table {
         this.lines = lines;
     }
 
-    public static Optional<Table> fromResource( Class<?> contextClass, String name, Model model ) {
-        return Tsv.fromResource( contextClass, name, model ).map( Table::new );
+    public static Optional<Table> fromResource( Class<?> contextClass, String name, Model.Version modelVersion ) {
+        return Tsv.fromResource( contextClass, name, modelVersion ).map( Table::new );
     }
 
     public static Table fromFile( Path path, Model model ) {
-        return new Table( Tsv.fromPath( path, model ) );
+        return new Table( Tsv.fromPath( path, model.withVersion(version(path) ) ) );
     }
 
     public static Table fromFiles( List<Path> paths, IoStreams.Encoding encoding, Model model ) {

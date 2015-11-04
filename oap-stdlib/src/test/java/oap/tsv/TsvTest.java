@@ -60,7 +60,7 @@ public class TsvTest {
         Asserts.assertEquals( Tsv.fromPath(
                 path.resolve( file ),
                 encoding,
-                Model.withoutHeader().s( 1 ).i( 3 ).columns( 4 ) ),
+                Model.withoutHeader().withVersion("defaultVersion").s( 1 ).i( 3 ).columns( 4 ) ),
             Stream.of(
                 Lists.of( "B", 1 ),
                 Lists.of( "A", 1 ),
