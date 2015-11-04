@@ -26,7 +26,7 @@
     },
     {
       "name": "test-storage-replication",
-      "implementation": "oap.storage.StorageReplicationGetClient",
+      "implementation": "oap.storage.StorageReplicationGet",
       "parameters": {
         "storage": "@service:test-storage",
         "replicationUrl": "http://controller.madberry-services.net:8880/replication/",

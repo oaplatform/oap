@@ -24,15 +24,13 @@
 
 package oap.replication;
 
-import oap.util.Pair;
 import oap.util.Result;
 import oap.ws.Uri;
 import oap.ws.apache.SimpleHttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.slf4j.LoggerFactory;
+import org.apache.http.client.methods.HttpGet;
+import org.joda.time.DateTimeUtils;
 
+import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.util.Pair.__;
 import static oap.util.Result.success;
@@ -40,43 +38,52 @@ import static oap.util.Result.success;
 /**
  * Created by Igor Petrenko on 06.10.2015.
  */
-public abstract class ReplicationPostClient<T> implements Runnable {
-    protected static final org.slf4j.Logger logger = LoggerFactory.getLogger( ReplicationPostClient.class );
+public abstract class ReplicationGet extends ReplicationClient {
+    private long lastSyncTime = -1;
 
-    public String replicationUrl;
+    public ReplicationGet( String master, String replicationUrl ) {
+        super( master, replicationUrl );
+    }
 
-    protected abstract String getMasterServiceName();
+    public final long getLastSyncTime() {
+        return lastSyncTime;
+    }
 
     public final synchronized void run() {
-        T data = getData();
+        run2( lastSyncTime );
+    }
 
+    public final synchronized void resync() {
+        run2( -1 );
+    }
+
+    private void run2( long syncTime ) {
         try {
-            if( replicationUrl == null ) throw new IllegalAccessError( "master is not configured" );
+            if( getReplicationUrl() == null ) throw new IllegalAccessError( "master is not configured" );
 
-            final HttpPost post = new HttpPost( Uri.uri( replicationUrl,
-                __( "service", getMasterServiceName() ) ) );
+            final long now = DateTimeUtils.currentTimeMillis();
 
-            post.setEntity( new StringEntity( data.toString(), ContentType.APPLICATION_JSON ) );
-
-            SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
+            SimpleHttpClient.Response response = SimpleHttpClient.execute(
+                new HttpGet( Uri.uri( getReplicationUrl(), __( "lastSyncTime", syncTime ),
+                    __( "service", getMaster() ) ) ) );
 
             switch( response.code ) {
+                case HTTP_NOT_MODIFIED:
+                    break;
                 case HTTP_OK:
-                    process( success( __( response.body, data ) ) );
+                    process( success( response.body ) );
+                    lastSyncTime = now;
                     break;
                 default:
-                    process( Result.failure( __( response.body, data ) ) );
+                    process( Result.failure( response.reasonPhrase ) );
                     logger.error( "code: {}, message: {}", response.code, response.body );
 
             }
         } catch( Exception e ) {
-            if( logger.isTraceEnabled() ) logger.trace( e.getMessage(), e );
-            else logger.error( e.getMessage() );
-            process( Result.failure( __( e.getMessage(), data ) ) );
+            process( Result.failure( e.getMessage() ) );
         }
+
     }
 
-    protected abstract T getData();
-
-    protected abstract void process( Result<Pair<String, T>, Pair<String, T>> result );
+    protected abstract void process( Result<String, String> result );
 }

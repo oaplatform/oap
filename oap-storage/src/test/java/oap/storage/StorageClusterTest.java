@@ -121,7 +121,7 @@ public class StorageClusterTest extends AbstractTest {
         storageMaster.store( new Bean( "1" ) );
 
         Storage<Bean> storageSlave = Application.service( "test-storage" );
-        StorageReplicationGetClient<Bean> storageSlaveRep = Application.service( "test-storage-replication" );
+        StorageReplicationGet<Bean> storageSlaveRep = Application.service( "test-storage-replication" );
 
         assertEquals( storageSlave.select().count(), 0 );
         storageSlaveRep.run();

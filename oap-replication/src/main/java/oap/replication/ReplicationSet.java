@@ -24,14 +24,15 @@
 
 package oap.replication;
 
+import oap.util.Pair;
 import oap.util.Result;
 import oap.ws.Uri;
 import oap.ws.apache.SimpleHttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.joda.time.DateTimeUtils;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.slf4j.LoggerFactory;
 
-import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.util.Pair.__;
 import static oap.util.Result.success;
@@ -39,49 +40,40 @@ import static oap.util.Result.success;
 /**
  * Created by Igor Petrenko on 06.10.2015.
  */
-public abstract class ReplicationGetClient implements Runnable {
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger( ReplicationGetClient.class );
-
-    public String replicationUrl;
-    protected long lastSyncTime = -1;
-
-    protected abstract String getMasterServiceName();
+public abstract class ReplicationSet<T> extends ReplicationClient {
+    public ReplicationSet( String master, String replicationUrl ) {
+        super( master, replicationUrl );
+    }
 
     public final synchronized void run() {
-        run2( lastSyncTime );
-    }
+        T data = getData();
 
-    public final synchronized void resync() {
-        run2( -1 );
-    }
-
-    private void run2( long syncTime ) {
         try {
-            if( replicationUrl == null ) throw new IllegalAccessError( "master is not configured" );
+            if( getReplicationUrl() == null ) throw new IllegalAccessError( "master is not configured" );
 
-            final long now = DateTimeUtils.currentTimeMillis();
+            final HttpPost post = new HttpPost( Uri.uri( getReplicationUrl(), __( "service", getMaster() ) ) );
 
-            SimpleHttpClient.Response response = SimpleHttpClient.execute(
-                new HttpGet( Uri.uri( replicationUrl, __( "lastSyncTime", syncTime ),
-                    __( "service", getMasterServiceName() ) ) ) );
+            post.setEntity( new StringEntity( data.toString(), ContentType.APPLICATION_JSON ) );
+
+            SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
 
             switch( response.code ) {
-                case HTTP_NOT_MODIFIED:
-                    break;
                 case HTTP_OK:
-                    process( success( response.body ) );
-                    lastSyncTime = now;
+                    process( success( __( response.body, data ) ) );
                     break;
                 default:
-                    process( Result.failure( response.reasonPhrase ) );
+                    process( Result.failure( __( response.body, data ) ) );
                     logger.error( "code: {}, message: {}", response.code, response.body );
 
             }
         } catch( Exception e ) {
-            process( Result.failure( e.getMessage() ) );
+            if( logger.isTraceEnabled() ) logger.trace( e.getMessage(), e );
+            else logger.error( e.getMessage() );
+            process( Result.failure( __( e.getMessage(), data ) ) );
         }
-
     }
 
-    protected abstract void process( Result<String, String> result );
+    protected abstract T getData();
+
+    protected abstract void process( Result<Pair<String, T>, Pair<String, T>> result );
 }

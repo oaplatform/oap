@@ -26,7 +26,7 @@ package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import oap.json.Binder;
-import oap.replication.ReplicationGetClient;
+import oap.replication.ReplicationGet;
 import oap.util.Result;
 
 import java.util.List;
@@ -36,13 +36,12 @@ import static java.util.stream.Collectors.toList;
 /**
  * Created by Igor Petrenko on 06.10.2015.
  */
-public class StorageReplicationGetClient<T> extends ReplicationGetClient {
-    protected Storage<T> storage;
-    protected String master;
+public class StorageReplicationGet<T> extends ReplicationGet {
+    private Storage<T> storage;
 
-    @Override
-    protected String getMasterServiceName() {
-        return master;
+    public StorageReplicationGet( String master, String replicationUrl, Storage<T> storage ) {
+        super( master, replicationUrl );
+        this.storage = storage;
     }
 
     @Override
