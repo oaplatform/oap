@@ -26,7 +26,7 @@ package oap.etl;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import oap.io.IoStreams;
-import oap.tsv.Model;
+import oap.tsv.ModelSet;
 import oap.tsv.Tsv;
 import oap.util.Stream;
 
@@ -51,16 +51,16 @@ public class Table {
         this.lines = lines;
     }
 
-    public static Optional<Table> fromResource( Class<?> contextClass, String name, Model.Version modelVersion ) {
-        return Tsv.fromResource( contextClass, name, modelVersion ).map( Table::new );
+    public static Optional<Table> fromResource( Class<?> contextClass, String name, ModelSet modelSet ) {
+        return Tsv.fromResource( contextClass, name, modelSet ).map( Table::new );
     }
 
-    public static Table fromFile( Path path, Model model ) {
-        return new Table( Tsv.fromPath( path, model.withVersion(version(path) ) ) );
+    public static Table fromFile( Path path, ModelSet modelSet) {
+        return new Table( Tsv.fromPath( path, modelSet ) );
     }
 
-    public static Table fromFiles( List<Path> paths, IoStreams.Encoding encoding, Model model ) {
-        return new Table( Tsv.fromPaths( paths, encoding, model ) );
+    public static Table fromFiles( List<Path> paths, IoStreams.Encoding encoding, ModelSet modelSet) {
+        return new Table( Tsv.fromPaths( paths, encoding, modelSet) );
     }
 
     @SuppressWarnings( "unchecked" )

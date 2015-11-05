@@ -23,8 +23,10 @@
  */
 package oap.tsv;
 
+import oap.io.Files;
 import oap.util.Stream;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,29 +37,38 @@ import java.util.stream.Collectors;
 
 import static oap.util.Lists.Collectors.toArrayList;
 
-public class Model {
+public class ModelSet {
     public boolean withHeader = false;
-    private Map<String, Version> versions;
+    private Map<String, Model> versions;
 
-    private Model(){
+    private ModelSet(){
         versions = new HashMap<>();
     }
 
-    public static Model withHeader() {
-        Model model = new Model();
-        model.withHeader = true;
-        return model;
+    public static ModelSet withHeader() {
+        ModelSet modelSet = new ModelSet();
+        modelSet.withHeader = true;
+        return modelSet;
     }
 
 
-    public static Model withoutHeader() {
-        return new Model();
+    public static ModelSet withoutHeader() {
+        return new ModelSet();
     }
 
-    public Model.Version withVersion(String version) {
-        versions.putIfAbsent(version, new Version(this.withHeader));
+    public Model modelForName(String version) {
+        versions.putIfAbsent(version, new Model(this.withHeader));
         return versions.get(version);
     }
+
+    public Model modelForPath(Path path){
+        return modelForName(Files.version(path)) ;
+    }
+
+    public int size() {
+        return versions.get(versions.keySet().toArray()[0]).fields.size();
+    }
+
 
     private class Field {
         int index;
@@ -69,16 +80,16 @@ public class Model {
         }
     }
 
-    public class Version {
+    public class Model {
         public boolean withHeader;
         private Predicate<List<String>> filter;
         private List<Field> fields = new ArrayList<>();
 
-        public Version(boolean withHeader) {
+        public Model(boolean withHeader) {
             this.withHeader = withHeader;
         }
 
-        public Model.Version field( Function<String, Object> mapper, int index, int... more ) {
+        public Model field( Function<String, Object> mapper, int index, int... more ) {
             this.fields.add( new Field( index, mapper ) );
             return field( mapper, more );
         }
@@ -98,38 +109,38 @@ public class Model {
                     .collect(toArrayList());
         }
 
-        public Model.Version field( Function<String, Object> mapper, int[] indices ) {
+        public Model field( Function<String, Object> mapper, int[] indices ) {
             for( int i : indices ) this.fields.add( new Field( i, mapper ) );
             return this;
         }
 
-        public Model.Version s( int[] indices ) {
+        public Model s( int[] indices ) {
             return field( s -> s, indices );
         }
 
-        public Model.Version s( int index, int... more ) {
+        public Model s( int index, int... more ) {
             return field( s -> s, index, more );
         }
 
-        public Model.Version i( int index, int... more ) {
+        public Model i( int index, int... more ) {
             return field( Integer::parseInt, index, more );
         }
 
-        public Model.Version l( int index, int... more ) {
+        public Model l( int index, int... more ) {
             return field( Long::parseLong, index, more );
         }
 
-        public Model.Version d( int index, int... more ) {
+        public Model d( int index, int... more ) {
             return field( Double::parseDouble, index, more );
         }
 
 
-        public Model.Version filtered( Predicate<List<String>> filter ) {
+        public Model filtered( Predicate<List<String>> filter ) {
             this.filter = this.filter == null ? filter : this.filter.and( filter );
             return this;
         }
 
-        public Model.Version columns( int count ) {
+        public Model columns( int count ) {
             return filtered( l -> l.size() == count );
         }
 
@@ -137,7 +148,7 @@ public class Model {
             return fields.size();
         }
 
-        public Model.Version join( Model.Version model ) {
+        public Model join( Model model ) {
             this.fields.addAll( model.fields );
             return this;
         }

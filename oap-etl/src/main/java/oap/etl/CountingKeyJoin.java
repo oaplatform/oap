@@ -24,7 +24,7 @@
 package oap.etl;
 
 import oap.io.IoStreams;
-import oap.tsv.Model;
+import oap.tsv.ModelSet;
 import oap.tsv.Tsv;
 import oap.util.Lists;
 import oap.util.LongMap;
@@ -34,23 +34,21 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-import static oap.io.Files.version;
-
 public class CountingKeyJoin implements Join {
     private LongMap map = new LongMap();
 
-    public static Optional<CountingKeyJoin> fromResource( Class<?> contextClass, String name, Model.Version modelVersion ) {
-        return Tsv.fromResource( contextClass, name, modelVersion )
+    public static Optional<CountingKeyJoin> fromResource( Class<?> contextClass, String name, ModelSet modelSet ) {
+        return Tsv.fromResource( contextClass, name, modelSet )
             .map( s -> s.foldLeft( new CountingKeyJoin(), ( l, list ) -> {
                 l.map.increment( (String) list.get( 0 ) );
                 return l;
             } ) );
     }
 
-    public static CountingKeyJoin fromFiles( List<Path> paths, IoStreams.Encoding encoding, Model model ) {
+    public static CountingKeyJoin fromFiles( List<Path> paths, IoStreams.Encoding encoding, ModelSet modelSet ) {
         return Stream.of( paths.stream() )
             .foldLeft( new CountingKeyJoin(), ( l, path ) -> {
-                Tsv.fromPath( path, encoding, model.withVersion(version(path)) )
+                Tsv.fromPath( path, encoding, modelSet )
                     .forEach( list -> l.map.increment( (String) list.get( 0 ) ) );
                 return l;
             } );

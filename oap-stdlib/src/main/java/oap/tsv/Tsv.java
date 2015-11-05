@@ -37,47 +37,46 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 import static java.util.stream.Collectors.toList;
-import static oap.io.Files.version;
 
 public class Tsv {
 
-    public static Optional<Stream<List<Object>>> fromResource( Class<?> contextClass, String name, Model.Version modelVersion ) {
-        return Resources.url( contextClass, name ).map( url -> fromUrl( url, modelVersion ) );
+    public static Optional<Stream<List<Object>>> fromResource( Class<?> contextClass, String name, ModelSet modelSet) {
+        return Resources.url( contextClass, name ).map( url -> fromUrl( url, modelSet.modelForName(name)) );
     }
 
-    public static Stream<List<Object>> fromPath( Path path, Model.Version modelVersion ) {
-        return fromPath( path, IoStreams.Encoding.PLAIN, modelVersion );
+    public static Stream<List<Object>> fromPath( Path path, ModelSet modelSet) {
+        return fromPath( path, IoStreams.Encoding.PLAIN, modelSet );
     }
 
-    public static Stream<List<Object>> fromPath( Path path, IoStreams.Encoding encoding, Model.Version modelVersion ) {
-        return fromStream( IoStreams.lines( path, encoding ), modelVersion );
+    public static Stream<List<Object>> fromPath( Path path, IoStreams.Encoding encoding, ModelSet modelSet) {
+        return fromStream(IoStreams.lines(path, encoding), modelSet.modelForPath(path) );
     }
 
-    public static Stream<List<Object>> fromPaths( List<Path> paths, Model model ) {
-        return fromPaths( paths, IoStreams.Encoding.PLAIN, model );
+    public static Stream<List<Object>> fromPaths( List<Path> paths, ModelSet modelSet) {
+        return fromPaths( paths, IoStreams.Encoding.PLAIN, modelSet);
     }
 
-    public static Stream<List<Object>> fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model model ) {
-        return Stream.of( paths ).flatMap( path -> fromStream( IoStreams.lines( path, encoding ), model.withVersion(version(path)) ) );
+    public static Stream<List<Object>> fromPaths( List<Path> paths, IoStreams.Encoding encoding, ModelSet modelSet) {
+        return Stream.of( paths ).flatMap( path -> fromStream( IoStreams.lines( path, encoding ), modelSet.modelForPath(path) ) );
     }
 
-    public static Stream<List<Object>> fromUrl( URL url, Model.Version modelVersion ) {
-        return fromUrl( url, modelVersion, IoStreams.Encoding.PLAIN, p -> {
+    public static Stream<List<Object>> fromUrl( URL url, ModelSet.Model model) {
+        return fromUrl( url, model, IoStreams.Encoding.PLAIN, p -> {
         } );
     }
 
-    public static Stream<List<Object>> fromUrl( URL url, Model.Version modelVersion, IoStreams.Encoding encoding,
+    public static Stream<List<Object>> fromUrl( URL url, ModelSet.Model model, IoStreams.Encoding encoding,
         Consumer<Integer> progressCallback ) {
-        return fromStream( IoStreams.lines( url, encoding, progressCallback ), modelVersion );
+        return fromStream( IoStreams.lines( url, encoding, progressCallback ), model);
     }
 
-    public static Stream<List<Object>> fromStream( Stream<String> stream, Model.Version modelVersion ) {
-        int skip = modelVersion.withHeader ? 1 : 0;
+    public static Stream<List<Object>> fromStream( Stream<String> stream, ModelSet.Model model) {
+        int skip = model.withHeader ? 1 : 0;
         return fromStream( stream ).skip( skip )
-            .filter( modelVersion.filter() )
+            .filter( model.filter() )
             .mapWithIndex( ( index, line ) -> {
                 try {
-                    return modelVersion.convert( line );
+                    return model.convert( line );
                 } catch( TsvException e ) {
                     throw new TsvException( "at line " + (index + skip) + " " + e, e.getCause() );
                 } catch( Exception e ) {

@@ -76,8 +76,8 @@ public final class Files {
     public static String version(Path path) {
         return Optional.of(path.getFileName().toString()).map(s -> {
             Matcher m = java.util.regex.Pattern.compile("_(v.*?)-").matcher(s);
-            return m.find() ? m.group(1) : null;
-        }).orElseThrow(() -> new UncheckedIOException(new IOException("Cannot find payload version of file: " + path.getFileName().toString())));
+            return m.find() ? m.group(1) : "";
+        }).get();
     }
 
     public static String readString( String path ) {

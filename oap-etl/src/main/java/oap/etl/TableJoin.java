@@ -24,7 +24,7 @@
 package oap.etl;
 
 import oap.io.IoStreams;
-import oap.tsv.Model;
+import oap.tsv.ModelSet;
 import oap.tsv.Tsv;
 import oap.util.Stream;
 
@@ -44,19 +44,19 @@ public class TableJoin implements Join {
     }
 
     public static Optional<TableJoin> fromResource( Class<?> contextClass, String name,
-        Model.Version modelVersion, List<Object> defaults ) {
-        return Tsv.fromResource( contextClass, name, modelVersion )
+        ModelSet modelSet, List<Object> defaults ) {
+        return Tsv.fromResource( contextClass, name, modelSet)
             .map( s -> s.foldLeft( new TableJoin( defaults ), ( l, line ) -> {
-                l.map.put( (String) line.remove( modelVersion.size() - 1 ), line );
+                l.map.put( (String) line.remove( modelSet.size() - 1 ), line );
                 return l;
             } ) );
     }
 
-    public static TableJoin fromFiles( List<Path> files, IoStreams.Encoding encoding, Model model, List<Object> defaults ) {
+    public static TableJoin fromFiles( List<Path> files, IoStreams.Encoding encoding, ModelSet modelSet, List<Object> defaults ) {
         return Stream.of( files.stream() )
             .foldLeft( new TableJoin( defaults ), ( t, path ) -> {
-                Tsv.fromPath( path, encoding, model.withVersion(version(path)) )
-                        .forEach( line -> t.map.put( (String) line.remove( model.withVersion(version(path) ).size() - 1 ), line ) );
+                Tsv.fromPath( path, encoding, modelSet )
+                        .forEach( line -> t.map.put( (String) line.remove( modelSet.size() - 1 ), line ) );
                 return t;
             } );
     }
