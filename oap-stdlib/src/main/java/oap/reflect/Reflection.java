@@ -47,13 +47,13 @@ import java.util.function.Predicate;
 import static java.util.stream.Collectors.toList;
 
 public class Reflection extends Annotated<Class<?>> {
-    private final TypeToken<?> typeToken;
+    //    @todo constructors (PERFORMANCE)
+    private static Coercions coercions = Coercions.basic().withIdentity();
     public final Class<?> underlying;
     public final List<Field> fields;
     public final List<Method> methods;
     public final List<Reflection> typeParameters;
-    //    @todo constructors (PERFORMANCE)
-    private static Coercions coercions = Coercions.basic().withIdentity();
+    private final TypeToken<?> typeToken;
 
     Reflection( TypeToken<?> typeToken ) {
         super( typeToken.getRawType() );
@@ -195,6 +195,39 @@ public class Reflection extends Annotated<Class<?>> {
 
     public String name() {
         return this.typeToken.getRawType().getCanonicalName();
+    }
+
+    public Class<?> parameterType( String name ) {
+        Constructor<?>[] constructors = typeToken.getRawType().getConstructors();
+//              @todo initialization of constructorless classes
+        java.util.Arrays.sort( constructors, Comparator
+            .<Constructor<?>>comparingInt( Constructor::getParameterCount )
+            .reversed() );
+        for( Constructor<?> constructor : constructors ) {
+            List<String> paramNames = Lists.of( Arrays.map( String.class,
+                java.lang.reflect.Parameter::getName,
+                constructor.getParameters() ) );
+//      @todo check correspondence of parameter types
+            if( paramNames.contains( name ) || paramNames.isEmpty() ) try {
+                constructor.setAccessible( true );
+                ArrayList<java.lang.reflect.Parameter> params = Lists.of( constructor.getParameters() );
+
+                if( params.isEmpty() ) {
+                    return field( name ).orElseThrow( () -> new ReflectException(
+                            "cannot find matching parameter: " + name + " in " + typeToken.getRawType() )
+                    ).type().underlying;
+                } else {
+                    return params.stream()
+                        .filter( p -> name.equals( p.getName() ) )
+                        .findFirst()
+                        .orElseThrow( () -> new IllegalStateException( name ) )
+                        .getType();
+                }
+            } catch( Exception e ) {
+                throw new ReflectException( constructor.toString() + ":", e );
+            }
+        }
+        throw new ReflectException( "cannot find matching parameter: " + name + " in " + typeToken.getRawType() );
     }
 
     public class Field extends Annotated<java.lang.reflect.Field> implements Comparable<Field> {

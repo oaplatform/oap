@@ -23,7 +23,9 @@
  */
 package oap.application;
 
+import com.google.common.base.Throwables;
 import oap.application.supervision.Supervisor;
+import oap.io.Resources;
 import oap.json.Parser;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
@@ -31,13 +33,19 @@ import oap.util.Maps;
 import oap.util.Stream;
 import org.slf4j.Logger;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -46,8 +54,9 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class Kernel {
     private static Logger logger = getLogger( Kernel.class );
-    private Supervisor supervisor = new Supervisor();
+    private static HashMap<String, ServiceReference> serviceReferences;
     private final Set<Module> modules;
+    private Supervisor supervisor = new Supervisor();
 
     public Kernel( List<URL> modules ) {
         logger.debug( "modules = " + modules );
@@ -70,7 +79,7 @@ public class Kernel {
                 Map<String, Object> serviceConfiguration = config.getOrDefault( service.name, Collections.emptyMap() );
                 serviceConfiguration.forEach( service.parameters::put );
                 Reflection reflect = Reflect.reflect( service.implementation );
-                initializeServiceLinks( service );
+                initializeServiceLinks( service, reflect );
                 Object instance = reflect.newInstance( service.parameters );
                 Application.register( service.name, instance );
                 if( service.supervision.supervise )
@@ -96,14 +105,27 @@ public class Kernel {
         return deferred.size() == services.size() ? deferred : initializeServices( deferred, initialized, config );
     }
 
-    private void initializeServiceLinks( Module.Service service ) {
+    private void initializeServiceLinks( Module.Service service, Reflection reflect ) {
         for( Map.Entry<String, Object> entry : service.parameters.entrySet() )
-            if( entry.getValue() instanceof String && ((String) entry.getValue()).startsWith( "@service:" ) ) {
-                logger.debug( "for " + service.name + " linking " + entry );
-                Object link = Application.service( ((String) entry.getValue()).substring( "@service:".length() ) );
-                if( link == null ) throw new ApplicationException(
-                    "for " + service.name + " service link " + entry.getValue() + " is not initialized yet" );
-                entry.setValue( link );
+            if( entry.getValue() instanceof String ) {
+                resolvers()
+                    .stream()
+                    .filter( r -> ((String) entry.getValue()).startsWith( "@" + r + ":" ) )
+                    .findFirst()
+                    .ifPresent( r -> {
+                        logger.debug( "for " + service.name + " linking " + entry );
+                        final String serviceName = ((String) entry.getValue()).substring( ("@" + r + ":").length() );
+
+                        Class<?> pClass = reflect.parameterType( entry.getKey() );
+
+                        Object link =
+                            getServiceReference( r ).flatMap( ref -> ref.getLink( serviceName, pClass ) )
+                                .orElseThrow( () -> new ApplicationException(
+                                    "for " + service.name + " service link " + entry.getValue() +
+                                        " is not initialized yet" ) );
+
+                        entry.setValue( link );
+                    } );
             }
     }
 
@@ -152,6 +174,38 @@ public class Kernel {
 
     public void start( Path configPath ) {
         start( configPath.toFile().exists() ? Parser.parse( configPath ) : Maps.of() );
+    }
 
+    private synchronized Optional<ServiceReference> getServiceReference( String reference ) {
+        load();
+
+        return Optional.ofNullable( serviceReferences.get( reference ) );
+    }
+
+    private void load() {
+        if( serviceReferences == null ) {
+            serviceReferences = new HashMap<>();
+
+            Resources.urls( "META-INF/oap-references.properties" ).forEach( url -> {
+                final Properties properties = new Properties();
+                try( InputStream is = url.openStream() ) {
+                    properties.load( is );
+                    for( String key : properties.stringPropertyNames() ) {
+                        serviceReferences.put( key, (ServiceReference) Class.forName(
+                            properties.getProperty( key ) ).newInstance() );
+                    }
+                } catch( InstantiationException | IllegalAccessException | ClassNotFoundException e ) {
+                    throw Throwables.propagate( e );
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                }
+            } );
+        }
+    }
+
+    private synchronized Set<String> resolvers() {
+        load();
+
+        return serviceReferences.keySet();
     }
 }

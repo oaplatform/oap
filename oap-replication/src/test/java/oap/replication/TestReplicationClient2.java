@@ -22,41 +22,23 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.replication;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import oap.json.Binder;
-import oap.replication.ReplicationGet;
-import oap.util.Result;
+import oap.net.Inet;
 
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
+public class TestReplicationClient2 {
+    private ITestReplicationServer server;
 
-/**
- * Created by Igor Petrenko on 06.10.2015.
- */
-public class StorageReplicationGet<T> extends ReplicationGet {
-    private Storage<T> storage;
-
-    public StorageReplicationGet( String master, String replicationUrl, Storage<T> storage ) {
-        super( master, replicationUrl );
-        this.storage = storage;
+    public TestReplicationClient2() {
     }
 
-    public final Storage<T> getStorage() {
-        return storage;
+    public Object set( String data ) {
+        return server.set( data, Inet.HOSTNAME );
     }
 
-    @Override
-    protected void process( Result<String, String> result ) {
-        result.ifSuccess( r -> {
-            if( result.isSuccess() ) {
-                final List<Metadata<T>> objects = Binder.unmarshal( new TypeReference<List<Metadata<T>>>() {
-                }, r );
-                if( !objects.isEmpty() )
-                    storage.store( objects.stream().map( m -> m.object ).collect( toList() ) );
-            }
-        } );
+    public List<String> get() {
+        return server.get( -1 );
     }
 }

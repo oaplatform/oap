@@ -22,29 +22,16 @@
  * SOFTWARE.
  */
 
-package oap.replication;
+package oap.application;
 
-import org.slf4j.LoggerFactory;
+import java.util.Optional;
 
 /**
  * Created by Igor Petrenko on 04.11.2015.
  */
-public abstract class ReplicationClient implements Runnable {
-    protected static final org.slf4j.Logger logger = LoggerFactory.getLogger( ReplicationSet.class );
-
-    private String replicationUrl;
-    private String master;
-
-    public ReplicationClient( String master, String replicationUrl ) {
-        this.master = master;
-        this.replicationUrl = replicationUrl;
-    }
-
-    public String getMaster() {
-        return master;
-    }
-
-    public String getReplicationUrl() {
-        return replicationUrl;
+public class LocalServiceReference implements ServiceReference {
+    @Override
+    public Optional<Object> getLink( String serviceName, Class<?> serviceClass ) {
+        return Optional.ofNullable( Application.service( serviceName ) );
     }
 }

@@ -24,32 +24,15 @@
 
 package oap.replication;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import oap.json.Binder;
-import oap.ws.testng.HttpAsserts;
+import oap.util.Result;
 
-import java.util.Collections;
-import java.util.List;
-
-import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static oap.util.Pair.__;
-import static oap.ws.testng.HttpAsserts.HTTP_PREFIX;
-import static org.testng.Assert.assertEquals;
+import java.util.Optional;
 
 /**
- * Created by Igor Petrenko on 05.10.2015.
+ * Created by Igor Petrenko on 04.11.2015.
  */
-public class TestReplication {
-    public static <T> List<T> sync( TypeReference<List<T>> ref, long lastSyncTime, String service ) {
-        final HttpAsserts.Response response =
-            HttpAsserts.get( HTTP_PREFIX + "/replication/", __( "lastSyncTime", lastSyncTime ),
-                __( "service", service ) );
+public interface RemoteService<T> {
+    Result<String, String> set( String data );
 
-        if( response.code == HTTP_NOT_MODIFIED ) return Collections.emptyList();
-
-        assertEquals( HTTP_OK, response.code, response.body );
-
-        return Binder.unmarshal( ref, response.body );
-    }
+    Result<Optional<String>, String> get();
 }

@@ -10,14 +10,14 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>parent</artifactId>
-        <version>1.0.15</version>
+        <version>1.0.16</version>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>1.0.15</version>
+            <version>1.0.16</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

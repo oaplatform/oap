@@ -39,11 +39,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 
-public class SimpleHttpClient {
+public final class SimpleHttpClient {
+    private static SimpleHttpClient instance = new SimpleHttpClient();
 
-    private static CloseableHttpClient client;
+    private CloseableHttpClient client;
 
-    static {
+    public SimpleHttpClient() {
         final PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
 
         client = HttpClients
@@ -54,7 +55,15 @@ public class SimpleHttpClient {
             .build();
     }
 
-    public static Response execute( HttpUriRequest request ) {
+    public static SimpleHttpClient instance() {
+        return instance;
+    }
+
+    public static void reset() {
+        instance = new SimpleHttpClient();
+    }
+
+    public Response execute( HttpUriRequest request ) {
         try( CloseableHttpResponse response = client.execute( request ) ) {
             if( response.getEntity() != null ) {
                 HttpEntity entity = response.getEntity();
