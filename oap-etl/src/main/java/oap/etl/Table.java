@@ -26,7 +26,7 @@ package oap.etl;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import oap.io.IoStreams;
-import oap.tsv.Model;
+import oap.tsv.ModelSet;
 import oap.tsv.Tsv;
 import oap.util.Stream;
 
@@ -41,6 +41,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import static oap.io.Files.version;
+
 public class Table {
     private Stream<List<Object>> lines;
     private List<Runnable> closeHandlers = new ArrayList<>();
@@ -49,16 +51,16 @@ public class Table {
         this.lines = lines;
     }
 
-    public static Optional<Table> fromResource( Class<?> contextClass, String name, Model model ) {
-        return Tsv.fromResource( contextClass, name, model ).map( Table::new );
+    public static Optional<Table> fromResource( Class<?> contextClass, String name, ModelSet modelSet ) {
+        return Tsv.fromResource( contextClass, name, modelSet ).map( Table::new );
     }
 
-    public static Table fromFile( Path path, Model model ) {
-        return new Table( Tsv.fromPath( path, model ) );
+    public static Table fromFile( Path path, ModelSet modelSet) {
+        return new Table( Tsv.fromPath( path, modelSet ) );
     }
 
-    public static Table fromFiles( List<Path> paths, IoStreams.Encoding encoding, Model model ) {
-        return new Table( Tsv.fromPaths( paths, encoding, model ) );
+    public static Table fromFiles( List<Path> paths, IoStreams.Encoding encoding, ModelSet modelSet) {
+        return new Table( Tsv.fromPaths( paths, encoding, modelSet) );
     }
 
     @SuppressWarnings( "unchecked" )

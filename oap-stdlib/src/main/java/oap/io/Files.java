@@ -43,6 +43,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class Files {
     public static ArrayList<Path> wildcard( String basePath, String wildcard ) {
@@ -68,6 +71,13 @@ public final class Files {
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
+    }
+
+    public static String version(Path path) {
+        return Optional.of(path.getFileName().toString()).map(s -> {
+            Matcher m = java.util.regex.Pattern.compile("_(v.*?)-").matcher(s);
+            return m.find() ? m.group(1) : "";
+        }).get();
     }
 
     public static String readString( String path ) {

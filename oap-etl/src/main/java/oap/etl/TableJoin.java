@@ -24,7 +24,7 @@
 package oap.etl;
 
 import oap.io.IoStreams;
-import oap.tsv.Model;
+import oap.tsv.ModelSet;
 import oap.tsv.Tsv;
 import oap.util.Stream;
 
@@ -32,7 +32,8 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
+
+import static oap.io.Files.version;
 
 public class TableJoin implements Join {
     private HashMap<String, List<Object>> map = new HashMap<>();
@@ -42,26 +43,20 @@ public class TableJoin implements Join {
         this.defaults = defaults;
     }
 
-    public static Optional<TableJoin> fromResource( Class<?> contextClass, String name, int keyPos,
-        Model model, List<Object> defaults ) {
-        return Tsv.fromResource( contextClass, name, model.s( keyPos ) )
+    public static Optional<TableJoin> fromResource( Class<?> contextClass, String name,
+        ModelSet modelSet, List<Object> defaults ) {
+        return Tsv.fromResource( contextClass, name, modelSet)
             .map( s -> s.foldLeft( new TableJoin( defaults ), ( l, line ) -> {
-                l.map.put( (String) line.remove( model.size() - 1 ), line );
+                l.map.put( (String) line.remove( modelSet.size() - 1 ), line );
                 return l;
             } ) );
     }
 
-    public static TableJoin fromFiles( List<Path> files, IoStreams.Encoding encoding, int keyPos, Model model,
-        List<Object> defaults ) {
-        return fromFiles( files, encoding, keyPos, s -> s, model, defaults );
-    }
-
-    public static TableJoin fromFiles( List<Path> files, IoStreams.Encoding encoding, int keyPos,
-        Function<String, Object> keyMapper, Model model, List<Object> defaults ) {
+    public static TableJoin fromFiles( List<Path> files, IoStreams.Encoding encoding, ModelSet modelSet, List<Object> defaults ) {
         return Stream.of( files.stream() )
             .foldLeft( new TableJoin( defaults ), ( t, path ) -> {
-                Tsv.fromPath( path, encoding, model.field( keyMapper, keyPos ) )
-                    .forEach( line -> t.map.put( (String) line.remove( model.size() - 1 ), line ) );
+                Tsv.fromPath( path, encoding, modelSet )
+                        .forEach( line -> t.map.put( (String) line.remove( modelSet.size() - 1 ), line ) );
                 return t;
             } );
     }
