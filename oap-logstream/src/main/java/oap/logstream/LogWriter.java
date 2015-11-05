@@ -55,7 +55,12 @@ public class LogWriter implements Closeable {
         this.bufferSize = bufferSize;
         this.interval = interval;
         this.lastPattern = currentPattern();
-        this.scheduled = Scheduler.scheduleWithFixedDelay( 1, TimeUnit.MINUTES, this::refresh );
+        this.scheduled = Scheduler.scheduleWithFixedDelay( 30, TimeUnit.SECONDS, this::fsync );
+    }
+
+    private void fsync() {
+        flush();
+        refresh();
     }
 
 
@@ -115,7 +120,7 @@ public class LogWriter implements Closeable {
         return "LogWriter@" + filename();
     }
 
-    public void flush() {
+    public synchronized void flush() {
         try {
             if( out != null ) out.flush();
         } catch( IOException e ) {
