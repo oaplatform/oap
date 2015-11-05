@@ -24,23 +24,37 @@
 
 package oap.replication;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.InetAddress;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-import static java.util.Collections.emptyList;
+public class RpcData {
+    public String service;
+    public String method;
+    public final List<RpcArgumentData> arguments = new ArrayList<>();
 
-/**
- * Created by Igor Petrenko on 06.10.2015.
- */
-public interface ReplicationMaster<T> {
-    default List<T> get( long lastSyncTime ) {
-        return emptyList();
+    public RpcData() {
     }
 
-    default Object post( String json, InetAddress remoteAddress ) throws IOException {
-        return emptyList();
+    public RpcData( String service, String method ) {
+        this.service = service;
+        this.method = method;
+    }
+
+    public static class RpcArgumentData {
+        public String name;
+        @JsonTypeInfo( use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+        public Class<?> type;
+        public Object value;
+
+        public RpcArgumentData() {
+        }
+
+        public RpcArgumentData( String name, Class<?> type, Object value ) {
+            this.name = name;
+            this.type = type;
+            this.value = value;
+        }
     }
 }

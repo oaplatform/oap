@@ -1,0 +1,28 @@
+{
+  "name": "test-replication",
+  "dependsOn": [
+    "oap-replication"
+  ],
+  "services": [
+    {
+      "name": "test-client",
+      "implementation": "oap.replication.TestReplicationClient",
+      "parameters": {
+        "server": "@remote:http://test/test@test-server"
+      }
+    },
+    {
+      "name": "test-client2",
+      "implementation": "oap.replication.TestReplicationClient2",
+      "parameters": {
+        "server": "@remote:http://test/test@test-server"
+      }
+    },
+    {
+      "name": "test-server",
+      "implementation": "oap.replication.TestReplicationServer",
+      "parameters": {
+      }
+    }
+  ]
+}

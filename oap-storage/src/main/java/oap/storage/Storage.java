@@ -28,7 +28,6 @@ import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Files;
 import oap.json.Binder;
-import oap.replication.ReplicationMaster;
 import oap.util.Stream;
 import oap.util.Try;
 import org.joda.time.DateTimeUtils;
@@ -51,7 +50,7 @@ import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class Storage<T> implements ReplicationMaster<Metadata<T>> {
+public class Storage<T> {
     private final org.slf4j.Logger logger = getLogger( getClass() );
     private final AtomicLong lastSync = new AtomicLong( 0 );
     protected Function<T, String> identify;
@@ -212,7 +211,7 @@ public class Storage<T> implements ReplicationMaster<Metadata<T>> {
         this.dataListeners.remove( dataListener );
     }
 
-    public List<Metadata<T>> get( long lastSyncTime ) {
+    public List<Metadata<T>> find( long lastSyncTime ) {
         return data.values().stream().filter( m -> m.modified > lastSyncTime ).collect( toList() );
     }
 

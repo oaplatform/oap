@@ -25,7 +25,6 @@
 package oap.replication;
 
 import oap.application.Application;
-import oap.util.Strings;
 import oap.ws.Request;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
@@ -33,55 +32,50 @@ import oap.ws.WsResponse;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
-import java.util.List;
 
-import static oap.ws.Request.HttpMethod.GET;
 import static oap.ws.Request.HttpMethod.POST;
-import static oap.ws.WsParam.From.QUERY;
+import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.REQUEST;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class ReplicationWS {
     private static Logger logger = getLogger( ReplicationWS.class );
 
-    @WsMethod( path = "/", method = GET )
-    public WsResponse get(
-        @WsParam( from = QUERY ) String service,
-        @WsParam( from = QUERY ) long lastSyncTime
-    ) {
-        if( logger.isDebugEnabled() ) logger.debug( "get service =" + service + ", lastSyncTime = " + lastSyncTime );
-
-        final ReplicationMaster<?> master = Application.service( service );
-
-        if( master == null )
-            return WsResponse.status( HttpURLConnection.HTTP_BAD_REQUEST, "service '" + service + "' not found." );
-
-        final List<?> objects = master.get( lastSyncTime );
-
-        if( objects.isEmpty() ) return WsResponse.NOT_MODIFIED;
-        else return WsResponse.ok( objects );
-    }
-
     @WsMethod( path = "/", method = POST )
     public WsResponse post(
-        @WsParam( from = QUERY ) String service,
+        @WsParam( from = BODY ) RpcData rpcData,
         @WsParam( from = REQUEST ) Request request
     ) throws IOException {
 
-        final String body = request.body().map( Strings::readString ).orElse( "" );
+        final String service = rpcData.service;
 
-        if( logger.isTraceEnabled() ) logger.trace( "post service =" + service + ", body = " + body );
+        if( logger.isTraceEnabled() ) logger.trace( "post service =" + rpcData );
         else if( logger.isDebugEnabled() ) logger.debug( "post service =" + service );
 
-        final ReplicationMaster<?> master = Application.service( service );
+        final Object master = Application.service( service );
 
         if( master == null )
             return WsResponse.status( HttpURLConnection.HTTP_BAD_REQUEST, "service '" + service + "' not found." );
 
-        Object result = master.post( body, request.remoteAddress() );
+        try {
+            final Method method = master.getClass()
+                .getMethod( rpcData.method, rpcData.arguments.stream().map( v -> v.type ).toArray( Class[]::new ) );
 
-        if( result instanceof List<?> && ((List<?>) result).isEmpty() ) return WsResponse.NO_CONTENT;
-        else return WsResponse.ok( result );
+            final Object result = method.invoke( master, rpcData.arguments.stream().map( v -> v.value ).toArray() );
+
+            return WsResponse.ok( result );
+
+        } catch( NoSuchMethodException e ) {
+            logger.debug( e.getMessage(), e );
+            return WsResponse.status( HttpURLConnection.HTTP_BAD_REQUEST,
+                "service '" + service + "', method '" + rpcData.method + "' not found." );
+        } catch( InvocationTargetException | IllegalAccessException e ) {
+            logger.debug( e.getMessage(), e );
+            return WsResponse.status( HttpURLConnection.HTTP_INTERNAL_ERROR,
+                e.getMessage() );
+        }
     }
 }
