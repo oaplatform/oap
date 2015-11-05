@@ -25,7 +25,7 @@
 package oap.etl;
 
 import oap.io.Resources;
-import oap.tsv.Model;
+import oap.tsv.ModelSet;
 import oap.util.Lists;
 import org.testng.annotations.Test;
 
@@ -37,12 +37,17 @@ import static org.testng.Assert.assertEquals;
 public class TableTest {
     @Test
     public void testSorted() {
+        ModelSet modelSetOne = ModelSet.withoutHeader();
+        modelSetOne.modelForName(getClass().getSimpleName() + "/2.tsv").s(0);
+        ModelSet modelSetTwo = ModelSet.withoutHeader();
+        modelSetTwo.modelForName(getClass().getSimpleName() + "/1.tsv").s( 1, 2, 3 );
+
         CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
-            getClass().getSimpleName() + "/2.tsv", 0 ).get();
+            getClass().getSimpleName() + "/2.tsv", modelSetOne ).get();
         StringExport export = new StringExport();
         List<Long> progress = new ArrayList<>();
         Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
-            Model.withoutHeader().s( 1, 2, 3 ) )
+                modelSetTwo )
             .get()
             .progress( 2, progress::add )
             .sort( new int[]{ 0, 1 } )
@@ -56,11 +61,16 @@ public class TableTest {
 
     @Test
     public void testDistincted() {
+        ModelSet modelSet = ModelSet.withoutHeader();
+        modelSet.modelForName(getClass().getSimpleName() + "/2.tsv").s( 0 );
+
+        ModelSet modelSetTwo = ModelSet.withoutHeader();
+        modelSetTwo.modelForName(getClass().getSimpleName() + "/1.tsv").s(1, 2).i(3);
+
         CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
-            getClass().getSimpleName() + "/2.tsv", 0 ).get();
+            getClass().getSimpleName() + "/2.tsv", modelSet ).get();
         StringExport export = new StringExport();
-        Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
-            Model.withoutHeader().s( 1, 2 ).i( 3 ) )
+        Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv", modelSetTwo )
             .get()
             .sort( new int[]{ 0, 1 } )
             .join( 1, join )
@@ -73,10 +83,16 @@ public class TableTest {
 
     @Test
     public void testJoined() {
+        ModelSet modelSet = ModelSet.withoutHeader();
+        modelSet.modelForName(getClass().getSimpleName() + "/2.tsv").s( 1, 2, 0 );
+
+        ModelSet modelSetTwo = ModelSet.withoutHeader();
+        modelSetTwo.modelForName(getClass().getSimpleName() + "/1.tsv").s( 1, 2, 3 );
+
         TableJoin join = TableJoin.fromResource( getClass(), getClass().getSimpleName() + "/2.tsv",
-            0, Model.withoutHeader().s( 1, 2 ), Lists.of( "0", "x" ) ).get();
+                modelSet, Lists.of( "0", "x" ) ).get();
         StringExport export = new StringExport();
-        Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv", Model.withoutHeader().s( 1, 2, 3 ) )
+        Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv", modelSetTwo )
             .get()
             .sort( new int[]{ 0, 1 } )
             .join( 1, join )

@@ -56,11 +56,12 @@ public class TsvTest {
 
     @Test( dataProvider = "files" )
     public void loadTsv( String file, IoStreams.Encoding encoding ) {
+        ModelSet modelSet = ModelSet.withoutHeader();
+        modelSet.modelForName("").s( 1 ).i( 3 ).columns( 4 );
         Path path = Env.deployTestData( getClass() );
         Asserts.assertEquals( Tsv.fromPath(
                 path.resolve( file ),
-                encoding,
-                Model.withoutHeader().s( 1 ).i( 3 ).columns( 4 ) ),
+                encoding, modelSet ),
             Stream.of(
                 Lists.of( "B", 1 ),
                 Lists.of( "A", 1 ),
