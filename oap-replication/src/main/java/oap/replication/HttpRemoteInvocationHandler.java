@@ -70,7 +70,7 @@ public class HttpRemoteInvocationHandler implements InvocationHandler {
 
             post.setEntity( new StringEntity( marshal, ContentType.APPLICATION_JSON ) );
 
-            SimpleHttpClient.Response response = SimpleHttpClient.instance().execute( post );
+            SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
 
             switch( response.code ) {
                 case HTTP_OK:

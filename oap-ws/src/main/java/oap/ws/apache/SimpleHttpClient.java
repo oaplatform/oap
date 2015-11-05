@@ -24,6 +24,7 @@
 
 package oap.ws.apache;
 
+import oap.io.Closeables;
 import oap.util.Strings;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -40,30 +41,23 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 
 public final class SimpleHttpClient {
-    private static SimpleHttpClient instance = new SimpleHttpClient();
+    private static CloseableHttpClient client = initialize();
 
-    private CloseableHttpClient client;
-
-    public SimpleHttpClient() {
-        final PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
-
-        client = HttpClients
+    private static CloseableHttpClient initialize() {
+        return HttpClients
             .custom()
-            .setConnectionManager( cm )
+            .setConnectionManager( new PoolingHttpClientConnectionManager() )
             .setKeepAliveStrategy( new DefaultConnectionKeepAliveStrategy() )
             .setRetryHandler( new DefaultHttpRequestRetryHandler( 0, false ) )
             .build();
     }
 
-    public static SimpleHttpClient instance() {
-        return instance;
-    }
-
     public static void reset() {
-        instance = new SimpleHttpClient();
+        Closeables.close( client );
+        client = initialize();
     }
 
-    public Response execute( HttpUriRequest request ) {
+    public static Response execute( HttpUriRequest request ) {
         try( CloseableHttpResponse response = client.execute( request ) ) {
             if( response.getEntity() != null ) {
                 HttpEntity entity = response.getEntity();
