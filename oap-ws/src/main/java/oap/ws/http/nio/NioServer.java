@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Igor Petrenko <igor.petrenko@madberry.net>
+ * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,13 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.apache;
+package oap.ws.http.nio;
 
-import oap.application.Application;
-import oap.ws.RawService;
-import oap.ws.Service;
 import oap.ws.WsConfig;
 import oap.ws.WsException;
+import oap.ws.http.Handler;
+import oap.ws.http.Server;
 import org.apache.http.ExceptionLogger;
 import org.apache.http.impl.nio.bootstrap.HttpServer;
 import org.apache.http.impl.nio.bootstrap.ServerBootstrap;
@@ -36,10 +35,9 @@ import org.apache.http.nio.protocol.UriHttpAsyncRequestHandlerMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.util.concurrent.TimeUnit;
 
-public class NioServer implements Closeable {
+public class NioServer implements oap.ws.http.HttpServer {
 
     private static Logger logger = LoggerFactory.getLogger( Server.class );
     private UriHttpAsyncRequestHandlerMapper mapper = new UriHttpAsyncRequestHandlerMapper();
@@ -65,12 +63,12 @@ public class NioServer implements Closeable {
             .create();
     }
 
-    public void bind( String context, Object impl ) {
-        String binding = "/" + context + "/*";
-        String serviceName = impl.getClass().getSimpleName();
-        RawService service = impl instanceof RawService ? (RawService) impl : new Service( impl );
-        this.mapper.register( binding, new NioServiceHandler( serviceName, "/" + context, service ) );
-        logger.info( serviceName + " bound to " + binding );
+    @Override
+    public void bind( String context, Handler handler ) {
+        String location = "/" + context + "/*";
+        this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler ) );
+        logger.info( handler + " bound to " + location );
+
     }
 
     public void unbind( String context ) {
@@ -79,12 +77,6 @@ public class NioServer implements Closeable {
 
     public void start() {
         try {
-            logger.info( "binding web services..." );
-
-            for( WsConfig config : WsConfig.fromClassPath() )
-                for( WsConfig.Service service : config.services )
-                    bind( service.context, Application.service( service.service ) );
-
             logger.info( "starting [localhost:" + port + "]..." );
 
             server.start();
@@ -109,8 +101,4 @@ public class NioServer implements Closeable {
         logger.info( "server gone down" );
     }
 
-    @Override
-    public void close() {
-        stop();
-    }
 }

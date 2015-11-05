@@ -1,0 +1,14 @@
+{
+  "services": [
+    {
+      "context": "x/v/math",
+      "service": "math"
+    }
+  ],
+  "handlers": [
+    {
+      "context": "x/h",
+      "service": "handler"
+    }
+  ]
+}

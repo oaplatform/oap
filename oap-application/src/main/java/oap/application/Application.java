@@ -35,7 +35,7 @@ public class Application {
         return (T) services.get( name );
     }
 
-    static void register( String name, Object service ) {
+    public static void register( String name, Object service ) {
         services.put( name, service );
     }
 

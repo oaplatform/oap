@@ -21,42 +21,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.apache;
+package oap.ws.http.nio;
 
 import oap.ws.Context;
-import oap.ws.RawService;
+import oap.ws.http.Handler;
+import oap.ws.http.Request;
+import oap.ws.http.Response;
+import org.apache.http.HttpException;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
+import org.apache.http.nio.protocol.BasicAsyncRequestConsumer;
+import org.apache.http.nio.protocol.HttpAsyncExchange;
+import org.apache.http.nio.protocol.HttpAsyncRequestConsumer;
+import org.apache.http.nio.protocol.HttpAsyncRequestHandler;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpCoreContext;
-import org.apache.http.protocol.HttpRequestHandler;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class ServiceHandler implements HttpRequestHandler {
-    private static Logger logger = getLogger( ServiceHandler.class );
+public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
+    private static Logger logger = getLogger( NioHandlerAdapter.class );
 
-    private String name;
     private String location;
-    private RawService service;
+    private Handler handler;
 
-    public ServiceHandler( String name, String location, RawService service ) {
-        this.name = name;
+    public NioHandlerAdapter( String location, Handler handler ) {
         this.location = location;
-        this.service = service;
+        this.handler = handler;
     }
 
-    public void handle( HttpRequest req, HttpResponse resp, HttpContext ctx ) throws IOException {
+    @Override
+    public HttpAsyncRequestConsumer<HttpRequest> processRequest( HttpRequest httpRequest,
+        HttpContext httpContext ) throws HttpException, IOException {
+        return new BasicAsyncRequestConsumer();
+    }
+
+    @Override
+    public void handle( HttpRequest req, HttpAsyncExchange httpAsyncExchange,
+        HttpContext ctx ) throws HttpException, IOException {
         if( logger.isTraceEnabled() ) logger.trace( "handling " + req );
         HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
-        service.perform(
-            new ApacheRequest( req, new Context( name, location, connection.getRemoteAddress() ) ),
-            new ApacheResponse( resp )
+        handler.handle(
+            new Request( req, new Context( location, connection.getRemoteAddress() ) ),
+            new Response( httpAsyncExchange.getResponse() )
         );
+
+        httpAsyncExchange.submitResponse();
     }
 }
-

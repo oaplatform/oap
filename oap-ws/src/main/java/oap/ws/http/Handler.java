@@ -21,14 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws;
+package oap.ws.http;
 
-import java.util.Optional;
+import java.io.IOException;
 
-public interface Session {
-    <A> Optional<A> get( String name );
-
-    void set( String name, Object value );
-
-    void invalidate();
+public interface Handler {
+    void handle( Request request, Response response ) throws IOException;
 }

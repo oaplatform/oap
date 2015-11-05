@@ -26,6 +26,7 @@ package oap.ws;
 
 
 import oap.util.Strings;
+import oap.ws.http.Request;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

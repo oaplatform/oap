@@ -26,7 +26,7 @@ package oap.replication;
 
 import oap.json.Binder;
 import oap.ws.Uri;
-import oap.ws.apache.SimpleHttpClient;
+import oap.ws.http.SimpleHttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;

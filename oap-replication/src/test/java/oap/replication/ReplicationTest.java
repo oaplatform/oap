@@ -31,7 +31,7 @@ import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Maps;
-import oap.ws.apache.SimpleHttpClient;
+import oap.ws.http.SimpleHttpClient;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 

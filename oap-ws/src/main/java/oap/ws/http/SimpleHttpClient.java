@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.ws.apache;
+package oap.ws.http;
 
 import oap.io.Closeables;
 import oap.util.Strings;

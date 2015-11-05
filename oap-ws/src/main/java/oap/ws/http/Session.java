@@ -21,10 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws;
+package oap.ws.http;
 
-public interface Response {
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
-    void respond( WsResponse response );
+public class Session {
+    public static final Map<String, Object> params = Collections.synchronizedMap( new HashMap<>() );
 
+    @SuppressWarnings( "unchecked" )
+    public <A> Optional<A> get( String name ) {
+        return Optional.ofNullable( (A) params.get( name ) );
+    }
+
+    public void set( String name, Object value ) {
+        params.put( name, value );
+    }
+
+    public void invalidate() {
+        params.clear();
+    }
 }

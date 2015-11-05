@@ -3,9 +3,13 @@
  */
 package oap.ws;
 
+import oap.application.Application;
+import oap.io.Resources;
 import oap.metrics.Metrics;
 import oap.testng.Env;
-import oap.ws.apache.Server;
+import oap.util.Lists;
+import oap.ws.http.*;
+import oap.ws.http.Response;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -18,19 +22,23 @@ import static oap.ws.testng.HttpAsserts.get;
 import static org.apache.http.entity.ContentType.*;
 import static org.testng.Assert.assertEquals;
 
-public class ServiceTest {
+public class WebServicesTest {
     protected final Server server = new Server( Env.port(), 100 );
+    protected final WebServices ws = new WebServices( server, Lists.of(
+        Resources.readString( getClass(), "ws.json" ).map( WsConfig::parse ).get() ) );
 
     @BeforeClass
     public void startServer() {
-        server.bind( "x/v/math", new MathWS() );
+        Application.register( "math", new MathWS() );
+        Application.register( "handler", new TestHandler() );
+        ws.start();
         server.start();
     }
 
     @AfterClass
     public void stopServer() {
         server.stop();
-        server.unbind( "x/v/math" );
+        ws.stop();
         reset();
     }
 
@@ -71,6 +79,15 @@ public class ServiceTest {
                 .tag( "service", MathWS.class.getSimpleName() )
                 .tag( "method", "bean" ) ).count,
             1 );
+        get( HTTP_PREFIX + "/x/h/" ).assertResponse( 204 );
+    }
+
+    static class TestHandler implements Handler {
+
+        @Override
+        public void handle( Request request, Response response ) throws IOException {
+            response.respond( WsResponse.NO_CONTENT );
+        }
     }
 }
 

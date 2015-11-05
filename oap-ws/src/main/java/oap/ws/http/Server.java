@@ -21,18 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.apache;
+package oap.ws.http;
 
 
 import com.google.common.base.Throwables;
-import oap.application.Application;
 import oap.concurrent.Threads;
 import oap.io.Closeables;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
-import oap.ws.RawService;
-import oap.ws.Service;
-import oap.ws.WsConfig;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpConnection;
 import org.apache.http.config.ConnectionConfig;
@@ -43,7 +39,6 @@ import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpCoreContext;
 import org.apache.http.protocol.HttpProcessorBuilder;
-import org.apache.http.protocol.HttpRequestHandler;
 import org.apache.http.protocol.HttpService;
 import org.apache.http.protocol.ResponseConnControl;
 import org.apache.http.protocol.ResponseContent;
@@ -53,13 +48,11 @@ import org.apache.http.protocol.UriHttpRequestHandlerMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -69,7 +62,7 @@ import java.util.concurrent.Semaphore;
 /**
  * @author Vladimir Kirichenko <vladimir.kirichenko@gmail.com>
  */
-public class Server implements Closeable {
+public class Server implements HttpServer {
 
     private final static Logger logger = LoggerFactory.getLogger( Server.class );
     private static final Name CONNECTIONS = Metrics.name( "connections" );
@@ -86,48 +79,32 @@ public class Server implements Closeable {
     private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
     private ExecutorService executor;
     private int port;
-    private final List<WsConfig> wsConfigs;
     private ServerSocket serverSocket;
     private Thread thread;
     private Semaphore semaphore = new Semaphore( 0 );
 
     public Server( int port, int workers ) {
-        this( port, workers, WsConfig.fromClassPath() );
-    }
-
-    public Server( int port, int workers, List<WsConfig> wsConfigs ) {
         this.port = port;
-        this.wsConfigs = wsConfigs;
         this.executor = Executors.newFixedThreadPool( workers );
-        registerHandler( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
+        this.mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
     }
 
-    public void bind( String context, Object impl ) {
-        String binding = "/" + context + "/*";
-        String serviceName = impl.getClass().getSimpleName();
-        RawService service = impl instanceof RawService ? (RawService) impl : new Service( impl );
-        registerHandler( binding, new ServiceHandler( serviceName, "/" + context, service ) );
-        logger.info( serviceName + " bound to " + binding );
+    @Override
+    public void bind( String context, Handler handler ) {
+        String location = "/" + context + "/*";
+        this.mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler ) );
+        logger.info( handler + " bound to " + location );
+
     }
 
+    @Override
     public void unbind( String context ) {
-        String binding = "/" + context + "/*";
-
-        this.mapper.unregister( binding );
-    }
-
-    public void registerHandler( String pattern, HttpRequestHandler handler ) {
-        this.mapper.register( pattern, handler );
+        String location = "/" + context + "/*";
+        this.mapper.unregister( location );
     }
 
     public void start() {
         try {
-
-            logger.info( "binding web services..." );
-
-            for( WsConfig config : wsConfigs )
-                for( WsConfig.Service service : config.services )
-                    bind( service.context, Application.service( service.service ) );
 
             logger.info( "starting [localhost:" + port + "]..." );
 
@@ -160,15 +137,9 @@ public class Server implements Closeable {
         Closeables.close( serverSocket );
         Threads.interruptAndJoin( thread );
 
-        serverSocket = null;
-        thread = null;
-
-        connections.forEach( ( key, value ) -> Closeables.close( value ) );
+        connections.forEach( ( key, connection ) -> Closeables.close( connection ) );
 
         Closeables.close( executor );
-
-        for( WsConfig config : wsConfigs )
-            for( WsConfig.Service service : config.services ) unbind( service.context );
 
         logger.info( "server gone down" );
     }
@@ -231,11 +202,6 @@ public class Server implements Closeable {
 
             Throwables.propagate( e );
         }
-    }
-
-    @Override
-    public void close() {
-        stop();
     }
 
 }

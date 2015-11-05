@@ -55,7 +55,7 @@ import java.util.Objects;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.testng.Assert.assertEquals;
 
-//todo implement it via oap.ws.apache.SimpleHttpClient
+//todo implement it via oap.ws.http.SimpleHttpClient
 public class HttpAsserts {
 
     public static final String HTTP_PREFIX = "http://localhost:" + Env.port();

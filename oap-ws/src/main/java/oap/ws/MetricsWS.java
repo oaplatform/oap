@@ -29,7 +29,7 @@ import oap.metrics.Metrics;
 import java.io.IOException;
 import java.util.List;
 
-import static oap.ws.Request.HttpMethod.GET;
+import static oap.ws.http.Request.HttpMethod.GET;
 
 public class MetricsWS {
 

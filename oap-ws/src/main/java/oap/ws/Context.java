@@ -26,12 +26,10 @@ package oap.ws;
 import java.net.InetAddress;
 
 public class Context {
-    public final String serviceName;
     public final String serviceLocation;
     public final InetAddress remoteAddress;
 
-    public Context( String serviceName, String serviceLocation, InetAddress remoteAddress ) {
-        this.serviceName = serviceName;
+    public Context( String serviceLocation, InetAddress remoteAddress ) {
         this.serviceLocation = serviceLocation;
         this.remoteAddress = remoteAddress;
     }

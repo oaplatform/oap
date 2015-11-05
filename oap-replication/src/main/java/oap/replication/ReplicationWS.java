@@ -25,7 +25,7 @@
 package oap.replication;
 
 import oap.application.Application;
-import oap.ws.Request;
+import oap.ws.http.Request;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
 import oap.ws.WsResponse;
@@ -36,7 +36,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 
-import static oap.ws.Request.HttpMethod.POST;
+import static oap.ws.http.Request.HttpMethod.POST;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.REQUEST;
 import static org.slf4j.LoggerFactory.getLogger;

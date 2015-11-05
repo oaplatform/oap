@@ -25,10 +25,11 @@ package oap.ws.validate;
 
 import oap.testng.Env;
 import oap.util.Lists;
+import oap.ws.WebServices;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
 import oap.ws.WsResponse;
-import oap.ws.apache.Server;
+import oap.ws.http.Server;
 import oap.ws.testng.HttpAsserts;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -37,17 +38,17 @@ import org.testng.annotations.Test;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import static oap.ws.Request.HttpMethod.POST;
+import static oap.ws.http.Request.HttpMethod.POST;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.testng.HttpAsserts.HTTP_PREFIX;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class ValidatePeerMethodTest {
     protected final Server server = new Server( Env.port(), 100 );
-
+    protected final WebServices ws = new WebServices( server );
     @BeforeClass
     public void startServer() {
-        server.bind( "test", new TestWS() );
+        ws.bind( "test", new TestWS() );
         server.start();
     }
 

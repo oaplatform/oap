@@ -34,11 +34,15 @@ import oap.reflect.Reflection;
 import oap.util.Optionals;
 import oap.util.Stream;
 import oap.util.Strings;
+import oap.ws.http.Handler;
+import oap.ws.http.Request;
+import oap.ws.http.Response;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -51,8 +55,7 @@ import java.util.regex.Pattern;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
-public class Service implements RawService {
-
+public class Service implements  Handler {
     private final Object impl;
     private final Logger logger;
     private final Reflection reflection;
@@ -69,20 +72,71 @@ public class Service implements RawService {
         this.logger = LoggerFactory.getLogger( impl.getClass() );
         this.reflection = Reflect.reflect( impl.getClass() );
         this.reflection.methods.forEach( m -> m.findAnnotation( WsMethod.class )
-                .ifPresent( a -> compiledPaths.put( a.path(), ServiceUtil.compile( a.path() ) ) )
+            .ifPresent( a -> compiledPaths.put( a.path(), ServiceUtil.compile( a.path() ) ) )
         );
     }
 
-    public void perform( Request request, Response response ) {
+    private List<Object> convert( Reflection type, List<String> values ) {
         try {
-            Optionals.fork( reflection.method( method ->
-                methodMatches( request.requestLine(), request.httpMethod(), method ) ) )
+            return Stream.of( values )
+                .map( v -> coercions.cast( type.typeParameters.get( 0 ), v ) )
+                .toList();
+        } catch( Exception e ) {
+            throw new WsClientException( e.getMessage(), e );
+        }
+    }
+
+    private Object convert( String name, Reflection type, Optional<?> value ) {
+        try {
+            Optional<Object> result = value.map( v -> coercions.cast( type.isOptional() ?
+                type.typeParameters.get( 0 ) : type, v ) );
+            return type.isOptional() ? result :
+                result.orElseThrow( () -> new WsClientException( name + " is required" ) );
+        } catch( Exception e ) {
+            throw new WsClientException( e.getMessage(), e );
+        }
+    }
+
+    private void wsError( Response response, Throwable e ) {
+        if( e instanceof ReflectException && e.getCause() != null )
+            wsError( response, e.getCause() );
+        else if( e instanceof InvocationTargetException )
+            wsError( response, ((InvocationTargetException) e).getTargetException() );
+        else if( e instanceof WsClientException ) {
+            WsClientException e1 = (WsClientException) e;
+            if( logger.isDebugEnabled() ) logger.debug( e.toString(), e );
+            WsResponse wsResponse = WsResponse.status( e1.code, e.getMessage() );
+            if( !e1.errors.isEmpty() ) wsResponse.withContent( String.join( "\n", e1.errors ),
+                TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ) );
+            response.respond( wsResponse );
+        } else {
+            logger.error( e.toString(), e );
+            response.respond( WsResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() )
+                .withContent( Throwables.getRootCause( e ).getMessage(),
+                    TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ) ) );
+        }
+    }
+
+    private boolean methodMatches( String requestLine, Request.HttpMethod httpMethod, Reflection.Method m ) {
+        return m.findAnnotation( WsMethod.class )
+            .map( a -> oap.util.Arrays.contains( httpMethod, a.method() ) && (
+                    (Strings.isUndefined( a.path() ) && Objects.equals( requestLine, "/" + m.name() ))
+                        || compiledPaths.get( a.path() ).matcher( requestLine ).find()
+                )
+            ).orElse( m.isPublic() && Objects.equals( requestLine, "/" + m.name() ) );
+    }
+
+    @Override
+    public void handle( Request request, Response response ) throws IOException {
+        try {
+            Optionals.fork( reflection.method(
+                method -> methodMatches( request.requestLine, request.httpMethod, method ) ) )
                 .ifAbsent( () -> response.respond( WsResponse.NOT_FOUND ) )
                 .ifPresent(
                     method -> {
                         Name name = Metrics
                             .name( "rest_timer" )
-                            .tag( "service", request.context().serviceName )
+                            .tag( "service", impl.getClass().getSimpleName() )
                             .tag( "method", method.name() );
 
                         Metrics.measureTimer( name, () -> {
@@ -102,7 +156,8 @@ public class Service implements RawService {
                                                     request.header( parameter.name() ) );
                                             case PATH:
                                                 return wsMethod.map( wsm -> convert( parameter.name(), parameter.type(),
-                                                    request.parameter( wsm.path(), parameter.name() ) ) )
+                                                    ServiceUtil.pathParam( wsm.path(), request.requestLine,
+                                                        parameter.name() ) ) )
                                                     .orElseThrow( () -> new WsException(
                                                         "path parameter " + parameter.name() + " without " +
                                                             WsMethod.class.getName() + " annotation" ) );
@@ -124,9 +179,9 @@ public class Service implements RawService {
                                         }
                                     } )
                                     .orElseGet( () -> parameter.type().assignableTo( List.class ) ?
-                                            convert( parameter.type(), request.parameters( parameter.name() ) ) :
-                                            convert( parameter.name(), parameter.type(),
-                                                request.parameter( parameter.name() ) )
+                                        convert( parameter.type(), request.parameters( parameter.name() ) ) :
+                                        convert( parameter.name(), parameter.type(),
+                                            request.parameter( parameter.name() ) )
                                     );
 
                                 paramErrors.addAll( validators.forParameter( parameter, impl )
@@ -167,96 +222,8 @@ public class Service implements RawService {
         }
     }
 
-    private List<Object> convert( Reflection type, List<String> values ) {
-        try {
-            return Stream.of( values )
-                .map( v -> coercions.cast( type.typeParameters.get( 0 ), v ) )
-                .toList();
-        } catch( Exception e ) {
-            throw new WsClientException( e.getMessage(), e );
-        }
+    @Override
+    public String toString() {
+        return impl.getClass().getName();
     }
-
-    private Object convert( String name, Reflection type, Optional<?> value ) {
-        try {
-            Optional<Object> result = value.map( v -> coercions.cast( type.isOptional() ?
-                type.typeParameters.get( 0 ) : type, v ) );
-            return type.isOptional() ? result :
-                result.orElseThrow( () -> new WsClientException( name + " is required" ) );
-        } catch( Exception e ) {
-            throw new WsClientException( e.getMessage(), e );
-        }
-    }
-
-
-    private void wsError( Response response, Throwable e ) {
-        if( e instanceof ReflectException && e.getCause() != null )
-            wsError( response, e.getCause() );
-        else if( e instanceof InvocationTargetException )
-            wsError( response, ((InvocationTargetException) e).getTargetException() );
-        else if( e instanceof WsClientException ) {
-            WsClientException e1 = (WsClientException) e;
-            if( logger.isDebugEnabled() ) logger.debug( e.toString(), e );
-            WsResponse wsResponse = WsResponse.status( e1.code, e.getMessage() );
-            if( !e1.errors.isEmpty() ) wsResponse.withContent( String.join( "\n", e1.errors ),
-                TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ) );
-            response.respond( wsResponse );
-        } else {
-            logger.error( e.toString(), e );
-            response.respond( WsResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() )
-                .withContent( Throwables.getRootCause( e ).getMessage(),
-                    TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ) ) );
-        }
-    }
-
-    //    @SuppressWarnings( "unchecked" )
-//    private Either<List<String>, Object> validate( Reflection reflection,
-//        Class<? extends ParameterValidator>[] classes,
-//        String name,
-//        WsParam.From from,
-//        List<WsAttribute> attributes,
-//        Object value,
-//        boolean text ) {
-//        ArrayList<ParameterValidator> validators = new ArrayList<>();
-//        validators.add( new TypeConverterParameterValidator( reflection, text ) );
-//        validators.addAll( Stream.of( classes )
-//            .map( clazz -> parameterValidators.computeIfAbsent( clazz, Try.map( Class::newInstance ) ) )
-//            .toList() );
-//
-//
-//        validators.sort( ( l, r ) -> Boolean.compare( l.beforeTypeConverter(), r.beforeTypeConverter() ) * -1 );
-//
-//        return _validate( name, from, attributes, validators, Either.right( value ) );
-//    }
-//
-//    private Either<List<String>, Object> _validate(
-//        String name,
-//        WsParam.From from,
-//        List<WsAttribute> attributes,
-//        List<ParameterValidator> validators,
-//        Either<List<String>, Object> value ) {
-//        if( validators.isEmpty() ) return value;
-//
-//        return _validate(
-//            name,
-//            from,
-//            attributes,
-//            validators.subList( 1, validators.size() ),
-//            value.right().flatMap( r ->
-//                    r instanceof List<?> ?
-//                        validators.get( 0 ).validateParameters( name, from, attributes, r ) :
-//                        validators.get( 0 ).validateParameter( name, from, attributes, r )
-//            )
-//        );
-//    }
-//
-    private boolean methodMatches( String requestLine, Request.HttpMethod httpMethod, Reflection.Method m ) {
-        return m.findAnnotation( WsMethod.class )
-            .map( a -> oap.util.Arrays.contains( httpMethod, a.method() ) && (
-                    (Strings.isUndefined( a.path() ) && Objects.equals( requestLine, "/" + m.name() ))
-                        || compiledPaths.get( a.path() ).matcher( requestLine ).find()
-                )
-            ).orElse( m.isPublic() && Objects.equals( requestLine, "/" + m.name() ) );
-    }
-
 }

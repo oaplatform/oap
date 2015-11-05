@@ -21,49 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws;
+package oap.ws.http;
 
-import com.google.common.io.ByteStreams;
-import oap.util.Try;
+public interface HttpServer {
+    void bind( String context, Handler handler );
 
-import java.io.InputStream;
-import java.net.InetAddress;
-import java.util.List;
-import java.util.Optional;
-
-public abstract class Request {
-    public abstract String requestLine();
-
-    public abstract String baseUrl();
-
-    public abstract HttpMethod httpMethod();
-
-    public abstract Context context();
-
-    public Optional<String> parameter( String mapping, String name ) {
-        return ServiceUtil.pathParam( mapping, requestLine(), name );
-    }
-
-    public abstract Optional<String> parameter( String name );
-
-    public abstract List<String> parameters( String name );
-
-    public abstract Optional<InputStream> body();
-
-    public Optional<byte[]> readBody() {
-        return body().map( Try.mapOrThrow( ByteStreams::toByteArray, WsClientException.class ) );
-    }
-
-    public abstract Optional<String> header( String name );
-
-    //    @todo delete
-    public abstract boolean isBodyJson();
-
-    public abstract InetAddress remoteAddress();
-
-
-    public enum HttpMethod {
-        GET, POST, PUT, DELETE, HEAD
-    }
-
+    void unbind( String context );
 }

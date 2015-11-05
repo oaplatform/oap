@@ -21,10 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.apache;
+package oap.ws.http;
 
 import oap.util.Pair;
-import oap.ws.Response;
 import oap.ws.WsResponse;
 import org.apache.http.HttpResponse;
 import org.apache.http.entity.InputStreamEntity;
@@ -33,16 +32,15 @@ import org.slf4j.Logger;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
-class ApacheResponse implements Response {
-    private static Logger logger = getLogger( ApacheResponse.class );
+public class Response {
+    private static Logger logger = getLogger( Response.class );
 
     private HttpResponse resp;
 
-    public ApacheResponse( HttpResponse resp ) {
+    public Response( HttpResponse resp ) {
         this.resp = resp;
     }
 
-    @Override
     public void respond( WsResponse response ) {
         if( logger.isTraceEnabled() ) logger.trace( "responding " + response.code + " " + response.reasonPhrase );
         resp.setStatusCode( response.code );

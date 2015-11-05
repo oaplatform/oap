@@ -1,14 +1,12 @@
 package oap.ws;
 
 import oap.util.Stream;
+import oap.ws.http.Request;
 
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Copyright (c) 2015 Igor Petrenko <igor.petrenko@madberry.net>
- */
 final class ServiceUtil {
     private static Pattern rxParamPattern = Pattern.compile( "\\{([^:]+):([^\\)]+\\))\\}" );
     private static Pattern namedParamPattern = Pattern.compile( "/\\{([^\\}]+)\\}" );
@@ -23,7 +21,7 @@ final class ServiceUtil {
         return rxParamPattern.matcher( mapping ).replaceAll( "{$1}" );
     }
 
-    public static Optional<String> pathParam( String mapping, String requestLine, String name ) {
+    public static Optional<String> pathParam( String mapping, String path, String name ) {
         Matcher matcher = namedParamPattern.matcher( filter( mapping ) );
         return Stream.of( matcher::find, matcher::group )
             .zipWithIndex()
@@ -31,7 +29,7 @@ final class ServiceUtil {
             .map( p -> p._2 )
             .findFirst()
             .flatMap( group -> {
-                Matcher matcher1 = compile( mapping ).matcher( requestLine );
+                Matcher matcher1 = compile( mapping ).matcher( path );
                 return matcher1.matches() && group <= matcher1.groupCount() ?
                     Optional.of( matcher1.group( group + 1 ) ) :
                     Optional.<String>empty();

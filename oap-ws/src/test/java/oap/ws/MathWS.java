@@ -23,6 +23,8 @@
  */
 package oap.ws;
 
+import oap.ws.http.Request;
+
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 import java.util.Optional;
@@ -55,7 +57,7 @@ class MathWS {
     }
 
     public String req( @WsParam( from = REQUEST ) Request req ) {
-        return req.baseUrl() + req.context().serviceLocation;
+        return req.baseUrl + req.context.serviceLocation;
     }
 
     public Bean bean( int i, String s ) {

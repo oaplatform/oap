@@ -39,6 +39,7 @@ import java.util.Objects;
 @ToString
 public class WsConfig {
     public List<Service> services = new ArrayList<>();
+    public List<Service> handlers = new ArrayList<>();
 
     public static List<WsConfig> fromClassPath() {
         return Stream.of( Resources.urls( "META-INF/oap-ws.json" ) )

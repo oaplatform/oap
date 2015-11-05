@@ -21,31 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.apache;
+package oap.ws.http;
 
-import oap.ws.Session;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-
-class ApacheSession implements Session {
-    public static final Map<String, Object> params = Collections.synchronizedMap( new HashMap<>() );
-
-    @Override
-    @SuppressWarnings( "unchecked" )
-    public <A> Optional<A> get( String name ) {
-        return Optional.ofNullable( ( A ) params.get( name ) );
+public class HttpException extends RuntimeException{
+    public HttpException( String message ) {
+        super( message );
     }
 
-    @Override
-    public void set( String name, Object value ) {
-        params.put( name, value );
+    public HttpException( String message, Throwable cause ) {
+        super( message, cause );
     }
 
-    @Override
-    public void invalidate() {
-        params.clear();
+    public HttpException( Throwable cause ) {
+        super( cause );
     }
 }
