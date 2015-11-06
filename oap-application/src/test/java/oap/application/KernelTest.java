@@ -25,25 +25,29 @@
 package oap.application;
 
 import oap.io.Resources;
-import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.Test;
+
+import java.net.URL;
+import java.util.ArrayList;
 
 import static oap.testng.Asserts.assertEventually;
 import static oap.util.Pair.__;
 import static org.testng.Assert.*;
 
-public class KernelTest extends AbstractTest {
+public class KernelTest {
     @Test
     public void startStop() throws InterruptedException {
-        Kernel kernel = new Kernel( Lists.of(
+        ArrayList<URL> modules = Lists.of(
             Resources.url( KernelTest.class, "modules/m1.json" ).get(),
             Resources.url( KernelTest.class, "modules/m2.json" ).get()
-        ) );
+        );
+        modules.addAll( Module.fromClassPath() );
+        Kernel kernel = new Kernel( modules );
         kernel.start( Maps.of( __( "ServiceOne", Maps.of( __( "i", 3 ) ) ) ) );
         try {
-            assertEventually( 50, 30, () -> {
+            assertEventually( 50, 10, () -> {
                 assertEquals( ServiceOne.instances, 1 );
                 assertEquals( Application.<ServiceOne>service( ServiceOne.class.getSimpleName() ).i, 3 );
                 assertEquals( Application.<ServiceTwo>service( ServiceTwo.class.getSimpleName() ).j, 1 );
@@ -51,6 +55,8 @@ public class KernelTest extends AbstractTest {
                     Application.<ServiceOne>service( ServiceOne.class.getSimpleName() ) );
                 assertTrue( Application.<ServiceTwo>service( ServiceTwo.class.getSimpleName() ).started );
                 assertTrue( Application.<ServiceScheduled>service( ServiceScheduled.class.getSimpleName() ).executed );
+                assertEquals( Application.<RemoteHello>service( "hello" ).hello(),
+                    Application.<ServiceTwo>service( ServiceTwo.class.getSimpleName() ).hello() );
             } );
         } finally {
             kernel.stop();
@@ -59,39 +65,3 @@ public class KernelTest extends AbstractTest {
 
 }
 
-class ServiceOne {
-    static volatile int instances;
-    int i;
-
-    public ServiceOne() {
-    }
-}
-
-class ServiceTwo {
-    int j;
-    boolean started;
-    public ServiceOne one;
-
-    public ServiceTwo() {
-        assertNotNull( Application.service( ServiceOne.class.getSimpleName() ) );
-        ServiceOne.instances++;
-    }
-
-    public void start() {
-        System.out.println( "started" );
-        started = true;
-    }
-}
-
-class ServiceScheduled implements Runnable {
-
-    boolean executed;
-
-    public ServiceScheduled() {
-    }
-
-    @Override
-    public void run() {
-        executed = true;
-    }
-}

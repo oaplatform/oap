@@ -35,11 +35,11 @@ import java.nio.file.Path;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertEqualsNoOrder;
 
-public class StorageTest extends AbstractTest {
+public class FileStorageTest extends AbstractTest {
     @Test
     public void load() {
-        Storage<Bean> storage =
-            new Storage<>( Resources.filePath( StorageTest.class, "data" ).get(), b -> b.id );
+        FileStorage<Bean> storage =
+            new FileStorage<>( Resources.filePath( FileStorageTest.class, "data" ).get(), b -> b.id );
         storage.start();
         assertEqualsNoOrder( storage.select().toArray(),
             new Bean[]{ new Bean( "t2" ), new Bean( "t1" ) } );
@@ -48,14 +48,14 @@ public class StorageTest extends AbstractTest {
     @Test
     public void persist() throws InterruptedException {
         Path dataLocation = Files.path( Env.tmp( "data" ) );
-        Storage<Bean> storage1 = new Storage<>( dataLocation, b -> b.id );
+        FileStorage<Bean> storage1 = new FileStorage<>( dataLocation, b -> b.id );
         storage1.fsync = 50;
         storage1.start();
         storage1.store( new Bean( "1" ) );
         storage1.store( new Bean( "2" ) );
         Thread.sleep( 100 );
         storage1.stop();
-        Storage<Bean> storage2 = new Storage<>( dataLocation, b -> b.id );
+        FileStorage<Bean> storage2 = new FileStorage<>( dataLocation, b -> b.id );
         storage2.start();
         assertEqualsNoOrder( storage2.select().toArray(),
             new Bean[]{ new Bean( "2" ), new Bean( "1" ) } );
@@ -65,7 +65,7 @@ public class StorageTest extends AbstractTest {
     @Test
     public void storeAndUpdate() {
         Path dataLocation = Files.path( Env.tmp( "data" ) );
-        Storage<Bean> storage = new Storage<>( dataLocation, b -> b.id );
+        FileStorage<Bean> storage = new FileStorage<>( dataLocation, b -> b.id );
         storage.start();
         storage.store( new Bean( "111" ) );
         storage.get( "111" ).ifPresent( b -> {

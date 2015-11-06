@@ -29,10 +29,9 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>1.0.17</version>
+    <version>1.1.0</version>
 
     <name>oap</name>
-    <inceptionYear>2015</inceptionYear>
 
     <prerequisites>
         <maven>3.1</maven>
@@ -46,7 +45,6 @@
         <module>oap-http</module>
         <module>oap-ws</module>
         <module>oap-application</module>
-        <module>oap-replication</module>
         <module>oap-storage</module>
         <module>oap-etl</module>
         <module>oap-logstream</module>

@@ -21,18 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.application;
 
-package oap.replication;
+public class ServiceOne {
+    static volatile int instances;
+    int i;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.util.List;
-
-/**
- * Created by Igor Petrenko on 04.11.2015.
- */
-public interface ITestReplicationServer {
-    List<String> get( long lastSyncTime );
-
-    Object set( String json, String remoteAddress );
+    public ServiceOne() {
+    }
 }

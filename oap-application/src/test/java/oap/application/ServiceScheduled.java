@@ -21,31 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.application;
 
-package oap.replication;
+public class ServiceScheduled implements Runnable {
 
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Supplier;
+    boolean executed;
 
-public class TestReplicationServer implements ITestReplicationServer {
-    public long lastGetSyncTime;
-    public String lastSetData;
-    public String lastSetAddress;
-    public Supplier<String> setRet = () -> "";
-    public Supplier<List<String>> getRet = Collections::emptyList;
-
-    @Override
-    public List<String> get( long lastSyncTime ) {
-        lastGetSyncTime = lastSyncTime;
-
-        return getRet.get();
+    public ServiceScheduled() {
     }
 
     @Override
-    public Object set( String json, String remoteAddress ) {
-        lastSetData = json;
-        lastSetAddress = remoteAddress;
-        return setRet.get();
+    public void run() {
+        executed = true;
     }
 }

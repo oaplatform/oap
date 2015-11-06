@@ -106,9 +106,8 @@ public class WebServicesTest {
     }
 
     static class TestHandler implements Handler {
-
         @Override
-        public void handle( Request request, Response response ) throws IOException {
+        public void handle( Request request, Response response ) {
             response.respond( HttpResponse.NO_CONTENT );
         }
     }

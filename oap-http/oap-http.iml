@@ -11,25 +11,9 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="oap-stdlib" />
-    <orderEntry type="library" name="Maven: org.quartz-scheduler:quartz:2.2.1" level="project" />
-    <orderEntry type="library" name="Maven: c3p0:c3p0:0.9.1.1" level="project" />
-    <orderEntry type="library" name="Maven: com.google.guava:guava:18.0" level="project" />
-    <orderEntry type="module" module-name="oap-metrics" />
-    <orderEntry type="library" name="Maven: io.dropwizard.metrics:metrics-graphite:3.1.2" level="project" />
-    <orderEntry type="library" name="Maven: io.dropwizard.metrics:metrics-core:3.1.2" level="project" />
-    <orderEntry type="library" name="Maven: com.github.influxdb:influxdb-java:influxdb-java-2.0" level="project" />
-    <orderEntry type="library" name="Maven: com.squareup.retrofit:retrofit:1.9.0" level="project" />
-    <orderEntry type="library" name="Maven: com.google.code.gson:gson:2.3.1" level="project" />
-    <orderEntry type="library" name="Maven: com.squareup.okhttp:okhttp:2.4.0" level="project" />
-    <orderEntry type="library" name="Maven: com.squareup.okio:okio:1.4.0" level="project" />
-    <orderEntry type="module" module-name="oap-json" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-core:2.6.2" level="project" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.6.2" level="project" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.6.0" level="project" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.6.2" level="project" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.datatype:jackson-datatype-joda:2.6.2" level="project" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.module:jackson-module-afterburner:2.6.2" level="project" />
+    <orderEntry type="library" name="Maven: oap:oap-stdlib:1.1.0" level="project" />
+    <orderEntry type="library" name="Maven: oap:oap-metrics:1.1.0" level="project" />
+    <orderEntry type="library" name="Maven: oap:oap-json:1.1.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore:4.4.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore-nio:4.4.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient:4.5.1" level="project" />

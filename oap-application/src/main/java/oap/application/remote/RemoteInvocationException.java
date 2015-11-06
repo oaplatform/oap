@@ -21,28 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.application.remote;
 
-package oap.replication;
+public class RemoteInvocationException extends RuntimeException {
+    public RemoteInvocationException( String message ) {
+        super( message );
+    }
 
-import oap.application.ApplicationException;
-import oap.application.ServiceReference;
+    public RemoteInvocationException( String message, Throwable cause ) {
+        super( message, cause );
+    }
 
-import java.lang.reflect.Proxy;
-import java.util.Optional;
-
-public class RemoteServiceReference implements ServiceReference {
-    @Override
-    public Optional<Object> getLink( String serviceName, Class<?> serviceClass ) {
-        final int index = serviceName.indexOf( '@' );
-
-        if( index <= 0 ) throw new ApplicationException( "remote service url: " + serviceName );
-
-        return Optional.of(
-            Proxy.newProxyInstance(
-                getClass().getClassLoader(),
-                new Class[]{ serviceClass },
-                new HttpRemoteInvocationHandler( serviceName.substring( index + 1 ), serviceName.substring( 0, index ) )
-            )
-        );
+    public RemoteInvocationException( Throwable cause ) {
+        super( cause );
     }
 }

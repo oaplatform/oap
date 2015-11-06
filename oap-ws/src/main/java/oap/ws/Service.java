@@ -24,7 +24,10 @@
 package oap.ws;
 
 import com.google.common.base.Throwables;
+import oap.http.Handler;
 import oap.http.HttpResponse;
+import oap.http.Request;
+import oap.http.Response;
 import oap.json.Binder;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
@@ -35,15 +38,11 @@ import oap.reflect.Reflection;
 import oap.util.Optionals;
 import oap.util.Stream;
 import oap.util.Strings;
-import oap.http.Handler;
-import oap.http.Request;
-import oap.http.Response;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -56,7 +55,7 @@ import java.util.regex.Pattern;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
-public class Service implements  Handler {
+public class Service implements Handler {
     private final Object impl;
     private final Logger logger;
     private final Reflection reflection;
@@ -128,7 +127,7 @@ public class Service implements  Handler {
     }
 
     @Override
-    public void handle( Request request, Response response ) throws IOException {
+    public void handle( Request request, Response response ) {
         try {
             Optionals.fork( reflection.method(
                 method -> methodMatches( request.requestLine, request.httpMethod, method ) ) )

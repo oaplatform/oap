@@ -21,12 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.application.remote;
 
-package oap.replication;
-
-import oap.json.Binder;
-import oap.http.Uri;
+import com.google.common.base.Throwables;
 import oap.http.SimpleHttpClient;
+import oap.json.Binder;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
@@ -35,56 +34,54 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Proxy;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static oap.util.Pair.__;
 
-public class HttpRemoteInvocationHandler implements InvocationHandler {
-    public static final String SERVICE_PARAM = "service";
-    protected static final org.slf4j.Logger logger = LoggerFactory.getLogger( "replication" );
-    private String master;
-    private String replicationUrl;
+public class RemoteInvocationHandler implements InvocationHandler {
+    protected static org.slf4j.Logger logger = LoggerFactory.getLogger( RemoteInvocationHandler.class );
+    private URI uri;
+    private String service;
 
-    public HttpRemoteInvocationHandler( String master, String replicationUrl ) {
-        this.master = master;
-        this.replicationUrl = replicationUrl;
+    public RemoteInvocationHandler( URI uri, String service ) {
+        this.uri = uri;
+        this.service = service;
     }
 
     @Override
     public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
-        final RpcData rpcData = new RpcData( master, method.getName() );
-        final Parameter[] parameters = method.getParameters();
+        Parameter[] parameters = method.getParameters();
+        List<RemoteInvocation.Argument> arguments = new ArrayList<>();
         for( int i = 0; i < parameters.length; i++ ) {
-            final Parameter parameter = parameters[i];
-            final Object arg = args[i];
-
-            final String name = parameter.getName();
-
-            rpcData.arguments.add( new RpcData.RpcArgumentData( name, parameter.getType(), arg ) );
+            Parameter parameter = parameters[i];
+            arguments.add( new RemoteInvocation.Argument( parameter.getName(), parameter.getType(), args[i] ) );
         }
 
-        final String marshal = Binder.marshal( rpcData );
-
         try {
-            final HttpPost post = new HttpPost( Uri.uri( replicationUrl, __( SERVICE_PARAM, master ) ) );
-
-            post.setEntity( new StringEntity( marshal, ContentType.APPLICATION_JSON ) );
-
+            HttpPost post = new HttpPost( uri );
+            post.setEntity( new StringEntity(
+                Binder.marshal( new RemoteInvocation( service, method.getName(), arguments ) ),
+                ContentType.APPLICATION_JSON ) );
             SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
-
             switch( response.code ) {
                 case HTTP_OK:
-                    return Binder.unmarshal( method.getReturnType(), response.body );
-
+                    return method.getReturnType().equals( Void.class ) ? null :
+                        Binder.unmarshal( method.getReturnType(), response.body );
                 default:
-                    logger.error( "code: {}, message: {}", response.code, response.body );
-
-                    throw new RuntimeException( "code: " + response.code + ", message: " + response.body );
+                    throw new RemoteInvocationException( "code: " + response.code + ", message: " + response.body );
             }
         } catch( Exception e ) {
             if( logger.isTraceEnabled() ) logger.trace( e.getMessage(), e );
             else logger.error( e.getMessage() );
-            throw new RuntimeException( e );
+            throw Throwables.propagate( e );
         }
+    }
+
+    public static Object proxy( URI uri, String service, Class<?> clazz ) {
+        return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{ clazz },
+            new RemoteInvocationHandler( uri, service ) );
     }
 }

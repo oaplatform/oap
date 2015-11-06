@@ -21,25 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.application;
 
-package oap.replication;
+import static org.testng.Assert.assertNotNull;
 
-import oap.net.Inet;
+public class ServiceTwo implements RemoteHello {
+    int j;
+    boolean started;
+    public ServiceOne one;
 
-import java.util.List;
-
-public class TestReplicationClient {
-    private ITestReplicationServer server;
-
-    public TestReplicationClient( ITestReplicationServer server ) {
-        this.server = server;
+    public ServiceTwo() {
+        assertNotNull( Application.service( ServiceOne.class.getSimpleName() ) );
+        ServiceOne.instances++;
     }
 
-    public Object set( String data ) {
-        return server.set( data, Inet.HOSTNAME );
+    public void start() {
+        System.out.println( "started" );
+        started = true;
     }
 
-    public List<String> get() {
-        return server.get( -1 );
+    @Override
+    public String hello() {
+        return "Hello " + j;
     }
 }

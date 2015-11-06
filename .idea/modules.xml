@@ -10,7 +10,6 @@
       <module fileurl="file://$PROJECT_DIR$/oap-json/oap-json.iml" filepath="$PROJECT_DIR$/oap-json/oap-json.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-logstream/oap-logstream.iml" filepath="$PROJECT_DIR$/oap-logstream/oap-logstream.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-metrics/oap-metrics.iml" filepath="$PROJECT_DIR$/oap-metrics/oap-metrics.iml" />
-      <module fileurl="file://$PROJECT_DIR$/oap-replication/oap-replication.iml" filepath="$PROJECT_DIR$/oap-replication/oap-replication.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-stdlib/oap-stdlib.iml" filepath="$PROJECT_DIR$/oap-stdlib/oap-stdlib.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-storage/oap-storage.iml" filepath="$PROJECT_DIR$/oap-storage/oap-storage.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-ws/oap-ws.iml" filepath="$PROJECT_DIR$/oap-ws/oap-ws.iml" />

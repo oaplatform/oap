@@ -29,6 +29,8 @@ import oap.util.Pair;
 import org.joda.time.DateTime;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -190,7 +192,20 @@ public class Coercions {
             } catch( MalformedURLException e ) {
                 throw new ReflectException( "cannot cast " + value + " to URL.class" );
             }
-            else throw new ReflectException( "cannot cast " + value + " to Path.class" );
+            else throw new ReflectException( "cannot cast " + value + " to URL.class" );
+        }
+    }
+
+    private static class URIConvertor implements Function<Object, Object> {
+        @Override
+        public Object apply( Object value ) {
+            if( value instanceof URI ) return value;
+            else if( value instanceof String ) try {
+                return new URI( (String) value );
+            } catch( URISyntaxException e ) {
+                throw new ReflectException( "cannot cast " + value + " to URI.class" );
+            }
+            else throw new ReflectException( "cannot cast " + value + " to URI.class" );
         }
     }
 
@@ -237,6 +252,7 @@ public class Coercions {
         convertors.put( DateTime.class, new DateTimeConvertor() );
         convertors.put( Path.class, new PathConvertor() );
         convertors.put( URL.class, new URLConvertor() );
+        convertors.put( URI.class, new URIConvertor() );
     }
 
     public Object cast( Reflection target, Object value ) {

@@ -21,18 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.application;
 
-package oap.replication;
-
-import oap.util.Result;
-
-import java.util.Optional;
-
-/**
- * Created by Igor Petrenko on 04.11.2015.
- */
-public interface RemoteService<T> {
-    Result<String, String> set( String data );
-
-    Result<Optional<String>, String> get();
+public interface RemoteHello {
+    String hello();
 }

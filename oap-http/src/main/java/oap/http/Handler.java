@@ -23,8 +23,6 @@
  */
 package oap.http;
 
-import java.io.IOException;
-
 public interface Handler {
-    void handle( Request request, Response response ) throws IOException;
+    void handle( Request request, Response response ) ;
 }

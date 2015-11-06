@@ -22,36 +22,48 @@
  * SOFTWARE.
  */
 
-package oap.replication;
+package oap.application.remote;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class RpcData {
+@ToString
+public class RemoteInvocation {
     public String service;
     public String method;
-    public final List<RpcArgumentData> arguments = new ArrayList<>();
+    public List<Argument> arguments = new ArrayList<>();
 
-    public RpcData() {
+    public RemoteInvocation() {
     }
 
-    public RpcData( String service, String method ) {
+    public RemoteInvocation( String service, String method, List<Argument> arguments ) {
         this.service = service;
         this.method = method;
+        this.arguments = arguments;
     }
 
-    public static class RpcArgumentData {
+    public Class<?>[] types() {
+        return arguments.stream().map( v -> v.type ).toArray( Class[]::new );
+    }
+
+    public Object[] values() {
+        return arguments.stream().map( v -> v.value ).toArray();
+    }
+
+    @ToString
+    public static class Argument {
         public String name;
-        @JsonTypeInfo( use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
+        @JsonTypeInfo( use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type" )
         public Class<?> type;
         public Object value;
 
-        public RpcArgumentData() {
+        public Argument() {
         }
 
-        public RpcArgumentData( String name, Class<?> type, Object value ) {
+        public Argument( String name, Class<?> type, Object value ) {
             this.name = name;
             this.type = type;
             this.value = value;

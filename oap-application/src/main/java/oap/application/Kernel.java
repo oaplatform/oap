@@ -24,6 +24,7 @@
 package oap.application;
 
 import com.google.common.base.Throwables;
+import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.io.Resources;
 import oap.json.Parser;
@@ -76,18 +77,24 @@ public class Kernel {
             if( initialized.containsAll( service.dependsOn ) ) {
                 logger.debug( "initializing " + service.name );
 
-                Map<String, Object> serviceConfiguration = config.getOrDefault( service.name, Collections.emptyMap() );
-                serviceConfiguration.forEach( service.parameters::put );
                 Reflection reflect = Reflect.reflect( service.implementation );
-                initializeServiceLinks( service, reflect );
-                Object instance = reflect.newInstance( service.parameters );
+
+                Object instance;
+                if( service.remoteUrl == null ) {
+                    config.getOrDefault( service.name, Collections.emptyMap() )
+                        .forEach( service.parameters::put );
+                    initializeServiceLinks( service );
+                    instance = reflect.newInstance( service.parameters );
+                } else instance = RemoteInvocationHandler.proxy(
+                    service.remoteUrl,
+                    service.remoteName,
+                    reflect.underlying
+                );
                 Application.register( service.name, instance );
                 if( service.supervision.supervise )
                     supervisor.startSupervised( service.name, instance );
-
                 if( service.supervision.thread )
                     supervisor.startThread( service.name, instance );
-
                 else {
                     if( service.supervision.schedule && service.supervision.delay > 0 )
                         supervisor.scheduleWithFixedDelay( service.name, (Runnable) instance,
@@ -105,27 +112,14 @@ public class Kernel {
         return deferred.size() == services.size() ? deferred : initializeServices( deferred, initialized, config );
     }
 
-    private void initializeServiceLinks( Module.Service service, Reflection reflect ) {
+    private void initializeServiceLinks( Module.Service service ) {
         for( Map.Entry<String, Object> entry : service.parameters.entrySet() )
-            if( entry.getValue() instanceof String ) {
-                resolvers()
-                    .stream()
-                    .filter( r -> ((String) entry.getValue()).startsWith( "@" + r + ":" ) )
-                    .findFirst()
-                    .ifPresent( r -> {
-                        logger.debug( "for " + service.name + " linking " + entry );
-                        final String serviceName = ((String) entry.getValue()).substring( ("@" + r + ":").length() );
-
-                        Class<?> pClass = reflect.parameterType( entry.getKey() );
-
-                        Object link =
-                            getServiceReference( r ).flatMap( ref -> ref.getLink( serviceName, pClass ) )
-                                .orElseThrow( () -> new ApplicationException(
-                                    "for " + service.name + " service link " + entry.getValue() +
-                                        " is not initialized yet" ) );
-
-                        entry.setValue( link );
-                    } );
+            if( entry.getValue() instanceof String && ((String) entry.getValue()).startsWith( "@service:" ) ) {
+                logger.debug( "for " + service.name + " linking " + entry );
+                Object link = Application.service( ((String) entry.getValue()).substring( "@service:".length() ) );
+                if( link == null ) throw new ApplicationException(
+                    "for " + service.name + " service link " + entry.getValue() + " is not initialized yet" );
+                entry.setValue( link );
             }
     }
 
@@ -203,9 +197,4 @@ public class Kernel {
         }
     }
 
-    private synchronized Set<String> resolvers() {
-        load();
-
-        return serviceReferences.keySet();
-    }
 }
