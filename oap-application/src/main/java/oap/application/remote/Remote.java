@@ -30,11 +30,9 @@ import oap.http.HttpServer;
 import oap.http.Request;
 import oap.http.Response;
 import oap.json.Binder;
-import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 
 import java.lang.reflect.InvocationTargetException;
-import java.net.HttpURLConnection;
 
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
@@ -44,18 +42,16 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class Remote implements Handler {
     private static Logger logger = getLogger( Remote.class );
 
-    private String server;
+    private HttpServer server;
     private String context;
 
-    public Remote( String server, String context ) {
+    public Remote( HttpServer server, String context ) {
         this.server = server;
         this.context = context;
     }
 
     public void start() {
-        HttpServer http = Application.service( server );
-        if( http != null ) http.bind( context, this );
-        else logger.info( "no http server " + server + ". Remoting is not available" );
+        server.bind( context, this );
     }
 
     @Override
