@@ -91,15 +91,17 @@ public class HttpAsserts {
             this.response = response;
         }
 
-        public void assertOk() {
+        public ResponseAssert assertOk() {
             assertResponse( HTTP_OK );
+            return this;
         }
 
-        public void assertResponse( int code ) {
+        public ResponseAssert assertResponse( int code ) {
             assertEquals( response.code, code, "body: " + response.body );
+            return this;
         }
 
-        public void assertResponse( int code, String reasonPhrase, ContentType contentType, String body ) {
+        public ResponseAssert assertResponse( int code, String reasonPhrase, ContentType contentType, String body ) {
             assertEquals( response.reasonPhrase, reasonPhrase );
             assertEquals( response.code, code );
             assertEquals( response.contentType, contentType != null ? contentType.toString() : null );
@@ -107,21 +109,25 @@ public class HttpAsserts {
                 JsonAsserts.assertEquals( response.body, body );
             else
                 assertEquals( response.body, body );
+            return this;
         }
 
-        public void assertResponse( int code, String reasonPhrase, ContentType contentType, Class<?> context,
-            String resourcePath ) {
+        public ResponseAssert assertResponse( int code, String reasonPhrase, ContentType contentType,
+            Class<?> context, String resourcePath ) {
             assertResponse( code, reasonPhrase, contentType,
                 Resources.readString( context, context.getSimpleName() + "/" + resourcePath ).get() );
+            return this;
         }
 
-        public void assertResponse( int code, String reasonPhrase ) {
+        public ResponseAssert assertResponse( int code, String reasonPhrase ) {
             assertResponse( code, reasonPhrase, null, null );
+            return this;
         }
 
-        public void assertContent( int code, Consumer<String> assertor ) {
+        public ResponseAssert assertContent( int code, Consumer<String> assertor ) {
             assertEquals( response.code, code );
             assertor.accept( response.body );
+            return this;
         }
     }
 }
