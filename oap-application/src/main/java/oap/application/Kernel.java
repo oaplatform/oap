@@ -23,10 +23,8 @@
  */
 package oap.application;
 
-import com.google.common.base.Throwables;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
-import oap.io.Resources;
 import oap.json.Parser;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
@@ -34,19 +32,13 @@ import oap.util.Maps;
 import oap.util.Stream;
 import org.slf4j.Logger;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -55,7 +47,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class Kernel {
     private static Logger logger = getLogger( Kernel.class );
-    private static HashMap<String, ServiceReference> serviceReferences;
     private final Set<Module> modules;
     private Supervisor supervisor = new Supervisor();
 
@@ -168,33 +159,6 @@ public class Kernel {
 
     public void start( Path configPath ) {
         start( configPath.toFile().exists() ? Parser.parse( configPath ) : Maps.of() );
-    }
-
-    private synchronized Optional<ServiceReference> getServiceReference( String reference ) {
-        load();
-
-        return Optional.ofNullable( serviceReferences.get( reference ) );
-    }
-
-    private void load() {
-        if( serviceReferences == null ) {
-            serviceReferences = new HashMap<>();
-
-            Resources.urls( "META-INF/oap-references.properties" ).forEach( url -> {
-                final Properties properties = new Properties();
-                try( InputStream is = url.openStream() ) {
-                    properties.load( is );
-                    for( String key : properties.stringPropertyNames() ) {
-                        serviceReferences.put( key, (ServiceReference) Class.forName(
-                            properties.getProperty( key ) ).newInstance() );
-                    }
-                } catch( InstantiationException | IllegalAccessException | ClassNotFoundException e ) {
-                    throw Throwables.propagate( e );
-                } catch( IOException e ) {
-                    throw new UncheckedIOException( e );
-                }
-            } );
-        }
     }
 
 }
