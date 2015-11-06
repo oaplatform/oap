@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.ws.http;
+package oap.http;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ListMultimap;
@@ -31,8 +31,6 @@ import oap.util.Arrays;
 import oap.util.Maps;
 import oap.util.Strings;
 import oap.util.Try;
-import oap.ws.Context;
-import oap.ws.Url;
 import org.apache.http.Header;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
@@ -58,7 +56,7 @@ public class Request {
         this.headers = req.getAllHeaders();
         this.baseUrl = "http://" + req.getFirstHeader( "Host" ).getValue();
         this.requestLine = Strings.substringBefore( req.getRequestLine().getUri(), "?" ).substring(
-            context.serviceLocation.length() );
+            context.location.length() );
         this.httpMethod = HttpMethod.valueOf( req.getRequestLine().getMethod().toUpperCase() );
         this.context = context;
         this.body = content( req );

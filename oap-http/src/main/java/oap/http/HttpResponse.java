@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws;
+package oap.http;
 
-import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Strings;
@@ -40,66 +39,65 @@ import java.util.function.Function;
 import static oap.util.Pair.__;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
-public class WsResponse {
-
-    public static final WsResponse NOT_FOUND = status( HttpURLConnection.HTTP_NOT_FOUND );
-    public static final WsResponse NO_CONTENT = status( HttpURLConnection.HTTP_NO_CONTENT );
-    public static final WsResponse NOT_MODIFIED = status( HttpURLConnection.HTTP_NOT_MODIFIED );
-    public int code;
+public class HttpResponse {
+    public static final HttpResponse NOT_FOUND = status( HttpURLConnection.HTTP_NOT_FOUND );
+    public static final HttpResponse NO_CONTENT = status( HttpURLConnection.HTTP_NO_CONTENT );
+    public static final HttpResponse NOT_MODIFIED = status( HttpURLConnection.HTTP_NOT_MODIFIED );
     public String reasonPhrase;
     public Object content;
-    private InputStream streamContent;
-    boolean raw;
     public List<Pair<String, String>> headers = new ArrayList<>();
     public ContentType contentType;
+    public int code;
+    boolean raw;
+    private InputStream streamContent;
 
-    private WsResponse( int code ) {
+    public HttpResponse( int code ) {
         this.code = code;
     }
 
-    public WsResponse withHeader( String name, String value ) {
-        headers.add( __( name, value ) );
-        return this;
+    public static HttpResponse redirect( String location ) {
+        return new HttpResponse( HttpURLConnection.HTTP_MOVED_TEMP ).withHeader( "Location", location );
     }
 
-    public static WsResponse redirect( String location ) {
-        return new WsResponse( HttpURLConnection.HTTP_MOVED_TEMP ).withHeader( "Location", location );
-    }
-
-    public static WsResponse ok( Object content, boolean raw, ContentType contentType ) {
-        WsResponse response = ok( content );
+    public static HttpResponse ok( Object content, boolean raw, ContentType contentType ) {
+        HttpResponse response = ok( content );
         response.raw = raw;
         response.contentType = contentType;
         return response;
     }
 
-    public static WsResponse ok( Object content ) {
-        WsResponse response = new WsResponse( HttpURLConnection.HTTP_OK );
+    public static HttpResponse ok( Object content ) {
+        HttpResponse response = new HttpResponse( HttpURLConnection.HTTP_OK );
         response.content = content;
         response.contentType = ContentType.APPLICATION_JSON;
         return response;
     }
 
-    public static WsResponse stream( InputStream stream, ContentType contentType ) {
-        WsResponse response = new WsResponse( HttpURLConnection.HTTP_OK );
+    public static HttpResponse stream( InputStream stream, ContentType contentType ) {
+        HttpResponse response = new HttpResponse( HttpURLConnection.HTTP_OK );
         response.streamContent = stream;
         response.contentType = contentType;
         return response;
     }
 
-    public static WsResponse status( int code, String reason ) {
-        WsResponse response = status( code );
+    public static HttpResponse status( int code, String reason ) {
+        HttpResponse response = status( code );
         response.reasonPhrase = Strings.removeControl( reason );
         return response;
     }
 
-    public static WsResponse status( int code ) {
-        WsResponse response = new WsResponse( code );
+    public static HttpResponse status( int code ) {
+        HttpResponse response = new HttpResponse( code );
         response.contentType = TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 );
         return response;
     }
 
-    public WsResponse withContent( String content, ContentType contentType ) {
+    public HttpResponse withHeader( String name, String value ) {
+        headers.add( __( name, value ) );
+        return this;
+    }
+
+    public HttpResponse withContent( String content, ContentType contentType ) {
         this.content = content;
         this.contentType = contentType;
         return this;
@@ -107,13 +105,8 @@ public class WsResponse {
 
     public String content() {
         return raw ? (String) content :
-            producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
+            HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
     }
-
-    private static Map<String, Function<Object, String>> producers = Maps.of(
-        __( ContentType.TEXT_PLAIN.getMimeType(), String::valueOf ),
-        __( ContentType.APPLICATION_JSON.getMimeType(), Binder::marshal )
-    );
 
     public boolean hasContent() {
         return content != null;
@@ -126,4 +119,13 @@ public class WsResponse {
     public InputStream stream() {
         return streamContent;
     }
+
+    private static Map<String, Function<Object, String>> producers = Maps.of(
+        __( ContentType.TEXT_PLAIN.getMimeType(), String::valueOf )
+    );
+
+    public static void registerProducer(String mimeType, Function<Object, String> producer) {
+        producers.put( mimeType, producer );
+    }
+
 }

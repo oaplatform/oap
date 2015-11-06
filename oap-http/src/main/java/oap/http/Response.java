@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,11 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.http;
+package oap.http;
 
 import oap.util.Pair;
-import oap.ws.WsResponse;
-import org.apache.http.HttpResponse;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.slf4j.Logger;
@@ -35,13 +33,13 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class Response {
     private static Logger logger = getLogger( Response.class );
 
-    private HttpResponse resp;
+    private org.apache.http.HttpResponse resp;
 
-    public Response( HttpResponse resp ) {
+    public Response( org.apache.http.HttpResponse resp ) {
         this.resp = resp;
     }
 
-    public void respond( WsResponse response ) {
+    public void respond( HttpResponse response ) {
         if( logger.isTraceEnabled() ) logger.trace( "responding " + response.code + " " + response.reasonPhrase );
         resp.setStatusCode( response.code );
 

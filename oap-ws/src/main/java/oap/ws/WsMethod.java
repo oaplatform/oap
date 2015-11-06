@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,7 @@ package oap.ws;
 
 
 import oap.util.Strings;
-import oap.ws.http.Request;
+import oap.http.Request;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

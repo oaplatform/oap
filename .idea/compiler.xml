@@ -23,13 +23,6 @@
       <profile default="true" name="Default" enabled="true">
         <processorPath useClasspath="true" />
       </profile>
-      <profile default="false" name="Annotation profile for madberry-rtb" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="madberry-rtb" />
-      </profile>
       <profile default="false" name="Annotation profile for oap-storage" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
@@ -72,13 +65,6 @@
         <processorPath useClasspath="true" />
         <module name="oap-ws" />
       </profile>
-      <profile default="false" name="Annotation profile for madberry-bidder" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="madberry-bidder" />
-      </profile>
       <profile default="false" name="Annotation profile for oap-cli" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
@@ -93,47 +79,12 @@
         <processorPath useClasspath="true" />
         <module name="oap-metrics" />
       </profile>
-      <profile default="false" name="Annotation profile for madberry-aggregator" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="madberry-aggregator" />
-      </profile>
-      <profile default="false" name="Annotation profile for madberry-showroom" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="madberry-showroom" />
-      </profile>
-      <profile default="false" name="Annotation profile for madberry-showroom-rpm" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="madberry-showroom-rpm" />
-      </profile>
       <profile default="false" name="Annotation profile for oap-etl" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
         <module name="oap-etl" />
-      </profile>
-      <profile default="false" name="Annotation profile for madberry-logger" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="madberry-logger" />
-      </profile>
-      <profile default="false" name="Annotation profile for madberry-logger-server" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="madberry-logger-server" />
       </profile>
       <profile default="false" name="Annotation profile for oap-replication" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -142,19 +93,12 @@
         <processorPath useClasspath="true" />
         <module name="oap-replication" />
       </profile>
-      <profile default="false" name="Annotation profile for madberry-datasync" enabled="true">
+      <profile default="false" name="Annotation profile for oap-http" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="madberry-datasync" />
-      </profile>
-      <profile default="false" name="Annotation profile for madberry-missioncontrol" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-        <module name="madberry-missioncontrol" />
+        <module name="oap-http" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="1.8">
@@ -189,6 +133,7 @@
       <module name="oap-application" target="1.8" />
       <module name="oap-cli" target="1.8" />
       <module name="oap-etl" target="1.8" />
+      <module name="oap-http" target="1.8" />
       <module name="oap-json" target="1.8" />
       <module name="oap-logstream" target="1.8" />
       <module name="oap-metrics" target="1.8" />

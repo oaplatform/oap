@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,10 @@
 package oap.ws;
 
 import oap.application.Application;
-import oap.ws.http.HttpServer;
+import oap.http.HttpResponse;
+import oap.http.HttpServer;
+import oap.json.Binder;
+import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 
 import java.util.List;
@@ -36,6 +39,10 @@ public class WebServices {
     private final List<WsConfig> wsConfigs;
 
     private HttpServer server;
+
+    static {
+        HttpResponse.registerProducer( ContentType.APPLICATION_JSON.getMimeType(), Binder::marshal );
+    }
 
     public WebServices( HttpServer server ) {
         this( server, WsConfig.fromClassPath() );

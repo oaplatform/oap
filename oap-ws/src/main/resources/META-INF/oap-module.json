@@ -1,17 +1,9 @@
 {
   "name": "oap-ws",
+  "dependsOn": [
+    "oap-http"
+  ],
   "services": [
-    {
-      "name": "oap-ws-server",
-      "implementation": "oap.ws.http.Server",
-      "parameters": {
-        "port": 8880,
-        "workers": 500
-      },
-      "supervision": {
-        "supervise": true
-      }
-    },
     {
       "name": "oap-ws-webservices",
       "implementation": "oap.ws.WebServices",
@@ -20,10 +12,7 @@
       },
       "supervision": {
         "supervise": true
-      },
-      "dependsOn": [
-        "oap-ws-server"
-      ]
+      }
     }
   ]
 }

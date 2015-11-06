@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,7 @@ import oap.metrics.Metrics;
 import java.io.IOException;
 import java.util.List;
 
-import static oap.ws.http.Request.HttpMethod.GET;
+import static oap.http.Request.HttpMethod.GET;
 
 public class MetricsWS {
 

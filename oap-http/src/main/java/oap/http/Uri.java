@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,26 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.http;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+package oap.http;
 
-public class Session {
-    public static final Map<String, Object> params = Collections.synchronizedMap( new HashMap<>() );
+import com.google.common.base.Throwables;
+import oap.util.Pair;
+import org.apache.http.client.utils.URIBuilder;
 
-    @SuppressWarnings( "unchecked" )
-    public <A> Optional<A> get( String name ) {
-        return Optional.ofNullable( (A) params.get( name ) );
-    }
+import java.net.URI;
+import java.net.URISyntaxException;
 
-    public void set( String name, Object value ) {
-        params.put( name, value );
-    }
+public class Uri {
+    @SafeVarargs
+    public static URI uri( String address, Pair<String, Object>... params ) {
+        try {
+            URIBuilder uriBuilder = new URIBuilder( address );
+            for( Pair<String, Object> param : params )
+                uriBuilder.addParameter( param._1, String.valueOf( param._2 ) );
+            return uriBuilder.build();
+        } catch( URISyntaxException e ) {
+            throw Throwables.propagate( e );
+        }
 
-    public void invalidate() {
-        params.clear();
     }
 }

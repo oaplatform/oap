@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ package oap.ws;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
+import oap.http.Url;
 import org.testng.annotations.Test;
 
 import static oap.util.Pair.__;

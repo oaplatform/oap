@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@
 package oap.ws;
 
 import com.google.common.base.Throwables;
+import oap.http.HttpResponse;
 import oap.json.Binder;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
@@ -34,9 +35,9 @@ import oap.reflect.Reflection;
 import oap.util.Optionals;
 import oap.util.Stream;
 import oap.util.Strings;
-import oap.ws.http.Handler;
-import oap.ws.http.Request;
-import oap.ws.http.Response;
+import oap.http.Handler;
+import oap.http.Request;
+import oap.http.Response;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
@@ -105,13 +106,13 @@ public class Service implements  Handler {
         else if( e instanceof WsClientException ) {
             WsClientException e1 = (WsClientException) e;
             if( logger.isDebugEnabled() ) logger.debug( e.toString(), e );
-            WsResponse wsResponse = WsResponse.status( e1.code, e.getMessage() );
+            HttpResponse wsResponse = HttpResponse.status( e1.code, e.getMessage() );
             if( !e1.errors.isEmpty() ) wsResponse.withContent( String.join( "\n", e1.errors ),
                 TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ) );
             response.respond( wsResponse );
         } else {
             logger.error( e.toString(), e );
-            response.respond( WsResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() )
+            response.respond( HttpResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() )
                 .withContent( Throwables.getRootCause( e ).getMessage(),
                     TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ) ) );
         }
@@ -131,7 +132,7 @@ public class Service implements  Handler {
         try {
             Optionals.fork( reflection.method(
                 method -> methodMatches( request.requestLine, request.httpMethod, method ) ) )
-                .ifAbsent( () -> response.respond( WsResponse.NOT_FOUND ) )
+                .ifAbsent( () -> response.respond( HttpResponse.NOT_FOUND ) )
                 .ifPresent(
                     method -> {
                         Name name = Metrics
@@ -206,15 +207,15 @@ public class Service implements  Handler {
                                 wsMethod.map( wsm -> ContentType.create( wsm.produces() )
                                     .withCharset( StandardCharsets.UTF_8 ) )
                                     .orElse( ContentType.APPLICATION_JSON );
-                            if( method.isVoid() ) response.respond( WsResponse.NO_CONTENT );
-                            else if( result instanceof WsResponse ) response.respond( (WsResponse) result );
+                            if( method.isVoid() ) response.respond( HttpResponse.NO_CONTENT );
+                            else if( result instanceof HttpResponse ) response.respond( (HttpResponse) result );
                             else if( result instanceof Optional<?> ) {
                                 response.respond(
                                     ((Optional<?>) result)
-                                        .map( r -> WsResponse.ok( result, isRaw, produces ) )
-                                        .orElseGet( () -> WsResponse.NOT_FOUND )
+                                        .map( r -> HttpResponse.ok( result, isRaw, produces ) )
+                                        .orElseGet( () -> HttpResponse.NOT_FOUND )
                                 );
-                            } else response.respond( WsResponse.ok( result, isRaw, produces ) );
+                            } else response.respond( HttpResponse.ok( result, isRaw, produces ) );
                         } );
                     } );
         } catch( Throwable e ) {

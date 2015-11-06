@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,14 +31,14 @@ import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Maps;
-import oap.ws.http.SimpleHttpClient;
+import oap.http.SimpleHttpClient;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 
 import static oap.util.Pair.__;
-import static oap.ws.testng.HttpAsserts.HTTP_PREFIX;
+import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 import static org.testng.Assert.assertEquals;
 
 public class ReplicationTest extends AbstractTest {

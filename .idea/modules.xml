@@ -6,6 +6,7 @@
       <module fileurl="file://$PROJECT_DIR$/oap-application/oap-application.iml" filepath="$PROJECT_DIR$/oap-application/oap-application.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-cli/oap-cli.iml" filepath="$PROJECT_DIR$/oap-cli/oap-cli.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-etl/oap-etl.iml" filepath="$PROJECT_DIR$/oap-etl/oap-etl.iml" />
+      <module fileurl="file://$PROJECT_DIR$/oap-http/oap-http.iml" filepath="$PROJECT_DIR$/oap-http/oap-http.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-json/oap-json.iml" filepath="$PROJECT_DIR$/oap-json/oap-json.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-logstream/oap-logstream.iml" filepath="$PROJECT_DIR$/oap-logstream/oap-logstream.iml" />
       <module fileurl="file://$PROJECT_DIR$/oap-metrics/oap-metrics.iml" filepath="$PROJECT_DIR$/oap-metrics/oap-metrics.iml" />

@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,10 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.http;
+package oap.http;
 
-public interface HttpServer {
-    void bind( String context, Handler handler );
+public class HttpException extends RuntimeException{
+    public HttpException( String message ) {
+        super( message );
+    }
 
-    void unbind( String context );
+    public HttpException( String message, Throwable cause ) {
+        super( message, cause );
+    }
+
+    public HttpException( Throwable cause ) {
+        super( cause );
+    }
 }

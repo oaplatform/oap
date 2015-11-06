@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,39 +21,54 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.http;
+package oap.http.nio;
 
-import oap.ws.Context;
+import oap.http.Context;
+import oap.http.Handler;
+import oap.http.Request;
+import oap.http.Response;
+import org.apache.http.HttpException;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
+import org.apache.http.nio.protocol.BasicAsyncRequestConsumer;
+import org.apache.http.nio.protocol.HttpAsyncExchange;
+import org.apache.http.nio.protocol.HttpAsyncRequestConsumer;
+import org.apache.http.nio.protocol.HttpAsyncRequestHandler;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpCoreContext;
-import org.apache.http.protocol.HttpRequestHandler;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
-class BlockingHandlerAdapter implements HttpRequestHandler {
-    private static Logger logger = getLogger( BlockingHandlerAdapter.class );
-    protected String location;
+public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
+    private static Logger logger = getLogger( NioHandlerAdapter.class );
+
+    private String location;
     private Handler handler;
 
-    public BlockingHandlerAdapter( String location, Handler handler ) {
+    public NioHandlerAdapter( String location, Handler handler ) {
         this.location = location;
         this.handler = handler;
     }
 
     @Override
-    public void handle( HttpRequest req, HttpResponse resp, HttpContext ctx ) throws IOException {
+    public HttpAsyncRequestConsumer<HttpRequest> processRequest( HttpRequest httpRequest,
+        HttpContext httpContext ) throws HttpException, IOException {
+        return new BasicAsyncRequestConsumer();
+    }
+
+    @Override
+    public void handle( HttpRequest req, HttpAsyncExchange httpAsyncExchange,
+        HttpContext ctx ) throws HttpException, IOException {
         if( logger.isTraceEnabled() ) logger.trace( "handling " + req );
         HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
         handler.handle(
             new Request( req, new Context( location, connection.getRemoteAddress() ) ),
-            new Response( resp )
+            new Response( httpAsyncExchange.getResponse() )
         );
-    }
 
+        httpAsyncExchange.submitResponse();
+    }
 }

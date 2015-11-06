@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,10 +25,10 @@
 package oap.replication;
 
 import oap.application.Application;
-import oap.ws.http.Request;
+import oap.http.HttpResponse;
+import oap.http.Request;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
-import oap.ws.WsResponse;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -36,7 +36,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 
-import static oap.ws.http.Request.HttpMethod.POST;
+import static oap.http.Request.HttpMethod.POST;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.REQUEST;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -45,7 +45,7 @@ public class ReplicationWS {
     private static Logger logger = getLogger( ReplicationWS.class );
 
     @WsMethod( path = "/", method = POST )
-    public WsResponse post(
+    public Object post(
         @WsParam( from = BODY ) RpcData rpcData,
         @WsParam( from = REQUEST ) Request request
     ) throws IOException {
@@ -53,12 +53,12 @@ public class ReplicationWS {
         final String service = rpcData.service;
 
         if( logger.isTraceEnabled() ) logger.trace( "post service =" + rpcData );
-        else if( logger.isDebugEnabled() ) logger.debug( "post service =" + service );
+         if( logger.isDebugEnabled() ) logger.debug( "post service =" + service );
 
         final Object master = Application.service( service );
 
         if( master == null )
-            return WsResponse.status( HttpURLConnection.HTTP_BAD_REQUEST, "service '" + service + "' not found." );
+            return HttpResponse.status( HttpURLConnection.HTTP_BAD_REQUEST, "service '" + service + "' not found." );
 
         try {
             final Method method = master.getClass()
@@ -66,15 +66,15 @@ public class ReplicationWS {
 
             final Object result = method.invoke( master, rpcData.arguments.stream().map( v -> v.value ).toArray() );
 
-            return WsResponse.ok( result );
+            return HttpResponse.ok( result );
 
         } catch( NoSuchMethodException e ) {
             logger.debug( e.getMessage(), e );
-            return WsResponse.status( HttpURLConnection.HTTP_BAD_REQUEST,
+            return HttpResponse.status( HttpURLConnection.HTTP_BAD_REQUEST,
                 "service '" + service + "', method '" + rpcData.method + "' not found." );
         } catch( InvocationTargetException | IllegalAccessException e ) {
             logger.debug( e.getMessage(), e );
-            return WsResponse.status( HttpURLConnection.HTTP_INTERNAL_ERROR,
+            return HttpResponse.status( HttpURLConnection.HTTP_INTERNAL_ERROR,
                 e.getMessage() );
         }
     }

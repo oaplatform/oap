@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Igor Petrenko <igor.petrenko@madberry.net>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,14 +23,14 @@
  */
 package oap.ws.validate;
 
+import oap.http.HttpResponse;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.ws.WebServices;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
-import oap.ws.WsResponse;
-import oap.ws.http.Server;
-import oap.ws.testng.HttpAsserts;
+import oap.http.Server;
+import oap.http.testng.HttpAsserts;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -38,9 +38,9 @@ import org.testng.annotations.Test;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import static oap.ws.http.Request.HttpMethod.POST;
+import static oap.http.Request.HttpMethod.POST;
 import static oap.ws.WsParam.From.BODY;
-import static oap.ws.testng.HttpAsserts.HTTP_PREFIX;
+import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class ValidatePeerMethodTest {
@@ -81,20 +81,20 @@ public class ValidatePeerMethodTest {
     public static class TestWS {
 
         @WsMethod( path = "/run/validation/default", method = POST )
-        public WsResponse validationDefault( @WsParam( from = BODY ) String request ) {
-            return WsResponse.ok( request, true, TEXT_PLAIN );
+        public Object validationDefault( @WsParam( from = BODY ) String request ) {
+            return HttpResponse.ok( request, true, TEXT_PLAIN );
         }
 
         @WsMethod( path = "/run/validation/ok", method = POST )
         @Validate( "validateOk" )
-        public WsResponse validationOk( @WsParam( from = BODY ) String request ) {
-            return WsResponse.ok( request, true, TEXT_PLAIN );
+        public Object validationOk( @WsParam( from = BODY ) String request ) {
+            return HttpResponse.ok( request, true, TEXT_PLAIN );
         }
 
         @WsMethod( path = "/run/validation/fail", method = POST )
         @Validate( "validateFail" )
-        public WsResponse validationFail( @WsParam( from = BODY ) String request ) {
-            return WsResponse.ok( request, true, TEXT_PLAIN );
+        public Object validationFail( @WsParam( from = BODY ) String request ) {
+            return HttpResponse.ok( request, true, TEXT_PLAIN );
         }
 
         @SuppressWarnings( "unused" )

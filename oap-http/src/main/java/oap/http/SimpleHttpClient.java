@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.ws.http;
+package oap.http;
 
 import oap.io.Closeables;
 import oap.util.Strings;
@@ -44,10 +44,17 @@ public final class SimpleHttpClient {
     private static CloseableHttpClient client = initialize();
 
     private static CloseableHttpClient initialize() {
+        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+        cm.setDefaultMaxPerRoute( 100 );
+        cm.setMaxTotal( 200 );
+
         return HttpClients
             .custom()
-            .setConnectionManager( new PoolingHttpClientConnectionManager() )
-            .setKeepAliveStrategy( new DefaultConnectionKeepAliveStrategy() )
+            .setMaxConnPerRoute( 100 )
+            .setMaxConnTotal( 200 )
+            .setConnectionManager( cm )
+            .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
+            .disableRedirectHandling()
             .setRetryHandler( new DefaultHttpRequestRetryHandler( 0, false ) )
             .build();
     }

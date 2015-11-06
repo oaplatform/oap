@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.http.nio;
+package oap.http.nio;
 
-import oap.ws.WsConfig;
-import oap.ws.WsException;
-import oap.ws.http.Handler;
-import oap.ws.http.Server;
+import oap.http.Handler;
+import oap.http.Server;
 import org.apache.http.ExceptionLogger;
 import org.apache.http.impl.nio.bootstrap.HttpServer;
 import org.apache.http.impl.nio.bootstrap.ServerBootstrap;
@@ -37,14 +35,14 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
-public class NioServer implements oap.ws.http.HttpServer {
+public class NioServer implements oap.http.HttpServer {
 
     private static Logger logger = LoggerFactory.getLogger( Server.class );
     private UriHttpAsyncRequestHandlerMapper mapper = new UriHttpAsyncRequestHandlerMapper();
     private final int port;
     private HttpServer server;
 
-    public NioServer( int port ) throws WsException {
+    public NioServer( int port ) {
         this.port = port;
         this.mapper.register( "/static/*", new NioClasspathResourceHandler( "/static", "/WEB-INF" ) );
 
@@ -92,11 +90,8 @@ public class NioServer implements oap.ws.http.HttpServer {
         try {
             server.awaitTermination( 60, TimeUnit.SECONDS );
         } catch( InterruptedException e ) {
-            e.printStackTrace();
+            logger.debug( e.getMessage(), e );
         }
-
-        for( WsConfig config : WsConfig.fromClassPath() )
-            for( WsConfig.Service service : config.services ) unbind( service.context );
 
         logger.info( "server gone down" );
     }

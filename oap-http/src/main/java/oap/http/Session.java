@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,16 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws;
+package oap.http;
 
-import java.net.InetAddress;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
-public class Context {
-    public final String serviceLocation;
-    public final InetAddress remoteAddress;
+public class Session {
+    public static final Map<String, Object> params = Collections.synchronizedMap( new HashMap<>() );
 
-    public Context( String serviceLocation, InetAddress remoteAddress ) {
-        this.serviceLocation = serviceLocation;
-        this.remoteAddress = remoteAddress;
+    @SuppressWarnings( "unchecked" )
+    public <A> Optional<A> get( String name ) {
+        return Optional.ofNullable( (A) params.get( name ) );
+    }
+
+    public void set( String name, Object value ) {
+        params.put( name, value );
+    }
+
+    public void invalidate() {
+        params.clear();
     }
 }

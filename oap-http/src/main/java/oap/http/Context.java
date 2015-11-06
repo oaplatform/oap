@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,18 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.http;
 
-public class HttpException extends RuntimeException{
-    public HttpException( String message ) {
-        super( message );
-    }
+package oap.http;
 
-    public HttpException( String message, Throwable cause ) {
-        super( message, cause );
-    }
+import java.net.InetAddress;
 
-    public HttpException( Throwable cause ) {
-        super( cause );
+public class Context {
+    public final String location;
+    public final InetAddress remoteAddress;
+
+    public Context( String location, InetAddress remoteAddress ) {
+        this.location = location;
+        this.remoteAddress = remoteAddress;
     }
 }

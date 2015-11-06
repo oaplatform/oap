@@ -1,7 +1,7 @@
 /*
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Igor Petrenko <igor.petrenko@madberry.net>
+ * Copyright (c) Open Application Platform Authors
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,8 @@
  */
 package oap.ws;
 
-import oap.ws.http.Request;
+import oap.http.HttpResponse;
+import oap.http.Request;
 
 import java.lang.annotation.RetentionPolicy;
 import java.util.List;
@@ -57,7 +58,7 @@ class MathWS {
     }
 
     public String req( @WsParam( from = REQUEST ) Request req ) {
-        return req.baseUrl + req.context.serviceLocation;
+        return req.baseUrl + req.context.location;
     }
 
     public Bean bean( int i, String s ) {
@@ -72,8 +73,8 @@ class MathWS {
         throw new RuntimeException( "failed" );
     }
 
-    public WsResponse code( int code ) {
-        return WsResponse.status( code );
+    public Object code( int code ) {
+        return HttpResponse.status( code );
     }
 
     public String bytes( @WsParam( from = BODY ) byte[] bytes ) {

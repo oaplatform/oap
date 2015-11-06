@@ -2,7 +2,7 @@
 <!--
   ~ The MIT License (MIT)
   ~
-  ~ Copyright (c) 2015 Volodymyr Kyrychenko <vladimir.kirichenko@gmail.com>
+  ~ Copyright (c) Open Application Platform Authors
   ~
   ~ Permission is hereby granted, free of charge, to any person obtaining a copy
   ~ of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,7 @@
 
     <parent>
         <groupId>oap</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>oap</artifactId>
         <version>1.0.17</version>
     </parent>
 
@@ -40,7 +40,7 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>1.0.17</version>
+            <version>${parent.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
