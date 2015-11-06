@@ -8,7 +8,7 @@
       "name": "oap-ws-webservices",
       "implementation": "oap.ws.WebServices",
       "parameters": {
-        "server": "@service:oap-ws-server",
+        "server": "@service:oap-http-server"
       },
       "supervision": {
         "supervise": true
