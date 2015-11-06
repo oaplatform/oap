@@ -46,12 +46,11 @@ import java.util.function.Consumer;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.testng.Assert.assertEquals;
 
-//todo implement it via oap.ws.http.SimpleHttpClient
 public class HttpAsserts {
 
     public static final String HTTP_PREFIX = "http://localhost:" + Env.port();
 
-    public synchronized static void reset() {
+    public static void reset() {
         SimpleHttpClient.reset();
     }
 
@@ -86,7 +85,7 @@ public class HttpAsserts {
     @EqualsAndHashCode
     @ToString
     public static class ResponseAssert {
-        private SimpleHttpClient.Response response;
+        public final SimpleHttpClient.Response response;
 
         public ResponseAssert( SimpleHttpClient.Response response ) {
             this.response = response;
