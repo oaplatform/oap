@@ -32,6 +32,7 @@ import oap.util.Stream;
 import oap.util.Try;
 import org.joda.time.DateTimeUtils;
 
+import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +51,7 @@ import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class FileStorage<T> implements Storage<T> {
+public class FileStorage<T> implements Storage<T>, Closeable {
     private final org.slf4j.Logger logger = getLogger( getClass() );
     private final AtomicLong lastSync = new AtomicLong( 0 );
     protected Function<T, String> identify;
@@ -155,7 +156,10 @@ public class FileStorage<T> implements Storage<T> {
                 T object = init.get();
                 m = new Metadata<>( identify.apply( object ), object );
                 data.put( m.id, m );
-            } else update.accept( m.object );
+            } else {
+                update.accept( m.object );
+                m.update( m.object );
+            }
             fireUpdated( m.object );
             return m.object;
         }
@@ -222,6 +226,11 @@ public class FileStorage<T> implements Storage<T> {
     @Override
     public List<Metadata<T>> updatedSince( long time ) {
         return data.values().stream().filter( m -> m.modified > time ).collect( toList() );
+    }
+
+    @Override
+    public void close() {
+        stop();
     }
 
     public interface DataListener<T> {
