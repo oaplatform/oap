@@ -32,48 +32,56 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 
-import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertEqualsNoOrder;
 
 public class FileStorageTest extends AbstractTest {
     @Test
     public void load() {
-        FileStorage<Bean> storage =
-            new FileStorage<>( Resources.filePath( FileStorageTest.class, "data" ).get(), b -> b.id );
-        storage.start();
-        assertEqualsNoOrder( storage.select().toArray(),
-            new Bean[]{ new Bean( "t2" ), new Bean( "t1" ) } );
+        try( FileStorage<Bean> storage =
+                 new FileStorage<>( Resources.filePath( FileStorageTest.class, "data" ).get(), b -> b.id ) ) {
+            storage.start();
+            assertEqualsNoOrder( storage.select().toArray(),
+                new Bean[]{ new Bean( "t2" ), new Bean( "t1" ) } );
+        }
     }
 
     @Test
     public void persist() throws InterruptedException {
         Path dataLocation = Files.path( Env.tmp( "data" ) );
-        FileStorage<Bean> storage1 = new FileStorage<>( dataLocation, b -> b.id );
-        storage1.fsync = 50;
-        storage1.start();
-        storage1.store( new Bean( "1" ) );
-        storage1.store( new Bean( "2" ) );
-        Thread.sleep( 100 );
-        storage1.stop();
-        FileStorage<Bean> storage2 = new FileStorage<>( dataLocation, b -> b.id );
-        storage2.start();
-        assertEqualsNoOrder( storage2.select().toArray(),
-            new Bean[]{ new Bean( "2" ), new Bean( "1" ) } );
-        storage2.stop();
+        try( FileStorage<Bean> storage1 = new FileStorage<>( dataLocation, b -> b.id ) ) {
+            storage1.fsync = 50;
+            storage1.start();
+            storage1.store( new Bean( "1" ) );
+            storage1.store( new Bean( "2" ) );
+            Thread.sleep( 100 );
+        }
+
+        try( FileStorage<Bean> storage2 = new FileStorage<>( dataLocation, b -> b.id ) ) {
+            storage2.start();
+            assertEqualsNoOrder( storage2.select().toArray(),
+                new Bean[]{ new Bean( "2" ), new Bean( "1" ) } );
+        }
     }
 
     @Test
-    public void storeAndUpdate() {
+    public void storeAndUpdate() throws InterruptedException {
         Path dataLocation = Files.path( Env.tmp( "data" ) );
-        FileStorage<Bean> storage = new FileStorage<>( dataLocation, b -> b.id );
-        storage.start();
-        storage.store( new Bean( "111" ) );
-        storage.get( "111" ).ifPresent( b -> {
-            b.s = "bbb";
-            storage.store( b );
-        } );
-        assertEquals( storage.get( "111" ).get().s, "bbb" );
-        storage.stop();
+        try( FileStorage<Bean> storage = new FileStorage<>( dataLocation, b -> b.id ) ) {
+            storage.fsync = 50;
+            storage.start();
+            storage.store( new Bean( "111" ) );
+// !!! Storage::persist
+//             long current = DateTimeUtils.currentTimeMillis() - 1000;
+            Thread.sleep( 2000 );
+
+            storage.update( "111", ( u ) -> u.s = "bbb" );
+        }
+
+        try( FileStorage<Bean> storage2 = new FileStorage<>( dataLocation, b -> b.id ) ) {
+            storage2.start();
+            assertEqualsNoOrder( storage2.select().toArray(),
+                new Bean[]{ new Bean( "111", "bbb" ) } );
+        }
     }
 }
 
