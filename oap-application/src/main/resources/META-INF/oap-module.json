@@ -1,5 +1,8 @@
 {
   "name": "kernel",
+  "dependsOn": [
+    "oap-http"
+  ],
   "services": [
     {
       "implementation": "oap.application.remote.Remote",
