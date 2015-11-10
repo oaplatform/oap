@@ -73,11 +73,11 @@ public final class Files {
         }
     }
 
-    public static String version(Path path) {
-        return Optional.of(path.getFileName().toString()).map(s -> {
-            Matcher m = java.util.regex.Pattern.compile("_(v.*?)-").matcher(s);
-            return m.find() ? m.group(1) : "";
-        }).get();
+    public static String version( Path path ) {
+        return Optional.of( path.getFileName().toString() ).map( s -> {
+            Matcher m = java.util.regex.Pattern.compile( "_(v.*?)-" ).matcher( s );
+            return m.find() ? m.group( 1 ) : "";
+        } ).get();
     }
 
     public static String readString( String path ) {
@@ -175,5 +175,11 @@ public final class Files {
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
+    }
+
+    public static void rename( Path sourcePath, Path destPath ) {
+        if( destPath.toFile().exists() ) delete( destPath );
+        if( !sourcePath.toFile().renameTo( destPath.toFile() ) )
+            throw new UncheckedIOException( new IOException( "cannot rename " + sourcePath + " to " + destPath ) );
     }
 }

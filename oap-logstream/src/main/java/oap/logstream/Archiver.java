@@ -50,14 +50,16 @@ public class Archiver implements Runnable {
 
     @Override
     public void run() {
-        logger.debug( "let's start packing of " + mask + " in " + sourceDirectory + " into " +destinationDirectory);
+        logger.debug( "let's start packing of " + mask + " in " + sourceDirectory + " into " + destinationDirectory );
         for( Path path : Files.wildcard( sourceDirectory, mask ) )
             if( path.toFile().lastModified() < DateTime.now().minusMinutes( safeInterval ).getMillis() ) {
                 logger.debug( "archiving " + path );
-                Files.copy( path, PLAIN,
-                    destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz" ), GZIP );
+                Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz" );
+                Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz.tmp" );
+                Files.copy( path, PLAIN, targetTemp, GZIP );
+                Files.rename( targetTemp, targetFile );
                 Files.delete( path );
-            } else logger.debug( "skipping(not safe yet) " + path );
+            } else logger.debug( "skipping (not safe yet) " + path );
         logger.debug( "packing is done" );
     }
 }
