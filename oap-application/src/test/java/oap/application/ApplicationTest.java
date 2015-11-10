@@ -21,31 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.application;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Stream;
+import oap.io.Resources;
+import oap.testng.AbstractTest;
+import oap.util.Lists;
+import oap.util.Maps;
+import org.testng.annotations.Test;
 
-public class Application {
+import java.net.URL;
+import java.util.ArrayList;
 
-    final static Map<String, Object> services = new HashMap<>();
+import static oap.util.Pair.__;
+import static org.testng.Assert.assertEquals;
 
-    @SuppressWarnings( "unchecked" )
-    public static <T> T service( String name ) {
-        return (T) services.get( name );
-    }
+/**
+ * Created by Igor Petrenko on 10.11.2015.
+ */
+public class ApplicationTest extends AbstractTest {
 
-    @SuppressWarnings( "unchecked" )
-    public static <T> Stream<? extends T> filter( Class<T> clazz ) {
-        return (Stream<? extends T>) services.values().stream().filter( clazz::isInstance );
-    }
+    @Test
+    public void testFilter() throws Exception {
+        ArrayList<URL> modules = Lists.of(
+            Resources.url( KernelTest.class, "modules/m1.json" ).get(),
+            Resources.url( KernelTest.class, "modules/m2.json" ).get()
+        );
+        modules.addAll( Module.fromClassPath() );
 
-    public static void register( String name, Object service ) {
-        services.put( name, service );
-    }
+        try( Kernel kernel = new Kernel( modules ) ) {
+            kernel.start( Maps.of( __( "ServiceOne", Maps.of( __( "i", 3 ) ) ) ) );
 
-    static void unregisterServices() {
-        services.clear();
+            assertEquals( Application.filter( ServiceOne.class ).findFirst().get().getClass(), ServiceOne.class );
+            assertEquals( Application.filter( IServiceOne.class ).findFirst().get().getClass(), ServiceOne.class );
+        }
     }
 }
