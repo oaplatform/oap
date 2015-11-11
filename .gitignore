@@ -2,3 +2,4 @@
 workspace.xml
 target
 .surefire*
+*.iml
