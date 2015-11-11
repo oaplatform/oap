@@ -72,7 +72,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
             .stream()
             .map( Try.map(
                 f -> (Metadata<T>) Binder.unmarshal( new TypeReference<Metadata<T>>() {
-                }, f ) ) )
+                }, f, true ) ) )
             .sorted( reverseOrder() )
             .map( x -> __( x.id, x ) )
             .collect( toConcurrentMap() );

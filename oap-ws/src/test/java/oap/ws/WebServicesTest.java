@@ -27,12 +27,12 @@ import oap.application.Application;
 import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.Request;
+import oap.http.Response;
 import oap.http.Server;
 import oap.io.Resources;
 import oap.metrics.Metrics;
 import oap.testng.Env;
 import oap.util.Lists;
-import oap.http.Response;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -49,12 +49,15 @@ public class WebServicesTest {
     protected final Server server = new Server( Env.port(), 100 );
     protected final WebServices ws = new WebServices( server, Lists.of(
         Resources.readString( getClass(), "ws.json" ).map( WsConfig::parse ).get() ) );
+    protected final WebServices wsHoconConf = new WebServices( server, Lists.of(
+        Resources.readString( getClass(), "ws.conf" ).map( WsConfig::parse ).get() ) );
 
     @BeforeClass
     public void startServer() {
         Application.register( "math", new MathWS() );
         Application.register( "handler", new TestHandler() );
         ws.start();
+        wsHoconConf.start();
         server.start();
     }
 
@@ -62,7 +65,14 @@ public class WebServicesTest {
     public void stopServer() {
         server.stop();
         ws.stop();
+        wsHoconConf.stop();
         reset();
+    }
+
+    @Test
+    public void testHoconWeb() {
+        get( HTTP_PREFIX + "/hocon/x/v/math/x?i=1&s=2" )
+            .assertResponse( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
     }
 
     @Test

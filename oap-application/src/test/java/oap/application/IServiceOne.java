@@ -21,31 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.application;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.Stream;
-
-public class Application {
-
-    final static Map<String, Object> services = new HashMap<>();
-
-    @SuppressWarnings( "unchecked" )
-    public static <T> T service( String name ) {
-        return (T) services.get( name );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public static <T> Stream<? extends T> filter( Class<T> clazz ) {
-        return (Stream<? extends T>) services.values().stream().filter( clazz::isInstance );
-    }
-
-    public static void register( String name, Object service ) {
-        services.put( name, service );
-    }
-
-    static void unregisterServices() {
-        services.clear();
-    }
+/**
+ * Created by Igor Petrenko on 10.11.2015.
+ */
+public interface IServiceOne {
 }

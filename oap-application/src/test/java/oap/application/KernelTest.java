@@ -34,19 +34,32 @@ import java.util.ArrayList;
 
 import static oap.testng.Asserts.assertEventually;
 import static oap.util.Pair.__;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class KernelTest {
     @Test
-    public void startStop() throws InterruptedException {
+    public void startStopJsonConfig() throws InterruptedException {
         ArrayList<URL> modules = Lists.of(
             Resources.url( KernelTest.class, "modules/m1.json" ).get(),
             Resources.url( KernelTest.class, "modules/m2.json" ).get()
         );
+        run( modules );
+    }
+
+    @Test
+    public void startStopHoconConfig() throws InterruptedException {
+        ArrayList<URL> modules = Lists.of(
+            Resources.url( KernelTest.class, "modules/m1.conf" ).get(),
+            Resources.url( KernelTest.class, "modules/m2.conf" ).get()
+        );
+        run( modules );
+    }
+
+    private void run( ArrayList<URL> modules ) {
         modules.addAll( Module.fromClassPath() );
-        Kernel kernel = new Kernel( modules );
-        kernel.start( Maps.of( __( "ServiceOne", Maps.of( __( "i", 3 ) ) ) ) );
-        try {
+        try( Kernel kernel = new Kernel( modules ) ) {
+            kernel.start( Maps.of( __( "ServiceOne", Maps.of( __( "i", 3 ) ) ) ) );
             assertEventually( 50, 10, () -> {
                 assertEquals( ServiceOne.instances, 1 );
                 assertEquals( Application.<ServiceOne>service( ServiceOne.class.getSimpleName() ).i, 3 );
@@ -58,8 +71,6 @@ public class KernelTest {
                 assertEquals( Application.<RemoteHello>service( "hello" ).hello(),
                     Application.<ServiceTwo>service( ServiceTwo.class.getSimpleName() ).hello() );
             } );
-        } finally {
-            kernel.stop();
         }
     }
 

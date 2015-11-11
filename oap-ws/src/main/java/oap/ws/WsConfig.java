@@ -29,6 +29,7 @@ import oap.io.Resources;
 import oap.json.Binder;
 import oap.util.Stream;
 import oap.util.Strings;
+import org.apache.commons.collections4.ListUtils;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -42,7 +43,10 @@ public class WsConfig {
     public List<Service> handlers = new ArrayList<>();
 
     public static List<WsConfig> fromClassPath() {
-        return Stream.of( Resources.urls( "META-INF/oap-ws.json" ) )
+        return Stream.of( ListUtils.union(
+            Resources.urls( "META-INF/oap-ws.json" ),
+            Resources.urls( "META-INF/oap-ws.conf" )
+        ) )
             .map( WsConfig::parse )
             .toList();
     }
