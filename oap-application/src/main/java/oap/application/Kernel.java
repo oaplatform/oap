@@ -34,6 +34,7 @@ import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.util.Maps;
 import oap.util.Stream;
+import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
@@ -115,7 +116,8 @@ public class Kernel implements Closeable {
                 }
                 initialized.add( serviceName );
             } else {
-                logger.debug( "dependencies are not ready - deferring " + serviceName );
+                logger.debug( "dependencies are not ready - deferring " + serviceName + " -> " +
+                    CollectionUtils.subtract( service.dependsOn, initialized ) );
                 deferred.add( info );
             }
         }
