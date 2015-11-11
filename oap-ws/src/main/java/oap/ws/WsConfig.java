@@ -32,15 +32,15 @@ import oap.util.Strings;
 import org.apache.commons.collections4.ListUtils;
 
 import java.net.URL;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 
 @EqualsAndHashCode
 @ToString
 public class WsConfig {
-    public List<Service> services = new ArrayList<>();
-    public List<Service> handlers = new ArrayList<>();
+    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
+    public LinkedHashMap<String, Service> handlers = new LinkedHashMap<>();
 
     public static List<WsConfig> fromClassPath() {
         return Stream.of( ListUtils.union(
@@ -63,7 +63,6 @@ public class WsConfig {
     @EqualsAndHashCode
     @ToString
     public static class Service {
-        public String context;
         public String service;
     }
 }

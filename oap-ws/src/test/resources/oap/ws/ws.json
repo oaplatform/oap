@@ -1,14 +1,12 @@
 {
-  "services": [
-    {
-      "context": "x/v/math",
+  "services": {
+    "x/v/math": {
       "service": "math"
     }
-  ],
-  "handlers": [
-    {
-      "context": "x/h",
+  },
+  "handlers": {
+    "x/h": {
       "service": "handler"
     }
-  ]
+  }
 }

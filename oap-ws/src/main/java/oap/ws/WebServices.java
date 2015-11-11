@@ -31,6 +31,7 @@ import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -58,17 +59,17 @@ public class WebServices {
         logger.info( "binding web services..." );
 
         for( WsConfig config : wsConfigs ) {
-            for( WsConfig.Service service : config.services )
-                bind( service.context, Application.service( service.service ) );
-            for( WsConfig.Service service : config.handlers )
-                server.bind( service.context, Application.service( service.service ) );
+            for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() )
+                bind( entry.getKey(), Application.service( entry.getValue().service ) );
+            for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() )
+                server.bind( entry.getKey(), Application.service( entry.getValue().service ) );
         }
     }
 
     public void stop() {
         for( WsConfig config : wsConfigs ) {
-            for( WsConfig.Service service : config.handlers ) server.unbind( service.context );
-            for( WsConfig.Service service : config.services ) server.unbind( service.context );
+            for( String context : config.handlers.keySet() ) server.unbind( context );
+            for( String context : config.services.keySet() ) server.unbind( context );
         }
 
     }
