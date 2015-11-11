@@ -43,14 +43,16 @@ public class LogWriter implements Closeable {
     private static Logger logger = getLogger( LogWriter.class );
     private final String suffix;
     private final String prefix;
+    private final String root;
     private int bufferSize;
     private int interval;
     private OutputStream out;
     private String lastPattern;
     private Scheduled scheduled;
 
-    public LogWriter( String prefix, String suffix, int bufferSize, int interval ) {
+    public LogWriter( String prefix, String root, String suffix, int bufferSize, int interval ) {
         this.prefix = prefix;
+        this.root = root;
         this.suffix = suffix;
         this.bufferSize = bufferSize;
         this.interval = interval;
@@ -98,7 +100,7 @@ public class LogWriter implements Closeable {
     }
 
     private Path filename() {
-        return Files.path( prefix + "-" + lastPattern + "." + suffix );
+        return Files.path( prefix + "/" + Filename.directoryName( lastPattern ) + "/" + root + "-" + lastPattern + "." + suffix );
     }
 
     private synchronized void refresh() {
