@@ -23,9 +23,6 @@
  */
 package oap.application;
 
-import com.google.common.collect.Sets;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.json.Binder;
@@ -41,6 +38,7 @@ import java.io.Closeable;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -76,22 +74,22 @@ public class Kernel implements Closeable {
             .collect( toSet() );
     }
 
-    private Set<ServiceInfo> initializeServices( Set<ServiceInfo> services,
+    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
         Set<String> initialized,
         Map<String, Map<String, Object>> config ) {
 
-        Set<ServiceInfo> deferred = new HashSet<>();
+        HashMap<String, Module.Service> deferred = new HashMap<>();
 
-        for( ServiceInfo info : services ) {
-            Module.Service service = info.service;
-            String serviceName = info.name;
+        for( Map.Entry<String, Module.Service> entry : services.entrySet() ) {
+            Module.Service service = entry.getValue();
+            String serviceName = entry.getKey();
             if( initialized.containsAll( service.dependsOn ) ) {
                 logger.debug( "initializing " + serviceName );
 
                 Reflection reflect = Reflect.reflect( service.implementation );
 
                 Object instance;
-                if( info.serviceType == ServiceType.SERVICE ) {
+                if( !service.remote ) {
                     config.getOrDefault( serviceName, Collections.emptyMap() )
                         .forEach( service.parameters::put );
                     initializeServiceLinks( serviceName, service );
@@ -118,7 +116,7 @@ public class Kernel implements Closeable {
             } else {
                 logger.debug( "dependencies are not ready - deferring " + serviceName + " -> " +
                     CollectionUtils.subtract( service.dependsOn, initialized ) );
-                deferred.add( info );
+                deferred.put( entry.getKey(), service );
             }
         }
 
@@ -144,20 +142,10 @@ public class Kernel implements Closeable {
             logger.debug( "initializing module " + module.name );
             if( initialized.containsAll( module.dependsOn ) ) {
 
-                final Set<ServiceInfo> infos = Sets.union( module.services.entrySet()
-                        .stream()
-                        .map( e -> new ServiceInfo( e.getKey(), e.getValue(), ServiceType.SERVICE ) )
-                        .collect( toSet() ),
-                    module.interfaces.entrySet()
-                        .stream()
-                        .map( e -> new ServiceInfo( e.getKey(), e.getValue(), ServiceType.INTERFACE ) )
-                        .collect( toSet() )
-                );
-
-                Set<ServiceInfo> def =
-                    initializeServices( infos, new LinkedHashSet<>(), config );
+                Map<String, Module.Service> def =
+                    initializeServices( module.services, new LinkedHashSet<>(), config );
                 if( !def.isEmpty() ) {
-                    List<String> names = Stream.of( def.stream() ).map( e -> e.name ).toList();
+                    List<String> names = Stream.of( def.entrySet().stream() ).map( Map.Entry::getKey ).toList();
                     logger.error( "failed to initialize: " + names );
                     throw new ApplicationException( "failed to initialize services: " + names );
                 }
@@ -205,23 +193,5 @@ public class Kernel implements Closeable {
     @Override
     public void close() {
         stop();
-    }
-
-    enum ServiceType {
-        INTERFACE, SERVICE
-    }
-
-    @EqualsAndHashCode
-    @ToString
-    private static class ServiceInfo {
-        public String name;
-        public Module.Service service;
-        public ServiceType serviceType;
-
-        public ServiceInfo( String name, Module.Service service, ServiceType serviceType ) {
-            this.name = name;
-            this.service = service;
-            this.serviceType = serviceType;
-        }
     }
 }
