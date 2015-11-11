@@ -46,6 +46,7 @@ public class Module {
     public String name;
     public ArrayList<String> dependsOn = new ArrayList<>();
     public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
+    public LinkedHashMap<String, Service> interfaces = new LinkedHashMap<>();
 
     public Module( String name, ArrayList<String> dependsOn, LinkedHashMap<String, Service> services ) {
         this.name = name;
