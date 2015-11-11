@@ -94,5 +94,18 @@ public class KernelTest extends AbstractTest {
             assertEquals( Application.findFirst( ServiceOne.class ).get().i, 2 );
         }
     }
+
+    @Test
+    public void testRemoteToMock() {
+        ArrayList<URL> modules = Lists.of( Resources.url( KernelTest.class, "modules/m1.conf" ).get() );
+
+        modules.addAll( Module.fromClassPath() );
+        try( Kernel kernel = new Kernel( modules, "hello.remoteUrl = null,hello.implementation=oap.application.MockRemoteHello" ) ) {
+            kernel.start();
+
+            assertEquals( Application.<RemoteHello>service( "hello" ).hello(),
+                Application.findFirst( MockRemoteHello.class ).get().hello() );
+        }
+    }
 }
 

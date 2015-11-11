@@ -22,37 +22,14 @@
  * SOFTWARE.
  */
 
-package oap.json;
-
-import com.fasterxml.jackson.core.io.IOContext;
-import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
-import com.jasonclawson.jackson.dataformat.hocon.HoconTreeTraversingParser;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigParseOptions;
-
-import java.io.IOException;
-import java.io.Reader;
+package oap.application;
 
 /**
  * Created by Igor Petrenko on 11.11.2015.
  */
-public class HoconFactoryWithFallback extends HoconFactory {
-    private final Config additinal;
-
-    public HoconFactoryWithFallback( String config ) {
-        additinal = ConfigFactory.parseString( config );
-    }
-
+public class MockRemoteHello implements RemoteHello {
     @Override
-    protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) throws IOException {
-        ConfigParseOptions options = ConfigParseOptions.defaults();
-        Config config = ConfigFactory.parseReader( r, options );
-
-        Config resolvedConfig = additinal
-            .withFallback( config )
-            .withFallback( ConfigFactory.systemProperties() )
-            .resolve();
-        return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
+    public String hello() {
+        return "Hello mock";
     }
 }
