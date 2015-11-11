@@ -25,6 +25,7 @@ package oap.application;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class Application {
@@ -37,8 +38,12 @@ public class Application {
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <T> Stream<? extends T> filter( Class<T> clazz ) {
-        return (Stream<? extends T>) services.values().stream().filter( clazz::isInstance );
+    public static <T> Stream<T> filter( Class<T> clazz ) {
+        return (Stream<T>) services.values().stream().filter( clazz::isInstance );
+    }
+
+    public static <T> Optional<T> findFirst( Class<T> clazz ) {
+        return filter( clazz ).findFirst();
     }
 
     public static void register( String name, Object service ) {

@@ -45,12 +45,12 @@ import java.util.Map;
 public class Module {
     public String name;
     public ArrayList<String> dependsOn = new ArrayList<>();
-    public ArrayList<Service> services = new ArrayList<>();
+    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
 
-    public Module( String name, ArrayList<String> dependsOn, ArrayList<Service> services ) {
+    public Module( String name, ArrayList<String> dependsOn, LinkedHashMap<String, Service> services ) {
         this.name = name;
         this.dependsOn = dependsOn;
-        this.services = services;
+        this.services = new LinkedHashMap<>( services );
     }
 
     public Module() {
@@ -71,15 +71,29 @@ public class Module {
         return parse( Strings.readString( url ) );
     }
 
+    public static Module parse( URL url, Map<String, Map<String, Object>> config ) {
+        return parse( Strings.readString( url ), config );
+    }
+
     public static Module parse( String json ) {
-        return Binder.unmarshal( Module.class, Strings.substitute( json,
-            key -> key.startsWith( "env:" ) ? System.getenv( key.substring( 4 ) ) : System.getProperty( key ) ) );
+        return Binder.hocon.unmarshal( Module.class, json );
+    }
+
+    public static Module parse( String json, Map<String, Map<String, Object>> config ) {
+        final Module module = Binder.hocon.unmarshal( Module.class, json );
+
+        module.services
+            .entrySet()
+            .stream()
+            .filter( e -> config.containsKey( e.getKey() ) )
+            .forEach( e -> Binder.hocon.update( e.getValue(), config.get( e.getKey() ) ) );
+
+        return module;
     }
 
     @EqualsAndHashCode
     @ToString
     public static class Service {
-        public String name;
         public String implementation;
         public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
         public Supervision supervision = new Supervision();
@@ -90,9 +104,8 @@ public class Module {
         public Service() {
         }
 
-        public Service( String name, String implementation, Map<String, Object> parameters, Supervision supervision,
+        public Service( String implementation, Map<String, Object> parameters, Supervision supervision,
             ArrayList<String> dependsOn ) {
-            this.name = name;
             this.implementation = implementation;
             this.dependsOn = dependsOn;
             this.parameters = new LinkedHashMap<>( parameters );

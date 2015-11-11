@@ -59,8 +59,8 @@ public class BinderTest extends AbstractTest {
     @Test
     public void bindString() {
         assertBind( String.class, "test" );
-        assertEquals( "test", Binder.unmarshal( String.class, "\"test\"" ) );
-        assertEquals( 1.1d, Binder.unmarshal( double.class, "\"1.1\"" ) );
+        assertEquals( "test", Binder.hocon.unmarshal( String.class, "\"test\"" ) );
+        assertEquals( 1.1d, Binder.hocon.unmarshal( double.class, "\"1.1\"" ) );
     }
 
     @Test
@@ -127,13 +127,13 @@ public class BinderTest extends AbstractTest {
     @Test
     public void bindNamed() {
         assertBind( NamedBean.class, new NamedBean( 10 ) );
-        assertEquals( Binder.marshal( new NamedBean( 10 ) ), "{\"y\":10}" );
+        assertEquals( Binder.json.marshal( new NamedBean( 10 ) ), "{\"y\":10}" );
     }
 
     @Test
     public void bindMap() {
         assertBind( MapBean.class, new MapBean( __( "a", 1l ), __( "b", 2l ) ) );
-        assertEquals( Binder.marshal( new MapBean( __( "a", 1l ), __( "b", 2l ) ) ), "{\"map\":{\"a\":1,\"b\":2}}" );
+        assertEquals( Binder.json.marshal( new MapBean( __( "a", 1l ), __( "b", 2l ) ) ), "{\"map\":{\"a\":1,\"b\":2}}" );
     }
 
     @Test
@@ -144,10 +144,10 @@ public class BinderTest extends AbstractTest {
     //todo generic map-list binding
     private static <T> void assertBind( Class<T> clazz, T source ) {
         System.out.println( "========================================" );
-        String json2 = Binder.marshal( source );
+        String json2 = Binder.json.marshal( source );
         System.out.println( "JSON2:" );
         System.out.println( json2 );
-        T result = Binder.unmarshal( clazz, json2 );
+        T result = Binder.hocon.unmarshal( clazz, json2 );
         System.out.println( "Object:" );
         System.out.println( result );
         assertEquals( result, source );
@@ -155,10 +155,10 @@ public class BinderTest extends AbstractTest {
 
     private static <T> void assertBind( TypeReference<T> ref, T source ) {
         System.out.println( "========================================" );
-        String json = Binder.marshal( source );
+        String json = Binder.json.marshal( source );
         System.out.println( "JSON:" );
         System.out.println( json );
-        T result = Binder.unmarshal( ref, json );
+        T result = Binder.hocon.unmarshal( ref, json );
         System.out.println( "Object:" );
         System.out.println( result );
         assertEquals( result, source );

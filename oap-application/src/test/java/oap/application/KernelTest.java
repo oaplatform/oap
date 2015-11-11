@@ -25,19 +25,27 @@
 package oap.application;
 
 import oap.io.Resources;
+import oap.testng.AbstractTest;
 import oap.util.Lists;
-import oap.util.Maps;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.URL;
 import java.util.ArrayList;
 
 import static oap.testng.Asserts.assertEventually;
-import static oap.util.Pair.__;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-public class KernelTest {
+public class KernelTest extends AbstractTest {
+    @BeforeMethod
+    @Override
+    public void beforeMethod() {
+        super.beforeMethod();
+
+        ServiceOne.instances = 0;
+    }
+
     @Test
     public void startStopJsonConfig() throws InterruptedException {
         ArrayList<URL> modules = Lists.of(
@@ -58,18 +66,19 @@ public class KernelTest {
 
     private void run( ArrayList<URL> modules ) {
         modules.addAll( Module.fromClassPath() );
-        try( Kernel kernel = new Kernel( modules ) ) {
-            kernel.start( Maps.of( __( "ServiceOne", Maps.of( __( "i", 3 ) ) ) ) );
+        try( Kernel kernel = new Kernel( modules, "ServiceOne.parameters.i2 = 100" ) ) {
+            kernel.start( "ServiceOne.i = 3" );
             assertEventually( 50, 10, () -> {
                 assertEquals( ServiceOne.instances, 1 );
-                assertEquals( Application.<ServiceOne>service( ServiceOne.class.getSimpleName() ).i, 3 );
-                assertEquals( Application.<ServiceTwo>service( ServiceTwo.class.getSimpleName() ).j, 1 );
-                assertEquals( Application.<ServiceTwo>service( ServiceTwo.class.getSimpleName() ).one,
-                    Application.<ServiceOne>service( ServiceOne.class.getSimpleName() ) );
-                assertTrue( Application.<ServiceTwo>service( ServiceTwo.class.getSimpleName() ).started );
-                assertTrue( Application.<ServiceScheduled>service( ServiceScheduled.class.getSimpleName() ).executed );
+                assertEquals( Application.findFirst( ServiceOne.class ).get().i, 3 );
+                assertEquals( Application.findFirst( ServiceOne.class ).get().i2, 100 );
+                assertEquals( Application.findFirst( ServiceTwo.class ).get().j, 1 );
+                assertEquals( Application.findFirst( ServiceTwo.class ).get().one,
+                    Application.findFirst( ServiceOne.class ).get() );
+                assertTrue( Application.findFirst( ServiceTwo.class ).get().started );
+                assertTrue( Application.findFirst( ServiceScheduled.class ).get().executed );
                 assertEquals( Application.<RemoteHello>service( "hello" ).hello(),
-                    Application.<ServiceTwo>service( ServiceTwo.class.getSimpleName() ).hello() );
+                    Application.findFirst( ServiceTwo.class ).get().hello() );
             } );
         }
     }

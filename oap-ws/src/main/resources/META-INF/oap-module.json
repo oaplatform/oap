@@ -3,9 +3,8 @@
   "dependsOn": [
     "oap-http"
   ],
-  "services": [
-    {
-      "name": "oap-ws-webservices",
+  "services": {
+    "oap-ws-webservices": {
       "implementation": "oap.ws.WebServices",
       "parameters": {
         "server": "@service:oap-http-server"
@@ -14,5 +13,5 @@
         "supervise": true
       }
     }
-  ]
+  }
 }

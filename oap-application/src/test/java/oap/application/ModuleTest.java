@@ -24,6 +24,7 @@
 
 package oap.application;
 
+import com.typesafe.config.ConfigFactory;
 import oap.io.Resources;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
@@ -40,23 +41,26 @@ public class ModuleTest extends AbstractTest {
     @Test
     public void parse() {
         System.setProperty( "number", "222" );
-        assertEquals( Resources.
-                filePath( ModuleTest.class, "oap-module.json" ).
-                map( Try.map( Module::parse ) )
-                .orElse( null ),
-            new Module( "oap-test",
-                Lists.of( "dep1", "dep2" ),
-                Lists.of( new Module.Service(
-                    "test-service",
-                    "oap.application.TestService",
-                    Maps.of(
-                        __( "port", 8080l ),
-                        __( "home", System.getenv( "HOME" ) ),
-                        __( "os", System.getProperty( "os.name" ) ),
-                        __( "number", 222l )
-                    ),
-                    new Module.Supervision( true ),
-                    new ArrayList<>()
-                ) ) ) );
+
+        ConfigFactory.invalidateCaches();
+
+        final Module actual = Resources.
+            filePath( ModuleTest.class, "oap-module.conf" ).
+            map( Try.map( Module::parse ) )
+            .orElse( null );
+        final Module expected = new Module( "oap-test",
+            Lists.of( "dep1", "dep2" ),
+            Maps.of( __( "test-service", new Module.Service(
+                "oap.application.TestService",
+                Maps.of(
+                    __( "port", 8080l ),
+                    __( "home", System.getenv( "HOME" ) ),
+                    __( "os", System.getProperty( "os.name" ) ),
+                    __( "number", "222" )
+                ),
+                new Module.Supervision( true ),
+                new ArrayList<>()
+            ) ) ) );
+        assertEquals( actual, expected );
     }
 }

@@ -1,8 +1,7 @@
 {
   "name": "oap-http",
-  "services": [
-    {
-      "name": "oap-http-server",
+  "services": {
+    "oap-http-server": {
       "implementation": "oap.http.Server",
       "parameters": {
         "port": 8880,
@@ -12,5 +11,5 @@
         "supervise": true
       }
     }
-  ]
+  }
 }

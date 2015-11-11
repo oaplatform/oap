@@ -26,6 +26,7 @@ package oap.application;
 public class ServiceOne implements IServiceOne {
     static volatile int instances;
     int i;
+    int i2;
 
     public ServiceOne() {
     }

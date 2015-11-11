@@ -41,7 +41,7 @@ public class WebServices {
     private HttpServer server;
 
     static {
-        HttpResponse.registerProducer( ContentType.APPLICATION_JSON.getMimeType(), Binder::marshal );
+        HttpResponse.registerProducer( ContentType.APPLICATION_JSON.getMimeType(), Binder.json::marshal );
     }
 
     public WebServices( HttpServer server ) {

@@ -25,6 +25,7 @@ package oap.application;
 
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
+import oap.json.Binder;
 import oap.json.Parser;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
@@ -33,11 +34,12 @@ import oap.util.Stream;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -61,57 +63,71 @@ public class Kernel implements Closeable {
             .collect( toSet() );
     }
 
-    private Set<Module.Service> initializeServices( Set<Module.Service> services, Set<String> initialized,
+    public Kernel( List<URL> modules, String config ) {
+        logger.debug( "modules = " + modules );
+
+        final Map<String,Map<String,Object>> mapConfig = Binder.hocon.unmarshal( Map.class, config );
+
+        this.modules = modules
+            .stream()
+            .map( m -> Module.parse(m, mapConfig) )
+            .collect( toSet() );
+    }
+
+    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services, Set<String> initialized,
         Map<String, Map<String, Object>> config ) {
 
-        HashSet<Module.Service> deferred = new HashSet<>();
+        HashMap<String, Module.Service> deferred = new HashMap<>();
 
-        for( Module.Service service : services )
+        for( Map.Entry<String, Module.Service> entry : services.entrySet() ) {
+            Module.Service service = entry.getValue();
+            String serviceName = entry.getKey();
             if( initialized.containsAll( service.dependsOn ) ) {
-                logger.debug( "initializing " + service.name );
+                logger.debug( "initializing " + serviceName );
 
                 Reflection reflect = Reflect.reflect( service.implementation );
 
                 Object instance;
                 if( service.remoteUrl == null ) {
-                    config.getOrDefault( service.name, Collections.emptyMap() )
+                    config.getOrDefault( serviceName, Collections.emptyMap() )
                         .forEach( service.parameters::put );
-                    initializeServiceLinks( service );
+                    initializeServiceLinks( serviceName, service );
                     instance = reflect.newInstance( service.parameters );
                 } else instance = RemoteInvocationHandler.proxy(
                     service.remoteUrl,
                     service.remoteName,
                     reflect.underlying
                 );
-                Application.register( service.name, instance );
+                Application.register( serviceName, instance );
                 if( service.supervision.supervise )
-                    supervisor.startSupervised( service.name, instance );
+                    supervisor.startSupervised( serviceName, instance );
                 if( service.supervision.thread )
-                    supervisor.startThread( service.name, instance );
+                    supervisor.startThread( serviceName, instance );
                 else {
                     if( service.supervision.schedule && service.supervision.delay > 0 )
-                        supervisor.scheduleWithFixedDelay( service.name, (Runnable) instance,
+                        supervisor.scheduleWithFixedDelay( serviceName, (Runnable) instance,
                             service.supervision.delay, TimeUnit.SECONDS );
                     else if( service.supervision.schedule && service.supervision.cron != null )
-                        supervisor.scheduleCron( service.name, (Runnable) instance,
+                        supervisor.scheduleCron( serviceName, (Runnable) instance,
                             service.supervision.cron );
                 }
-                initialized.add( service.name );
+                initialized.add( serviceName );
             } else {
-                logger.debug( "dependencies are not ready - deferring " + service.name );
-                deferred.add( service );
+                logger.debug( "dependencies are not ready - deferring " + serviceName );
+                deferred.put( entry.getKey(), service );
             }
+        }
 
         return deferred.size() == services.size() ? deferred : initializeServices( deferred, initialized, config );
     }
 
-    private void initializeServiceLinks( Module.Service service ) {
+    private void initializeServiceLinks( String name, Module.Service service ) {
         for( Map.Entry<String, Object> entry : service.parameters.entrySet() )
             if( entry.getValue() instanceof String && ((String) entry.getValue()).startsWith( "@service:" ) ) {
-                logger.debug( "for " + service.name + " linking " + entry );
+                logger.debug( "for " + name + " linking " + entry );
                 Object link = Application.service( ((String) entry.getValue()).substring( "@service:".length() ) );
                 if( link == null ) throw new ApplicationException(
-                    "for " + service.name + " service link " + entry.getValue() + " is not initialized yet" );
+                    "for " + name + " service link " + entry.getValue() + " is not initialized yet" );
                 entry.setValue( link );
             }
     }
@@ -124,10 +140,10 @@ public class Kernel implements Closeable {
             logger.debug( "initializing module " + module.name );
             if( initialized.containsAll( module.dependsOn ) ) {
 
-                Set<Module.Service> def =
-                    initializeServices( new LinkedHashSet<>( module.services ), new LinkedHashSet<>(), config );
+                Map<String, Module.Service> def =
+                    initializeServices( module.services, new LinkedHashSet<>(), config );
                 if( !def.isEmpty() ) {
-                    List<String> names = Stream.of( def.stream() ).map( s -> s.name ).toList();
+                    List<String> names = Stream.of( def.entrySet().stream() ).map( Map.Entry::getKey ).toList();
                     logger.error( "failed to initialize: " + names );
                     throw new ApplicationException( "failed to initialize services: " + names );
                 }
@@ -140,6 +156,11 @@ public class Kernel implements Closeable {
         }
 
         return deferred.size() == modules.size() ? deferred : initialize( deferred, initialized, config );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public void start( String config ) {
+        start( (Map<String, Map<String, Object>>) Binder.hocon.unmarshal( Map.class, config ) );
     }
 
     public void start( Map<String, Map<String, Object>> config ) {
@@ -164,7 +185,7 @@ public class Kernel implements Closeable {
     }
 
     @Override
-    public void close()  {
+    public void close() {
         stop();
     }
 }

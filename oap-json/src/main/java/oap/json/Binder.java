@@ -37,8 +37,6 @@ import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
 import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
 import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
-import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
-import lombok.val;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Dates;
@@ -51,19 +49,21 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
 
 public class Binder {
-    public static final ObjectMapper jsonMapperRW = new ObjectMapper();
-    public static final ObjectMapper hoconMapperRO = new ObjectMapper( new HoconFactory() );
     private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( Dates.FORMAT_SIMPLE );
 
-    static {
-        initialize( jsonMapperRW );
-        initialize( hoconMapperRO );
+    public static final Binder hocon = new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties() ) ) );
+    public static final Binder json = new Binder( initialize( new ObjectMapper() ) );
+    private ObjectMapper mapper;
+
+    public Binder( ObjectMapper mapper ) {
+        this.mapper = mapper;
     }
 
-    private static void initialize( ObjectMapper mapper ) {
+    private static ObjectMapper initialize( ObjectMapper mapper ) {
         mapper.registerModule( new AfterburnerModule() );
 
         mapper.registerModule( new Jdk8Module() );
@@ -78,6 +78,8 @@ public class Binder {
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
         mapper.registerModule( new PathModule() );
+
+        return mapper;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -85,69 +87,55 @@ public class Binder {
         return (JsonDeserializer<T>) new DateTimeDeserializer( cls, jodaDateFormat );
     }
 
-    public static String canonicalize( Class<?> clazz, String json ) {
+    public String canonicalize( Class<?> clazz, String json ) {
         return marshal( unmarshal( clazz, json ) );
     }
 
-    public static String marshal( Object value ) {
+    public String marshal( Object value ) {
         try {
-            return jsonMapperRW.writeValueAsString( value );
+            return mapper.writeValueAsString( value );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
     }
 
-    public static <T> String marshal( TypeReference<T> ref, Object value ) {
+    public <T> String marshal( TypeReference<T> ref, Object value ) {
         try {
-            return jsonMapperRW.writerFor( ref ).writeValueAsString( value );
+            return mapper.writerFor( ref ).writeValueAsString( value );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
     }
 
 
-    public static void marshal( Path path, Object object ) {
+    public void marshal( Path path, Object object ) {
         Files.writeString( path, marshal( object ) );
     }
 
-    public static <T> T unmarshal( Class<T> clazz, Path path ) {
+    public <T> T unmarshal( Class<T> clazz, Path path ) {
         return unmarshal( clazz, Files.readString( path ) );
     }
 
-    public static <T> T unmarshal( Class<T> clazz, URL url ) {
+    public <T> T unmarshal( Class<T> clazz, URL url ) {
         return unmarshal( clazz, Strings.readString( url ) );
     }
 
-    public static <T> T unmarshal( TypeReference<T> ref, String txt ) {
-        return unmarshal( ref, txt, false );
-    }
-
     @SuppressWarnings( "unchecked" )
-    public static <T> T unmarshal( TypeReference<T> ref, String txt, boolean json ) {
+    public <T> T unmarshal( TypeReference<T> ref, String txt ) {
         try {
-            val mapper = json ? Binder.jsonMapperRW : Binder.hoconMapperRO;
             return (T) mapper.readValue( txt, ref );
         } catch( IOException e ) {
             throw new JsonException( "json error", e );
         }
     }
 
-    public static <T> T unmarshal( TypeReference<T> ref, Path path, boolean json ) {
-        return unmarshal( ref, Files.readString( path ), json );
-    }
-
-    public static <T> T unmarshal( TypeReference<T> ref, Path path ) {
+    public <T> T unmarshal( TypeReference<T> ref, Path path ) {
         return unmarshal( ref, Files.readString( path ) );
     }
 
-    public static <T> T unmarshal( TypeReference<T> ref, InputStream is ) {
-        return unmarshal( ref, is, false );
-    }
-
     @SuppressWarnings( "unchecked" )
-    public static <T> T unmarshal( TypeReference<T> ref, InputStream is, boolean json ) {
+    public <T> T unmarshal( TypeReference<T> ref, InputStream is ) {
         try {
-            val mapper = json ? Binder.jsonMapperRW : Binder.hoconMapperRO;
             return (T) mapper.readValue( is, ref );
         } catch( IOException e ) {
             throw new JsonException( "json error", e );
@@ -155,39 +143,41 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <T> T unmarshal( Class<?> clazz, String txt, boolean json ) {
+    public <T> T unmarshal( Class<?> clazz, String txt ) {
         try {
-            val mapper = json ? Binder.jsonMapperRW : Binder.hoconMapperRO;
             return (T) mapper.readValue( txt, clazz );
         } catch( IOException e ) {
             throw new JsonException( "json error", e );
         }
     }
 
-    public static <T> T unmarshal( Class<?> clazz, String txt ) {
-        return Binder.<T>unmarshal( clazz, txt, false );
-    }
-
     @SuppressWarnings( "unchecked" )
-    public static <T> T unmarshal( Class<?> clazz, InputStream json ) {
+    public <T> T unmarshal( Class<?> clazz, InputStream json ) {
         try {
-            return (T) hoconMapperRO.readValue( json, clazz );
+            return (T) mapper.readValue( json, clazz );
         } catch( IOException e ) {
             throw new JsonException( "json error", e );
         }
     }
 
-    public static <T> Optional<T> unmarshalResource( Class<?> context, Class<T> clazz,
+    public <T> Optional<T> unmarshalResource( Class<?> context, Class<T> clazz,
         String resourceJsonPath ) {
         return Resources.readString( context, resourceJsonPath ).
-            map( json -> Binder.unmarshal( clazz, json ) );
+            map( json -> unmarshal( clazz, json ) );
 
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <T> T clone( T object ) {
+    public <T> T clone( T object ) {
         return unmarshal( (Class<T>) object.getClass(), marshal( object ) );
     }
 
+    public void update( Object obj, Map<String, Object> values ) {
+        try {
+            mapper.readerForUpdating( obj ).readValue( json.marshal( values ) );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 }
 

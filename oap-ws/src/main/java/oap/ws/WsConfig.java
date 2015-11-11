@@ -57,7 +57,7 @@ public class WsConfig {
 
     public static WsConfig parse( String json ) {
         Objects.nonNull( json );
-        return Binder.unmarshal( WsConfig.class, json );
+        return Binder.hocon.unmarshal( WsConfig.class, json );
     }
 
     @EqualsAndHashCode

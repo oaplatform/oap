@@ -71,8 +71,8 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         data = Files.wildcard( path, "*.json" )
             .stream()
             .map( Try.map(
-                f -> (Metadata<T>) Binder.unmarshal( new TypeReference<Metadata<T>>() {
-                }, f, true ) ) )
+                f -> (Metadata<T>) Binder.json.unmarshal( new TypeReference<Metadata<T>>() {
+                }, f) ) )
             .sorted( reverseOrder() )
             .map( x -> __( x.id, x ) )
             .collect( toConcurrentMap() );
@@ -95,7 +95,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
             data.values()
                 .stream()
                 .filter( m -> m.modified > last )
-                .forEach( Try.consume( m -> Binder.marshal( path.resolve( m.id + ".json" ), m ) ) );
+                .forEach( Try.consume( m -> Binder.json.marshal( path.resolve( m.id + ".json" ), m ) ) );
 
             lastSync.set( current );
         }

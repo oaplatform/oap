@@ -60,7 +60,7 @@ public class Service implements Handler {
     private final Logger logger;
     private final Reflection reflection;
     private final Coercions coercions = Coercions.basic()
-        .with( r -> true, ( r, value ) -> Binder.unmarshal( r.underlying,
+        .with( r -> true, ( r, value ) -> Binder.hocon.unmarshal( r.underlying,
             value instanceof String ? (String) value :
                 new String( (byte[]) value, StandardCharsets.UTF_8 ) ) );
     private final Validators validators = new Validators();

@@ -3,9 +3,8 @@
   "dependsOn": [
     "oap-ws"
   ],
-  "services": [
-    {
-      "name": "master.test-storage",
+  "services": {
+    "master.test-storage": {
       "implementation": "oap.storage.TestBeanStorage",
       "parameters": {
         "path": "/tmp/test/bean-master"
@@ -14,8 +13,7 @@
         "supervise": true
       }
     },
-    {
-      "name": "test-storage",
+    "test-storage": {
       "implementation": "oap.storage.TestBeanStorage",
       "parameters": {
         "path": "/tmp/test/bean-slave"
@@ -24,8 +22,7 @@
         "supervise": true
       }
     },
-    {
-      "name": "test-storage-replication",
+    "test-storage-replication": {
       "implementation": "oap.storage.StorageReplicationGet",
       "parameters": {
         "storage": "@service:test-storage",
@@ -38,5 +35,5 @@
         "delay": 10
       }
     }
-  ]
+  }
 }
