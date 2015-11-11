@@ -39,7 +39,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,15 +65,16 @@ public class Kernel implements Closeable {
     public Kernel( List<URL> modules, String config ) {
         logger.debug( "modules = " + modules );
 
-        final Map<String,Map<String,Object>> mapConfig = Binder.hocon.unmarshal( Map.class, config );
+        final Map<String, Map<String, Object>> mapConfig = Binder.hocon.unmarshal( Map.class, config );
 
         this.modules = modules
             .stream()
-            .map( m -> Module.parse(m, mapConfig) )
+            .map( m -> Module.parse( m, mapConfig ) )
             .collect( toSet() );
     }
 
-    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services, Set<String> initialized,
+    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
+        Set<String> initialized,
         Map<String, Map<String, Object>> config ) {
 
         HashMap<String, Module.Service> deferred = new HashMap<>();
@@ -156,6 +156,10 @@ public class Kernel implements Closeable {
         }
 
         return deferred.size() == modules.size() ? deferred : initialize( deferred, initialized, config );
+    }
+
+    public void start() {
+        start( Collections.emptyMap() );
     }
 
     @SuppressWarnings( "unchecked" )

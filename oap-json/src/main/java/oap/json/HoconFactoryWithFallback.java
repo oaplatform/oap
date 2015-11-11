@@ -21,14 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application;
 
-public class ServiceOne implements IServiceOne {
-    static volatile int instances;
-    int i;
-    int i2;
+package oap.json;
 
-    public ServiceOne( int i ) {
-        this.i = i;
+import com.fasterxml.jackson.core.io.IOContext;
+import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
+import com.jasonclawson.jackson.dataformat.hocon.HoconTreeTraversingParser;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigParseOptions;
+
+import java.io.IOException;
+import java.io.Reader;
+
+/**
+ * Created by Igor Petrenko on 11.11.2015.
+ */
+public class HoconFactoryWithFallback extends HoconFactory {
+    private final Config additinal;
+
+    public HoconFactoryWithFallback( String config ) {
+        additinal = ConfigFactory.parseString( config );
+    }
+
+    @Override
+    protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) throws IOException {
+        ConfigParseOptions options = ConfigParseOptions.defaults();
+        Config config = ConfigFactory.parseReader( r, options );
+
+        Config resolvedConfig = config
+            .withFallback( ConfigFactory.systemProperties() )
+            .withFallback( additinal )
+            .resolve();
+        return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
     }
 }

@@ -47,7 +47,7 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void startStopJsonConfig() throws InterruptedException {
+    public void testStartStopJsonConfig() throws InterruptedException {
         ArrayList<URL> modules = Lists.of(
             Resources.url( KernelTest.class, "modules/m1.json" ).get(),
             Resources.url( KernelTest.class, "modules/m2.json" ).get()
@@ -56,7 +56,7 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void startStopHoconConfig() throws InterruptedException {
+    public void testStartStopHoconConfig() throws InterruptedException {
         ArrayList<URL> modules = Lists.of(
             Resources.url( KernelTest.class, "modules/m1.conf" ).get(),
             Resources.url( KernelTest.class, "modules/m2.conf" ).get()
@@ -67,12 +67,12 @@ public class KernelTest extends AbstractTest {
     private void run( ArrayList<URL> modules ) {
         modules.addAll( Module.fromClassPath() );
         try( Kernel kernel = new Kernel( modules, "ServiceOne.parameters.i2 = 100" ) ) {
-            kernel.start( "ServiceOne.i = 3" );
+            kernel.start( "ServiceTwo.j = 3" );
             assertEventually( 50, 10, () -> {
                 assertEquals( ServiceOne.instances, 1 );
-                assertEquals( Application.findFirst( ServiceOne.class ).get().i, 3 );
+                assertEquals( Application.findFirst( ServiceOne.class ).get().i, 2 );
                 assertEquals( Application.findFirst( ServiceOne.class ).get().i2, 100 );
-                assertEquals( Application.findFirst( ServiceTwo.class ).get().j, 1 );
+                assertEquals( Application.findFirst( ServiceTwo.class ).get().j, 3 );
                 assertEquals( Application.findFirst( ServiceTwo.class ).get().one,
                     Application.findFirst( ServiceOne.class ).get() );
                 assertTrue( Application.findFirst( ServiceTwo.class ).get().started );
@@ -83,5 +83,16 @@ public class KernelTest extends AbstractTest {
         }
     }
 
+    @Test
+    public void testStringToNumberParameters() {
+        ArrayList<URL> modules = Lists.of( Resources.url( KernelTest.class, "modules/m3.conf" ).get() );
+
+        modules.addAll( Module.fromClassPath() );
+        try( Kernel kernel = new Kernel( modules ) ) {
+            kernel.start();
+
+            assertEquals( Application.findFirst( ServiceOne.class ).get().i, 2 );
+        }
+    }
 }
 

@@ -55,12 +55,17 @@ import java.util.Optional;
 public class Binder {
     private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( Dates.FORMAT_SIMPLE );
 
-    public static final Binder hocon = new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties() ) ) );
+    public static final Binder hocon =
+        new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties() ) ) );
     public static final Binder json = new Binder( initialize( new ObjectMapper() ) );
     private ObjectMapper mapper;
 
     public Binder( ObjectMapper mapper ) {
         this.mapper = mapper;
+    }
+
+    public static Binder hoconWithConfig( String config ) {
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( config ) ) ) );
     }
 
     private static ObjectMapper initialize( ObjectMapper mapper ) {
@@ -174,7 +179,10 @@ public class Binder {
 
     public void update( Object obj, Map<String, Object> values ) {
         try {
-            mapper.readerForUpdating( obj ).readValue( json.marshal( values ) );
+            final String marshal = json.marshal( obj );
+            final String vs = json.marshal( values );
+
+            hoconWithConfig( vs ).mapper.readerForUpdating( obj ).readValue( marshal );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
