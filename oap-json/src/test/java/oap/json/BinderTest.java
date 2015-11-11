@@ -59,8 +59,8 @@ public class BinderTest extends AbstractTest {
     @Test
     public void bindString() {
         assertBind( String.class, "test" );
-        assertEquals( "test", Binder.hocon.unmarshal( String.class, "\"test\"" ) );
-        assertEquals( 1.1d, Binder.hocon.unmarshal( double.class, "\"1.1\"" ) );
+        assertEquals( "test", Binder.json.unmarshal( String.class, "\"test\"" ) );
+        assertEquals( 1.1d, Binder.json.unmarshal( double.class, "\"1.1\"" ) );
     }
 
     @Test
@@ -147,7 +147,7 @@ public class BinderTest extends AbstractTest {
         String json2 = Binder.json.marshal( source );
         System.out.println( "JSON2:" );
         System.out.println( json2 );
-        T result = Binder.hocon.unmarshal( clazz, json2 );
+        T result = Binder.json.unmarshal( clazz, json2 );
         System.out.println( "Object:" );
         System.out.println( result );
         assertEquals( result, source );
@@ -158,7 +158,7 @@ public class BinderTest extends AbstractTest {
         String json = Binder.json.marshal( source );
         System.out.println( "JSON:" );
         System.out.println( json );
-        T result = Binder.hocon.unmarshal( ref, json );
+        T result = Binder.json.unmarshal( ref, json );
         System.out.println( "Object:" );
         System.out.println( result );
         assertEquals( result, source );
