@@ -46,14 +46,14 @@ public class Logger {
         this.interval = interval;
     }
 
-    public void log( String path, String line ) {
-        log( path, line.getBytes() );
+    public void log( String hostName, String fileName, String line ) {
+        log( hostName, fileName, line.getBytes() );
     }
 
-    public void log( String path, byte[] buffer ) {
+    public void log( String hostName, String fileName, byte[] buffer ) {
         if( closed ) throw new UncheckedIOException( new IOException( "already closed!" ) );
-        writers.computeIfAbsent( path,
-            k -> new LogWriter( logDirectory.resolve( path ).toString(), suffix, bufferSize, interval ) )
+        writers.computeIfAbsent( hostName + fileName,
+            k -> new LogWriter( logDirectory.resolve( hostName ).toString(), fileName, suffix, bufferSize, interval ) )
             .write( buffer );
     }
 
