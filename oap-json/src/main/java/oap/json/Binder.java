@@ -37,6 +37,8 @@ import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
 import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
 import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
+import lombok.val;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Dates;
@@ -51,14 +53,17 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
 public class Binder {
-    public static final ObjectMapper mapper = new ObjectMapper();
-    private static final org.slf4j.Logger logger = getLogger( Binder.class );
+    public static final ObjectMapper jsonMapperRW = new ObjectMapper();
+    public static final ObjectMapper hoconMapperRO = new ObjectMapper( new HoconFactory() );
     private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( Dates.FORMAT_SIMPLE );
 
     static {
+        initialize( jsonMapperRW );
+        initialize( hoconMapperRO );
+    }
+
+    private static void initialize( ObjectMapper mapper ) {
         mapper.registerModule( new AfterburnerModule() );
 
         mapper.registerModule( new Jdk8Module() );
@@ -86,7 +91,7 @@ public class Binder {
 
     public static String marshal( Object value ) {
         try {
-            return mapper.writeValueAsString( value );
+            return jsonMapperRW.writeValueAsString( value );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
@@ -94,7 +99,7 @@ public class Binder {
 
     public static <T> String marshal( TypeReference<T> ref, Object value ) {
         try {
-            return mapper.writerFor( ref ).writeValueAsString( value );
+            return jsonMapperRW.writerFor( ref ).writeValueAsString( value );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
@@ -113,41 +118,60 @@ public class Binder {
         return unmarshal( clazz, Strings.readString( url ) );
     }
 
+    public static <T> T unmarshal( TypeReference<T> ref, String txt ) {
+        return unmarshal( ref, txt, false );
+    }
+
     @SuppressWarnings( "unchecked" )
-    public static <T> T unmarshal( TypeReference<T> ref, String json ) {
+    public static <T> T unmarshal( TypeReference<T> ref, String txt, boolean json ) {
         try {
-            return (T) mapper.readValue( json, ref );
+            val mapper = json ? Binder.jsonMapperRW : Binder.hoconMapperRO;
+            return (T) mapper.readValue( txt, ref );
         } catch( IOException e ) {
             throw new JsonException( "json error", e );
         }
+    }
+
+    public static <T> T unmarshal( TypeReference<T> ref, Path path, boolean json ) {
+        return unmarshal( ref, Files.readString( path ), json );
     }
 
     public static <T> T unmarshal( TypeReference<T> ref, Path path ) {
         return unmarshal( ref, Files.readString( path ) );
     }
 
+    public static <T> T unmarshal( TypeReference<T> ref, InputStream is ) {
+        return unmarshal( ref, is, false );
+    }
+
     @SuppressWarnings( "unchecked" )
-    public static <T> T unmarshal( TypeReference<T> ref, InputStream json ) {
+    public static <T> T unmarshal( TypeReference<T> ref, InputStream is, boolean json ) {
         try {
-            return (T) mapper.readValue( json, ref );
+            val mapper = json ? Binder.jsonMapperRW : Binder.hoconMapperRO;
+            return (T) mapper.readValue( is, ref );
         } catch( IOException e ) {
             throw new JsonException( "json error", e );
         }
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <T> T unmarshal( Class<?> clazz, String json ) {
+    public static <T> T unmarshal( Class<?> clazz, String txt, boolean json ) {
         try {
-            return (T) mapper.readValue( json, clazz );
+            val mapper = json ? Binder.jsonMapperRW : Binder.hoconMapperRO;
+            return (T) mapper.readValue( txt, clazz );
         } catch( IOException e ) {
             throw new JsonException( "json error", e );
         }
+    }
+
+    public static <T> T unmarshal( Class<?> clazz, String txt ) {
+        return Binder.<T>unmarshal( clazz, txt, false );
     }
 
     @SuppressWarnings( "unchecked" )
     public static <T> T unmarshal( Class<?> clazz, InputStream json ) {
         try {
-            return (T) mapper.readValue( json, clazz );
+            return (T) hoconMapperRO.readValue( json, clazz );
         } catch( IOException e ) {
             throw new JsonException( "json error", e );
         }

@@ -29,6 +29,7 @@ import oap.io.Files;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.util.Strings;
+import org.apache.commons.collections4.ListUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -56,7 +57,10 @@ public class Module {
     }
 
     public static List<URL> fromClassPath() {
-        return Resources.urls( "META-INF/oap-module.json" );
+        return ListUtils.union(
+            Resources.urls( "META-INF/oap-module.json" ),
+            Resources.urls( "META-INF/oap-module.conf" )
+        );
     }
 
     public static Module parse( Path path ) throws IOException {

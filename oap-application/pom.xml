@@ -58,6 +58,7 @@
             <artifactId>oap-stdlib</artifactId>
             <version>${parent.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
