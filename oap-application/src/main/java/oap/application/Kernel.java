@@ -89,7 +89,7 @@ public class Kernel implements Closeable {
                 Reflection reflect = Reflect.reflect( service.implementation );
 
                 Object instance;
-                if( !service.remote ) {
+                if( service.remoteUrl == null ) {
                     config.getOrDefault( serviceName, Collections.emptyMap() )
                         .forEach( service.parameters::put );
                     initializeServiceLinks( serviceName, service );

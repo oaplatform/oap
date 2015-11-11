@@ -94,7 +94,6 @@ public class Module {
     @EqualsAndHashCode
     @ToString
     public static class Service {
-        public boolean remote = false;
         public String implementation;
         public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
         public Supervision supervision = new Supervision();
