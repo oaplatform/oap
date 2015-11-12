@@ -44,7 +44,7 @@ public class ValidateJsonPeer implements ValidatorPeer {
     @Override
     public List<String> validate( Object value ) {
         try {
-            Map<?, ?> unmarshal = Binder.hocon.unmarshal( Map.class, (String) value );
+            Map<?, ?> unmarshal = Binder.json.unmarshal( Map.class, (String) value );
             return factory.validate( unmarshal, false ).left().orElseGet( Lists::empty );
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
