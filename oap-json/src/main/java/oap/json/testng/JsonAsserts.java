@@ -39,24 +39,24 @@ public class JsonAsserts {
     public static void assertEqualsCanonical( Class<?> context, Class<?> clazz,
         String actual, String expectedResourcePath,
         Pair<String, Object>... substitutions ) {
-        assertEquals( Binder.hocon.canonicalize( clazz, actual ),
+        assertEquals( Binder.json.canonicalize( clazz, actual ),
             readCanonical( context, clazz, expectedResourcePath, substitutions ) );
     }
 
     public static void assertEqualsCanonical( Class<?> clazz, String actual, String expected ) {
-        assertEquals( Binder.hocon.canonicalize( clazz, actual ), Binder.hocon.canonicalize( clazz, expected ) );
+        assertEquals( Binder.json.canonicalize( clazz, actual ), Binder.json.canonicalize( clazz, expected ) );
     }
 
     @SafeVarargs
     public static String readCanonical( Class<?> context, Class<?> clazz, String resourcePath,
         Pair<String, Object>... substitutions ) {
         return Resources.readString( context, resourcePath )
-            .map( json -> Binder.hocon.canonicalize( clazz, Strings.substitute( json, substitutions ) ) )
+            .map( json -> Binder.json.canonicalize( clazz, Strings.substitute( json, substitutions ) ) )
             .orElseThrow( () -> new AssertionError( "not found " + resourcePath ) );
     }
 
     public static <T> T readObject( Class<?> context, Class<T> clazz, String resourcePath ) {
-        return Binder.hocon.unmarshalResource( context, clazz, resourcePath )
+        return Binder.json.unmarshalResource( context, clazz, resourcePath )
             .orElseThrow( () -> new AssertionError( "not found " + resourcePath ) );
 
     }
