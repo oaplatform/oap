@@ -33,9 +33,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.StringJoiner;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.util.Pair.__;
@@ -161,4 +165,14 @@ public class Strings {
         for( int i = 0; i < times; i++ ) result += content;
         return result;
     }
+
+    public static List<String> regex( String s, String regex ) {
+        Matcher matcher = Pattern.compile( regex, Pattern.MULTILINE ).matcher( s );
+        List<String> result = new ArrayList<>();
+        while( matcher.find() )
+            for( int i = 0; i < matcher.groupCount(); i++ )
+                result.add( matcher.group( i + 1 ) );
+        return result;
+    }
+
 }

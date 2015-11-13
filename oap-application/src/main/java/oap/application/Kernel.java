@@ -34,7 +34,6 @@ import oap.util.Stream;
 import org.apache.commons.collections4.CollectionUtils;
 import org.slf4j.Logger;
 
-import java.io.Closeable;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -49,7 +48,7 @@ import java.util.concurrent.TimeUnit;
 import static java.util.stream.Collectors.toSet;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class Kernel implements Closeable {
+public class Kernel {
     private static Logger logger = getLogger( Kernel.class );
     private final Set<Module> modules;
     private Supervisor supervisor = new Supervisor();
@@ -188,10 +187,5 @@ public class Kernel implements Closeable {
 
     public void start( Path configPath ) {
         start( configPath.toFile().exists() ? Parser.parse( configPath ) : Maps.of() );
-    }
-
-    @Override
-    public void close() {
-        stop();
     }
 }

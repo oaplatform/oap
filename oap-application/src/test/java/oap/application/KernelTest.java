@@ -32,6 +32,7 @@ import org.testng.annotations.Test;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 import static oap.testng.Asserts.assertEventually;
 import static org.testng.Assert.assertEquals;
@@ -66,45 +67,52 @@ public class KernelTest extends AbstractTest {
 
     private void run( ArrayList<URL> modules ) {
         modules.addAll( Module.fromClassPath() );
-        try( Kernel kernel = new Kernel( modules, "ServiceOne.parameters.i2 = 100" ) ) {
+        Kernel kernel = new Kernel( modules, "ServiceOne.parameters.i2 = 100" );
+        try {
             kernel.start( "ServiceTwo.j = 3" );
             assertEventually( 50, 10, () -> {
                 assertEquals( ServiceOne.instances, 1 );
-                assertEquals( Application.findFirst( ServiceOne.class ).get().i, 2 );
-                assertEquals( Application.findFirst( ServiceOne.class ).get().i2, 100 );
-                assertEquals( Application.findFirst( ServiceTwo.class ).get().j, 3 );
-                assertEquals( Application.findFirst( ServiceTwo.class ).get().one,
-                    Application.findFirst( ServiceOne.class ).get() );
-                assertTrue( Application.findFirst( ServiceTwo.class ).get().started );
-                assertTrue( Application.findFirst( ServiceScheduled.class ).get().executed );
+                assertEquals( Application.service( ServiceOne.class ).i, 2 );
+                assertEquals( Application.service( ServiceOne.class ).i2, 100 );
+                assertEquals( Application.service( ServiceTwo.class ).j, 3 );
+                assertEquals( Application.service( ServiceTwo.class ).one,
+                    Application.service( ServiceOne.class ) );
+                assertTrue( Application.service( ServiceTwo.class ).started );
+                assertTrue( Application.service( ServiceScheduled.class ).executed );
                 assertEquals( Application.<RemoteHello>service( "hello" ).hello(),
-                    Application.findFirst( ServiceTwo.class ).get().hello() );
+                    Application.service( ServiceTwo.class ).hello() );
             } );
+        } finally {
+            kernel.stop();
         }
     }
 
     @Test
     public void testStringToNumberParameters() {
-        ArrayList<URL> modules = Lists.of( Resources.url( KernelTest.class, "modules/m3.conf" ).get() );
-
-        modules.addAll( Module.fromClassPath() );
-        try( Kernel kernel = new Kernel( modules ) ) {
+        List<URL> modules = Module.fromClassPath();
+        modules.add( Resources.url( KernelTest.class, "modules/m3.conf" ).get() );
+        Kernel kernel = new Kernel( modules );
+        try {
             kernel.start();
 
-            assertEquals( Application.findFirst( ServiceOne.class ).get().i, 2 );
+            assertEquals( Application.service( ServiceOne.class ).i, 2 );
+        } finally {
+            kernel.stop();
         }
     }
 
     @Test
     public void testRemoteToMock() {
-        ArrayList<URL> modules = Lists.of( Resources.url( KernelTest.class, "modules/m1.conf" ).get() );
-
-        modules.addAll( Module.fromClassPath() );
-        try( Kernel kernel = new Kernel( modules, "hello.remoteUrl = null,hello.implementation=oap.application.MockRemoteHello" ) ) {
+        List<URL> modules = Module.fromClassPath();
+        modules.add( Resources.url( KernelTest.class, "modules/m1.conf" ).get() );
+        Kernel kernel =
+            new Kernel( modules, "hello.remoteUrl = null,hello.implementation=oap.application.MockRemoteHello" );
+        try {
             kernel.start();
-
             assertEquals( Application.<RemoteHello>service( "hello" ).hello(),
-                Application.findFirst( MockRemoteHello.class ).get().hello() );
+                Application.service( MockRemoteHello.class ).hello() );
+        } finally {
+            kernel.stop();
         }
     }
 }

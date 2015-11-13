@@ -48,12 +48,14 @@ public class ApplicationTest extends AbstractTest {
             Resources.url( KernelTest.class, "modules/m2.json" ).get()
         );
         modules.addAll( Module.fromClassPath() );
-
-        try( Kernel kernel = new Kernel( modules ) ) {
+        Kernel kernel = new Kernel( modules );
+        try {
             kernel.start( Maps.of( __( "ServiceOne", Maps.of( __( "i", 3 ) ) ) ) );
 
-            assertEquals( Application.filter( ServiceOne.class ).findFirst().get().getClass(), ServiceOne.class );
-            assertEquals( Application.filter( IServiceOne.class ).findFirst().get().getClass(), ServiceOne.class );
+            assertEquals( Application.instancesOf( ServiceOne.class ).get( 0 ).getClass(), ServiceOne.class );
+            assertEquals( Application.instancesOf( IServiceOne.class ).get( 0 ).getClass(), ServiceOne.class );
+        } finally {
+            kernel.stop();
         }
     }
 }

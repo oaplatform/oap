@@ -45,4 +45,10 @@ public class StringsTest extends AbstractTest {
     public void split() {
         assertEquals( Strings.split( "aaaa.bb.cc", "." ), __( "aaaa", "bb.cc" ) );
     }
+
+    @Test
+    public void regex() {
+        assertEquals( Strings.regex( "aaaXbbb:cccXddd", "X([^:]*)" ), Lists.of( "bbb", "ddd" ) );
+    }
+
 }

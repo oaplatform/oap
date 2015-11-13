@@ -23,10 +23,11 @@
  */
 package oap.application;
 
+import oap.util.Stream;
+
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Stream;
 
 public class Application {
 
@@ -38,12 +39,16 @@ public class Application {
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <T> Stream<T> filter( Class<T> clazz ) {
-        return (Stream<T>) services.values().stream().filter( clazz::isInstance );
+    public static <T> List<T> instancesOf( Class<T> clazz ) {
+        return Stream.of( services.values() )
+            .filter( clazz::isInstance )
+            .<T>map( x -> (T) x )
+            .toList();
     }
 
-    public static <T> Optional<T> findFirst( Class<T> clazz ) {
-        return filter( clazz ).findFirst();
+    public static <T> T service( Class<T> clazz ) {
+        List<T> services = instancesOf( clazz );
+        return services.isEmpty() ? null : services.get( 0 );
     }
 
     public static void register( String name, Object service ) {
