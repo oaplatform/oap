@@ -166,7 +166,13 @@ public class Strings {
         return result;
     }
 
-    public static List<String> regex( String s, String regex ) {
+
+    public static String regex( String s, String regex ) {
+        Matcher matcher = Pattern.compile( regex, Pattern.MULTILINE ).matcher( s );
+        return matcher.find() ? matcher.group( 1 ) : null;
+    }
+
+    public static List<String> regexAll( String s, String regex ) {
         Matcher matcher = Pattern.compile( regex, Pattern.MULTILINE ).matcher( s );
         List<String> result = new ArrayList<>();
         while( matcher.find() )
@@ -174,5 +180,4 @@ public class Strings {
                 result.add( matcher.group( i + 1 ) );
         return result;
     }
-
 }

@@ -48,7 +48,7 @@ public class StringsTest extends AbstractTest {
 
     @Test
     public void regex() {
-        assertEquals( Strings.regex( "aaaXbbb:cccXddd", "X([^:]*)" ), Lists.of( "bbb", "ddd" ) );
+        assertEquals( Strings.regexAll( "aaaXbbb:cccXddd", "X([^:]*)" ), Lists.of( "bbb", "ddd" ) );
+        assertEquals( Strings.regex( "aaaXbbb:cccXddd", "X([^:]*)" ), "bbb" );
     }
-
 }
