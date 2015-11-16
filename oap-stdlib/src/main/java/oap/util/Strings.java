@@ -180,4 +180,24 @@ public class Strings {
                 result.add( matcher.group( i + 1 ) );
         return result;
     }
+
+    public static int indexOfAny( String value, String any ) {
+        return indexOfAny( value, any, 0 );
+    }
+
+    public static int indexOfAny( String value, String any, int start ) {
+        try {
+            int length = value.length();
+
+            for( int i = start; i < length; ++i ) {
+                if( any.indexOf( value.charAt( i ) ) >= 0 ) {
+                    return i;
+                }
+            }
+
+            return -1;
+        } catch( StringIndexOutOfBoundsException var5 ) {
+            return -1;
+        }
+    }
 }

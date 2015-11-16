@@ -51,4 +51,11 @@ public class StringsTest extends AbstractTest {
         assertEquals( Strings.regexAll( "aaaXbbb:cccXddd", "X([^:]*)" ), Lists.of( "bbb", "ddd" ) );
         assertEquals( Strings.regex( "aaaXbbb:cccXddd", "X([^:]*)" ), "bbb" );
     }
+
+    @Test
+    public void testIndexOfAny() {
+        assertEquals( Strings.indexOfAny( "test", "e", 0 ), 1 );
+        assertEquals( Strings.indexOfAny( "test", "et", 0 ), 0 );
+        assertEquals( Strings.indexOfAny( "test", "bso", 1 ), 2 );
+    }
 }
