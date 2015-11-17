@@ -32,6 +32,7 @@ import org.apache.http.protocol.HttpRequestHandler;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -39,19 +40,22 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     private static Logger logger = getLogger( BlockingHandlerAdapter.class );
     protected String location;
     private Handler handler;
+    private LinkedHashMap<String, String> defaultHeaders;
 
-    public BlockingHandlerAdapter( String location, Handler handler ) {
+    public BlockingHandlerAdapter( String location, Handler handler, LinkedHashMap<String, String> defaultHeaders ) {
         this.location = location;
         this.handler = handler;
+        this.defaultHeaders = defaultHeaders;
     }
 
     @Override
     public void handle( HttpRequest req, HttpResponse resp, HttpContext ctx ) throws IOException {
         if( logger.isTraceEnabled() ) logger.trace( "handling " + req );
         HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
+        final Response response = new Response( resp, defaultHeaders );
         handler.handle(
             new Request( req, new Context( location, connection.getRemoteAddress() ) ),
-            new Response( resp )
+            response
         );
     }
 

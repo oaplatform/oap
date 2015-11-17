@@ -39,6 +39,7 @@ import org.apache.http.protocol.HttpCoreContext;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -47,10 +48,12 @@ public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
 
     private String location;
     private Handler handler;
+    private LinkedHashMap<String, String> defaultHeaders;
 
-    public NioHandlerAdapter( String location, Handler handler ) {
+    public NioHandlerAdapter( String location, Handler handler, LinkedHashMap<String, String> defaultHeaders ) {
         this.location = location;
         this.handler = handler;
+        this.defaultHeaders = defaultHeaders;
     }
 
     @Override
@@ -66,7 +69,7 @@ public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
         HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
         handler.handle(
             new Request( req, new Context( location, connection.getRemoteAddress() ) ),
-            new Response( httpAsyncExchange.getResponse() )
+            new Response( httpAsyncExchange.getResponse(), defaultHeaders )
         );
 
         httpAsyncExchange.submitResponse();

@@ -58,7 +58,7 @@ public class Module {
 
     public static List<URL> fromClassPath() {
         return ListUtils.union(
-            Resources.urls( "META-INF/oap-module.json" ),
+            Resources.urls( "META-INF/oap-module.conf" ),
             Resources.urls( "META-INF/oap-module.conf" )
         );
     }

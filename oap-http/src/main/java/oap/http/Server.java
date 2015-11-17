@@ -24,6 +24,7 @@
 package oap.http;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Throwables;
 import oap.concurrent.Threads;
 import oap.io.Closeables;
@@ -53,6 +54,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.LinkedHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -79,12 +81,19 @@ public class Server implements HttpServer {
     private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
     private ExecutorService executor;
     private int port;
+    @JsonProperty( "default-headers" )
+    private LinkedHashMap<String, String> defaultHeaders = new LinkedHashMap<>();
     private ServerSocket serverSocket;
     private Thread thread;
     private Semaphore semaphore = new Semaphore( 0 );
 
     public Server( int port, int workers ) {
+        this( port, workers, new LinkedHashMap<>() );
+    }
+
+    public Server( int port, int workers, LinkedHashMap<String, String> defaultHeaders ) {
         this.port = port;
+        this.defaultHeaders = defaultHeaders;
         this.executor = Executors.newFixedThreadPool( workers );
         this.mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
     }
@@ -92,7 +101,7 @@ public class Server implements HttpServer {
     @Override
     public void bind( String context, Handler handler ) {
         String location = "/" + context + "/*";
-        this.mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler ) );
+        this.mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, defaultHeaders ) );
         logger.info( handler + " bound to " + location );
 
     }

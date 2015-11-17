@@ -33,6 +33,7 @@ import oap.io.Resources;
 import oap.metrics.Metrics;
 import oap.testng.Env;
 import oap.util.Lists;
+import oap.util.Maps;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -42,11 +43,12 @@ import java.nio.charset.StandardCharsets;
 
 import static oap.http.testng.HttpAsserts.*;
 import static oap.http.testng.HttpAsserts.get;
+import static oap.util.Pair.__;
 import static org.apache.http.entity.ContentType.*;
 import static org.testng.Assert.assertEquals;
 
 public class WebServicesTest {
-    protected final Server server = new Server( Env.port(), 100 );
+    protected final Server server = new Server( Env.port(), 100, Maps.of( __( "Access-Control-Allow-Origin", "*" ) ) );
     protected final WebServices ws = new WebServices( server, Lists.of(
         Resources.readString( getClass(), "ws.json" ).map( WsConfig::parse ).get() ) );
     protected final WebServices wsHoconConf = new WebServices( server, Lists.of(
@@ -113,6 +115,13 @@ public class WebServicesTest {
                 .tag( "method", "bean" ) ).count,
             1 );
         get( HTTP_PREFIX + "/x/h/" ).assertResponse( 204 );
+    }
+
+    @Test
+    public void testDefaultHeaders() {
+        assertEquals( get( HTTP_PREFIX + "/x/h/" ).response.getHeader( "Access-Control-Allow-Origin" ).get(), "*" );
+        assertEquals( post( HTTP_PREFIX + "/x/v/math/json", "{\"i\":1,\"s\":\"sss\"}",
+            APPLICATION_OCTET_STREAM ).response.getHeader( "Access-Control-Allow-Origin" ).get(), "*" );
     }
 
     static class TestHandler implements Handler {

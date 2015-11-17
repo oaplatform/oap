@@ -39,6 +39,12 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
+
+import static oap.util.Maps.Collectors.toMap;
+import static oap.util.Pair.__;
 
 public final class SimpleHttpClient {
     private static CloseableHttpClient client = initialize();
@@ -66,6 +72,10 @@ public final class SimpleHttpClient {
 
     public static Response execute( HttpUriRequest request ) {
         try( CloseableHttpResponse response = client.execute( request ) ) {
+            final Map<String, String> headers = Arrays.stream( response.getAllHeaders() )
+                .map( h -> __( h.getName(), h.getValue() ) )
+                .collect( toMap() );
+
             if( response.getEntity() != null ) {
                 HttpEntity entity = response.getEntity();
                 try( InputStream is = entity.getContent() ) {
@@ -74,11 +84,13 @@ public final class SimpleHttpClient {
                         response.getStatusLine().getReasonPhrase(),
                         entity.getContentType() != null ?
                             ContentType.parse( entity.getContentType().getValue() ) : null,
+                        headers,
                         Strings.readString( is ) );
                 }
             } else return new Response(
                 response.getStatusLine().getStatusCode(),
-                response.getStatusLine().getReasonPhrase()
+                response.getStatusLine().getReasonPhrase(),
+                headers
             );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
@@ -91,16 +103,23 @@ public final class SimpleHttpClient {
         public final String body;
         public final String contentType;
         public final String reasonPhrase;
+        private final Map<String, String> headers;
 
-        public Response( int code, String reasonPhrase, ContentType contentType, String body ) {
+        public Response( int code, String reasonPhrase, ContentType contentType, Map<String, String> headers,
+            String body ) {
             this.code = code;
             this.reasonPhrase = reasonPhrase;
+            this.headers = headers;
             this.contentType = contentType != null ? contentType.toString() : null;
             this.body = body;
         }
 
-        public Response( int code, String reasonPhrase ) {
-            this( code, reasonPhrase, null, null );
+        public Response( int code, String reasonPhrase, Map<String, String> headers ) {
+            this( code, reasonPhrase, null, headers, null );
+        }
+
+        public Optional<String> getHeader( String name ) {
+            return Optional.ofNullable( headers.get( name ) );
         }
 
         @Override
