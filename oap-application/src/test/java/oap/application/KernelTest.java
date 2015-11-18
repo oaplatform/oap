@@ -26,6 +26,7 @@ package oap.application;
 
 import oap.io.Resources;
 import oap.testng.AbstractTest;
+import oap.testng.Env;
 import oap.util.Lists;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -36,6 +37,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Collections.emptyList;
+import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 import static oap.testng.Asserts.assertEventually;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -81,8 +84,8 @@ public class KernelTest extends AbstractTest {
                     Application.service( ServiceOne.class ) );
                 assertTrue( Application.service( ServiceTwo.class ).started );
                 assertTrue( Application.service( ServiceScheduled.class ).executed );
-                assertEquals( Application.<RemoteHello>service( "hello" ).hello(),
-                    Application.service( ServiceTwo.class ).hello() );
+                assertEquals( Application.<RemoteHello>service( "hello" ).hello( emptyList() ),
+                    Application.service( ServiceTwo.class ).hello( emptyList() ) );
             } );
         } finally {
             kernel.stop();
@@ -120,15 +123,20 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void testRemoteToMock() {
+    public void testRemote() {
         List<URL> modules = Module.fromClassPath();
         modules.add( Resources.url( KernelTest.class, "modules/m1.conf" ).get() );
+        modules.add( Resources.url( KernelTest.class, "modules/m2.conf" ).get() );
         Kernel kernel =
-            new Kernel( modules, "hello.remoteUrl = null,hello.implementation=oap.application.MockRemoteHello" );
+            new Kernel( modules, "hello.remoteUrl = \"" + HTTP_PREFIX + "/remote/\",ServiceTwo.implementation=oap.application.MockRemoteHello" );
         try {
-            kernel.start();
-            assertEquals( Application.<RemoteHello>service( "hello" ).hello(),
-                Application.service( MockRemoteHello.class ).hello() );
+            kernel.start( "oap-http-server.port = " + Env.port() );
+
+            TestBean b1 = new TestBean( "v1", 1 );
+            TestBean b2 = new TestBean( "v2", 2 );
+
+            assertEquals( Application.<RemoteHello>service( "hello" ).hello( Lists.of( b1, b2 ) ),
+                "{value=v1, i=1},{value=v2, i=2}");
         } finally {
             kernel.stop();
         }

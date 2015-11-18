@@ -23,6 +23,8 @@
  */
 package oap.application;
 
+import java.util.List;
+
 public interface RemoteHello {
-    String hello();
+    String hello( List<TestBean> beans );
 }

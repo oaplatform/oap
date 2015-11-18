@@ -69,9 +69,9 @@ public class RemoteInvocationHandler implements InvocationHandler {
             switch( response.code ) {
                 case HTTP_OK:
                     return method.getReturnType().equals( Void.class ) ? null :
-                        Binder.json.unmarshal( method.getReturnType(), response.body);
+                        Binder.jsonWithTyping.unmarshal( method.getReturnType(), response.body);
                 default:
-                    throw new RemoteInvocationException( "code: " + response.code + ", message: " + response.body );
+                    throw new RemoteInvocationException( "code: " + response.code + ", message: " + response.reasonPhrase + "\n" + response.body );
             }
         } catch( Exception e ) {
             if( logger.isTraceEnabled() ) logger.trace( e.getMessage(), e );

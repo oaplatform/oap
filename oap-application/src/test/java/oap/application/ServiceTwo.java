@@ -23,12 +23,14 @@
  */
 package oap.application;
 
+import java.util.List;
+
 import static org.testng.Assert.assertNotNull;
 
 public class ServiceTwo implements RemoteHello {
+    public ServiceOne one;
     int j;
     boolean started;
-    public ServiceOne one;
 
     public ServiceTwo() {
         assertNotNull( Application.service( ServiceOne.class.getSimpleName() ) );
@@ -41,7 +43,7 @@ public class ServiceTwo implements RemoteHello {
     }
 
     @Override
-    public String hello() {
+    public String hello( List<TestBean> beans ) {
         return "Hello " + j;
     }
 }

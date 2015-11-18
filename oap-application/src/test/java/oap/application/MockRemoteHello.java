@@ -24,12 +24,16 @@
 
 package oap.application;
 
+import oap.util.Strings;
+
+import java.util.List;
+
 /**
  * Created by Igor Petrenko on 11.11.2015.
  */
 public class MockRemoteHello implements RemoteHello {
     @Override
-    public String hello() {
-        return "Hello mock";
+    public String hello( List<TestBean> beans ) {
+        return Strings.join( ",", beans );
     }
 }
