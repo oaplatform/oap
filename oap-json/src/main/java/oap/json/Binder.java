@@ -130,7 +130,7 @@ public class Binder {
         try {
             return (T) mapper.readValue( txt, ref );
         } catch( IOException e ) {
-            throw new JsonException( "json error", e );
+            throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
 
@@ -143,7 +143,7 @@ public class Binder {
         try {
             return (T) mapper.readValue( is, ref );
         } catch( IOException e ) {
-            throw new JsonException( "json error", e );
+            throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
 
@@ -152,7 +152,7 @@ public class Binder {
         try {
             return (T) mapper.readValue( txt, clazz );
         } catch( IOException e ) {
-            throw new JsonException( "json error", e );
+            throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
 
@@ -161,7 +161,7 @@ public class Binder {
         try {
             return (T) mapper.readValue( json, clazz );
         } catch( IOException e ) {
-            throw new JsonException( "json error", e );
+            throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
 
