@@ -33,24 +33,29 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static oap.util.Result.trying;
+
 public class SimpleHttpService {
 
     public static <T> T execute(Object request, String url, Class<? extends HttpRequestBase> httpMethod,
                                Function<Object, Pair<String, Object>[]> queryMapper,
                                Function<Object, HttpEntity> entityMapper,
                                Function<SimpleHttpClient.Response, T> responseMapper){
-        T response = null;
+
+        URI uri = Uri.uri(url, queryMapper.apply( request ) );
+
         try {
-            URI uri = Uri.uri(url, queryMapper.apply( request ) );
             final HttpUriRequest httpRequest = httpMethod.getConstructor( URI.class ).newInstance( uri );
             Optional.ofNullable( entityMapper.apply( request ) ).ifPresent( e -> ( ( HttpEntityEnclosingRequestBase ) httpRequest ).setEntity( e ) );
-            response = responseMapper.apply( SimpleHttpClient.execute( httpRequest ) );
+
+            return responseMapper.apply(
+                trying( () -> SimpleHttpClient.execute( httpRequest ) )
+                    .orElse( new SimpleHttpClient.Response( 503, "Service Unavailable: " + httpRequest.getURI().getHost() , null) )
+            );
 
         } catch( ReflectiveOperationException e ) {
-            new RuntimeException( e );
+            throw new RuntimeException( "Http method " + httpMethod.getCanonicalName() + " cannot have entity", e );
         }
 
-        return response;
     }
-
 }
