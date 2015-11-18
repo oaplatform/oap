@@ -64,7 +64,7 @@ public class StartupScriptsMojo extends AbstractMojo {
             OTHERS_EXECUTE, OTHERS_READ };
         script( "/bin/oap.sh", serviceBin, ".sh", permissions );
         script( "/bin/service.systemd", "usr/lib/systemd/system", ".service" );
-        script( "/bin/service.sysvinit", "etc/initd", "", permissions );
+        script( "/bin/service.sysvinit", "etc/init.d", "", permissions );
     }
 
     private void script( String script, String preffix, String suffix, PosixFilePermission... permissions ) {

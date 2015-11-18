@@ -23,6 +23,7 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.json.Binder;
@@ -186,6 +187,8 @@ public class Kernel {
     }
 
     public void start( Path configPath ) {
-        start( configPath.toFile().exists() ? Parser.parse( configPath ) : Maps.of() );
+        start( configPath.toFile().exists() ? Binder.hocon.unmarshal(
+            new TypeReference<Map<String, Map<String, Object>>>() {
+            }, configPath ) : Maps.of() );
     }
 }

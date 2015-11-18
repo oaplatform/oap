@@ -30,7 +30,9 @@ import oap.util.Lists;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,6 +84,22 @@ public class KernelTest extends AbstractTest {
                 assertEquals( Application.<RemoteHello>service( "hello" ).hello(),
                     Application.service( ServiceTwo.class ).hello() );
             } );
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
+    public void testStartWithConfig() throws URISyntaxException {
+        ArrayList<URL> modules = Lists.of(
+            Resources.url( KernelTest.class, "modules/m1.conf" ).get()
+        );
+
+        Kernel kernel = new Kernel( modules );
+        try {
+            kernel.start( Paths.get( getClass().getResource( "/application-test.conf" ).toURI() ) );
+
+            assertEquals( Application.service( ServiceOne.class ).i, 123 );
         } finally {
             kernel.stop();
         }

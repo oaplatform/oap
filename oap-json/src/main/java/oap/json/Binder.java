@@ -37,6 +37,7 @@ import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
 import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
 import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Dates;
@@ -52,6 +53,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 public class Binder {
     private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( Dates.FORMAT_SIMPLE );
 
@@ -130,7 +132,8 @@ public class Binder {
         try {
             return (T) mapper.readValue( txt, ref );
         } catch( IOException e ) {
-            throw new JsonException( "json error", e );
+            log.debug("json: " + txt);
+            throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
 
@@ -143,7 +146,7 @@ public class Binder {
         try {
             return (T) mapper.readValue( is, ref );
         } catch( IOException e ) {
-            throw new JsonException( "json error", e );
+            throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
 
@@ -152,7 +155,7 @@ public class Binder {
         try {
             return (T) mapper.readValue( txt, clazz );
         } catch( IOException e ) {
-            throw new JsonException( "json error", e );
+            throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
 
@@ -161,7 +164,7 @@ public class Binder {
         try {
             return (T) mapper.readValue( json, clazz );
         } catch( IOException e ) {
-            throw new JsonException( "json error", e );
+            throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
 
