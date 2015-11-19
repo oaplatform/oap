@@ -24,11 +24,10 @@
 
 package oap.application;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-
-import static com.fasterxml.jackson.annotation.JsonTypeInfo.*;
 
 /**
  * Created by Igor Petrenko on 18.11.2015.
@@ -39,10 +38,9 @@ public class TestBean {
     public String value;
     public int i;
 
-    public TestBean() {
-    }
 
-    public TestBean( String value, int i ) {
+    @JsonCreator
+    public TestBean( @JsonProperty( "value" ) String value, @JsonProperty( "i" ) int i ) {
         this.value = value;
         this.i = i;
     }
