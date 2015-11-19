@@ -24,8 +24,6 @@
 
 package oap.application;
 
-import oap.util.Strings;
-
 import java.util.List;
 
 /**
@@ -33,7 +31,7 @@ import java.util.List;
  */
 public class MockRemoteHello implements RemoteHello {
     @Override
-    public String hello( List<TestBean> beans ) {
-        return Strings.join( ",", beans );
+    public List<TestBean> hello( List<TestBean> beans ) {
+        return beans;
     }
 }

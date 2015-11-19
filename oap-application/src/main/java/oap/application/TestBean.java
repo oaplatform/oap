@@ -39,6 +39,9 @@ public class TestBean {
     public String value;
     public int i;
 
+    public TestBean() {
+    }
+
     public TestBean( String value, int i ) {
         this.value = value;
         this.i = i;

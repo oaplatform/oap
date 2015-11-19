@@ -63,7 +63,7 @@ public class RemoteInvocationHandler implements InvocationHandler {
         try {
             HttpPost post = new HttpPost( uri );
             post.setEntity( new StringEntity(
-                Binder.json.marshal( new RemoteInvocation( service, method.getName(), arguments ) ),
+                Binder.jsonWithTyping.marshal( new RemoteInvocation( service, method.getName(), arguments ) ),
                 ContentType.APPLICATION_JSON ) );
             SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
             switch( response.code ) {

@@ -55,7 +55,7 @@ public class Remote implements Handler {
     @Override
     public void handle( Request request, Response response ) {
         RemoteInvocation invocation = request.body
-            .<RemoteInvocation>map( bytes -> Binder.json.unmarshal( RemoteInvocation.class, bytes ) )
+            .<RemoteInvocation>map( bytes -> Binder.jsonWithTyping.unmarshal( RemoteInvocation.class, bytes ) )
             .orElseThrow( () -> new RemoteInvocationException( "no invocation data" ) );
 
         if( log.isTraceEnabled() ) log.trace( "invoke:" + invocation );
@@ -68,7 +68,7 @@ public class Remote implements Handler {
             Object result = service.getClass()
                 .getMethod( invocation.method, invocation.types() )
                 .invoke( service, invocation.values() );
-            response.respond( HttpResponse.ok( Binder.json.marshal( result ), true, APPLICATION_JSON ) );
+            response.respond( HttpResponse.ok( Binder.jsonWithTyping.marshal( result ), true, APPLICATION_JSON ) );
         } catch( NoSuchMethodException e ) {
             log.debug( e.getMessage(), e );
             response.respond( HttpResponse.status( HTTP_NOT_FOUND,
