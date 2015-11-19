@@ -22,50 +22,26 @@
  * SOFTWARE.
  */
 
-package oap.application.remote;
+package oap.application;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * Created by Igor Petrenko on 18.11.2015.
+ */
 @ToString
-public class RemoteInvocation {
-    public String service;
-    public String method;
-    public List<Argument> arguments = new ArrayList<>();
+@EqualsAndHashCode
+public class TestBean {
+    public String value;
+    public int i;
 
-    public RemoteInvocation() {
-    }
 
-    public RemoteInvocation( String service, String method, List<Argument> arguments ) {
-        this.service = service;
-        this.method = method;
-        this.arguments = arguments;
-    }
-
-    public Class<?>[] types() {
-        return arguments.stream().map( v -> v.type ).toArray( Class[]::new );
-    }
-
-    public Object[] values() {
-        return arguments.stream().map( v -> v.value ).toArray();
-    }
-
-    @ToString
-    public static class Argument {
-        public String name;
-        public Class<?> type;
-        public Object value;
-
-        public Argument() {
-        }
-
-        public Argument( String name, Class<?> type, Object value ) {
-            this.name = name;
-            this.type = type;
-            this.value = value;
-        }
+    @JsonCreator
+    public TestBean( @JsonProperty( "value" ) String value, @JsonProperty( "i" ) int i ) {
+        this.value = value;
+        this.i = i;
     }
 }

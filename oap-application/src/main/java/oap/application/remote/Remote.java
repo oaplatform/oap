@@ -23,6 +23,7 @@
  */
 package oap.application.remote;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.application.Application;
 import oap.http.Handler;
 import oap.http.HttpResponse;
@@ -30,18 +31,15 @@ import oap.http.HttpServer;
 import oap.http.Request;
 import oap.http.Response;
 import oap.json.Binder;
-import org.slf4j.Logger;
 
 import java.lang.reflect.InvocationTargetException;
 
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
-import static org.slf4j.LoggerFactory.getLogger;
 
+@Slf4j
 public class Remote implements Handler {
-    private static Logger logger = getLogger( Remote.class );
-
     private HttpServer server;
     private String context;
 
@@ -56,12 +54,11 @@ public class Remote implements Handler {
 
     @Override
     public void handle( Request request, Response response ) {
-
         RemoteInvocation invocation = request.body
-            .<RemoteInvocation>map( bytes -> Binder.json.unmarshal( RemoteInvocation.class, bytes ) )
+            .<RemoteInvocation>map( bytes -> Binder.jsonWithTyping.unmarshal( RemoteInvocation.class, bytes ) )
             .orElseThrow( () -> new RemoteInvocationException( "no invocation data" ) );
 
-        if( logger.isTraceEnabled() ) logger.trace( "invoke:" + invocation );
+        if( log.isTraceEnabled() ) log.trace( "invoke:" + invocation );
 
         Object service = Application.service( invocation.service );
 
@@ -71,16 +68,15 @@ public class Remote implements Handler {
             Object result = service.getClass()
                 .getMethod( invocation.method, invocation.types() )
                 .invoke( service, invocation.values() );
-            response.respond( HttpResponse.ok( Binder.json.marshal( result ), true, APPLICATION_JSON ) );
+            response.respond( HttpResponse.ok( Binder.jsonWithTyping.marshal( result ), true, APPLICATION_JSON ) );
         } catch( NoSuchMethodException e ) {
-            logger.debug( e.getMessage(), e );
+            log.debug( e.getMessage(), e );
             response.respond( HttpResponse.status( HTTP_NOT_FOUND,
                 "service " + invocation.service + "." + invocation.method + " not found." ) );
         } catch( InvocationTargetException | IllegalAccessException e ) {
-            logger.debug( e.getMessage(), e );
+            log.debug( e.getMessage(), e );
             response.respond( HttpResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() ) );
         }
-
     }
 
     @Override

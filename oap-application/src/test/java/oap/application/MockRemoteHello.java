@@ -24,12 +24,21 @@
 
 package oap.application;
 
+import java.util.List;
+
 /**
  * Created by Igor Petrenko on 11.11.2015.
  */
 public class MockRemoteHello implements RemoteHello {
+    public static String hv = null;
+
     @Override
-    public String hello() {
-        return "Hello mock";
+    public List<TestBean> hello( List<TestBean> beans ) {
+        return beans;
+    }
+
+    @Override
+    public void helloVoid( String test ) {
+        hv = test;
     }
 }

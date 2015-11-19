@@ -63,15 +63,15 @@ public class RemoteInvocationHandler implements InvocationHandler {
         try {
             HttpPost post = new HttpPost( uri );
             post.setEntity( new StringEntity(
-                Binder.json.marshal( new RemoteInvocation( service, method.getName(), arguments ) ),
+                Binder.jsonWithTyping.marshal( new RemoteInvocation( service, method.getName(), arguments ) ),
                 ContentType.APPLICATION_JSON ) );
             SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
             switch( response.code ) {
                 case HTTP_OK:
-                    return method.getReturnType().equals( Void.class ) ? null :
-                        Binder.json.unmarshal( method.getReturnType(), response.body);
+                    return method.getReturnType().equals( void.class ) ? null :
+                        Binder.jsonWithTyping.unmarshal( method.getReturnType(), response.body);
                 default:
-                    throw new RemoteInvocationException( "code: " + response.code + ", message: " + response.body );
+                    throw new RemoteInvocationException( "code: " + response.code + ", message: " + response.reasonPhrase + "\n" + response.body );
             }
         } catch( Exception e ) {
             if( logger.isTraceEnabled() ) logger.trace( e.getMessage(), e );

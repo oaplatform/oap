@@ -25,6 +25,7 @@ package oap.json;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -58,8 +59,9 @@ public class Binder {
     private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( Dates.FORMAT_SIMPLE );
 
     public static final Binder hocon =
-        new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties() ) ) );
-    public static final Binder json = new Binder( initialize( new ObjectMapper() ) );
+        new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties() ), false ) );
+    public static final Binder json = new Binder( initialize( new ObjectMapper(), false ) );
+    public static final Binder jsonWithTyping = new Binder( initialize( new ObjectMapper(), true ) );
     private ObjectMapper mapper;
 
     public Binder( ObjectMapper mapper ) {
@@ -67,10 +69,10 @@ public class Binder {
     }
 
     public static Binder hoconWithConfig( String config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( config ) ) ) );
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( config ) ), false ) );
     }
 
-    private static ObjectMapper initialize( ObjectMapper mapper ) {
+    private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping ) {
         mapper.registerModule( new AfterburnerModule() );
 
         mapper.registerModule( new Jdk8Module() );
@@ -85,6 +87,9 @@ public class Binder {
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
         mapper.registerModule( new PathModule() );
+
+        if( defaultTyping )
+            mapper.enableDefaultTyping( ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY );
 
         return mapper;
     }
@@ -132,7 +137,7 @@ public class Binder {
         try {
             return (T) mapper.readValue( txt, ref );
         } catch( IOException e ) {
-            log.debug("json: " + txt);
+            log.debug( "json: " + txt );
             throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
@@ -154,7 +159,8 @@ public class Binder {
     public <T> T unmarshal( Class<?> clazz, String txt ) {
         try {
             return (T) mapper.readValue( txt, clazz );
-        } catch( IOException e ) {
+        } catch( Exception e ) {
+            log.debug( "json: " + txt );
             throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }

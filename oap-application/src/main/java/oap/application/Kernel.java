@@ -27,7 +27,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.json.Binder;
-import oap.json.Parser;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.util.Maps;
@@ -67,6 +66,19 @@ public class Kernel {
         logger.debug( "modules = " + modules );
 
         final Map<String, Map<String, Object>> mapConfig = Binder.hocon.unmarshal( Map.class, config );
+
+        this.modules = modules
+            .stream()
+            .map( m -> Module.parse( m, mapConfig ) )
+            .collect( toSet() );
+    }
+
+    public Kernel( List<URL> modules, Path config ) {
+        logger.debug( "modules = " + modules );
+
+        final Map<String, Map<String, Object>> mapConfig = Binder.hocon.unmarshal(
+            new TypeReference<Map<String, Map<String, Object>>>() {
+            }, config );
 
         this.modules = modules
             .stream()
