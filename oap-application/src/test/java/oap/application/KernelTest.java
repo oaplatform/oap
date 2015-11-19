@@ -100,7 +100,23 @@ public class KernelTest extends AbstractTest {
 
         Kernel kernel = new Kernel( modules );
         try {
-            kernel.start( Paths.get( getClass().getResource( "/application-test.conf" ).toURI() ) );
+            kernel.start( Paths.get( getClass().getResource( "/application-start-test.conf" ).toURI() ) );
+
+            assertEquals( Application.service( ServiceOne.class ).i, 123 );
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
+    public void testKernelWithConfig() throws URISyntaxException {
+        ArrayList<URL> modules = Lists.of(
+            Resources.url( KernelTest.class, "modules/m1.conf" ).get()
+        );
+
+        Kernel kernel = new Kernel( modules, Paths.get( getClass().getResource( "/application-test.conf" ).toURI() ) );
+        try {
+            kernel.start( );
 
             assertEquals( Application.service( ServiceOne.class ).i, 123 );
         } finally {

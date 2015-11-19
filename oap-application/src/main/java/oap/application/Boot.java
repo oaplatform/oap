@@ -31,9 +31,9 @@ import org.slf4j.Logger;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class Boot {
-    private static Logger logger = getLogger( Boot.class );
     public static boolean terminated = false;
-    public static final Kernel kernel = new Kernel( Module.fromClassPath() );
+    private static Logger logger = getLogger( Boot.class );
+    private static Kernel kernel;
 
     public static void main( String[] args ) {
         Cli.create()
@@ -52,7 +52,8 @@ public class Boot {
             }
         } );
         try {
-            kernel.start( Files.path( config ) );
+            kernel = new Kernel( Module.fromClassPath(), Files.path( config ) );
+            kernel.start();
             logger.debug( "started" );
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
