@@ -158,5 +158,24 @@ public class KernelTest extends AbstractTest {
             kernel.stop();
         }
     }
+
+    @Test
+    public void testRemoteVoid() {
+        List<URL> modules = Module.fromClassPath();
+        modules.add( Resources.url( KernelTest.class, "modules/m1.conf" ).get() );
+        modules.add( Resources.url( KernelTest.class, "modules/m2.conf" ).get() );
+        Kernel kernel =
+            new Kernel( modules, "hello.remoteUrl = \"" + HTTP_PREFIX + "/remote/\"," +
+                "ServiceTwo.implementation=oap.application.MockRemoteHello" );
+        try {
+            kernel.start( "oap-http-server.port = " + Env.port() );
+
+            Application.<RemoteHello>service( "hello" ).helloVoid( "cm");
+
+            assertEquals( MockRemoteHello.hv, "cm" );
+        } finally {
+            kernel.stop();
+        }
+    }
 }
 

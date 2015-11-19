@@ -27,4 +27,5 @@ import java.util.List;
 
 public interface RemoteHello {
     List<TestBean> hello( List<TestBean> beans );
+    void helloVoid( String test );
 }

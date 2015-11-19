@@ -50,4 +50,9 @@ public class ServiceTwo implements RemoteHello {
         return testBeans;
     }
 
+    @Override
+    public void helloVoid( String test ) {
+
+    }
+
 }
