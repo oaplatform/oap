@@ -50,40 +50,12 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class Kernel {
     private static Logger logger = getLogger( Kernel.class );
-    private final Set<Module> modules;
+    private final List<URL> modules;
     private Supervisor supervisor = new Supervisor();
 
     public Kernel( List<URL> modules ) {
         logger.debug( "modules = " + modules );
-
-        this.modules = modules
-            .stream()
-            .map( Module::parse )
-            .collect( toSet() );
-    }
-
-    public Kernel( List<URL> modules, String config ) {
-        logger.debug( "modules = " + modules );
-
-        final Map<String, Map<String, Object>> mapConfig = Binder.hocon.unmarshal( Map.class, config );
-
-        this.modules = modules
-            .stream()
-            .map( m -> Module.parse( m, mapConfig ) )
-            .collect( toSet() );
-    }
-
-    public Kernel( List<URL> modules, Path config ) {
-        logger.debug( "modules = " + modules );
-
-        final Map<String, Map<String, Object>> mapConfig = Binder.hocon.unmarshal(
-            new TypeReference<Map<String, Map<String, Object>>>() {
-            }, config );
-
-        this.modules = modules
-            .stream()
-            .map( m -> Module.parse( m, mapConfig ) )
-            .collect( toSet() );
+        this.modules = modules;
     }
 
     private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
@@ -183,10 +155,14 @@ public class Kernel {
 
     public void start( Map<String, Map<String, Object>> config ) {
         logger.debug( "initializing application kernel..." );
-        logger.trace( "modules = " + Stream.of( modules ).map( m -> m.name ).toList() );
 
-        if( !initialize( modules, new HashSet<>(), config ).isEmpty() ) {
-            logger.error( "failed to initialize: " + modules );
+        Set<Module> moduleConfigs = Stream.of( modules )
+            .map( m -> Module.parse( m, config ) )
+            .collect( toSet() );
+        logger.trace( "modules = " + Stream.of( moduleConfigs ).map( m -> m.name ).toList() );
+
+        if( !initialize( moduleConfigs, new HashSet<>(), config ).isEmpty() ) {
+            logger.error( "failed to initialize: " + moduleConfigs );
             throw new ApplicationException( "failed to initialize modules" );
         }
 

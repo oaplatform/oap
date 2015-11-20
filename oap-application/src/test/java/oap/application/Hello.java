@@ -21,11 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package oap.application;
 
-/**
- * Created by Igor Petrenko on 10.11.2015.
- */
-public interface IServiceOne {
+import java.util.List;
+
+public interface Hello {
+    List<TestBean> hello( List<TestBean> beans );
+
+    void voidMethod( String test );
 }
