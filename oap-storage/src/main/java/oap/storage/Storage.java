@@ -25,6 +25,7 @@ package oap.storage;
 
 import oap.util.Stream;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -35,15 +36,15 @@ public interface Storage<T> {
 
     void store( T object );
 
-    void store( List<T> objects );
+    void store( Collection<T> objects );
 
     T update( String id, Consumer<T> update );
 
     T update( String id, Consumer<T> update, Supplier<T> init );
 
-    void bulkUpdate( List<String> ids, Consumer<T> update );
+    void bulkUpdate( Collection<String> ids, Consumer<T> update );
 
-    void bulkUpdate( List<String> ids, Consumer<T> update, Supplier<T> init );
+    void bulkUpdate( Collection<String> ids, Consumer<T> update, Supplier<T> init );
 
     Optional<T> get( String id );
 

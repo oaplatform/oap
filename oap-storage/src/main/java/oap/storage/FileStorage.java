@@ -35,6 +35,7 @@ import org.joda.time.DateTimeUtils;
 import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -128,7 +129,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
     @Override
-    public void store( List<T> objects ) {
+    public void store( Collection<T> objects ) {
         for( T object : objects ) {
             String id = this.identify.apply( object );
             synchronized( id.intern() ) {
@@ -170,12 +171,12 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
     @Override
-    public void bulkUpdate( List<String> ids, Consumer<T> update ) {
+    public void bulkUpdate( Collection<String> ids, Consumer<T> update ) {
         bulkUpdate( ids, update, null );
     }
 
     @Override
-    public void bulkUpdate( List<String> ids, Consumer<T> update, Supplier<T> init ) {
+    public void bulkUpdate( Collection<String> ids, Consumer<T> update, Supplier<T> init ) {
         final List<T> collect = ids.stream().map( id -> update( id, update, init, false ) ).collect( toList() );
 
         fireUpdated( collect );
@@ -217,7 +218,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( object );
     }
 
-    protected void fireUpdated( List<T> objects ) {
+    protected void fireUpdated( Collection<T> objects ) {
         for( DataListener<T> dataListener : this.dataListeners )
             dataListener.updated( objects );
     }
@@ -252,11 +253,11 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     public interface DataListener<T> {
         void updated( T object );
 
-        void updated( List<T> objects );
+        void updated( Collection<T> objects );
 
         void deleted( T object );
 
-        void deleted( List<T> objects );
+        void deleted( Collection<T> objects );
 
     }
 }
