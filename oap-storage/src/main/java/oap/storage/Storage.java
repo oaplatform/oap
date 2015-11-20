@@ -41,6 +41,10 @@ public interface Storage<T> {
 
     T update( String id, Consumer<T> update, Supplier<T> init );
 
+    void bulkUpdate( List<String> ids, Consumer<T> update );
+
+    void bulkUpdate( List<String> ids, Consumer<T> update, Supplier<T> init );
+
     Optional<T> get( String id );
 
     void clear();

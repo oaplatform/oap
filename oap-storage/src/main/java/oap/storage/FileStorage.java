@@ -72,7 +72,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
             .stream()
             .map( Try.map(
                 f -> (Metadata<T>) Binder.json.unmarshal( new TypeReference<Metadata<T>>() {
-                }, f) ) )
+                }, f ) ) )
             .sorted( reverseOrder() )
             .map( x -> __( x.id, x ) )
             .collect( toConcurrentMap() );
@@ -149,6 +149,10 @@ public class FileStorage<T> implements Storage<T>, Closeable {
 
     @Override
     public T update( String id, Consumer<T> update, Supplier<T> init ) {
+        return update( id, update, init, true );
+    }
+
+    private T update( String id, Consumer<T> update, Supplier<T> init, boolean notification ) {
         synchronized( id.intern() ) {
             Metadata<T> m = data.get( id );
             if( m == null ) {
@@ -160,9 +164,21 @@ public class FileStorage<T> implements Storage<T>, Closeable {
                 update.accept( m.object );
                 m.update( m.object );
             }
-            fireUpdated( m.object );
+            if( notification ) fireUpdated( m.object );
             return m.object;
         }
+    }
+
+    @Override
+    public void bulkUpdate( List<String> ids, Consumer<T> update ) {
+        bulkUpdate( ids, update, null );
+    }
+
+    @Override
+    public void bulkUpdate( List<String> ids, Consumer<T> update, Supplier<T> init ) {
+        final List<T> collect = ids.stream().map( id -> update( id, update, init, false ) ).collect( toList() );
+
+        fireUpdated( collect );
     }
 
     @Override
