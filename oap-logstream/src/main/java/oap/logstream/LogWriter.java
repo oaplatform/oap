@@ -42,7 +42,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class LogWriter implements Closeable {
     private static Logger logger = getLogger( LogWriter.class );
     private final String suffix;
-    private final String prefix;
+    private final Path logDirectory;
     private final String root;
     private int bufferSize;
     private int interval;
@@ -50,8 +50,8 @@ public class LogWriter implements Closeable {
     private String lastPattern;
     private Scheduled scheduled;
 
-    public LogWriter( String prefix, String root, String suffix, int bufferSize, int interval ) {
-        this.prefix = prefix;
+    public LogWriter( Path logDirectory, String root, String suffix, int bufferSize, int interval ) {
+        this.logDirectory = logDirectory;
         this.root = root;
         this.suffix = suffix;
         this.bufferSize = bufferSize;
@@ -68,7 +68,7 @@ public class LogWriter implements Closeable {
 
     @Override
     public void close() throws IOException {
-        logger.trace( "closing writer " + prefix );
+        logger.debug( "closing " + this );
         Scheduled.cancel( scheduled );
         closeOutput();
     }
@@ -100,7 +100,8 @@ public class LogWriter implements Closeable {
     }
 
     private Path filename() {
-        return Files.path( prefix + "/" + Filename.directoryName( lastPattern ) + "/" + root + "-" + lastPattern + "." + suffix );
+        return logDirectory.resolve( Filename.directoryName( lastPattern ) )
+            .resolve( root + "-" + lastPattern + "." + suffix );
     }
 
     private synchronized void refresh() {

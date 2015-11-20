@@ -38,7 +38,7 @@ public class Filename {
         return formatter.print( date ) + "-" + (bucket > 9 ? bucket : "0" + bucket);
     }
 
-    public static String directoryName(String timestamp){
+    public static String directoryName( String timestamp ) {
         return directoryFormatter.print( formatter.parseDateTime( timestamp.substring( 0, 12 ) ) );
     }
 }

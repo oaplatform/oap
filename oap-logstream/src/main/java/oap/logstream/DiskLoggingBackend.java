@@ -30,7 +30,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Logger {
+public class DiskLoggingBackend {
     public static final int DEFAULT_BUFFER = 1024 * 100;
     private ConcurrentHashMap<String, LogWriter> writers = new ConcurrentHashMap<>();
     final Path logDirectory;
@@ -39,7 +39,7 @@ public class Logger {
     private int interval;
     private boolean closed;
 
-    public Logger( Path logDirectory, String suffix, int bufferSize, int interval ) {
+    public DiskLoggingBackend( Path logDirectory, String suffix, int bufferSize, int interval ) {
         this.logDirectory = logDirectory;
         this.suffix = suffix;
         this.bufferSize = bufferSize;
@@ -53,7 +53,7 @@ public class Logger {
     public void log( String hostName, String fileName, byte[] buffer ) {
         if( closed ) throw new UncheckedIOException( new IOException( "already closed!" ) );
         writers.computeIfAbsent( hostName + fileName,
-            k -> new LogWriter( logDirectory.resolve( hostName ).toString(), fileName, suffix, bufferSize, interval ) )
+            k -> new LogWriter( logDirectory.resolve( hostName ), fileName, suffix, bufferSize, interval ) )
             .write( buffer );
     }
 

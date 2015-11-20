@@ -27,6 +27,7 @@ package oap.logstream;
 import oap.io.IoAsserts;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.util.Dates;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
@@ -37,22 +38,22 @@ public class LogWriterTest extends AbstractTest {
 
     @Test
     public void write() throws IOException {
-        DateTimeUtils.setCurrentMillisFixed( new DateTime( 2015, 10, 10, 1, 0, 0 ).getMillis() );
+        Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1234567890\n";
-        LogWriter logWriter = new LogWriter( Env.tmp( "logs" ), "file", "txt", 10, 5 );
+        LogWriter logWriter = new LogWriter( Env.tmpPath( "logs" ), "file", "txt", 10, 5 );
 
         logWriter.write( content.getBytes() );
 
-        DateTimeUtils.setCurrentMillisFixed( new DateTime( 2015, 10, 10, 1, 5, 0 ).getMillis() );
+        Dates.setTimeFixed( 2015, 10, 10, 1, 5 );
         logWriter.write( content.getBytes() );
 
-        DateTimeUtils.setCurrentMillisFixed( new DateTime( 2015, 10, 10, 1, 10, 0 ).getMillis() );
+        Dates.setTimeFixed( 2015, 10, 10, 1, 10 );
         logWriter.write( content.getBytes() );
 
-        DateTimeUtils.setCurrentMillisFixed( new DateTime( 2015, 10, 10, 1, 14, 0 ).getMillis() );
+        Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
         logWriter.write( content.getBytes() );
 
-        DateTimeUtils.setCurrentMillisFixed( new DateTime( 2015, 10, 10, 1, 59, 0 ).getMillis() );
+        Dates.setTimeFixed( 2015, 10, 10, 1, 59 );
         logWriter.write( content.getBytes() );
 
         logWriter.close();
