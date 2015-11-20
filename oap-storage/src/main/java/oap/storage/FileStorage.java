@@ -171,12 +171,12 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
     @Override
-    public void bulkUpdate( Collection<String> ids, Consumer<T> update ) {
-        bulkUpdate( ids, update, null );
+    public void update( Collection<String> ids, Consumer<T> update ) {
+        update( ids, update, null );
     }
 
     @Override
-    public void bulkUpdate( Collection<String> ids, Consumer<T> update, Supplier<T> init ) {
+    public void update( Collection<String> ids, Consumer<T> update, Supplier<T> init ) {
         final List<T> collect = ids.stream().map( id -> update( id, update, init, false ) ).collect( toList() );
 
         fireUpdated( collect );

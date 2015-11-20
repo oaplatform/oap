@@ -28,13 +28,14 @@ import java.util.List;
 
 import static org.testng.Assert.assertNotNull;
 
-public class ServiceTwo implements RemoteHello {
+public class ServiceTwo implements Hello {
     public ServiceOne one;
     int j;
     boolean started;
+    String test;
+
 
     public ServiceTwo() {
-        assertNotNull( Application.service( ServiceOne.class.getSimpleName() ) );
         ServiceOne.instances++;
     }
 
@@ -51,8 +52,8 @@ public class ServiceTwo implements RemoteHello {
     }
 
     @Override
-    public void helloVoid( String test ) {
-
+    public void voidMethod( String test ) {
+        this.test = test;
     }
 
 }

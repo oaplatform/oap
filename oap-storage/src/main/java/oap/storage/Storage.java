@@ -42,9 +42,9 @@ public interface Storage<T> {
 
     T update( String id, Consumer<T> update, Supplier<T> init );
 
-    void bulkUpdate( Collection<String> ids, Consumer<T> update );
+    void update( Collection<String> ids, Consumer<T> update );
 
-    void bulkUpdate( Collection<String> ids, Consumer<T> update, Supplier<T> init );
+    void update( Collection<String> ids, Consumer<T> update, Supplier<T> init );
 
     Optional<T> get( String id );
 
