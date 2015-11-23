@@ -135,9 +135,9 @@ public abstract class AbstractPerformance extends AbstractTest {
 
                         long start = System.nanoTime();
                         IntStream
-                            .range( 0, threadSamles )
+                            .range( 0, threads )
                             .mapToObj( t -> pool.submit( () -> IntStream
-                                    .range( t * threads, (t + 1) * threads )
+                                    .range( t * threadSamles, (t + 1) * threadSamles )
                                     .forEach( code.asConsumer()::accept )
 
                             ) )
