@@ -52,8 +52,8 @@ public class Boot {
             }
         } );
         try {
-            kernel = new Kernel( Module.fromClassPath(), Files.path( config ) );
-            kernel.start();
+            kernel = new Kernel( Module.fromClassPath() );
+            kernel.start( Files.path( config ) );
             logger.debug( "started" );
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );

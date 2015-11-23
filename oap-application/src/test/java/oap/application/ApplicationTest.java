@@ -24,38 +24,21 @@
 
 package oap.application;
 
-import oap.io.Resources;
 import oap.testng.AbstractTest;
-import oap.util.Lists;
-import oap.util.Maps;
 import org.testng.annotations.Test;
 
-import java.net.URL;
-import java.util.ArrayList;
+import static org.testng.Assert.assertSame;
 
-import static oap.util.Pair.__;
-import static org.testng.Assert.assertEquals;
-
-/**
- * Created by Igor Petrenko on 10.11.2015.
- */
 public class ApplicationTest extends AbstractTest {
 
     @Test
-    public void testFilter() throws Exception {
-        ArrayList<URL> modules = Lists.of(
-            Resources.url( KernelTest.class, "modules/m1.json" ).get(),
-            Resources.url( KernelTest.class, "modules/m2.json" ).get()
-        );
-        modules.addAll( Module.fromClassPath() );
-        Kernel kernel = new Kernel( modules );
+    public void instancesOf() throws Exception {
         try {
-            kernel.start( Maps.of( __( "ServiceOne", Maps.of( __( "i", 3 ) ) ) ) );
-
-            assertEquals( Application.instancesOf( ServiceOne.class ).get( 0 ).getClass(), ServiceOne.class );
-            assertEquals( Application.instancesOf( IServiceOne.class ).get( 0 ).getClass(), ServiceOne.class );
+            Application.register( "ServiceTwo", new ServiceTwo() );
+            assertSame( Application.instancesOf( ServiceTwo.class ).get( 0 ),
+                Application.instancesOf( Hello.class ).get( 0 ) );
         } finally {
-            kernel.stop();
+            Application.unregisterServices();
         }
     }
 }

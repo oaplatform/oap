@@ -133,11 +133,11 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( TypeReference<T> ref, String txt ) {
+    public <T> T unmarshal( TypeReference<T> ref, String string ) {
         try {
-            return (T) mapper.readValue( txt, ref );
+            return (T) mapper.readValue( string, ref );
         } catch( IOException e ) {
-            log.debug( "json: " + txt );
+            log.debug( "json: " + string );
             throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
@@ -156,12 +156,12 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( Class<?> clazz, String txt ) {
+    public <T> T unmarshal( Class<?> clazz, String string ) {
         try {
-            return (T) mapper.readValue( txt, clazz );
+            return (T) mapper.readValue( string, clazz );
         } catch( Exception e ) {
-            log.debug( "json: " + txt );
-            throw new JsonException( "json error: " + e.getMessage(), e );
+            log.debug( "hocon: " + string );
+            throw new JsonException( "hocon error: " + e.getMessage(), e );
         }
     }
 

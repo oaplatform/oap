@@ -66,6 +66,19 @@ public class Dates {
         return FORMAT_MILLIS.print( millis );
     }
 
+    public static void setTimeFixed( int year, int monthOfYear, int dayOfMonth, int hourOfDay ) {
+        setTimeFixed( year, monthOfYear, dayOfMonth, hourOfDay, 0, 0, 0 );
+    }
+
+    public static void setTimeFixed( int year, int monthOfYear, int dayOfMonth, int hourOfDay, int minuteOfHour ) {
+        setTimeFixed( year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, 0, 0 );
+    }
+
+    public static void setTimeFixed( int year, int monthOfYear, int dayOfMonth, int hourOfDay,
+        int minuteOfHour, int secondOfMinute ) {
+        setTimeFixed( year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, secondOfMinute, 0 );
+    }
+
     public static void setTimeFixed( int year, int monthOfYear, int dayOfMonth, int hourOfDay,
         int minuteOfHour, int secondOfMinute, int millisOfSecond ) {
         setTimeFixed( new DateTime( year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, secondOfMinute,
