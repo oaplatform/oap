@@ -190,7 +190,7 @@ public class Server implements HttpServer {
                         } finally {
                             connections.remove( connectionName );
                             Closeables.close( connection );
-                            Metrics.measureCounterDecrement( Metrics.name( "connections" ) );
+                            Metrics.measureCounterDecrement( CONNECTIONS );
                             logger.trace( "connection closed: " + connectionName );
                         }
                     } );
@@ -199,8 +199,6 @@ public class Server implements HttpServer {
                     if( serverSocket != null && !serverSocket.isClosed() ) logger.warn( e.getMessage(), e );
                 } catch( Throwable e ) {
                     logger.warn( e.getMessage(), e );
-                } finally {
-                    Metrics.reset( CONNECTIONS );
                 }
             }
         } catch( Exception e ) {
