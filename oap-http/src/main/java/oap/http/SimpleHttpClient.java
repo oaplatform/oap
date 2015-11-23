@@ -56,8 +56,8 @@ public final class SimpleHttpClient {
 
         return HttpClients
             .custom()
-            .setMaxConnPerRoute( 100 )
-            .setMaxConnTotal( 200 )
+            .setMaxConnPerRoute( 1000 )
+            .setMaxConnTotal( 10000 )
             .setConnectionManager( cm )
             .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
             .disableRedirectHandling()
