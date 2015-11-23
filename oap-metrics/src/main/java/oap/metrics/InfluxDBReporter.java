@@ -105,6 +105,8 @@ class InfluxDBReporter extends ScheduledReporter {
             final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
             if( !Objects.equals( value, lastValue ) ) {
+                lastReport.put(entry.getKey(), value);
+
                 Point.Builder builder = Point
                     .measurement( entry.getKey() );
 
@@ -126,6 +128,8 @@ class InfluxDBReporter extends ScheduledReporter {
             final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
             if( !Objects.equals( value, lastValue ) ) {
+                lastReport.put(entry.getKey(), value);
+
                 Point.Builder builder = Point
                     .measurement( entry.getKey() );
 
@@ -146,6 +150,8 @@ class InfluxDBReporter extends ScheduledReporter {
             final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
             if( !Objects.equals( value, lastValue ) ) {
+                lastReport.put(entry.getKey(), value);
+
                 Point.Builder builder = Point
                     .measurement( entry.getKey() );
 
@@ -166,6 +172,8 @@ class InfluxDBReporter extends ScheduledReporter {
             final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
             if( !Objects.equals( value, lastValue ) ) {
+                lastReport.put(entry.getKey(), value);
+
                 Point.Builder builder = Point
                     .measurement( entry.getKey() );
 
