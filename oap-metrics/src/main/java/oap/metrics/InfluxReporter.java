@@ -26,6 +26,7 @@ package oap.metrics;
 
 import oap.net.Inet;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class InfluxReporter {
@@ -41,13 +42,17 @@ public class InfluxReporter {
 
     private InfluxDBReporter reporter;
 
-    public void start() {
-        reporter = InfluxDBReporter.forRegistry( metrics.registry )
+    public InfluxReporter( Map<String, Object> tags ) {
+        InfluxDBReporter.Builder builder = InfluxDBReporter.forRegistry( metrics.registry )
             .withTag( "host", Inet.HOSTNAME )
             .convertRatesTo( TimeUnit.MINUTES )
             .convertDurationsTo( TimeUnit.MICROSECONDS )
-            .withConnect( host, port, database, login, password )
-            .build();
+            .withConnect( this.host, port, database, login, password );
+        tags.forEach( ( name, value ) -> builder.withTag( name, String.valueOf( value ) ) );
+        reporter = builder.build();
+    }
+
+    public void start() {
         reporter.start( period, TimeUnit.MILLISECONDS );
     }
 
