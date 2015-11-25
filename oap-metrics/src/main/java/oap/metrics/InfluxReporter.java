@@ -35,6 +35,8 @@ public class InfluxReporter {
     protected String login;
     protected String password;
 
+    protected long period = 60 * 1000;
+
     protected Metrics metrics;
 
     private InfluxDBReporter reporter;
@@ -46,7 +48,7 @@ public class InfluxReporter {
             .convertDurationsTo( TimeUnit.MICROSECONDS )
             .withConnect( host, port, database, login, password )
             .build();
-        reporter.start( 1, TimeUnit.MINUTES );
+        reporter.start( period, TimeUnit.MILLISECONDS );
     }
 
     public void stop() {
