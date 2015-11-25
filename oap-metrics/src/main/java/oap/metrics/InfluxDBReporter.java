@@ -44,6 +44,7 @@ import java.net.ConnectException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
@@ -53,6 +54,8 @@ class InfluxDBReporter extends ScheduledReporter {
     private final InfluxDB influxDB;
     private final String database;
     private final HashMap<String, String> tags;
+
+    private HashMap<String, Object> lastReport = new HashMap<>();
 
     protected InfluxDBReporter( InfluxDB influxDB, String database, HashMap<String, String> tags,
         MetricRegistry registry, String name,
@@ -64,8 +67,12 @@ class InfluxDBReporter extends ScheduledReporter {
         this.tags = tags;
     }
 
+    public static Builder forRegistry( MetricRegistry registry ) {
+        return new Builder( registry );
+    }
+
     @Override
-    public void report( SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters,
+    public synchronized void report( SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters,
         SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers ) {
         try {
 
@@ -94,67 +101,114 @@ class InfluxDBReporter extends ScheduledReporter {
 
     private void reportCounters( SortedMap<String, Counter> counters, BatchPoints points ) {
         for( Map.Entry<String, Counter> entry : counters.entrySet() ) {
-            Point.Builder builder = Point
-                .measurement( entry.getKey() );
+            final long value = entry.getValue().getCount();
+            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
-            tags.forEach( builder::tag );
+            if( !Objects.equals( value, lastValue ) ) {
+                lastReport.put(entry.getKey(), value);
 
-            final Point point = builder
-                .field( "value", entry.getValue().getCount() )
-                .build();
+                Point.Builder builder = Point
+                    .measurement( entry.getKey() );
 
-            points.point( point );
+                tags.forEach( builder::tag );
+
+                final Point point = builder
+                    .field( "value", value )
+                    .build();
+
+                points.point( point );
+            }
+
         }
     }
 
     private void reportMeters( SortedMap<String, Meter> meters, BatchPoints points ) {
         for( Map.Entry<String, Meter> entry : meters.entrySet() ) {
-            Point.Builder builder = Point
-                .measurement( entry.getKey() );
+            final double value = entry.getValue().getOneMinuteRate();
+            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
-            tags.forEach( builder::tag );
+            if( !Objects.equals( value, lastValue ) ) {
+                lastReport.put(entry.getKey(), value);
 
-            final Point point = builder
-                .field( "value", format( convertRate( entry.getValue().getOneMinuteRate() ) ) )
-                .build();
+                Point.Builder builder = Point
+                    .measurement( entry.getKey() );
 
-            points.point( point );
+                tags.forEach( builder::tag );
+
+                final Point point = builder
+                    .field( "value", format( convertRate( value ) ) )
+                    .build();
+
+                points.point( point );
+            }
         }
     }
 
     private void reportTimers( SortedMap<String, Timer> timers, BatchPoints points ) {
         for( Map.Entry<String, Timer> entry : timers.entrySet() ) {
-            Point.Builder builder = Point
-                .measurement( entry.getKey() );
+            final double value = entry.getValue().getSnapshot().getMean();
+            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
-            tags.forEach( builder::tag );
+            if( !Objects.equals( value, lastValue ) ) {
+                lastReport.put(entry.getKey(), value);
 
-            final Point point = builder
-                .field( "value", format( convertDuration( entry.getValue().getSnapshot().getMean() ) ) )
-                .build();
+                Point.Builder builder = Point
+                    .measurement( entry.getKey() );
 
-            points.point( point );
+                tags.forEach( builder::tag );
+
+                final Point point = builder
+                    .field( "value", format( convertDuration( value ) ) )
+                    .build();
+
+                points.point( point );
+            }
         }
     }
 
     private void reportGauges( SortedMap<String, Gauge> gauges, BatchPoints points ) {
         for( Map.Entry<String, Gauge> entry : gauges.entrySet() ) {
-            Point.Builder builder = Point
-                .measurement( entry.getKey() );
+            final Object value = entry.getValue().getValue();
+            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
-            tags.forEach( builder::tag );
+            if( !Objects.equals( value, lastValue ) ) {
+                lastReport.put(entry.getKey(), value);
 
-            final Point point = builder
-                .field( "value", format( entry.getValue().getValue() ) )
-                .build();
+                Point.Builder builder = Point
+                    .measurement( entry.getKey() );
 
-            points.point( point );
+                tags.forEach( builder::tag );
+
+                final Point point = builder
+                    .field( "value", format( value ) )
+                    .build();
+
+                points.point( point );
+            }
         }
     }
 
+    private String format( double v ) {
+        // the Carbon plaintext format is pretty underspecified, but it seems like it just wants
+        // US-formatted digits
+        return String.format( Locale.US, "%2.2f", v );
+    }
 
-    public static Builder forRegistry( MetricRegistry registry ) {
-        return new Builder( registry );
+    private String format( Object o ) {
+        if( o instanceof Float ) {
+            return format( ((Float) o).doubleValue() );
+        } else if( o instanceof Double ) {
+            return format( ((Double) o).doubleValue() );
+        } else if( o instanceof Byte ) {
+            return format( ((Byte) o).longValue() );
+        } else if( o instanceof Short ) {
+            return format( ((Short) o).longValue() );
+        } else if( o instanceof Integer ) {
+            return format( ((Integer) o).longValue() );
+        } else if( o instanceof Long ) {
+            return format( ((Long) o).longValue() );
+        }
+        return null;
     }
 
     public static class Builder {
@@ -214,28 +268,5 @@ class InfluxDBReporter extends ScheduledReporter {
                 rateUnit,
                 durationUnit );
         }
-    }
-
-    private String format( double v ) {
-        // the Carbon plaintext format is pretty underspecified, but it seems like it just wants
-        // US-formatted digits
-        return String.format( Locale.US, "%2.2f", v );
-    }
-
-    private String format( Object o ) {
-        if( o instanceof Float ) {
-            return format( ((Float) o).doubleValue() );
-        } else if( o instanceof Double ) {
-            return format( ((Double) o).doubleValue() );
-        } else if( o instanceof Byte ) {
-            return format( ((Byte) o).longValue() );
-        } else if( o instanceof Short ) {
-            return format( ((Short) o).longValue() );
-        } else if( o instanceof Integer ) {
-            return format( ((Integer) o).longValue() );
-        } else if( o instanceof Long ) {
-            return format( ((Long) o).longValue() );
-        }
-        return null;
     }
 }

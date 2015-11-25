@@ -47,7 +47,7 @@ public class WebServicesPerformance extends AbstractPerformance {
             server.start();
 
             HttpAsserts.reset();
-            benchmark( "Server.invocations", samples, experiments,
+            benchmark( "Server.invocations", samples, experiments, 500,
                 number -> HttpAsserts.get( HTTP_PREFIX + "/x/v/math/id?a=aaa" ).assertResponse( 200, "OK",
                     ContentType.APPLICATION_JSON, "\"aaa\"" ) );
 
@@ -67,7 +67,7 @@ public class WebServicesPerformance extends AbstractPerformance {
             Thread.sleep( 3000 ); // ??? TODO: fix me
 
             HttpAsserts.reset();
-            benchmark( "NioServer.invocations", samples, experiments, ( number ) -> {
+            benchmark( "NioServer.invocations", samples, experiments, 500, ( number ) -> {
                 try {
                     HttpAsserts.get( HTTP_PREFIX + "/x/v/math/id?a=aaa" ).assertResponse( 200, "OK",
                         ContentType.APPLICATION_JSON, "\"aaa\"" );

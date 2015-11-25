@@ -27,6 +27,7 @@ import oap.application.Application;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
 import oap.json.Binder;
+import oap.metrics.Metrics;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 
@@ -37,13 +38,14 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class WebServices {
     private static Logger logger = getLogger( WebServices.class );
-    private final List<WsConfig> wsConfigs;
-
-    private HttpServer server;
 
     static {
         HttpResponse.registerProducer( ContentType.APPLICATION_JSON.getMimeType(), Binder.json::marshal );
     }
+
+    private final List<WsConfig> wsConfigs;
+    private final HttpServer server;
+    final Metrics metrics;
 
     public WebServices( HttpServer server ) {
         this( server, WsConfig.fromClassPath() );
@@ -52,6 +54,7 @@ public class WebServices {
     public WebServices( HttpServer server, List<WsConfig> wsConfigs ) {
         this.wsConfigs = wsConfigs;
         this.server = server;
+        this.metrics = new Metrics();
     }
 
 
@@ -75,7 +78,7 @@ public class WebServices {
     }
 
     public void bind( String context, Object impl ) {
-        server.bind( context, new Service( impl ) );
+        server.bind( context, new Service( impl, metrics ) );
     }
 
 }

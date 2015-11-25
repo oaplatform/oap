@@ -81,6 +81,7 @@ public class Server implements HttpServer {
     private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
     private ExecutorService executor;
     private int port;
+    private Metrics metrics;
     @JsonProperty( "default-headers" )
     private LinkedHashMap<String, String> defaultHeaders = new LinkedHashMap<>();
     private ServerSocket serverSocket;
@@ -96,6 +97,7 @@ public class Server implements HttpServer {
         this.defaultHeaders = defaultHeaders;
         this.executor = Executors.newFixedThreadPool( workers );
         this.mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
+        this.metrics = new Metrics();
     }
 
     @Override
@@ -172,7 +174,7 @@ public class Server implements HttpServer {
                     logger.trace( "connection accepted: " + connection );
                     HttpContext context = HttpCoreContext.create();
                     executor.submit( () -> {
-                        Metrics.measureCounterIncrement( CONNECTIONS );
+                        metrics.measureCounterIncrement( CONNECTIONS );
                         String connectionName = connection.toString();
                         try {
                             Thread.currentThread().setName( connection.toString() );
@@ -190,7 +192,7 @@ public class Server implements HttpServer {
                         } finally {
                             connections.remove( connectionName );
                             Closeables.close( connection );
-                            Metrics.measureCounterDecrement( Metrics.name( "connections" ) );
+                            metrics.measureCounterDecrement( CONNECTIONS );
                             logger.trace( "connection closed: " + connectionName );
                         }
                     } );
@@ -199,8 +201,6 @@ public class Server implements HttpServer {
                     if( serverSocket != null && !serverSocket.isClosed() ) logger.warn( e.getMessage(), e );
                 } catch( Throwable e ) {
                     logger.warn( e.getMessage(), e );
-                } finally {
-                    Metrics.reset( CONNECTIONS );
                 }
             }
         } catch( Exception e ) {

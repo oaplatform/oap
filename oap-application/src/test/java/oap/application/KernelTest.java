@@ -46,7 +46,7 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void start() throws InterruptedException {
+    public void start() {
         List<URL> modules = Module.fromClassPath();
         modules.add( Resources.url( KernelTest.class, "modules/m1.conf" ).get() );
         modules.add( Resources.url( KernelTest.class, "modules/m2.json" ).get() );

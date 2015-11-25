@@ -40,14 +40,11 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class AbstractPerformance extends AbstractTest {
 
-    public static RandomDataGenerator random = new RandomDataGenerator();
-
     public static final int WARMING = 1000;
-
     protected final static Consumer<Integer> none = ( i ) -> {
     };
-
     private final static Function<Long, String> actions_s = ( rate ) -> rate + " action/s";
+    public static RandomDataGenerator random = new RandomDataGenerator();
 
     public static void benchmark( String name, int samples, Try.ThrowingConsumer<Integer> code ) {
         benchmark( name, samples, 5, code, none, none, actions_s );
@@ -123,7 +120,10 @@ public abstract class AbstractPerformance extends AbstractTest {
             ExecutorService pool = Executors.newFixedThreadPool( threads );
             if( warming > 0 ) {
                 System.out.println( "warming up..." );
-                IntStream.range( 0, warming ).parallel().forEach( i -> code.asConsumer().accept( 0 ) );
+                IntStream
+                    .range( 0, warming )
+                    .mapToObj( i -> pool.submit( () -> code.asConsumer().accept( 0 ) ) )
+                    .forEach( Try.consume( Future::get ) );
             }
             System.out.println( "starting test..." );
 
@@ -135,10 +135,10 @@ public abstract class AbstractPerformance extends AbstractTest {
 
                         long start = System.nanoTime();
                         IntStream
-                            .range( 0, threadSamles )
+                            .range( 0, threads )
                             .mapToObj( t -> pool.submit( () -> IntStream
-                                    .range( t * threads, (t + 1) * threads )
-                                    .forEach( code.asConsumer()::accept )
+                                .range( t * threadSamles, (t + 1) * threadSamles )
+                                .forEach( code.asConsumer()::accept )
 
                             ) )
                             .collect( toList() )
@@ -174,6 +174,13 @@ public abstract class AbstractPerformance extends AbstractTest {
         } );
     }
 
+    public static <T> T time( String name, Supplier<T> code ) {
+        long start = System.nanoTime();
+        T result = code.get();
+        System.out.println( name + " took " + ((System.nanoTime() - start) / 1000) + " usec" );
+        return result;
+    }
+
     public static class BenchmarkResult {
         public long rate;
         public long time;
@@ -187,12 +194,5 @@ public abstract class AbstractPerformance extends AbstractTest {
             Assert.assertTrue( this.time < time, "expected time < " + time + " but was " + this.time + "." );
             Assert.assertTrue( this.rate > rate, "expected rate > " + rate + " but was " + this.rate + "." );
         }
-    }
-
-    public static <T> T time( String name, Supplier<T> code ) {
-        long start = System.nanoTime();
-        T result = code.get();
-        System.out.println( name + " took " + ((System.nanoTime() - start) / 1000) + " usec" );
-        return result;
     }
 }

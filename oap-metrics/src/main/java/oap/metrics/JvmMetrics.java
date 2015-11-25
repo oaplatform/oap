@@ -24,39 +24,13 @@
 
 package oap.metrics;
 
-import oap.net.Inet;
+import oap.metrics.jvm.MemoryUsageGaugeSet;
 
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-public class InfluxReporter {
-    protected String host;
-    protected int port;
-    protected String database;
-    protected String login;
-    protected String password;
-
-    protected long period = 60 * 1000;
-
-    protected Metrics metrics;
-
-    private InfluxDBReporter reporter;
-
-    public InfluxReporter( Map<String, Object> tags ) {
-        InfluxDBReporter.Builder builder = InfluxDBReporter.forRegistry( metrics.registry )
-            .withTag( "host", Inet.HOSTNAME )
-            .convertRatesTo( TimeUnit.MINUTES )
-            .convertDurationsTo( TimeUnit.MICROSECONDS )
-            .withConnect( this.host, port, database, login, password );
-        tags.forEach( ( name, value ) -> builder.withTag( name, String.valueOf( value ) ) );
-        reporter = builder.build();
-    }
-
-    public void start() {
-        reporter.start( period, TimeUnit.MILLISECONDS );
-    }
-
-    public void stop() {
-        reporter.stop();
+/**
+ * Created by Igor Petrenko on 25.11.2015.
+ */
+public class JvmMetrics extends Metrics {
+    public JvmMetrics() {
+        registry.registerAll( new MemoryUsageGaugeSet() );
     }
 }

@@ -58,9 +58,7 @@ public class Kernel {
         this.modules = modules;
     }
 
-    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
-        Set<String> initialized,
-        Map<String, Map<String, Object>> config ) {
+    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services, Set<String> initialized ) {
 
         HashMap<String, Module.Service> deferred = new HashMap<>();
 
@@ -74,8 +72,6 @@ public class Kernel {
 
                 Object instance;
                 if( service.remoteUrl == null ) {
-                    config.getOrDefault( serviceName, Collections.emptyMap() )
-                        .forEach( service.parameters::put );
                     initializeServiceLinks( serviceName, service );
                     instance = reflect.newInstance( service.parameters );
                 } else instance = RemoteInvocationHandler.proxy(
@@ -104,7 +100,7 @@ public class Kernel {
             }
         }
 
-        return deferred.size() == services.size() ? deferred : initializeServices( deferred, initialized, config );
+        return deferred.size() == services.size() ? deferred : initializeServices( deferred, initialized );
     }
 
     private void initializeServiceLinks( String name, Module.Service service ) {
@@ -118,8 +114,7 @@ public class Kernel {
             }
     }
 
-    private Set<Module> initialize( Set<Module> modules, Set<String> initialized,
-        Map<String, Map<String, Object>> config ) {
+    private Set<Module> initialize( Set<Module> modules, Set<String> initialized ) {
         HashSet<Module> deferred = new HashSet<>();
 
         for( Module module : modules ) {
@@ -127,7 +122,7 @@ public class Kernel {
             if( initialized.containsAll( module.dependsOn ) ) {
 
                 Map<String, Module.Service> def =
-                    initializeServices( module.services, new LinkedHashSet<>(), config );
+                    initializeServices( module.services, new LinkedHashSet<>() );
                 if( !def.isEmpty() ) {
                     List<String> names = Stream.of( def.entrySet().stream() ).map( Map.Entry::getKey ).toList();
                     logger.error( "failed to initialize: " + names );
@@ -141,7 +136,7 @@ public class Kernel {
             }
         }
 
-        return deferred.size() == modules.size() ? deferred : initialize( deferred, initialized, config );
+        return deferred.size() == modules.size() ? deferred : initialize( deferred, initialized );
     }
 
     public void start() {
@@ -161,7 +156,7 @@ public class Kernel {
             .collect( toSet() );
         logger.trace( "modules = " + Stream.of( moduleConfigs ).map( m -> m.name ).toList() );
 
-        if( !initialize( moduleConfigs, new HashSet<>(), config ).isEmpty() ) {
+        if( !initialize( moduleConfigs, new HashSet<>() ).isEmpty() ) {
             logger.error( "failed to initialize: " + moduleConfigs );
             throw new ApplicationException( "failed to initialize modules" );
         }

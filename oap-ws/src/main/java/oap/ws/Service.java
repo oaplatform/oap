@@ -57,6 +57,7 @@ import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class Service implements Handler {
     private final Object impl;
+    private final Metrics metrics;
     private final Logger logger;
     private final Reflection reflection;
     private final Coercions coercions = Coercions.basic()
@@ -67,8 +68,9 @@ public class Service implements Handler {
     private HashMap<String, Pattern> compiledPaths = new HashMap<>();
 
 
-    public Service( Object impl ) {
+    public Service( Object impl, Metrics metrics ) {
         this.impl = impl;
+        this.metrics = metrics;
         this.logger = LoggerFactory.getLogger( impl.getClass() );
         this.reflection = Reflect.reflect( impl.getClass() );
         this.reflection.methods.forEach( m -> m.findAnnotation( WsMethod.class )
@@ -139,7 +141,7 @@ public class Service implements Handler {
                             .tag( "service", impl.getClass().getSimpleName() )
                             .tag( "method", method.name() );
 
-                        Metrics.measureTimer( name, () -> {
+                        metrics.measureTimer( name, () -> {
                             Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
                             Object[] paramValues = new Object[method.paramerers.size()];
                             List<String> paramErrors = new ArrayList<>();

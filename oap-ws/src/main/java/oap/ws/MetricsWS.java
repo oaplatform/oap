@@ -33,13 +33,19 @@ import static oap.http.Request.HttpMethod.GET;
 
 public class MetricsWS {
 
+    private final Metrics metrics;
+
+    public MetricsWS( Metrics metrics ) {
+        this.metrics = metrics;
+    }
+
     @WsMethod( path = "/", method = GET )
     public List<Metrics.Snapshot> metrics() throws IOException {
-        return Metrics.snapshots();
+        return metrics.snapshots();
     }
 
     @WsMethod( path = "/reset", method = GET )
     public void reset() throws IOException {
-        Metrics.resetAll();
+        metrics.resetAll();
     }
 }
