@@ -35,10 +35,12 @@ public class InfluxReporter {
     protected String login;
     protected String password;
 
+    protected Metrics metrics;
+
     private InfluxDBReporter reporter;
 
     public void start() {
-        reporter = InfluxDBReporter.forRegistry( Metrics.registry )
+        reporter = InfluxDBReporter.forRegistry( metrics.registry )
             .withTag( "host", Inet.HOSTNAME )
             .convertRatesTo( TimeUnit.MINUTES )
             .convertDurationsTo( TimeUnit.MICROSECONDS )
