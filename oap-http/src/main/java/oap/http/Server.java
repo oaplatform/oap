@@ -29,7 +29,6 @@ import com.google.common.base.Throwables;
 import oap.concurrent.Threads;
 import oap.io.Closeables;
 import oap.metrics.Metrics;
-import oap.metrics.Name;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpConnection;
 import org.apache.http.config.ConnectionConfig;
@@ -67,7 +66,7 @@ import java.util.concurrent.Semaphore;
 public class Server implements HttpServer {
 
     private final static Logger logger = LoggerFactory.getLogger( Server.class );
-    private static final Name CONNECTIONS = Metrics.name( "connections" );
+    private static final String CONNECTIONS = "connections";
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
         .add( new ResponseDate() )
@@ -116,9 +115,9 @@ public class Server implements HttpServer {
 
     public void start() {
         try {
-
             logger.info( "starting [localhost:" + port + "]..." );
 
+            metrics.measureGauge( CONNECTIONS, connections::size );
             serverSocket = new ServerSocket();
 
             serverSocket.setSoTimeout( 500 );
@@ -174,7 +173,6 @@ public class Server implements HttpServer {
                     logger.trace( "connection accepted: " + connection );
                     HttpContext context = HttpCoreContext.create();
                     executor.submit( () -> {
-                        metrics.measureCounterIncrement( CONNECTIONS );
                         String connectionName = connection.toString();
                         try {
                             Thread.currentThread().setName( connection.toString() );
@@ -192,7 +190,6 @@ public class Server implements HttpServer {
                         } finally {
                             connections.remove( connectionName );
                             Closeables.close( connection );
-                            metrics.measureCounterDecrement( CONNECTIONS );
                             logger.trace( "connection closed: " + connectionName );
                         }
                     } );
