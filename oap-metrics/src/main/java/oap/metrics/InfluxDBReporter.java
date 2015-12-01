@@ -221,7 +221,7 @@ class InfluxDBReporter extends ScheduledReporter {
         private String password;
         private TimeUnit rateUnit;
         private TimeUnit durationUnit;
-        private ReporterFilter filter = new ReporterFilter();
+        private ReporterFilter filter;
 
         public Builder( MetricRegistry registry ) {
             this.registry = registry;

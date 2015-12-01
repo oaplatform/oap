@@ -26,9 +26,12 @@ package oap.metrics;
 
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
+import oap.util.Lists;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
+
+import static oap.util.Lists.Collectors.toArrayList;
 
 /**
  * Created by Igor Petrenko on 01.12.2015.
@@ -37,13 +40,9 @@ public class ReporterFilter implements MetricFilter {
     public final ArrayList<Pattern> include;
     public final ArrayList<Pattern> exclude;
 
-    public ReporterFilter() {
-        this( new ArrayList<>(), new ArrayList<>() );
-    }
-
-    public ReporterFilter( ArrayList<Pattern> include, ArrayList<Pattern> exclude ) {
-        this.include = include;
-        this.exclude = exclude;
+    public ReporterFilter( ArrayList<String> include, ArrayList<String> exclude ) {
+        this.include = include.stream().map(Pattern::compile).collect( toArrayList() );
+        this.exclude = exclude.stream().map(Pattern::compile).collect( toArrayList() );
     }
 
     @Override

@@ -27,6 +27,7 @@ package oap.metrics;
 import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 import static org.testng.Assert.assertFalse;
@@ -39,7 +40,7 @@ public class ReporterFilterTest extends AbstractTest {
 
     @Test
     public void testMatchesExclude() throws Exception {
-        final ReporterFilter reporterFilter = new ReporterFilter();
+        final ReporterFilter reporterFilter = new ReporterFilter( new ArrayList<>(), new ArrayList<>() );
         reporterFilter.exclude.add( Pattern.compile( "^test.*" ) );
 
         assertFalse( reporterFilter.matches( "test.test", null ) );
@@ -48,7 +49,7 @@ public class ReporterFilterTest extends AbstractTest {
 
     @Test
     public void testMatchesInclude() throws Exception {
-        final ReporterFilter reporterFilter = new ReporterFilter();
+        final ReporterFilter reporterFilter = new ReporterFilter( new ArrayList<>(), new ArrayList<>() );
         reporterFilter.include.add( Pattern.compile( "^test.*" ) );
 
         assertTrue( reporterFilter.matches( "test.test", null ) );
@@ -57,7 +58,7 @@ public class ReporterFilterTest extends AbstractTest {
 
     @Test
     public void testMatchesExcludeVsInclude() throws Exception {
-        final ReporterFilter reporterFilter = new ReporterFilter();
+        final ReporterFilter reporterFilter = new ReporterFilter( new ArrayList<>(), new ArrayList<>() );
         reporterFilter.include.add( Pattern.compile( "^test.*" ) );
         reporterFilter.exclude.add( Pattern.compile( "^testt.*" ) );
 
