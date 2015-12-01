@@ -51,6 +51,8 @@ public class ValidatePeerMethodTest extends AbstractTest {
 
     @BeforeClass
     public void startServer() {
+        Metrics.resetAll();
+
         ws.bind( "test", new TestWS() );
         server.start();
     }
