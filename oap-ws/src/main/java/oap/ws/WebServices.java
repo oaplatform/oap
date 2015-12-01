@@ -45,7 +45,6 @@ public class WebServices {
 
     private final List<WsConfig> wsConfigs;
     private final HttpServer server;
-    final Metrics metrics;
 
     public WebServices( HttpServer server ) {
         this( server, WsConfig.fromClassPath() );
@@ -54,7 +53,6 @@ public class WebServices {
     public WebServices( HttpServer server, List<WsConfig> wsConfigs ) {
         this.wsConfigs = wsConfigs;
         this.server = server;
-        this.metrics = new Metrics();
     }
 
 
@@ -78,7 +76,7 @@ public class WebServices {
     }
 
     public void bind( String context, Object impl ) {
-        server.bind( context, new Service( impl, metrics ) );
+        server.bind( context, new Service( impl ) );
     }
 
 }

@@ -80,7 +80,6 @@ public class Server implements HttpServer {
     private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
     private ExecutorService executor;
     private int port;
-    private Metrics metrics;
     @JsonProperty( "default-headers" )
     private LinkedHashMap<String, String> defaultHeaders = new LinkedHashMap<>();
     private ServerSocket serverSocket;
@@ -96,7 +95,6 @@ public class Server implements HttpServer {
         this.defaultHeaders = defaultHeaders;
         this.executor = Executors.newFixedThreadPool( workers );
         this.mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
-        this.metrics = new Metrics();
     }
 
     @Override
@@ -117,7 +115,7 @@ public class Server implements HttpServer {
         try {
             logger.info( "starting [localhost:" + port + "]..." );
 
-            metrics.measureGauge( CONNECTIONS, connections::size );
+            Metrics.measureGauge( CONNECTIONS, connections::size );
             serverSocket = new ServerSocket();
 
             serverSocket.setSoTimeout( 500 );

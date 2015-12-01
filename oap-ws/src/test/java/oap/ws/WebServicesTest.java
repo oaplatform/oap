@@ -110,7 +110,7 @@ public class WebServicesTest {
         get( HTTP_PREFIX + "/x/v/math/code?code=204" )
             .assertResponse( 204, "No Content" );
         assertEquals(
-            ws.metrics.snapshot( Metrics.name( "rest_timer" )
+            Metrics.snapshot( Metrics.name( "rest_timer" )
                 .tag( "service", MathWS.class.getSimpleName() )
                 .tag( "method", "bean" ) ).count,
             1 );

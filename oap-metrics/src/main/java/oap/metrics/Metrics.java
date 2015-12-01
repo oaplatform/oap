@@ -36,8 +36,8 @@ import oap.util.PairStream;
 import java.util.List;
 import java.util.function.Supplier;
 
-public class Metrics {
-    final MetricRegistry registry = new MetricRegistry();
+public final class Metrics {
+    static final MetricRegistry registry = new MetricRegistry();
 
     private static Snapshot toSnapshot( String name, Metric value ) {
         Snapshot snapshot = new Snapshot( name );
@@ -50,47 +50,47 @@ public class Metrics {
         return snapshot;
     }
 
-    public void measureTimer( Name metric, Runnable code ) {
+    public static void measureTimer( Name metric, Runnable code ) {
         try( Timer.Context ignored = registry.timer( metric.line ).time() ) {
             code.run();
         }
     }
 
-    public <T> void measureGauge( String metric, Supplier<T> get ) {
+    public static <T> void measureGauge( String metric, Supplier<T> get ) {
         registry.register( metric, (Gauge<T>) get::get );
     }
 
-    public <T> T measureTimer( String metric, Supplier<T> code ) {
+    public static <T> T measureTimer( String metric, Supplier<T> code ) {
         return measureTimer( name( metric ), code );
     }
 
-    public <T> T measureTimer( Name metric, Supplier<T> code ) {
+    public static <T> T measureTimer( Name metric, Supplier<T> code ) {
         try( Timer.Context ignored = registry.timer( metric.line ).time() ) {
             return code.get();
         }
     }
 
-    public Timer.Context measureTimerCodehale( String metric ) {
+    public static Timer.Context measureTimerCodehale( String metric ) {
         return registry.timer( name( metric ).line ).time();
     }
 
-    public void measureMeter( Name metric ) {
+    public static void measureMeter( Name metric ) {
         registry.meter( MetricRegistry.name( metric.line ) ).mark();
     }
 
-    public void measureHistogram( String metric, long count ) {
+    public static void measureHistogram( String metric, long count ) {
         measureHistogram( name( metric ), count );
     }
 
-    public void measureHistogram( Name metric, long count ) {
+    public static void measureHistogram( Name metric, long count ) {
         registry.histogram( metric.line ).update( count );
     }
 
-    public void measureCounterIncrement( Name metric ) {
+    public static void measureCounterIncrement( Name metric ) {
         registry.counter( metric.line ).inc();
     }
 
-    public void measureCounterDecrement( Name metric ) {
+    public static void measureCounterDecrement( Name metric ) {
         registry.counter( metric.line ).dec();
     }
 
@@ -98,28 +98,28 @@ public class Metrics {
         return new Name( measurement );
     }
 
-    public void reset( Name metric ) {
+    public static void reset( Name metric ) {
         registry.remove( metric.line );
     }
 
-    public void resetAll() {
+    public static void resetAll() {
         registry.removeMatching( MetricFilter.ALL );
     }
 
-    public Snapshot snapshot( Name name ) {
+    public static Snapshot snapshot( Name name ) {
         return snapshot( name.line );
     }
 
-    public Snapshot snapshot( String name ) {
+    public static Snapshot snapshot( String name ) {
         Metric metric = registry.getMetrics().get( name );
         return metric != null ? toSnapshot( name, metric ) : new Snapshot( name );
     }
 
-    public List<Snapshot> snapshots() {
+    public static List<Snapshot> snapshots() {
         return PairStream.of( registry.getMetrics() ).mapToObj( Metrics::toSnapshot ).toList();
     }
 
-    public void unregister( String metric ) {
+    public static void unregister( String metric ) {
         registry.remove( metric );
     }
 

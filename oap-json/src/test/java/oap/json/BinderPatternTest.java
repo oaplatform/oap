@@ -22,42 +22,30 @@
  * SOFTWARE.
  */
 
-package oap.metrics;
+package oap.json;
 
-import oap.net.Inet;
+import oap.testng.AbstractTest;
+import org.testng.annotations.Test;
 
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
-public class InfluxReporter {
-    protected String host;
-    protected int port;
-    protected String database;
-    protected String login;
-    protected String password;
-    protected ReporterFilter filter = new ReporterFilter();
+import static org.testng.Assert.assertEquals;
 
-    protected long period = 60 * 1000;
 
-    private InfluxDBReporter reporter;
+/**
+ * Created by Igor Petrenko on 01.12.2015.
+ */
+public class BinderPatternTest extends AbstractTest {
+    @Test
+    public void testPattern() {
+        final String pattern = "{test = \"[^a]+\"}";
 
-    public InfluxReporter( Map<String, Object> tags ) {
-        InfluxDBReporter.Builder builder = InfluxDBReporter
-            .forRegistry( Metrics.registry )
-            .withFilter( filter )
-            .withTag( "host", Inet.HOSTNAME )
-            .convertRatesTo( TimeUnit.MINUTES )
-            .convertDurationsTo( TimeUnit.MICROSECONDS )
-            .withConnect( this.host, port, database, login, password );
-        tags.forEach( ( name, value ) -> builder.withTag( name, String.valueOf( value ) ) );
-        reporter = builder.build();
+        final BeanPattern unmarshal = Binder.hocon.unmarshal( BeanPattern.class, pattern );
+
+        assertEquals( unmarshal.test.pattern(), "[^a]+" );
     }
 
-    public void start() {
-        reporter.start( period, TimeUnit.MILLISECONDS );
-    }
-
-    public void stop() {
-        reporter.stop();
+    public static class BeanPattern {
+        public Pattern test;
     }
 }

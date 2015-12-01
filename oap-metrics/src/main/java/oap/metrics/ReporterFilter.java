@@ -24,13 +24,35 @@
 
 package oap.metrics;
 
-import oap.metrics.jvm.MemoryUsageGaugeSet;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricFilter;
+
+import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 /**
- * Created by Igor Petrenko on 25.11.2015.
+ * Created by Igor Petrenko on 01.12.2015.
  */
-public class JvmMetrics extends Metrics {
-    public JvmMetrics() {
-        registry.registerAll( new MemoryUsageGaugeSet() );
+public class ReporterFilter implements MetricFilter {
+    public final ArrayList<Pattern> include;
+    public final ArrayList<Pattern> exclude;
+
+    public ReporterFilter() {
+        this( new ArrayList<>(), new ArrayList<>() );
+    }
+
+    public ReporterFilter( ArrayList<Pattern> include, ArrayList<Pattern> exclude ) {
+        this.include = include;
+        this.exclude = exclude;
+    }
+
+    @Override
+    public boolean matches( String name, Metric metric ) {
+        if( !include.isEmpty() && !include.stream().filter( e -> e.matcher( name ).find() ).findAny().isPresent() )
+            return false;
+
+        if( exclude.isEmpty() ) return true;
+
+        return !exclude.stream().filter( e -> e.matcher( name ).find() ).findAny().isPresent();
     }
 }
