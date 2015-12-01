@@ -24,6 +24,8 @@
 package oap.ws.validate;
 
 import oap.http.HttpResponse;
+import oap.metrics.Metrics;
+import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.ws.WebServices;
@@ -43,9 +45,10 @@ import static oap.ws.WsParam.From.BODY;
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
-public class ValidatePeerMethodTest {
+public class ValidatePeerMethodTest extends AbstractTest {
     protected final Server server = new Server( Env.port(), 100 );
     protected final WebServices ws = new WebServices( server );
+
     @BeforeClass
     public void startServer() {
         ws.bind( "test", new TestWS() );
@@ -58,6 +61,8 @@ public class ValidatePeerMethodTest {
         HttpAsserts.reset();
 
         server.unbind( "test" );
+
+        Metrics.resetAll();
     }
 
     @Test
