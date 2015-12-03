@@ -21,24 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.logstream;
 
+import oap.testng.AbstractTest;
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.DateTimeUtils;
+import org.testng.annotations.Test;
 
-import java.util.Date;
+import static org.testng.Assert.assertEquals;
 
-public class Filename {
-    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" );
-    private static final DateTimeFormatter directoryFormatter = DateTimeFormat.forPattern( "yyyy-MM/dd" );
+/**
+ * Created by Igor Petrenko on 03.12.2015.
+ */
+public class FilenameTest extends AbstractTest {
 
-    public static String formatDate( DateTime date, int interval ) {
-        int bucket = (int) Math.floor( date.getMinuteOfHour() / (double) interval );
-        return formatter.print( date ) + "-" + (bucket > 9 ? bucket : "0" + bucket);
+    @Test
+    public void testFormatDate() throws Exception {
+        DateTimeUtils.setCurrentMillisFixed( new DateTime( 2015, 12, 3, 11, 28, 30 ).getMillis() );
+        final String s = Filename.formatDate( DateTime.now(), 5 );
+
+        assertEquals( s, "2015-12-03-11-05" );
     }
 
-    public static String directoryName(String timestamp){
-        return directoryFormatter.print( formatter.parseDateTime( timestamp.substring( 0, 12 ) ) );
+    @Test
+    public void testDirectoryName() throws Exception {
+        assertEquals(Filename.directoryName( "2015-12-03-11-05" ), "2015-12/03");
     }
 }
