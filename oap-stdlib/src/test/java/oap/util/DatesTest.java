@@ -24,13 +24,13 @@
 
 package oap.util;
 
+import oap.testng.AbstractTest;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
 
-public class DatesTest {
-
+public class DatesTest extends AbstractTest {
     @Test
     public void parseIsoDate() throws Exception {
         assertEquals( Dates.parseDateWithMillis( "2016-01-01T00:00:00.000" ).successValue,
