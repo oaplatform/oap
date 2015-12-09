@@ -51,7 +51,6 @@ public class NioServer implements oap.http.HttpServer {
         this.mapper.register( "/static/*", new NioClasspathResourceHandler( "/static", "/WEB-INF" ) );
 
         IOReactorConfig config = IOReactorConfig.custom()
-            .setSoTimeout( 500 )
             .setTcpNoDelay( true )
             .setSoKeepAlive( true )
             .build();

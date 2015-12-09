@@ -58,6 +58,17 @@ public class BinderTest extends AbstractTest {
         assertEquals( result, source );
     }
 
+    private static <T> void assertBindWithTyping( Class<T> clazz, T source ) {
+        System.out.println( "========================================" );
+        String json2 = Binder.jsonWithTyping.marshal( source );
+        System.out.println( "JSON2:" );
+        System.out.println( json2 );
+        T result = Binder.jsonWithTyping.unmarshal( clazz, json2 );
+        System.out.println( "Object:" );
+        System.out.println( result );
+        assertEquals( result, source );
+    }
+
     private static <T> void assertBind( TypeReference<T> ref, T source ) {
         System.out.println( "========================================" );
         String json = Binder.json.marshal( source );
@@ -132,6 +143,7 @@ public class BinderTest extends AbstractTest {
     @Test
     public void bindAtomicLong() {
         assertBind( AtomicLongBean.class, new AtomicLongBean( 10 ) );
+        assertBindWithTyping( AtomicLongBean.class, new AtomicLongBean( 10 ) );
     }
 
     @Test
