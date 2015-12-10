@@ -171,14 +171,13 @@ public class Server implements HttpServer {
                     DefaultBHttpServerConnection connection =
                         connectionFactory.createConnection( accept );
 
-                    connections.put( connection.toString(), connection );
+                    final String connectionName = connection.toString();
+                    connections.put( connectionName, connection );
 
                     try {
-
                         logger.trace( "connection accepted: " + connection );
                         HttpContext context = HttpCoreContext.create();
                         executor.submit( () -> {
-                            String connectionName = connection.toString();
                             try {
                                 Thread.currentThread().setName( connection.toString() );
                                 logger.trace( "start handling " + connectionName );
@@ -199,6 +198,8 @@ public class Server implements HttpServer {
                             }
                         } );
                     } catch( IllegalStateException e ) {
+                        connections.remove( connectionName );
+
                         logger.warn( e.getMessage() );
                         IOUtils.closeQuietly( connection );
                     }
