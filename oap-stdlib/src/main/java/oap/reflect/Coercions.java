@@ -138,7 +138,8 @@ public class Coercions {
         return this;
     }
 
-    private static class LongConvertor implements Function<Object, Object> {
+    public static class LongConvertor implements Function<Object, Object> {
+        public static final LongConvertor DEFAULT = new LongConvertor();
         private final String name;
 
         public LongConvertor() {
