@@ -23,6 +23,7 @@
  */
 package oap.io;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
@@ -45,8 +46,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+@Slf4j
 public final class Files {
     public static ArrayList<Path> wildcard( String basePath, String wildcard ) {
         return wildcard( path( basePath ), wildcard );
@@ -57,15 +58,17 @@ public final class Files {
             PathMatcher pm = FileSystems.getDefault()
                 .getPathMatcher( ("glob:" + basePath + File.separator + wildcard).replace( "\\", "\\\\" ) );
             ArrayList<Path> result = new ArrayList<>();
-            SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
+            SimpleFileVisitor2<Path> visitor = new SimpleFileVisitor2<Path>() {
                 @Override
                 public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException {
                     if( pm.matches( file ) ) result.add( file );
-                    return FileVisitResult.CONTINUE;
+                    return super.visitFile( file, attrs );
                 }
             };
-            if( basePath.toFile().exists() && basePath.toFile().canExecute() )
+            if( basePath.toFile().exists() && basePath.toFile().canExecute() ) {
                 java.nio.file.Files.walkFileTree( basePath, visitor );
+                log.debug( "visited count {}, basePath {}, wildcard {}", visitor.visited, basePath, wildcard );
+            }
             Collections.sort( result );
             return result;
         } catch( IOException e ) {
