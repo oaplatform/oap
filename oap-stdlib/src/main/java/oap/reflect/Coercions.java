@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -47,6 +48,7 @@ import static oap.util.Pair.__;
 
 public class Coercions {
 
+    private static final Pattern numberPattern = Pattern.compile( "(\\d+)\\s*([^\\d]*)" );
     private static HashMap<Class<?>, Function<Object, Object>> convertors = new HashMap<>();
 
     static {
@@ -136,36 +138,72 @@ public class Coercions {
         return this;
     }
 
-    private static class IntConvertor implements Function<Object, Object> {
-        @Override
-        public Object apply( Object value ) {
-            if( value instanceof Number ) return ((Number) value).intValue();
-            else if( value instanceof String ) try {
-                String str = (String) value;
-                if( str.endsWith( "Kb" ) )
-                    return Integer.parseInt( str.substring( 0, str.length() - 2 ) ) * 1024;
-                if( str.endsWith( "Mb" ) )
-                    return Integer.parseInt( str.substring( 0, str.length() - 2 ) ) * 1024 * 1024;
-                if( str.endsWith( "Gb" ) )
-                    return Integer.parseInt( str.substring( 0, str.length() - 2 ) ) * 1024 * 1024 * 1024;
-                return Integer.parseInt( str );
-            } catch( NumberFormatException e ) {
-                throw new ReflectException( "cannot cast " + value + " to int" );
-            }
-            else throw new ReflectException( "cannot cast " + value + " to int" );
-        }
-    }
-
     private static class LongConvertor implements Function<Object, Object> {
+        private final String name;
+
+        public LongConvertor() {
+            this( "long" );
+        }
+
+        public LongConvertor( String name ) {
+            this.name = name;
+        }
+
         @Override
         public Object apply( Object value ) {
             if( value instanceof Number ) return ((Number) value).longValue();
-            else if( value instanceof String ) try {
-                return Long.parseLong( (String) value );
-            } catch( NumberFormatException e ) {
-                throw new ReflectException( "cannot cast " + value + " to Long.class" );
+            else if( value instanceof String ) {
+                String str = (String) value;
+
+                final Matcher matcher = numberPattern.matcher( str );
+                if( matcher.find() ) {
+                    final String mod = matcher.group( 2 );
+                    final String number = matcher.group( 1 );
+
+                    switch( mod.toLowerCase() ) {
+                        case "kb":
+                            return Long.parseLong( number ) * 1024;
+                        case "mb":
+                            return Long.parseLong( number ) * 1024 * 1024;
+                        case "gb":
+                            return Long.parseLong( number ) * 1024 * 1024 * 1024;
+                        case "ms":
+                            return Long.parseLong( number );
+                        case "s":
+                        case "second":
+                        case "seconds":
+                            return Long.parseLong( number ) * 1000;
+                        case "m":
+                        case "minute":
+                        case "minutes":
+                            return Long.parseLong( number ) * 1000 * 60;
+                        case "h":
+                        case "hour":
+                        case "hours":
+                            return Long.parseLong( number ) * 1000 * 60 * 60;
+                        case "d":
+                        case "day":
+                        case "days":
+                            return Long.parseLong( number ) * 1000 * 60 * 60 * 24;
+                        case "":
+                            return Long.parseLong( number );
+                        default:
+                    }
+                }
             }
-            else throw new ReflectException( "cannot cast " + value + " to Long.class" );
+
+            throw new ReflectException( "cannot cast " + value + " to " + name );
+        }
+    }
+
+    private static class IntConvertor extends LongConvertor {
+        public IntConvertor() {
+            super( "int" );
+        }
+
+        @Override
+        public Object apply( Object value ) {
+            return (int) (long) super.apply( value );
         }
     }
 

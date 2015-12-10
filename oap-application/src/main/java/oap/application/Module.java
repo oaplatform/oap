@@ -120,7 +120,7 @@ public class Module {
         public boolean supervise;
         public boolean thread;
         public boolean schedule;
-        public long delay; //seconds
+        public long delay; //ms
         public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
 
         public Supervision() {
