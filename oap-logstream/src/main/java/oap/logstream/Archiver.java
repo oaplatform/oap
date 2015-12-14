@@ -36,12 +36,12 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class Archiver implements Runnable {
     private final Path sourceDirectory;
     private final Path destinationDirectory;
-    private final int safeInterval;
+    private final long safeInterval;
     private String mask;
     private static Logger logger = getLogger( Archiver.class );
 
 
-    public Archiver( Path sourceDirectory, Path destinationDirectory, int safeInterval, String mask ) {
+    public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask ) {
         this.sourceDirectory = sourceDirectory;
         this.destinationDirectory = destinationDirectory;
         this.safeInterval = safeInterval;
@@ -52,7 +52,7 @@ public class Archiver implements Runnable {
     public void run() {
         logger.debug( "let's start packing of " + mask + " in " + sourceDirectory + " into " + destinationDirectory );
         for( Path path : Files.wildcard( sourceDirectory, mask ) )
-            if( path.toFile().lastModified() < DateTime.now().minusMinutes( safeInterval ).getMillis() ) {
+            if( path.toFile().lastModified() < DateTime.now().minus( safeInterval ).getMillis() ) {
                 logger.debug( "archiving " + path );
                 Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz" );
                 Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz.tmp" );

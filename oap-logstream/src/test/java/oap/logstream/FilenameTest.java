@@ -46,7 +46,7 @@ public class FilenameTest extends AbstractTest {
         DateTimeZone.setDefault( DateTimeZone.forOffsetHours( -9 ) );
 
         DateTimeUtils.setCurrentMillisFixed( new DateTime( 2015, 12, 3, 11, 28, 30, DateTimeZone.UTC ).getMillis() );
-        final String s = Filename.formatDate( DateTime.now(), 5 );
+        final String s = Filename.formatDate( DateTime.now(), 5 * 60 * 1000 );
 
         assertEquals( s, "2015-12-03-11-05" );
     }
