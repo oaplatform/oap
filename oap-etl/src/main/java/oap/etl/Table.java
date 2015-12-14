@@ -41,8 +41,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-import static oap.io.Files.version;
-
 public class Table {
     private Stream<List<Object>> lines;
     private List<Runnable> closeHandlers = new ArrayList<>();
@@ -61,6 +59,10 @@ public class Table {
 
     public static Table fromFiles( List<Path> paths, IoStreams.Encoding encoding, ModelSet modelSet) {
         return new Table( Tsv.fromPaths( paths, encoding, modelSet) );
+    }
+
+    public static Table fromFiles( List<Path> paths, IoStreams.Encoding encoding, ModelSet.Model model) {
+        return new Table( Tsv.fromPaths( paths, encoding, model) );
     }
 
     @SuppressWarnings( "unchecked" )

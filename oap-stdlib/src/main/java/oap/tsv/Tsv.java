@@ -60,6 +60,10 @@ public class Tsv {
         return Stream.of( paths ).flatMap( path -> fromStream( IoStreams.lines( path, encoding ), modelSet.modelForPath(path) ) );
     }
 
+    public static Stream<List<Object>> fromPaths( List<Path> paths, IoStreams.Encoding encoding, ModelSet.Model model) {
+        return Stream.of( paths ).flatMap( path -> fromStream( IoStreams.lines( path, encoding ), model ) );
+    }
+
     public static Stream<List<Object>> fromUrl( URL url, ModelSet.Model model) {
         return fromUrl( url, model, IoStreams.Encoding.PLAIN, p -> {
         } );
