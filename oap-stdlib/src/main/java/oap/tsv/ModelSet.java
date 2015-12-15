@@ -52,6 +52,9 @@ public class ModelSet {
     }
 
 
+    public static Model unversionedModel(){
+        return new ModelSet().modelForName( "unversioned" );
+    }
     public static ModelSet withoutHeader() {
         return new ModelSet();
     }

@@ -46,7 +46,7 @@ public class Iterators {
 
     public static <T> Iterator<T> of( T initialState, Predicate<T> hasNext, UnaryOperator<T> next ) {
         AtomicReference<T> state = new AtomicReference<>( initialState );
-        return of( () -> hasNext.test( state.get() ), () -> state.updateAndGet( next ) );
+        return of( () -> hasNext.test( state.get() ), () -> state.getAndUpdate( next ) );
     }
 
     public static <T> Iterator<T> traverse( T initialState, UnaryOperator<T> traverse ) {
