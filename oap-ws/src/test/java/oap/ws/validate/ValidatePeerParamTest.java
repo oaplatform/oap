@@ -55,7 +55,7 @@ public class ValidatePeerParamTest {
     public void startServer() {
         Metrics.resetAll();
 
-        ws.bind( "test", new TestWS() );
+        ws.bind( "test", new TestWS(), false );
         server.start();
     }
 

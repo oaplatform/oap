@@ -47,6 +47,8 @@ public final class Metrics {
             snapshot.meanRate = ((Metered) value).getMeanRate();
         if( value instanceof Counting )
             snapshot.count = ((Counting) value).getCount();
+        if( value instanceof Gauge )
+            snapshot.count = ((Number) ((Gauge) value).getValue()).longValue();
         return snapshot;
     }
 

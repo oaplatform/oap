@@ -32,31 +32,39 @@ import org.apache.http.protocol.HttpRequestHandler;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.LinkedHashMap;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
 class BlockingHandlerAdapter implements HttpRequestHandler {
     private static Logger logger = getLogger( BlockingHandlerAdapter.class );
+    private final boolean localHostOnly;
     protected String location;
     private Handler handler;
     private LinkedHashMap<String, String> defaultHeaders;
 
-    public BlockingHandlerAdapter( String location, Handler handler, LinkedHashMap<String, String> defaultHeaders ) {
+    public BlockingHandlerAdapter( String location, Handler handler, LinkedHashMap<String, String> defaultHeaders,
+        boolean localHostOnly ) {
         this.location = location;
         this.handler = handler;
         this.defaultHeaders = defaultHeaders;
+        this.localHostOnly = localHostOnly;
     }
 
     @Override
     public void handle( HttpRequest req, HttpResponse resp, HttpContext ctx ) throws IOException {
         if( logger.isTraceEnabled() ) logger.trace( "handling " + req );
+
         HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
         final Response response = new Response( resp, defaultHeaders );
-        handler.handle(
-            new Request( req, new Context( location, connection.getRemoteAddress() ) ),
-            response
-        );
+        final InetAddress remoteAddress = connection.getRemoteAddress();
+
+        if( localHostOnly && !remoteAddress.isAnyLocalAddress() ) {
+            response.respond( oap.http.HttpResponse.HTTP_FORBIDDEN );
+        } else {
+            handler.handle( new Request( req, new Context( location, remoteAddress ) ), response );
+        }
     }
 
 }

@@ -49,7 +49,7 @@ public class Remote implements Handler {
     }
 
     public void start() {
-        server.bind( context, this );
+        server.bind( context, this, false );
     }
 
     @Override

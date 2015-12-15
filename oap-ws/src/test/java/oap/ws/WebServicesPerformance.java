@@ -43,7 +43,7 @@ public class WebServicesPerformance extends AbstractPerformance {
         Server server = new Server( Env.port(), 100 );
         try {
             WebServices ws = new WebServices( server );
-            ws.bind( "x/v/math", new MathWS() );
+            ws.bind( "x/v/math", new MathWS(), false );
             server.start();
 
             HttpAsserts.reset();
@@ -62,7 +62,7 @@ public class WebServicesPerformance extends AbstractPerformance {
         NioServer server = new NioServer( Env.port() );
         try {
             WebServices ws = new WebServices( server );
-            ws.bind( "x/v/math", new MathWS() );
+            ws.bind( "x/v/math", new MathWS(), false );
             server.start();
             Thread.sleep( 3000 ); // ??? TODO: fix me
 
