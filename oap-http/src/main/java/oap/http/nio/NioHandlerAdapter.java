@@ -27,6 +27,7 @@ import oap.http.Context;
 import oap.http.Handler;
 import oap.http.Request;
 import oap.http.Response;
+import oap.net.Inet;
 import org.apache.http.HttpException;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
@@ -76,7 +77,7 @@ public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
 
         final HttpResponse response = httpAsyncExchange.getResponse();
 
-        if( localHostOnly && !remoteAddress.isSiteLocalAddress() ) {
+        if( localHostOnly && !Inet.isLocalAddress( remoteAddress ) ) {
             response.setStatusCode( HTTP_FORBIDDEN );
         } else {
             handler.handle(

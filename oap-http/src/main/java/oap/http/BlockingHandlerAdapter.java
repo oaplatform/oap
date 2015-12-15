@@ -23,6 +23,7 @@
  */
 package oap.http;
 
+import oap.net.Inet;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -60,7 +61,7 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
         final Response response = new Response( resp, defaultHeaders );
         final InetAddress remoteAddress = connection.getRemoteAddress();
 
-        if( localHostOnly && !remoteAddress.isSiteLocalAddress() ) {
+        if( localHostOnly && !Inet.isLocalAddress( remoteAddress ) ) {
             response.respond( oap.http.HttpResponse.HTTP_FORBIDDEN );
         } else {
             handler.handle( new Request( req, new Context( location, remoteAddress ) ), response );
