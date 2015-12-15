@@ -60,7 +60,7 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
         final Response response = new Response( resp, defaultHeaders );
         final InetAddress remoteAddress = connection.getRemoteAddress();
 
-        if( localHostOnly && !remoteAddress.isAnyLocalAddress() ) {
+        if( localHostOnly && !remoteAddress.isSiteLocalAddress() ) {
             response.respond( oap.http.HttpResponse.HTTP_FORBIDDEN );
         } else {
             handler.handle( new Request( req, new Context( location, remoteAddress ) ), response );

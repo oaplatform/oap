@@ -76,7 +76,7 @@ public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
 
         final HttpResponse response = httpAsyncExchange.getResponse();
 
-        if( localHostOnly && !remoteAddress.isAnyLocalAddress() ) {
+        if( localHostOnly && !remoteAddress.isSiteLocalAddress() ) {
             response.setStatusCode( HTTP_FORBIDDEN );
         } else {
             handler.handle(
