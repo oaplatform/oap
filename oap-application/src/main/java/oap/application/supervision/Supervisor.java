@@ -41,8 +41,8 @@ public class Supervisor {
     private LinkedHashMap<String, Supervised> scheduled = new LinkedHashMap<>();
     private boolean stopped = false;
 
-    public void startSupervised( String name, Object service ) {
-        this.supervised.put( name, new StartableService( service ) );
+    public void startSupervised( String name, Object service, String startWith, String stopWith ) {
+        this.supervised.put( name, new StartableService( service, startWith, stopWith ) );
     }
 
     public void startThread( String name, Object instance ) {

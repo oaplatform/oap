@@ -40,22 +40,21 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     private static Logger logger = getLogger( BlockingHandlerAdapter.class );
     protected String location;
     private Handler handler;
-    private LinkedHashMap<String, String> defaultHeaders;
+    private Cors cors;
 
-    public BlockingHandlerAdapter( String location, Handler handler, LinkedHashMap<String, String> defaultHeaders ) {
+    public BlockingHandlerAdapter( String location, Handler handler, Cors cors ) {
         this.location = location;
         this.handler = handler;
-        this.defaultHeaders = defaultHeaders;
+        this.cors = cors;
     }
 
     @Override
     public void handle( HttpRequest req, HttpResponse resp, HttpContext ctx ) throws IOException {
         if( logger.isTraceEnabled() ) logger.trace( "handling " + req );
         HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
-        final Response response = new Response( resp, defaultHeaders );
         handler.handle(
             new Request( req, new Context( location, connection.getRemoteAddress() ) ),
-            response
+            new Response( resp, cors )
         );
     }
 

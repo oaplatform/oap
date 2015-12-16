@@ -24,13 +24,18 @@
 package oap.io;
 
 import oap.util.Strings;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 public class Sockets {
+    private static final Logger logger = getLogger( Sockets.class );
+
     public static String send( String host, int port, String data ) throws IOException {
         try( Socket socket = new Socket( host, port );
              OutputStream os = socket.getOutputStream();
@@ -40,5 +45,22 @@ public class Sockets {
             socket.shutdownOutput();
             return Strings.readString( is );
         }
+    }
+
+    public static void shutdown( Socket socket ) {
+        try {
+            socket.getInputStream().close();
+            socket.shutdownInput();
+        } catch( IOException e ) {
+            logger.error( e.getMessage(), e );
+        }
+        try {
+            socket.getOutputStream().flush();
+            socket.getOutputStream().close();
+            socket.shutdownOutput();
+        } catch( IOException e ) {
+            logger.error( e.getMessage(), e );
+        }
+        Closeables.close( socket );
     }
 }

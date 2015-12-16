@@ -21,10 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
+package oap.concurrent;
 
-public interface HttpServer {
-    void bind( String context, Cors cors, Handler handler );
+public class ThreadException extends RuntimeException{
+    public ThreadException( String message ) {
+        super( message );
+    }
 
-    void unbind( String context );
+    public ThreadException( String message, Throwable cause ) {
+        super( message, cause );
+    }
+
+    public ThreadException( Throwable cause ) {
+        super( cause );
+    }
+
+    public ThreadException( String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace ) {
+        super( message, cause, enableSuppression, writableStackTrace );
+    }
 }

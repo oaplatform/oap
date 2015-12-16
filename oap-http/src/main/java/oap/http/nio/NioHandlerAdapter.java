@@ -24,6 +24,7 @@
 package oap.http.nio;
 
 import oap.http.Context;
+import oap.http.Cors;
 import oap.http.Handler;
 import oap.http.Request;
 import oap.http.Response;
@@ -39,7 +40,6 @@ import org.apache.http.protocol.HttpCoreContext;
 import org.slf4j.Logger;
 
 import java.io.IOException;
-import java.util.LinkedHashMap;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -48,12 +48,12 @@ public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
 
     private String location;
     private Handler handler;
-    private LinkedHashMap<String, String> defaultHeaders;
+    private Cors cors;
 
-    public NioHandlerAdapter( String location, Handler handler, LinkedHashMap<String, String> defaultHeaders ) {
+    public NioHandlerAdapter( String location, Handler handler, Cors cors ) {
         this.location = location;
         this.handler = handler;
-        this.defaultHeaders = defaultHeaders;
+        this.cors = cors;
     }
 
     @Override
@@ -69,7 +69,7 @@ public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
         HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
         handler.handle(
             new Request( req, new Context( location, connection.getRemoteAddress() ) ),
-            new Response( httpAsyncExchange.getResponse(), defaultHeaders )
+            new Response( httpAsyncExchange.getResponse(), cors )
         );
 
         httpAsyncExchange.submitResponse();

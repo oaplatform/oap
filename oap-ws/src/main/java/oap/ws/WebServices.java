@@ -24,6 +24,7 @@
 package oap.ws;
 
 import oap.application.Application;
+import oap.http.Cors;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
 import oap.json.Binder;
@@ -63,9 +64,9 @@ public class WebServices {
 
         for( WsConfig config : wsConfigs ) {
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() )
-                bind( entry.getKey(), Application.service( entry.getValue().service ) );
+                bind( entry.getKey(), entry.getValue().cors, Application.service( entry.getValue().service ) );
             for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() )
-                server.bind( entry.getKey(), Application.service( entry.getValue().service ) );
+                server.bind( entry.getKey(), entry.getValue().cors, Application.service( entry.getValue().service ) );
         }
     }
 
@@ -77,8 +78,8 @@ public class WebServices {
 
     }
 
-    public void bind( String context, Object impl ) {
-        server.bind( context, new Service( impl, metrics ) );
+    public void bind( String context, Cors cors, Object impl ) {
+        server.bind( context, cors, new Service( impl, metrics ) );
     }
 
 }

@@ -28,25 +28,24 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.slf4j.Logger;
 
-import java.util.LinkedHashMap;
-
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class Response {
     private static Logger logger = getLogger( Response.class );
 
     private org.apache.http.HttpResponse resp;
-    private LinkedHashMap<String, String> defaultHeaders;
+    private Cors cors;
 
-    public Response( org.apache.http.HttpResponse resp, LinkedHashMap<String, String> defaultHeaders ) {
+    public Response( org.apache.http.HttpResponse resp, Cors cors ) {
         this.resp = resp;
-        this.defaultHeaders = defaultHeaders;
+        this.cors = cors;
     }
 
     public void respond( HttpResponse response ) {
         if( logger.isTraceEnabled() ) logger.trace( "responding " + response.code + " " + response.reasonPhrase );
 
-        defaultHeaders.forEach( response::withHeader );
+        cors.setHeaders( resp );
+
         resp.setStatusCode( response.code );
 
         if( response.reasonPhrase != null )

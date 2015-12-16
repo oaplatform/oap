@@ -24,7 +24,6 @@
 package oap.http;
 
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Throwables;
 import oap.concurrent.Threads;
 import oap.io.Closeables;
@@ -82,28 +81,21 @@ public class Server implements HttpServer {
     private ExecutorService executor;
     private int port;
     private Metrics metrics;
-    @JsonProperty( "default-headers" )
-    private LinkedHashMap<String, String> defaultHeaders = new LinkedHashMap<>();
     private ServerSocket serverSocket;
     private Thread thread;
     private Semaphore semaphore = new Semaphore( 0 );
 
     public Server( int port, int workers ) {
-        this( port, workers, new LinkedHashMap<>() );
-    }
-
-    public Server( int port, int workers, LinkedHashMap<String, String> defaultHeaders ) {
         this.port = port;
-        this.defaultHeaders = defaultHeaders;
         this.executor = Executors.newFixedThreadPool( workers );
         this.mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
         this.metrics = new Metrics();
     }
 
     @Override
-    public void bind( String context, Handler handler ) {
+    public void bind( String context, Cors cors, Handler handler ) {
         String location = "/" + context + "/*";
-        this.mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, defaultHeaders ) );
+        this.mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, cors ) );
         logger.info( handler + " bound to " + location );
 
     }
@@ -117,7 +109,7 @@ public class Server implements HttpServer {
     public void start() {
         try {
 
-            logger.info( "starting [localhost:" + port + "]..." );
+            logger.info( "binding to " + port + "..." );
 
             serverSocket = new ServerSocket();
 

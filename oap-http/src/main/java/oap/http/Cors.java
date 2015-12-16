@@ -21,50 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws;
+package oap.http;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.http.Cors;
-import oap.io.Resources;
-import oap.json.Binder;
-import oap.util.Stream;
-import oap.util.Strings;
-import org.apache.commons.collections4.ListUtils;
-
-import java.net.URL;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Objects;
 
 @EqualsAndHashCode
 @ToString
-public class WsConfig {
-    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
-    public LinkedHashMap<String, Service> handlers = new LinkedHashMap<>();
+public class Cors {
+    public static final Cors DEFAULT = new Cors();
+    public String allowOrigin = "*";
 
-    public static List<WsConfig> fromClassPath() {
-        return Stream.of( ListUtils.union(
-            Resources.urls( "META-INF/oap-ws.json" ),
-            Resources.urls( "META-INF/oap-ws.conf" )
-        ) )
-            .map( WsConfig::parse )
-            .toList();
-    }
-
-    public static WsConfig parse( URL url ) {
-        return parse( Strings.readString( url ) );
-    }
-
-    public static WsConfig parse( String json ) {
-        Objects.nonNull( json );
-        return Binder.hocon.unmarshal( WsConfig.class, json );
-    }
-
-    @EqualsAndHashCode
-    @ToString
-    public static class Service {
-        public String service;
-        public Cors cors = new Cors();
+    void setHeaders( org.apache.http.HttpResponse response ) {
+        response.setHeader( "Access-Control-Allow-Origin", allowOrigin );
     }
 }

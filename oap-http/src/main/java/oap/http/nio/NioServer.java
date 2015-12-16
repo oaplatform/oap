@@ -23,7 +23,7 @@
  */
 package oap.http.nio;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import oap.http.Cors;
 import oap.http.Handler;
 import oap.http.Server;
 import org.apache.http.ExceptionLogger;
@@ -34,7 +34,6 @@ import org.apache.http.nio.protocol.UriHttpAsyncRequestHandlerMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class NioServer implements oap.http.HttpServer {
@@ -42,8 +41,6 @@ public class NioServer implements oap.http.HttpServer {
     private static Logger logger = LoggerFactory.getLogger( Server.class );
     private UriHttpAsyncRequestHandlerMapper mapper = new UriHttpAsyncRequestHandlerMapper();
     private final int port;
-    @JsonProperty( "default-headers" )
-    private LinkedHashMap<String, String> defaultHeaders = new LinkedHashMap<>();
     private HttpServer server;
 
     public NioServer( int port ) {
@@ -66,9 +63,9 @@ public class NioServer implements oap.http.HttpServer {
     }
 
     @Override
-    public void bind( String context, Handler handler ) {
+    public void bind( String context, Cors cors, Handler handler ) {
         String location = "/" + context + "/*";
-        this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler, defaultHeaders ) );
+        this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler, cors ) );
         logger.info( handler + " bound to " + location );
 
     }

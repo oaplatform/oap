@@ -23,6 +23,7 @@
  */
 package oap.ws;
 
+import oap.http.Cors;
 import oap.testng.AbstractPerformance;
 import oap.testng.Env;
 import oap.http.nio.NioServer;
@@ -43,7 +44,7 @@ public class WebServicesPerformance extends AbstractPerformance {
         Server server = new Server( Env.port(), 100 );
         try {
             WebServices ws = new WebServices( server );
-            ws.bind( "x/v/math", new MathWS() );
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS() );
             server.start();
 
             HttpAsserts.reset();
@@ -62,7 +63,7 @@ public class WebServicesPerformance extends AbstractPerformance {
         NioServer server = new NioServer( Env.port() );
         try {
             WebServices ws = new WebServices( server );
-            ws.bind( "x/v/math", new MathWS() );
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS() );
             server.start();
             Thread.sleep( 3000 ); // ??? TODO: fix me
 

@@ -32,6 +32,8 @@ import org.apache.commons.io.IOUtils;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystems;
@@ -80,6 +82,17 @@ public final class Files {
         } ).get();
     }
 
+    @SuppressWarnings( "unchecked" )
+    public static <T> T readObject( Path path ) {
+        try( ObjectInputStream is = new ObjectInputStream( IoStreams.in( path, IoStreams.Encoding.PLAIN ) ) ) {
+            return (T) is.readObject();
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        } catch( ClassNotFoundException e ) {
+            throw new UncheckedIOException( new IOException( e ) );
+        }
+    }
+
     public static String readString( String path ) {
         return readString( path( path ), IoStreams.Encoding.PLAIN );
     }
@@ -114,6 +127,14 @@ public final class Files {
 
     public static void writeString( Path path, IoStreams.Encoding encoding, String value ) {
         IoStreams.write( path, encoding, value );
+    }
+
+    public static void writeObject( Path path, Object value ) {
+        try( ObjectOutputStream os = new ObjectOutputStream( IoStreams.out( path, IoStreams.Encoding.PLAIN ) ) ) {
+            os.writeObject( value );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
     }
 
     public static Path path( String path, String... more ) {
@@ -181,5 +202,13 @@ public final class Files {
         if( destPath.toFile().exists() ) delete( destPath );
         if( !sourcePath.toFile().renameTo( destPath.toFile() ) )
             throw new UncheckedIOException( new IOException( "cannot rename " + sourcePath + " to " + destPath ) );
+    }
+
+    public static void ensureFile( Path path ) {
+        ensureDirectory( path.getParent() );
+    }
+
+    public static void ensureDirectory( Path path ) {
+        path.toFile().mkdirs();
     }
 }

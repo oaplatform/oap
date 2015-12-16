@@ -1,7 +1,10 @@
 {
   "services": {
     "x/v/math": {
-      "service": "math"
+      "service": "math",
+      "cors": {
+        "allowOrigin": "*"
+      }
     }
   },
   "handlers": {

@@ -58,7 +58,8 @@ public class Kernel {
         this.modules = modules;
     }
 
-    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services, Set<String> initialized ) {
+    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
+        Set<String> initialized ) {
 
         HashMap<String, Module.Service> deferred = new HashMap<>();
 
@@ -81,7 +82,9 @@ public class Kernel {
                 );
                 Application.register( serviceName, instance );
                 if( service.supervision.supervise )
-                    supervisor.startSupervised( serviceName, instance );
+                    supervisor.startSupervised( serviceName, instance,
+                        service.supervision.startWith,
+                        service.supervision.stopWith );
                 if( service.supervision.thread )
                     supervisor.startThread( serviceName, instance );
                 else {

@@ -21,49 +21,60 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application.supervision;
+package oap.concurrent;
 
-import oap.concurrent.SynchronizedThread;
-import org.slf4j.Logger;
+import java.util.concurrent.Semaphore;
 
-import static org.slf4j.LoggerFactory.getLogger;
+public class SynchronizedThread implements Runnable {
+    private Thread thread = new Thread( this );
+    private Runnable child;
+    private Semaphore semaphore = new Semaphore( 0 );
+    private boolean stopped = true;
 
-public class ThreadService implements Runnable, Supervised {
-    private SynchronizedThread thread = new SynchronizedThread( this );
-    private Runnable supervisee;
-    private final Supervisor supervisor;
-    private static Logger logger = getLogger( ThreadService.class );
-    private int maxFailures = 100;
+    public SynchronizedThread( Runnable child ) {
+        this.child = child;
+    }
 
-    public ThreadService( String name, Runnable supervisee, Supervisor supervisor ) {
-        this.supervisee = supervisee;
-        this.supervisor = supervisor;
+    public SynchronizedThread( String name, Runnable child ) {
+        this.child = child;
         this.thread.setName( name );
     }
 
-
     @Override
     public void run() {
-        while( thread.isRunning() && maxFailures > 0 ) try {
-            supervisee.run();
-        } catch( Exception e ) {
-            maxFailures--;
-            logger.error( "Crushed unexpectedly with message: " + e.getMessage() + ". Restarting...", e );
-        }
-        if( maxFailures <= 0 ) {
-            logger.error( this + " constantly crushing. Requesting shutdown..." );
-            supervisor.stop();
-        }
+        semaphore.release();
+        child.run();
     }
 
-
     public synchronized void start() {
-        logger.debug( "starting " + thread.getName() );
+        stopped = false;
         thread.start();
+        try {
+            semaphore.acquire();
+        } catch( InterruptedException e ) {
+            throw new ThreadException( e );
+        }
     }
 
     public synchronized void stop() {
-        logger.debug( "stopping " + thread.getName() );
-        thread.stop();
+        try {
+            stopped = true;
+            thread.interrupt();
+            thread.join();
+        } catch( InterruptedException e ) {
+            throw new ThreadException( e );
+        }
+    }
+
+    public void setName( String name ) {
+        this.thread.setName( name );
+    }
+
+    public String getName() {
+        return this.thread.getName();
+    }
+
+    public boolean isRunning() {
+        return !stopped;
     }
 }

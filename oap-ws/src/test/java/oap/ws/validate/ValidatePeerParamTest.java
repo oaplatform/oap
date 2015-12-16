@@ -23,6 +23,7 @@
  */
 package oap.ws.validate;
 
+import oap.http.Cors;
 import oap.http.HttpResponse;
 import oap.testng.Env;
 import oap.util.Lists;
@@ -52,7 +53,7 @@ public class ValidatePeerParamTest {
 
     @BeforeClass
     public void startServer() {
-        ws.bind( "test", new TestWS() );
+        ws.bind( "test", Cors.DEFAULT, new TestWS() );
         server.start();
     }
 

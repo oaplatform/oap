@@ -25,6 +25,7 @@ package oap.application.remote;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Application;
+import oap.http.Cors;
 import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
@@ -42,6 +43,7 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 public class Remote implements Handler {
     private HttpServer server;
     private String context;
+    private Cors cors = new Cors();
 
     public Remote( HttpServer server, String context ) {
         this.server = server;
@@ -49,7 +51,7 @@ public class Remote implements Handler {
     }
 
     public void start() {
-        server.bind( context, this );
+        server.bind( context, cors, this );
     }
 
     @Override
