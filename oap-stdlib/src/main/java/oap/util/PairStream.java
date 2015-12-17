@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 
 import static oap.util.Pair.__;
 
@@ -41,8 +42,8 @@ public class PairStream<A, B> extends Stream<Pair<A, B>> {
 
     public static <A, B> PairStream<A, B> reversed( Map<A, B> map ) {
         return new PairStream<>( Stream.of( of( map )
-                .collect( java.util.stream.Collectors.toCollection( LinkedList::new ) )
-                .descendingIterator()
+            .collect( java.util.stream.Collectors.toCollection( LinkedList::new ) )
+            .descendingIterator()
         ) );
     }
 
@@ -58,6 +59,10 @@ public class PairStream<A, B> extends Stream<Pair<A, B>> {
         return new PairStream<>( super.map( p -> mapper.apply( p._1, p._2 ) ) );
     }
 
+    @Override
+    public PairStream<A, B> filter( Predicate<? super Pair<A, B>> predicate ) {
+        return new PairStream<>( super.filter( predicate ) );
+    }
 
     public void forEach( BiConsumer<A, B> consumer ) {
         super.forEach( p -> consumer.accept( p._1, p._2 ) );

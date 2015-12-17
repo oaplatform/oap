@@ -31,9 +31,11 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Sampling;
 import com.codahale.metrics.Timer;
+import oap.util.Pair;
 import oap.util.PairStream;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class Metrics {
@@ -119,6 +121,14 @@ public final class Metrics {
 
     public static List<Snapshot> snapshots() {
         return PairStream.of( registry.getMetrics() ).mapToObj( Metrics::toSnapshot ).toList();
+    }
+
+    public static List<Snapshot> snapshots( Predicate<Pair<String, Metric>> filter ) {
+        return PairStream
+            .of( registry.getMetrics() )
+            .filter( filter )
+            .mapToObj( Metrics::toSnapshot )
+            .toList();
     }
 
     public static void unregister( String metric ) {
