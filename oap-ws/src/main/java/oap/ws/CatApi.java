@@ -38,9 +38,6 @@ import java.util.regex.Pattern;
 
 import static java.util.stream.Collectors.toList;
 
-/**
- * Created by Igor Petrenko on 21.12.2015.
- */
 public class CatApi {
     private static final ContentType CONTENT_TYPE =
         ContentType.create( "text/tab-separated-values", StandardCharsets.UTF_8 );
