@@ -53,8 +53,12 @@ public class CatApi {
             CONTENT_TYPE );
     }
 
+    public static String row( Collection<Object> tabs ) {
+        return String.join( "\t", tabs.stream().map( Object::toString ).collect( toList() ) );
+    }
+
     public static String row( Object... tabs ) {
-        return String.join( "\t", Arrays.stream( tabs ).map( Object::toString ).collect( toList() ) );
+        return row( Arrays.stream( tabs ).collect( toList() ) );
     }
 
     public static List<String> rows( Object... tabs ) {
