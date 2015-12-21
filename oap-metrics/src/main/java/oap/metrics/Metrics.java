@@ -60,11 +60,11 @@ public final class Metrics {
         }
     }
 
-    public static <T> void measureGauge( String metric, Supplier<T> get ) {
-        registry.register( metric, (Gauge<T>) get::get );
+    public static <T extends Metric> void measureGauge( String metric, Supplier<T> get ) {
+        registry.register( metric, get.get() );
     }
 
-    public static <T> void measureGauge( Name metric, Supplier<T> get ) {
+    public static <T extends Metric> void measureGauge( Name metric, Supplier<T> get ) {
         measureGauge( metric.line, get );
     }
 
