@@ -64,6 +64,10 @@ public final class Metrics {
         registry.register( metric, (Gauge<T>) get::get );
     }
 
+    public static <T> void measureGauge( Name metric, Supplier<T> get ) {
+        measureGauge( metric.line, get );
+    }
+
     public static <T> T measureTimer( String metric, Supplier<T> code ) {
         return measureTimer( name( metric ), code );
     }
