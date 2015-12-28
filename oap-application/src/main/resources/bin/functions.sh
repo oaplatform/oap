@@ -10,6 +10,7 @@ if [ -f $APPHOME/conf/vm.options ]
 then
     for opt in `cat $APPHOME/conf/vm.options`
     do
+        opt=`eval echo $opt`
         VM_OPTS="$VM_OPTS $opt"
     done
 fi
