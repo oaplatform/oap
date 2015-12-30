@@ -38,7 +38,7 @@ import java.util.Properties;
 @Mojo( name = "copy", defaultPhase = LifecyclePhase.PREPARE_PACKAGE )
 public class CopyMojo extends AbstractMojo {
     @Parameter( required = true )
-    private String targetDirectory;
+    private String outputDirectory;
 
     @Parameter( defaultValue = "${project}", readonly = true, required = true )
     private MavenProject project;
@@ -50,7 +50,7 @@ public class CopyMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Properties properties = project.getProperties();
         for( FileSet file : fileSets )
-            Files.copyContent( Files.path( file.getDirectory() ), Files.path( targetDirectory ),
+            Files.copyContent( Files.path( file.getDirectory() ), Files.path( outoutDirectory ),
                 file.getIncludes(), file.getExcludes(),
                 file.isFiltering(), properties::get );
     }
