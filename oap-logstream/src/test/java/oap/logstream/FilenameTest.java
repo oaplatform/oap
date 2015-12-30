@@ -22,15 +22,39 @@
  * SOFTWARE.
  */
 
-package oap.metrics;
+package oap.logstream;
 
-import oap.metrics.jvm.MemoryUsageGaugeSet;
+import oap.testng.AbstractTest;
+import oap.util.Stream;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
+import org.testng.annotations.Test;
+
+import java.util.TimeZone;
+
+import static org.joda.time.DateTime.now;
+import static org.testng.Assert.assertEquals;
 
 /**
- * Created by Igor Petrenko on 25.11.2015.
+ * Created by Igor Petrenko on 03.12.2015.
  */
-public class JvmMetrics extends Metrics {
-    public JvmMetrics() {
-        registry.registerAll( new MemoryUsageGaugeSet() );
+public class FilenameTest extends AbstractTest {
+
+    @Test
+    public void testFormatDate() throws Exception {
+        DateTimeZone.setDefault( DateTimeZone.forOffsetHours( -9 ) );
+
+        DateTimeUtils.setCurrentMillisFixed( new DateTime( 2015, 12, 3, 11, 28, 30, DateTimeZone.UTC ).getMillis() );
+        final String s = Filename.formatDate( DateTime.now(), 5 * 60 * 1000 );
+
+        assertEquals( s, "2015-12-03-11-05" );
+    }
+
+    @Test
+    public void testDirectoryName() throws Exception {
+        DateTimeZone.setDefault( DateTimeZone.forOffsetHours( -9 ) );
+
+        assertEquals(Filename.directoryName( "2015-12-03-11-05" ), "2015-12/03");
     }
 }

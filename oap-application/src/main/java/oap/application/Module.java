@@ -23,11 +23,14 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.json.Binder;
+import oap.reflect.Coercions;
 import oap.util.Strings;
 import org.apache.commons.collections4.ListUtils;
 
@@ -39,6 +42,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @EqualsAndHashCode
 @ToString
@@ -120,7 +124,8 @@ public class Module {
         public boolean supervise;
         public boolean thread;
         public boolean schedule;
-        public long delay; //seconds
+        @JsonProperty
+        public String delay; //ms
         public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
 
         public Supervision() {
@@ -128,6 +133,11 @@ public class Module {
 
         public Supervision( boolean supervise ) {
             this.supervise = supervise;
+        }
+
+        @JsonIgnore
+        public Optional<Long> getDelay() {
+            return Optional.ofNullable( delay ).map( d -> (long) Coercions.LongConvertor.DEFAULT.apply( d ) );
         }
     }
 }

@@ -36,10 +36,10 @@ public class Logger {
     final Path logDirectory;
     final String suffix;
     final int bufferSize;
-    private int interval;
+    private long interval;
     private boolean closed;
 
-    public Logger( Path logDirectory, String suffix, int bufferSize, int interval ) {
+    public Logger( Path logDirectory, String suffix, int bufferSize, long interval ) {
         this.logDirectory = logDirectory;
         this.suffix = suffix;
         this.bufferSize = bufferSize;

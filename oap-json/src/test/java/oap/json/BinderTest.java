@@ -39,11 +39,46 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static oap.util.Pair.__;
 import static org.testng.Assert.assertEquals;
 
 public class BinderTest extends AbstractTest {
+
+    //todo generic map-list binding
+    private static <T> void assertBind( Class<T> clazz, T source ) {
+        System.out.println( "========================================" );
+        String json2 = Binder.json.marshal( source );
+        System.out.println( "JSON2:" );
+        System.out.println( json2 );
+        T result = Binder.json.unmarshal( clazz, json2 );
+        System.out.println( "Object:" );
+        System.out.println( result );
+        assertEquals( result, source );
+    }
+
+    private static <T> void assertBindWithTyping( Class<T> clazz, T source ) {
+        System.out.println( "========================================" );
+        String json2 = Binder.jsonWithTyping.marshal( source );
+        System.out.println( "JSON2:" );
+        System.out.println( json2 );
+        T result = Binder.jsonWithTyping.unmarshal( clazz, json2 );
+        System.out.println( "Object:" );
+        System.out.println( result );
+        assertEquals( result, source );
+    }
+
+    private static <T> void assertBind( TypeReference<T> ref, T source ) {
+        System.out.println( "========================================" );
+        String json = Binder.json.marshal( source );
+        System.out.println( "JSON:" );
+        System.out.println( json );
+        T result = Binder.json.unmarshal( ref, json );
+        System.out.println( "Object:" );
+        System.out.println( result );
+        assertEquals( result, source );
+    }
 
     @Test
     public void bindPrimitives() {
@@ -71,7 +106,8 @@ public class BinderTest extends AbstractTest {
 
     @Test
     public void bindList() {
-        assertBind( new TypeReference<ArrayList<Integer>>() {}, Lists.of( 1, 2, 3 ) );
+        assertBind( new TypeReference<ArrayList<Integer>>() {
+        }, Lists.of( 1, 2, 3 ) );
     }
 
     @Test
@@ -105,6 +141,12 @@ public class BinderTest extends AbstractTest {
     }
 
     @Test
+    public void bindAtomicLong() {
+        assertBind( AtomicLongBean.class, new AtomicLongBean( 10 ) );
+        assertBindWithTyping( AtomicLongBean.class, new AtomicLongBean( 10 ) );
+    }
+
+    @Test
     public void bindDeepGeneric() {
         assertBind( BeanGB2.class, new BeanGB2(
             new BeanGeneric<>( Lists.of( new BeanGeneric<>( Lists.of( 1, 2 ) ),
@@ -133,35 +175,13 @@ public class BinderTest extends AbstractTest {
     @Test
     public void bindMap() {
         assertBind( MapBean.class, new MapBean( __( "a", 1l ), __( "b", 2l ) ) );
-        assertEquals( Binder.json.marshal( new MapBean( __( "a", 1l ), __( "b", 2l ) ) ), "{\"map\":{\"a\":1,\"b\":2}}" );
+        assertEquals( Binder.json.marshal( new MapBean( __( "a", 1l ), __( "b", 2l ) ) ),
+            "{\"map\":{\"a\":1,\"b\":2}}" );
     }
 
     @Test
     void optional() {
         assertBind( OptBean.class, new OptBean() );
-    }
-
-    //todo generic map-list binding
-    private static <T> void assertBind( Class<T> clazz, T source ) {
-        System.out.println( "========================================" );
-        String json2 = Binder.json.marshal( source );
-        System.out.println( "JSON2:" );
-        System.out.println( json2 );
-        T result = Binder.json.unmarshal( clazz, json2 );
-        System.out.println( "Object:" );
-        System.out.println( result );
-        assertEquals( result, source );
-    }
-
-    private static <T> void assertBind( TypeReference<T> ref, T source ) {
-        System.out.println( "========================================" );
-        String json = Binder.json.marshal( source );
-        System.out.println( "JSON:" );
-        System.out.println( json );
-        T result = Binder.json.unmarshal( ref, json );
-        System.out.println( "Object:" );
-        System.out.println( result );
-        assertEquals( result, source );
     }
 
 }
@@ -284,7 +304,7 @@ class EnumBean {
 @EqualsAndHashCode
 @ToString
 class BeanAnyRef {
-    @JsonTypeInfo( use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "a:type")
+    @JsonTypeInfo( use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "a:type" )
     public Object a;
 
     public BeanAnyRef() {
@@ -334,5 +354,33 @@ class MapBean {
     @SafeVarargs
     public MapBean( Pair<String, Long>... pairs ) {
         this.map = Maps.of( pairs );
+    }
+}
+
+@ToString
+class AtomicLongBean {
+    public AtomicLong v = new AtomicLong();
+
+    public AtomicLongBean() {
+    }
+
+    public AtomicLongBean( long v ) {
+        this.v.set( v );
+    }
+
+    @Override
+    public boolean equals( Object o ) {
+        if( this == o ) return true;
+        if( o == null || getClass() != o.getClass() ) return false;
+
+        AtomicLongBean that = (AtomicLongBean) o;
+
+        return v.get() == that.v.get();
+
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.hashCode( v.get() );
     }
 }

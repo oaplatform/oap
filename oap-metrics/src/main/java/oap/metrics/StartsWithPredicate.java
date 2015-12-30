@@ -21,10 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
 
-public interface HttpServer {
-    void bind( String context, Handler handler, boolean localHostOnly );
+package oap.metrics;
 
-    void unbind( String context );
+import com.codahale.metrics.Metric;
+import oap.util.Pair;
+
+import java.util.function.Predicate;
+
+/**
+ * Created by Igor Petrenko on 17.12.2015.
+ */
+class StartsWithPredicate implements Predicate<Pair<String, Metric>> {
+    private final String prefix;
+
+    public StartsWithPredicate( String prefix ) {
+        this.prefix = prefix;
+    }
+
+    @Override
+    public boolean test( Pair<String, Metric> pair ) {
+        return pair._1.startsWith( prefix );
+    }
 }

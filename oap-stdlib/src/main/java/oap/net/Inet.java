@@ -26,6 +26,8 @@ package oap.net;
 import com.google.common.base.Throwables;
 
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 
 public class Inet {
@@ -39,4 +41,16 @@ public class Inet {
         }
     }
 
+    public static boolean isLocalAddress( InetAddress addr ) {
+        // Check if the address is a valid special local or loop back
+        if( addr.isAnyLocalAddress() || addr.isLoopbackAddress() )
+            return true;
+
+        // Check if the address is defined on any interface
+        try {
+            return NetworkInterface.getByInetAddress( addr ) != null;
+        } catch( SocketException e ) {
+            return false;
+        }
+    }
 }

@@ -21,10 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
 
-public interface HttpServer {
-    void bind( String context, Handler handler, boolean localHostOnly );
+package oap.metrics;
 
-    void unbind( String context );
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricFilter;
+import oap.util.Lists;
+
+import java.util.ArrayList;
+import java.util.regex.Pattern;
+
+import static oap.util.Lists.Collectors.toArrayList;
+
+/**
+ * Created by Igor Petrenko on 01.12.2015.
+ */
+public class ReporterFilter implements MetricFilter {
+    public final ArrayList<Pattern> include;
+    public final ArrayList<Pattern> exclude;
+
+    public ReporterFilter( ArrayList<String> include, ArrayList<String> exclude ) {
+        this.include = include.stream().map(Pattern::compile).collect( toArrayList() );
+        this.exclude = exclude.stream().map(Pattern::compile).collect( toArrayList() );
+    }
+
+    @Override
+    public boolean matches( String name, Metric metric ) {
+        if( !include.isEmpty() && !include.stream().filter( e -> e.matcher( name ).find() ).findAny().isPresent() )
+            return false;
+
+        if( exclude.isEmpty() ) return true;
+
+        return !exclude.stream().filter( e -> e.matcher( name ).find() ).findAny().isPresent();
+    }
 }

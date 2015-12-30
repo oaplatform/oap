@@ -45,12 +45,12 @@ public class LogWriter implements Closeable {
     private final String prefix;
     private final String root;
     private int bufferSize;
-    private int interval;
+    private long interval;
     private OutputStream out;
     private String lastPattern;
     private Scheduled scheduled;
 
-    public LogWriter( String prefix, String root, String suffix, int bufferSize, int interval ) {
+    public LogWriter( String prefix, String root, String suffix, int bufferSize, long interval ) {
         this.prefix = prefix;
         this.root = root;
         this.suffix = suffix;

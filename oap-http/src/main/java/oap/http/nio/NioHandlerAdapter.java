@@ -27,9 +27,11 @@ import oap.http.Context;
 import oap.http.Handler;
 import oap.http.Request;
 import oap.http.Response;
+import oap.net.Inet;
 import org.apache.http.HttpException;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
 import org.apache.http.nio.protocol.BasicAsyncRequestConsumer;
 import org.apache.http.nio.protocol.HttpAsyncExchange;
 import org.apache.http.nio.protocol.HttpAsyncRequestConsumer;
@@ -39,21 +41,25 @@ import org.apache.http.protocol.HttpCoreContext;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.LinkedHashMap;
 
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
     private static Logger logger = getLogger( NioHandlerAdapter.class );
-
+    private final boolean localHostOnly;
     private String location;
     private Handler handler;
     private LinkedHashMap<String, String> defaultHeaders;
 
-    public NioHandlerAdapter( String location, Handler handler, LinkedHashMap<String, String> defaultHeaders ) {
+    public NioHandlerAdapter( String location, Handler handler, LinkedHashMap<String, String> defaultHeaders,
+        boolean localHostOnly ) {
         this.location = location;
         this.handler = handler;
         this.defaultHeaders = defaultHeaders;
+        this.localHostOnly = localHostOnly;
     }
 
     @Override
@@ -67,10 +73,18 @@ public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
         HttpContext ctx ) throws HttpException, IOException {
         if( logger.isTraceEnabled() ) logger.trace( "handling " + req );
         HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
-        handler.handle(
-            new Request( req, new Context( location, connection.getRemoteAddress() ) ),
-            new Response( httpAsyncExchange.getResponse(), defaultHeaders )
-        );
+        final InetAddress remoteAddress = connection.getRemoteAddress();
+
+        final HttpResponse response = httpAsyncExchange.getResponse();
+
+        if( localHostOnly && !Inet.isLocalAddress( remoteAddress ) ) {
+            response.setStatusCode( HTTP_FORBIDDEN );
+        } else {
+            handler.handle(
+                new Request( req, new Context( location, remoteAddress ) ),
+                new Response( response, defaultHeaders )
+            );
+        }
 
         httpAsyncExchange.submitResponse();
     }

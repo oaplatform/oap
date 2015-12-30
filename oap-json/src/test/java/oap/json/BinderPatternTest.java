@@ -21,10 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
 
-public interface HttpServer {
-    void bind( String context, Handler handler, boolean localHostOnly );
+package oap.json;
 
-    void unbind( String context );
+import oap.testng.AbstractTest;
+import org.testng.annotations.Test;
+
+import java.util.regex.Pattern;
+
+import static org.testng.Assert.assertEquals;
+
+
+/**
+ * Created by Igor Petrenko on 01.12.2015.
+ */
+public class BinderPatternTest extends AbstractTest {
+    @Test
+    public void testPattern() {
+        final String pattern = "{test = \"[^a]+\"}";
+
+        final BeanPattern unmarshal = Binder.hocon.unmarshal( BeanPattern.class, pattern );
+
+        assertEquals( unmarshal.test.pattern(), "[^a]+" );
+    }
+
+    public static class BeanPattern {
+        public Pattern test;
+    }
 }

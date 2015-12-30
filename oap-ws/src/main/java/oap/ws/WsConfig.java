@@ -23,6 +23,7 @@
  */
 package oap.ws;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.io.Resources;
@@ -64,5 +65,7 @@ public class WsConfig {
     @ToString
     public static class Service {
         public String service;
+        @JsonProperty( "local_host_only" )
+        public boolean localHostOnly = false;
     }
 }

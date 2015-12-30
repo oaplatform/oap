@@ -26,8 +26,10 @@ package oap.metrics;
 
 import oap.net.Inet;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 public class InfluxReporter {
     protected String host;
@@ -35,24 +37,24 @@ public class InfluxReporter {
     protected String database;
     protected String login;
     protected String password;
+    protected ArrayList<String> include = new ArrayList<>();
+    protected ArrayList<String> exclude = new ArrayList<>();
+    protected HashMap<String, Object> tags = new HashMap<>();
 
     protected long period = 60 * 1000;
 
-    protected Metrics metrics;
-
     private InfluxDBReporter reporter;
 
-    public InfluxReporter( Map<String, Object> tags ) {
-        InfluxDBReporter.Builder builder = InfluxDBReporter.forRegistry( metrics.registry )
+    public void start() {
+        InfluxDBReporter.Builder builder = InfluxDBReporter
+            .forRegistry( Metrics.registry )
+            .withFilter( new ReporterFilter( include, exclude ) )
             .withTag( "host", Inet.HOSTNAME )
             .convertRatesTo( TimeUnit.MINUTES )
             .convertDurationsTo( TimeUnit.MICROSECONDS )
             .withConnect( this.host, port, database, login, password );
         tags.forEach( ( name, value ) -> builder.withTag( name, String.valueOf( value ) ) );
         reporter = builder.build();
-    }
-
-    public void start() {
         reporter.start( period, TimeUnit.MILLISECONDS );
     }
 

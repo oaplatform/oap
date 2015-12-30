@@ -29,7 +29,7 @@ import com.google.common.base.Throwables;
 import oap.concurrent.Threads;
 import oap.io.Closeables;
 import oap.metrics.Metrics;
-import oap.metrics.Name;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpConnection;
 import org.apache.http.config.ConnectionConfig;
@@ -52,13 +52,16 @@ import org.slf4j.LoggerFactory;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.LinkedHashMap;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -67,7 +70,7 @@ import java.util.concurrent.Semaphore;
 public class Server implements HttpServer {
 
     private final static Logger logger = LoggerFactory.getLogger( Server.class );
-    private static final Name CONNECTIONS = Metrics.name( "connections" );
+    private static final String CONNECTIONS = "connections";
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
         .add( new ResponseDate() )
@@ -81,7 +84,6 @@ public class Server implements HttpServer {
     private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
     private ExecutorService executor;
     private int port;
-    private Metrics metrics;
     @JsonProperty( "default-headers" )
     private LinkedHashMap<String, String> defaultHeaders = new LinkedHashMap<>();
     private ServerSocket serverSocket;
@@ -95,15 +97,17 @@ public class Server implements HttpServer {
     public Server( int port, int workers, LinkedHashMap<String, String> defaultHeaders ) {
         this.port = port;
         this.defaultHeaders = defaultHeaders;
-        this.executor = Executors.newFixedThreadPool( workers );
+
+        final ArrayBlockingQueue<Runnable> queue = new ArrayBlockingQueue<>( workers );
+
+        this.executor = new ThreadPoolExecutor( workers, workers, 0L, TimeUnit.MILLISECONDS, queue );
         this.mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
-        this.metrics = new Metrics();
     }
 
     @Override
-    public void bind( String context, Handler handler ) {
+    public void bind( String context, Handler handler, boolean localHostOnly ) {
         String location = "/" + context + "/*";
-        this.mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, defaultHeaders ) );
+        this.mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, defaultHeaders, localHostOnly ) );
         logger.info( handler + " bound to " + location );
 
     }
@@ -116,15 +120,12 @@ public class Server implements HttpServer {
 
     public void start() {
         try {
-
             logger.info( "starting [localhost:" + port + "]..." );
 
+            Metrics.measureGauge( CONNECTIONS, connections::size );
             serverSocket = new ServerSocket();
 
-            serverSocket.setSoTimeout( 500 );
             serverSocket.setReuseAddress( true );
-            serverSocket.setReceiveBufferSize( 1024 * 512 );
-            serverSocket.setPerformancePreferences( 2, 1, 0 );
             serverSocket.bind( new InetSocketAddress( port ) );
             logger.info( "ready to rock on " + serverSocket.getLocalSocketAddress() );
 
@@ -159,46 +160,52 @@ public class Server implements HttpServer {
         try {
             semaphore.release();
 
-            final ConnectionConfig connectionConfig = ConnectionConfig.custom().setBufferSize( 1024 * 128 ).build();
-
             final DefaultBHttpServerConnectionFactory connectionFactory =
-                new DefaultBHttpServerConnectionFactory( connectionConfig );
+                new DefaultBHttpServerConnectionFactory( );
 
             while( !Thread.interrupted() && !serverSocket.isClosed() ) {
                 try {
+                    final Socket accept = serverSocket.accept();
+//                    accept.setKeepAlive( true );
+//                    accept.setTcpNoDelay( true );
                     DefaultBHttpServerConnection connection =
-                        connectionFactory.createConnection( serverSocket.accept() );
+                        connectionFactory.createConnection( accept );
 
-                    connections.put( connection.toString(), connection );
+                    final String connectionName = connection.toString();
+                    connections.put( connectionName, connection );
 
-                    logger.trace( "connection accepted: " + connection );
-                    HttpContext context = HttpCoreContext.create();
-                    executor.submit( () -> {
-                        metrics.measureCounterIncrement( CONNECTIONS );
-                        String connectionName = connection.toString();
-                        try {
-                            Thread.currentThread().setName( connection.toString() );
-                            logger.trace( "start handling " + connectionName );
-                            while( !Thread.interrupted() && connection.isOpen() )
-                                httpService.handleRequest( connection, context );
-                        } catch( SocketException e ) {
-                            if( "Socket closed".equals( e.getMessage() ) )
+                    try {
+                        logger.trace( "connection accepted: " + connection );
+                        HttpContext context = HttpCoreContext.create();
+                        executor.submit( () -> {
+                            try {
+                                Thread.currentThread().setName( connection.toString() );
+                                logger.trace( "start handling " + connectionName );
+                                while( !Thread.interrupted() && connection.isOpen() )
+                                    httpService.handleRequest( connection, context );
+                            } catch( SocketException e ) {
+                                if( "Socket closed".equals( e.getMessage() ) )
+                                    logger.trace( "connection closed: " + connectionName );
+                                else logger.error( e.getMessage(), e );
+                            } catch( ConnectionClosedException e ) {
                                 logger.trace( "connection closed: " + connectionName );
-                            else logger.error( e.getMessage(), e );
-                        } catch( ConnectionClosedException e ) {
-                            logger.trace( "connection closed: " + connectionName );
-                        } catch( Throwable e ) {
-                            logger.error( e.getMessage(), e );
-                        } finally {
-                            connections.remove( connectionName );
-                            Closeables.close( connection );
-                            metrics.measureCounterDecrement( CONNECTIONS );
-                            logger.trace( "connection closed: " + connectionName );
-                        }
-                    } );
+                            } catch( Throwable e ) {
+                                logger.error( e.getMessage(), e );
+                            } finally {
+                                connections.remove( connectionName );
+                                Closeables.close( connection );
+                                logger.trace( "connection closed: " + connectionName );
+                            }
+                        } );
+                    } catch( IllegalStateException e ) {
+                        connections.remove( connectionName );
+
+                        logger.warn( e.getMessage() );
+                        IOUtils.closeQuietly( connection );
+                    }
                 } catch( SocketTimeoutException ignored ) {
                 } catch( SocketException e ) {
-                    if( serverSocket != null && !serverSocket.isClosed() ) logger.warn( e.getMessage(), e );
+                    if( serverSocket != null && !serverSocket.isClosed() ) logger.warn( e.getMessage() );
                 } catch( Throwable e ) {
                     logger.warn( e.getMessage(), e );
                 }

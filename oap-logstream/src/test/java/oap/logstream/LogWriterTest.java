@@ -39,7 +39,7 @@ public class LogWriterTest extends AbstractTest {
     public void write() throws IOException {
         DateTimeUtils.setCurrentMillisFixed( new DateTime( 2015, 10, 10, 1, 0, 0 ).getMillis() );
         String content = "1234567890\n";
-        LogWriter logWriter = new LogWriter( Env.tmp( "logs" ), "file", "txt", 10, 5 );
+        LogWriter logWriter = new LogWriter( Env.tmp( "logs" ), "file", "txt", 10, 5 * 60 * 1000 );
 
         logWriter.write( content.getBytes() );
 

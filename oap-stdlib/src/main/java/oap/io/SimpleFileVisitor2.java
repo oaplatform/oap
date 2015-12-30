@@ -21,10 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
 
-public interface HttpServer {
-    void bind( String context, Handler handler, boolean localHostOnly );
+package oap.io;
 
-    void unbind( String context );
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+
+/**
+ * Created by Igor Petrenko on 10.12.2015.
+ */
+public class SimpleFileVisitor2<T> extends SimpleFileVisitor<T> {
+    public long visited;
+
+    @Override
+    public FileVisitResult visitFile( T file, BasicFileAttributes attrs )
+        throws IOException {
+
+        visited++;
+
+        return FileVisitResult.CONTINUE;
+    }
 }

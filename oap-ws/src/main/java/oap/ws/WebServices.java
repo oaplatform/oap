@@ -27,7 +27,6 @@ import oap.application.Application;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
 import oap.json.Binder;
-import oap.metrics.Metrics;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 
@@ -45,7 +44,6 @@ public class WebServices {
 
     private final List<WsConfig> wsConfigs;
     private final HttpServer server;
-    final Metrics metrics;
 
     public WebServices( HttpServer server ) {
         this( server, WsConfig.fromClassPath() );
@@ -54,7 +52,6 @@ public class WebServices {
     public WebServices( HttpServer server, List<WsConfig> wsConfigs ) {
         this.wsConfigs = wsConfigs;
         this.server = server;
-        this.metrics = new Metrics();
     }
 
 
@@ -62,10 +59,14 @@ public class WebServices {
         logger.info( "binding web services..." );
 
         for( WsConfig config : wsConfigs ) {
-            for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() )
-                bind( entry.getKey(), Application.service( entry.getValue().service ) );
-            for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() )
-                server.bind( entry.getKey(), Application.service( entry.getValue().service ) );
+            for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
+                final WsConfig.Service value = entry.getValue();
+                bind( entry.getKey(), Application.service( value.service ), value.localHostOnly );
+            }
+            for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
+                final WsConfig.Service value = entry.getValue();
+                server.bind( entry.getKey(), Application.service( value.service ), value.localHostOnly );
+            }
         }
     }
 
@@ -77,8 +78,8 @@ public class WebServices {
 
     }
 
-    public void bind( String context, Object impl ) {
-        server.bind( context, new Service( impl, metrics ) );
+    public void bind( String context, Object impl, boolean localHostOnly ) {
+        server.bind( context, new Service( impl ), localHostOnly );
     }
 
 }

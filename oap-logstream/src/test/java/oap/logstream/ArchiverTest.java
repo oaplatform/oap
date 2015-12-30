@@ -63,7 +63,7 @@ public class ArchiverTest {
         }
 
 
-        Archiver archiver = new Archiver( logs, archives, 1, "**/*.log" );
+        Archiver archiver = new Archiver( logs, archives, 60 * 1000, "**/*.log" );
         archiver.run();
 
         for( String file : files ) {
