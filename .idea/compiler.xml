@@ -99,6 +99,13 @@
         <processorPath useClasspath="true" />
         <module name="oap-json" />
       </profile>
+      <profile default="false" name="Annotation profile for oap-maven" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="oap-maven" />
+      </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="1.8">
       <module name="madberry" target="1.8" />
@@ -135,6 +142,7 @@
       <module name="oap-http" target="1.8" />
       <module name="oap-json" target="1.8" />
       <module name="oap-logstream" target="1.8" />
+      <module name="oap-maven" target="1.8" />
       <module name="oap-metrics" target="1.8" />
       <module name="oap-replication" target="1.8" />
       <module name="oap-stdlib" target="1.8" />
