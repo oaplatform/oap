@@ -50,7 +50,7 @@ public class CopyMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Properties properties = project.getProperties();
         for( FileSet file : fileSets )
-            Files.copyContent( Files.path( file.getDirectory() ), Files.path( outoutDirectory ),
+            Files.copyContent( Files.path( file.getDirectory() ), Files.path( outputDirectory ),
                 file.getIncludes(), file.getExcludes(),
                 file.isFiltering(), properties::get );
     }
