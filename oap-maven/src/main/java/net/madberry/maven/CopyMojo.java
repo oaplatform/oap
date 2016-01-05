@@ -52,6 +52,10 @@ public class CopyMojo extends AbstractMojo {
         Properties properties = project.getProperties();
         for( FileSet file : fileSets ) {
             Path path = Files.path( file.getDirectory() );
+            getLog().debug( "copy " + path + "(exists=" + path.toFile().exists() + ") to " + outputDirectory );
+            getLog().debug( "includes = " + file.getIncludes() );
+            getLog().debug( "excludes = " + file.getExcludes() );
+            getLog().debug( "filtering = " + file.isFiltering() );
             if( path.toFile().exists() ) Files.copyContent( path, Files.path( outputDirectory ),
                 file.getIncludes(), file.getExcludes(),
                 file.isFiltering(), properties::get );
