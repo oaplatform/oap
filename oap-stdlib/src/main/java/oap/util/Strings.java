@@ -108,7 +108,7 @@ public class Strings {
         String result = "";
         for( byte b : bytes ) {
             int masked = b & 0xFF;
-            result += masked < 17 ? "0" + hex[masked] : hex[masked >> 4] + hex[masked & 0x0F];
+            result += masked < 16 ? "0" + hex[masked] : hex[masked >> 4] + hex[masked & 0x0F];
         }
         return result;
     }
