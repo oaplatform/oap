@@ -51,7 +51,7 @@ public class CopyMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Properties properties = project.getProperties();
         for( FileSet file : fileSets ) {
-            Path path = Files.path( file.getDirectory() );
+            Path path = Files.path( file.getDirectory() ).toAbsolutePath();
             getLog().debug( "copy " + path + "(exists=" + path.toFile().exists() + ") to " + outputDirectory );
             getLog().debug( "includes = " + file.getIncludes() );
             getLog().debug( "excludes = " + file.getExcludes() );
