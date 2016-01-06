@@ -58,9 +58,17 @@ oap_run() {
     return $retval
 }
 
+
+oap_waitforpid() {
+    while test -d "/proc/$1"; do
+        sleep 0.2
+    done
+    return 0
+}
+
 oap_stop() {
     pid=`cat $PIDFILE`
-    [ ! -z `ps --pid $pid -opid=` ] && kill $pid && wait $pid
+    [ ! -z `ps --pid $pid -opid=` ] && kill $pid && oap_waitforpid $pid
     retval=$?
     [ $retval -eq 0 ] && rm $PIDFILE
     return $retval
