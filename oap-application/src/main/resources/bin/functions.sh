@@ -60,7 +60,7 @@ oap_run() {
 
 oap_stop() {
     pid=`cat $PIDFILE`
-    [ ! -z `ps --pid $pid -opid=` ] && kill $pid
+    [ ! -z `ps --pid $pid -opid=` ] && kill $pid && wait $pid
     retval=$?
     [ $retval -eq 0 ] && rm $PIDFILE
     return $retval
