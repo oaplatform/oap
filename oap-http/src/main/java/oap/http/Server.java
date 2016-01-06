@@ -32,7 +32,6 @@ import oap.metrics.Metrics;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpConnection;
-import org.apache.http.config.ConnectionConfig;
 import org.apache.http.impl.DefaultBHttpServerConnection;
 import org.apache.http.impl.DefaultBHttpServerConnectionFactory;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
@@ -107,7 +106,8 @@ public class Server implements HttpServer {
     @Override
     public void bind( String context, Handler handler, boolean localHostOnly ) {
         String location = "/" + context + "/*";
-        this.mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, defaultHeaders, localHostOnly ) );
+        this.mapper.register( location,
+            new BlockingHandlerAdapter( "/" + context, handler, defaultHeaders, localHostOnly ) );
         logger.info( handler + " bound to " + location );
 
     }
@@ -161,7 +161,7 @@ public class Server implements HttpServer {
             semaphore.release();
 
             final DefaultBHttpServerConnectionFactory connectionFactory =
-                new DefaultBHttpServerConnectionFactory( );
+                new DefaultBHttpServerConnectionFactory();
 
             while( !Thread.interrupted() && !serverSocket.isClosed() ) {
                 try {
@@ -186,6 +186,8 @@ public class Server implements HttpServer {
                             } catch( SocketException e ) {
                                 if( "Socket closed".equals( e.getMessage() ) )
                                     logger.trace( "connection closed: " + connectionName );
+                                else if( "Connection reset".equals( e.getMessage() ) )
+                                    logger.warn( "Connection reset: " + connectionName );
                                 else logger.error( e.getMessage(), e );
                             } catch( ConnectionClosedException e ) {
                                 logger.trace( "connection closed: " + connectionName );
