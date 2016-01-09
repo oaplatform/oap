@@ -66,6 +66,6 @@ public class WsConfig {
     public static class Service {
         public String service;
         public Cors cors = new Cors();
-        public boolean localHostOnly = false;
+        public boolean local = false;
     }
 }

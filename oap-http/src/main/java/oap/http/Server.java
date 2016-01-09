@@ -96,9 +96,9 @@ public class Server implements HttpServer {
     }
 
     @Override
-    public void bind( String context, Cors cors, Handler handler, , boolean localHostOnly  ) {
+    public void bind( String context, Cors cors, Handler handler, boolean local ) {
         String location = "/" + context + "/*";
-        this.mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, cors ), localHostOnly );
+        this.mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, cors, local ) );
         logger.info( handler + " bound to " + location );
 
     }

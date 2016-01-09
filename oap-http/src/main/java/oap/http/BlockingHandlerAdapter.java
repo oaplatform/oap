@@ -28,42 +28,40 @@ import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.protocol.HttpCoreContext;
 import org.apache.http.protocol.HttpRequestHandler;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.LinkedHashMap;
 
+import static oap.http.HttpResponse.HTTP_FORBIDDEN;
+import static org.apache.http.protocol.HttpCoreContext.HTTP_CONNECTION;
 import static org.slf4j.LoggerFactory.getLogger;
 
 class BlockingHandlerAdapter implements HttpRequestHandler {
     private static Logger logger = getLogger( BlockingHandlerAdapter.class );
-    private final boolean localHostOnly;
+    private final boolean local;
     protected String location;
     private Handler handler;
     private Cors cors;
 
-    public BlockingHandlerAdapter( String location, Handler handler, Cors cors, boolean localHostOnly  ) {
+    public BlockingHandlerAdapter( String location, Handler handler, Cors cors, boolean local ) {
         this.location = location;
         this.handler = handler;
         this.cors = cors;
-        this.localHostOnly = localHostOnly;
+        this.local = local;
     }
 
     @Override
     public void handle( HttpRequest req, HttpResponse resp, HttpContext ctx ) throws IOException {
-        if( logger.isTraceEnabled() ) logger.trace( "handling " + req );
+        logger.trace( "handling {}", req );
 
-        HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
-        final Response response = new Response( resp, defaultHeaders );
+        HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HTTP_CONNECTION );
+        final Response response = new Response( resp, cors );
         final InetAddress remoteAddress = connection.getRemoteAddress();
 
-        if( localHostOnly && !Inet.isLocalAddress( remoteAddress ) )
-            response.respond( oap.http.HttpResponse.HTTP_FORBIDDEN );
-         else
-            handler.handle(
+        if( local && !Inet.isLocalAddress( remoteAddress ) ) response.respond( HTTP_FORBIDDEN );
+        else handler.handle(
             new Request( req, new Context( location, remoteAddress ) ),
             new Response( resp, cors )
         );

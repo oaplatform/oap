@@ -62,11 +62,11 @@ public class WebServices {
         for( WsConfig config : wsConfigs ) {
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
                 final WsConfig.Service value = entry.getValue();
-                bind( entry.getKey(), value.cors, Application.service( value.service ), value.localHostOnly );
+                bind( entry.getKey(), value.cors, Application.service( value.service ), value.local );
             }
             for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
                 final WsConfig.Service value = entry.getValue();
-                server.bind( entry.getKey(),value.cors, Application.service( value.service ), value.localHostOnly );
+                server.bind( entry.getKey(), value.cors, Application.service( value.service ), value.local );
             }
         }
     }
@@ -79,8 +79,8 @@ public class WebServices {
 
     }
 
-    public void bind( String context, Cors cors, Object impl, boolean localHostOnly ) {
-        server.bind( context, cors, new Service( impl ), localHostOnly );
+    public void bind( String context, Cors cors, Object impl, boolean local ) {
+        server.bind( context, cors, new Service( impl ), local );
     }
 
 }

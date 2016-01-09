@@ -43,23 +43,22 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.LinkedHashMap;
 
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
     private static Logger logger = getLogger( NioHandlerAdapter.class );
-    private final boolean localHostOnly;
+    private final boolean local;
     private String location;
     private Handler handler;
     private Cors cors;
 
-    public NioHandlerAdapter( String location, Handler handler, Cors cors, boolean localHostOnly ) {
+    public NioHandlerAdapter( String location, Handler handler, Cors cors, boolean local ) {
         this.location = location;
         this.handler = handler;
         this.cors = cors;
-        this.localHostOnly = localHostOnly;
+        this.local = local;
     }
 
     @Override
@@ -71,17 +70,17 @@ public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
     @Override
     public void handle( HttpRequest req, HttpAsyncExchange httpAsyncExchange,
         HttpContext ctx ) throws HttpException, IOException {
-        if( logger.isTraceEnabled() ) logger.trace( "handling " + req );
-        HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
-        if( localHostOnly && !Inet.isLocalAddress( remoteAddress ) ) {
-            response.setStatusCode( HTTP_FORBIDDEN );
-        } else {
+        logger.trace( "handling {}", req );
 
-            handler.handle(
-                new Request( req, new Context( location, remoteAddress ) ),
-                new Response( httpAsyncExchange.getResponse(), cors )
-            );
-        }
+        HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
+        InetAddress remoteAddress = connection.getRemoteAddress();
+        HttpResponse response = httpAsyncExchange.getResponse();
+
+        if( local && !Inet.isLocalAddress( remoteAddress ) ) response.setStatusCode( HTTP_FORBIDDEN );
+        else handler.handle(
+            new Request( req, new Context( location, remoteAddress ) ),
+            new Response( response, cors )
+        );
         httpAsyncExchange.submitResponse();
     }
 }

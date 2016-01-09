@@ -62,10 +62,9 @@ public class NioServer implements oap.http.HttpServer {
     }
 
     @Override
-    public void bind( String context, Cors cors, Handler handler, boolean localHostOnly  ) {
+    public void bind( String context, Cors cors, Handler handler, boolean local ) {
         String location = "/" + context + "/*";
-        this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler, defaultHeaders, localHostOnly ) );
-        this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler, cors ) );
+        this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler, cors, local ) );
         logger.info( handler + " bound to " + location );
 
     }
