@@ -10,6 +10,7 @@ if [ -f $APPHOME/conf/vm.options ]
 then
     for opt in `cat $APPHOME/conf/vm.options`
     do
+        opt=`eval echo $opt`
         VM_OPTS="$VM_OPTS $opt"
     done
 fi
@@ -57,9 +58,17 @@ oap_run() {
     return $retval
 }
 
+
+oap_waitforpid() {
+    while test -d "/proc/$1"; do
+        sleep 0.2
+    done
+    return 0
+}
+
 oap_stop() {
     pid=`cat $PIDFILE`
-    [ ! -z `ps --pid $pid -opid=` ] && kill $pid
+    [ ! -z `ps --pid $pid -opid=` ] && kill $pid && oap_waitforpid $pid
     retval=$?
     [ $retval -eq 0 ] && rm $PIDFILE
     return $retval

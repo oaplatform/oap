@@ -32,11 +32,11 @@ import org.joda.time.format.DateTimeFormatter;
 public class Dates {
     public static final DateTimeFormatter FORMAT_MILLIS = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSS" )
-        .withZone( DateTimeZone.getDefault() );
+        .withZoneUTC();
 
     public static final DateTimeFormatter FORMAT_SIMPLE = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss" )
-        .withZone( DateTimeZone.getDefault() );
+        .withZoneUTC();
 
     public static Result<DateTime, Exception> parseDateWithMillis( String date ) {
         return parse( date, FORMAT_MILLIS );

@@ -105,7 +105,7 @@ class InfluxDBReporter extends ScheduledReporter {
             final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
             if( !Objects.equals( value, lastValue ) ) {
-                lastReport.put(entry.getKey(), value);
+                lastReport.put( entry.getKey(), value );
 
                 Point.Builder builder = Point
                     .measurement( entry.getKey() );
@@ -128,7 +128,7 @@ class InfluxDBReporter extends ScheduledReporter {
             final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
             if( !Objects.equals( value, lastValue ) ) {
-                lastReport.put(entry.getKey(), value);
+                lastReport.put( entry.getKey(), value );
 
                 Point.Builder builder = Point
                     .measurement( entry.getKey() );
@@ -150,7 +150,7 @@ class InfluxDBReporter extends ScheduledReporter {
             final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
             if( !Objects.equals( value, lastValue ) ) {
-                lastReport.put(entry.getKey(), value);
+                lastReport.put( entry.getKey(), value );
 
                 Point.Builder builder = Point
                     .measurement( entry.getKey() );
@@ -172,7 +172,7 @@ class InfluxDBReporter extends ScheduledReporter {
             final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
 
             if( !Objects.equals( value, lastValue ) ) {
-                lastReport.put(entry.getKey(), value);
+                lastReport.put( entry.getKey(), value );
 
                 Point.Builder builder = Point
                     .measurement( entry.getKey() );
@@ -221,6 +221,7 @@ class InfluxDBReporter extends ScheduledReporter {
         private String password;
         private TimeUnit rateUnit;
         private TimeUnit durationUnit;
+        private ReporterFilter filter;
 
         public Builder( MetricRegistry registry ) {
             this.registry = registry;
@@ -264,9 +265,14 @@ class InfluxDBReporter extends ScheduledReporter {
                 tags,
                 registry,
                 "influx-reporter",
-                MetricFilter.ALL,
+                filter,
                 rateUnit,
                 durationUnit );
+        }
+
+        public Builder withFilter( ReporterFilter filter ) {
+            this.filter = filter;
+            return this;
         }
     }
 }

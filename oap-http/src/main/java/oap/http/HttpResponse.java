@@ -41,6 +41,7 @@ import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class HttpResponse {
     public static final HttpResponse NOT_FOUND = status( HttpURLConnection.HTTP_NOT_FOUND );
+    public static final HttpResponse HTTP_FORBIDDEN = status( HttpURLConnection.HTTP_FORBIDDEN );
     public static final HttpResponse NO_CONTENT = status( HttpURLConnection.HTTP_NO_CONTENT );
     public static final HttpResponse NOT_MODIFIED = status( HttpURLConnection.HTTP_NOT_MODIFIED );
     public String reasonPhrase;

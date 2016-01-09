@@ -57,7 +57,7 @@ public class KernelTest extends AbstractTest {
                 assertEquals( ServiceOne.instances, 1 );
                 assertEquals( Application.service( ServiceOne.class ).i, 2 );
                 assertEquals( Application.service( ServiceOne.class ).i2, 100 );
-                assertEquals( Application.service( ServiceTwo.class ).j, 3 );
+                assertEquals( Application.service( ServiceTwo.class ).j, 3000 );
                 assertEquals( Application.service( ServiceTwo.class ).one,
                     Application.service( ServiceOne.class ) );
                 assertTrue( Application.service( ServiceTwo.class ).started );

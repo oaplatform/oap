@@ -23,11 +23,14 @@
  */
 package oap.io;
 
+import lombok.extern.slf4j.Slf4j;
+import oap.util.Lists;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.codehaus.plexus.util.DirectoryScanner;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,6 +41,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.SimpleFileVisitor;
@@ -45,10 +49,13 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+@Slf4j
 public final class Files {
     public static ArrayList<Path> wildcard( String basePath, String wildcard ) {
         return wildcard( path( basePath ), wildcard );
@@ -59,15 +66,17 @@ public final class Files {
             PathMatcher pm = FileSystems.getDefault()
                 .getPathMatcher( ("glob:" + basePath + File.separator + wildcard).replace( "\\", "\\\\" ) );
             ArrayList<Path> result = new ArrayList<>();
-            SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
+            SimpleFileVisitor2<Path> visitor = new SimpleFileVisitor2<Path>() {
                 @Override
                 public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException {
                     if( pm.matches( file ) ) result.add( file );
-                    return FileVisitResult.CONTINUE;
+                    return super.visitFile( file, attrs );
                 }
             };
-            if( basePath.toFile().exists() && basePath.toFile().canExecute() )
+            if( basePath.toFile().exists() && basePath.toFile().canExecute() ) {
                 java.nio.file.Files.walkFileTree( basePath, visitor );
+                log.debug( "visited count {}, basePath {}, wildcard {}", visitor.visited, basePath, wildcard );
+            }
             Collections.sort( result );
             return result;
         } catch( IOException e ) {
@@ -190,12 +199,37 @@ public final class Files {
         }
     }
 
-    public static void chmod( Path path, PosixFilePermission... permissions ) {
+    public static void copyContent( Path basePath, Path destPath ) {
+        copyContent( basePath, destPath, Lists.of( "**/*" ), Lists.of() );
+    }
+
+    public static void copyContent( Path basePath, Path destPath, List<String> includes, List<String> excludes ) {
+        copyContent( basePath, destPath, includes, excludes, false, null );
+    }
+
+    public static void copyContent( Path basePath, Path destPath, List<String> includes, List<String> excludes,
+        boolean filtering, Function<String, Object> mapper ) {
+        DirectoryScanner scanner = new DirectoryScanner();
+        scanner.setBasedir( basePath.toFile() );
+        scanner.setIncludes( includes.toArray( new String[includes.size()] ) );
+        scanner.setExcludes( excludes.toArray( new String[excludes.size()] ) );
+        scanner.scan();
+        for( String included : scanner.getIncludedFiles() ) {
+            Path src = basePath.resolve( included );
+            Path dst = destPath.resolve( included );
+            if( filtering ) Files.writeString( dst, Strings.substitute( Files.readString( src ), mapper ) );
+            else copy( src, IoStreams.Encoding.PLAIN, dst, IoStreams.Encoding.PLAIN );
+            setPosixPermissions( dst, getPosixPermissions( src ) );
+        }
+    }
+
+    public static void setPosixPermissions( Path path, Set<PosixFilePermission> permissions ) {
         try {
-            java.nio.file.Files.setPosixFilePermissions( path, Sets.of( permissions ) );
+            java.nio.file.Files.setPosixFilePermissions( path, permissions );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
+
     }
 
     public static void rename( Path sourcePath, Path destPath ) {
@@ -210,5 +244,17 @@ public final class Files {
 
     public static void ensureDirectory( Path path ) {
         path.toFile().mkdirs();
+    }
+
+    public static void setPosixPermissions( Path path, PosixFilePermission... permissions ) {
+        setPosixPermissions( path, Sets.of( permissions ) );
+    }
+
+    public static Set<PosixFilePermission> getPosixPermissions( Path path ) {
+        try {
+            return java.nio.file.Files.getPosixFilePermissions( path, LinkOption.NOFOLLOW_LINKS );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
     }
 }

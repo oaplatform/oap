@@ -41,7 +41,7 @@ public class ModelSet {
     public boolean withHeader = false;
     private Map<String, Model> versions;
 
-    private ModelSet(){
+    private ModelSet() {
         versions = new HashMap<>();
     }
 
@@ -52,31 +52,72 @@ public class ModelSet {
     }
 
 
+    public static Model unversionedModel(){
+        return new ModelSet().modelForName( "unversioned" );
+    }
     public static ModelSet withoutHeader() {
         return new ModelSet();
     }
 
-    public Model modelForName(String version) {
-        versions.putIfAbsent(version, new Model(this.withHeader));
-        return versions.get(version);
+    public Model modelForName( String version ) {
+        versions.putIfAbsent( version, new Model( this.withHeader ) );
+        return versions.get( version );
     }
 
-    public Model modelForPath(Path path){
-        return modelForName(Files.version(path)) ;
+    public Model modelForPath( Path path ) {
+        return modelForName( Files.version( path ) );
     }
 
     public int size() {
-        return versions.get(versions.keySet().toArray()[0]).fields.size();
+        return versions.get( versions.keySet().toArray()[0] ).fields.size();
     }
 
 
-    private class Field {
-        int index;
+    abstract class Field implements Function<List<String>, Object> {
         Function<String, Object> mapper;
 
-        public Field( int index, Function<String, Object> mapper ) {
-            this.index = index;
+        public Field( Function<String, Object> mapper ) {
             this.mapper = mapper;
+        }
+    }
+
+    private class IndexField extends Field {
+        int index;
+
+        public IndexField( int index, Function<String, Object> mapper ) {
+            super( mapper );
+
+            this.index = index;
+        }
+
+        @Override
+        public Object apply( List<String> line ) {
+            return mapper.apply( line.get( index ) );
+        }
+
+        @Override
+        public String toString() {
+            return String.valueOf( index );
+        }
+    }
+
+    private class ValueField extends Field {
+        String value;
+
+        public ValueField( String value, Function<String, Object> mapper ) {
+            super( mapper );
+
+            this.value = value;
+        }
+
+        @Override
+        public Object apply( List<String> line ) {
+            return mapper.apply( value );
+        }
+
+        @Override
+        public String toString() {
+            return "NONE/default: " + value;
         }
     }
 
@@ -85,32 +126,38 @@ public class ModelSet {
         private Predicate<List<String>> filter;
         private List<Field> fields = new ArrayList<>();
 
-        public Model(boolean withHeader) {
+        public Model( boolean withHeader ) {
             this.withHeader = withHeader;
         }
 
         public Model field( Function<String, Object> mapper, int index, int... more ) {
-            this.fields.add( new Field( index, mapper ) );
+            this.fields.add( new IndexField( index, mapper ) );
             return field( mapper, more );
+        }
+
+        public Model field( Function<String, Object> mapper, String value ) {
+            this.fields.add( new ValueField( value, mapper ) );
+            return this;
         }
 
         public List<Object> convert( List<String> line ) {
             return Stream.of( fields )
-                    .map(f -> {
-                        try {
-                            return f.mapper.apply(line.get(f.index));
-                        } catch (IndexOutOfBoundsException e) {
-                            String lineToPrint = "[" + Stream.of(line).collect(Collectors.joining("|")) + "]";
-                            throw new TsvException("line does not contain a column with index " + f.index + ": "+ lineToPrint, e);
-                        } catch (Exception e) {
-                            throw new TsvException("at column " + f.index + " " + e, e);
-                        }
-                    })
-                    .collect(toArrayList());
+                .map( f -> {
+                    try {
+                        return f.apply( line );
+                    } catch( IndexOutOfBoundsException e ) {
+                        String lineToPrint = "[" + Stream.of( line ).collect( Collectors.joining( "|" ) ) + "]";
+                        throw new TsvException(
+                            "line does not contain a column with index " + f + ": " + lineToPrint, e );
+                    } catch( Exception e ) {
+                        throw new TsvException( "at column " + f + " " + e, e );
+                    }
+                } )
+                .collect( toArrayList() );
         }
 
         public Model field( Function<String, Object> mapper, int[] indices ) {
-            for( int i : indices ) this.fields.add( new Field( i, mapper ) );
+            for( int i : indices ) this.fields.add( new IndexField( i, mapper ) );
             return this;
         }
 
@@ -118,8 +165,16 @@ public class ModelSet {
             return field( s -> s, indices );
         }
 
+        public Model s( String defaulValue ) {
+            return field( s -> s, defaulValue );
+        }
+
         public Model s( int index, int... more ) {
             return field( s -> s, index, more );
+        }
+
+        public Model i( String defaultValue ) {
+            return field( Integer::parseInt, defaultValue );
         }
 
         public Model i( int index, int... more ) {
@@ -130,8 +185,16 @@ public class ModelSet {
             return field( Long::parseLong, index, more );
         }
 
+        public Model l( String defaultValue ) {
+            return field( Long::parseLong, defaultValue );
+        }
+
         public Model d( int index, int... more ) {
             return field( Double::parseDouble, index, more );
+        }
+
+        public Model d( String defaultValue ) {
+            return field( Double::parseDouble, defaultValue );
         }
 
 

@@ -24,7 +24,7 @@
 package oap.http;
 
 public interface HttpServer {
-    void bind( String context, Cors cors, Handler handler );
+    void bind( String context, Cors cors, Handler handler, boolean localHostOnly );
 
     void unbind( String context );
 }

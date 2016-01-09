@@ -27,14 +27,12 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.util.Date;
-
 public class Filename {
-    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" );
-    private static final DateTimeFormatter directoryFormatter = DateTimeFormat.forPattern( "yyyy-MM/dd" );
+    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" ).withZoneUTC();
+    private static final DateTimeFormatter directoryFormatter = DateTimeFormat.forPattern( "yyyy-MM/dd" ).withZoneUTC();
 
-    public static String formatDate( DateTime date, int interval ) {
-        int bucket = (int) Math.floor( date.getMinuteOfHour() / (double) interval );
+    public static String formatDate( DateTime date, long intervalms ) {
+        int bucket = (int) Math.floor( date.getMinuteOfHour() / (intervalms / 60000d ) );
         return formatter.print( date ) + "-" + (bucket > 9 ? bucket : "0" + bucket);
     }
 

@@ -44,11 +44,11 @@ public class WebServicesPerformance extends AbstractPerformance {
         Server server = new Server( Env.port(), 100 );
         try {
             WebServices ws = new WebServices( server );
-            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS() );
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false );
             server.start();
 
             HttpAsserts.reset();
-            benchmark( "Server.invocations", samples, experiments, 500,
+            benchmark( "Server.invocations", samples, experiments, 5000,
                 number -> HttpAsserts.get( HTTP_PREFIX + "/x/v/math/id?a=aaa" ).assertResponse( 200, "OK",
                     ContentType.APPLICATION_JSON, "\"aaa\"" ) );
 
@@ -63,12 +63,12 @@ public class WebServicesPerformance extends AbstractPerformance {
         NioServer server = new NioServer( Env.port() );
         try {
             WebServices ws = new WebServices( server );
-            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS() );
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false );
             server.start();
             Thread.sleep( 3000 ); // ??? TODO: fix me
 
             HttpAsserts.reset();
-            benchmark( "NioServer.invocations", samples, experiments, 500, ( number ) -> {
+            benchmark( "NioServer.invocations", samples, experiments, 5000, ( number ) -> {
                 try {
                     HttpAsserts.get( HTTP_PREFIX + "/x/v/math/id?a=aaa" ).assertResponse( 200, "OK",
                         ContentType.APPLICATION_JSON, "\"aaa\"" );

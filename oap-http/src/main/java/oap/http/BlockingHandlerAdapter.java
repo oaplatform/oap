@@ -23,6 +23,7 @@
  */
 package oap.http;
 
+import oap.net.Inet;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -32,28 +33,38 @@ import org.apache.http.protocol.HttpRequestHandler;
 import org.slf4j.Logger;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.LinkedHashMap;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
 class BlockingHandlerAdapter implements HttpRequestHandler {
     private static Logger logger = getLogger( BlockingHandlerAdapter.class );
+    private final boolean localHostOnly;
     protected String location;
     private Handler handler;
     private Cors cors;
 
-    public BlockingHandlerAdapter( String location, Handler handler, Cors cors ) {
+    public BlockingHandlerAdapter( String location, Handler handler, Cors cors, boolean localHostOnly  ) {
         this.location = location;
         this.handler = handler;
         this.cors = cors;
+        this.localHostOnly = localHostOnly;
     }
 
     @Override
     public void handle( HttpRequest req, HttpResponse resp, HttpContext ctx ) throws IOException {
         if( logger.isTraceEnabled() ) logger.trace( "handling " + req );
+
         HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
-        handler.handle(
-            new Request( req, new Context( location, connection.getRemoteAddress() ) ),
+        final Response response = new Response( resp, defaultHeaders );
+        final InetAddress remoteAddress = connection.getRemoteAddress();
+
+        if( localHostOnly && !Inet.isLocalAddress( remoteAddress ) )
+            response.respond( oap.http.HttpResponse.HTTP_FORBIDDEN );
+         else
+            handler.handle(
+            new Request( req, new Context( location, remoteAddress ) ),
             new Response( resp, cors )
         );
     }

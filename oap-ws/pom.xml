@@ -33,34 +33,34 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.2.25</version>
+        <version>1.4.8</version>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-metrics</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-json</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-http</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-application</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>

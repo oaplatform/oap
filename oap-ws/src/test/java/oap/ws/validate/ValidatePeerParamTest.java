@@ -25,12 +25,13 @@ package oap.ws.validate;
 
 import oap.http.Cors;
 import oap.http.HttpResponse;
+import oap.http.Server;
+import oap.metrics.Metrics;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.ws.WebServices;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
-import oap.http.Server;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -40,10 +41,10 @@ import java.util.List;
 import java.util.Optional;
 
 import static oap.http.Request.HttpMethod.POST;
-import static oap.ws.WsParam.From.BODY;
-import static oap.ws.WsParam.From.QUERY;
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 import static oap.http.testng.HttpAsserts.post;
+import static oap.ws.WsParam.From.BODY;
+import static oap.ws.WsParam.From.QUERY;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
@@ -53,7 +54,9 @@ public class ValidatePeerParamTest {
 
     @BeforeClass
     public void startServer() {
-        ws.bind( "test", Cors.DEFAULT, new TestWS() );
+        Metrics.resetAll();
+
+        ws.bind( "test", Cors.DEFAULT, new TestWS(), false );
         server.start();
     }
 
@@ -61,6 +64,8 @@ public class ValidatePeerParamTest {
     public void stopServer() {
         server.stop();
         server.unbind( "test" );
+
+        Metrics.resetAll();
     }
 
     @Test

@@ -32,6 +32,7 @@ import static org.testng.Assert.assertEquals;
 public class StringsTest extends AbstractTest {
     @Test
     public void toHexString() {
+        assertEquals( Strings.toHexString( new byte[]{ 16 } ), "10" );
         assertEquals( Strings.toHexString( new byte[]{ 1, 10, 120, -78 } ), "010A78B2" );
         assertEquals( Strings.toHexString( new byte[]{ 40, -78, -67, 42, -93, -91 } ), "28B2BD2AA3A5" );
     }

@@ -34,70 +34,67 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="oap-metrics" />
       </profile>
       <profile default="false" name="Annotation profile for oap-ws" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="oap-ws" />
       </profile>
       <profile default="false" name="Annotation profile for oap-logstream" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="oap-logstream" />
       </profile>
       <profile default="false" name="Annotation profile for oap-cli" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="oap-cli" />
       </profile>
       <profile default="false" name="Annotation profile for oap-application" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="oap-application" />
       </profile>
       <profile default="false" name="Annotation profile for oap-storage" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="oap-storage" />
       </profile>
       <profile default="false" name="Annotation profile for oap-stdlib" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="oap-stdlib" />
       </profile>
       <profile default="false" name="Annotation profile for oap-etl" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="oap-etl" />
       </profile>
       <profile default="false" name="Annotation profile for oap-http" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="oap-http" />
       </profile>
       <profile default="false" name="Annotation profile for oap-json" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
-        <module name="oap-json" />
+      </profile>
+      <profile default="false" name="Annotation profile for oap-maven" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="oap-maven" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="1.8">
@@ -135,6 +132,7 @@
       <module name="oap-http" target="1.8" />
       <module name="oap-json" target="1.8" />
       <module name="oap-logstream" target="1.8" />
+      <module name="oap-maven" target="1.8" />
       <module name="oap-metrics" target="1.8" />
       <module name="oap-replication" target="1.8" />
       <module name="oap-stdlib" target="1.8" />

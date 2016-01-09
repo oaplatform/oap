@@ -76,7 +76,7 @@ public class StartupScriptsMojo extends AbstractMojo {
                 Strings.substitute( value, properties::getProperty ) ) );
         if( permissions.length > 0 ) {
             try {
-                Files.chmod( path, permissions );
+                Files.setPosixPermissions( path, permissions );
             } catch( UnsupportedOperationException e ) {
                 if( failIfUnsupportedOperationException ) throw e;
                 getLog().error( e.getMessage() );

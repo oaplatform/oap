@@ -48,7 +48,6 @@ public class NioServer implements oap.http.HttpServer {
         this.mapper.register( "/static/*", new NioClasspathResourceHandler( "/static", "/WEB-INF" ) );
 
         IOReactorConfig config = IOReactorConfig.custom()
-            .setSoTimeout( 500 )
             .setTcpNoDelay( true )
             .setSoKeepAlive( true )
             .build();
@@ -63,8 +62,9 @@ public class NioServer implements oap.http.HttpServer {
     }
 
     @Override
-    public void bind( String context, Cors cors, Handler handler ) {
+    public void bind( String context, Cors cors, Handler handler, boolean localHostOnly  ) {
         String location = "/" + context + "/*";
+        this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler, defaultHeaders, localHostOnly ) );
         this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler, cors ) );
         logger.info( handler + " bound to " + location );
 

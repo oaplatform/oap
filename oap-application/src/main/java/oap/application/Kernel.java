@@ -88,9 +88,9 @@ public class Kernel {
                 if( service.supervision.thread )
                     supervisor.startThread( serviceName, instance );
                 else {
-                    if( service.supervision.schedule && service.supervision.delay > 0 )
+                    if( service.supervision.schedule && service.supervision.getDelay().isPresent() )
                         supervisor.scheduleWithFixedDelay( serviceName, (Runnable) instance,
-                            service.supervision.delay, TimeUnit.SECONDS );
+                            service.supervision.getDelay().get(), TimeUnit.MILLISECONDS );
                     else if( service.supervision.schedule && service.supervision.cron != null )
                         supervisor.scheduleCron( serviceName, (Runnable) instance,
                             service.supervision.cron );

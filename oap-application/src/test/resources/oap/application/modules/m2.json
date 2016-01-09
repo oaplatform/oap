@@ -18,7 +18,7 @@
       "implementation": "oap.application.ServiceScheduled",
       "supervision": {
         "schedule": true,
-        "delay": 1
+        "delay": "1s"
       }
     }
   }

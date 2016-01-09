@@ -114,6 +114,13 @@ public abstract class AbstractPerformance extends AbstractTest {
 
     public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
         Try.ThrowingConsumer<Integer> code, int warming ) {
+        return benchmark( name, samples, experiments, threads, code, none, none, warming );
+    }
+
+    public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
+        Try.ThrowingConsumer<Integer> code,
+        Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment,
+        int warming ) {
 
         return Teamcity.progress( name + "...", () -> {
             System.out.println( "pool threads = " + threads );
@@ -130,6 +137,8 @@ public abstract class AbstractPerformance extends AbstractTest {
             List<BenchmarkResult> results = IntStream
                 .range( 0, experiments )
                 .mapToObj( x -> Teamcity.progress( name + " e=" + x + "...", () -> {
+
+                        initExperiment.accept( x );
 
                         int threadSamles = samples / threads;
 
@@ -152,6 +161,9 @@ public abstract class AbstractPerformance extends AbstractTest {
                         System.out.format(
                             "benchmarking %s: %d samples, %d usec, avg time %d usec, rate %d actions/s\n",
                             name, samples, total / 1000, avg, rate );
+
+                        doneExperiment.accept( x );
+
                         return new BenchmarkResult( avg, rate );
                     } )
                 )
