@@ -38,21 +38,21 @@ public class DiskLoggingBackend implements LoggingBackend {
     final Path logDirectory;
     final String ext;
     final int bufferSize;
-    private int interval;
+    private int bucketsPerHour;
     private boolean closed;
 
-    public DiskLoggingBackend( Path logDirectory, String ext, int bufferSize, int interval ) {
+    public DiskLoggingBackend( Path logDirectory, String ext, int bufferSize, int bucketsPerHour ) {
         this.logDirectory = logDirectory;
         this.ext = ext;
         this.bufferSize = bufferSize;
-        this.interval = interval;
+        this.bucketsPerHour = bucketsPerHour;
     }
 
     @Override
     public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
         if( closed ) throw new UncheckedIOException( new IOException( "already closed!" ) );
         writers.computeIfAbsent( hostName + fileName,
-            k -> new LogWriter( logDirectory.resolve( hostName ), fileName, ext, bufferSize, interval ) )
+            k -> new LogWriter( logDirectory.resolve( hostName ), fileName, ext, bufferSize, bucketsPerHour ) )
             .write( buffer, offset, length );
     }
 

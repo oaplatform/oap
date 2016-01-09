@@ -47,17 +47,17 @@ public class LogWriter implements Closeable {
     private final String root;
     private int fsyncInterval = 30;
     private int bufferSize;
-    private int interval;
+    private int bucketsPerHour;
     private OutputStream out;
     private String lastPattern;
     private Scheduled scheduled;
 
-    public LogWriter( Path logDirectory, String root, String ext, int bufferSize, int interval ) {
+    public LogWriter( Path logDirectory, String root, String ext, int bufferSize, int bucketsPerHour ) {
         this.logDirectory = logDirectory;
         this.root = root;
         this.ext = ext;
         this.bufferSize = bufferSize;
-        this.interval = interval;
+        this.bucketsPerHour = bucketsPerHour;
         this.lastPattern = currentPattern();
         this.scheduled = Scheduler.scheduleWithFixedDelay( fsyncInterval, TimeUnit.SECONDS, this::fsync );
     }
@@ -121,7 +121,7 @@ public class LogWriter implements Closeable {
     }
 
     private String currentPattern() {
-        return Filename.formatDate( DateTime.now(), interval );
+        return Filename.formatDate( DateTime.now(), bucketsPerHour );
     }
 
     @Override

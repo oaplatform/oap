@@ -25,26 +25,17 @@
 package oap.logstream;
 
 import oap.testng.AbstractTest;
-import oap.util.Stream;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
-import java.util.TimeZone;
-
-import static org.joda.time.DateTime.now;
 import static org.testng.Assert.assertEquals;
 
-/**
- * Created by Igor Petrenko on 03.12.2015.
- */
 public class FilenameTest extends AbstractTest {
 
     @Test
     public void testFormatDate() throws Exception {
         DateTime date = new DateTime( 2015, 12, 3, 11, 28, 30 );
-        assertEquals( Filename.formatDate( date, 5 * 60 * 1000 ), "2015-12-03-11-05" );
+        assertEquals( Filename.formatDate( date, 12 ), "2015-12-03-11-05" );
     }
 
     @Test

@@ -31,9 +31,9 @@ public class Filename {
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" ).withZoneUTC();
     private static final DateTimeFormatter directoryFormatter = DateTimeFormat.forPattern( "yyyy-MM/dd" ).withZoneUTC();
 
-    public static String formatDate( DateTime date, long interval ) {
-        int bucket = (int) Math.floor( date.getMinuteOfHour() / (interval / 60000d ) );
-        return formatter.print( date ) + "-" + (bucket > 9 ? bucket : "0" + bucket);
+    public static String formatDate( DateTime date, long bucketsPerHour ) {
+        int bucket = ( int ) Math.floor( date.getMinuteOfHour() / ( 60d / bucketsPerHour ) );
+        return formatter.print( date ) + "-" + ( bucket > 9 ? bucket : "0" + bucket );
     }
 
     public static String directoryName( String timestamp ) {
