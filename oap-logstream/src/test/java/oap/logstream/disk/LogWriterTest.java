@@ -39,7 +39,7 @@ public class LogWriterTest extends AbstractTest {
     public void write() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1234567890\n";
-        LogWriter logWriter = new LogWriter( Env.tmpPath( "logs" ), "file", "log", 10, 5 );
+        LogWriter logWriter = new LogWriter( Env.tmpPath( "logs" ), "file", "log", 10, 12 );
 
         logWriter.write( content.getBytes() );
 
