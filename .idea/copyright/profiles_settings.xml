@@ -1,9 +1,3 @@
 <component name="CopyrightManager">
-  <settings default="MIT">
-    <LanguageOptions name="Erlang">
-      <option name="fileTypeOverride" value="3" />
-      <option name="block" value="false" />
-      <option name="filler" value="=" />
-    </LanguageOptions>
-  </settings>
+  <settings default="" />
 </component>

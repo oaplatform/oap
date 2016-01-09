@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <option name="DEFAULT_COMPILER" value="Javac" />
     <resourceExtensions />
     <wildcardResourcePatterns>
       <entry name="!?*.java" />
@@ -13,56 +12,9 @@
       <entry name="!?*.kt" />
       <entry name="!?*.clj" />
       <entry name="!?*.aj" />
-      <entry name="?*.jar" />
-      <entry name="?*.json" />
-      <entry name="?*.xml" />
-      <entry name="?*.gz" />
-      <entry name="?*.zip" />
     </wildcardResourcePatterns>
     <annotationProcessing>
-      <profile default="true" name="Default" enabled="true">
-        <processorPath useClasspath="true" />
-      </profile>
-      <profile default="false" name="Annotation profile for oap-replication" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-      </profile>
-      <profile default="false" name="Annotation profile for oap-metrics" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-      </profile>
-      <profile default="false" name="Annotation profile for oap-ws" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-      </profile>
-      <profile default="false" name="Annotation profile for oap-logstream" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-      </profile>
-      <profile default="false" name="Annotation profile for oap-cli" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-      </profile>
-      <profile default="false" name="Annotation profile for oap-application" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="true" />
-      </profile>
-      <profile default="false" name="Annotation profile for oap-storage" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
+      <profile default="true" name="Default" enabled="false">
         <processorPath useClasspath="true" />
       </profile>
       <profile default="false" name="Annotation profile for oap-stdlib" enabled="true">
@@ -70,24 +22,28 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
+        <module name="oap-stdlib" />
       </profile>
-      <profile default="false" name="Annotation profile for oap-etl" enabled="true">
+      <profile default="false" name="Annotation profile for oap-metrics" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
+        <module name="oap-metrics" />
       </profile>
-      <profile default="false" name="Annotation profile for oap-http" enabled="true">
+      <profile default="false" name="Annotation profile for oap-logstream" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
+        <module name="oap-logstream" />
       </profile>
       <profile default="false" name="Annotation profile for oap-json" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
+        <module name="oap-json" />
       </profile>
       <profile default="false" name="Annotation profile for oap-maven" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -96,35 +52,50 @@
         <processorPath useClasspath="true" />
         <module name="oap-maven" />
       </profile>
+      <profile default="false" name="Annotation profile for oap-cli" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="oap-cli" />
+      </profile>
+      <profile default="false" name="Annotation profile for oap-application" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="oap-application" />
+      </profile>
+      <profile default="false" name="Annotation profile for oap-ws" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="oap-ws" />
+      </profile>
+      <profile default="false" name="Annotation profile for oap-storage" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="oap-storage" />
+      </profile>
+      <profile default="false" name="Annotation profile for oap-etl" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="oap-etl" />
+      </profile>
+      <profile default="false" name="Annotation profile for oap-http" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="true" />
+        <module name="oap-http" />
+      </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel target="1.8">
-      <module name="madberry" target="1.8" />
-      <module name="madberry-aggregator" target="1.8" />
-      <module name="madberry-aggregator (1) (oap)" target="1.8" />
-      <module name="madberry-aggregator (2) (net.madberry)" target="1.8" />
-      <module name="madberry-aggregator-rpm" target="1.8" />
-      <module name="madberry-bidder" target="1.8" />
-      <module name="madberry-bidder (1) (oap)" target="1.8" />
-      <module name="madberry-bidder (2) (net.madberry)" target="1.8" />
-      <module name="madberry-bidder-replication" target="1.8" />
-      <module name="madberry-bidder-rpm" target="1.8" />
-      <module name="madberry-controller" target="1.8" />
-      <module name="madberry-datasync" target="1.8" />
-      <module name="madberry-datasync-rpm" target="1.8" />
-      <module name="madberry-geo" target="1.8" />
-      <module name="madberry-geo-rpm" target="1.8" />
-      <module name="madberry-logger" target="1.8" />
-      <module name="madberry-logger-server" target="1.8" />
-      <module name="madberry-logger-server (1) (oap)" target="1.8" />
-      <module name="madberry-logger-server-rpm" target="1.8" />
-      <module name="madberry-miner" target="1.8" />
-      <module name="madberry-miner-rpm" target="1.8" />
-      <module name="madberry-missioncontrol" target="1.8" />
-      <module name="madberry-missioncontrol (1) (oap)" target="1.8" />
-      <module name="madberry-rpm" target="1.8" />
-      <module name="madberry-rtb" target="1.8" />
-      <module name="madberry-showroom" target="1.8" />
-      <module name="madberry-showroom-rpm" target="1.8" />
+    <bytecodeTargetLevel>
       <module name="oap" target="1.8" />
       <module name="oap-application" target="1.8" />
       <module name="oap-cli" target="1.8" />
@@ -134,15 +105,9 @@
       <module name="oap-logstream" target="1.8" />
       <module name="oap-maven" target="1.8" />
       <module name="oap-metrics" target="1.8" />
-      <module name="oap-replication" target="1.8" />
       <module name="oap-stdlib" target="1.8" />
       <module name="oap-storage" target="1.8" />
       <module name="oap-ws" target="1.8" />
-      <module name="parent" target="1.8" />
-      <module name="project" target="1.8" />
     </bytecodeTargetLevel>
-  </component>
-  <component name="JavacSettings">
-    <option name="ADDITIONAL_OPTIONS_STRING" value="-parameters -Xlint:unchecked" />
   </component>
 </project>

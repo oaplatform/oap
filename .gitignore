@@ -3,3 +3,7 @@ workspace.xml
 target
 .surefire*
 *.iml
+modules.xml
+compiler.xml
+encodings.xml
+misc.xml
