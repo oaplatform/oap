@@ -22,14 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.logstream;
+package oap.logstream.disk;
 
 import oap.io.IoAsserts;
+import oap.logstream.disk.LogWriter;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Dates;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -40,7 +39,7 @@ public class LogWriterTest extends AbstractTest {
     public void write() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1234567890\n";
-        LogWriter logWriter = new LogWriter( Env.tmpPath( "logs" ), "file", "txt", 10, 5 );
+        LogWriter logWriter = new LogWriter( Env.tmpPath( "logs" ), "file", "log", 10, 5 );
 
         logWriter.write( content.getBytes() );
 
@@ -57,10 +56,10 @@ public class LogWriterTest extends AbstractTest {
         logWriter.write( content.getBytes() );
 
         logWriter.close();
-        IoAsserts.assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-00.txt" ), content );
-        IoAsserts.assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-01.txt" ), content );
-        IoAsserts.assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-02.txt" ), content + content );
-        IoAsserts.assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-11.txt" ), content );
+        IoAsserts.assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-00.log" ), content );
+        IoAsserts.assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-01.log" ), content );
+        IoAsserts.assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-02.log" ), content + content );
+        IoAsserts.assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-11.log" ), content );
 
     }
 }

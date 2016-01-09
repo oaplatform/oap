@@ -47,20 +47,24 @@ public class Sockets {
         }
     }
 
-    public static void shutdown( Socket socket ) {
-        try {
-            socket.getInputStream().close();
-            socket.shutdownInput();
-        } catch( IOException e ) {
-            logger.error( e.getMessage(), e );
+    public static void close( Socket socket ) {
+        if( !socket.isClosed() ) {
+            try {
+                socket.getInputStream().close();
+                socket.shutdownInput();
+            } catch( IOException e ) {
+                if( !"Socket is closed".equals( e.getMessage() ) )
+                    logger.error( e.getMessage(), e );
+            }
+            try {
+                socket.getOutputStream().flush();
+                socket.getOutputStream().close();
+                socket.shutdownOutput();
+            } catch( IOException e ) {
+                if( !"Socket is closed".equals( e.getMessage() ) )
+                    logger.error( e.getMessage(), e );
+            }
+            Closeables.close( socket );
         }
-        try {
-            socket.getOutputStream().flush();
-            socket.getOutputStream().close();
-            socket.shutdownOutput();
-        } catch( IOException e ) {
-            logger.error( e.getMessage(), e );
-        }
-        Closeables.close( socket );
     }
 }

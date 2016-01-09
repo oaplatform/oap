@@ -29,6 +29,9 @@
         </encoder>
     </appender>
 
+    <logger name="org.quartz" additivity="false">
+        <level value="ERROR"/>
+    </logger>
 
     <root level="TRACE">
         <appender-ref ref="STDOUT"/>

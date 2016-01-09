@@ -21,51 +21,52 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.logstream;
+
+package oap.logstream.disk;
 
 import oap.io.Closeables;
+import oap.logstream.LoggingBackend;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class DiskLoggingBackend {
+public class DiskLoggingBackend implements LoggingBackend {
     public static final int DEFAULT_BUFFER = 1024 * 100;
     private ConcurrentHashMap<String, LogWriter> writers = new ConcurrentHashMap<>();
     final Path logDirectory;
-    final String suffix;
+    final String ext;
     final int bufferSize;
     private int interval;
     private boolean closed;
 
-    public DiskLoggingBackend( Path logDirectory, String suffix, int bufferSize, int interval ) {
+    public DiskLoggingBackend( Path logDirectory, String ext, int bufferSize, int interval ) {
         this.logDirectory = logDirectory;
-        this.suffix = suffix;
+        this.ext = ext;
         this.bufferSize = bufferSize;
         this.interval = interval;
     }
 
-    public void log( String hostName, String fileName, String line ) {
-        log( hostName, fileName, line.getBytes() );
-    }
-
-    public void log( String hostName, String fileName, byte[] buffer ) {
+    @Override
+    public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
         if( closed ) throw new UncheckedIOException( new IOException( "already closed!" ) );
         writers.computeIfAbsent( hostName + fileName,
-            k -> new LogWriter( logDirectory.resolve( hostName ), fileName, suffix, bufferSize, interval ) )
-            .write( buffer );
+            k -> new LogWriter( logDirectory.resolve( hostName ), fileName, ext, bufferSize, interval ) )
+            .write( buffer, offset, length );
     }
 
+    @Override
     public void close() {
         if( !closed ) {
             closed = true;
-            writers.forEach( ( k, writer ) -> Closeables.close( writer ) );
+            flush();
+            writers.forEach( ( selector, writer ) -> Closeables.close( writer ) );
             writers.clear();
         }
     }
 
     public void flush() {
-        writers.forEachValue( Long.MAX_VALUE, LogWriter::flush );
+        writers.forEach( ( selector, writer ) -> writer.flush() );
     }
 }

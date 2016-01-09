@@ -21,12 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.logstream;
+
+package oap.logstream.disk;
 
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
-import oap.io.Files;
 import oap.io.IoStreams;
+import oap.logstream.Filename;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 
@@ -41,23 +42,24 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class LogWriter implements Closeable {
     private static Logger logger = getLogger( LogWriter.class );
-    private final String suffix;
+    private final String ext;
     private final Path logDirectory;
     private final String root;
+    private int fsyncInterval = 30;
     private int bufferSize;
     private int interval;
     private OutputStream out;
     private String lastPattern;
     private Scheduled scheduled;
 
-    public LogWriter( Path logDirectory, String root, String suffix, int bufferSize, int interval ) {
+    public LogWriter( Path logDirectory, String root, String ext, int bufferSize, int interval ) {
         this.logDirectory = logDirectory;
         this.root = root;
-        this.suffix = suffix;
+        this.ext = ext;
         this.bufferSize = bufferSize;
         this.interval = interval;
         this.lastPattern = currentPattern();
-        this.scheduled = Scheduler.scheduleWithFixedDelay( 30, TimeUnit.SECONDS, this::fsync );
+        this.scheduled = Scheduler.scheduleWithFixedDelay( fsyncInterval, TimeUnit.SECONDS, this::fsync );
     }
 
     private void fsync() {
@@ -82,10 +84,14 @@ public class LogWriter implements Closeable {
     }
 
     public synchronized void write( byte[] buffer ) {
+        write( buffer, 0, buffer.length );
+    }
+
+    public synchronized void write( byte[] buffer, int offset, int length ) {
         try {
             refresh();
             if( out == null ) out = IoStreams.out( filename(), IoStreams.Encoding.PLAIN, bufferSize, true );
-            out.write( buffer );
+            out.write( buffer, offset, length );
 
         } catch( IOException e ) {
             logger.error( e.getMessage(), e );
@@ -101,7 +107,7 @@ public class LogWriter implements Closeable {
 
     private Path filename() {
         return logDirectory.resolve( Filename.directoryName( lastPattern ) )
-            .resolve( root + "-" + lastPattern + "." + suffix );
+            .resolve( root + "-" + lastPattern + "." + ext );
     }
 
     private synchronized void refresh() {
@@ -120,7 +126,7 @@ public class LogWriter implements Closeable {
 
     @Override
     public String toString() {
-        return "LogWriter@" + filename();
+        return getClass().getSimpleName() + "@" + filename();
     }
 
     public synchronized void flush() {

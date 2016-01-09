@@ -24,9 +24,11 @@
 
 package oap.util;
 
+import java.io.Serializable;
+import java.util.Objects;
 import java.util.function.BiFunction;
 
-public class Pair<K, V> {
+public class Pair<K, V> implements Serializable {
     public final K _1;
     public final V _2;
 
@@ -54,8 +56,8 @@ public class Pair<K, V> {
 
         Pair pair = (Pair) o;
 
-        if( _1 != null ? !_1.equals( pair._1 ) : pair._1 != null ) return false;
-        if( _2 != null ? !_2.equals( pair._2 ) : pair._2 != null ) return false;
+        if( _1 != null ? !Objects.deepEquals( _1, pair._1 ) : pair._1 != null ) return false;
+        if( _2 != null ? !Objects.deepEquals( _2, pair._2 ) : pair._2 != null ) return false;
 
         return true;
     }
