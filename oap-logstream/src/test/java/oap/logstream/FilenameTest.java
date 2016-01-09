@@ -43,18 +43,12 @@ public class FilenameTest extends AbstractTest {
 
     @Test
     public void testFormatDate() throws Exception {
-        DateTimeZone.setDefault( DateTimeZone.forOffsetHours( -9 ) );
-
-        DateTimeUtils.setCurrentMillisFixed( new DateTime( 2015, 12, 3, 11, 28, 30, DateTimeZone.UTC ).getMillis() );
-        final String s = Filename.formatDate( DateTime.now(), 5 * 60 * 1000 );
-
-        assertEquals( s, "2015-12-03-11-05" );
+        DateTime date = new DateTime( 2015, 12, 3, 11, 28, 30 );
+        assertEquals( Filename.formatDate( date, 5 * 60 * 1000 ), "2015-12-03-11-05" );
     }
 
     @Test
     public void testDirectoryName() throws Exception {
-        DateTimeZone.setDefault( DateTimeZone.forOffsetHours( -9 ) );
-
-        assertEquals(Filename.directoryName( "2015-12-03-11-05" ), "2015-12/03");
+        assertEquals( Filename.directoryName( "2015-12-03-11-05" ), "2015-12/03" );
     }
 }

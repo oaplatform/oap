@@ -25,8 +25,7 @@ package oap.io;
 
 import java.nio.file.Path;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.*;
 
 public class IoAsserts {
     public static void assertFileContent( Path path, String content ) {
@@ -38,12 +37,13 @@ public class IoAsserts {
     }
 
     public static void assertFileResource( Class<?> contextClass, Path actual, IoStreams.Encoding encoding,
-        String expectedResource ) {
+                                           String expectedResource ) {
         assertEquals( Files.readString( actual, encoding ),
             Resources.readString( contextClass, contextClass.getSimpleName() + "/" + expectedResource ).get() );
     }
 
     public static void assertFileContent( Path path, IoStreams.Encoding encoding, String content ) {
+        assertTrue( path.toFile().exists(), "file " + path + " does not exist" );
         assertEquals( Files.readString( path, encoding ), content );
     }
 
