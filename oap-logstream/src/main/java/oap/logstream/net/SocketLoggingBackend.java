@@ -44,7 +44,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     private final int port;
     private DataSocket socket;
     private Buffers buffers;
-    private long syncInterval = 10000;
+    private long flushInterval = 10000;
     private final Scheduled scheduled;
     private boolean loggingAvailable = true;
 
@@ -52,13 +52,12 @@ public class SocketLoggingBackend implements LoggingBackend {
         this.host = host;
         this.port = port;
         this.buffers = new Buffers( location, bufferSize );
-        this.scheduled = Scheduler.scheduleWithFixedDelay( syncInterval, TimeUnit.MILLISECONDS, this::sync );
+        this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::sync );
     }
 
     public void sync() {
         try {
             connect();
-            buffers.flush();
             buffers.forEachReadyData( ( selector, data ) -> {
                 try {
                     logger.debug( "syncing " + data.length + " bytes to " + selector );

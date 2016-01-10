@@ -84,7 +84,7 @@ public class Buffers implements Closeable {
         }
     }
 
-    public void flush() {
+   private void flush() {
         state.currentBuffers.forEach( ( key, b ) -> {
             synchronized( key.intern() ) {
                 if( !b.isEmpty() ) {
@@ -95,7 +95,6 @@ public class Buffers implements Closeable {
         } );
     }
 
-
     @Override
     public synchronized void close() {
         if( closed ) throw new IllegalStateException( "already closed" );
@@ -104,6 +103,7 @@ public class Buffers implements Closeable {
     }
 
     public synchronized void forEachReadyData( BiPredicate<String, byte[]> consumer ) {
+        flush();
         Iterator<Pair<String, byte[]>> iterator = state.readyBuffers.iterator();
         while( iterator.hasNext() ) {
             Pair<String, byte[]> next = iterator.next();
