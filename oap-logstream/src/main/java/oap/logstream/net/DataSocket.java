@@ -68,7 +68,7 @@ public class DataSocket implements Closeable {
     public void close() throws IOException {
         Closeables.close( this.in );
         Closeables.close( this.out );
-        Closeables.close( this.socket );
+        Sockets.close( this.socket );
     }
 
     @Override

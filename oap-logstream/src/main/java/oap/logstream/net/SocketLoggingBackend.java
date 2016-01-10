@@ -46,6 +46,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     private Buffers buffers;
     private long syncInterval = 10000;
     private final Scheduled scheduled;
+    private boolean loggingAvailable = true;
 
     public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
         this.host = host;
@@ -55,29 +56,40 @@ public class SocketLoggingBackend implements LoggingBackend {
     }
 
     public void sync() {
-        connect();
-        buffers.flush();
-        buffers.forEachReadyData( ( selector, data ) -> {
-            try {
-                logger.debug( "syncing " + data.length + " bytes to " + selector );
-                DataOutputStream out = socket.getOutputStream();
-                out.writeUTF( selector );
-                out.writeInt( data.length );
-                out.write( data );
-                int written = socket.getInputStream().readInt();
-                if( written == data.length ) return true;
-                else {
-                    logger.error( "checksum failed: " + written + ":" + data.length );
+        try {
+            connect();
+            buffers.flush();
+            buffers.forEachReadyData( ( selector, data ) -> {
+                try {
+                    logger.debug( "syncing " + data.length + " bytes to " + selector );
+                    DataOutputStream out = socket.getOutputStream();
+                    out.writeUTF( selector );
+                    out.writeInt( data.length );
+                    out.write( data );
+                    int written = socket.getInputStream().readInt();
+                    if( written == data.length ) {
+                        loggingAvailable = true;
+                        return true;
+                    } else {
+                        loggingAvailable = false;
+                        logger.error( "checksum failed: " + written + ":" + data.length );
+                        Closeables.close( socket );
+                        return false;
+                    }
+                } catch( IOException e ) {
+                    loggingAvailable = false;
+                    logger.warn( e.getMessage() );
+                    logger.warn( "closing " + socket );
                     Closeables.close( socket );
                     return false;
                 }
-            } catch( IOException e ) {
-                logger.warn( e.getMessage() );
-                logger.warn( "closing " + socket );
-                Closeables.close( socket );
-                return false;
-            }
-        } );
+            } );
+        } catch( Exception e ) {
+            loggingAvailable = false;
+            logger.warn( e.getMessage() );
+            logger.warn( "closing " + socket );
+            Closeables.close( socket );
+        }
 
     }
 
@@ -100,4 +112,8 @@ public class SocketLoggingBackend implements LoggingBackend {
         Closeables.close( buffers );
     }
 
+    @Override
+    public boolean isLoggingAvailable() {
+        return loggingAvailable;
+    }
 }
