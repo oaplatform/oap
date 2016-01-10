@@ -45,7 +45,7 @@ public class LogWriter implements Closeable {
     private final String ext;
     private final Path logDirectory;
     private final String root;
-    private int flushInterval = 30;
+    private int flushInterval = 30000;
     private int bufferSize;
     private int bucketsPerHour;
     private OutputStream out;
@@ -59,7 +59,7 @@ public class LogWriter implements Closeable {
         this.bufferSize = bufferSize;
         this.bucketsPerHour = bucketsPerHour;
         this.lastPattern = currentPattern();
-        this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.SECONDS, this::fsync );
+        this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::fsync );
     }
 
     private void fsync() {
