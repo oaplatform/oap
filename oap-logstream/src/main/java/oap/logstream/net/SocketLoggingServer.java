@@ -116,7 +116,7 @@ public class SocketLoggingServer implements Runnable {
                         if( size > bufferSize )
                             throw new IOException(
                                 "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize );
-                        in.read( buffer, 0, size );
+                        in.readFully( buffer, 0, size );
                         out.writeInt( size );
                         logger.trace( "logging " + size + " bytes to " + selector );
                         backend.log( hostName, selector, buffer, 0, size );
