@@ -47,7 +47,7 @@ public class LoggerTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
         String content = "12345678";
-        try( LoggingBackend backend = new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 5 ) ) {
+        try( LoggingBackend backend = new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12 ) ) {
             Logger logger = new Logger( backend );
             logger.log( "a", content );
             logger.log( "b", content );
@@ -69,7 +69,7 @@ public class LoggerTest extends AbstractTest {
         String content = "12345678";
 
         try( LoggingBackend serverBackend =
-                 new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 5 ) ) {
+                 new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12 ) ) {
             SocketLoggingServer server = new SocketLoggingServer( 7777, 1024, serverBackend );
             try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", 7777,
                 Env.tmpPath( "buffers" ), 10 ) ) {
