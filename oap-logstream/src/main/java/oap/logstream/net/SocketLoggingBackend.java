@@ -50,16 +50,16 @@ public class SocketLoggingBackend implements LoggingBackend {
         this.host = host;
         this.port = port;
         this.buffers = new Buffers( location, bufferSize );
-        this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::sync );
+        this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::send );
     }
 
-    public void sync() {
+    public void send() {
         try {
             log.debug( "sending data to server..." );
             connect();
             buffers.forEachReadyData( ( selector, data ) -> {
                 try {
-                    log.trace( "syncing " + data.length + " bytes to " + selector );
+                    log.trace( "sending " + data.length + " bytes to " + selector );
                     DataOutputStream out = socket.getOutputStream();
                     out.writeUTF( selector );
                     out.writeInt( data.length );
@@ -77,7 +77,6 @@ public class SocketLoggingBackend implements LoggingBackend {
                 } catch( IOException e ) {
                     loggingAvailable = false;
                     log.warn( e.getMessage() );
-                    log.warn( "closing " + socket );
                     Closeables.close( socket );
                     return false;
                 }
@@ -85,7 +84,6 @@ public class SocketLoggingBackend implements LoggingBackend {
         } catch( Exception e ) {
             loggingAvailable = false;
             log.warn( e.getMessage() );
-            if( socket != null ) log.warn( "closing " + socket );
             Closeables.close( socket );
         }
 

@@ -75,16 +75,16 @@ public class LoggerTest extends AbstractTest {
                 Env.tmpPath( "buffers" ), 10 ) ) {
                 Logger logger = new Logger( clientBackend );
                 logger.log( "a", content );
-                clientBackend.sync();
+                clientBackend.send();
                 assertFalse( logger.isLoggingAvailable() );
                 server.start();
                 Threads.sleepSafely( 500 );
-                clientBackend.sync();
+                clientBackend.send();
                 assertTrue( logger.isLoggingAvailable() );
                 logger.log( "b", content );
                 logger.log( "a", content );
                 logger.log( "d", content );
-                clientBackend.sync();
+                clientBackend.send();
             } finally {
                 server.stop();
             }
