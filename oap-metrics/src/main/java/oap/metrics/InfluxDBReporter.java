@@ -105,7 +105,7 @@ class InfluxDBReporter extends ScheduledReporter {
         int before = points.getPoints().size();
         for( Map.Entry<String, Counter> entry : counters.entrySet() ) {
             long value = entry.getValue().getCount();
-            makePoint( entry.getKey(), entry.getValue(), points, value );
+            makePoint( entry.getKey(), value, points, value );
         }
         return points.getPoints().size() - before;
     }
