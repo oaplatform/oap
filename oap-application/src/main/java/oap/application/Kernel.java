@@ -59,7 +59,7 @@ public class Kernel {
     }
 
     private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
-        Set<String> initialized ) {
+                                                            Set<String> initialized ) {
 
         HashMap<String, Module.Service> deferred = new HashMap<>();
 
@@ -89,10 +89,10 @@ public class Kernel {
                     supervisor.startThread( serviceName, instance );
                 else {
                     if( service.supervision.schedule && service.supervision.getDelay().isPresent() )
-                        supervisor.scheduleWithFixedDelay( serviceName, (Runnable) instance,
+                        supervisor.scheduleWithFixedDelay( serviceName, ( Runnable ) instance,
                             service.supervision.getDelay().get(), TimeUnit.MILLISECONDS );
                     else if( service.supervision.schedule && service.supervision.cron != null )
-                        supervisor.scheduleCron( serviceName, (Runnable) instance,
+                        supervisor.scheduleCron( serviceName, ( Runnable ) instance,
                             service.supervision.cron );
                 }
                 initialized.add( serviceName );
@@ -108,9 +108,9 @@ public class Kernel {
 
     private void initializeServiceLinks( String name, Module.Service service ) {
         for( Map.Entry<String, Object> entry : service.parameters.entrySet() )
-            if( entry.getValue() instanceof String && ((String) entry.getValue()).startsWith( "@service:" ) ) {
+            if( entry.getValue() instanceof String && ( ( String ) entry.getValue() ).startsWith( "@service:" ) ) {
                 logger.debug( "for " + name + " linking " + entry );
-                Object link = Application.service( ((String) entry.getValue()).substring( "@service:".length() ) );
+                Object link = Application.service( ( ( String ) entry.getValue() ).substring( "@service:".length() ) );
                 if( link == null ) throw new ApplicationException(
                     "for " + name + " service link " + entry.getValue() + " is not initialized yet" );
                 entry.setValue( link );
@@ -148,7 +148,7 @@ public class Kernel {
 
     @SuppressWarnings( "unchecked" )
     public void start( String config ) {
-        start( (Map<String, Map<String, Object>>) Binder.hocon.unmarshal( Map.class, config ) );
+        start( ( Map<String, Map<String, Object>> ) Binder.hocon.unmarshal( Map.class, config ) );
     }
 
     public void start( Map<String, Map<String, Object>> config ) {
@@ -159,8 +159,9 @@ public class Kernel {
             .collect( toSet() );
         logger.trace( "modules = " + Stream.of( moduleConfigs ).map( m -> m.name ).toList() );
 
-        if( !initialize( moduleConfigs, new HashSet<>() ).isEmpty() ) {
-            logger.error( "failed to initialize: " + moduleConfigs );
+        Set<Module> def = initialize( moduleConfigs, new HashSet<>() );
+        if( !def.isEmpty() ) {
+            logger.error( "failed to initialize: " + Stream.of( def ).map( m -> m.name ).toList() );
             throw new ApplicationException( "failed to initialize modules" );
         }
 

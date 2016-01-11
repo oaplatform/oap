@@ -65,10 +65,6 @@ public class SocketLoggingServer implements Runnable {
     @Override
     public void run() {
         try {
-            serverSocket = new ServerSocket();
-            serverSocket.setReuseAddress( true );
-            serverSocket.setSoTimeout( 1000 );
-            serverSocket.bind( new InetSocketAddress( port ) );
             while( thread.isRunning() ) try {
                 Socket socket = serverSocket.accept();
                 logger.debug( "accepted connection " + socket );
@@ -77,8 +73,6 @@ public class SocketLoggingServer implements Runnable {
             } catch( IOException e ) {
                 logger.error( e.getMessage(), e );
             }
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
         } finally {
             Closeables.close( serverSocket );
             workers.forEach( Closeables::close );
@@ -86,7 +80,16 @@ public class SocketLoggingServer implements Runnable {
     }
 
     public void start() {
-        thread.start();
+        try {
+            serverSocket = new ServerSocket();
+            serverSocket.setReuseAddress( true );
+            serverSocket.setSoTimeout( 1000 );
+            serverSocket.bind( new InetSocketAddress( port ) );
+            logger.debug( "ready to rock " + serverSocket.getLocalSocketAddress() );
+            thread.start();
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
     }
 
     public void stop() {
