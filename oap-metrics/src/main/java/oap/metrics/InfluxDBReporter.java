@@ -90,7 +90,7 @@ class InfluxDBReporter extends ScheduledReporter {
             int g = reportGauges( gauges, points );
             int h = reportHistograms( histograms, points );
 
-            logger.debug( "reporting {} counters, {} meters, {} timers, {} gauges, {} histograms", c, m, t, g, h );
+            logger.trace( "reporting {} counters, {} meters, {} timers, {} gauges, {} histograms", c, m, t, g, h );
             influxDB.write( points );
         } catch( Exception e ) {
             if( e.getCause() instanceof ConnectException ) {
