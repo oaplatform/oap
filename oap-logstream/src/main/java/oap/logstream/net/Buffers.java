@@ -28,7 +28,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.metrics.Metrics;
-import oap.util.Pair;
+import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
 import java.io.Serializable;
@@ -38,9 +38,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BiPredicate;
-
-import static oap.util.Pair.__;
+import java.util.function.Predicate;
 
 @EqualsAndHashCode( exclude = "closed" )
 @ToString
@@ -49,13 +47,25 @@ public class Buffers implements Closeable {
     private final Path location;
     private final int bufferSize;
     private boolean closed;
-    private State state = new State();
+    Map<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
+    Queue<Bucket> readyBuffers = new ConcurrentLinkedQueue<>();
+    private static long idseed = DateTimeUtils.currentTimeMillis();
 
     @EqualsAndHashCode
-    @ToString
-    private static class State implements Serializable {
-        Map<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
-        Queue<Pair<String, byte[]>> readyBuffers = new ConcurrentLinkedQueue<>();
+    static class Bucket implements Serializable {
+        String selector;
+        long id = idseed++;
+        byte[] data;
+
+        public Bucket( String selector, byte[] data ) {
+            this.selector = selector;
+            this.data = data;
+        }
+
+        @Override
+        public String toString() {
+            return "(" + id + ", " + selector + "," + data.length + ")";
+        }
     }
 
     public Buffers( Path location, int bufferSize ) {
@@ -63,10 +73,10 @@ public class Buffers implements Closeable {
         this.bufferSize = bufferSize;
         try {
             if( location.toFile().exists() )
-                state = Files.readObject( location );
-            log.debug( "unsent buffers: {}", state.readyBuffers.size() );
+                readyBuffers = Files.readObject( location );
+            log.debug( "unsent buffers: {}", readyBuffers.size() );
         } catch( Exception e ) {
-            log.error( "cannot read {}. Ignoring....", location );
+            log.warn( e.getMessage() );
         }
         location.toFile().delete();
     }
@@ -77,10 +87,12 @@ public class Buffers implements Closeable {
 
     public void put( String key, byte[] buffer, int offset, int length ) {
         if( closed ) throw new IllegalStateException( "current buffers already closed" );
-        synchronized( key.intern() ) {
-            Buffer b = state.currentBuffers.computeIfAbsent( key, k -> new Buffer( bufferSize ) );
+        String keyInterned = key.intern();
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized( keyInterned ) {
+            Buffer b = currentBuffers.computeIfAbsent( keyInterned, k -> new Buffer( bufferSize ) );
             if( !b.available( length ) ) {
-                state.readyBuffers.offer( __( key.intern(), b.data() ) );
+                readyBuffers.offer( new Bucket( keyInterned, b.data() ) );
                 b.reset();
             }
             b.put( buffer, offset, length );
@@ -88,10 +100,12 @@ public class Buffers implements Closeable {
     }
 
     private void flush() {
-        state.currentBuffers.forEach( ( key, b ) -> {
-            synchronized( key.intern() ) {
+        currentBuffers.forEach( ( key, b ) -> {
+            String keyInterned = key.intern();
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized( keyInterned ) {
                 if( !b.isEmpty() ) {
-                    state.readyBuffers.offer( __( key.intern(), b.data() ) );
+                    readyBuffers.offer( new Bucket( keyInterned, b.data() ) );
                     b.reset();
                 }
             }
@@ -103,19 +117,17 @@ public class Buffers implements Closeable {
         if( closed ) throw new IllegalStateException( "already closed" );
         closed = true;
         flush();
-        log.info( "writing unsent buffers " + state.readyBuffers.size() );
-        Files.writeObject( location, state );
+        log.info( "writing unsent buffers " + readyBuffers.size() );
+        Files.writeObject( location, readyBuffers );
     }
 
-    public synchronized void forEachReadyData( BiPredicate<String, byte[]> consumer ) {
+    public synchronized void forEachReadyData( Predicate<Bucket> consumer ) {
         flush();
-        Metrics.measureHistogram( Metrics.name( "logging_buffers_count" ), state.readyBuffers.size() );
-        log.debug( "buffers to go " + state.readyBuffers.size() );
-        Iterator<Pair<String, byte[]>> iterator = state.readyBuffers.iterator();
-        while( iterator.hasNext() ) {
-            Pair<String, byte[]> next = iterator.next();
-            if( consumer.test( next._1, next._2 ) ) iterator.remove();
+        Metrics.measureHistogram( Metrics.name( "logging_buffers_count" ), readyBuffers.size() );
+        log.debug( "buffers to go " + readyBuffers.size() );
+        Iterator<Bucket> iterator = readyBuffers.iterator();
+        while( iterator.hasNext() )
+            if( consumer.test( iterator.next() ) ) iterator.remove();
             else break;
-        }
     }
 }

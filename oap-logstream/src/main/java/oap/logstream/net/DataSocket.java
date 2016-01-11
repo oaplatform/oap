@@ -27,7 +27,6 @@ import oap.io.Closeables;
 import oap.io.Sockets;
 
 import java.io.Closeable;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -37,24 +36,20 @@ import java.net.Socket;
 public class DataSocket implements Closeable {
     private final Socket socket;
     private final DataOutputStream out;
-    private final DataInputStream in;
 
     public DataSocket( String host, int port ) {
         this.socket = new Socket();
         try {
             this.socket.setKeepAlive( true );
             this.socket.setReuseAddress( true );
+            this.socket.setSoTimeout( 1000 );
             this.socket.connect( new InetSocketAddress( host, port ) );
             this.out = new DataOutputStream( this.socket.getOutputStream() );
-            this.in = new DataInputStream( this.socket.getInputStream() );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
     }
 
-    public DataInputStream getInputStream() {
-        return in;
-    }
 
     public DataOutputStream getOutputStream() {
         return out;
@@ -66,7 +61,6 @@ public class DataSocket implements Closeable {
 
     @Override
     public void close() throws IOException {
-        Closeables.close( this.in );
         Closeables.close( this.out );
         Sockets.close( this.socket );
     }

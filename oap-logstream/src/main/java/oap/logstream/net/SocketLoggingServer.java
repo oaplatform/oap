@@ -26,13 +26,12 @@ package oap.logstream.net;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.io.Closeables;
+import oap.io.Files;
 import oap.io.Sockets;
 import oap.logstream.LoggingBackend;
-import org.slf4j.Logger;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -40,12 +39,13 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static org.slf4j.LoggerFactory.getLogger;
 
 @Slf4j
 public class SocketLoggingServer implements Runnable {
@@ -54,13 +54,16 @@ public class SocketLoggingServer implements Runnable {
     private int port;
     private int bufferSize;
     private LoggingBackend backend;
+    private Path controlState;
     private List<Worker> workers = new ArrayList<>();
     private ServerSocket serverSocket;
+    private Map<String, Long> control = new ConcurrentHashMap<>();
 
-    public SocketLoggingServer( int port, int bufferSize, LoggingBackend backend ) {
+    public SocketLoggingServer( int port, int bufferSize, LoggingBackend backend, Path controlState ) {
         this.port = port;
         this.bufferSize = bufferSize;
         this.backend = backend;
+        this.controlState = controlState;
     }
 
     @Override
@@ -68,8 +71,8 @@ public class SocketLoggingServer implements Runnable {
         try {
             while( thread.isRunning() ) try {
                 Socket socket = serverSocket.accept();
-                log.debug( "accepted connection " + socket );
-                executor.submit( new Worker( socket ) );
+                log.debug( "accepted connection {}",  socket );
+                executor.submit( new Worker( socket, control ) );
             } catch( SocketTimeoutException ignore ) {
             } catch( IOException e ) {
                 log.error( e.getMessage(), e );
@@ -82,12 +85,18 @@ public class SocketLoggingServer implements Runnable {
 
     public void start() {
         try {
+            if( controlState.toFile().exists() ) this.control = Files.readObject( controlState );
+        } catch( Exception e ) {
+            log.warn( e.getMessage() );
+        }
+        try {
             serverSocket = new ServerSocket();
             serverSocket.setReuseAddress( true );
             serverSocket.setSoTimeout( 1000 );
             serverSocket.bind( new InetSocketAddress( port ) );
             log.debug( "ready to rock " + serverSocket.getLocalSocketAddress() );
             thread.start();
+
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
@@ -95,35 +104,44 @@ public class SocketLoggingServer implements Runnable {
 
     public void stop() {
         thread.stop();
+        workers.forEach( Closeables::close );
+        Closeables.close( executor );
+        Files.writeObject( controlState, control );
     }
 
     public class Worker implements Runnable, Closeable {
         private Socket socket;
+        private Map<String, Long> control;
         private byte[] buffer = new byte[bufferSize];
         private boolean closed;
 
-        public Worker( Socket socket ) {
+        public Worker( Socket socket, Map<String, Long> control ) {
             this.socket = socket;
+            this.control = control;
         }
 
         @Override
         public void run() {
             try {
                 DataInputStream in = new DataInputStream( socket.getInputStream() );
-                DataOutputStream out = new DataOutputStream( socket.getOutputStream() );
+                socket.setSoTimeout( 5000 );
                 String hostName = socket.getInetAddress().getCanonicalHostName();
                 log.debug( "start logging for " + hostName );
                 while( !closed ) {
+                    long bucketId = in.readLong();
+                    long lastBucket = control.computeIfAbsent( hostName, h -> 0L );
                     String selector = in.readUTF();
                     if( !"SHUTDOWN".equals( selector ) ) {
                         int size = in.readInt();
                         if( size > bufferSize )
-                            throw new IOException(
-                                "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize );
+                            throw new IOException( "buffer overflow: chunk size is {}" + size + " when buffer size is " + bufferSize );
                         in.readFully( buffer, 0, size );
-                        out.writeInt( size );
-                        log.trace( "logging " + size + " bytes to " + selector );
-                        backend.log( hostName, selector, buffer, 0, size );
+                        if( lastBucket > bucketId ) log.warn( "bucket {} already written ({})", bucketId, lastBucket );
+                        else {
+                            log.trace( "logging ({}, {}, {})", bucketId, selector, size );
+                            backend.log( hostName, selector, buffer, 0, size );
+                            control.put( hostName, bucketId );
+                        }
                     } else close();
                 }
             } catch( EOFException e ) {
@@ -131,17 +149,14 @@ public class SocketLoggingServer implements Runnable {
             } catch( IOException e ) {
                 log.error( e.getMessage(), e );
             } finally {
-                close();
+                Sockets.close( socket );
+                workers.remove( this );
             }
         }
 
         @Override
         public void close() {
-            if( !closed ) {
-                this.closed = true;
-                Sockets.close( socket );
-                workers.remove( this );
-            }
+            this.closed = true;
         }
     }
 }

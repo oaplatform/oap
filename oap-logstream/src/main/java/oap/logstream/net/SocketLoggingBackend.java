@@ -57,23 +57,16 @@ public class SocketLoggingBackend implements LoggingBackend {
         try {
             log.debug( "sending data to server..." );
             connect();
-            buffers.forEachReadyData( ( selector, data ) -> {
+            buffers.forEachReadyData( bucket -> {
                 try {
-                    log.trace( "sending " + data.length + " bytes to " + selector );
+                    log.trace( "sending {}", bucket );
                     DataOutputStream out = socket.getOutputStream();
-                    out.writeUTF( selector );
-                    out.writeInt( data.length );
-                    out.write( data );
-                    int written = socket.getInputStream().readInt();
-                    if( written == data.length ) {
-                        loggingAvailable = true;
-                        return true;
-                    } else {
-                        loggingAvailable = false;
-                        log.error( "checksum failed: " + written + ":" + data.length );
-                        Closeables.close( socket );
-                        return false;
-                    }
+                    out.writeLong( bucket.id );
+                    out.writeUTF( bucket.selector );
+                    out.writeInt( bucket.data.length );
+                    out.write( bucket.data );
+                    loggingAvailable = true;
+                    return true;
                 } catch( IOException e ) {
                     loggingAvailable = false;
                     log.warn( e.getMessage() );

@@ -70,7 +70,7 @@ public class LoggerTest extends AbstractTest {
 
         try( LoggingBackend serverBackend =
                  new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12 ) ) {
-            SocketLoggingServer server = new SocketLoggingServer( 7777, 1024, serverBackend );
+            SocketLoggingServer server = new SocketLoggingServer( 7777, 1024, serverBackend, Env.tmpPath( "control" ) );
             try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", 7777,
                 Env.tmpPath( "buffers" ), 10 ) ) {
                 Logger logger = new Logger( clientBackend );

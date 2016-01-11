@@ -67,10 +67,10 @@ public class BuffersTest {
 
     private void assertReadyData( Buffers buffers, ArrayList<Pair<String, byte[]>> expectedData ) {
         Iterator<Pair<String, byte[]>> expected = expectedData.iterator();
-        buffers.forEachReadyData( ( key, buffer ) -> {
+        buffers.forEachReadyData( bucket -> {
             Pair<String, byte[]> next = expected.next();
-            assertEquals( key, next._1 );
-            assertEquals( buffer, next._2 );
+            assertEquals( bucket.selector, next._1 );
+            assertEquals( bucket.data, next._2 );
             return true;
         } );
         assertFalse( expected.hasNext() );
