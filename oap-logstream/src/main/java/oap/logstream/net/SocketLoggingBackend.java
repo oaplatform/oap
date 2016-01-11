@@ -29,7 +29,6 @@ import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.logstream.LoggingBackend;
-import oap.metrics.Metrics;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -47,6 +46,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     private final Scheduled scheduled;
     private boolean loggingAvailable = true;
     protected int soTimeout = 5000;
+    private boolean closed = false;
 
     public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
         this.host = host;
@@ -56,7 +56,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     }
 
     public void send() {
-        try {
+        if( !closed ) try {
             if( buffers.isEmpty() ) loggingAvailable = true;
 
             log.debug( "sending data to server..." );
@@ -98,6 +98,7 @@ public class SocketLoggingBackend implements LoggingBackend {
 
     @Override
     public void close() {
+        closed = true;
         Scheduled.cancel( scheduled );
         Closeables.close( socket );
         Closeables.close( buffers );
@@ -105,6 +106,6 @@ public class SocketLoggingBackend implements LoggingBackend {
 
     @Override
     public boolean isLoggingAvailable() {
-        return loggingAvailable;
+        return loggingAvailable && !closed;
     }
 }
