@@ -153,12 +153,10 @@ class InfluxDBReporter extends ScheduledReporter {
             lastReport.put( key, value );
 
             Point.Builder builder = Point.measurement( key );
-
             tags.forEach( builder::tag );
+            builder.field( "value", formatted );
 
-            final Point point = builder.field( "value", formatted ).build();
-
-            points.point( point );
+            points.point( builder.build() );
         }
     }
 
