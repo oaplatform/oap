@@ -63,7 +63,7 @@ public class SocketLoggingBackend implements LoggingBackend {
             }
             buffers.forEachReadyData( bucket -> {
                 try {
-                    log.debug( "sending {}", bucket );
+                    log.trace( "sending {}", bucket );
                     DataOutputStream out = socket.getOutputStream();
                     out.writeLong( bucket.id );
                     out.writeUTF( bucket.selector );
