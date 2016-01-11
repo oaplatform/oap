@@ -26,6 +26,7 @@ package oap.logstream.net;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.io.Files;
+import oap.metrics.Metrics;
 import oap.util.Pair;
 import org.slf4j.Logger;
 
@@ -84,7 +85,7 @@ public class Buffers implements Closeable {
         }
     }
 
-   private void flush() {
+    private void flush() {
         state.currentBuffers.forEach( ( key, b ) -> {
             synchronized( key.intern() ) {
                 if( !b.isEmpty() ) {
@@ -104,6 +105,7 @@ public class Buffers implements Closeable {
 
     public synchronized void forEachReadyData( BiPredicate<String, byte[]> consumer ) {
         flush();
+        Metrics.measureHistogram( Metrics.name( "logging_buffers_count" ), state.readyBuffers.size() );
         Iterator<Pair<String, byte[]>> iterator = state.readyBuffers.iterator();
         while( iterator.hasNext() ) {
             Pair<String, byte[]> next = iterator.next();
