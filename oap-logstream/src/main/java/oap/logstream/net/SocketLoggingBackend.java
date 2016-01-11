@@ -45,6 +45,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     private long flushInterval = 10000;
     private final Scheduled scheduled;
     private boolean loggingAvailable = true;
+    protected int soTimeout = 5000;
 
     public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
         this.host = host;
@@ -59,7 +60,7 @@ public class SocketLoggingBackend implements LoggingBackend {
             connect();
             buffers.forEachReadyData( bucket -> {
                 try {
-                    log.trace( "sending {}", bucket );
+                    log.debug( "sending {}", bucket );
                     DataOutputStream out = socket.getOutputStream();
                     out.writeLong( bucket.id );
                     out.writeUTF( bucket.selector );
@@ -90,7 +91,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     private void connect() {
         if( this.socket == null || !socket.isConnected() ) {
             Closeables.close( socket );
-            this.socket = new DataSocket( host, port );
+            this.socket = new DataSocket( host, port, soTimeout );
         }
     }
 

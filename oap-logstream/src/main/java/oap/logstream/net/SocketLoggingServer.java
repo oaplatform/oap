@@ -58,6 +58,7 @@ public class SocketLoggingServer implements Runnable {
     private List<Worker> workers = new ArrayList<>();
     private ServerSocket serverSocket;
     private Map<String, Long> control = new ConcurrentHashMap<>();
+    private int soTimeout = 5000;
 
     public SocketLoggingServer( int port, int bufferSize, LoggingBackend backend, Path controlState ) {
         this.port = port;
@@ -71,8 +72,8 @@ public class SocketLoggingServer implements Runnable {
         try {
             while( thread.isRunning() ) try {
                 Socket socket = serverSocket.accept();
-                log.debug( "accepted connection {}",  socket );
-                executor.submit( new Worker( socket, control ) );
+                log.debug( "accepted connection {}", socket );
+                executor.submit( new Worker( socket ) );
             } catch( SocketTimeoutException ignore ) {
             } catch( IOException e ) {
                 log.error( e.getMessage(), e );
@@ -111,20 +112,18 @@ public class SocketLoggingServer implements Runnable {
 
     public class Worker implements Runnable, Closeable {
         private Socket socket;
-        private Map<String, Long> control;
         private byte[] buffer = new byte[bufferSize];
         private boolean closed;
 
-        public Worker( Socket socket, Map<String, Long> control ) {
+        public Worker( Socket socket ) {
             this.socket = socket;
-            this.control = control;
         }
 
         @Override
         public void run() {
             try {
                 DataInputStream in = new DataInputStream( socket.getInputStream() );
-                socket.setSoTimeout( 5000 );
+                socket.setSoTimeout( soTimeout );
                 String hostName = socket.getInetAddress().getCanonicalHostName();
                 log.debug( "start logging for " + hostName );
                 while( !closed ) {
@@ -138,7 +137,7 @@ public class SocketLoggingServer implements Runnable {
                         in.readFully( buffer, 0, size );
                         if( lastBucket > bucketId ) log.warn( "bucket {} already written ({})", bucketId, lastBucket );
                         else {
-                            log.trace( "logging ({}, {}, {})", bucketId, selector, size );
+                            log.debug( "logging ({}, {}, {})", bucketId, selector, size );
                             backend.log( hostName, selector, buffer, 0, size );
                             control.put( hostName, bucketId );
                         }

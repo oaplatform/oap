@@ -37,12 +37,12 @@ public class DataSocket implements Closeable {
     private final Socket socket;
     private final DataOutputStream out;
 
-    public DataSocket( String host, int port ) {
+    public DataSocket( String host, int port, int soTimeout ) {
         this.socket = new Socket();
         try {
             this.socket.setKeepAlive( true );
             this.socket.setReuseAddress( true );
-            this.socket.setSoTimeout( 1000 );
+            this.socket.setSoTimeout( soTimeout );
             this.socket.connect( new InetSocketAddress( host, port ) );
             this.out = new DataOutputStream( this.socket.getOutputStream() );
         } catch( IOException e ) {
