@@ -26,6 +26,8 @@ package oap.logstream.net;
 
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+
 import static org.testng.Assert.*;
 
 public class BufferTest {
@@ -39,6 +41,6 @@ public class BufferTest {
         assertTrue( buffer.put( data ) );
         assertFalse( buffer.available( data.length ) );
         assertFalse( buffer.put( data ) );
-        assertEquals( buffer.data(), new byte[]{ 1, 2, 3, 1, 2, 3, 1, 2, 3 } );
+        assertEquals( Arrays.copyOf( buffer.data(), buffer.length() ), new byte[]{ 1, 2, 3, 1, 2, 3, 1, 2, 3 } );
     }
 }
