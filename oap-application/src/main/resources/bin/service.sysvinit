@@ -20,7 +20,7 @@ APPHOME=${oap.service.home}
 APPNAME=${oap.service.name}
 SUEXEC="sudo -u ${oap.service.user}"
 
-[ $UID -eq 0 ] || echo "not a root" && exit 1
+[[ $UID -eq 0 ]] || { echo "not a root"; exit 1; }
 
 . $APPHOME/bin/functions.sh
 
