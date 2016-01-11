@@ -112,6 +112,11 @@ public class Buffers implements Closeable {
         } );
     }
 
+    public boolean isEmpty() {
+        return readyBuffers.isEmpty();
+    }
+
+
     @Override
     public synchronized void close() {
         if( closed ) throw new IllegalStateException( "already closed" );
