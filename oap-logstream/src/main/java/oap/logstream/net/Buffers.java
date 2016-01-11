@@ -25,10 +25,10 @@ package oap.logstream.net;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.metrics.Metrics;
 import oap.util.Pair;
-import org.slf4j.Logger;
 
 import java.io.Closeable;
 import java.io.Serializable;
@@ -41,15 +41,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiPredicate;
 
 import static oap.util.Pair.__;
-import static org.slf4j.LoggerFactory.getLogger;
 
 @EqualsAndHashCode( exclude = "closed" )
 @ToString
+@Slf4j
 public class Buffers implements Closeable {
     private final Path location;
     private final int bufferSize;
     private boolean closed;
-    private static final Logger logger = getLogger( Buffers.class );
     private State state = new State();
 
     @EqualsAndHashCode
@@ -65,7 +64,7 @@ public class Buffers implements Closeable {
         try {
             if( location.toFile().exists() ) state = Files.readObject( location );
         } catch( Exception e ) {
-            logger.error( "cannot read " + location + ". Ignoring...." );
+            log.error( "cannot read " + location + ". Ignoring...." );
         }
     }
 
@@ -106,6 +105,7 @@ public class Buffers implements Closeable {
     public synchronized void forEachReadyData( BiPredicate<String, byte[]> consumer ) {
         flush();
         Metrics.measureHistogram( Metrics.name( "logging_buffers_count" ), state.readyBuffers.size() );
+        log.debug( "buffers to go " + state.readyBuffers.size() );
         Iterator<Pair<String, byte[]>> iterator = state.readyBuffers.iterator();
         while( iterator.hasNext() ) {
             Pair<String, byte[]> next = iterator.next();

@@ -23,6 +23,7 @@
  */
 package oap.logstream.net;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.io.Closeables;
 import oap.io.Sockets;
@@ -46,8 +47,8 @@ import java.util.concurrent.Executors;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
+@Slf4j
 public class SocketLoggingServer implements Runnable {
-    private static final Logger logger = getLogger( SocketLoggingServer.class );
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private final SynchronizedThread thread = new SynchronizedThread( this );
     private int port;
@@ -67,11 +68,11 @@ public class SocketLoggingServer implements Runnable {
         try {
             while( thread.isRunning() ) try {
                 Socket socket = serverSocket.accept();
-                logger.debug( "accepted connection " + socket );
+                log.debug( "accepted connection " + socket );
                 executor.submit( new Worker( socket ) );
             } catch( SocketTimeoutException ignore ) {
             } catch( IOException e ) {
-                logger.error( e.getMessage(), e );
+                log.error( e.getMessage(), e );
             }
         } finally {
             Closeables.close( serverSocket );
@@ -85,7 +86,7 @@ public class SocketLoggingServer implements Runnable {
             serverSocket.setReuseAddress( true );
             serverSocket.setSoTimeout( 1000 );
             serverSocket.bind( new InetSocketAddress( port ) );
-            logger.debug( "ready to rock " + serverSocket.getLocalSocketAddress() );
+            log.debug( "ready to rock " + serverSocket.getLocalSocketAddress() );
             thread.start();
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
@@ -111,7 +112,7 @@ public class SocketLoggingServer implements Runnable {
                 DataInputStream in = new DataInputStream( socket.getInputStream() );
                 DataOutputStream out = new DataOutputStream( socket.getOutputStream() );
                 String hostName = socket.getInetAddress().getCanonicalHostName();
-                logger.debug( "start logging for " + hostName );
+                log.debug( "start logging for " + hostName );
                 while( !closed ) {
                     String selector = in.readUTF();
                     if( !"SHUTDOWN".equals( selector ) ) {
@@ -121,14 +122,14 @@ public class SocketLoggingServer implements Runnable {
                                 "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize );
                         in.readFully( buffer, 0, size );
                         out.writeInt( size );
-                        logger.trace( "logging " + size + " bytes to " + selector );
+                        log.trace( "logging " + size + " bytes to " + selector );
                         backend.log( hostName, selector, buffer, 0, size );
                     } else close();
                 }
             } catch( EOFException e ) {
-                logger.debug( socket + " closed" );
+                log.debug( socket + " closed" );
             } catch( IOException e ) {
-                logger.error( e.getMessage(), e );
+                log.error( e.getMessage(), e );
             } finally {
                 close();
             }

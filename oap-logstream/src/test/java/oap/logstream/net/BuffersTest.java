@@ -56,6 +56,7 @@ public class BuffersTest {
             __( "x/y", new byte[]{ 7, 8, 9 } )
         );
         assertReadyData( buffers, expected );
+        assertReadyData( buffers, Lists.empty() );
 
         Buffers buffers2 = new Buffers( Env.tmpPath( "bfrs" ), 4 );
         assertReadyData( buffers2, expected );

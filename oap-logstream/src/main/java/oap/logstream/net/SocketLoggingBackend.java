@@ -24,21 +24,19 @@
 
 package oap.logstream.net;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.logstream.LoggingBackend;
-import org.slf4j.Logger;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
+@Slf4j
 public class SocketLoggingBackend implements LoggingBackend {
-    private static final Logger logger = getLogger( SocketLoggingBackend.class );
 
     private final String host;
     private final int port;
@@ -57,10 +55,11 @@ public class SocketLoggingBackend implements LoggingBackend {
 
     public void sync() {
         try {
+            log.debug( "sending data to server..." );
             connect();
             buffers.forEachReadyData( ( selector, data ) -> {
                 try {
-                    logger.trace( "syncing " + data.length + " bytes to " + selector );
+                    log.trace( "syncing " + data.length + " bytes to " + selector );
                     DataOutputStream out = socket.getOutputStream();
                     out.writeUTF( selector );
                     out.writeInt( data.length );
@@ -71,22 +70,22 @@ public class SocketLoggingBackend implements LoggingBackend {
                         return true;
                     } else {
                         loggingAvailable = false;
-                        logger.error( "checksum failed: " + written + ":" + data.length );
+                        log.error( "checksum failed: " + written + ":" + data.length );
                         Closeables.close( socket );
                         return false;
                     }
                 } catch( IOException e ) {
                     loggingAvailable = false;
-                    logger.warn( e.getMessage() );
-                    logger.warn( "closing " + socket );
+                    log.warn( e.getMessage() );
+                    log.warn( "closing " + socket );
                     Closeables.close( socket );
                     return false;
                 }
             } );
         } catch( Exception e ) {
             loggingAvailable = false;
-            logger.warn( e.getMessage() );
-            logger.warn( "closing " + socket );
+            log.warn( e.getMessage() );
+            if( socket != null ) log.warn( "closing " + socket );
             Closeables.close( socket );
         }
 
