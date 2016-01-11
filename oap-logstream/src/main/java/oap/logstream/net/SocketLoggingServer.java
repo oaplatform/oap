@@ -137,7 +137,7 @@ public class SocketLoggingServer implements Runnable {
                         in.readFully( buffer, 0, size );
                         if( lastBucket > bucketId ) log.warn( "bucket {} already written ({})", bucketId, lastBucket );
                         else {
-                            log.debug( "logging ({}, {}, {}) from {}", bucketId, selector, size, hostName );
+                            log.trace( "logging ({}, {}, {}) from {}", bucketId, selector, size, hostName );
                             backend.log( hostName, selector, buffer, 0, size );
                             control.put( hostName, bucketId );
                         }
