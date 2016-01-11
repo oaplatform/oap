@@ -61,6 +61,8 @@ public class BuffersTest {
         Buffers buffers2 = new Buffers( Env.tmpPath( "bfrs" ), 4 );
         assertReadyData( buffers2, expected );
 
+        Buffers buffers3 = new Buffers( Env.tmpPath( "bfrs" ), 4 );
+        assertReadyData( buffers3, Lists.empty() );
     }
 
     private void assertReadyData( Buffers buffers, ArrayList<Pair<String, byte[]>> expectedData ) {

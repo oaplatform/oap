@@ -62,10 +62,13 @@ public class Buffers implements Closeable {
         this.location = location;
         this.bufferSize = bufferSize;
         try {
-            if( location.toFile().exists() ) state = Files.readObject( location );
+            if( location.toFile().exists() ) {
+                state = Files.readObject( location );
+            }
         } catch( Exception e ) {
             log.error( "cannot read " + location + ". Ignoring...." );
         }
+        location.toFile().delete();
     }
 
     public void put( String key, byte[] buffer ) {
