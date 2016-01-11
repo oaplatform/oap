@@ -44,13 +44,13 @@ public final class Metrics {
     private static Snapshot toSnapshot( String name, Metric value ) {
         Snapshot snapshot = new Snapshot( name );
         if( value instanceof Sampling )
-            snapshot.mean = ((Sampling) value).getSnapshot().getMean();
+            snapshot.mean = ( ( Sampling ) value ).getSnapshot().getMean();
         if( value instanceof Metered )
-            snapshot.meanRate = ((Metered) value).getMeanRate();
+            snapshot.meanRate = ( ( Metered ) value ).getMeanRate();
         if( value instanceof Counting )
-            snapshot.count = ((Counting) value).getCount();
+            snapshot.count = ( ( Counting ) value ).getCount();
         if( value instanceof Gauge )
-            snapshot.count = ((Number) ((Gauge) value).getValue()).longValue();
+            snapshot.count = ( ( Number ) ( ( Gauge ) value ).getValue() ).longValue();
         return snapshot;
     }
 
@@ -61,7 +61,7 @@ public final class Metrics {
     }
 
     public static <T> void measureGauge( String metric, Supplier<T> get ) {
-        registry.register( metric, (Gauge) get::get );
+        registry.register( metric, ( Gauge ) get::get );
     }
 
     public static <T> void measureGauge( Name metric, Supplier<T> get ) {

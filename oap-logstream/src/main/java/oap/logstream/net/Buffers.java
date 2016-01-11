@@ -62,11 +62,11 @@ public class Buffers implements Closeable {
         this.location = location;
         this.bufferSize = bufferSize;
         try {
-            if( location.toFile().exists() ) {
+            if( location.toFile().exists() )
                 state = Files.readObject( location );
-            }
+            log.debug( "unsent buffers: {}", state.readyBuffers.size() );
         } catch( Exception e ) {
-            log.error( "cannot read " + location + ". Ignoring...." );
+            log.error( "cannot read {}. Ignoring....", location );
         }
         location.toFile().delete();
     }
@@ -76,7 +76,7 @@ public class Buffers implements Closeable {
     }
 
     public void put( String key, byte[] buffer, int offset, int length ) {
-        if( closed ) throw new IllegalStateException( "currentBuffers already closed" );
+        if( closed ) throw new IllegalStateException( "current buffers already closed" );
         synchronized( key.intern() ) {
             Buffer b = state.currentBuffers.computeIfAbsent( key, k -> new Buffer( bufferSize ) );
             if( !b.available( length ) ) {
@@ -102,6 +102,8 @@ public class Buffers implements Closeable {
     public synchronized void close() {
         if( closed ) throw new IllegalStateException( "already closed" );
         closed = true;
+        flush();
+        log.info( "writing unsent buffers " + state.readyBuffers.size() );
         Files.writeObject( location, state );
     }
 

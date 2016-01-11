@@ -58,9 +58,9 @@ class InfluxDBReporter extends ScheduledReporter {
     private HashMap<String, Object> lastReport = new HashMap<>();
 
     protected InfluxDBReporter( InfluxDB influxDB, String database, HashMap<String, String> tags,
-        MetricRegistry registry, String name,
-        MetricFilter filter, TimeUnit rateUnit,
-        TimeUnit durationUnit ) {
+                                MetricRegistry registry, String name,
+                                MetricFilter filter, TimeUnit rateUnit,
+                                TimeUnit durationUnit ) {
         super( registry, name, filter, rateUnit, durationUnit );
         this.influxDB = influxDB;
         this.database = database;
@@ -73,7 +73,7 @@ class InfluxDBReporter extends ScheduledReporter {
 
     @Override
     public synchronized void report( SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters,
-        SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers ) {
+                                     SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers ) {
         try {
 
             final long time = DateTimeUtils.currentTimeMillis();
@@ -88,6 +88,7 @@ class InfluxDBReporter extends ScheduledReporter {
             reportMeters( meters, points );
             reportTimers( timers, points );
             reportGauges( gauges, points );
+            reportHistogramms( histograms, points );
 
             influxDB.write( points );
         } catch( Exception e ) {
@@ -102,89 +103,53 @@ class InfluxDBReporter extends ScheduledReporter {
     private void reportCounters( SortedMap<String, Counter> counters, BatchPoints points ) {
         for( Map.Entry<String, Counter> entry : counters.entrySet() ) {
             final long value = entry.getValue().getCount();
-            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
-
-            if( !Objects.equals( value, lastValue ) ) {
-                lastReport.put( entry.getKey(), value );
-
-                Point.Builder builder = Point
-                    .measurement( entry.getKey() );
-
-                tags.forEach( builder::tag );
-
-                final Point point = builder
-                    .field( "value", value )
-                    .build();
-
-                points.point( point );
-            }
-
+            makePoint( entry.getKey(), entry.getValue(), points, String.valueOf( value ) );
         }
     }
 
     private void reportMeters( SortedMap<String, Meter> meters, BatchPoints points ) {
         for( Map.Entry<String, Meter> entry : meters.entrySet() ) {
             final double value = entry.getValue().getOneMinuteRate();
-            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
-
-            if( !Objects.equals( value, lastValue ) ) {
-                lastReport.put( entry.getKey(), value );
-
-                Point.Builder builder = Point
-                    .measurement( entry.getKey() );
-
-                tags.forEach( builder::tag );
-
-                final Point point = builder
-                    .field( "value", format( convertRate( value ) ) )
-                    .build();
-
-                points.point( point );
-            }
+            makePoint( entry.getKey(), value, points, format( convertRate( value ) ) );
         }
     }
 
     private void reportTimers( SortedMap<String, Timer> timers, BatchPoints points ) {
         for( Map.Entry<String, Timer> entry : timers.entrySet() ) {
             final double value = entry.getValue().getSnapshot().getMean();
-            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
-
-            if( !Objects.equals( value, lastValue ) ) {
-                lastReport.put( entry.getKey(), value );
-
-                Point.Builder builder = Point
-                    .measurement( entry.getKey() );
-
-                tags.forEach( builder::tag );
-
-                final Point point = builder
-                    .field( "value", format( convertDuration( value ) ) )
-                    .build();
-
-                points.point( point );
-            }
+            makePoint( entry.getKey(), value, points, format( convertDuration( value ) ) );
         }
     }
 
     private void reportGauges( SortedMap<String, Gauge> gauges, BatchPoints points ) {
         for( Map.Entry<String, Gauge> entry : gauges.entrySet() ) {
-            final Object value = entry.getValue().getValue();
-            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), ( k ) -> value );
+            Object value = entry.getValue().getValue();
+            makePoint( entry.getKey(), value, points, format( value ) );
+        }
+    }
 
-            if( !Objects.equals( value, lastValue ) ) {
-                lastReport.put( entry.getKey(), value );
+    private void makePoint( String key, Object value, BatchPoints points, String formatted ) {
+        final Object lastValue = lastReport.computeIfAbsent( key, ( k ) -> value );
 
-                Point.Builder builder = Point
-                    .measurement( entry.getKey() );
+        if( !Objects.equals( value, lastValue ) ) {
+            lastReport.put( key, value );
 
-                tags.forEach( builder::tag );
+            Point.Builder builder = Point.measurement( key );
 
-                final Point point = builder
-                    .field( "value", format( value ) )
-                    .build();
+            tags.forEach( builder::tag );
 
-                points.point( point );
-            }
+            final Point point = builder
+                .field( "value", formatted )
+                .build();
+
+            points.point( point );
+        }
+    }
+
+    private void reportHistogramms( SortedMap<String, Histogram> gauges, BatchPoints points ) {
+        for( Map.Entry<String, Histogram> entry : gauges.entrySet() ) {
+            double mean = entry.getValue().getSnapshot().getMean();
+            makePoint( entry.getKey(), mean, points, format( mean ) );
         }
     }
 
@@ -196,17 +161,17 @@ class InfluxDBReporter extends ScheduledReporter {
 
     private String format( Object o ) {
         if( o instanceof Float ) {
-            return format( ((Float) o).doubleValue() );
+            return format( ( ( Float ) o ).doubleValue() );
         } else if( o instanceof Double ) {
-            return format( ((Double) o).doubleValue() );
+            return format( ( ( Double ) o ).doubleValue() );
         } else if( o instanceof Byte ) {
-            return format( ((Byte) o).longValue() );
+            return format( ( ( Byte ) o ).longValue() );
         } else if( o instanceof Short ) {
-            return format( ((Short) o).longValue() );
+            return format( ( ( Short ) o ).longValue() );
         } else if( o instanceof Integer ) {
-            return format( ((Integer) o).longValue() );
+            return format( ( ( Integer ) o ).longValue() );
         } else if( o instanceof Long ) {
-            return format( ((Long) o).longValue() );
+            return format( ( ( Long ) o ).longValue() );
         }
         return null;
     }
