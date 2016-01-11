@@ -57,7 +57,10 @@ public class SocketLoggingBackend implements LoggingBackend {
     public void send() {
         try {
             log.debug( "sending data to server..." );
-            connect();
+            if( this.socket == null || !socket.isConnected() ) {
+                Closeables.close( socket );
+                this.socket = new DataSocket( host, port, soTimeout );
+            }
             buffers.forEachReadyData( bucket -> {
                 try {
                     log.debug( "sending {}", bucket );
@@ -86,13 +89,6 @@ public class SocketLoggingBackend implements LoggingBackend {
     @Override
     public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
         buffers.put( fileName, buffer, offset, length );
-    }
-
-    private void connect() {
-        if( this.socket == null || !socket.isConnected() ) {
-            Closeables.close( socket );
-            this.socket = new DataSocket( host, port, soTimeout );
-        }
     }
 
     @Override
