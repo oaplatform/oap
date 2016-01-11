@@ -147,7 +147,7 @@ class InfluxDBReporter extends ScheduledReporter {
     }
 
     private void makePoint( String key, Object value, BatchPoints points, Object formatted ) {
-        final Object lastValue = lastReport.computeIfAbsent( key, ( k ) -> value );
+        final Object lastValue = lastReport.computeIfAbsent( key, k -> value );
 
         if( !Objects.equals( value, lastValue ) ) {
             lastReport.put( key, value );
