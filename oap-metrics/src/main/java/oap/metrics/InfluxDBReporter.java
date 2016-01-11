@@ -104,8 +104,24 @@ class InfluxDBReporter extends ScheduledReporter {
     private int reportCounters( SortedMap<String, Counter> counters, BatchPoints points ) {
         int before = points.getPoints().size();
         for( Map.Entry<String, Counter> entry : counters.entrySet() ) {
-            long value = entry.getValue().getCount();
-            makePoint( entry.getKey(), value, points, value );
+            final long value = entry.getValue().getCount();
+            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), k -> value );
+
+            if( !Objects.equals( value, lastValue ) ) {
+                lastReport.put( entry.getKey(), value );
+
+                Point.Builder builder = Point
+                    .measurement( entry.getKey() );
+
+                tags.forEach( builder::tag );
+
+                final Point point = builder
+                    .field( "value", value )
+                    .build();
+
+                points.point( point );
+            }
+
         }
         return points.getPoints().size() - before;
     }
@@ -113,10 +129,24 @@ class InfluxDBReporter extends ScheduledReporter {
     private int reportMeters( SortedMap<String, Meter> meters, BatchPoints points ) {
         int before = points.getPoints().size();
         for( Map.Entry<String, Meter> entry : meters.entrySet() ) {
-            double value = entry.getValue().getOneMinuteRate();
-            makePoint( entry.getKey(), value, points, format( convertRate( value ) ) );
-        }
-        return points.getPoints().size() - before;
+            final double value = entry.getValue().getOneMinuteRate();
+            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), k -> value );
+
+            if( !Objects.equals( value, lastValue ) ) {
+                lastReport.put( entry.getKey(), value );
+
+                Point.Builder builder = Point
+                    .measurement( entry.getKey() );
+
+                tags.forEach( builder::tag );
+
+                final Point point = builder
+                    .field( "value", format( convertRate( value ) ) )
+                    .build();
+
+                points.point( point );
+            }
+        }  return points.getPoints().size() - before;
     }
 
     private int reportTimers( SortedMap<String, Timer> timers, BatchPoints points ) {
