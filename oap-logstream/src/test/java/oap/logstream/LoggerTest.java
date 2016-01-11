@@ -78,7 +78,7 @@ public class LoggerTest extends AbstractTest {
                 clientBackend.send();
                 assertFalse( logger.isLoggingAvailable() );
                 server.start();
-                Threads.sleepSafely( 500 );
+                Threads.sleepSafely( 100 );
                 clientBackend.send();
                 assertTrue( logger.isLoggingAvailable() );
                 logger.log( "b", content );

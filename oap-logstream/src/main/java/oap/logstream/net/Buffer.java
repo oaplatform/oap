@@ -54,9 +54,7 @@ class Buffer implements Serializable {
     }
 
     public byte[] data() {
-        byte[] bytes = new byte[this.position];
-        System.arraycopy( this.data, 0, bytes, 0, this.position );
-        return bytes;
+        return this.data;
     }
 
     public void reset() {
@@ -65,5 +63,9 @@ class Buffer implements Serializable {
 
     public boolean isEmpty() {
         return this.position == 0;
+    }
+
+    public int length() {
+        return position;
     }
 }

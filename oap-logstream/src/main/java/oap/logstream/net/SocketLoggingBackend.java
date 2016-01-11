@@ -25,10 +25,12 @@
 package oap.logstream.net;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Synchronized;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.logstream.LoggingBackend;
+import oap.metrics.Metrics;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -53,9 +55,11 @@ public class SocketLoggingBackend implements LoggingBackend {
         this.port = port;
         this.buffers = new Buffers( location, bufferSize );
         this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::send );
+        Metrics.measureGauge( Metrics.name( "logging_buffers_cache" ), () -> buffers.cache.size() );
+
     }
 
-    public void send() {
+    public synchronized void send() {
         if( !closed ) try {
             if( buffers.isEmpty() ) loggingAvailable = true;
 
@@ -71,8 +75,8 @@ public class SocketLoggingBackend implements LoggingBackend {
                     DataOutputStream out = socket.getOutputStream();
                     out.writeLong( bucket.id );
                     out.writeUTF( bucket.selector );
-                    out.writeInt( bucket.data.length );
-                    out.write( bucket.data );
+                    out.writeInt( bucket.buffer.length() );
+                    out.write( bucket.buffer.data(), 0, bucket.buffer.length() );
                     loggingAvailable = true;
                     return true;
                 } catch( IOException e ) {
@@ -97,7 +101,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     }
 
     @Override
-    public void close() {
+    public synchronized void close() {
         closed = true;
         Scheduled.cancel( scheduled );
         Closeables.close( socket );

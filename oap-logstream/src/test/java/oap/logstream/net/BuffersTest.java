@@ -30,6 +30,7 @@ import oap.util.Pair;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import static oap.util.Pair.__;
@@ -70,7 +71,7 @@ public class BuffersTest {
         buffers.forEachReadyData( bucket -> {
             Pair<String, byte[]> next = expected.next();
             assertEquals( bucket.selector, next._1 );
-            assertEquals( bucket.data, next._2 );
+            assertEquals( Arrays.copyOf( bucket.buffer.data(), bucket.buffer.length() ), next._2 );
             return true;
         } );
         assertFalse( expected.hasNext() );

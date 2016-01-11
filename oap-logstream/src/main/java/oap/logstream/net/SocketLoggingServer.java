@@ -58,7 +58,7 @@ public class SocketLoggingServer implements Runnable {
     private List<Worker> workers = new ArrayList<>();
     private ServerSocket serverSocket;
     private Map<String, Long> control = new ConcurrentHashMap<>();
-    private int soTimeout = 5000;
+    protected int soTimeout = 60000;
 
     public SocketLoggingServer( int port, int bufferSize, LoggingBackend backend, Path controlState ) {
         this.port = port;
@@ -130,18 +130,16 @@ public class SocketLoggingServer implements Runnable {
                     long bucketId = in.readLong();
                     long lastBucket = control.computeIfAbsent( hostName, h -> 0L );
                     String selector = in.readUTF();
-                    if( !"SHUTDOWN".equals( selector ) ) {
-                        int size = in.readInt();
-                        if( size > bufferSize )
-                            throw new IOException( "buffer overflow: chunk size is {}" + size + " when buffer size is " + bufferSize );
-                        in.readFully( buffer, 0, size );
-                        if( lastBucket > bucketId ) log.warn( "bucket {} already written ({})", bucketId, lastBucket );
-                        else {
-                            log.trace( "logging ({}, {}, {}) from {}", bucketId, selector, size, hostName );
-                            backend.log( hostName, selector, buffer, 0, size );
-                            control.put( hostName, bucketId );
-                        }
-                    } else close();
+                    int size = in.readInt();
+                    if( size > bufferSize )
+                        throw new IOException( "buffer overflow: chunk size is {}" + size + " when buffer size is " + bufferSize );
+                    in.readFully( buffer, 0, size );
+                    if( lastBucket > bucketId ) log.warn( "bucket {} already written ({})", bucketId, lastBucket );
+                    else {
+                        log.trace( "logging ({}, {}, {}) from {}", bucketId, selector, size, hostName );
+                        backend.log( hostName, selector, buffer, 0, size );
+                        control.put( hostName, bucketId );
+                    }
                 }
             } catch( EOFException e ) {
                 log.debug( socket + " closed" );
