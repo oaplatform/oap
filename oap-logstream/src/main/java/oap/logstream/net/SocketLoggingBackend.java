@@ -60,7 +60,7 @@ public class SocketLoggingBackend implements LoggingBackend {
             connect();
             buffers.forEachReadyData( ( selector, data ) -> {
                 try {
-                    logger.debug( "syncing " + data.length + " bytes to " + selector );
+                    logger.trace( "syncing " + data.length + " bytes to " + selector );
                     DataOutputStream out = socket.getOutputStream();
                     out.writeUTF( selector );
                     out.writeInt( data.length );
