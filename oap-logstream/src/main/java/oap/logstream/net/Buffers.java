@@ -150,8 +150,8 @@ public class Buffers implements Closeable {
         }
     }
 
-    int allocatedBuffers() {
-        return readyBuffers.size() + cache.size() + currentBuffers.size();
+    int readyBuffers() {
+        return readyBuffers.size();
     }
 
     public static class BufferCache {
