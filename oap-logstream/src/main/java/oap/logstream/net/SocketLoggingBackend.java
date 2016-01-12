@@ -110,6 +110,6 @@ public class SocketLoggingBackend implements LoggingBackend {
 
     @Override
     public boolean isLoggingAvailable() {
-        return loggingAvailable && !closed && buffers.size() < maxBuffers;
+        return loggingAvailable && !closed && buffers.allocatedBuffers() < maxBuffers;
     }
 }
