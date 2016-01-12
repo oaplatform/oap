@@ -69,26 +69,26 @@ public class SocketLoggingBackend implements LoggingBackend {
                 this.socket = new DataSocket( host, port, soTimeout );
             }
 
-            buffers.forEachReadyData( bucket -> {
-                try {
-                    log.trace( "sending {}", bucket );
-                    DataOutputStream out = socket.getOutputStream();
-                    out.writeLong( bucket.id );
-                    out.writeUTF( bucket.selector );
-                    out.writeInt( bucket.buffer.length() );
-                    out.write( bucket.buffer.data(), 0, bucket.buffer.length() );
+            buffers.forEachReadyData( bucket ->
+                Metrics.measureTimer( Metrics.name( "logging_buffer_send_time" ), () -> {
+                    try {
+                        log.trace( "sending {}", bucket );
+                        DataOutputStream out = socket.getOutputStream();
+                        out.writeLong( bucket.id );
+                        out.writeUTF( bucket.selector );
+                        out.writeInt( bucket.buffer.length() );
+                        out.write( bucket.buffer.data(), 0, bucket.buffer.length() );
+                        Metrics.measureCounterIncrement( Metrics.name( "logging_socket" ), bucket.buffer.length() );
 
-                    Metrics.measureCounterIncrement( Metrics.name( "logging_socket" ), bucket.buffer.length() );
-
-                    loggingAvailable = true;
-                    return true;
-                } catch( IOException e ) {
-                    loggingAvailable = false;
-                    log.warn( e.getMessage() );
-                    Closeables.close( socket );
-                    return false;
-                }
-            } );
+                        loggingAvailable = true;
+                        return true;
+                    } catch( IOException e ) {
+                        loggingAvailable = false;
+                        log.warn( e.getMessage() );
+                        Closeables.close( socket );
+                        return false;
+                    }
+                } ) );
             log.debug( "sending done..." );
         } catch( Exception e ) {
             loggingAvailable = false;
