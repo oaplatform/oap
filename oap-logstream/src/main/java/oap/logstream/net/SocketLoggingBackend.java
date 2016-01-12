@@ -66,6 +66,7 @@ public class SocketLoggingBackend implements LoggingBackend {
             log.debug( "sending data to server..." );
             if( this.socket == null || !socket.isConnected() ) {
                 Closeables.close( socket );
+                log.debug( "opening connection..." );
                 this.socket = new DataSocket( host, port, soTimeout );
             }
 
