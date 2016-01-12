@@ -40,6 +40,27 @@ import static org.testng.Assert.assertFalse;
 
 public class BuffersTest {
     @Test
+    public void foreach() {
+        Buffers buffers = new Buffers( Env.tmpPath( "bfrs" ), 4 );
+        buffers.put( "x/y", new byte[]{ 1, 2, 3 } );
+        buffers.put( "x/z", new byte[]{ 11, 12, 13 } );
+        buffers.put( "x/y", new byte[]{ 4, 5, 6 } );
+        buffers.put( "x/y", new byte[]{ 7, 8, 9 } );
+        buffers.put( "x/z", new byte[]{ 14, 15, 16 } );
+
+        ArrayList<Pair<String, byte[]>> expected = Lists.of(
+            __( "x/y", new byte[]{ 1, 2, 3 } ),
+            __( "x/y", new byte[]{ 4, 5, 6 } ),
+            __( "x/z", new byte[]{ 11, 12, 13 } ),
+            __( "x/z", new byte[]{ 14, 15, 16 } ),
+            __( "x/y", new byte[]{ 7, 8, 9 } )
+        );
+        assertReadyData( buffers, expected );
+        assertReadyData( buffers, Lists.empty() );
+
+    }
+
+    @Test
     public void persistence() {
         Buffers buffers = new Buffers( Env.tmpPath( "bfrs" ), 4 );
         buffers.put( "x/y", new byte[]{ 1, 2, 3 } );
@@ -56,9 +77,6 @@ public class BuffersTest {
             __( "x/z", new byte[]{ 14, 15, 16 } ),
             __( "x/y", new byte[]{ 7, 8, 9 } )
         );
-        assertReadyData( buffers, expected );
-        assertReadyData( buffers, Lists.empty() );
-
         Buffers buffers2 = new Buffers( Env.tmpPath( "bfrs" ), 4 );
         assertReadyData( buffers2, expected );
 
