@@ -134,12 +134,11 @@ public class SocketLoggingServer implements Runnable {
                     if( size > bufferSize )
                         throw new IOException( "buffer overflow: chunk size is {}" + size + " when buffer size is " + bufferSize );
                     in.readFully( buffer, 0, size );
-                    if( lastBucket > bucketId ) log.warn( "bucket {} already written ({})", bucketId, lastBucket );
-                    else {
+                    if( lastBucket < bucketId ) {
                         log.trace( "logging ({}, {}, {}) from {}", bucketId, selector, size, hostName );
                         backend.log( hostName, selector, buffer, 0, size );
                         control.put( hostName, bucketId );
-                    }
+                    } else log.warn( "bucket {} already written ({})", bucketId, lastBucket );
                 }
             } catch( EOFException e ) {
                 log.debug( socket + " closed" );
