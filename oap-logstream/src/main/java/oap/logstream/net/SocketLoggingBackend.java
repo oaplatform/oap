@@ -39,7 +39,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class SocketLoggingBackend implements LoggingBackend {
 
-    public static final String METRICS_LOGGING_SOCKET = "logging_socket";
     private final String host;
     private final int port;
     private final Scheduled scheduled;
@@ -47,7 +46,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     protected int maxBuffers = 5000;
     private DataSocket socket;
     private Buffers buffers;
-    private long flushInterval = 10000;
+    protected long flushInterval = 10000;
     private boolean loggingAvailable = true;
     private boolean closed = false;
 
@@ -79,7 +78,7 @@ public class SocketLoggingBackend implements LoggingBackend {
                     out.writeInt( bucket.buffer.length() );
                     out.write( bucket.buffer.data(), 0, bucket.buffer.length() );
 
-                    Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_SOCKET ), bucket.buffer.length() );
+                    Metrics.measureCounterIncrement( Metrics.name( "logging_socket" ), bucket.buffer.length() );
 
                     loggingAvailable = true;
                     return true;
@@ -90,11 +89,13 @@ public class SocketLoggingBackend implements LoggingBackend {
                     return false;
                 }
             } );
+            log.debug( "sending done..." );
         } catch( Exception e ) {
             loggingAvailable = false;
             log.warn( e.getMessage() );
             Closeables.close( socket );
         }
+
         if( !loggingAvailable ) log.debug( "logging unavailable" );
 
     }
