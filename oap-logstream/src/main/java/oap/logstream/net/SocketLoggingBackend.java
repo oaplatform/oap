@@ -51,65 +51,65 @@ public class SocketLoggingBackend implements LoggingBackend {
     private boolean loggingAvailable = true;
     private boolean closed = false;
 
-    public SocketLoggingBackend(String host, int port, Path location, int bufferSize) {
+    public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
         this.host = host;
         this.port = port;
-        this.buffers = new Buffers(location, bufferSize);
-        this.scheduled = Scheduler.scheduleWithFixedDelay(flushInterval, TimeUnit.MILLISECONDS, this::send);
-        Metrics.measureGauge(Metrics.name("logging_buffers_cache"), () -> buffers.cache.size());
+        this.buffers = new Buffers( location, bufferSize );
+        this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::send );
+        Metrics.measureGauge( Metrics.name( "logging_buffers_cache" ), () -> buffers.cache.size() );
 
     }
 
     public synchronized void send() {
-        if (!closed) try {
-            if (buffers.isEmpty()) loggingAvailable = true;
+        if( !closed ) try {
+            if( buffers.isEmpty() ) loggingAvailable = true;
 
-            log.debug("sending data to server...");
-            if (this.socket == null || !socket.isConnected()) {
-                Closeables.close(socket);
-                this.socket = new DataSocket(host, port, soTimeout);
+            log.debug( "sending data to server..." );
+            if( this.socket == null || !socket.isConnected() ) {
+                Closeables.close( socket );
+                this.socket = new DataSocket( host, port, soTimeout );
             }
 
-            buffers.forEachReadyData(bucket -> {
+            buffers.forEachReadyData( bucket -> {
                 try {
-                    log.trace("sending {}", bucket);
+                    log.trace( "sending {}", bucket );
                     DataOutputStream out = socket.getOutputStream();
-                    out.writeLong(bucket.id);
-                    out.writeUTF(bucket.selector);
-                    out.writeInt(bucket.buffer.length());
-                    out.write(bucket.buffer.data(), 0, bucket.buffer.length());
+                    out.writeLong( bucket.id );
+                    out.writeUTF( bucket.selector );
+                    out.writeInt( bucket.buffer.length() );
+                    out.write( bucket.buffer.data(), 0, bucket.buffer.length() );
 
-                    Metrics.measureCounterIncrement(Metrics.name(METRICS_LOGGING_SOCKET), bucket.buffer.length());
+                    Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_SOCKET ), bucket.buffer.length() );
 
                     loggingAvailable = true;
                     return true;
-                } catch (IOException e) {
+                } catch( IOException e ) {
                     loggingAvailable = false;
-                    log.warn(e.getMessage());
-                    Closeables.close(socket);
+                    log.warn( e.getMessage() );
+                    Closeables.close( socket );
                     return false;
                 }
-            });
-        } catch (Exception e) {
+            } );
+        } catch( Exception e ) {
             loggingAvailable = false;
-            log.warn(e.getMessage());
-            Closeables.close(socket);
+            log.warn( e.getMessage() );
+            Closeables.close( socket );
         }
-        if (!loggingAvailable) log.debug("logging unavailable");
+        if( !loggingAvailable ) log.debug( "logging unavailable" );
 
     }
 
     @Override
-    public void log(String hostName, String fileName, byte[] buffer, int offset, int length) {
-        buffers.put(fileName, buffer, offset, length);
+    public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
+        buffers.put( fileName, buffer, offset, length );
     }
 
     @Override
     public synchronized void close() {
         closed = true;
-        Scheduled.cancel(scheduled);
-        Closeables.close(socket);
-        Closeables.close(buffers);
+        Scheduled.cancel( scheduled );
+        Closeables.close( socket );
+        Closeables.close( buffers );
     }
 
     @Override
