@@ -27,7 +27,7 @@ import java.io.Closeable;
 
 public interface LoggingBackend extends Closeable {
     default void log( String hostName, String fileName, String line ) {
-        log( hostName, fileName, line.getBytes() );
+        log( hostName, fileName, ( line + "\n" ).getBytes() );
     }
 
     default void log( String hostName, String fileName, byte[] buffer ) {

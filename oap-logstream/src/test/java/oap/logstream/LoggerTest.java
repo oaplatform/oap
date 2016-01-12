@@ -56,11 +56,11 @@ public class LoggerTest extends AbstractTest {
         }
 
         assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/a-2015-10-10-01-00.log" ),
-            content + content );
+            content + "\n" + content + "\n" );
         assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/b-2015-10-10-01-00.log" ),
-            content );
+            content + "\n" );
         assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/d-2015-10-10-01-00.log" ),
-            content );
+            content + "\n" );
     }
 
     @Test
@@ -90,11 +90,11 @@ public class LoggerTest extends AbstractTest {
             }
         }
         assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/a-2015-10-10-01-00.log" ),
-            content + content );
+            content + "\n" + content + "\n" );
         assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/b-2015-10-10-01-00.log" ),
-            content );
+            content + "\n" );
         assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/d-2015-10-10-01-00.log" ),
-            content );
+            content + "\n" );
     }
 
 
