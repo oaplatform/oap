@@ -25,7 +25,6 @@
 package oap.logstream.net;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.Synchronized;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
@@ -49,6 +48,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     private boolean loggingAvailable = true;
     protected int soTimeout = 5000;
     private boolean closed = false;
+    protected int maxBuffers = 5000;
 
     public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
         this.host = host;
@@ -110,6 +110,6 @@ public class SocketLoggingBackend implements LoggingBackend {
 
     @Override
     public boolean isLoggingAvailable() {
-        return loggingAvailable && !closed;
+        return loggingAvailable && !closed && buffers.size() < maxBuffers;
     }
 }

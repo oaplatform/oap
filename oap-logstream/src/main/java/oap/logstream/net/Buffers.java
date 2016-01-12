@@ -34,6 +34,7 @@ import java.io.Closeable;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,7 +51,7 @@ public class Buffers implements Closeable {
     Map<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
     Queue<Bucket> readyBuffers = new ConcurrentLinkedQueue<>();
     private static long idseed = DateTimeUtils.currentTimeMillis();
-    Queue<Buffer> cache = new ConcurrentLinkedQueue<>();
+    BufferCache cache;
 
     @EqualsAndHashCode
     static class Bucket implements Serializable {
@@ -72,6 +73,7 @@ public class Buffers implements Closeable {
     public Buffers( Path location, int bufferSize ) {
         this.location = location;
         this.bufferSize = bufferSize;
+        this.cache = new BufferCache( bufferSize );
         try {
             if( location.toFile().exists() )
                 readyBuffers = Files.readObject( location );
@@ -93,23 +95,15 @@ public class Buffers implements Closeable {
         String keyInterned = key.intern();
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized( keyInterned ) {
-            Buffer b = currentBuffers.computeIfAbsent( keyInterned, k -> newBuffer() );
+            Buffer b = currentBuffers.computeIfAbsent( keyInterned, k -> cache.get() );
             if( !b.available( length ) ) {
                 readyBuffers.offer( new Bucket( keyInterned, b ) );
-                currentBuffers.put( keyInterned, b = newBuffer() );
+                currentBuffers.put( keyInterned, b = cache.get() );
             }
             b.put( buffer, offset, length );
         }
     }
 
-    private synchronized Buffer newBuffer() {
-        return cache.isEmpty() ? new Buffer( bufferSize ) : cache.poll();
-    }
-
-    private synchronized void releaseBuffer( Buffer buffer ) {
-        buffer.reset();
-        cache.offer( buffer );
-    }
 
     private synchronized void flush() {
         Iterator<Map.Entry<String, Buffer>> iterator = currentBuffers.entrySet().iterator();
@@ -132,12 +126,14 @@ public class Buffers implements Closeable {
 
 
     @Override
-    public synchronized void close() {
+    public void close() {
         if( closed ) throw new IllegalStateException( "already closed" );
         closed = true;
-        flush();
-        log.info( "writing unsent buffers " + readyBuffers.size() );
-        Files.writeObject( location, readyBuffers );
+        synchronized( this ) {
+            flush();
+            log.info( "writing unsent buffers " + readyBuffers.size() );
+            Files.writeObject( location, readyBuffers );
+        }
     }
 
     public synchronized void forEachReadyData( Predicate<Bucket> consumer ) {
@@ -145,12 +141,38 @@ public class Buffers implements Closeable {
         Metrics.measureHistogram( Metrics.name( "logging_buffers_count" ), readyBuffers.size() );
         log.debug( "buffers to go " + readyBuffers.size() );
         Iterator<Bucket> iterator = readyBuffers.iterator();
-        while( iterator.hasNext() ) {
+        while( iterator.hasNext() && !closed ) {
             Bucket bucket = iterator.next();
             if( consumer.test( bucket ) ) {
                 iterator.remove();
-                releaseBuffer( bucket.buffer );
+                cache.release( bucket.buffer );
             } else break;
+        }
+    }
+
+    public int size() {
+        return readyBuffers.size();
+    }
+
+    public static class BufferCache {
+        Queue<Buffer> cache = new LinkedList<>();
+        private int bufferSize;
+
+        public BufferCache( int bufferSize ) {
+            this.bufferSize = bufferSize;
+        }
+
+        private synchronized Buffer get() {
+            return cache.isEmpty() ? new Buffer( bufferSize ) : cache.poll();
+        }
+
+        private synchronized void release( Buffer buffer ) {
+            buffer.reset();
+            cache.offer( buffer );
+        }
+
+        public int size() {
+            return cache.size();
         }
     }
 }
