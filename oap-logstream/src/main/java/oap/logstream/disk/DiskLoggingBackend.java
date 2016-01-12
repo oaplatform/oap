@@ -26,6 +26,7 @@ package oap.logstream.disk;
 
 import oap.io.Closeables;
 import oap.logstream.LoggingBackend;
+import oap.metrics.Metrics;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -34,14 +35,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class DiskLoggingBackend implements LoggingBackend {
     public static final int DEFAULT_BUFFER = 1024 * 100;
-    private ConcurrentHashMap<String, LogWriter> writers = new ConcurrentHashMap<>();
+    public static final String METRICS_LOGGING_DISK = "logging_disk";
     final Path logDirectory;
     final String ext;
     final int bufferSize;
+    private ConcurrentHashMap<String, LogWriter> writers = new ConcurrentHashMap<>();
     private int bucketsPerHour;
     private boolean closed;
 
-    public DiskLoggingBackend( Path logDirectory, String ext, int bufferSize, int bucketsPerHour ) {
+    public DiskLoggingBackend(Path logDirectory, String ext, int bufferSize, int bucketsPerHour) {
         this.logDirectory = logDirectory;
         this.ext = ext;
         this.bufferSize = bufferSize;
@@ -49,24 +51,27 @@ public class DiskLoggingBackend implements LoggingBackend {
     }
 
     @Override
-    public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
-        if( closed ) throw new UncheckedIOException( new IOException( "already closed!" ) );
-        writers.computeIfAbsent( hostName + fileName,
-            k -> new LogWriter( logDirectory.resolve( hostName ), fileName, ext, bufferSize, bucketsPerHour ) )
-            .write( buffer, offset, length );
+    public void log(String hostName, String fileName, byte[] buffer, int offset, int length) {
+        if (closed) throw new UncheckedIOException(new IOException("already closed!"));
+
+        Metrics.measureCounterIncrement(Metrics.name(METRICS_LOGGING_DISK).tag("from", hostName));
+
+        writers.computeIfAbsent(hostName + fileName,
+                k -> new LogWriter(logDirectory.resolve(hostName), fileName, ext, bufferSize, bucketsPerHour))
+                .write(buffer, offset, length);
     }
 
     @Override
     public void close() {
-        if( !closed ) {
+        if (!closed) {
             closed = true;
             flush();
-            writers.forEach( ( selector, writer ) -> Closeables.close( writer ) );
+            writers.forEach((selector, writer) -> Closeables.close(writer));
             writers.clear();
         }
     }
 
     public void flush() {
-        writers.forEach( ( selector, writer ) -> writer.flush() );
+        writers.forEach((selector, writer) -> writer.flush());
     }
 }
