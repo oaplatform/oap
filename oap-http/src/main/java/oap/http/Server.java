@@ -49,8 +49,8 @@ import java.util.concurrent.*;
 public class Server implements HttpServer {
 
     private final static Logger logger = LoggerFactory.getLogger(Server.class);
-    private static final String CONNECTIONS = "connections";
-    private static final String CONNECTIONS_QUEUE = "connections_queue";
+    private static final String METRICS_CONNECTIONS = "connections";
+    private static final String METRICS_CONNECTIONS_QUEUE = "connections_queue";
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService(HttpProcessorBuilder.create()
             .add(new ResponseDate())
@@ -64,7 +64,6 @@ public class Server implements HttpServer {
     private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
     private ThreadPoolExecutor executor;
     private int port;
-    private Metrics metrics;
     private ServerSocket serverSocket;
     private Thread thread;
     private Semaphore semaphore = new Semaphore(0);
@@ -96,8 +95,8 @@ public class Server implements HttpServer {
 
             logger.info("binding to " + port + "...");
 
-            Metrics.measureGauge(CONNECTIONS, connections::size);
-            Metrics.measureGauge(CONNECTIONS_QUEUE, executor::getPoolSize);
+            Metrics.measureGauge(METRICS_CONNECTIONS, connections::size);
+            Metrics.measureGauge(METRICS_CONNECTIONS_QUEUE, executor::getPoolSize);
             serverSocket = new ServerSocket();
 
             serverSocket.setReuseAddress(true);
