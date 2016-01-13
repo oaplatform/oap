@@ -34,7 +34,6 @@ import oap.logstream.Filename;
 import oap.metrics.Metrics;
 import oap.util.Try;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -163,10 +162,10 @@ public class LogWriter implements Closeable {
                 measureTime( out::close );
 
                 if( compress ) {
-                    Files.rename( outTmpName, outName );
+                    measureTime( () -> Files.rename( outTmpName, outName ) );
                 }
 
-                Metrics.measureHistogram( "logger_server_time", outTime );
+                Metrics.measureHistogram( "logger_server_time", outTime / 1000000L );
                 Metrics.measureHistogram( "logger_server_size_to", outName.toFile().length() );
             } catch( IOException e ) {
                 log.error( e.getMessage(), e );
@@ -191,9 +190,12 @@ public class LogWriter implements Closeable {
         }
 
         private void measureTime( Try.ThrowingRunnable2<IOException> run ) throws IOException {
-            final long time = DateTimeUtils.currentTimeMillis();
-            run.run();
-            outTime += ( DateTimeUtils.currentTimeMillis() - time );
+            final long time = System.nanoTime();
+            try {
+                run.run();
+            } finally {
+                outTime += ( System.nanoTime() - time );
+            }
         }
     }
 }
