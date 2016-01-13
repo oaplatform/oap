@@ -23,22 +23,22 @@
  */
 package oap.logstream;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
+import oap.metrics.Metrics;
+import org.joda.time.DateTimeUtils;
 
 import java.nio.file.Path;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
-import static org.slf4j.LoggerFactory.getLogger;
 
+@Slf4j
 public class Archiver implements Runnable {
     private final Path sourceDirectory;
     private final Path destinationDirectory;
     private final long safeInterval;
     private String mask;
-    private static Logger logger = getLogger( Archiver.class );
 
 
     public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask ) {
@@ -50,16 +50,21 @@ public class Archiver implements Runnable {
 
     @Override
     public void run() {
-        logger.debug( "let's start packing of " + mask + " in " + sourceDirectory + " into " + destinationDirectory );
+        log.debug( "let's start packing of " + mask + " in " + sourceDirectory + " into " + destinationDirectory );
         for( Path path : Files.wildcard( sourceDirectory, mask ) )
-            if( path.toFile().lastModified() < DateTime.now().minus( safeInterval ).getMillis() ) {
-                logger.debug( "archiving " + path );
-                Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz" );
-                Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz.tmp" );
-                Files.copy( path, PLAIN, targetTemp, GZIP );
-                Files.rename( targetTemp, targetFile );
-                Files.delete( path );
-            } else logger.debug( "skipping (not safe yet) " + path );
-        logger.debug( "packing is done" );
+            if( path.toFile().lastModified() < DateTimeUtils.currentTimeMillis() - safeInterval ) {
+                log.debug( "archiving " + path );
+                Metrics.measureTimer( Metrics.name( "archiver_time" ), () -> {
+                    Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz" );
+                    Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz.tmp" );
+                    Files.copy( path, PLAIN, targetTemp, GZIP );
+                    Files.rename( targetTemp, targetFile );
+                    Files.delete( path );
+
+                    Metrics.measureHistogram( "archiver_size_from", path.toFile().length() );
+                    Metrics.measureHistogram( "archiver_size_to", targetFile.toFile().length() );
+                } );
+            } else log.debug( "skipping (not safe yet) " + path );
+        log.debug( "packing is done" );
     }
 }
