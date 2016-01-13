@@ -55,13 +55,14 @@ public class Archiver implements Runnable {
             if( path.toFile().lastModified() < DateTimeUtils.currentTimeMillis() - safeInterval ) {
                 log.debug( "archiving " + path );
                 Metrics.measureTimer( Metrics.name( "archiver_time" ), () -> {
+                    Metrics.measureHistogram( "archiver_size_from", path.toFile().length() );
+
                     Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz" );
                     Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz.tmp" );
                     Files.copy( path, PLAIN, targetTemp, GZIP );
                     Files.rename( targetTemp, targetFile );
                     Files.delete( path );
 
-                    Metrics.measureHistogram( "archiver_size_from", path.toFile().length() );
                     Metrics.measureHistogram( "archiver_size_to", targetFile.toFile().length() );
                 } );
             } else log.debug( "skipping (not safe yet) " + path );
