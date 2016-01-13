@@ -40,19 +40,12 @@ public class DataSocket implements Closeable {
     public DataSocket( String host, int port, int soTimeout ) {
         this.socket = new Socket();
         try {
-            this.socket.setKeepAlive( true );
-            this.socket.setReuseAddress( true );
             this.socket.setSoTimeout( soTimeout );
             this.socket.connect( new InetSocketAddress( host, port ) );
             this.out = new DataOutputStream( this.socket.getOutputStream() );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
-    }
-
-
-    public DataOutputStream getOutputStream() {
-        return out;
     }
 
     public boolean isConnected() {
@@ -68,5 +61,37 @@ public class DataSocket implements Closeable {
     @Override
     public String toString() {
         return this.socket.toString();
+    }
+
+    public void writeLong( long l ) {
+        try {
+            out.writeLong( l );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public void writeUTF( String string ) {
+        try {
+            out.writeUTF( string );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public void writeInt( int i ) {
+        try {
+            out.writeInt( i );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public void write( byte[] buffer, int off, int length ) {
+        try {
+            out.write( buffer, off, length );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
     }
 }
