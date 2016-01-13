@@ -24,42 +24,47 @@
 
 package oap.logstream.disk;
 
+import com.google.common.io.CountingOutputStream;
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.io.Files;
 import oap.io.IoStreams;
 import oap.logstream.Filename;
+import oap.metrics.Metrics;
+import oap.util.Try;
 import org.joda.time.DateTime;
-import org.slf4j.Logger;
+import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
+@Slf4j
 public class LogWriter implements Closeable {
-    private static Logger logger = getLogger( LogWriter.class );
     private final String ext;
     private final Path logDirectory;
     private final String root;
+    private final boolean compress;
     private int flushInterval = 30000;
     private int bufferSize;
     private int bucketsPerHour;
-    private OutputStream out;
     private String lastPattern;
     private Scheduled scheduled;
+    private Out out;
 
-    public LogWriter( Path logDirectory, String root, String ext, int bufferSize, int bucketsPerHour ) {
+    public LogWriter( Path logDirectory, String root, String ext, int bufferSize, int bucketsPerHour, boolean compress ) {
         this.logDirectory = logDirectory;
         this.root = root;
         this.ext = ext;
         this.bufferSize = bufferSize;
         this.bucketsPerHour = bucketsPerHour;
+        this.compress = compress;
         this.lastPattern = currentPattern();
-        this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::fsync );
+        if( flushInterval > 0 )
+            this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::fsync );
     }
 
     private void fsync() {
@@ -70,14 +75,13 @@ public class LogWriter implements Closeable {
 
     @Override
     public void close() throws IOException {
-        logger.debug( "closing " + this );
-        Scheduled.cancel( scheduled );
+        log.debug( "closing {}", this );
+        if( flushInterval > 0 ) Scheduled.cancel( scheduled );
         closeOutput();
     }
 
     private void closeOutput() throws IOException {
         if( out != null ) {
-            out.flush();
             out.close();
             out = null;
         }
@@ -90,24 +94,19 @@ public class LogWriter implements Closeable {
     public synchronized void write( byte[] buffer, int offset, int length ) {
         try {
             refresh();
-            if( out == null ) out = IoStreams.out( filename(), IoStreams.Encoding.PLAIN, bufferSize, true );
-            out.write( buffer, offset, length );
+            if( out == null ) out = new Out();
 
+            out.write( buffer, offset, length );
         } catch( IOException e ) {
-            logger.error( e.getMessage(), e );
+            log.error( e.getMessage(), e );
             try {
                 closeOutput();
             } catch( IOException e1 ) {
-                logger.error( e.getMessage(), e );
+                log.error( e.getMessage(), e );
             } finally {
                 out = null;
             }
         }
-    }
-
-    private Path filename() {
-        return logDirectory.resolve( Filename.directoryName( lastPattern ) )
-            .resolve( root + "-" + lastPattern + "." + ext );
     }
 
     private synchronized void refresh() {
@@ -116,7 +115,7 @@ public class LogWriter implements Closeable {
             lastPattern = currentPattern;
             closeOutput();
         } catch( IOException e ) {
-            logger.error( e.getMessage(), e );
+            log.error( e.getMessage(), e );
         }
     }
 
@@ -126,15 +125,75 @@ public class LogWriter implements Closeable {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "@" + filename();
+        return getClass().getSimpleName() + "@" + out;
     }
 
     public synchronized void flush() {
-        try {
-            if( out != null ) out.flush();
-        } catch( IOException e ) {
-            logger.error( e.getMessage(), e );
-        }
+        if( out != null ) out.flush();
     }
 
+    private class Out {
+        public final CountingOutputStream out;
+        public final Path outTmpName;
+        public final Path outName;
+
+        private long outTime = 0;
+
+        public Out() {
+            outTmpName = filename( true );
+            outName = filename( false );
+
+            out = new CountingOutputStream(
+                IoStreams.out( outTmpName,
+                    compress ? IoStreams.Encoding.GZIP : IoStreams.Encoding.PLAIN,
+                    bufferSize, true )
+            );
+        }
+
+        private Path filename( boolean temp ) {
+            return logDirectory.resolve( Filename.directoryName( lastPattern ) )
+                .resolve( root + "-" + lastPattern + "." + ext + ( temp && compress ? ".tmp" : "" ) );
+        }
+
+        public final void close() {
+            try {
+                Metrics.measureHistogram( "logger_server_size_from", out.getCount() );
+
+                flush();
+                measureTime( out::close );
+
+                if( compress ) {
+                    Files.rename( outTmpName, outName );
+                }
+
+                Metrics.measureHistogram( "logger_server_time", outTime );
+                Metrics.measureHistogram( "logger_server_size_to", outName.toFile().length() );
+            } catch( IOException e ) {
+                log.error( e.getMessage(), e );
+            }
+        }
+
+        public final void write( byte[] buffer, int offset, int length ) throws IOException {
+            measureTime( () -> out.write( buffer, offset, length ) );
+        }
+
+        @Override
+        public final String toString() {
+            return outTmpName.toString();
+        }
+
+        public final void flush() {
+            try {
+                measureTime( out::flush );
+            } catch( IOException e ) {
+                log.error( e.getMessage(), e );
+            }
+        }
+
+        private void measureTime( Try.ThrowingRunnable2<IOException> run ) throws IOException {
+            final long time = DateTimeUtils.currentTimeMillis();
+            run.run();
+            outTime += ( DateTimeUtils.currentTimeMillis() - time );
+        }
+    }
 }

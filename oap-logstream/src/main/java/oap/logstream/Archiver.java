@@ -25,7 +25,6 @@ package oap.logstream;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
-import oap.metrics.Metrics;
 import org.joda.time.DateTimeUtils;
 
 import java.nio.file.Path;
@@ -38,33 +37,41 @@ public class Archiver implements Runnable {
     private final Path sourceDirectory;
     private final Path destinationDirectory;
     private final long safeInterval;
-    private String mask;
+    private final boolean compress;
+    private final String targetExtention;
+    private final String mask;
 
 
-    public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask ) {
+    public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask, boolean compress, String targetExtention ) {
         this.sourceDirectory = sourceDirectory;
         this.destinationDirectory = destinationDirectory;
         this.safeInterval = safeInterval;
         this.mask = mask;
+        this.compress = compress;
+        this.targetExtention = targetExtention;
     }
 
     @Override
     public void run() {
         log.debug( "let's start packing of " + mask + " in " + sourceDirectory + " into " + destinationDirectory );
+
         for( Path path : Files.wildcard( sourceDirectory, mask ) )
             if( path.toFile().lastModified() < DateTimeUtils.currentTimeMillis() - safeInterval ) {
                 log.debug( "archiving " + path );
-                Metrics.measureTimer( Metrics.name( "archiver_time" ), () -> {
-                    Metrics.measureHistogram( "archiver_size_from", path.toFile().length() );
 
-                    Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz" );
-                    Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".gz.tmp" );
+                final String dotTargetExtension = targetExtention.isEmpty() ? "" : "." + targetExtention;
+
+                Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + dotTargetExtension );
+
+                if( compress ) {
+                    Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + dotTargetExtension + ".tmp" );
                     Files.copy( path, PLAIN, targetTemp, GZIP );
                     Files.rename( targetTemp, targetFile );
-                    Files.delete( path );
-
-                    Metrics.measureHistogram( "archiver_size_to", targetFile.toFile().length() );
-                } );
+                } else {
+                    Files.ensureFile( targetFile );
+                    Files.rename( path, targetFile );
+                }
+                Files.delete( path );
             } else log.debug( "skipping (not safe yet) " + path );
         log.debug( "packing is done" );
     }

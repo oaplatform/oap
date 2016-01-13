@@ -24,6 +24,7 @@
 
 package oap.logstream.disk;
 
+import oap.io.IoStreams;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Dates;
@@ -36,10 +37,10 @@ import static oap.io.IoAsserts.assertFileContent;
 public class LogWriterTest extends AbstractTest {
 
     @Test
-    public void write() throws IOException {
+    public void write_nocompress() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1234567890\n";
-        LogWriter logWriter = new LogWriter( Env.tmpPath( "logs" ), "file", "log", 10, 12 );
+        LogWriter logWriter = new LogWriter( Env.tmpPath( "logs" ), "file", "log", 10, 12, false );
 
         logWriter.write( content.getBytes() );
 
@@ -60,6 +61,34 @@ public class LogWriterTest extends AbstractTest {
         assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-01.log" ), content );
         assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-02.log" ), content + content );
         assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-11.log" ), content );
+
+    }
+
+    @Test
+    public void write_compress() throws IOException {
+        Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
+        String content = "1234567890\n";
+        LogWriter logWriter = new LogWriter( Env.tmpPath( "logs" ), "file", "log", 10, 12, true );
+
+        logWriter.write( content.getBytes() );
+
+        Dates.setTimeFixed( 2015, 10, 10, 1, 5 );
+        logWriter.write( content.getBytes() );
+
+        Dates.setTimeFixed( 2015, 10, 10, 1, 10 );
+        logWriter.write( content.getBytes() );
+
+        Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
+        logWriter.write( content.getBytes() );
+
+        Dates.setTimeFixed( 2015, 10, 10, 1, 59 );
+        logWriter.write( content.getBytes() );
+
+        logWriter.close();
+        assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-00.log" ), IoStreams.Encoding.GZIP, content );
+        assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-01.log" ), IoStreams.Encoding.GZIP, content );
+        assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-02.log" ), IoStreams.Encoding.GZIP, content + content );
+        assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-11.log" ), IoStreams.Encoding.GZIP, content );
 
     }
 }

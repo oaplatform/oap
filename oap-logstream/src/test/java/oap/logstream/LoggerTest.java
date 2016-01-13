@@ -43,11 +43,11 @@ import static org.testng.Assert.assertTrue;
 
 public class LoggerTest extends AbstractTest {
     @Test
-    public void disk() {
+    public void disk_nocompress() {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
         String content = "12345678";
-        try( LoggingBackend backend = new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12 ) ) {
+        try( LoggingBackend backend = new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, false ) ) {
             Logger logger = new Logger( backend );
             logger.log( "a", content );
             logger.log( "b", content );
@@ -64,12 +64,12 @@ public class LoggerTest extends AbstractTest {
     }
 
     @Test
-    public void net() throws IOException {
+    public void net_nocompress() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "12345678";
 
         try( LoggingBackend serverBackend =
-                 new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12 ) ) {
+                 new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, false ) ) {
             SocketLoggingServer server = new SocketLoggingServer( 7777, 1024, serverBackend, Env.tmpPath( "control" ) );
             try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", 7777,
                 Env.tmpPath( "buffers" ), 10 ) ) {

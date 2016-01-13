@@ -40,7 +40,7 @@ import static oap.io.IoAsserts.assertFileDoesNotExist;
 public class ArchiverTest {
 
     @Test
-    public void testArchive() {
+    public void testArchive_compress() {
         DateTime now = new DateTime( 2015, 10, 10, 12, 0, 0 );
         DateTimeUtils.setCurrentMillisFixed( now.getMillis() );
         Path logs = Env.tmpPath( "logs" );
@@ -63,7 +63,7 @@ public class ArchiverTest {
         }
 
 
-        Archiver archiver = new Archiver( logs, archives, 60 * 1000, "**/*.log" );
+        Archiver archiver = new Archiver( logs, archives, 60 * 1000, "**/*.log", true, "gz" );
         archiver.run();
 
         for( String file : files ) {
@@ -71,6 +71,43 @@ public class ArchiverTest {
             if( file.contains( "3.log" ) ) assertFileDoesNotExist( path );
             else {
                 assertFileContent( path, IoStreams.Encoding.GZIP, "data" );
+                assertFileDoesNotExist( logs.resolve( file ) );
+            }
+        }
+    }
+
+    @Test
+    public void testArchive_nocompress() {
+        DateTime now = new DateTime( 2015, 10, 10, 12, 0, 0 );
+        DateTimeUtils.setCurrentMillisFixed( now.getMillis() );
+        Path logs = Env.tmpPath( "logs" );
+        Path archives = Env.tmpPath( "archives" );
+
+        String[] files = {
+            "a/1.log",
+            "a/2.log",
+            "a/3.log",
+            "b/c/1.log",
+            "b/c/2.log",
+            "b/c/3.log"
+        };
+
+        for( String file : files ) {
+            Path path = logs.resolve( file );
+            Files.writeString( path, "data" );
+            path.toFile().setLastModified(
+                now.minusMinutes( file.contains( "3.log" ) ? 0 : 10 ).getMillis() );
+        }
+
+
+        Archiver archiver = new Archiver( logs, archives, 60 * 1000, "**/*.log", false, "" );
+        archiver.run();
+
+        for( String file : files ) {
+            Path path = archives.resolve( file );
+            if( file.contains( "3.log" ) ) assertFileDoesNotExist( path );
+            else {
+                assertFileContent( path, IoStreams.Encoding.PLAIN, "data" );
                 assertFileDoesNotExist( logs.resolve( file ) );
             }
         }
