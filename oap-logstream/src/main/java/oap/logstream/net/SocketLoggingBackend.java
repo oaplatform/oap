@@ -58,40 +58,56 @@ public class SocketLoggingBackend implements LoggingBackend {
     }
 
     public synchronized void send() {
+        send( false );
+    }
+
+    private void send( boolean retry ) {
         if( !closed ) try {
             if( buffers.isEmpty() ) loggingAvailable = true;
 
             log.debug( "sending data to server..." );
-            if( this.connection == null || !connection.isConnected() ) {
-                Closeables.close( connection );
-                log.debug( "opening connection..." );
-                this.connection = new ChannelConnection( host, port, timeout );
-            }
+            refreshConnection();
 
-            buffers.forEachReadyData( buffer ->
-                Metrics.measureTimer( Metrics.name( "logging_buffer_send_time" ), () -> {
-                    try {
-                        log.trace( "sending {}", buffer );
-                        connection.write( buffer.data(), 0, buffer.length() );
-                        Metrics.measureCounterIncrement( Metrics.name( "logging_socket" ), buffer.length() );
-                        loggingAvailable = true;
-                        return true;
-                    } catch( Exception e ) {
-                        loggingAvailable = false;
-                        log.warn( e.getMessage() );
-                        Closeables.close( connection );
-                        return false;
-                    }
-                } ) );
+            buffers.forEachReadyData( buffer -> sendBuffer( buffer, retry ) );
             log.debug( "sending done" );
         } catch( Exception e ) {
             loggingAvailable = false;
             log.warn( e.getMessage() );
-            Closeables.close( connection );
+            Closeables.close( socket );
         }
 
         if( !loggingAvailable ) log.debug( "logging unavailable" );
 
+    }
+
+    private void refreshConnection() {
+        if( this.socket == null || !socket.isConnected() ) {
+            Closeables.close( socket );
+            log.debug( "opening connection..." );
+            this.socket = new DataSocket( host, port, soTimeout );
+        }
+    }
+
+    private Boolean sendBuffer( Buffer buffer, boolean retry ) {
+        return Metrics.measureTimer( Metrics.name( "logging_buffer_send_time" ), () -> {
+            try {
+                log.trace( "sending {}", buffer );
+                socket.write( buffer.data(), 0, buffer.length() );
+                Metrics.measureCounterIncrement( Metrics.name( "logging_socket" ), buffer.length() );
+                loggingAvailable = true;
+                return true;
+            } catch( Exception e ) {
+                loggingAvailable = false;
+                log.warn( e.getMessage() );
+                Closeables.close( socket );
+
+                if( !retry ) {
+                    refreshConnection();
+
+                    return sendBuffer( buffer, true );
+                } else return false;
+            }
+        } );
     }
 
     @Override
