@@ -47,6 +47,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     private boolean loggingAvailable = true;
     private boolean closed = false;
     protected long timeout = 10000;
+    protected boolean nio = false;
 
     public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
         this.host = host;
@@ -88,7 +89,7 @@ public class SocketLoggingBackend implements LoggingBackend {
         if( this.connection == null || !connection.isConnected() ) {
             Closeables.close( connection );
             log.debug( "opening connection..." );
-            this.connection = new ChannelConnection( host, port, timeout );
+            this.connection = nio ? new ChannelConnection( host, port, timeout ) : new SocketConnection( host, port );
         }
     }
 
