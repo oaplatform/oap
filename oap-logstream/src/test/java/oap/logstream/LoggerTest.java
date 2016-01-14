@@ -25,7 +25,6 @@
 package oap.logstream;
 
 import oap.concurrent.Threads;
-import oap.io.IoStreams;
 import oap.logstream.disk.DiskLoggingBackend;
 import oap.logstream.net.SocketLoggingBackend;
 import oap.logstream.net.SocketLoggingServer;
