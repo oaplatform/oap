@@ -141,7 +141,7 @@ public class SocketLoggingServer implements Runnable {
                     } else log.warn( "buffer {} already written ({})", digestionId, lastId );
                 }
             } catch( EOFException e ) {
-                log.debug( socket + " closed" );
+                log.debug( "{} closed", socket );
             } catch( IOException e ) {
                 log.error( e.getMessage(), e );
             } finally {
