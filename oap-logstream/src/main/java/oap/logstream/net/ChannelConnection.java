@@ -23,17 +23,20 @@
  */
 package oap.logstream.net;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 import oap.io.Closeables;
 import org.joda.time.DateTimeUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
+@Slf4j
 public class ChannelConnection implements Connection {
 
     private final long timeout;
@@ -45,6 +48,7 @@ public class ChannelConnection implements Connection {
             channel = SocketChannel.open();
             channel.configureBlocking( false );
             channel.connect( new InetSocketAddress( host, port ) );
+            if( !channel.finishConnect() ) throw new ConnectException( "cannot connect to " + host + ":" + port );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }

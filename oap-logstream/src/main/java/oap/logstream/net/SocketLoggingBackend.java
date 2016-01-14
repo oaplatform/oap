@@ -76,6 +76,7 @@ public class SocketLoggingBackend implements LoggingBackend {
         } catch( Exception e ) {
             loggingAvailable = false;
             log.warn( e.getMessage() );
+            log.trace( e.getMessage(), e );
             Closeables.close( connection );
         }
 
@@ -102,6 +103,7 @@ public class SocketLoggingBackend implements LoggingBackend {
             } catch( Exception e ) {
                 loggingAvailable = false;
                 log.warn( e.getMessage() );
+                log.trace( e.getMessage(), e );
                 Closeables.close( connection );
                 return false;
             }

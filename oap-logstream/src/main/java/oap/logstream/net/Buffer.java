@@ -26,12 +26,14 @@ package oap.logstream.net;
 import java.io.Serializable;
 
 class Buffer implements Serializable {
+    private final String selector;
     private byte[] data;
     private int position = 0;
     private boolean closed = false;
     private int dataStart;
 
     public Buffer( int size, String selector ) {
+        this.selector = selector;
         this.data = new byte[size];
         initMetadata( selector );
     }
@@ -164,4 +166,8 @@ class Buffer implements Serializable {
         return position - dataStart;
     }
 
+    @Override
+    public String toString() {
+        return ( selector + "," + position );
+    }
 }
