@@ -89,7 +89,7 @@ public class SocketLoggingBackend implements LoggingBackend {
         if( this.connection == null || !connection.isConnected() ) {
             Closeables.close( connection );
             log.debug( "opening connection..." );
-            this.connection = blocking ? new ChannelConnection( host, port, timeout ) : new SocketConnection( host, port );
+            this.connection = blocking ? new SocketConnection( host, port ) : new ChannelConnection( host, port, timeout );
         }
     }
 
