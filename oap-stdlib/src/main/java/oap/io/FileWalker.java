@@ -5,8 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.util.function.Consumer;
 
 /**
@@ -33,6 +32,8 @@ public class FileWalker {
 
     private void walkFileTree( Path path, int position, Consumer<Path> visitor ) {
         if( wildcard[position] ) {
+            if( !java.nio.file.Files.isDirectory( path )) return;
+
             try( DirectoryStream<Path> stream = java.nio.file.Files.newDirectoryStream( path, entry -> {
                 return FilenameUtils.wildcardMatch( entry.getFileName().toString(), paths[position] );
             } ) ) {
@@ -41,6 +42,7 @@ public class FileWalker {
                 } else {
                     stream.forEach( visitor::accept );
                 }
+            } catch( NoSuchFileException ignore ) {
             } catch( IOException e ) {
                 throw new UncheckedIOException( e );
             }

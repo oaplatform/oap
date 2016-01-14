@@ -42,6 +42,16 @@ import java.util.regex.Matcher;
 
 @Slf4j
 public final class Files {
+    public static ArrayList<Path> fast_wildcard( String basePath, String wildcard ) {
+        return fast_wildcard( path( basePath ), wildcard );
+    }
+
+    public static ArrayList<Path> fast_wildcard( Path basePath, String wildcard ) {
+        final ArrayList<Path> result = new ArrayList<>();
+        new FileWalker( basePath, wildcard ).walkFileTree( result::add );
+        return result;
+    }
+
     public static ArrayList<Path> wildcard( String basePath, String wildcard ) {
         return wildcard( path( basePath ), wildcard );
     }

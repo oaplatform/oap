@@ -53,6 +53,23 @@ public class FilesTest extends AbstractTest {
     }
 
     @Test
+    public void fast_wildcard() {
+        Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
+        assertEquals( Files.fast_wildcard( Env.tmp( "/wildcard" ), "*.txt" ),
+            Lists.of( Env.tmpPath( "/wildcard/1.txt" ) ) );
+        assertEquals( Files.fast_wildcard( "/aaa", "*.txt" ), Lists.empty() );
+
+        Files.writeString( Env.tmp( "/wildcard/a/1.txt" ), "1" );
+        Files.writeString( Env.tmp( "/wildcard/b/1.txt" ), "1" );
+        Files.fast_wildcard( Env.tmp( "/wildcard" ), "*/*.txt" ).forEach( System.out::println );
+        assertEquals( Files.fast_wildcard( Env.tmp( "/wildcard" ), "*/*.txt" ),
+            Lists.of(
+                Env.tmpPath( "/wildcard/a/1.txt" ),
+                Env.tmpPath( "/wildcard/b/1.txt" )
+            ) );
+    }
+
+    @Test
     public void path() {
         assertEquals( Files.path( "a", "b/c", "d" ), Files.path( "a", "b", "c", "d" ) );
     }

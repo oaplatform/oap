@@ -33,6 +33,14 @@ public class FileWalkerTest extends AbstractTest {
     }
 
     @Test
+    public void testWalkFileTree_basePath_not_found() throws Exception {
+        final MockVisitor visitor = new MockVisitor();
+        new FileWalker( Files.path( "/aaa" ), "*.txt" ).walkFileTree( visitor );
+
+        assertEquals( visitor.files, emptyList() );
+    }
+
+    @Test
     public void testWalkFileTree_static_path() throws Exception {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "w2/3.txt" ).walkFileTree( visitor );
@@ -55,6 +63,16 @@ public class FileWalkerTest extends AbstractTest {
 
         assertEqualsNoOrder( visitor.files.toArray(), new Path[]{
             tmpPath( "/wildcard/w2/33.txt" ), tmpPath( "/wildcard/w2/w1" ), tmpPath( "/wildcard/w2/3.txt" )
+        } );
+    }
+
+    @Test
+    public void testWalkFileTree_any2() throws Exception {
+        final MockVisitor visitor = new MockVisitor();
+        new FileWalker( tmpPath( "wildcard" ), "*/*.txt" ).walkFileTree( visitor );
+
+        assertEqualsNoOrder( visitor.files.toArray(), new Path[]{
+            tmpPath( "/wildcard/w2/33.txt" ), tmpPath( "/wildcard/w2/3.txt" )
         } );
     }
 
