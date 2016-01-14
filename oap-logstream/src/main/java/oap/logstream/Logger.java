@@ -24,6 +24,8 @@
 package oap.logstream;
 
 import oap.net.Inet;
+import oap.util.Dates;
+import org.joda.time.DateTimeUtils;
 
 public class Logger {
     private LoggingBackend backend;
@@ -33,7 +35,7 @@ public class Logger {
     }
 
     public void log( String selector, String line ) {
-        backend.log( Inet.HOSTNAME, selector, line );
+        backend.log( Inet.HOSTNAME, selector, Dates.formatDateWihMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
     }
 
     public boolean isLoggingAvailable() {
