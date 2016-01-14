@@ -2,7 +2,6 @@ package oap.io;
 
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -14,6 +13,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static oap.testng.Env.tmpPath;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertEqualsNoOrder;
 
 /**
  * Created by Igor Petrenko on 14.01.2016.
@@ -36,7 +37,7 @@ public class FileWalkerTest extends AbstractTest {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "w2/3.txt" ).walkFileTree( visitor );
 
-        Assert.assertEquals( visitor.files, singletonList( tmpPath( "/wildcard/w2/3.txt" ) ) );
+        assertEquals( visitor.files, singletonList( tmpPath( "/wildcard/w2/3.txt" ) ) );
     }
 
     @Test
@@ -44,7 +45,7 @@ public class FileWalkerTest extends AbstractTest {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "unknown/3.txt" ).walkFileTree( visitor );
 
-        Assert.assertEquals( visitor.files, emptyList() );
+        assertEquals( visitor.files, emptyList() );
     }
 
     @Test
@@ -52,9 +53,9 @@ public class FileWalkerTest extends AbstractTest {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "w2/*" ).walkFileTree( visitor );
 
-        Assert.assertEquals( visitor.files, asList(
-            tmpPath( "/wildcard/w2/3.txt" ), tmpPath( "/wildcard/w2/33.txt" ), tmpPath( "/wildcard/w2/w1" )
-        ) );
+        assertEqualsNoOrder( visitor.files.toArray(), new Path[]{
+            tmpPath( "/wildcard/w2/33.txt" ), tmpPath( "/wildcard/w2/w1" ), tmpPath( "/wildcard/w2/3.txt" )
+        } );
     }
 
     @Test
@@ -62,7 +63,7 @@ public class FileWalkerTest extends AbstractTest {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "w2/3*.txt" ).walkFileTree( visitor );
 
-        Assert.assertEquals( visitor.files, asList(
+        assertEquals( visitor.files, asList(
             tmpPath( "/wildcard/w2/3.txt" ), tmpPath( "/wildcard/w2/33.txt" )
         ) );
     }
