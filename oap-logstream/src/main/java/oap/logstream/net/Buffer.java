@@ -23,13 +23,8 @@
  */
 package oap.logstream.net;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
 import java.io.Serializable;
 
-@ToString
-@EqualsAndHashCode
 class Buffer implements Serializable {
     private byte[] data;
     private int position = 0;
@@ -38,10 +33,10 @@ class Buffer implements Serializable {
 
     public Buffer( int size, String selector ) {
         this.data = new byte[size];
-        metadata( selector );
+        initMetadata( selector );
     }
 
-    private void metadata( String selector ) {
+    private void initMetadata( String selector ) {
         if( position != 0 ) throw new IllegalStateException( "metadata could be set for empty buffer only!" );
         boolean result = putLong( 0 ); //reserved for digestion control
         result &= putInt( 0 ); //reserved for data length
@@ -146,7 +141,7 @@ class Buffer implements Serializable {
     public void reset( String selector ) {
         this.closed = false;
         this.position = 0;
-        metadata( selector );
+        initMetadata( selector );
     }
 
     public boolean isEmpty() {

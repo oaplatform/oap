@@ -87,7 +87,7 @@ public class LoggerTest extends AbstractTest {
     }
 
     @Test
-    public void net_nocompress() throws IOException {
+    public void net() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "12345678";
 

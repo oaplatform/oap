@@ -40,13 +40,13 @@ public class SocketLoggingBackend implements LoggingBackend {
     private final String host;
     private final int port;
     private final Scheduled scheduled;
-    protected int soTimeout = 5000;
     protected int maxBuffers = 5000;
-    private DataSocket socket;
+    private Connection connection;
     private Buffers buffers;
-    protected long flushInterval = 10000;
+    protected long flushInterval = 5000;
     private boolean loggingAvailable = true;
     private boolean closed = false;
+    protected long timeout = 10000;
 
     public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
         this.host = host;
@@ -62,24 +62,24 @@ public class SocketLoggingBackend implements LoggingBackend {
             if( buffers.isEmpty() ) loggingAvailable = true;
 
             log.debug( "sending data to server..." );
-            if( this.socket == null || !socket.isConnected() ) {
-                Closeables.close( socket );
+            if( this.connection == null || !connection.isConnected() ) {
+                Closeables.close( connection );
                 log.debug( "opening connection..." );
-                this.socket = new DataSocket( host, port, soTimeout );
+                this.connection = new ChannelConnection( host, port, timeout );
             }
 
             buffers.forEachReadyData( buffer ->
                 Metrics.measureTimer( Metrics.name( "logging_buffer_send_time" ), () -> {
                     try {
                         log.trace( "sending {}", buffer );
-                        socket.write( buffer.data(), 0, buffer.length() );
+                        connection.write( buffer.data(), 0, buffer.length() );
                         Metrics.measureCounterIncrement( Metrics.name( "logging_socket" ), buffer.length() );
                         loggingAvailable = true;
                         return true;
                     } catch( Exception e ) {
                         loggingAvailable = false;
                         log.warn( e.getMessage() );
-                        Closeables.close( socket );
+                        Closeables.close( connection );
                         return false;
                     }
                 } ) );
@@ -87,7 +87,7 @@ public class SocketLoggingBackend implements LoggingBackend {
         } catch( Exception e ) {
             loggingAvailable = false;
             log.warn( e.getMessage() );
-            Closeables.close( socket );
+            Closeables.close( connection );
         }
 
         if( !loggingAvailable ) log.debug( "logging unavailable" );
@@ -103,7 +103,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     public synchronized void close() {
         closed = true;
         Scheduled.cancel( scheduled );
-        Closeables.close( socket );
+        Closeables.close( connection );
         Closeables.close( buffers );
     }
 
