@@ -43,7 +43,7 @@ public class ChannelConnection implements Connection {
         this.timeout = timeout;
         try {
             channel = SocketChannel.open();
-            channel.configureBlocking( true );
+            channel.configureBlocking( false );
             channel.connect( new InetSocketAddress( host, port ) );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
