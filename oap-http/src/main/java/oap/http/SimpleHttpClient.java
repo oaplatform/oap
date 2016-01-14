@@ -71,6 +71,10 @@ public final class SimpleHttpClient {
     }
 
     public static Response execute( HttpUriRequest request ) {
+        return execute( client, request );
+    }
+
+    public static Response execute( CloseableHttpClient client, HttpUriRequest request ) {
         try( CloseableHttpResponse response = client.execute( request ) ) {
             final Map<String, String> headers = Arrays.stream( response.getAllHeaders() )
                 .map( h -> __( h.getName(), h.getValue() ) )
@@ -106,7 +110,7 @@ public final class SimpleHttpClient {
         private final Map<String, String> headers;
 
         public Response( int code, String reasonPhrase, ContentType contentType, Map<String, String> headers,
-            String body ) {
+                         String body ) {
             this.code = code;
             this.reasonPhrase = reasonPhrase;
             this.headers = headers;
