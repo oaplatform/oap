@@ -31,8 +31,6 @@ import oap.io.Closeables;
 import oap.logstream.LoggingBackend;
 import oap.metrics.Metrics;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -70,16 +68,12 @@ public class SocketLoggingBackend implements LoggingBackend {
                 this.socket = new DataSocket( host, port, soTimeout );
             }
 
-            buffers.forEachReadyData( bucket ->
+            buffers.forEachReadyData( buffer ->
                 Metrics.measureTimer( Metrics.name( "logging_buffer_send_time" ), () -> {
                     try {
-                        log.trace( "sending {}", bucket );
-                        socket.writeLong( bucket.id );
-                        socket.writeUTF( bucket.selector );
-                        socket.writeInt( bucket.buffer.length() );
-                        socket.write( bucket.buffer.data(), 0, bucket.buffer.length() );
-                        Metrics.measureCounterIncrement( Metrics.name( "logging_socket" ), bucket.buffer.length() );
-
+                        log.trace( "sending {}", buffer );
+                        socket.write( buffer.data(), 0, buffer.length() );
+                        Metrics.measureCounterIncrement( Metrics.name( "logging_socket" ), buffer.length() );
                         loggingAvailable = true;
                         return true;
                     } catch( Exception e ) {

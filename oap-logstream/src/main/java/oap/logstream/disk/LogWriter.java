@@ -62,8 +62,7 @@ public class LogWriter implements Closeable {
         this.bucketsPerHour = bucketsPerHour;
         this.compress = compress;
         this.lastPattern = currentPattern();
-        if( flushInterval > 0 )
-            this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::fsync );
+        this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::fsync );
     }
 
     private void fsync() {
