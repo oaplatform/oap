@@ -21,39 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
-package oap.logstream.net;
+package oap.io;
 
 import org.testng.annotations.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.util.Arrays;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Path;
 
+import static oap.io.IoStreams.Encoding.GZIP;
 import static org.testng.Assert.*;
 
-public class BufferTest {
-
+public class IoStreamsTest {
     @Test
-    public void data() throws IOException {
-        Buffer buffer = new Buffer( 200, "sel" );
-        assertTrue( buffer.putInt( 10 ) );
-        assertTrue( buffer.putLong( 10 ) );
-        assertTrue( buffer.putUTF( "aaaa" ) );
-        assertTrue( buffer.putInt( 20 ) );
-        assertTrue( buffer.putInt( 30 ) );
-        buffer.close( 1 );
-
-        DataInputStream dis = new DataInputStream( new ByteArrayInputStream( Arrays.copyOf( buffer.data(), buffer.length() ) ) );
-        assertEquals( dis.readLong(), 1 );
-        assertEquals( dis.readInt(), 26 );
-        assertEquals( dis.readUTF(), "sel" );
-        assertEquals( dis.readInt(), 10 );
-        assertEquals( dis.readLong(), 10 );
-        assertEquals( dis.readUTF(), "aaaa" );
-        assertEquals( dis.readInt(), 20 );
-        assertEquals( dis.readInt(), 30 );
-        assertEquals( dis.read(), -1 );
+    public void emptyGz() throws IOException {
+        Path path = Files.path( "/tmp/test.gz" );
+        OutputStream out = IoStreams.out( path, GZIP );
+        out.flush();
+        out.close();
+        InputStream in = IoStreams.in( path, GZIP );
+        assertEquals( in.read(), -1 );
+        in.close();
+        assertEquals( Files.readString( path, GZIP ), "" );
     }
+
 }

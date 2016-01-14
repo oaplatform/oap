@@ -25,6 +25,7 @@
 package oap.logstream;
 
 import oap.concurrent.Threads;
+import oap.io.IoStreams;
 import oap.logstream.disk.DiskLoggingBackend;
 import oap.logstream.net.SocketLoggingBackend;
 import oap.logstream.net.SocketLoggingServer;
@@ -36,6 +37,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 
 import static oap.io.IoAsserts.assertFileContent;
+import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_BUFFER;
 import static oap.net.Inet.HOSTNAME;
 import static org.testng.Assert.assertFalse;
@@ -43,7 +45,7 @@ import static org.testng.Assert.assertTrue;
 
 public class LoggerTest extends AbstractTest {
     @Test
-    public void disk_nocompress() {
+    public void disk() {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
         String content = "12345678";
@@ -64,6 +66,27 @@ public class LoggerTest extends AbstractTest {
     }
 
     @Test
+    public void diskCompression() {
+        Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
+
+        String content = "12345678";
+        try( LoggingBackend backend = new DiskLoggingBackend( Env.tmpPath( "logs" ), "gz", DEFAULT_BUFFER, 12, true ) ) {
+            Logger logger = new Logger( backend );
+            logger.log( "a", content );
+            logger.log( "b", content );
+            logger.log( "a", content );
+            logger.log( "d", content );
+        }
+
+        assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/a-2015-10-10-01-00.gz" ), GZIP,
+            content + "\n" + content + "\n" );
+        assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/b-2015-10-10-01-00.gz" ), GZIP,
+            content + "\n" );
+        assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/d-2015-10-10-01-00.gz" ), GZIP,
+            content + "\n" );
+    }
+
+    @Test
     public void net_nocompress() throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "12345678";
@@ -72,7 +95,7 @@ public class LoggerTest extends AbstractTest {
                  new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, false ) ) {
             SocketLoggingServer server = new SocketLoggingServer( 7777, 1024, serverBackend, Env.tmpPath( "control" ) );
             try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", 7777,
-                Env.tmpPath( "buffers" ), 10 ) ) {
+                Env.tmpPath( "buffers" ), 25 ) ) {
                 Logger logger = new Logger( clientBackend );
                 logger.log( "a", content );
                 clientBackend.send();
