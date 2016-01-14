@@ -41,6 +41,7 @@ public class DataSocket implements Closeable {
         this.socket = new Socket();
         try {
             this.socket.setSoTimeout( soTimeout );
+            this.socket.setKeepAlive( true );
             this.socket.connect( new InetSocketAddress( host, port ) );
             this.out = new DataOutputStream( this.socket.getOutputStream() );
         } catch( IOException e ) {
