@@ -21,39 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-
 package oap.logstream.net;
 
-import org.testng.annotations.Test;
-
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
+import java.io.Closeable;
 import java.io.IOException;
-import java.util.Arrays;
 
-import static org.testng.Assert.*;
+public interface Connection extends Closeable {
+    boolean isConnected();
 
-public class BufferTest {
+    @Override
+    void close() throws IOException;
 
-    @Test
-    public void data() throws IOException {
-        Buffer buffer = new Buffer( 200, "sel" );
-        assertTrue( buffer.putInt( 10 ) );
-        assertTrue( buffer.putLong( 10 ) );
-        assertTrue( buffer.putUTF( "aaaa" ) );
-        assertTrue( buffer.putInt( 20 ) );
-        assertTrue( buffer.putInt( 30 ) );
-        buffer.close( 1 );
+    @Override
+    String toString();
 
-        DataInputStream dis = new DataInputStream( new ByteArrayInputStream( Arrays.copyOf( buffer.data(), buffer.length() ) ) );
-        assertEquals( dis.readLong(), 1 );
-        assertEquals( dis.readInt(), 26 );
-        assertEquals( dis.readUTF(), "sel" );
-        assertEquals( dis.readInt(), 10 );
-        assertEquals( dis.readLong(), 10 );
-        assertEquals( dis.readUTF(), "aaaa" );
-        assertEquals( dis.readInt(), 20 );
-        assertEquals( dis.readInt(), 30 );
-        assertEquals( dis.read(), -1 );
-    }
+    void write( byte[] buffer, int off, int length );
 }

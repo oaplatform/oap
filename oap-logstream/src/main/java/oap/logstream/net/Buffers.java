@@ -49,26 +49,8 @@ public class Buffers implements Closeable {
     private final int bufferSize;
     private boolean closed;
     Map<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
-    Queue<Bucket> readyBuffers = new ConcurrentLinkedQueue<>();
-    private static long idseed = DateTimeUtils.currentTimeMillis();
+    ReadyQueue readyBuffers = new ReadyQueue();
     BufferCache cache;
-
-    @EqualsAndHashCode
-    static class Bucket implements Serializable {
-        String selector;
-        long id = idseed++;
-        Buffer buffer;
-
-        public Bucket( String selector, Buffer buffer ) {
-            this.selector = selector;
-            this.buffer = buffer;
-        }
-
-        @Override
-        public String toString() {
-            return "(" + id + ", " + selector + ", " + buffer.length() + ")";
-        }
-    }
 
     public Buffers( Path location, int bufferSize ) {
         this.location = location;
@@ -88,17 +70,17 @@ public class Buffers implements Closeable {
         put( key, buffer, 0, buffer.length );
     }
 
-    public void put( String key, byte[] buffer, int offset, int length ) {
+    public void put( String selector, byte[] buffer, int offset, int length ) {
         if( closed ) throw new IllegalStateException( "current buffers already closed" );
         if( length > bufferSize )
             throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize );
-        String keyInterned = key.intern();
+        String interned = selector.intern();
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized( keyInterned ) {
-            Buffer b = currentBuffers.computeIfAbsent( keyInterned, k -> cache.get() );
+        synchronized( interned ) {
+            Buffer b = currentBuffers.computeIfAbsent( interned, k -> cache.get( interned ) );
             if( !b.available( length ) ) {
-                readyBuffers.offer( new Bucket( keyInterned, b ) );
-                currentBuffers.put( keyInterned, b = cache.get() );
+                readyBuffers.ready( b );
+                currentBuffers.put( interned, b = cache.get( interned ) );
             }
             b.put( buffer, offset, length );
         }
@@ -109,11 +91,12 @@ public class Buffers implements Closeable {
         Iterator<Map.Entry<String, Buffer>> iterator = currentBuffers.entrySet().iterator();
         while( iterator.hasNext() ) {
             Map.Entry<String, Buffer> entry = iterator.next();
-            String keyInterned = entry.getKey().intern();
+            String interned = entry.getKey().intern();
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized( keyInterned ) {
-                if( !entry.getValue().isEmpty() ) {
-                    readyBuffers.offer( new Bucket( keyInterned, entry.getValue() ) );
+            synchronized( interned ) {
+                Buffer buffer = entry.getValue();
+                if( !buffer.isEmpty() ) {
+                    readyBuffers.ready( buffer );
                     iterator.remove();
                 }
             }
@@ -131,21 +114,21 @@ public class Buffers implements Closeable {
         closed = true;
         synchronized( this ) {
             flush();
-            log.info( "writing unsent buffers " + readyBuffers.size() );
+            log.info( "writing {} unsent buffers to {}", readyBuffers.size(), location );
             Files.writeObject( location, readyBuffers );
         }
     }
 
-    public synchronized void forEachReadyData( Predicate<Bucket> consumer ) {
+    public synchronized void forEachReadyData( Predicate<Buffer> consumer ) {
         flush();
         Metrics.measureHistogram( Metrics.name( "logging_buffers_count" ), readyBuffers.size() );
         log.debug( "buffers to go " + readyBuffers.size() );
-        Iterator<Bucket> iterator = readyBuffers.iterator();
+        Iterator<Buffer> iterator = readyBuffers.iterator();
         while( iterator.hasNext() && !closed ) {
-            Bucket bucket = iterator.next();
-            if( consumer.test( bucket ) ) {
+            Buffer buffer = iterator.next();
+            if( consumer.test( buffer ) ) {
                 iterator.remove();
-                cache.release( bucket.buffer );
+                cache.release( buffer );
             } else break;
         }
     }
@@ -162,17 +145,43 @@ public class Buffers implements Closeable {
             this.bufferSize = bufferSize;
         }
 
-        private synchronized Buffer get() {
-            return cache.isEmpty() ? new Buffer( bufferSize ) : cache.poll();
+        private synchronized Buffer get( String selector ) {
+            if( cache.isEmpty() ) return new Buffer( bufferSize, selector );
+            else {
+                Buffer buffer = cache.poll();
+                buffer.reset( selector );
+                return buffer;
+            }
         }
 
         private synchronized void release( Buffer buffer ) {
-            buffer.reset();
             cache.offer( buffer );
         }
 
         public int size() {
             return cache.size();
+        }
+    }
+
+    static class ReadyQueue implements Serializable {
+        private Queue<Buffer> buffers = new ConcurrentLinkedQueue<>();
+        static volatile long digestionIds = DateTimeUtils.currentTimeMillis();
+
+        public synchronized void ready( Buffer buffer ) {
+            buffer.close( digestionIds++ );
+            buffers.offer( buffer );
+        }
+
+        public Iterator<Buffer> iterator() {
+            return buffers.iterator();
+        }
+
+        public int size() {
+            return buffers.size();
+        }
+
+        public boolean isEmpty() {
+            return buffers.isEmpty();
         }
     }
 }

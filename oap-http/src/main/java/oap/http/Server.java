@@ -50,7 +50,6 @@ public class Server implements HttpServer {
 
     private final static Logger logger = LoggerFactory.getLogger(Server.class);
     private static final String METRICS_CONNECTIONS = "connections";
-    private static final String METRICS_CONNECTIONS_QUEUE = "connections_queue";
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService(HttpProcessorBuilder.create()
             .add(new ResponseDate())
@@ -70,7 +69,7 @@ public class Server implements HttpServer {
 
     public Server(int port, int workers) {
         this.port = port;
-        final ArrayBlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(workers);
+        final BlockingQueue<Runnable> queue = new SynchronousQueue<>();
 
         this.executor = new ThreadPoolExecutor(workers, workers, 0L, TimeUnit.MILLISECONDS, queue);
         this.mapper.register("/static/*", new ClasspathResourceHandler("/static", "/WEB-INF"));
@@ -96,7 +95,6 @@ public class Server implements HttpServer {
             logger.info("binding to " + port + "...");
 
             Metrics.measureGauge(METRICS_CONNECTIONS, connections::size);
-            Metrics.measureGauge(METRICS_CONNECTIONS_QUEUE, executor::getPoolSize);
             serverSocket = new ServerSocket();
 
             serverSocket.setReuseAddress(true);

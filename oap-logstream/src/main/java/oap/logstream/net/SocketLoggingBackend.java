@@ -31,8 +31,6 @@ import oap.io.Closeables;
 import oap.logstream.LoggingBackend;
 import oap.metrics.Metrics;
 
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -42,13 +40,14 @@ public class SocketLoggingBackend implements LoggingBackend {
     private final String host;
     private final int port;
     private final Scheduled scheduled;
-    protected int soTimeout = 5000;
     protected int maxBuffers = 5000;
-    private DataSocket socket;
+    private Connection connection;
     private Buffers buffers;
-    protected long flushInterval = 10000;
+    protected long flushInterval = 5000;
     private boolean loggingAvailable = true;
     private boolean closed = false;
+    protected long timeout = 10000;
+    protected boolean blocking = true;
 
     public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
         this.host = host;
@@ -64,40 +63,52 @@ public class SocketLoggingBackend implements LoggingBackend {
             if( buffers.isEmpty() ) loggingAvailable = true;
 
             log.debug( "sending data to server..." );
-            if( this.socket == null || !socket.isConnected() ) {
-                Closeables.close( socket );
-                log.debug( "opening connection..." );
-                this.socket = new DataSocket( host, port, soTimeout );
-            }
+            refreshConnection();
 
-            buffers.forEachReadyData( bucket ->
-                Metrics.measureTimer( Metrics.name( "logging_buffer_send_time" ), () -> {
-                    try {
-                        log.trace( "sending {}", bucket );
-                        socket.writeLong( bucket.id );
-                        socket.writeUTF( bucket.selector );
-                        socket.writeInt( bucket.buffer.length() );
-                        socket.write( bucket.buffer.data(), 0, bucket.buffer.length() );
-                        Metrics.measureCounterIncrement( Metrics.name( "logging_socket" ), bucket.buffer.length() );
+            buffers.forEachReadyData( buffer -> {
+                if( !sendBuffer( buffer ) ) {
+                    refreshConnection();
+                    return sendBuffer( buffer );
+                }
+                return true;
 
-                        loggingAvailable = true;
-                        return true;
-                    } catch( Exception e ) {
-                        loggingAvailable = false;
-                        log.warn( e.getMessage() );
-                        Closeables.close( socket );
-                        return false;
-                    }
-                } ) );
+            } );
             log.debug( "sending done" );
         } catch( Exception e ) {
             loggingAvailable = false;
             log.warn( e.getMessage() );
-            Closeables.close( socket );
+            log.trace( e.getMessage(), e );
+            Closeables.close( connection );
         }
 
         if( !loggingAvailable ) log.debug( "logging unavailable" );
 
+    }
+
+    private void refreshConnection() {
+        if( this.connection == null || !connection.isConnected() ) {
+            Closeables.close( connection );
+            log.debug( "opening connection..." );
+            this.connection = blocking ? new SocketConnection( host, port ) : new ChannelConnection( host, port, timeout );
+        }
+    }
+
+    private Boolean sendBuffer( Buffer buffer ) {
+        return Metrics.measureTimer( Metrics.name( "logging_buffer_send_time" ), () -> {
+            try {
+                log.trace( "sending {}", buffer );
+                connection.write( buffer.data(), 0, buffer.length() );
+                Metrics.measureCounterIncrement( Metrics.name( "logging_socket" ), buffer.length() );
+                loggingAvailable = true;
+                return true;
+            } catch( Exception e ) {
+                loggingAvailable = false;
+                log.warn( e.getMessage() );
+                log.trace( e.getMessage(), e );
+                Closeables.close( connection );
+                return false;
+            }
+        } );
     }
 
     @Override
@@ -109,7 +120,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     public synchronized void close() {
         closed = true;
         Scheduled.cancel( scheduled );
-        Closeables.close( socket );
+        Closeables.close( connection );
         Closeables.close( buffers );
     }
 

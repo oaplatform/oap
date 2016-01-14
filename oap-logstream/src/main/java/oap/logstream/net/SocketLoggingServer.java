@@ -127,21 +127,21 @@ public class SocketLoggingServer implements Runnable {
                 String hostName = socket.getInetAddress().getCanonicalHostName();
                 log.debug( "start logging for " + hostName );
                 while( !closed ) {
-                    long bucketId = in.readLong();
-                    long lastBucket = control.computeIfAbsent( hostName, h -> 0L );
-                    String selector = in.readUTF();
+                    long digestionId = in.readLong();
+                    long lastId = control.computeIfAbsent( hostName, h -> 0L );
                     int size = in.readInt();
+                    String selector = in.readUTF();
                     if( size > bufferSize )
-                        throw new IOException( "buffer overflow: chunk size is {}" + size + " when buffer size is " + bufferSize );
+                        throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize );
                     in.readFully( buffer, 0, size );
-                    if( lastBucket < bucketId ) {
-                        log.trace( "logging ({}, {}, {}) from {}", bucketId, selector, size, hostName );
+                    if( lastId < digestionId ) {
+                        log.trace( "logging ({}, {}, {}) from {}", digestionId, selector, size, hostName );
                         backend.log( hostName, selector, buffer, 0, size );
-                        control.put( hostName, bucketId );
-                    } else log.warn( "bucket {} already written ({})", bucketId, lastBucket );
+                        control.put( hostName, digestionId );
+                    } else log.warn( "buffer {} already written ({})", digestionId, lastId );
                 }
             } catch( EOFException e ) {
-                log.debug( socket + " closed" );
+                log.debug( "{} closed", socket );
             } catch( IOException e ) {
                 log.error( e.getMessage(), e );
             } finally {

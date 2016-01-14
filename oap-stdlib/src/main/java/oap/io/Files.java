@@ -32,31 +32,26 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.plexus.util.DirectoryScanner;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
-import java.nio.file.SimpleFileVisitor;
+import java.io.*;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 
 @Slf4j
 public final class Files {
+    public static ArrayList<Path> fast_wildcard( String basePath, String wildcard ) {
+        return fast_wildcard( path( basePath ), wildcard );
+    }
+
+    public static ArrayList<Path> fast_wildcard( Path basePath, String wildcard ) {
+        final ArrayList<Path> result = new ArrayList<>();
+        new FileWalker( basePath, wildcard ).walkFileTree( result::add );
+        return result;
+    }
+
     public static ArrayList<Path> wildcard( String basePath, String wildcard ) {
         return wildcard( path( basePath ), wildcard );
     }
@@ -64,7 +59,7 @@ public final class Files {
     public static ArrayList<Path> wildcard( Path basePath, String wildcard ) {
         try {
             PathMatcher pm = FileSystems.getDefault()
-                .getPathMatcher( ("glob:" + basePath + File.separator + wildcard).replace( "\\", "\\\\" ) );
+                .getPathMatcher( ( "glob:" + basePath + File.separator + wildcard ).replace( "\\", "\\\\" ) );
             ArrayList<Path> result = new ArrayList<>();
             SimpleFileVisitor2<Path> visitor = new SimpleFileVisitor2<Path>() {
                 @Override
@@ -92,7 +87,7 @@ public final class Files {
     @SuppressWarnings( "unchecked" )
     public static <T> T readObject( Path path ) {
         try( ObjectInputStream is = new ObjectInputStream( IoStreams.in( path, IoStreams.Encoding.PLAIN ) ) ) {
-            return (T) is.readObject();
+            return ( T ) is.readObject();
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         } catch( ClassNotFoundException e ) {
@@ -187,7 +182,7 @@ public final class Files {
     }
 
     public static void copy( Path sourcePath, IoStreams.Encoding sourceEncoding,
-        Path destPath, IoStreams.Encoding destEncoding ) {
+                             Path destPath, IoStreams.Encoding destEncoding ) {
         destPath.getParent().toFile().mkdirs();
         try( InputStream is = IoStreams.in( sourcePath, sourceEncoding );
              OutputStream os = IoStreams.out( destPath, destEncoding ) ) {
@@ -206,7 +201,7 @@ public final class Files {
     }
 
     public static void copyContent( Path basePath, Path destPath, List<String> includes, List<String> excludes,
-        boolean filtering, Function<String, Object> mapper ) {
+                                    boolean filtering, Function<String, Object> mapper ) {
         DirectoryScanner scanner = new DirectoryScanner();
         scanner.setBasedir( basePath.toFile() );
         scanner.setIncludes( includes.toArray( new String[includes.size()] ) );
@@ -231,9 +226,11 @@ public final class Files {
     }
 
     public static void rename( Path sourcePath, Path destPath ) {
-        if( destPath.toFile().exists() ) delete( destPath );
-        if( !sourcePath.toFile().renameTo( destPath.toFile() ) )
-            throw new UncheckedIOException( new IOException( "cannot rename " + sourcePath + " to " + destPath ) );
+        try {
+            java.nio.file.Files.move( sourcePath, destPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( "cannot rename " + sourcePath + " to " + destPath, e );
+        }
     }
 
     public static void ensureFile( Path path ) {
@@ -241,7 +238,11 @@ public final class Files {
     }
 
     public static void ensureDirectory( Path path ) {
-        path.toFile().mkdirs();
+        try {
+            java.nio.file.Files.createDirectories( path );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
     }
 
     public static void setPosixPermissions( Path path, PosixFilePermission... permissions ) {

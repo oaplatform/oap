@@ -31,13 +31,17 @@ import oap.logstream.net.SocketLoggingServer;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Dates;
+import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 
 import static oap.io.IoAsserts.assertFileContent;
+import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_BUFFER;
 import static oap.net.Inet.HOSTNAME;
+import static oap.util.Dates.formatDateWihMillis;
+import static org.joda.time.DateTimeUtils.currentTimeMillis;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -47,7 +51,7 @@ public class LoggerTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
         String content = "12345678";
-        try( LoggingBackend backend = new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12 ) ) {
+        try( LoggingBackend backend = new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, false ) ) {
             Logger logger = new Logger( backend );
             logger.log( "a", content );
             logger.log( "b", content );
@@ -56,11 +60,34 @@ public class LoggerTest extends AbstractTest {
         }
 
         assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/a-2015-10-10-01-00.log" ),
-            content + "\n" + content + "\n" );
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
+                formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
         assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/b-2015-10-10-01-00.log" ),
-            content + "\n" );
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
         assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/d-2015-10-10-01-00.log" ),
-            content + "\n" );
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+    }
+
+    @Test
+    public void diskCompression() {
+        Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
+
+        String content = "12345678";
+        try( LoggingBackend backend = new DiskLoggingBackend( Env.tmpPath( "logs" ), "gz", DEFAULT_BUFFER, 12, true ) ) {
+            Logger logger = new Logger( backend );
+            logger.log( "a", content );
+            logger.log( "b", content );
+            logger.log( "a", content );
+            logger.log( "d", content );
+        }
+
+        assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/a-2015-10-10-01-00.gz" ), GZIP,
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
+                formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+        assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/b-2015-10-10-01-00.gz" ), GZIP,
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+        assertFileContent( Env.tmpPath( "logs/" + HOSTNAME + "/2015-10/10/d-2015-10-10-01-00.gz" ), GZIP,
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
     }
 
     @Test
@@ -69,10 +96,10 @@ public class LoggerTest extends AbstractTest {
         String content = "12345678";
 
         try( LoggingBackend serverBackend =
-                 new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12 ) ) {
+                 new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, false ) ) {
             SocketLoggingServer server = new SocketLoggingServer( 7777, 1024, serverBackend, Env.tmpPath( "control" ) );
             try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", 7777,
-                Env.tmpPath( "buffers" ), 10 ) ) {
+                Env.tmpPath( "buffers" ), 50 ) ) {
                 Logger logger = new Logger( clientBackend );
                 logger.log( "a", content );
                 clientBackend.send();
@@ -90,11 +117,12 @@ public class LoggerTest extends AbstractTest {
             }
         }
         assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/a-2015-10-10-01-00.log" ),
-            content + "\n" + content + "\n" );
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
+                formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
         assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/b-2015-10-10-01-00.log" ),
-            content + "\n" );
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
         assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/d-2015-10-10-01-00.log" ),
-            content + "\n" );
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
     }
 
 

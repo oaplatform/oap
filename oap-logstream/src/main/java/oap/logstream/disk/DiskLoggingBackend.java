@@ -39,39 +39,41 @@ public class DiskLoggingBackend implements LoggingBackend {
     final Path logDirectory;
     final String ext;
     final int bufferSize;
+    private final boolean compress;
     private ConcurrentHashMap<String, LogWriter> writers = new ConcurrentHashMap<>();
     private int bucketsPerHour;
     private boolean closed;
 
-    public DiskLoggingBackend(Path logDirectory, String ext, int bufferSize, int bucketsPerHour) {
+    public DiskLoggingBackend( Path logDirectory, String ext, int bufferSize, int bucketsPerHour, boolean compress ) {
         this.logDirectory = logDirectory;
         this.ext = ext;
         this.bufferSize = bufferSize;
         this.bucketsPerHour = bucketsPerHour;
+        this.compress = compress;
     }
 
     @Override
-    public void log(String hostName, String fileName, byte[] buffer, int offset, int length) {
-        if (closed) throw new UncheckedIOException(new IOException("already closed!"));
+    public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
+        if( closed ) throw new UncheckedIOException( new IOException( "already closed!" ) );
 
-        Metrics.measureCounterIncrement(Metrics.name(METRICS_LOGGING_DISK).tag("from", hostName));
+        Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_DISK ).tag( "from", hostName ) );
 
-        writers.computeIfAbsent(hostName + fileName,
-                k -> new LogWriter(logDirectory.resolve(hostName), fileName, ext, bufferSize, bucketsPerHour))
-                .write(buffer, offset, length);
+        writers.computeIfAbsent( hostName + fileName,
+            k -> new LogWriter( logDirectory.resolve( hostName ), fileName, ext, bufferSize, bucketsPerHour, compress ) )
+            .write( buffer, offset, length );
     }
 
     @Override
     public void close() {
-        if (!closed) {
+        if( !closed ) {
             closed = true;
             flush();
-            writers.forEach((selector, writer) -> Closeables.close(writer));
+            writers.forEach( ( selector, writer ) -> Closeables.close( writer ) );
             writers.clear();
         }
     }
 
     public void flush() {
-        writers.forEach((selector, writer) -> writer.flush());
+        writers.forEach( ( selector, writer ) -> writer.flush() );
     }
 }

@@ -127,6 +127,22 @@ public class Try {
     }
 
     @FunctionalInterface
+    public interface ThrowingRunnable2<T extends Exception> {
+        void run() throws T;
+
+        default Runnable asRunnable() {
+            return () -> {
+                try {
+                    this.run();
+                } catch( Exception e ) {
+                    Throwables.propagate( e );
+                }
+            };
+        }
+
+    }
+
+    @FunctionalInterface
     public interface ThrowingSupplier<R> {
         R get() throws Exception;
 
