@@ -44,6 +44,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import static java.net.HttpURLConnection.HTTP_OK;
+import static oap.util.Result.trying;
 import static org.testng.Assert.assertEquals;
 
 public class HttpAsserts {
@@ -79,7 +80,7 @@ public class HttpAsserts {
     }
 
     private static ResponseAssert invoke( HttpUriRequest http ) {
-        return new ResponseAssert( SimpleHttpClient.execute( http ) );
+        return new ResponseAssert( trying ( () -> SimpleHttpClient.execute( http ) ).successValue );
     }
 
     @EqualsAndHashCode

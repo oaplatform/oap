@@ -132,7 +132,7 @@ public class SocketLoggingServer implements Runnable {
                     int size = in.readInt();
                     String selector = in.readUTF();
                     if( size > bufferSize )
-                        throw new IOException( "buffer overflow: chunk size is {}" + size + " when buffer size is " + bufferSize );
+                        throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize );
                     in.readFully( buffer, 0, size );
                     if( lastId < digestionId ) {
                         log.trace( "logging ({}, {}, {}) from {}", digestionId, selector, size, hostName );

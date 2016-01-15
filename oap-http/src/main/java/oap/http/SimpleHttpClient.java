@@ -25,9 +25,17 @@
 package oap.http;
 
 import com.google.common.io.ByteStreams;
+import lombok.SneakyThrows;
 import oap.io.Closeables;
+import oap.util.Result;
+import oap.util.Strings;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpRequest;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -35,6 +43,9 @@ import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.protocol.HttpContext;
+import org.apache.http.util.Args;
+import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,17 +53,24 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import static oap.json.Binder.json;
 import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 
 public final class SimpleHttpClient {
     private static CloseableHttpClient client = initialize();
+    private static ExecutorService executorService = Executors.newCachedThreadPool();
 
     private static CloseableHttpClient initialize() {
         PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
-        cm.setDefaultMaxPerRoute( 100 );
-        cm.setMaxTotal( 200 );
+        cm.setDefaultMaxPerRoute( 1000 );
+        cm.setMaxTotal( 10000 );
 
         return HttpClients
             .custom()
@@ -70,12 +88,23 @@ public final class SimpleHttpClient {
         client = initialize();
     }
 
-    public static Response execute( HttpUriRequest request ) {
-        return execute( client, request );
+    @SneakyThrows
+    public <T> Result<T, Throwable> get( Class<T> clazz, String url, long timeout ) {
+        HttpUriRequest uri = new HttpGet( Uri.uri( url ) );
+
+        return  Result.trying( () -> {
+                Response r = this.execute( uri, timeout );
+                return json.unmarshal( clazz, r.body );
+            });
     }
 
-    public static Response execute( CloseableHttpClient client, HttpUriRequest request ) {
-        try( CloseableHttpResponse response = client.execute( request ) ) {
+    public static Response execute( HttpUriRequest request ) throws IOException, TimeoutException {
+        return execute( request, Long.MAX_VALUE );
+    }
+
+    public static Response execute( HttpUriRequest request, long timeout ) throws IOException, TimeoutException {
+
+        try( CloseableHttpResponse response = executorService.submit( () -> client.execute( request ) ).get(  timeout, TimeUnit.MILLISECONDS ) ) {
             final Map<String, String> headers = Arrays.stream( response.getAllHeaders() )
                 .map( h -> __( h.getName(), h.getValue() ) )
                 .collect( toMap() );
@@ -96,10 +125,9 @@ public final class SimpleHttpClient {
                 response.getStatusLine().getReasonPhrase(),
                 headers
             );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
+        } catch(  InterruptedException | ExecutionException e ) {
+            throw new IOException( e );
         }
-
     }
 
     public static class Response {

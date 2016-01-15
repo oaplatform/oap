@@ -21,24 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.logstream;
+package oap.logstream.net;
 
-import oap.net.Inet;
-import oap.util.Dates;
-import org.joda.time.DateTimeUtils;
+import java.io.Closeable;
+import java.io.IOException;
 
-public class Logger {
-    private LoggingBackend backend;
+public interface Connection extends Closeable {
+    boolean isConnected();
 
-    public Logger( LoggingBackend backend ) {
-        this.backend = backend;
-    }
+    @Override
+    void close() throws IOException;
 
-    public void log( String selector, String line ) {
-        backend.log( Inet.HOSTNAME, selector, Dates.formatDateWihMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
-    }
+    @Override
+    String toString();
 
-    public boolean isLoggingAvailable() {
-        return backend.isLoggingAvailable();
-    }
+    void write( byte[] buffer, int off, int length );
 }
