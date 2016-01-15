@@ -23,6 +23,7 @@
  */
 package oap.http.testng;
 
+import com.google.common.base.Throwables;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.http.SimpleHttpClient;
@@ -39,12 +40,14 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static oap.util.Result.trying;
 import static org.testng.Assert.assertEquals;
 
 public class HttpAsserts {
@@ -80,7 +83,13 @@ public class HttpAsserts {
     }
 
     private static ResponseAssert invoke( HttpUriRequest http ) {
-        return new ResponseAssert( trying ( () -> SimpleHttpClient.execute( http ) ).successValue );
+        try {
+            return new ResponseAssert( SimpleHttpClient.execute( http ) );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        } catch( TimeoutException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
     @EqualsAndHashCode
@@ -114,7 +123,7 @@ public class HttpAsserts {
         }
 
         public ResponseAssert assertResponse( int code, String reasonPhrase, ContentType contentType,
-            Class<?> context, String resourcePath ) {
+                                              Class<?> context, String resourcePath ) {
             assertResponse( code, reasonPhrase, contentType,
                 Resources.readString( context, context.getSimpleName() + "/" + resourcePath ).get() );
             return this;

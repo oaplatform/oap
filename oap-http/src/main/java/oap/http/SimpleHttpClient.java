@@ -139,7 +139,7 @@ public final class SimpleHttpClient {
             this.headers = headers;
             this.contentType = contentType != null ? contentType.toString() : null;
             this.raw = body;
-            this.body = new String( raw );
+            this.body = raw != null ? new String( raw ) : null;
         }
 
         public Response( int code, String reasonPhrase, Map<String, String> headers ) {
