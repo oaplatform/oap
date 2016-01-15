@@ -24,12 +24,16 @@
 package oap.application.remote;
 
 import com.google.common.base.Throwables;
+import lombok.extern.slf4j.Slf4j;
 import oap.http.SimpleHttpClient;
-import oap.json.Binder;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.slf4j.LoggerFactory;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
+import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.nustaq.serialization.FSTConfiguration;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -40,15 +44,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.net.HttpURLConnection.HTTP_OK;
+import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
+@Slf4j
 public class RemoteInvocationHandler implements InvocationHandler {
-    protected static org.slf4j.Logger logger = LoggerFactory.getLogger( RemoteInvocationHandler.class );
+    private static final CloseableHttpClient httpClient;
+
+    static {
+        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+        cm.setDefaultMaxPerRoute( 10 );
+        cm.setMaxTotal( 20 );
+
+        httpClient = HttpClients
+            .custom()
+            .setMaxConnPerRoute( 10 )
+            .setMaxConnTotal( 10 )
+            .setConnectionManager( cm )
+            .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
+            .disableRedirectHandling()
+            .setRetryHandler( new DefaultHttpRequestRetryHandler( 3, false ) )
+            .build();
+    }
+
     private URI uri;
     private String service;
 
     public RemoteInvocationHandler( URI uri, String service ) {
         this.uri = uri;
         this.service = service;
+    }
+
+    public static Object proxy( URI uri, String service, Class<?> clazz ) {
+        return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{ clazz },
+            new RemoteInvocationHandler( uri, service ) );
     }
 
     @Override
@@ -62,26 +90,22 @@ public class RemoteInvocationHandler implements InvocationHandler {
 
         try {
             HttpPost post = new HttpPost( uri );
-            post.setEntity( new StringEntity(
-                Binder.jsonWithTyping.marshal( new RemoteInvocation( service, method.getName(), arguments ) ),
-                ContentType.APPLICATION_JSON ) );
-            SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
+            post.setEntity( new ByteArrayEntity(
+                FST.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) ),
+                APPLICATION_OCTET_STREAM
+            ) );
+            SimpleHttpClient.Response response = SimpleHttpClient.execute( httpClient, post );
             switch( response.code ) {
                 case HTTP_OK:
                     return method.getReturnType().equals( void.class ) ? null :
-                        Binder.jsonWithTyping.unmarshal( method.getReturnType(), response.body);
+                        FST.conf.asObject( response.raw );
                 default:
                     throw new RemoteInvocationException( "code: " + response.code + ", message: " + response.reasonPhrase + "\n" + response.body );
             }
         } catch( Exception e ) {
-            if( logger.isTraceEnabled() ) logger.trace( e.getMessage(), e );
-            else logger.error( e.getMessage() );
+            if( log.isTraceEnabled() ) log.trace( e.getMessage(), e );
+            else log.error( e.getMessage() );
             throw Throwables.propagate( e );
         }
-    }
-
-    public static Object proxy( URI uri, String service, Class<?> clazz ) {
-        return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{ clazz },
-            new RemoteInvocationHandler( uri, service ) );
     }
 }

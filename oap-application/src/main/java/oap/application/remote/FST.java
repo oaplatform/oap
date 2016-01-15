@@ -22,30 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.remote;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
-import java.io.Serializable;
+import lombok.extern.slf4j.Slf4j;
+import org.nustaq.serialization.FSTConfiguration;
 
 /**
- * Created by Igor Petrenko on 18.11.2015.
+ * Created by Igor Petrenko on 15.01.2016.
  */
-@ToString
-@EqualsAndHashCode
-public class TestBean implements Serializable {
-    private static final long serialVersionUID = -397379867061676534L;
+@Slf4j
+class FST {
+    static FSTConfiguration conf;
 
-    public String value;
-    public int i;
+    static {
+        try {
+            conf = FSTConfiguration.createDefaultConfiguration();
+            conf.registerClass( RemoteInvocation.class );
+        } catch( Exception e ) {
+            log.error( e.getMessage(), e );
+            throw e;
+        }
+    }
 
-
-    @JsonCreator
-    public TestBean( @JsonProperty( "value" ) String value, @JsonProperty( "i" ) int i ) {
-        this.value = value;
-        this.i = i;
+    private FST() {
     }
 }

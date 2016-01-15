@@ -24,8 +24,8 @@
 
 package oap.http;
 
+import com.google.common.io.ByteStreams;
 import oap.io.Closeables;
-import oap.util.Strings;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -89,7 +89,7 @@ public final class SimpleHttpClient {
                         entity.getContentType() != null ?
                             ContentType.parse( entity.getContentType().getValue() ) : null,
                         headers,
-                        Strings.readString( is ) );
+                        ByteStreams.toByteArray( is ) );
                 }
             } else return new Response(
                 response.getStatusLine().getStatusCode(),
@@ -104,18 +104,20 @@ public final class SimpleHttpClient {
 
     public static class Response {
         public final int code;
+        public final byte[] raw;
         public final String body;
         public final String contentType;
         public final String reasonPhrase;
         private final Map<String, String> headers;
 
         public Response( int code, String reasonPhrase, ContentType contentType, Map<String, String> headers,
-                         String body ) {
+                         byte[] body ) {
             this.code = code;
             this.reasonPhrase = reasonPhrase;
             this.headers = headers;
             this.contentType = contentType != null ? contentType.toString() : null;
-            this.body = body;
+            this.raw = body;
+            this.body = new String( raw );
         }
 
         public Response( int code, String reasonPhrase, Map<String, String> headers ) {
