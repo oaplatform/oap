@@ -23,6 +23,10 @@
  */
 package oap.io;
 
+import oap.io.IoStreams.Encoding;
+import oap.testng.AbstractTest;
+import oap.testng.Env;
+import oap.util.Lists;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -31,12 +35,13 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 
 import static oap.io.IoStreams.Encoding.GZIP;
-import static org.testng.Assert.*;
+import static oap.io.IoStreams.Encoding.PLAIN;
+import static org.testng.Assert.assertEquals;
 
-public class IoStreamsTest {
+public class IoStreamsTest extends AbstractTest {
     @Test
     public void emptyGz() throws IOException {
-        Path path = Files.path( "/tmp/test.gz" );
+        Path path = Env.tmpPath( "test.gz" );
         OutputStream out = IoStreams.out( path, GZIP );
         out.flush();
         out.close();
@@ -46,4 +51,20 @@ public class IoStreamsTest {
         assertEquals( Files.readString( path, GZIP ), "" );
     }
 
+    @Test
+    public void append() throws IOException {
+        Path path = Env.tmpPath( "test.gz" );
+        for( Encoding encoding : Lists.of( PLAIN, GZIP ) ) {
+            OutputStream out = IoStreams.out( path, encoding );
+            out.write( "12345".getBytes() );
+            out.flush();
+            out.close();
+            out = IoStreams.out( path, encoding, true );
+            out.write( "12345".getBytes() );
+            out.flush();
+            out.close();
+            assertEquals( Files.readString( path, encoding ), "1234512345", "for " + encoding );
+        }
+
+    }
 }

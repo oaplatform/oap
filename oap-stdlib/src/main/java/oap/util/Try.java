@@ -35,7 +35,7 @@ import java.util.function.ToLongFunction;
 
 public class Try {
 
-    public static Runnable run( ThrowingRunnable throwing ) {
+    public static Runnable run( ThrowingRunnable<? extends Exception> throwing ) {
         return throwing.asRunnable();
     }
 
@@ -60,7 +60,7 @@ public class Try {
     }
 
     public static <T, R> Function<T, R> mapOrThrow( ThrowingFunction<T, R> throwing,
-        Class<? extends RuntimeException> e ) {
+                                                    Class<? extends RuntimeException> e ) {
         return throwing.orElseThrow( e );
     }
 
@@ -111,23 +111,7 @@ public class Try {
     }
 
     @FunctionalInterface
-    public interface ThrowingRunnable {
-        void run() throws Exception;
-
-        default Runnable asRunnable() {
-            return () -> {
-                try {
-                    this.run();
-                } catch( Exception e ) {
-                    Throwables.propagate( e );
-                }
-            };
-        }
-
-    }
-
-    @FunctionalInterface
-    public interface ThrowingRunnable2<T extends Exception> {
+    public interface ThrowingRunnable<T extends Exception> {
         void run() throws T;
 
         default Runnable asRunnable() {

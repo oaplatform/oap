@@ -52,6 +52,9 @@ import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class IoStreams {
+
+    public static final int DEFAULT_BUFFER = 8192;
+
     public enum Encoding {
         PLAIN, ZIP, GZIP
     }
@@ -93,14 +96,14 @@ public class IoStreams {
     }
 
     private static Stream<String> lines( InputStream stream, long size, Encoding encoding,
-        Consumer<Integer> progressCallback ) {
+                                         Consumer<Integer> progressCallback ) {
         long percent = size / 100;
         AtomicInteger lastReport = new AtomicInteger();
         CountingInputStream counting = new CountingInputStream( stream );
         return lines( in( counting, encoding ) )
             .map( l -> {
                 if( percent > 0 && counting.getCount() / percent > lastReport.get() ) {
-                    lastReport.set( (int) (counting.getCount() / percent) );
+                    lastReport.set( ( int ) ( counting.getCount() / percent ) );
                     progressCallback.accept( lastReport.get() );
                 }
                 return l;
@@ -122,21 +125,26 @@ public class IoStreams {
     }
 
     public static OutputStream out( Path path, Encoding encoding ) {
-        return out( path, encoding, 8192 );
+        return out( path, encoding, DEFAULT_BUFFER );
     }
 
-    public static OutputStream out( Path path, Encoding encoding, int size ) {
-        return out( path, encoding, size, false );
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize ) {
+        return out( path, encoding, bufferSize, false );
     }
 
-    public static OutputStream out( Path path, Encoding encoding, int size, boolean append ) {
+    public static OutputStream out( Path path, Encoding encoding, boolean append ) {
+        return out( path, encoding, DEFAULT_BUFFER, append );
+    }
+
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) {
         path.toAbsolutePath().getParent().toFile().mkdirs();
         try {
-            OutputStream fos = new BufferedOutputStream( new FileOutputStream( path.toFile(), append ), size );
+            OutputStream fos = new BufferedOutputStream( new FileOutputStream( path.toFile(), append ), bufferSize );
             switch( encoding ) {
                 case GZIP:
                     return new GZIPOutputStream( fos );
                 case ZIP:
+                    if( append ) throw new IllegalArgumentException( "cannot append zip file" );
                     ZipOutputStream zip = new ZipOutputStream( fos );
                     zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
                     return zip;

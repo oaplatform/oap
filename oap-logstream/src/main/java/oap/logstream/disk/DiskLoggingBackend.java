@@ -40,7 +40,7 @@ public class DiskLoggingBackend implements LoggingBackend {
     final String ext;
     final int bufferSize;
     private final boolean compress;
-    private ConcurrentHashMap<String, LogWriter> writers = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Writer> writers = new ConcurrentHashMap<>();
     private int bucketsPerHour;
     private boolean closed;
 
@@ -59,7 +59,7 @@ public class DiskLoggingBackend implements LoggingBackend {
         Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_DISK ).tag( "from", hostName ) );
 
         writers.computeIfAbsent( hostName + fileName,
-            k -> new LogWriter( logDirectory.resolve( hostName ), fileName, ext, bufferSize, bucketsPerHour, compress ) )
+            k -> new Writer( logDirectory.resolve( hostName ), fileName, ext, bufferSize, bucketsPerHour, compress ) )
             .write( buffer, offset, length );
     }
 

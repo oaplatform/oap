@@ -70,13 +70,14 @@ public class SocketLoggingServer implements Runnable {
     @Override
     public void run() {
         try {
-            while( thread.isRunning() ) try {
+            while( thread.isRunning() && !serverSocket.isClosed() ) try {
                 Socket socket = serverSocket.accept();
                 log.debug( "accepted connection {}", socket );
                 executor.submit( new Worker( socket ) );
             } catch( SocketTimeoutException ignore ) {
             } catch( IOException e ) {
-                log.error( e.getMessage(), e );
+                if( !"Socket closed".equals( e.getMessage() ) )
+                    log.error( e.getMessage(), e );
             }
         } finally {
             Closeables.close( serverSocket );
@@ -93,7 +94,6 @@ public class SocketLoggingServer implements Runnable {
         try {
             serverSocket = new ServerSocket();
             serverSocket.setReuseAddress( true );
-            serverSocket.setSoTimeout( 1000 );
             serverSocket.bind( new InetSocketAddress( port ) );
             log.debug( "ready to rock " + serverSocket.getLocalSocketAddress() );
             thread.start();
@@ -104,6 +104,7 @@ public class SocketLoggingServer implements Runnable {
     }
 
     public void stop() {
+        Closeables.close( serverSocket );
         thread.stop();
         workers.forEach( Closeables::close );
         Closeables.close( executor );
@@ -121,29 +122,30 @@ public class SocketLoggingServer implements Runnable {
 
         @Override
         public void run() {
+            String hostName = null;
             try {
                 DataInputStream in = new DataInputStream( socket.getInputStream() );
                 socket.setSoTimeout( soTimeout );
-                String hostName = socket.getInetAddress().getCanonicalHostName();
-                log.debug( "start logging for " + hostName );
+                hostName = socket.getInetAddress().getCanonicalHostName();
+                log.debug( "[{}] start logging... ", hostName );
                 while( !closed ) {
                     long digestionId = in.readLong();
                     long lastId = control.computeIfAbsent( hostName, h -> 0L );
                     int size = in.readInt();
                     String selector = in.readUTF();
                     if( size > bufferSize )
-                        throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize );
+                        throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize + " from " + hostName );
                     in.readFully( buffer, 0, size );
                     if( lastId < digestionId ) {
-                        log.trace( "logging ({}, {}, {}) from {}", digestionId, selector, size, hostName );
+                        log.trace( "[{}] logging ({}, {}, {})", hostName, digestionId, selector, size );
                         backend.log( hostName, selector, buffer, 0, size );
                         control.put( hostName, digestionId );
-                    } else log.warn( "buffer {} already written ({})", digestionId, lastId );
+                    } else log.warn( "[{}] buffer {} already written ({})", hostName, digestionId, lastId );
                 }
             } catch( EOFException e ) {
-                log.debug( "{} closed", socket );
+                log.debug( "[{}] {} closed", hostName, socket );
             } catch( IOException e ) {
-                log.error( e.getMessage(), e );
+                log.error( "[" + hostName + "] " + e.getMessage(), e );
             } finally {
                 Sockets.close( socket );
                 workers.remove( this );

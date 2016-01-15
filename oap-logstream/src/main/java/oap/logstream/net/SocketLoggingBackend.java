@@ -62,11 +62,13 @@ public class SocketLoggingBackend implements LoggingBackend {
         if( !closed ) try {
             if( buffers.isEmpty() ) loggingAvailable = true;
 
-            log.debug( "sending data to server..." );
             refreshConnection();
+
+            log.debug( "sending data to server..." );
 
             buffers.forEachReadyData( buffer -> {
                 if( !sendBuffer( buffer ) ) {
+                    log.debug( "send unsuccessful..." );
                     refreshConnection();
                     return sendBuffer( buffer );
                 }
@@ -90,6 +92,7 @@ public class SocketLoggingBackend implements LoggingBackend {
             Closeables.close( connection );
             log.debug( "opening connection..." );
             this.connection = blocking ? new SocketConnection( host, port ) : new ChannelConnection( host, port, timeout );
+            log.debug( "connected!" );
         }
     }
 

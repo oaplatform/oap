@@ -25,36 +25,39 @@
 package oap.logstream.disk;
 
 import com.google.common.io.CountingOutputStream;
-import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Stopwatch;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
-import oap.io.Files;
 import oap.io.IoStreams;
 import oap.logstream.Filename;
 import oap.metrics.Metrics;
-import oap.util.Try;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
-@Slf4j
-public class LogWriter implements Closeable {
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static oap.io.IoStreams.Encoding.GZIP;
+import static oap.io.IoStreams.Encoding.PLAIN;
+import static org.slf4j.LoggerFactory.getLogger;
+
+public class Writer implements Closeable {
+    private static Logger logger = getLogger( Writer.class );
     private final String ext;
     private final Path logDirectory;
     private final String root;
-    private final boolean compress;
-    private int flushInterval = 30000;
     private int bufferSize;
     private int bucketsPerHour;
+    private boolean compress;
+    private CountingOutputStream out;
     private String lastPattern;
     private Scheduled scheduled;
-    private Out out;
+    private Stopwatch stopwatch = new Stopwatch();
 
-    public LogWriter( Path logDirectory, String root, String ext, int bufferSize, int bucketsPerHour, boolean compress ) {
+    public Writer( Path logDirectory, String root, String ext, int bufferSize, int bucketsPerHour, boolean compress ) {
         this.logDirectory = logDirectory;
         this.root = root;
         this.ext = ext;
@@ -62,7 +65,7 @@ public class LogWriter implements Closeable {
         this.bucketsPerHour = bucketsPerHour;
         this.compress = compress;
         this.lastPattern = currentPattern();
-        this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::fsync );
+        this.scheduled = Scheduler.scheduleWithFixedDelay( 30, SECONDS, this::fsync );
     }
 
     private void fsync() {
@@ -73,14 +76,17 @@ public class LogWriter implements Closeable {
 
     @Override
     public void close() throws IOException {
-        log.debug( "closing {}", this );
-        if( flushInterval > 0 ) Scheduled.cancel( scheduled );
+        logger.debug( "closing " + this );
+        Scheduled.cancel( scheduled );
         closeOutput();
     }
 
     private void closeOutput() throws IOException {
         if( out != null ) {
-            out.close();
+            stopwatch.measure( out::flush );
+            stopwatch.measure( out::close );
+            Metrics.measureHistogram( "logger_server_bucket_size", out.getCount() );
+            Metrics.measureHistogram( "logger_server_bucket_time", stopwatch.elapsed() / 1000000L );
             out = null;
         }
     }
@@ -92,19 +98,27 @@ public class LogWriter implements Closeable {
     public synchronized void write( byte[] buffer, int offset, int length ) {
         try {
             refresh();
-            if( out == null ) out = new Out();
-
+            if( out == null )
+                out = new CountingOutputStream(
+                    IoStreams.out( filename(), compress ? GZIP : PLAIN, bufferSize, true )
+                );
             out.write( buffer, offset, length );
+
         } catch( IOException e ) {
-            log.error( e.getMessage(), e );
+            logger.error( e.getMessage(), e );
             try {
                 closeOutput();
             } catch( IOException e1 ) {
-                log.error( e.getMessage(), e );
+                logger.error( e.getMessage(), e );
             } finally {
                 out = null;
             }
         }
+    }
+
+    private Path filename() {
+        return logDirectory.resolve( Filename.directoryName( lastPattern ) )
+            .resolve( root + "-" + lastPattern + "." + ext );
     }
 
     private synchronized void refresh() {
@@ -113,7 +127,7 @@ public class LogWriter implements Closeable {
             lastPattern = currentPattern;
             closeOutput();
         } catch( IOException e ) {
-            log.error( e.getMessage(), e );
+            logger.error( e.getMessage(), e );
         }
     }
 
@@ -123,78 +137,15 @@ public class LogWriter implements Closeable {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "@" + out;
+        return getClass().getSimpleName() + "@" + filename();
     }
 
     public synchronized void flush() {
-        if( out != null ) out.flush();
-    }
-
-    private class Out {
-        public final CountingOutputStream out;
-        public final Path outTmpName;
-        public final Path outName;
-
-        private long outTime = 0;
-
-        public Out() {
-            outTmpName = filename( true );
-            outName = filename( false );
-
-            out = new CountingOutputStream(
-                IoStreams.out( outTmpName,
-                    compress ? IoStreams.Encoding.GZIP : IoStreams.Encoding.PLAIN,
-                    bufferSize, true )
-            );
-        }
-
-        private Path filename( boolean temp ) {
-            return logDirectory.resolve( Filename.directoryName( lastPattern ) )
-                .resolve( root + "-" + lastPattern + "." + ext + ( temp && compress ? ".tmp" : "" ) );
-        }
-
-        public final void close() {
-            try {
-                Metrics.measureHistogram( "logger_server_size_from", out.getCount() );
-
-                flush();
-                measureTime( out::close );
-
-                if( compress ) {
-                    measureTime( () -> Files.rename( outTmpName, outName ) );
-                }
-
-                Metrics.measureHistogram( "logger_server_time", outTime / 1000000L );
-                Metrics.measureHistogram( "logger_server_size_to", outName.toFile().length() );
-            } catch( IOException e ) {
-                log.error( e.getMessage(), e );
-            }
-        }
-
-        public final void write( byte[] buffer, int offset, int length ) throws IOException {
-            measureTime( () -> out.write( buffer, offset, length ) );
-        }
-
-        @Override
-        public final String toString() {
-            return outTmpName.toString();
-        }
-
-        public final void flush() {
-            try {
-                measureTime( out::flush );
-            } catch( IOException e ) {
-                log.error( e.getMessage(), e );
-            }
-        }
-
-        private void measureTime( Try.ThrowingRunnable2<IOException> run ) throws IOException {
-            final long time = System.nanoTime();
-            try {
-                run.run();
-            } finally {
-                outTime += ( System.nanoTime() - time );
-            }
+        try {
+            if( out != null ) out.flush();
+        } catch( IOException e ) {
+            logger.error( e.getMessage(), e );
         }
     }
+
 }
