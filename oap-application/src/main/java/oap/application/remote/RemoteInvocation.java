@@ -24,14 +24,16 @@
 
 package oap.application.remote;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.ToString;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 @ToString
-public class RemoteInvocation {
+public class RemoteInvocation implements Serializable {
+    private static final long serialVersionUID = -4083101417145198050L;
+
     public String service;
     public String method;
     public List<Argument> arguments = new ArrayList<>();
@@ -54,7 +56,9 @@ public class RemoteInvocation {
     }
 
     @ToString
-    public static class Argument {
+    public static class Argument implements Serializable {
+        private static final long serialVersionUID = 1809766005449930260L;
+
         public String name;
         public Class<?> type;
         public Object value;

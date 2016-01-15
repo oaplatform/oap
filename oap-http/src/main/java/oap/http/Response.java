@@ -24,6 +24,7 @@
 package oap.http;
 
 import oap.util.Pair;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.slf4j.Logger;
@@ -53,7 +54,9 @@ public class Response {
         if( !response.headers.isEmpty() )
             for( Pair<String, String> header : response.headers )
                 resp.setHeader( header._1, header._2 );
-        if( response.hasStreamContent() )
+        if( response.hasBytesContent() )
+            resp.setEntity( new ByteArrayEntity( response.bytes() ) );
+        else if( response.hasStreamContent() )
             resp.setEntity( new InputStreamEntity( response.stream() ) );
         else if( response.hasContent() )
             resp.setEntity( new StringEntity( response.content(), response.contentType ) );

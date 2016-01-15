@@ -23,23 +23,22 @@
  */
 package oap.http;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.net.Inet;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
-import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.InetAddress;
 
 import static oap.http.HttpResponse.HTTP_FORBIDDEN;
 import static org.apache.http.protocol.HttpCoreContext.HTTP_CONNECTION;
-import static org.slf4j.LoggerFactory.getLogger;
 
+@Slf4j
 class BlockingHandlerAdapter implements HttpRequestHandler {
-    private static Logger logger = getLogger( BlockingHandlerAdapter.class );
     private final boolean local;
     protected String location;
     private Handler handler;
@@ -54,9 +53,9 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
 
     @Override
     public void handle( HttpRequest req, HttpResponse resp, HttpContext ctx ) throws IOException {
-        logger.trace( "handling {}", req );
+        log.trace( "handling {}", req );
 
-        HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HTTP_CONNECTION );
+        HttpInetConnection connection = ( HttpInetConnection ) ctx.getAttribute( HTTP_CONNECTION );
         final Response response = new Response( resp, cors );
         final InetAddress remoteAddress = connection.getRemoteAddress();
 

@@ -24,10 +24,13 @@
 
 package oap.http;
 
+import com.google.common.io.ByteStreams;
+import lombok.SneakyThrows;
 import oap.io.Closeables;
-import oap.util.Strings;
+import oap.util.Result;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -38,21 +41,23 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.*;
 
+import static oap.json.Binder.json;
 import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 
 public final class SimpleHttpClient {
     private static CloseableHttpClient client = initialize();
+    private static ExecutorService executorService = Executors.newCachedThreadPool();
 
     private static CloseableHttpClient initialize() {
         PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
-        cm.setDefaultMaxPerRoute( 100 );
-        cm.setMaxTotal( 200 );
+        cm.setDefaultMaxPerRoute( 1000 );
+        cm.setMaxTotal( 10000 );
 
         return HttpClients
             .custom()
@@ -70,12 +75,20 @@ public final class SimpleHttpClient {
         client = initialize();
     }
 
-    public static Response execute( HttpUriRequest request ) {
+    public static Response execute( HttpUriRequest request ) throws IOException, TimeoutException {
         return execute( client, request );
     }
 
-    public static Response execute( CloseableHttpClient client, HttpUriRequest request ) {
-        try( CloseableHttpResponse response = client.execute( request ) ) {
+    public static Response execute( HttpUriRequest request, long timeout ) throws IOException, TimeoutException {
+        return execute( client, request, timeout );
+    }
+
+    public static Response execute( CloseableHttpClient client, HttpUriRequest request ) throws IOException, TimeoutException {
+        return execute( client, request, Long.MAX_VALUE );
+    }
+
+    public static Response execute( CloseableHttpClient client, HttpUriRequest request, long timeout ) throws IOException, TimeoutException {
+        try( CloseableHttpResponse response = executorService.submit( () -> client.execute( request ) ).get( timeout, TimeUnit.MILLISECONDS ) ) {
             final Map<String, String> headers = Arrays.stream( response.getAllHeaders() )
                 .map( h -> __( h.getName(), h.getValue() ) )
                 .collect( toMap() );
@@ -89,33 +102,44 @@ public final class SimpleHttpClient {
                         entity.getContentType() != null ?
                             ContentType.parse( entity.getContentType().getValue() ) : null,
                         headers,
-                        Strings.readString( is ) );
+                        ByteStreams.toByteArray( is ) );
                 }
             } else return new Response(
                 response.getStatusLine().getStatusCode(),
                 response.getStatusLine().getReasonPhrase(),
                 headers
             );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
+        } catch( InterruptedException | ExecutionException e ) {
+            throw new IOException( e );
         }
+    }
 
+    @SneakyThrows
+    public <T> Result<T, Throwable> get( Class<T> clazz, String url, long timeout ) {
+        HttpUriRequest uri = new HttpGet( Uri.uri( url ) );
+
+        return Result.trying( () -> {
+            Response r = execute( uri, timeout );
+            return json.unmarshal( clazz, r.body );
+        } );
     }
 
     public static class Response {
         public final int code;
+        public final byte[] raw;
         public final String body;
         public final String contentType;
         public final String reasonPhrase;
         private final Map<String, String> headers;
 
         public Response( int code, String reasonPhrase, ContentType contentType, Map<String, String> headers,
-                         String body ) {
+                         byte[] body ) {
             this.code = code;
             this.reasonPhrase = reasonPhrase;
             this.headers = headers;
             this.contentType = contentType != null ? contentType.toString() : null;
-            this.body = body;
+            this.raw = body;
+            this.body = raw != null ? new String( raw ) : null;
         }
 
         public Response( int code, String reasonPhrase, Map<String, String> headers ) {

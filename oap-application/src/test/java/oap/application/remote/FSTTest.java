@@ -22,30 +22,23 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.remote;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import oap.testng.AbstractTest;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
-import java.io.Serializable;
+import java.util.Optional;
 
 /**
- * Created by Igor Petrenko on 18.11.2015.
+ * Created by Igor Petrenko on 15.01.2016.
  */
-@ToString
-@EqualsAndHashCode
-public class TestBean implements Serializable {
-    private static final long serialVersionUID = -397379867061676534L;
+public class FSTTest extends AbstractTest {
+    @Test
+    public void testOptional() {
+        final FST fst = new FST();
 
-    public String value;
-    public int i;
-
-
-    @JsonCreator
-    public TestBean( @JsonProperty( "value" ) String value, @JsonProperty( "i" ) int i ) {
-        this.value = value;
-        this.i = i;
+        Assert.assertEquals( fst.conf.asObject( fst.conf.asByteArray( Optional.empty() ) ), Optional.empty() );
+        Assert.assertEquals( fst.conf.asObject( fst.conf.asByteArray( Optional.of( "1" ) ) ), Optional.of( "1" ) );
     }
 }

@@ -51,6 +51,7 @@ public class HttpResponse {
     public int code;
     boolean raw;
     private InputStream streamContent;
+    private byte[] bytesContent;
 
     public HttpResponse( int code ) {
         this.code = code;
@@ -77,6 +78,13 @@ public class HttpResponse {
     public static HttpResponse stream( InputStream stream, ContentType contentType ) {
         HttpResponse response = new HttpResponse( HttpURLConnection.HTTP_OK );
         response.streamContent = stream;
+        response.contentType = contentType;
+        return response;
+    }
+
+    public static HttpResponse bytes( byte[] bytes, ContentType contentType ) {
+        HttpResponse response = new HttpResponse( HttpURLConnection.HTTP_OK );
+        response.bytesContent = bytes;
         response.contentType = contentType;
         return response;
     }
@@ -117,8 +125,16 @@ public class HttpResponse {
         return streamContent != null;
     }
 
+    public boolean hasBytesContent() {
+        return bytesContent != null;
+    }
+
     public InputStream stream() {
         return streamContent;
+    }
+
+    public byte[] bytes() {
+        return bytesContent;
     }
 
     private static Map<String, Function<Object, String>> producers = Maps.of(

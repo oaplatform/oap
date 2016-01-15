@@ -26,12 +26,9 @@ package oap.util;
 import com.google.common.base.Throwables;
 import oap.reflect.Reflect;
 
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.function.ToLongFunction;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.function.*;
 
 public class Try {
 
@@ -93,6 +90,8 @@ public class Try {
             return t -> {
                 try {
                     return this.apply( t );
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
                 } catch( Exception e ) {
                     throw Throwables.propagate( e );
                 }

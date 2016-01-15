@@ -23,24 +23,25 @@
  */
 package oap.application.remote;
 
+import com.google.common.io.ByteStreams;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Application;
-import oap.http.Cors;
-import oap.http.Handler;
-import oap.http.HttpResponse;
-import oap.http.HttpServer;
-import oap.http.Request;
-import oap.http.Response;
-import oap.json.Binder;
+import oap.http.*;
+import oap.util.Try;
 
 import java.lang.reflect.InvocationTargetException;
 
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class Remote implements Handler {
+    private static ThreadLocal<FST> fst = new ThreadLocal<FST>() {
+        public FST initialValue() {
+            return new FST();
+        }
+    };
     private HttpServer server;
     private String context;
     private Cors cors = new Cors();
@@ -56,8 +57,10 @@ public class Remote implements Handler {
 
     @Override
     public void handle( Request request, Response response ) {
+        final FST fst = Remote.fst.get();
+
         RemoteInvocation invocation = request.body
-            .<RemoteInvocation>map( bytes -> Binder.jsonWithTyping.unmarshal( RemoteInvocation.class, bytes ) )
+            .map( Try.map( bytes -> ( RemoteInvocation ) fst.conf.asObject( ByteStreams.toByteArray( bytes ) ) ) )
             .orElseThrow( () -> new RemoteInvocationException( "no invocation data" ) );
 
         if( log.isTraceEnabled() ) log.trace( "invoke:" + invocation );
@@ -70,7 +73,7 @@ public class Remote implements Handler {
             Object result = service.getClass()
                 .getMethod( invocation.method, invocation.types() )
                 .invoke( service, invocation.values() );
-            response.respond( HttpResponse.ok( Binder.jsonWithTyping.marshal( result ), true, APPLICATION_JSON ) );
+            response.respond( HttpResponse.bytes( fst.conf.asByteArray( result ), APPLICATION_OCTET_STREAM ) );
         } catch( NoSuchMethodException e ) {
             log.debug( e.getMessage(), e );
             response.respond( HttpResponse.status( HTTP_NOT_FOUND,
