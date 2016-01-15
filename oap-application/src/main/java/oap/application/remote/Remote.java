@@ -37,6 +37,11 @@ import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class Remote implements Handler {
+    private static ThreadLocal<FST> fst = new ThreadLocal<FST>() {
+        public FST initialValue() {
+            return new FST();
+        }
+    };
     private HttpServer server;
     private String context;
     private Cors cors = new Cors();
@@ -52,8 +57,10 @@ public class Remote implements Handler {
 
     @Override
     public void handle( Request request, Response response ) {
+        final FST fst = Remote.fst.get();
+
         RemoteInvocation invocation = request.body
-            .map( Try.map( bytes -> ( RemoteInvocation ) FST.conf.asObject( ByteStreams.toByteArray( bytes ) ) ) )
+            .map( Try.map( bytes -> ( RemoteInvocation ) fst.conf.asObject( ByteStreams.toByteArray( bytes ) ) ) )
             .orElseThrow( () -> new RemoteInvocationException( "no invocation data" ) );
 
         if( log.isTraceEnabled() ) log.trace( "invoke:" + invocation );
@@ -66,7 +73,7 @@ public class Remote implements Handler {
             Object result = service.getClass()
                 .getMethod( invocation.method, invocation.types() )
                 .invoke( service, invocation.values() );
-            response.respond( HttpResponse.bytes( FST.conf.asByteArray( result ), APPLICATION_OCTET_STREAM ) );
+            response.respond( HttpResponse.bytes( fst.conf.asByteArray( result ), APPLICATION_OCTET_STREAM ) );
         } catch( NoSuchMethodException e ) {
             log.debug( e.getMessage(), e );
             response.respond( HttpResponse.status( HTTP_NOT_FOUND,

@@ -66,12 +66,15 @@ public class RemoteInvocationHandler implements InvocationHandler {
             .build();
     }
 
+    private final FST fst;
+
     private URI uri;
     private String service;
 
     public RemoteInvocationHandler( URI uri, String service ) {
         this.uri = uri;
         this.service = service;
+        this.fst = new FST();
     }
 
     public static Object proxy( URI uri, String service, Class<?> clazz ) {
@@ -91,14 +94,14 @@ public class RemoteInvocationHandler implements InvocationHandler {
         try {
             HttpPost post = new HttpPost( uri );
             post.setEntity( new ByteArrayEntity(
-                FST.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) ),
+                fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) ),
                 APPLICATION_OCTET_STREAM
             ) );
             SimpleHttpClient.Response response = SimpleHttpClient.execute( httpClient, post );
             switch( response.code ) {
                 case HTTP_OK:
                     return method.getReturnType().equals( void.class ) ? null :
-                        FST.conf.asObject( response.raw );
+                        fst.conf.asObject( response.raw );
                 default:
                     throw new RemoteInvocationException( "code: " + response.code + ", message: " + response.reasonPhrase + "\n" + response.body );
             }
