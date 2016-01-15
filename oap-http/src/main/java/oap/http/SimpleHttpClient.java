@@ -29,10 +29,6 @@ import oap.io.Closeables;
 import oap.util.Result;
 import oap.util.Strings;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
@@ -42,13 +38,9 @@ import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.Args;
-import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Optional;
@@ -88,11 +80,11 @@ public final class SimpleHttpClient {
     }
 
     @SneakyThrows
-    public <T> Result<T, Throwable> get( Class<T> clazz, String url, long timeout ) {
+    public static <T> Result<T, Throwable> get( Class<T> clazz, String url, long timeout ) {
         HttpUriRequest uri = new HttpGet( Uri.uri( url ) );
 
         return  Result.trying( () -> {
-                Response r = this.execute( uri, timeout );
+                Response r = execute( uri, timeout );
                 return json.unmarshal( clazz, r.body );
             });
     }
