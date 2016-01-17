@@ -28,12 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.SimpleHttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.nustaq.serialization.FSTConfiguration;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
