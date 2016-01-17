@@ -115,7 +115,7 @@ public final class SimpleHttpClient {
     }
 
     @SneakyThrows
-    public <T> Result<T, Throwable> get( Class<T> clazz, String url, long timeout ) {
+    public static <T> Result<T, Throwable> get( Class<T> clazz, String url, long timeout ) {
         HttpUriRequest uri = new HttpGet( Uri.uri( url ) );
 
         return Result.trying( () -> {
