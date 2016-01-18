@@ -25,7 +25,6 @@
 package oap.http;
 
 import com.google.common.io.ByteStreams;
-import lombok.SneakyThrows;
 import oap.io.Closeables;
 import oap.util.Result;
 import org.apache.http.HttpEntity;
@@ -84,11 +83,14 @@ public final class SimpleHttpClient {
     }
 
     public static Response execute( CloseableHttpClient client, HttpUriRequest request ) throws IOException, TimeoutException {
-        return execute( client, request, Long.MAX_VALUE );
+        return execute( client, request, -1 );
     }
 
     public static Response execute( CloseableHttpClient client, HttpUriRequest request, long timeout ) throws IOException, TimeoutException {
-        try( CloseableHttpResponse response = executorService.submit( () -> client.execute( request ) ).get( timeout, TimeUnit.MILLISECONDS ) ) {
+        try( CloseableHttpResponse response = timeout == -1 ?
+            client.execute( request ) :
+            executorService.submit( () -> client.execute( request ) )
+                .get( timeout, TimeUnit.MILLISECONDS ) ) {
             final Map<String, String> headers = Arrays.stream( response.getAllHeaders() )
                 .map( h -> __( h.getName(), h.getValue() ) )
                 .collect( toMap() );
@@ -114,7 +116,6 @@ public final class SimpleHttpClient {
         }
     }
 
-    @SneakyThrows
     public <T> Result<T, Throwable> get( Class<T> clazz, String url, long timeout ) {
         HttpUriRequest uri = new HttpGet( Uri.uri( url ) );
 
@@ -132,8 +133,7 @@ public final class SimpleHttpClient {
         public final String reasonPhrase;
         private final Map<String, String> headers;
 
-        public Response( int code, String reasonPhrase, ContentType contentType, Map<String, String> headers,
-                         byte[] body ) {
+        public Response( int code, String reasonPhrase, ContentType contentType, Map<String, String> headers, byte[] body ) {
             this.code = code;
             this.reasonPhrase = reasonPhrase;
             this.headers = headers;
