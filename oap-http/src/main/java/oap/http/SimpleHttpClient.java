@@ -76,10 +76,18 @@ public final class SimpleHttpClient {
     }
 
     public static Response execute( HttpUriRequest request ) throws IOException, TimeoutException {
-        return execute( request, Long.MAX_VALUE );
+        return execute( client, request );
     }
 
     public static Response execute( HttpUriRequest request, long timeout ) throws IOException, TimeoutException {
+        return execute( client, request, timeout );
+    }
+
+    public static Response execute( CloseableHttpClient client, HttpUriRequest request ) throws IOException, TimeoutException {
+        return execute( client, request, Long.MAX_VALUE );
+    }
+
+    public static Response execute( CloseableHttpClient client, HttpUriRequest request, long timeout ) throws IOException, TimeoutException {
         try( CloseableHttpResponse response = executorService.submit( () -> client.execute( request ) ).get( timeout, TimeUnit.MILLISECONDS ) ) {
             final Map<String, String> headers = Arrays.stream( response.getAllHeaders() )
                 .map( h -> __( h.getName(), h.getValue() ) )
