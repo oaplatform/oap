@@ -33,11 +33,7 @@ import org.joda.time.DateTimeUtils;
 import java.io.Closeable;
 import java.io.Serializable;
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 
@@ -48,7 +44,7 @@ public class Buffers implements Closeable {
     private final Path location;
     private final int bufferSize;
     private boolean closed;
-    Map<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
+    private final Map<String, Buffer> currentBuffers = new HashMap<>();
     ReadyQueue readyBuffers = new ReadyQueue();
     BufferCache cache;
 
@@ -71,29 +67,25 @@ public class Buffers implements Closeable {
     }
 
     public void put( String selector, byte[] buffer, int offset, int length ) {
-        if( closed ) throw new IllegalStateException( "current buffers already closed" );
-        if( length > bufferSize )
-            throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize );
-        String interned = selector.intern();
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized( interned ) {
-            Buffer b = currentBuffers.computeIfAbsent( interned, k -> cache.get( interned ) );
+        synchronized( currentBuffers ) {
+            if( closed ) throw new IllegalStateException( "current buffers already closed" );
+            if( length > bufferSize )
+                throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize );
+            Buffer b = currentBuffers.computeIfAbsent( selector, k -> cache.get( selector ) );
             if( !b.available( length ) ) {
                 readyBuffers.ready( b );
-                currentBuffers.put( interned, b = cache.get( interned ) );
+                currentBuffers.put( selector, b = cache.get( selector ) );
             }
             b.put( buffer, offset, length );
         }
     }
 
 
-    private synchronized void flush() {
-        Iterator<Map.Entry<String, Buffer>> iterator = currentBuffers.entrySet().iterator();
-        while( iterator.hasNext() ) {
-            Map.Entry<String, Buffer> entry = iterator.next();
-            String interned = entry.getKey().intern();
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized( interned ) {
+    private void flush() {
+        synchronized( currentBuffers ) {
+            Iterator<Map.Entry<String, Buffer>> iterator = currentBuffers.entrySet().iterator();
+            while( iterator.hasNext() ) {
+                Map.Entry<String, Buffer> entry = iterator.next();
                 Buffer buffer = entry.getValue();
                 if( !buffer.isEmpty() ) {
                     readyBuffers.ready( buffer );
@@ -109,14 +101,12 @@ public class Buffers implements Closeable {
 
 
     @Override
-    public void close() {
+    public synchronized void close() {
         if( closed ) throw new IllegalStateException( "already closed" );
         closed = true;
-        synchronized( this ) {
-            flush();
-            log.info( "writing {} unsent buffers to {}", readyBuffers.size(), location );
-            Files.writeObject( location, readyBuffers );
-        }
+        flush();
+        log.info( "writing {} unsent buffers to {}", readyBuffers.size(), location );
+        Files.writeObject( location, readyBuffers );
     }
 
     public synchronized void forEachReadyData( Predicate<Buffer> consumer ) {
