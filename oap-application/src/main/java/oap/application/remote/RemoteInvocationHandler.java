@@ -28,12 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.SimpleHttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.nustaq.serialization.FSTConfiguration;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -48,24 +42,6 @@ import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class RemoteInvocationHandler implements InvocationHandler {
-    private static final CloseableHttpClient httpClient;
-
-    static {
-        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
-        cm.setDefaultMaxPerRoute( 10 );
-        cm.setMaxTotal( 20 );
-
-        httpClient = HttpClients
-            .custom()
-            .setMaxConnPerRoute( 10 )
-            .setMaxConnTotal( 10 )
-            .setConnectionManager( cm )
-            .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
-            .disableRedirectHandling()
-            .setRetryHandler( new DefaultHttpRequestRetryHandler( 3, false ) )
-            .build();
-    }
-
     private final FST fst;
 
     private URI uri;
@@ -97,7 +73,7 @@ public class RemoteInvocationHandler implements InvocationHandler {
                 fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) ),
                 APPLICATION_OCTET_STREAM
             ) );
-            SimpleHttpClient.Response response = SimpleHttpClient.execute( httpClient, post );
+            SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
             switch( response.code ) {
                 case HTTP_OK:
                     return method.getReturnType().equals( void.class ) ? null :

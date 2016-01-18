@@ -40,41 +40,41 @@ import static java.util.stream.Collectors.toList;
 
 public class Tsv {
 
-    public static Optional<Stream<List<Object>>> fromResource( Class<?> contextClass, String name, ModelSet modelSet) {
-        return Resources.url( contextClass, name ).map( url -> fromUrl( url, modelSet.modelForName(name)) );
+    public static Optional<Stream<List<Object>>> fromResource( Class<?> contextClass, String name, ModelSet modelSet ) {
+        return Resources.url( contextClass, name ).map( url -> fromUrl( url, modelSet.modelForName( name ) ) );
     }
 
-    public static Stream<List<Object>> fromPath( Path path, ModelSet modelSet) {
+    public static Stream<List<Object>> fromPath( Path path, ModelSet modelSet ) {
         return fromPath( path, IoStreams.Encoding.PLAIN, modelSet );
     }
 
-    public static Stream<List<Object>> fromPath( Path path, IoStreams.Encoding encoding, ModelSet modelSet) {
-        return fromStream(IoStreams.lines(path, encoding), modelSet.modelForPath(path) );
+    public static Stream<List<Object>> fromPath( Path path, IoStreams.Encoding encoding, ModelSet modelSet ) {
+        return fromStream( path.toString(), IoStreams.lines( path, encoding ), modelSet.modelForPath( path ) );
     }
 
-    public static Stream<List<Object>> fromPaths( List<Path> paths, ModelSet modelSet) {
-        return fromPaths( paths, IoStreams.Encoding.PLAIN, modelSet);
+    public static Stream<List<Object>> fromPaths( List<Path> paths, ModelSet modelSet ) {
+        return fromPaths( paths, IoStreams.Encoding.PLAIN, modelSet );
     }
 
-    public static Stream<List<Object>> fromPaths( List<Path> paths, IoStreams.Encoding encoding, ModelSet modelSet) {
-        return Stream.of( paths ).flatMap( path -> fromStream( IoStreams.lines( path, encoding ), modelSet.modelForPath(path) ) );
+    public static Stream<List<Object>> fromPaths( List<Path> paths, IoStreams.Encoding encoding, ModelSet modelSet ) {
+        return Stream.of( paths ).flatMap( path -> fromStream( path.toString(), IoStreams.lines( path, encoding ), modelSet.modelForPath( path ) ) );
     }
 
-    public static Stream<List<Object>> fromPaths( List<Path> paths, IoStreams.Encoding encoding, ModelSet.Model model) {
-        return Stream.of( paths ).flatMap( path -> fromStream( IoStreams.lines( path, encoding ), model ) );
+    public static Stream<List<Object>> fromPaths( List<Path> paths, IoStreams.Encoding encoding, ModelSet.Model model ) {
+        return Stream.of( paths ).flatMap( path -> fromStream( path.toString(), IoStreams.lines( path, encoding ), model ) );
     }
 
-    public static Stream<List<Object>> fromUrl( URL url, ModelSet.Model model) {
+    public static Stream<List<Object>> fromUrl( URL url, ModelSet.Model model ) {
         return fromUrl( url, model, IoStreams.Encoding.PLAIN, p -> {
         } );
     }
 
     public static Stream<List<Object>> fromUrl( URL url, ModelSet.Model model, IoStreams.Encoding encoding,
-        Consumer<Integer> progressCallback ) {
-        return fromStream( IoStreams.lines( url, encoding, progressCallback ), model);
+                                                Consumer<Integer> progressCallback ) {
+        return fromStream( url.toString(), IoStreams.lines( url, encoding, progressCallback ), model );
     }
 
-    public static Stream<List<Object>> fromStream( Stream<String> stream, ModelSet.Model model) {
+    public static Stream<List<Object>> fromStream( String source, Stream<String> stream, ModelSet.Model model ) {
         int skip = model.withHeader ? 1 : 0;
         return fromStream( stream ).skip( skip )
             .filter( model.filter() )
@@ -82,9 +82,9 @@ public class Tsv {
                 try {
                     return model.convert( line );
                 } catch( TsvException e ) {
-                    throw new TsvException( "at line " + (index + skip) + " " + e, e.getCause() );
+                    throw new TsvException( "[" + ( index + skip ) + "] " + source + ": " + e, e.getCause() );
                 } catch( Exception e ) {
-                    throw new TsvException( "at line " + (index + skip) + " " + e, e );
+                    throw new TsvException( "[" + ( index + skip ) + "] " + source + ": " + e, e );
                 }
             } );
     }
