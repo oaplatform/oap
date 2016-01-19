@@ -83,11 +83,11 @@ public class Buffers implements Closeable {
     }
 
     private void flush() {
-        for( String s : currentBuffers.keySet() ) {
-            String selector = s.intern();
+        for( String selector : currentBuffers.keySet() ) {
+            String intern = selector.intern();
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized( selector ) {
-                Buffer buffer = currentBuffers.remove( selector );
+            synchronized( intern ) {
+                Buffer buffer = currentBuffers.remove( intern );
                 if( buffer != null && !buffer.isEmpty() ) readyBuffers.ready( buffer );
             }
         }

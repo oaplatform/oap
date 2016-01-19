@@ -25,6 +25,7 @@ package oap.logstream;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
 import java.nio.file.Path;
@@ -38,41 +39,51 @@ public class Archiver implements Runnable {
     private final Path destinationDirectory;
     private final long safeInterval;
     private final boolean compress;
-    private final String targetExtention;
+    private int bucketsPerHour;
     private final String mask;
 
 
-    public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask, boolean compress, String targetExtention ) {
+    public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask, boolean compress, int bucketsPerHour ) {
         this.sourceDirectory = sourceDirectory;
         this.destinationDirectory = destinationDirectory;
         this.safeInterval = safeInterval;
         this.mask = mask;
         this.compress = compress;
-        this.targetExtention = targetExtention;
+        this.bucketsPerHour = bucketsPerHour;
     }
 
     @Override
     public void run() {
-        log.debug( "let's start packing of " + mask + " in " + sourceDirectory + " into " + destinationDirectory );
+        log.debug( "let's start packing of {} in {} into {}", mask, sourceDirectory, destinationDirectory );
+        String timestamp = Filename.formatDate( DateTime.now(), bucketsPerHour );
 
-        for( Path path : Files.wildcard( sourceDirectory, mask ) )
-            if( path.toFile().lastModified() < DateTimeUtils.currentTimeMillis() - safeInterval ) {
-                log.debug( "archiving " + path );
+        log.debug( "current timestamp is {}", timestamp );
 
-                final String dotTargetExtension = targetExtention.isEmpty() ? "" : "." + targetExtention;
+        for( Path path : Files.wildcard( sourceDirectory, mask ) ) {
+            if( path.toFile().lastModified() >= DateTimeUtils.currentTimeMillis() - safeInterval ) {
+                log.debug( "skipping (modified within {} ms) {}", safeInterval, path );
+                continue;
+            }
+            if( path.getFileName().toString().contains( timestamp ) ) {
+                log.debug( "skipping (current timestamp) {}", path );
+                continue;
+            }
 
-                Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + dotTargetExtension );
+            Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ( compress ? ".gz" : "" ) );
 
-                if( compress ) {
-                    Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + dotTargetExtension + ".tmp" );
-                    Files.copy( path, PLAIN, targetTemp, GZIP );
-                    Files.rename( targetTemp, targetFile );
-                } else {
-                    Files.ensureFile( targetFile );
-                    Files.rename( path, targetFile );
-                }
+            if( compress ) {
+                log.debug( "compressing {}", path );
+                Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".tmp" );
+                Files.copy( path, PLAIN, targetTemp, GZIP );
+                Files.rename( targetTemp, targetFile );
                 Files.delete( path );
-            } else log.debug( "skipping (not safe yet) " + path );
+            } else {
+                log.debug( "moving {}", path );
+                Files.ensureFile( targetFile );
+                Files.rename( path, targetFile );
+            }
+        }
         log.debug( "packing is done" );
     }
+
 }

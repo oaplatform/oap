@@ -54,7 +54,7 @@ public class Writer implements Closeable {
     private boolean compress;
     private CountingOutputStream out;
     private String lastPattern;
-    private Scheduled scheduled;
+    private Scheduled refresher;
     private Stopwatch stopwatch = new Stopwatch();
 
     public Writer( Path logDirectory, String root, String ext, int bufferSize, int bucketsPerHour, boolean compress ) {
@@ -65,19 +65,14 @@ public class Writer implements Closeable {
         this.bucketsPerHour = bucketsPerHour;
         this.compress = compress;
         this.lastPattern = currentPattern();
-        this.scheduled = Scheduler.scheduleWithFixedDelay( 30, SECONDS, this::fsync );
-    }
-
-    private void fsync() {
-        flush();
-        refresh();
+        this.refresher = Scheduler.scheduleWithFixedDelay( 10, SECONDS, this::refresh );
     }
 
 
     @Override
     public void close() throws IOException {
         logger.debug( "closing " + this );
-        Scheduled.cancel( scheduled );
+        Scheduled.cancel( refresher );
         closeOutput();
     }
 
@@ -139,13 +134,4 @@ public class Writer implements Closeable {
     public String toString() {
         return getClass().getSimpleName() + "@" + filename();
     }
-
-    public synchronized void flush() {
-        try {
-            if( out != null ) out.flush();
-        } catch( IOException e ) {
-            logger.error( e.getMessage(), e );
-        }
-    }
-
 }

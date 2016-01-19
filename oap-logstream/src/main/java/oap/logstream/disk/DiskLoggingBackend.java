@@ -67,13 +67,8 @@ public class DiskLoggingBackend implements LoggingBackend {
     public void close() {
         if( !closed ) {
             closed = true;
-            flush();
             writers.forEach( ( selector, writer ) -> Closeables.close( writer ) );
             writers.clear();
         }
-    }
-
-    public void flush() {
-        writers.forEach( ( selector, writer ) -> writer.flush() );
     }
 }
