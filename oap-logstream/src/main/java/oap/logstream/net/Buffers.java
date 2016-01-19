@@ -67,10 +67,12 @@ public class Buffers implements Closeable {
     }
 
     public void put( String selector, byte[] buffer, int offset, int length ) {
-        synchronized( currentBuffers ) {
-            if( closed ) throw new IllegalStateException( "current buffers already closed" );
-            if( length > bufferSize )
-                throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize );
+        if( closed ) throw new IllegalStateException( "current buffers already closed" );
+        if( length > bufferSize )
+            throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize );
+        String intern = selector.intern();
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized( intern ) {
             Buffer b = currentBuffers.computeIfAbsent( selector, k -> cache.get( selector ) );
             if( !b.available( length ) ) {
                 readyBuffers.ready( b );
@@ -80,19 +82,16 @@ public class Buffers implements Closeable {
         }
     }
 
-
     private void flush() {
-        synchronized( currentBuffers ) {
-            Iterator<Map.Entry<String, Buffer>> iterator = currentBuffers.entrySet().iterator();
-            while( iterator.hasNext() ) {
-                Map.Entry<String, Buffer> entry = iterator.next();
-                Buffer buffer = entry.getValue();
-                if( !buffer.isEmpty() ) {
-                    readyBuffers.ready( buffer );
-                    iterator.remove();
-                }
+        for( String s : currentBuffers.keySet() ) {
+            String selector = s.intern();
+            //noinspection SynchronizationOnLocalVariableOrMethodParameter
+            synchronized( selector ) {
+                Buffer buffer = currentBuffers.remove( selector );
+                if( buffer != null && !buffer.isEmpty() ) readyBuffers.ready( buffer );
             }
         }
+
     }
 
     public boolean isEmpty() {
