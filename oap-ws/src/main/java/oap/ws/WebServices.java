@@ -62,7 +62,9 @@ public class WebServices {
         for( WsConfig config : wsConfigs ) {
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
                 final WsConfig.Service value = entry.getValue();
-                bind( entry.getKey(), value.cors, Application.service( value.service ), value.local );
+                final Object service = Application.service( value.service );
+                if( service == null ) throw new IllegalStateException( "Unknown service " + value.service );
+                bind( entry.getKey(), value.cors, service, value.local );
             }
             for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
                 final WsConfig.Service value = entry.getValue();
@@ -73,8 +75,8 @@ public class WebServices {
 
     public void stop() {
         for( WsConfig config : wsConfigs ) {
-            for( String context : config.handlers.keySet() ) server.unbind( context );
-            for( String context : config.services.keySet() ) server.unbind( context );
+            config.handlers.keySet().forEach( server::unbind );
+            config.services.keySet().forEach( server::unbind );
         }
 
     }
