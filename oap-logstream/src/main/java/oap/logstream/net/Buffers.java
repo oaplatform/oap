@@ -34,6 +34,7 @@ import java.io.Closeable;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Predicate;
 
@@ -44,7 +45,7 @@ public class Buffers implements Closeable {
     private final Path location;
     private final int bufferSize;
     private boolean closed;
-    private final Map<String, Buffer> currentBuffers = new HashMap<>();
+    private final Map<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
     ReadyQueue readyBuffers = new ReadyQueue();
     BufferCache cache;
 
@@ -83,11 +84,12 @@ public class Buffers implements Closeable {
     }
 
     private void flush() {
-        for( String s : currentBuffers.keySet() ) {
-            String selector = s.intern();
+
+        for( String selector : currentBuffers.keySet() ) {
+            String intern = selector.intern();
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized( selector ) {
-                Buffer buffer = currentBuffers.remove( selector );
+            synchronized( intern ) {
+                Buffer buffer = currentBuffers.remove( intern );
                 if( buffer != null && !buffer.isEmpty() ) readyBuffers.ready( buffer );
             }
         }
