@@ -157,18 +157,18 @@ public class Server implements HttpServer {
                                     httpService.handleRequest(connection, context);
                             } catch (SocketException e) {
                                 if ("Socket closed".equals(e.getMessage()))
-                                    logger.trace("connection closed: " + connectionName);
+                                    logger.trace("se:connection closed: " + connectionName, e);
                                 else if ("Connection reset".equals(e.getMessage()))
                                     logger.warn("Connection reset: " + connectionName);
                                 else logger.error(e.getMessage(), e);
                             } catch (ConnectionClosedException e) {
-                                logger.trace("connection closed: " + connectionName);
+                                logger.trace("cce:connection closed: " + connectionName, e);
                             } catch (Throwable e) {
                                 logger.error(e.getMessage(), e);
                             } finally {
                                 connections.remove(connectionName);
                                 Closeables.close(connection);
-                                logger.trace("connection closed: " + connectionName);
+                                logger.trace("f:connection closed: " + connectionName);
                             }
                         });
                     } catch (IllegalStateException e) {
