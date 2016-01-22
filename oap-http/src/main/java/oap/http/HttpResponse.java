@@ -26,7 +26,8 @@ package oap.http;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Strings;
-import org.apache.http.entity.ContentType;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.*;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -35,8 +36,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
+import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.util.Pair.__;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class HttpResponse {
@@ -44,48 +49,49 @@ public class HttpResponse {
     public static final HttpResponse HTTP_FORBIDDEN = status( HttpURLConnection.HTTP_FORBIDDEN );
     public static final HttpResponse NO_CONTENT = status( HttpURLConnection.HTTP_NO_CONTENT );
     public static final HttpResponse NOT_MODIFIED = status( HttpURLConnection.HTTP_NOT_MODIFIED );
+    private static Map<String, Function<Object, String>> producers = Maps.of(
+        __( ContentType.TEXT_PLAIN.getMimeType(), String::valueOf )
+    );
     public String reasonPhrase;
-    public Object content;
     public List<Pair<String, String>> headers = new ArrayList<>();
-    public ContentType contentType;
     public int code;
-    boolean raw;
-    private InputStream streamContent;
-    private byte[] bytesContent;
+    private HttpEntity entity;
 
     public HttpResponse( int code ) {
         this.code = code;
     }
 
     public static HttpResponse redirect( String location ) {
-        return new HttpResponse( HttpURLConnection.HTTP_MOVED_TEMP ).withHeader( "Location", location );
+        return new HttpResponse( HTTP_MOVED_TEMP ).withHeader( "Location", location );
     }
 
     public static HttpResponse ok( Object content, boolean raw, ContentType contentType ) {
         HttpResponse response = ok( content );
-        response.raw = raw;
-        response.contentType = contentType;
+        response.entity = new StringEntity( content( raw, content, contentType ), contentType );
         return response;
     }
 
     public static HttpResponse ok( Object content ) {
-        HttpResponse response = new HttpResponse( HttpURLConnection.HTTP_OK );
-        response.content = content;
-        response.contentType = ContentType.APPLICATION_JSON;
+        HttpResponse response = new HttpResponse( HTTP_OK );
+        response.entity = new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON );
         return response;
     }
 
     public static HttpResponse stream( InputStream stream, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HttpURLConnection.HTTP_OK );
-        response.streamContent = stream;
-        response.contentType = contentType;
+        HttpResponse response = new HttpResponse( HTTP_OK );
+        response.entity = new InputStreamEntity( stream, contentType );
+        return response;
+    }
+
+    public static HttpResponse stream( Stream<String> stream, ContentType contentType ) {
+        HttpResponse response = new HttpResponse( HTTP_OK );
+        response.entity = new HttpStreamEntity( stream, contentType );
         return response;
     }
 
     public static HttpResponse bytes( byte[] bytes, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HttpURLConnection.HTTP_OK );
-        response.bytesContent = bytes;
-        response.contentType = contentType;
+        HttpResponse response = new HttpResponse( HTTP_OK );
+        response.entity = new ByteArrayEntity( bytes, contentType );
         return response;
     }
 
@@ -97,8 +103,19 @@ public class HttpResponse {
 
     public static HttpResponse status( int code ) {
         HttpResponse response = new HttpResponse( code );
-        response.contentType = TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 );
+        final BasicHttpEntity basicHttpEntity = new BasicHttpEntity();
+        basicHttpEntity.setContentType( TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ).toString() );
+        response.entity = basicHttpEntity;
         return response;
+    }
+
+    public static void registerProducer( String mimeType, Function<Object, String> producer ) {
+        producers.put( mimeType, producer );
+    }
+
+    private static String content( boolean raw, Object content, ContentType contentType ) {
+        return raw ? ( String ) content :
+            HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
     }
 
     public HttpResponse withHeader( String name, String value ) {
@@ -107,42 +124,15 @@ public class HttpResponse {
     }
 
     public HttpResponse withContent( String content, ContentType contentType ) {
-        this.content = content;
-        this.contentType = contentType;
+        this.entity = new StringEntity( content( false, content, contentType ), contentType );
         return this;
     }
 
-    public String content() {
-        return raw ? (String) content :
-            HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
-    }
-
     public boolean hasContent() {
-        return content != null;
+        return entity != null;
     }
 
-    public boolean hasStreamContent() {
-        return streamContent != null;
+    public HttpEntity getEntity() {
+        return entity;
     }
-
-    public boolean hasBytesContent() {
-        return bytesContent != null;
-    }
-
-    public InputStream stream() {
-        return streamContent;
-    }
-
-    public byte[] bytes() {
-        return bytesContent;
-    }
-
-    private static Map<String, Function<Object, String>> producers = Maps.of(
-        __( ContentType.TEXT_PLAIN.getMimeType(), String::valueOf )
-    );
-
-    public static void registerProducer(String mimeType, Function<Object, String> producer) {
-        producers.put( mimeType, producer );
-    }
-
 }
