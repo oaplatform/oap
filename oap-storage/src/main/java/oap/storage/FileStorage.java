@@ -200,10 +200,14 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         fireDeleted( objects );
     }
 
-    private Optional<Metadata<T>> _remove( String id ) {
+    private synchronized Optional<Metadata<T>> _remove( String id ) {
         synchronized( id.intern() ) {
             try {
-                java.nio.file.Files.delete( path.resolve( id + ".json" ) );
+                final Path file = this.path.resolve( id + ".json" );
+
+                if( java.nio.file.Files.exists( file ) ) {
+                    java.nio.file.Files.delete( file );
+                }
             } catch( IOException e ) {
                 throw new UncheckedIOException( e );
             }

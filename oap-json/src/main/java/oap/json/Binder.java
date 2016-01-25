@@ -121,7 +121,7 @@ public class Binder {
 
 
     public void marshal( Path path, Object object ) {
-        Files.writeString( path, marshal( object ) );
+        Files.writeString( path,  marshal( object ) );
     }
 
     public <T> T unmarshal( Class<T> clazz, Path path ) {
