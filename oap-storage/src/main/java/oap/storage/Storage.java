@@ -48,6 +48,8 @@ public interface Storage<T> {
 
     Optional<T> get( String id );
 
+    void remove( String id );
+
     void clear();
 
     long size();

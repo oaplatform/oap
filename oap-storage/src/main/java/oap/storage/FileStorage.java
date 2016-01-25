@@ -33,6 +33,8 @@ import oap.util.Try;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,7 +74,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         data = Files.wildcard( path, "*.json" )
             .stream()
             .map( Try.map(
-                f -> (Metadata<T>) Binder.json.unmarshal( new TypeReference<Metadata<T>>() {
+                f -> ( Metadata<T> ) Binder.json.unmarshal( new TypeReference<Metadata<T>>() {
                 }, f ) ) )
             .sorted( reverseOrder() )
             .map( x -> __( x.id, x ) )
@@ -194,19 +196,23 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     @Override
     public void clear() {
         List<T> objects = new ArrayList<>();
-        for( String id : data.keySet() ) remove( id ).ifPresent( m -> objects.add( m.object ) );
+        for( String id : data.keySet() ) _remove( id ).ifPresent( m -> objects.add( m.object ) );
         fireDeleted( objects );
     }
 
-    private Optional<Metadata<T>> remove( String id ) {
+    private Optional<Metadata<T>> _remove( String id ) {
         synchronized( id.intern() ) {
-            path.resolve( id + ".json" ).toFile().delete();
+            try {
+                java.nio.file.Files.delete( path.resolve( id + ".json" ) );
+            } catch( IOException e ) {
+                throw new UncheckedIOException( e );
+            }
             return Optional.ofNullable( data.remove( id ) );
         }
     }
 
-    protected void deletePermanently( String id ) {
-        remove( id ).ifPresent( m -> fireDeleted( m.object ) );
+    public void remove( String id ) {
+        _remove( id ).ifPresent( m -> fireDeleted( m.object ) );
     }
 
     @Override
