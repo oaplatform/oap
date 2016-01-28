@@ -25,10 +25,8 @@
 package oap.logstream;
 
 import oap.io.Files;
-import oap.io.IoStreams;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import oap.util.Dates;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.DataProvider;
@@ -40,7 +38,6 @@ import static oap.io.IoAsserts.assertFileContent;
 import static oap.io.IoAsserts.assertFileDoesNotExist;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
-
 
 public class ArchiverTest extends AbstractTest {
 
@@ -70,19 +67,19 @@ public class ArchiverTest extends AbstractTest {
             "b/c/b_2015-10-10-11-11.log"
         };
 
-        for( String file : files ) {
-            Path path = logs.resolve( file );
-            Files.writeString( path, "data" );
-            path.toFile().setLastModified( now.minusSeconds( file.contains( "b_2015" ) ? 0 : 11 ).getMillis() );
-        }
+        for( String file : files ) Files.writeString( logs.resolve( file ), "data" );
 
         Archiver archiver = new Archiver( logs, archives, 10000, "**/*.log", compress, 12 );
         archiver.run();
 
+        for( String file : files ) assertFileDoesNotExist( archives.resolve( file + ( compress ? ".gz" : "" ) ) );
+
+        DateTimeUtils.setCurrentMillisFixed( now.plusSeconds( 11 ).getMillis() );
+        archiver.run();
+
         for( String file : files ) {
             Path path = archives.resolve( file + ( compress ? ".gz" : "" ) );
-            if( file.contains( "b_2015" ) || file.contains( "12-00" ) )
-                assertFileDoesNotExist( path );
+            if( file.contains( "12-00" ) ) assertFileDoesNotExist( path );
             else {
                 assertFileContent( path, compress ? GZIP : PLAIN, "data" );
                 assertFileDoesNotExist( logs.resolve( file ) );

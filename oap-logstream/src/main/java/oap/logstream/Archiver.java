@@ -58,12 +58,10 @@ public class Archiver implements Runnable {
         String timestamp = Filename.formatDate( DateTime.now(), bucketsPerHour );
 
         log.debug( "current timestamp is {}", timestamp );
-
-        for( Path path : Files.wildcard( sourceDirectory, mask ) ) {
-            if( path.toFile().lastModified() >= DateTimeUtils.currentTimeMillis() - safeInterval ) {
-                log.debug( "skipping (modified within {} ms) {}", safeInterval, path );
-                continue;
-            }
+        long elapsed = DateTimeUtils.currentTimeMillis() - Filename.currentBucketStartMillis( bucketsPerHour );
+        if( elapsed < safeInterval )
+            log.debug( "not safe to process yet ({}ms), some of the files could still be open, waiting...", elapsed );
+        else for( Path path : Files.wildcard( sourceDirectory, mask ) ) {
             if( path.getFileName().toString().contains( timestamp ) ) {
                 log.debug( "skipping (current timestamp) {}", path );
                 continue;

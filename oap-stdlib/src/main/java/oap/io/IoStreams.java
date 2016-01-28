@@ -137,9 +137,16 @@ public class IoStreams {
     }
 
     public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) {
+        return out( path, encoding, bufferSize, append, false );
+    }
+
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe ) {
         path.toAbsolutePath().getParent().toFile().mkdirs();
         try {
-            OutputStream fos = new BufferedOutputStream( new FileOutputStream( path.toFile(), append ), bufferSize );
+            OutputStream fos = new BufferedOutputStream( safe ?
+                new SafeFileOutputStream( path, append ) :
+                new FileOutputStream( path.toFile(), append ),
+                bufferSize );
             switch( encoding ) {
                 case GZIP:
                     return new GZIPOutputStream( fos );

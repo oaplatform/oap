@@ -33,6 +33,7 @@ import oap.io.IoStreams;
 import oap.logstream.Filename;
 import oap.metrics.Metrics;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -76,9 +77,8 @@ public class Writer implements Closeable {
     }
 
     private void closeOutput() throws IOException {
-        log.trace( "closing output {}", this );
-
         if( out != null ) {
+            log.trace( "closing output {}", this );
             stopwatch.measure( out::flush );
             stopwatch.measure( out::close );
             Metrics.measureHistogram( "logger_server_bucket_size", out.getCount() );

@@ -40,6 +40,9 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 @Slf4j
 public final class Files {
     public static ArrayList<Path> fast_wildcard( String basePath, String wildcard ) {
@@ -227,7 +230,7 @@ public final class Files {
 
     public static void rename( Path sourcePath, Path destPath ) {
         try {
-            java.nio.file.Files.move( sourcePath, destPath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING );
+            java.nio.file.Files.move( sourcePath, destPath, ATOMIC_MOVE, REPLACE_EXISTING );
         } catch( IOException e ) {
             throw new UncheckedIOException( "cannot rename " + sourcePath + " to " + destPath, e );
         }

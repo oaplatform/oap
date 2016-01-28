@@ -24,6 +24,7 @@
 package oap.logstream;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -31,9 +32,21 @@ public class Filename {
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" ).withZoneUTC();
     private static final DateTimeFormatter directoryFormatter = DateTimeFormat.forPattern( "yyyy-MM/dd" ).withZoneUTC();
 
-    public static String formatDate( DateTime date, long bucketsPerHour ) {
-        int bucket = ( int ) Math.floor( date.getMinuteOfHour() / ( 60d / bucketsPerHour ) );
+    public static String formatDate( DateTime date, int bucketsPerHour ) {
+        int bucket = currentBucket( date, bucketsPerHour );
         return formatter.print( date ) + "-" + ( bucket > 9 ? bucket : "0" + bucket );
+    }
+
+    private static int currentBucket( DateTime date, int bucketsPerHour ) {
+        return ( int ) Math.floor( date.getMinuteOfHour() / ( 60d / bucketsPerHour ) );
+    }
+
+    public static long currentBucketStartMillis( int bucketsPerHour ) {
+        DateTime date = DateTime.now();
+        return date.withMinuteOfHour( 60 / bucketsPerHour * currentBucket( date, bucketsPerHour ) )
+            .withSecondOfMinute( 0 )
+            .withMillisOfSecond( 0 )
+            .getMillis();
     }
 
     public static String directoryName( String timestamp ) {
