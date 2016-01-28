@@ -36,7 +36,7 @@ public class SynchronizedThread implements Runnable {
     }
 
     public SynchronizedThread( String name, Runnable child ) {
-        this.child = child;
+        this( child );
         this.thread.setName( name );
     }
 

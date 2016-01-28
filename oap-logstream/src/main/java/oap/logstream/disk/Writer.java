@@ -25,6 +25,7 @@
 package oap.logstream.disk;
 
 import com.google.common.io.CountingOutputStream;
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Stopwatch;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
@@ -32,7 +33,6 @@ import oap.io.IoStreams;
 import oap.logstream.Filename;
 import oap.metrics.Metrics;
 import org.joda.time.DateTime;
-import org.slf4j.Logger;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -42,10 +42,9 @@ import java.util.Objects;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
-import static org.slf4j.LoggerFactory.getLogger;
 
+@Slf4j
 public class Writer implements Closeable {
-    private static Logger logger = getLogger( Writer.class );
     private final String ext;
     private final Path logDirectory;
     private final String root;
@@ -71,12 +70,14 @@ public class Writer implements Closeable {
 
     @Override
     public void close() throws IOException {
-        logger.debug( "closing " + this );
+        log.debug( "closing {}", this );
         Scheduled.cancel( refresher );
         closeOutput();
     }
 
     private void closeOutput() throws IOException {
+        log.trace( "closing output {}", this );
+
         if( out != null ) {
             stopwatch.measure( out::flush );
             stopwatch.measure( out::close );
@@ -97,14 +98,15 @@ public class Writer implements Closeable {
                 out = new CountingOutputStream(
                     IoStreams.out( filename(), compress ? GZIP : PLAIN, bufferSize, true )
                 );
+            log.trace( "writing {} to {}", length, this );
             out.write( buffer, offset, length );
 
         } catch( IOException e ) {
-            logger.error( e.getMessage(), e );
+            log.error( e.getMessage(), e );
             try {
                 closeOutput();
             } catch( IOException e1 ) {
-                logger.error( e.getMessage(), e );
+                log.error( e1.getMessage(), e1 );
             } finally {
                 out = null;
             }
@@ -119,10 +121,10 @@ public class Writer implements Closeable {
     private synchronized void refresh() {
         String currentPattern = currentPattern();
         if( !Objects.equals( this.lastPattern, currentPattern ) ) try {
-            lastPattern = currentPattern;
             closeOutput();
+            lastPattern = currentPattern;
         } catch( IOException e ) {
-            logger.error( e.getMessage(), e );
+            log.error( e.getMessage(), e );
         }
     }
 
