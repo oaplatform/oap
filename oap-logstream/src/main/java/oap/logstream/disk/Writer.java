@@ -33,7 +33,6 @@ import oap.io.IoStreams;
 import oap.logstream.Filename;
 import oap.metrics.Metrics;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -48,7 +47,7 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 public class Writer implements Closeable {
     private final String ext;
     private final Path logDirectory;
-    private final String root;
+    private final String filename;
     private int bufferSize;
     private int bucketsPerHour;
     private boolean compress;
@@ -57,15 +56,16 @@ public class Writer implements Closeable {
     private Scheduled refresher;
     private Stopwatch stopwatch = new Stopwatch();
 
-    public Writer( Path logDirectory, String root, String ext, int bufferSize, int bucketsPerHour, boolean compress ) {
+    public Writer( Path logDirectory, String filename, String ext, int bufferSize, int bucketsPerHour, boolean compress ) {
         this.logDirectory = logDirectory;
-        this.root = root;
+        this.filename = filename;
         this.ext = ext;
         this.bufferSize = bufferSize;
         this.bucketsPerHour = bucketsPerHour;
         this.compress = compress;
         this.lastPattern = currentPattern();
         this.refresher = Scheduler.scheduleWithFixedDelay( 10, SECONDS, this::refresh );
+        log.debug( "spawning {}", this );
     }
 
 
@@ -78,7 +78,7 @@ public class Writer implements Closeable {
 
     private void closeOutput() throws IOException {
         if( out != null ) {
-            log.trace( "closing output {}", this );
+            log.trace( "closing output {} ({} bytes)", this, out.getCount() );
             stopwatch.measure( out::flush );
             stopwatch.measure( out::close );
             Metrics.measureHistogram( "logger_server_bucket_size", out.getCount() );
@@ -98,7 +98,7 @@ public class Writer implements Closeable {
                 out = new CountingOutputStream(
                     IoStreams.out( filename(), compress ? GZIP : PLAIN, bufferSize, true )
                 );
-            log.trace( "writing {} to {}", length, this );
+            log.trace( "writing {} bytes to {}", length, this );
             out.write( buffer, offset, length );
 
         } catch( IOException e ) {
@@ -115,7 +115,7 @@ public class Writer implements Closeable {
 
     private Path filename() {
         return logDirectory.resolve( Filename.directoryName( lastPattern ) )
-            .resolve( root + "-" + lastPattern + "." + ext );
+            .resolve( filename + "-" + lastPattern + "." + ext );
     }
 
     private synchronized void refresh() {

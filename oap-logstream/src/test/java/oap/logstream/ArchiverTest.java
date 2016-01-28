@@ -55,7 +55,6 @@ public class ArchiverTest extends AbstractTest {
         DateTimeUtils.setCurrentMillisFixed( now.getMillis() );
         Path logs = Env.tmpPath( "logs" );
         Path archives = Env.tmpPath( "archives" );
-        System.out.println( Filename.formatDate( DateTime.now(), 12 ) );
         String[] files = {
             "a/a_2015-10-10-11-10.log",
             "a/a_2015-10-10-11-11.log",

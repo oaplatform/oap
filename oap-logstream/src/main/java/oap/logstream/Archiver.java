@@ -70,13 +70,14 @@ public class Archiver implements Runnable {
             Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ( compress ? ".gz" : "" ) );
 
             if( compress ) {
-                log.debug( "compressing {}", path );
+                log.debug( "compressing {} ({} bytes)", path, path.toFile().length() );
                 Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".tmp" );
                 Files.copy( path, PLAIN, targetTemp, GZIP );
                 Files.rename( targetTemp, targetFile );
+                log.debug( "compressed {} ({} bytes)", path, targetFile.toFile().length() );
                 Files.delete( path );
             } else {
-                log.debug( "moving {}", path );
+                log.debug( "moving {} ({} bytes)", path, path.toFile().length() );
                 Files.ensureFile( targetFile );
                 Files.rename( path, targetFile );
             }

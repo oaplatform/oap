@@ -48,84 +48,84 @@ import java.util.concurrent.*;
  */
 public class Server implements HttpServer {
 
-    private final static Logger logger = LoggerFactory.getLogger(Server.class);
+    private final static Logger logger = LoggerFactory.getLogger( Server.class );
     private static final String METRICS_CONNECTIONS = "connections";
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
-    private final HttpService httpService = new HttpService(HttpProcessorBuilder.create()
-            .add(new ResponseDate())
-            .add(new ResponseServer("OAP Server/1.0"))
-            .add(new ResponseContent())
-            .add(new ResponseConnControl())
-            .build(),
-            DefaultConnectionReuseStrategy.INSTANCE,
-            DefaultHttpResponseFactory.INSTANCE,
-            mapper);
+    private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
+        .add( new ResponseDate() )
+        .add( new ResponseServer( "OAP Server/1.0" ) )
+        .add( new ResponseContent() )
+        .add( new ResponseConnControl() )
+        .build(),
+        DefaultConnectionReuseStrategy.INSTANCE,
+        DefaultHttpResponseFactory.INSTANCE,
+        mapper );
     private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
     private ThreadPoolExecutor executor;
     private int port;
     private ServerSocket serverSocket;
     private Thread thread;
-    private Semaphore semaphore = new Semaphore(0);
+    private Semaphore semaphore = new Semaphore( 0 );
 
-    public Server(int port, int workers) {
+    public Server( int port, int workers ) {
         this.port = port;
         final BlockingQueue<Runnable> queue = new SynchronousQueue<>();
 
-        this.executor = new ThreadPoolExecutor(0, workers, 10, TimeUnit.SECONDS, queue);
-        this.mapper.register("/static/*", new ClasspathResourceHandler("/static", "/WEB-INF"));
+        this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, queue );
+        this.mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
     }
 
     @Override
-    public void bind(String context, Cors cors, Handler handler, boolean local) {
+    public void bind( String context, Cors cors, Handler handler, boolean local ) {
         String location = "/" + context + "/*";
-        this.mapper.register(location, new BlockingHandlerAdapter("/" + context, handler, cors, local));
-        logger.info(handler + " bound to " + location);
+        this.mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, cors, local ) );
+        logger.info( handler + " bound to " + location );
 
     }
 
     @Override
-    public void unbind(String context) {
+    public void unbind( String context ) {
         String location = "/" + context + "/*";
-        this.mapper.unregister(location);
+        this.mapper.unregister( location );
     }
 
     public void start() {
         try {
 
-            logger.info("binding to " + port + "...");
+            logger.info( "binding to " + port + "..." );
 
-            Metrics.measureGauge(METRICS_CONNECTIONS, connections::size);
+            Metrics.measureGauge( METRICS_CONNECTIONS, connections::size );
             serverSocket = new ServerSocket();
 
-            serverSocket.setReuseAddress(true);
-            serverSocket.bind(new InetSocketAddress(port));
-            logger.info("ready to rock on " + serverSocket.getLocalSocketAddress());
+            serverSocket.setReuseAddress( true );
+            serverSocket.bind( new InetSocketAddress( port ) );
+            logger.info( "ready to rock on " + serverSocket.getLocalSocketAddress() );
 
-            thread = new Thread(this::run);
+            thread = new Thread( this::run );
             thread.start();
 
             semaphore.acquire();
 
-        } catch (InterruptedException e) {
-            logger.trace(e.getMessage(), e);
-        } catch (BindException e) {
-            logger.error(e.getMessage() + " [" + serverSocket.getLocalSocketAddress() + ":" + port + "]", e);
-            throw new RuntimeException(e.getMessage(), e);
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-            throw new RuntimeException(e.getMessage(), e);
+        } catch( InterruptedException e ) {
+            logger.trace( e.getMessage(), e );
+        } catch( BindException e ) {
+            logger.error( e.getMessage() + " [" + serverSocket.getLocalSocketAddress() + ":" + port + "]", e );
+            throw new RuntimeException( e.getMessage(), e );
+        } catch( Exception e ) {
+            logger.error( e.getMessage(), e );
+            throw new RuntimeException( e.getMessage(), e );
         }
     }
 
     public void stop() {
-        Closeables.close(serverSocket);
-        Threads.interruptAndJoin(thread);
+        Closeables.close( serverSocket );
+        Threads.interruptAndJoin( thread );
 
-        connections.forEach((key, connection) -> Closeables.close(connection));
+        connections.forEach( ( key, connection ) -> Closeables.close( connection ) );
 
-        Closeables.close(executor);
+        Closeables.close( executor );
 
-        logger.info("server gone down");
+        logger.info( "server gone down" );
     }
 
     private void run() {
@@ -133,62 +133,62 @@ public class Server implements HttpServer {
             semaphore.release();
 
             final DefaultBHttpServerConnectionFactory connectionFactory =
-                    new DefaultBHttpServerConnectionFactory();
+                new DefaultBHttpServerConnectionFactory();
 
-            while (!Thread.interrupted() && !serverSocket.isClosed()) {
+            while( !Thread.interrupted() && !serverSocket.isClosed() ) {
                 try {
                     final Socket accept = serverSocket.accept();
                     DefaultBHttpServerConnection connection =
-                            connectionFactory.createConnection(accept);
+                        connectionFactory.createConnection( accept );
 
                     final String connectionName = connection.toString();
 
                     try {
-                        executor.submit(() -> {
+                        executor.submit( () -> {
                             try {
-                                connections.put(connectionName, connection);
+                                connections.put( connectionName, connection );
 
-                                logger.trace("connection accepted: " + connection);
+                                logger.trace( "connection accepted: " + connection );
                                 HttpContext context = HttpCoreContext.create();
 
-                                Thread.currentThread().setName(connection.toString());
-                                logger.trace("start handling " + connectionName);
-                                while (!Thread.interrupted() && connection.isOpen())
-                                    httpService.handleRequest(connection, context);
-                            } catch (SocketException e) {
-                                if ("Socket closed".equals(e.getMessage()))
-                                    logger.trace("se:connection closed: " + connectionName, e);
-                                else if ("Connection reset".equals(e.getMessage()))
-                                    logger.warn("Connection reset: " + connectionName);
-                                else logger.error(e.getMessage(), e);
-                            } catch (ConnectionClosedException e) {
-                                logger.trace("cce:connection closed: " + connectionName, e);
-                            } catch (Throwable e) {
-                                logger.error(e.getMessage(), e);
+                                Thread.currentThread().setName( connection.toString() );
+                                logger.trace( "start handling " + connectionName );
+                                while( !Thread.interrupted() && connection.isOpen() )
+                                    httpService.handleRequest( connection, context );
+                            } catch( SocketException e ) {
+                                if( "Socket closed".equals( e.getMessage() ) )
+                                    logger.trace( "se:connection closed: " + connectionName, e );
+                                else if( "Connection reset".equals( e.getMessage() ) )
+                                    logger.warn( "Connection reset: " + connectionName );
+                                else logger.error( e.getMessage(), e );
+                            } catch( ConnectionClosedException e ) {
+                                logger.trace( "cce:connection closed: " + connectionName, e );
+                            } catch( Throwable e ) {
+                                logger.error( e.getMessage(), e );
                             } finally {
-                                connections.remove(connectionName);
-                                Closeables.close(connection);
-                                logger.trace("f:connection closed: " + connectionName);
+                                connections.remove( connectionName );
+                                Closeables.close( connection );
+                                logger.trace( "f:connection closed: " + connectionName );
                             }
-                        });
-                    } catch (IllegalStateException e) {
-                        logger.warn(e.getMessage());
-                        IOUtils.closeQuietly(connection);
+                        } );
+                    } catch( IllegalStateException e ) {
+                        logger.warn( e.getMessage() );
+                        IOUtils.closeQuietly( connection );
                     }
-                } catch (SocketTimeoutException ignored) {
-                } catch (SocketException e) {
-                    if (serverSocket != null && !serverSocket.isClosed()) logger.warn(e.getMessage());
-                } catch (Throwable e) {
-                    logger.warn(e.getMessage(), e);
+                } catch( SocketTimeoutException ignored ) {
+                } catch( SocketException e ) {
+                    if( serverSocket != null && !serverSocket.isClosed() ) logger.warn( e.getMessage() );
+                } catch( Throwable e ) {
+                    logger.warn( e.getMessage(), e );
                 }
             }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+        } catch( Exception e ) {
+            logger.error( e.getMessage(), e );
 
-            connections.values().forEach(Closeables::close);
+            connections.values().forEach( Closeables::close );
             connections.clear();
 
-            Throwables.propagate(e);
+            Throwables.propagate( e );
         }
     }
 
