@@ -29,6 +29,7 @@ import oap.io.Closeables;
 import oap.util.Result;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.concurrent.FutureCallback;
@@ -55,11 +56,17 @@ public final class SimpleAsyncHttpClient implements SimpleClient {
 
     private static CloseableHttpAsyncClient initialize() {
 
+        RequestConfig requestConfig = RequestConfig
+            .custom()
+            .setRedirectsEnabled( false )
+            .build();
+
         final CloseableHttpAsyncClient c = HttpAsyncClients
             .custom()
             .setMaxConnPerRoute( 1000 )
             .setMaxConnTotal( 10000 )
             .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
+            .setDefaultRequestConfig( requestConfig )
             .build();
         c.start();
         return c;
