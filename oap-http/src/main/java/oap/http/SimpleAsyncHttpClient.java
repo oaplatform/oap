@@ -55,12 +55,14 @@ public final class SimpleAsyncHttpClient implements SimpleClient {
 
     private static CloseableHttpAsyncClient initialize() {
 
-        return HttpAsyncClients
+        final CloseableHttpAsyncClient c = HttpAsyncClients
             .custom()
             .setMaxConnPerRoute( 1000 )
             .setMaxConnTotal( 10000 )
             .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
             .build();
+        c.start();
+        return c;
     }
 
     public static void reset() {
