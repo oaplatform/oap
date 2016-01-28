@@ -25,7 +25,8 @@ package oap.application.remote;
 
 import com.google.common.base.Throwables;
 import lombok.extern.slf4j.Slf4j;
-import oap.http.SimpleHttpClient;
+import oap.http.SimpleAsyncHttpClient;
+import oap.http.SimpleClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 
@@ -73,7 +74,7 @@ public class RemoteInvocationHandler implements InvocationHandler {
                 fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) ),
                 APPLICATION_OCTET_STREAM
             ) );
-            SimpleHttpClient.Response response = SimpleHttpClient.execute( post );
+            SimpleClient.Response response = SimpleAsyncHttpClient.execute( post );
             switch( response.code ) {
                 case HTTP_OK:
                     return method.getReturnType().equals( void.class ) ? null :

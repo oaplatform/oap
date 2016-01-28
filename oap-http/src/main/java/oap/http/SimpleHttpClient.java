@@ -25,7 +25,6 @@
 package oap.http;
 
 import com.google.common.io.ByteStreams;
-import lombok.SneakyThrows;
 import oap.io.Closeables;
 import oap.util.Result;
 import org.apache.http.HttpEntity;
@@ -43,14 +42,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.*;
 
 import static oap.json.Binder.json;
 import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 
-public final class SimpleHttpClient {
+public final class SimpleHttpClient implements SimpleClient {
     private static CloseableHttpClient client = initialize();
     private static ExecutorService executorService = Executors.newCachedThreadPool();
 
@@ -121,37 +119,5 @@ public final class SimpleHttpClient {
             Response r = execute( uri, timeout );
             return json.unmarshal( clazz, r.body );
         } );
-    }
-
-    public static class Response {
-        public final int code;
-        public final byte[] raw;
-        public final String body;
-        public final String contentType;
-        public final String reasonPhrase;
-        private final Map<String, String> headers;
-
-        public Response( int code, String reasonPhrase, ContentType contentType, Map<String, String> headers,
-                         byte[] body ) {
-            this.code = code;
-            this.reasonPhrase = reasonPhrase;
-            this.headers = headers;
-            this.contentType = contentType != null ? contentType.toString() : null;
-            this.raw = body;
-            this.body = raw != null ? new String( raw ) : null;
-        }
-
-        public Response( int code, String reasonPhrase, Map<String, String> headers ) {
-            this( code, reasonPhrase, null, headers, null );
-        }
-
-        public Optional<String> getHeader( String name ) {
-            return Optional.ofNullable( headers.get( name ) );
-        }
-
-        @Override
-        public String toString() {
-            return code + " " + reasonPhrase;
-        }
     }
 }

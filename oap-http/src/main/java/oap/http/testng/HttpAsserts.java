@@ -26,7 +26,8 @@ package oap.http.testng;
 import com.google.common.base.Throwables;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.http.SimpleHttpClient;
+import oap.http.SimpleAsyncHttpClient;
+import oap.http.SimpleClient;
 import oap.http.Uri;
 import oap.io.Resources;
 import oap.json.testng.JsonAsserts;
@@ -55,7 +56,7 @@ public class HttpAsserts {
     public static final String HTTP_PREFIX = "http://localhost:" + Env.port();
 
     public static void reset() {
-        SimpleHttpClient.reset();
+        SimpleAsyncHttpClient.reset();
     }
 
 
@@ -84,7 +85,7 @@ public class HttpAsserts {
 
     private static ResponseAssert invoke( HttpUriRequest http ) {
         try {
-            return new ResponseAssert( SimpleHttpClient.execute( http ) );
+            return new ResponseAssert( SimpleAsyncHttpClient.execute( http ) );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         } catch( TimeoutException e ) {
@@ -95,9 +96,9 @@ public class HttpAsserts {
     @EqualsAndHashCode
     @ToString
     public static class ResponseAssert {
-        public final SimpleHttpClient.Response response;
+        public final SimpleClient.Response response;
 
-        public ResponseAssert( SimpleHttpClient.Response response ) {
+        public ResponseAssert( SimpleClient.Response response ) {
             this.response = response;
         }
 
