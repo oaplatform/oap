@@ -71,7 +71,7 @@ public class Server implements HttpServer {
         this.port = port;
         final BlockingQueue<Runnable> queue = new SynchronousQueue<>();
 
-        this.executor = new ThreadPoolExecutor(workers, workers, 0L, TimeUnit.MILLISECONDS, queue);
+        this.executor = new ThreadPoolExecutor(0, workers, 10, TimeUnit.SECONDS, queue);
         this.mapper.register("/static/*", new ClasspathResourceHandler("/static", "/WEB-INF"));
     }
 
