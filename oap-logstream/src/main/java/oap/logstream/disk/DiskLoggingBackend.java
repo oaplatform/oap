@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class DiskLoggingBackend implements LoggingBackend {
     public static final int DEFAULT_BUFFER = 1024 * 100;
+    public static final String METRICS_LOGGING_DISK = "logging_disk";
     final Path logDirectory;
     final String ext;
     final int bufferSize;
@@ -57,7 +58,7 @@ public class DiskLoggingBackend implements LoggingBackend {
     public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
         if( closed ) throw new UncheckedIOException( new IOException( "already closed!" ) );
 
-        Metrics.measureCounterIncrement( Metrics.name( "logging_disk" ).tag( "from", hostName ) );
+        Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_DISK ).tag( "from", hostName ) );
         Writer writer = writers.computeIfAbsent( hostName + fileName,
             k -> new Writer( logDirectory.resolve( hostName ), fileName, ext, bufferSize, bucketsPerHour, compress ) );
         log.trace( "logging {} bytes to {}", length, writer );
