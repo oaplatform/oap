@@ -24,47 +24,51 @@
 
 package oap.metrics;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.ScheduledReporter;
+import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
+import org.apache.commons.lang3.StringUtils;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
-import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.ConnectException;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.SortedMap;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toList;
+import static org.joda.time.DateTimeUtils.currentTimeMillis;
 
 class InfluxDBReporter extends ScheduledReporter {
     private static final Logger logger = LoggerFactory.getLogger( InfluxDBReporter.class );
 
     private final InfluxDB influxDB;
     private final String database;
-    private final HashMap<String, String> tags;
+    private final Map<String, String> tags;
+    private final Collection<Pattern> aggregates;
 
-    private HashMap<String, Object> lastReport = new HashMap<>();
-
-    protected InfluxDBReporter( InfluxDB influxDB, String database, HashMap<String, String> tags,
+    protected InfluxDBReporter( InfluxDB influxDB, String database, Map<String, String> tags,
                                 MetricRegistry registry, String name,
-                                MetricFilter filter, TimeUnit rateUnit,
-                                TimeUnit durationUnit ) {
+                                MetricFilter filter, Collection<String> aggregates,
+                                TimeUnit rateUnit, TimeUnit durationUnit ) {
         super( registry, name, filter, rateUnit, durationUnit );
         this.influxDB = influxDB;
         this.database = database;
         this.tags = tags;
+
+        assert !aggregates.stream().filter( a -> !a.endsWith( ".*" ) ).findAny().isPresent();
+
+        this.aggregates = aggregates
+            .stream()
+            .map( a -> Pattern.compile( a.replace( ".", "\\." ).replace( "\\.*", "(\\.[^.]+)" ) ) )
+            .collect( toList() );
+
     }
 
     public static Builder forRegistry( MetricRegistry registry ) {
@@ -76,21 +80,27 @@ class InfluxDBReporter extends ScheduledReporter {
                                      SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers ) {
         try {
 
-            final long time = DateTimeUtils.currentTimeMillis();
+            final long time = currentTimeMillis();
             BatchPoints.Builder pointsBuilder = BatchPoints.database( database );
 
             BatchPoints points = pointsBuilder
                 .consistency( InfluxDB.ConsistencyLevel.QUORUM )
-                .time( time, TimeUnit.MILLISECONDS )
+                .time( time, MILLISECONDS )
                 .build();
 
-            int c = reportCounters( counters, points );
-            int m = reportMeters( meters, points );
-            int t = reportTimers( timers, points );
-            int g = reportGauges( gauges, points );
-            int h = reportHistograms( histograms, points );
+            final SortedMap<String, Point.Builder> builders = new TreeMap<>();
 
-            logger.trace( "reporting {} counters, {} meters, {} timers, {} gauges, {} histograms", c, m, t, g, h );
+            reportCounters( counters, builders );
+            reportMeters( meters, builders );
+            reportTimers( timers, builders );
+            reportGauges( gauges, builders );
+            reportHistograms( histograms, builders );
+
+            builders.values().forEach( b -> points.point( b.build() ) );
+
+            logger.trace( "reporting {} counters, {} meters, {} timers, {} gauges, {} histograms",
+                counters.size(), meters.size(), timers.size(), gauges.size(), histograms
+            );
             influxDB.write( points );
         } catch( Exception e ) {
             if( e.getCause() instanceof ConnectException ) {
@@ -101,95 +111,71 @@ class InfluxDBReporter extends ScheduledReporter {
         }
     }
 
-    private int reportCounters( SortedMap<String, Counter> counters, BatchPoints points ) {
-        int before = points.getPoints().size();
-        for( Map.Entry<String, Counter> entry : counters.entrySet() ) {
-            final long value = entry.getValue().getCount();
-            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), k -> value );
+    private void reportCounters( SortedMap<String, Counter> counters, SortedMap<String, Point.Builder> builders ) {
+        report( counters, builders, Counter::getCount );
+    }
 
-            if( !Objects.equals( value, lastValue ) ) {
-                lastReport.put( entry.getKey(), value );
+    private <T extends Metric> void report(
+        SortedMap<String, T> counters,
+        SortedMap<String, Point.Builder> builders,
+        Function<T, Object> func ) {
 
-                Point.Builder builder = Point
-                    .measurement( entry.getKey() );
+        final Map<String, SortedMap<String, T>> ap = aggregate( counters );
 
-                tags.forEach( builder::tag );
+        ap.forEach( ( pointName, metrics ) -> {
+            Point.Builder builder = builders.computeIfAbsent( pointName, ( p ) -> {
+                final Point.Builder b = Point.measurement( pointName ).time( currentTimeMillis(), MILLISECONDS );
+                tags.forEach( b::tag );
+                return b;
+            } );
 
-                final Point point = builder
-                    .field( "value", value )
-                    .build();
+            for( Map.Entry<String, T> entry : metrics.entrySet() ) {
+                builder.field( entry.getKey(), func.apply( entry.getValue() ) );
+            }
+        } );
+    }
 
-                points.point( point );
+    private <T extends Metric> SortedMap<String, SortedMap<String, T>> aggregate( SortedMap<String, T> metrics ) {
+        final SortedMap<String, SortedMap<String, T>> result = new TreeMap<>();
+
+        for( final Map.Entry<String, T> entry : metrics.entrySet() ) {
+            final Optional<Matcher> m = aggregates
+                .stream()
+                .map( a -> a.matcher( entry.getKey() ) )
+                .filter( Matcher::find )
+                .findAny();
+
+            if( m.isPresent() ) {
+                final String field = m.get().group( 1 ).substring( 1 );
+                final String point = StringUtils.removeEnd( entry.getKey(), m.get().group( 1 ) );
+                final SortedMap<String, T> map = result.computeIfAbsent( point, ( p ) -> new TreeMap<>() );
+                map.put( field, entry.getValue() );
+            } else {
+                final SortedMap<String, T> map = new TreeMap<>();
+                map.put( "value", entry.getValue() );
+                result.put( entry.getKey(), map );
             }
 
         }
-        return points.getPoints().size() - before;
+
+        return result;
     }
 
-    private int reportMeters( SortedMap<String, Meter> meters, BatchPoints points ) {
-        int before = points.getPoints().size();
-        for( Map.Entry<String, Meter> entry : meters.entrySet() ) {
-            final double value = entry.getValue().getOneMinuteRate();
-            final Object lastValue = lastReport.computeIfAbsent( entry.getKey(), k -> value );
-
-            if( !Objects.equals( value, lastValue ) ) {
-                lastReport.put( entry.getKey(), value );
-
-                Point.Builder builder = Point
-                    .measurement( entry.getKey() );
-
-                tags.forEach( builder::tag );
-
-                final Point point = builder
-                    .field( "value", format( convertRate( value ) ) )
-                    .build();
-
-                points.point( point );
-            }
-        }  return points.getPoints().size() - before;
+    private void reportMeters( SortedMap<String, Meter> meters, SortedMap<String, Point.Builder> builders ) {
+        report( meters, builders, ( m ) -> format( convertRate( m.getOneMinuteRate() ) ) );
     }
 
-    private int reportTimers( SortedMap<String, Timer> timers, BatchPoints points ) {
-        int before = points.getPoints().size();
-        for( Map.Entry<String, Timer> entry : timers.entrySet() ) {
-            double value = entry.getValue().getSnapshot().getMean();
-            makePoint( entry.getKey(), value, points, format( convertDuration( value ) ) );
-        }
-        return points.getPoints().size() - before;
+    private void reportTimers( SortedMap<String, Timer> timers, SortedMap<String, Point.Builder> builders ) {
+        report( timers, builders, ( t ) -> format( convertDuration( t.getSnapshot().getMean() ) ) );
     }
 
-    private int reportGauges( SortedMap<String, Gauge> gauges, BatchPoints points ) {
-        int before = points.getPoints().size();
-        for( Map.Entry<String, Gauge> entry : gauges.entrySet() ) {
-            Object value = entry.getValue().getValue();
-            makePoint( entry.getKey(), value, points, format( value ) );
-        }
-        return points.getPoints().size() - before;
+    private void reportGauges( SortedMap<String, Gauge> gauges, SortedMap<String, Point.Builder> builders ) {
+        report( gauges, builders, ( g ) -> format( g.getValue() ) );
     }
 
-    private int reportHistograms( SortedMap<String, Histogram> gauges, BatchPoints points ) {
-        int before = points.getPoints().size();
-        for( Map.Entry<String, Histogram> entry : gauges.entrySet() ) {
-            double mean = entry.getValue().getSnapshot().getMean();
-            makePoint( entry.getKey(), mean, points, format( mean ) );
-        }
-        return points.getPoints().size() - before;
+    private void reportHistograms( SortedMap<String, Histogram> histograms, SortedMap<String, Point.Builder> builders ) {
+        report( histograms, builders, ( h ) -> format( h.getSnapshot().getMean() ) );
     }
-
-    private void makePoint( String key, Object value, BatchPoints points, Object formatted ) {
-        final Object lastValue = lastReport.computeIfAbsent( key, k -> value );
-
-        if( !Objects.equals( value, lastValue ) ) {
-            lastReport.put( key, value );
-
-            Point.Builder builder = Point.measurement( key );
-            tags.forEach( builder::tag );
-            builder.field( "value", formatted );
-
-            points.point( builder.build() );
-        }
-    }
-
 
     private String format( double v ) {
         // the Carbon plaintext format is pretty underspecified, but it seems like it just wants
@@ -225,6 +211,7 @@ class InfluxDBReporter extends ScheduledReporter {
         private TimeUnit rateUnit;
         private TimeUnit durationUnit;
         private ReporterFilter filter;
+        private ArrayList<String> aggregates;
 
         public Builder( MetricRegistry registry ) {
             this.registry = registry;
@@ -269,12 +256,18 @@ class InfluxDBReporter extends ScheduledReporter {
                 registry,
                 "influx-reporter",
                 filter,
+                aggregates,
                 rateUnit,
                 durationUnit );
         }
 
         public Builder withFilter( ReporterFilter filter ) {
             this.filter = filter;
+            return this;
+        }
+
+        public Builder withAggregates( ArrayList<String> aggregates ) {
+            this.aggregates = aggregates;
             return this;
         }
     }

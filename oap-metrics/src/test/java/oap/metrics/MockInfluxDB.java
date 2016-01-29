@@ -24,42 +24,71 @@
 
 package oap.metrics;
 
-import oap.net.Inet;
+import org.influxdb.InfluxDB;
+import org.influxdb.dto.*;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-public class InfluxReporter {
-    protected String host;
-    protected int port;
-    protected String database;
-    protected String login;
-    protected String password;
-    protected ArrayList<String> include = new ArrayList<>();
-    protected ArrayList<String> exclude = new ArrayList<>();
-    protected ArrayList<String> aggregates = new ArrayList<>();
-    protected HashMap<String, Object> tags = new HashMap<>();
+import static java.util.Collections.emptyList;
 
-    protected long period = 60 * 1000;
+public class MockInfluxDB implements InfluxDB {
+    public ArrayList<Point> writes = new ArrayList<>();
 
-    private InfluxDBReporter reporter;
-
-    public void start() {
-        InfluxDBReporter.Builder builder = InfluxDBReporter
-            .forRegistry( Metrics.registry )
-            .withFilter( new ReporterFilter( include, exclude ) )
-            .withAggregates( aggregates )
-            .withTag( "host", Inet.HOSTNAME )
-            .convertRatesTo( TimeUnit.MINUTES )
-            .convertDurationsTo( TimeUnit.MICROSECONDS )
-            .withConnect( this.host, port, database, login, password );
-        tags.forEach( ( name, value ) -> builder.withTag( name, String.valueOf( value ) ) );
-        reporter = builder.build();
-        reporter.start( period, TimeUnit.MILLISECONDS );
+    @Override
+    public InfluxDB setLogLevel( LogLevel logLevel ) {
+        return this;
     }
 
-    public void stop() {
-        reporter.stop();
+    @Override
+    public InfluxDB enableBatch( int actions, int flushDuration, TimeUnit flushDurationTimeUnit ) {
+        return this;
+    }
+
+    @Override
+    public void disableBatch() {
+
+    }
+
+    @Override
+    public Pong ping() {
+        return new Pong();
+    }
+
+    @Override
+    public String version() {
+        return "mock";
+    }
+
+    @Override
+    public void write( String database, String retentionPolicy, Point point ) {
+        writes.add( point );
+    }
+
+    @Override
+    public void write( BatchPoints batchPoints ) {
+        writes.addAll( batchPoints.getPoints() );
+
+    }
+
+    @Override
+    public QueryResult query( Query query ) {
+        return new QueryResult();
+    }
+
+    @Override
+    public void createDatabase( String name ) {
+
+    }
+
+    @Override
+    public void deleteDatabase( String name ) {
+
+    }
+
+    @Override
+    public List<String> describeDatabases() {
+        return emptyList();
     }
 }
