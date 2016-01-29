@@ -146,7 +146,7 @@ public class SocketLoggingServer implements Runnable {
                 log.debug( "[{}] {} closed", hostName, socket );
             } catch( IOException e ) {
                 log.error( "[" + hostName + "] " + e.getMessage(), e );
-            } catch( Exception e ) {
+            } catch( Throwable e ) {
                 log.error( "Uncaught exception [" + hostName + "] " + e.getMessage(), e );
             } finally {
                 Sockets.close( socket );
