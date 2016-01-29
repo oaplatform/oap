@@ -93,11 +93,18 @@ public class Writer implements Closeable {
 
     public synchronized void write( byte[] buffer, int offset, int length ) {
         try {
+            log.trace( "Before refresh writer {}", this );
+
             refresh();
-            if( out == null )
+            log.trace( "After refresh writer {}", this );
+
+            if( out == null ) {
+                log.trace( "out is null with writer {}", this );
                 out = new CountingOutputStream(
                     IoStreams.out( filename(), compress ? GZIP : PLAIN, bufferSize, true )
                 );
+                log.trace( "out is {} with writer {}", out,this );
+            }
             log.trace( "writing {} bytes to {}", length, this );
             out.write( buffer, offset, length );
 
