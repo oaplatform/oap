@@ -24,13 +24,15 @@
 package oap.testng;
 
 import oap.util.Try;
+import oap.util.concurrent.ThreadPoolExecutor;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.testng.Assert;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -51,19 +53,19 @@ public abstract class AbstractPerformance extends AbstractTest {
     }
 
     public static BenchmarkResult benchmark( String name, int samples, int experiments,
-        Try.ThrowingConsumer<Integer> code ) {
+                                             Try.ThrowingConsumer<Integer> code ) {
         return benchmark( name, samples, experiments, code, none, none, actions_s );
     }
 
     public static BenchmarkResult benchmark( String name, int samples, int experiments,
-        Try.ThrowingConsumer<Integer> code,
-        Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment ) {
+                                             Try.ThrowingConsumer<Integer> code,
+                                             Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment ) {
         return benchmark( name, samples, experiments, code, initExperiment, doneExperiment, actions_s );
     }
 
     public static BenchmarkResult benchmark( String name, int samples, int experiments,
-        Try.ThrowingConsumer<Integer> code,
-        Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment, Function<Long, String> rateToString ) {
+                                             Try.ThrowingConsumer<Integer> code,
+                                             Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment, Function<Long, String> rateToString ) {
         return Teamcity.progress( name + "...", () -> {
             List<BenchmarkResult> results = IntStream.range( 0, experiments )
                 .mapToObj( x -> {
@@ -76,7 +78,7 @@ public abstract class AbstractPerformance extends AbstractTest {
                                     return System.nanoTime() - start;
                                 } ).sum();
                                 long avg = total / samples / 1000;
-                                long rate = (long) (samples / (total / 1000000000f));
+                                long rate = ( long ) ( samples / ( total / 1000000000f ) );
                                 System.out.format(
                                     "benchmarking %s: %d samples, %d usec, avg time %d usec, rate %s\n",
                                     name, samples, total / 1000, avg, rateToString.apply( rate ) );
@@ -93,11 +95,11 @@ public abstract class AbstractPerformance extends AbstractTest {
             long avgTime = results.stream()
                 .skip( 1 )
                 .mapToLong( r -> r.time )
-                .sum() / (experiments - 1);
+                .sum() / ( experiments - 1 );
             long avgRate = results.stream()
                 .skip( 1 )
                 .mapToLong( r -> r.rate )
-                .sum() / (experiments - 1);
+                .sum() / ( experiments - 1 );
             System.out.format( "benchmarking %s : avg time %d usec, avg rate %s\n",
                 name, avgTime, rateToString.apply( avgRate ) );
 
@@ -108,23 +110,23 @@ public abstract class AbstractPerformance extends AbstractTest {
     }
 
     public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
-        Try.ThrowingConsumer<Integer> code ) {
+                                             Try.ThrowingConsumer<Integer> code ) {
         return benchmark( name, samples, experiments, threads, code, WARMING );
     }
 
     public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
-        Try.ThrowingConsumer<Integer> code, int warming ) {
+                                             Try.ThrowingConsumer<Integer> code, int warming ) {
         return benchmark( name, samples, experiments, threads, code, none, none, warming );
     }
 
     public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
-        Try.ThrowingConsumer<Integer> code,
-        Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment,
-        int warming ) {
+                                             Try.ThrowingConsumer<Integer> code,
+                                             Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment,
+                                             int warming ) {
 
         return Teamcity.progress( name + "...", () -> {
             System.out.println( "pool threads = " + threads );
-            ExecutorService pool = Executors.newFixedThreadPool( threads );
+            ExecutorService pool = new ThreadPoolExecutor( threads, threads, 0, TimeUnit.SECONDS, new SynchronousQueue<>() );
             if( warming > 0 ) {
                 System.out.println( "warming up..." );
                 IntStream
@@ -146,7 +148,7 @@ public abstract class AbstractPerformance extends AbstractTest {
                         IntStream
                             .range( 0, threads )
                             .mapToObj( t -> pool.submit( () -> IntStream
-                                .range( t * threadSamles, (t + 1) * threadSamles )
+                                .range( t * threadSamles, ( t + 1 ) * threadSamles )
                                 .forEach( code.asConsumer()::accept )
 
                             ) )
@@ -157,7 +159,7 @@ public abstract class AbstractPerformance extends AbstractTest {
                         long total = System.nanoTime() - start;
 
                         long avg = total / samples / 1000;
-                        long rate = (long) (samples / (total / 1000000000f));
+                        long rate = ( long ) ( samples / ( total / 1000000000f ) );
                         System.out.format(
                             "benchmarking %s: %d samples, %d usec, avg time %d usec, rate %d actions/s\n",
                             name, samples, total / 1000, avg, rate );
@@ -172,11 +174,11 @@ public abstract class AbstractPerformance extends AbstractTest {
             long avgTime = results.stream()
                 .skip( 1 )
                 .mapToLong( r -> r.time )
-                .sum() / (experiments - 1);
+                .sum() / ( experiments - 1 );
             long avgRate = results.stream()
                 .skip( 1 )
                 .mapToLong( r -> r.rate )
-                .sum() / (experiments - 1);
+                .sum() / ( experiments - 1 );
             System.out.format( "benchmarking %s : avg time %d usec, avg rate %d actions/s\n",
                 name, avgTime, avgRate );
 
@@ -189,7 +191,7 @@ public abstract class AbstractPerformance extends AbstractTest {
     public static <T> T time( String name, Supplier<T> code ) {
         long start = System.nanoTime();
         T result = code.get();
-        System.out.println( name + " took " + ((System.nanoTime() - start) / 1000) + " usec" );
+        System.out.println( name + " took " + ( ( System.nanoTime() - start ) / 1000 ) + " usec" );
         return result;
     }
 

@@ -29,12 +29,9 @@ import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.Sockets;
 import oap.logstream.LoggingBackend;
+import oap.util.concurrent.ThreadPoolExecutor;
 
-import java.io.Closeable;
-import java.io.DataInputStream;
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -45,12 +42,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class SocketLoggingServer implements Runnable {
-    private final ExecutorService executor = Executors.newCachedThreadPool();
+    private final ExecutorService executor =
+        new ThreadPoolExecutor( 0, 1024, 100, TimeUnit.SECONDS, new SynchronousQueue<>() );
     private final SynchronizedThread thread = new SynchronizedThread( this );
+    protected int soTimeout = 60000;
     private int port;
     private int bufferSize;
     private LoggingBackend backend;
@@ -58,7 +58,6 @@ public class SocketLoggingServer implements Runnable {
     private List<Worker> workers = new ArrayList<>();
     private ServerSocket serverSocket;
     private Map<String, Long> control = new ConcurrentHashMap<>();
-    protected int soTimeout = 60000;
 
     public SocketLoggingServer( int port, int bufferSize, LoggingBackend backend, Path controlState ) {
         this.port = port;
