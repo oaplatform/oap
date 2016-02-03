@@ -62,11 +62,9 @@ class InfluxDBReporter extends ScheduledReporter {
         this.database = database;
         this.tags = tags;
 
-        assert !aggregates.stream().filter( a -> !a.endsWith( ".*" ) ).findAny().isPresent();
-
         this.aggregates = aggregates
             .stream()
-            .map( a -> Pattern.compile( a.replace( ".", "\\." ).replace( "\\.*", "(\\.[^.]+)" ) ) )
+            .map( a -> Pattern.compile( a.replace( ".", "\\." ).replace( "\\.*", "(\\.[^,\\s]+)([^\\s]*)" ) ) )
             .collect( toList() );
 
     }
@@ -146,8 +144,10 @@ class InfluxDBReporter extends ScheduledReporter {
                 .findAny();
 
             if( m.isPresent() ) {
-                final String field = m.get().group( 1 ).substring( 1 );
-                final String point = StringUtils.removeEnd( entry.getKey(), m.get().group( 1 ) );
+                final Matcher matcher = m.get();
+                final String field = matcher.group( 1 ).substring( 1 );
+                final String tags = matcher.group( 2 );
+                final String point = StringUtils.removeEnd( entry.getKey(), matcher.group( 1 ) + tags ) + tags;
                 final SortedMap<String, T> map = result.computeIfAbsent( point, ( p ) -> new TreeMap<>() );
                 map.put( field, entry.getValue() );
             } else {
