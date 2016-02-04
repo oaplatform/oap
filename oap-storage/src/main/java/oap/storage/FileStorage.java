@@ -200,7 +200,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         fireDeleted( objects );
     }
 
-    private synchronized Optional<Metadata<T>> _remove( String id ) {
+    private Optional<Metadata<T>> _remove( String id ) {
         synchronized( id.intern() ) {
             try {
                 final Path file = this.path.resolve( id + ".json" );
