@@ -23,12 +23,15 @@
  */
 package oap.logstream;
 
+import oap.util.Stream;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-public class Filename {
+import java.util.List;
+
+public class Timestamp {
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" ).withZoneUTC();
     private static final DateTimeFormatter directoryFormatter = DateTimeFormat.forPattern( "yyyy-MM/dd" ).withZoneUTC();
 
@@ -51,5 +54,11 @@ public class Filename {
 
     public static String directoryName( String timestamp ) {
         return directoryFormatter.print( formatter.parseDateTime( timestamp.substring( 0, 12 ) ) );
+    }
+
+    public static Stream<String> timestamps( int back, int bucketsPerHour ) {
+        DateTime now = DateTime.now();
+        return Stream.of( back, b -> b >= 0, b -> b - 1 )
+            .map( b -> formatDate( now.minusMinutes( b * 60 / bucketsPerHour ), bucketsPerHour ) );
     }
 }

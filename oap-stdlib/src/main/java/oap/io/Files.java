@@ -45,11 +45,11 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 @Slf4j
 public final class Files {
-    public static ArrayList<Path> fast_wildcard( String basePath, String wildcard ) {
-        return fast_wildcard( path( basePath ), wildcard );
+    public static ArrayList<Path> fastWildcard( String basePath, String wildcard ) {
+        return fastWildcard( path( basePath ), wildcard );
     }
 
-    public static ArrayList<Path> fast_wildcard( Path basePath, String wildcard ) {
+    public static ArrayList<Path> fastWildcard( Path basePath, String wildcard ) {
         final ArrayList<Path> result = new ArrayList<>();
         new FileWalker( basePath, wildcard ).walkFileTree( result::add );
         return result;

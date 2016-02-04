@@ -55,10 +55,10 @@ public class Archiver implements Runnable {
     @Override
     public void run() {
         log.debug( "let's start packing of {} in {} into {}", mask, sourceDirectory, destinationDirectory );
-        String timestamp = Filename.formatDate( DateTime.now(), bucketsPerHour );
+        String timestamp = Timestamp.formatDate( DateTime.now(), bucketsPerHour );
 
         log.debug( "current timestamp is {}", timestamp );
-        long elapsed = DateTimeUtils.currentTimeMillis() - Filename.currentBucketStartMillis( bucketsPerHour );
+        long elapsed = DateTimeUtils.currentTimeMillis() - Timestamp.currentBucketStartMillis( bucketsPerHour );
         if( elapsed < safeInterval )
             log.debug( "not safe to process yet ({}ms), some of the files could still be open, waiting...", elapsed );
         else for( Path path : Files.wildcard( sourceDirectory, mask ) ) {

@@ -30,7 +30,7 @@ import oap.concurrent.Stopwatch;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.IoStreams;
-import oap.logstream.Filename;
+import oap.logstream.Timestamp;
 import oap.metrics.Metrics;
 import org.joda.time.DateTime;
 
@@ -114,7 +114,7 @@ public class Writer implements Closeable {
     }
 
     private Path filename() {
-        return logDirectory.resolve( Filename.directoryName( lastPattern ) )
+        return logDirectory.resolve( Timestamp.directoryName( lastPattern ) )
             .resolve( filename + "-" + lastPattern + "." + ext );
     }
 
@@ -129,7 +129,7 @@ public class Writer implements Closeable {
     }
 
     private String currentPattern() {
-        return Filename.formatDate( DateTime.now(), bucketsPerHour );
+        return Timestamp.formatDate( DateTime.now(), bucketsPerHour );
     }
 
     @Override

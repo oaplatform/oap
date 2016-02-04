@@ -25,21 +25,44 @@
 package oap.logstream;
 
 import oap.testng.AbstractTest;
+import oap.testng.Asserts;
+import oap.util.Dates;
+import oap.util.Lists;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
+import java.util.stream.Stream;
+
 import static org.testng.Assert.assertEquals;
 
-public class FilenameTest extends AbstractTest {
+public class TimestampTest extends AbstractTest {
 
     @Test
-    public void testFormatDate() throws Exception {
+    public void formatDate() throws Exception {
         DateTime date = new DateTime( 2015, 12, 3, 11, 28, 30 );
-        assertEquals( Filename.formatDate( date, 12 ), "2015-12-03-11-05" );
+        assertEquals( Timestamp.formatDate( date, 12 ), "2015-12-03-11-05" );
     }
 
     @Test
-    public void testDirectoryName() throws Exception {
-        assertEquals( Filename.directoryName( "2015-12-03-11-05" ), "2015-12/03" );
+    public void directoryName() throws Exception {
+        assertEquals( Timestamp.directoryName( "2015-12-03-11-05" ), "2015-12/03" );
+    }
+
+    @Test
+    public void timestamps() {
+        Dates.setTimeFixed( 2016, 2, 1, 1, 1, 1 );
+        Asserts.assertEquals( Timestamp.timestamps( 10, 12 ), Stream.of(
+            "2016-02-01-00-02",
+            "2016-02-01-00-03",
+            "2016-02-01-00-04",
+            "2016-02-01-00-05",
+            "2016-02-01-00-06",
+            "2016-02-01-00-07",
+            "2016-02-01-00-08",
+            "2016-02-01-00-09",
+            "2016-02-01-00-10",
+            "2016-02-01-00-11",
+            "2016-02-01-01-00"
+        ) );
     }
 }
