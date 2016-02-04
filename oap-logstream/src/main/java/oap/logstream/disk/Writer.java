@@ -130,7 +130,7 @@ public class Writer implements Closeable {
     }
 
     private String currentPattern() {
-        return Timestamp.formatDate( DateTime.now(), bucketsPerHour );
+        return Timestamp.format( DateTime.now(), bucketsPerHour );
     }
 
     @Override

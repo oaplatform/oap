@@ -25,19 +25,21 @@ package oap.logstream;
 
 import oap.util.Stream;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-
-import java.util.List;
 
 public class Timestamp {
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" ).withZoneUTC();
     private static final DateTimeFormatter directoryFormatter = DateTimeFormat.forPattern( "yyyy-MM/dd" ).withZoneUTC();
 
-    public static String formatDate( DateTime date, int bucketsPerHour ) {
+    public static String format( DateTime date, int bucketsPerHour ) {
         int bucket = currentBucket( date, bucketsPerHour );
         return formatter.print( date ) + "-" + ( bucket > 9 ? bucket : "0" + bucket );
+    }
+
+    public static DateTime parse( String timestamp, int bucketsPerHour ) {
+        return formatter.parseDateTime( timestamp.substring( 0, 13 ) )
+            .plusMinutes( Integer.parseInt( timestamp.substring( 14, 16 ) ) * 60 / bucketsPerHour );
     }
 
     private static int currentBucket( DateTime date, int bucketsPerHour ) {
@@ -53,12 +55,15 @@ public class Timestamp {
     }
 
     public static String directoryName( String timestamp ) {
-        return directoryFormatter.print( formatter.parseDateTime( timestamp.substring( 0, 12 ) ) );
+        return directoryFormatter.print( formatter.parseDateTime( timestamp.substring( 0, 13 ) ) );
     }
 
     public static Stream<String> timestamps( int back, int bucketsPerHour ) {
-        DateTime now = DateTime.now();
+        return timestamps( DateTime.now(), back, bucketsPerHour );
+    }
+
+    public static Stream<String> timestamps( DateTime since, int back, int bucketsPerHour ) {
         return Stream.of( back, b -> b >= 0, b -> b - 1 )
-            .map( b -> formatDate( now.minusMinutes( b * 60 / bucketsPerHour ), bucketsPerHour ) );
+            .map( b -> format( since.minusMinutes( b * 60 / bucketsPerHour ), bucketsPerHour ) );
     }
 }

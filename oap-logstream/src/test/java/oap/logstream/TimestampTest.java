@@ -26,8 +26,6 @@ package oap.logstream;
 
 import oap.testng.AbstractTest;
 import oap.testng.Asserts;
-import oap.util.Dates;
-import oap.util.Lists;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
@@ -38,9 +36,8 @@ import static org.testng.Assert.assertEquals;
 public class TimestampTest extends AbstractTest {
 
     @Test
-    public void formatDate() throws Exception {
-        DateTime date = new DateTime( 2015, 12, 3, 11, 28, 30 );
-        assertEquals( Timestamp.formatDate( date, 12 ), "2015-12-03-11-05" );
+    public void format() throws Exception {
+        assertEquals( Timestamp.format( new DateTime( 2015, 12, 3, 11, 28, 30 ), 12 ), "2015-12-03-11-05" );
     }
 
     @Test
@@ -50,8 +47,7 @@ public class TimestampTest extends AbstractTest {
 
     @Test
     public void timestamps() {
-        Dates.setTimeFixed( 2016, 2, 1, 1, 1, 1 );
-        Asserts.assertEquals( Timestamp.timestamps( 10, 12 ), Stream.of(
+        Asserts.assertEquals( Timestamp.timestamps( new DateTime( 2016, 2, 1, 1, 1, 1 ), 10, 12 ), Stream.of(
             "2016-02-01-00-02",
             "2016-02-01-00-03",
             "2016-02-01-00-04",
@@ -64,5 +60,16 @@ public class TimestampTest extends AbstractTest {
             "2016-02-01-00-11",
             "2016-02-01-01-00"
         ) );
+    }
+
+    @Test
+    public void parse() {
+        DateTime[] times = {
+            new DateTime( 2016, 2, 1, 1, 0 ),
+            new DateTime( 2016, 2, 1, 1, 55 ),
+            new DateTime( 2016, 2, 1, 1, 5 ),
+            new DateTime( 2016, 2, 1, 1, 15 )
+        };
+        for( DateTime time : times ) assertEquals( Timestamp.parse( Timestamp.format( time, 12 ), 12 ), time );
     }
 }

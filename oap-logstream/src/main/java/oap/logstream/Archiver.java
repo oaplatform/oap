@@ -55,7 +55,7 @@ public class Archiver implements Runnable {
     @Override
     public void run() {
         log.debug( "let's start packing of {} in {} into {}", mask, sourceDirectory, destinationDirectory );
-        String timestamp = Timestamp.formatDate( DateTime.now(), bucketsPerHour );
+        String timestamp = Timestamp.format( DateTime.now(), bucketsPerHour );
 
         log.debug( "current timestamp is {}", timestamp );
         long elapsed = DateTimeUtils.currentTimeMillis() - Timestamp.currentBucketStartMillis( bucketsPerHour );
