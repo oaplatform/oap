@@ -6,6 +6,7 @@ APPHOME=`pwd`
 APPNAME=`basename $APPHOME`
 
 . $APPHOME/bin/functions.sh
+[ -f $APPHOME/bin/env.sh ] && . $APPHOME/bin/env.sh
 
 case $1 in
     "--start")
