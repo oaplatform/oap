@@ -40,8 +40,12 @@ import java.io.Reader;
 public class HoconFactoryWithFallback extends HoconFactory {
     private final Config additinal;
 
-    public HoconFactoryWithFallback( String config ) {
-        additinal = ConfigFactory.parseString( config );
+    public HoconFactoryWithFallback( String... config ) {
+        Config a = ConfigFactory.empty();
+
+        for( String c : config ) a = a.withFallback( ConfigFactory.parseString( c ) );
+
+        additinal = a;
     }
 
     @Override
