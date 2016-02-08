@@ -78,13 +78,9 @@ class InfluxDBReporter extends ScheduledReporter {
                                      SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers ) {
         try {
 
-            final long time = currentTimeMillis();
             BatchPoints.Builder pointsBuilder = BatchPoints.database( database );
 
-            BatchPoints points = pointsBuilder
-                .consistency( InfluxDB.ConsistencyLevel.QUORUM )
-                .time( time, MILLISECONDS )
-                .build();
+            BatchPoints points = pointsBuilder.build();
 
             final SortedMap<String, Point.Builder> builders = new TreeMap<>();
 
