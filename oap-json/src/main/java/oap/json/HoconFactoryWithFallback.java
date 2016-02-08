@@ -33,12 +33,17 @@ import com.typesafe.config.ConfigParseOptions;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Map;
 
 /**
  * Created by Igor Petrenko on 11.11.2015.
  */
 public class HoconFactoryWithFallback extends HoconFactory {
     private final Config additinal;
+
+    public HoconFactoryWithFallback( Map<String, Map<String, Object>> config ) {
+        additinal = ConfigFactory.parseMap( config );
+    }
 
     public HoconFactoryWithFallback( String... config ) {
         Config a = ConfigFactory.empty();

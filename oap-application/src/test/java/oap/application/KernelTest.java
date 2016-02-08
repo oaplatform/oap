@@ -81,7 +81,7 @@ public class KernelTest extends AbstractTest {
         modules.add( Resources.url( KernelTest.class, "modules/m2.json" ).get() );
         Kernel kernel = new Kernel( modules );
 
-        Files.writeString( Env.tmpPath( "conf.f/test.conf" ), "ServiceOne.parameters.i2 = \"100\"\na.b = 3s" );
+        Files.writeString( Env.tmpPath( "conf.f/test.conf" ), "so.i2 = \"100\"\na.b = 3s" );
         Files.writeString( Env.tmpPath( "application.conf" ), "ServiceTwo.parameters.j = ${a.b}" );
 
         try {

@@ -72,6 +72,10 @@ public class Binder {
         return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( config ) ), false ) );
     }
 
+    public static Binder hoconWithConfig( Map<String, Map<String, Object>> config ) {
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( config ) ), false ) );
+    }
+
     private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping ) {
         mapper.registerModule( new AfterburnerModule() );
 

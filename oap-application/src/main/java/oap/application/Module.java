@@ -84,7 +84,7 @@ public class Module {
     }
 
     public static Module parse( String json, Map<String, Map<String, Object>> config ) {
-        final Module module = Binder.hocon.unmarshal( Module.class, json );
+        final Module module = Binder.hoconWithConfig( config ).unmarshal( Module.class, json );
 
         module.services
             .entrySet()
