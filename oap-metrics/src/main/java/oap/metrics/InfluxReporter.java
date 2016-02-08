@@ -40,6 +40,9 @@ public class InfluxReporter {
     protected ArrayList<String> exclude = new ArrayList<>();
     protected ArrayList<String> aggregates = new ArrayList<>();
     protected HashMap<String, Object> tags = new HashMap<>();
+    protected long connectionTimeout = 1000;
+    protected long readTimeout = 1000;
+    protected long writeTimeout = 1000;
 
     protected long period = 60 * 1000;
 
@@ -53,7 +56,10 @@ public class InfluxReporter {
             .withTag( "host", Inet.HOSTNAME )
             .convertRatesTo( TimeUnit.MINUTES )
             .convertDurationsTo( TimeUnit.MICROSECONDS )
-            .withConnect( this.host, port, database, login, password );
+            .withConnect( this.host, port, database, login, password )
+            .withConnectionTimeout( connectionTimeout )
+            .withReadTimeout( readTimeout )
+            .withWriteTimeout( writeTimeout );
         tags.forEach( ( name, value ) -> builder.withTag( name, String.valueOf( value ) ) );
         reporter = builder.build();
         reporter.start( period, TimeUnit.MILLISECONDS );

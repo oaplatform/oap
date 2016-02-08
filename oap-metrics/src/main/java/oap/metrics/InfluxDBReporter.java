@@ -208,6 +208,9 @@ class InfluxDBReporter extends ScheduledReporter {
         private TimeUnit durationUnit;
         private ReporterFilter filter;
         private ArrayList<String> aggregates;
+        private long connectionTimeout;
+        private long readTimeout;
+        private long writeTimeout;
 
         public Builder( MetricRegistry registry ) {
             this.registry = registry;
@@ -242,6 +245,10 @@ class InfluxDBReporter extends ScheduledReporter {
         public InfluxDBReporter build() {
             InfluxDB influxDB = InfluxDBFactory.connect( "http://" + host + ":" + port, login, password );
 
+            influxDB.setConnectTimeout( connectionTimeout, MILLISECONDS );
+            influxDB.setReadTimeout( readTimeout, MILLISECONDS );
+            influxDB.setWriteTimeout( writeTimeout, MILLISECONDS );
+
             if( logger.isTraceEnabled() )
                 influxDB.setLogLevel( InfluxDB.LogLevel.FULL );
 
@@ -264,6 +271,21 @@ class InfluxDBReporter extends ScheduledReporter {
 
         public Builder withAggregates( ArrayList<String> aggregates ) {
             this.aggregates = aggregates;
+            return this;
+        }
+
+        public Builder withConnectionTimeout( long connectionTimeout ) {
+            this.connectionTimeout = connectionTimeout;
+            return this;
+        }
+
+        public Builder withReadTimeout( long readTimeout ) {
+            this.readTimeout = readTimeout;
+            return this;
+        }
+
+        public Builder withWriteTimeout( long writeTimeout ) {
+            this.writeTimeout = writeTimeout;
             return this;
         }
     }

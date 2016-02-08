@@ -78,6 +78,11 @@ public class MockInfluxDB implements InfluxDB {
     }
 
     @Override
+    public QueryResult query( Query query, TimeUnit timeUnit ) {
+        return new QueryResult();
+    }
+
+    @Override
     public void createDatabase( String name ) {
 
     }
@@ -90,5 +95,18 @@ public class MockInfluxDB implements InfluxDB {
     @Override
     public List<String> describeDatabases() {
         return emptyList();
+    }
+
+    @Override
+    public void setConnectTimeout( long connectTimeout, TimeUnit timeUnit ) {
+    }
+
+    @Override
+    public void setReadTimeout( long readTimeout, TimeUnit timeUnit ) {
+    }
+
+    @Override
+    public void setWriteTimeout( long writeTimeout, TimeUnit timeUnit ) {
+
     }
 }
