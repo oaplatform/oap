@@ -26,14 +26,19 @@ package oap.metrics;
 
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
+import com.google.common.base.Throwables;
+import com.google.common.escape.Escapers;
 import org.apache.commons.lang3.StringUtils;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
+import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.ConnectException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +48,6 @@ import java.util.regex.Pattern;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
-import static org.joda.time.DateTimeUtils.currentTimeMillis;
 
 class InfluxDBReporter extends ScheduledReporter {
     private static final Logger logger = LoggerFactory.getLogger( InfluxDBReporter.class );
@@ -62,6 +66,19 @@ class InfluxDBReporter extends ScheduledReporter {
         this.database = database;
         this.tags = tags;
 
+        try {
+            final Field key_escaper = Point.class.getDeclaredField( "KEY_ESCAPER" );
+            key_escaper.setAccessible( true );
+
+            Field modifiersField = Field.class.getDeclaredField( "modifiers" );
+            modifiersField.setAccessible( true );
+            modifiersField.setInt( key_escaper, key_escaper.getModifiers() & ~Modifier.FINAL );
+
+            key_escaper.set( null, Escapers.builder().addEscape( ' ', "\\ " ).build() );
+        } catch( NoSuchFieldException | IllegalAccessException e ) {
+            throw Throwables.propagate( e );
+        }
+
         this.aggregates = aggregates
             .stream()
             .map( a -> Pattern.compile( a.replace( ".", "\\." ).replace( "\\.*", "(\\.[^,\\s]+)([^\\s]*)" ) ) )
@@ -78,6 +95,8 @@ class InfluxDBReporter extends ScheduledReporter {
                                      SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers ) {
         try {
 
+            final long time = DateTimeUtils.currentTimeMillis();
+
             BatchPoints.Builder pointsBuilder = BatchPoints.database( database );
 
             BatchPoints points = pointsBuilder.build();
@@ -90,7 +109,7 @@ class InfluxDBReporter extends ScheduledReporter {
             reportGauges( gauges, builders );
             reportHistograms( histograms, builders );
 
-            builders.values().forEach( b -> points.point( b.build() ) );
+            builders.values().forEach( b -> points.point( b.time( time, MILLISECONDS ).useInteger( true ).build() ) );
 
             logger.trace( "reporting {} counters, {} meters, {} timers, {} gauges, {} histograms",
                 counters.size(), meters.size(), timers.size(), gauges.size(), histograms
@@ -118,7 +137,7 @@ class InfluxDBReporter extends ScheduledReporter {
 
         ap.forEach( ( pointName, metrics ) -> {
             Point.Builder builder = builders.computeIfAbsent( pointName, ( p ) -> {
-                final Point.Builder b = Point.measurement( pointName ).time( currentTimeMillis(), MILLISECONDS );
+                final Point.Builder b = Point.measurement( pointName );
                 tags.forEach( b::tag );
                 return b;
             } );
@@ -158,42 +177,19 @@ class InfluxDBReporter extends ScheduledReporter {
     }
 
     private void reportMeters( SortedMap<String, Meter> meters, SortedMap<String, Point.Builder> builders ) {
-        report( meters, builders, ( m ) -> format( convertRate( m.getOneMinuteRate() ) ) );
+        report( meters, builders, ( m ) -> convertRate( m.getOneMinuteRate() ) );
     }
 
     private void reportTimers( SortedMap<String, Timer> timers, SortedMap<String, Point.Builder> builders ) {
-        report( timers, builders, ( t ) -> format( convertDuration( t.getSnapshot().getMean() ) ) );
+        report( timers, builders, ( t ) -> convertDuration( t.getSnapshot().getMean() ) );
     }
 
     private void reportGauges( SortedMap<String, Gauge> gauges, SortedMap<String, Point.Builder> builders ) {
-        report( gauges, builders, ( g ) -> format( g.getValue() ) );
+        report( gauges, builders, Gauge::getValue );
     }
 
     private void reportHistograms( SortedMap<String, Histogram> histograms, SortedMap<String, Point.Builder> builders ) {
-        report( histograms, builders, ( h ) -> format( h.getSnapshot().getMean() ) );
-    }
-
-    private String format( double v ) {
-        // the Carbon plaintext format is pretty underspecified, but it seems like it just wants
-        // US-formatted digits
-        return String.format( Locale.US, "%2.2f", v );
-    }
-
-    private String format( Object o ) {
-        if( o instanceof Float ) {
-            return format( ( ( Float ) o ).doubleValue() );
-        } else if( o instanceof Double ) {
-            return format( ( ( Double ) o ).doubleValue() );
-        } else if( o instanceof Byte ) {
-            return format( ( ( Byte ) o ).longValue() );
-        } else if( o instanceof Short ) {
-            return format( ( ( Short ) o ).longValue() );
-        } else if( o instanceof Integer ) {
-            return format( ( ( Integer ) o ).longValue() );
-        } else if( o instanceof Long ) {
-            return format( ( ( Long ) o ).longValue() );
-        }
-        return null;
+        report( histograms, builders, ( h ) -> h.getSnapshot().getMean() );
     }
 
     public static class Builder {

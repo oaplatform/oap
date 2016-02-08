@@ -82,8 +82,8 @@ public class InfluxDBReporterTest extends AbstractTest {
         );
 
         assertEquals( influxDB.writes.stream().map( Point::lineProtocol ).collect( joining( "\n" ) ),
-            "test h1=10.00,h2=20.00,name1=1,name2=2,t1=10.00,t2=0.42 1454055727921000000\n" +
-                "test2.test2 g1=10.00,g2=10.00,m1=0.00,m2=0.00 1454055727921000000" );
+            "test h1=10.0,h2=20.0,name1=1i,name2=2i,t1=10.0,t2=0.41666666666666663 1454055727921000000\n" +
+                "test2.test2 g1=10i,g2=10i,m1=0.0,m2=0.0 1454055727921000000" );
     }
 
     @Test
@@ -116,6 +116,6 @@ public class InfluxDBReporterTest extends AbstractTest {
         );
 
         assertEquals( influxDB.writes.stream().map( Point::lineProtocol ).collect( joining( "\n" ) ),
-            "test,b=10,v=20 name1=1,name2=2 1454055727921000000" );
+            "test,b=10,v=20 name1=1i,name2=2i 1454055727921000000" );
     }
 }
