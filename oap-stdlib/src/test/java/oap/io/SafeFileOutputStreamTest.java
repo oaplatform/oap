@@ -33,6 +33,7 @@ import java.nio.file.Path;
 
 import static oap.io.IoAsserts.assertFileContent;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class SafeFileOutputStreamTest extends AbstractTest {
     @Test
@@ -47,4 +48,18 @@ public class SafeFileOutputStreamTest extends AbstractTest {
         assertFileContent( path, "111" );
     }
 
+    @Test
+    public void testRemoveIfEmpty() throws IOException {
+        Path path = Env.tmpPath( "1" );
+        path.getParent().toFile().mkdirs();
+        SafeFileOutputStream stream1 = new SafeFileOutputStream( path, false, true );
+        stream1.flush();
+        stream1.close();
+        assertFalse( path.toFile().exists() );
+
+        SafeFileOutputStream stream2 = new SafeFileOutputStream( path, false, false );
+        stream2.flush();
+        stream2.close();
+        assertTrue( path.toFile().exists() );
+    }
 }
