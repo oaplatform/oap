@@ -176,6 +176,8 @@ public class Kernel {
             dir -> {
                 ArrayList<Path> paths = Files.fastWildcard( dir, "*.conf" );
 
+                logger.info( "global configurations = {}", paths );
+
                 return Stream
                     .of( paths.stream() )
                     .map( Files::readString )
@@ -183,6 +185,8 @@ public class Kernel {
                     .toArray( String[]::new );
             }
         ).orElse( new String[]{ config } );
+
+        logger.info( "application configurations = {}", configPath );
 
         start( configPath.toFile().exists() ? Binder.hoconWithConfig( configs ).unmarshal(
             new TypeReference<Map<String, Map<String, Object>>>() {
