@@ -24,12 +24,14 @@
 
 package oap.metrics;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.net.Inet;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class InfluxReporter {
     protected String host;
     protected int port;
@@ -49,6 +51,12 @@ public class InfluxReporter {
     private InfluxDBReporter reporter;
 
     public void start() {
+        log.info( "host = {}", host );
+        log.info( "database = {}", database );
+        log.info( "login = {}", login );
+        log.info( "aggregates = {}", aggregates );
+        log.info( "period = {} ms", period );
+
         InfluxDBReporter.Builder builder = InfluxDBReporter
             .forRegistry( Metrics.registry )
             .withFilter( new ReporterFilter( include, exclude ) )
