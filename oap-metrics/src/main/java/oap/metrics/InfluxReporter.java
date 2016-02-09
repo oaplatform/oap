@@ -24,12 +24,14 @@
 
 package oap.metrics;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.net.Inet;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class InfluxReporter {
     protected String host;
     protected int port;
@@ -40,12 +42,21 @@ public class InfluxReporter {
     protected ArrayList<String> exclude = new ArrayList<>();
     protected ArrayList<String> aggregates = new ArrayList<>();
     protected HashMap<String, Object> tags = new HashMap<>();
+    protected long connectionTimeout = 1000;
+    protected long readTimeout = 1000;
+    protected long writeTimeout = 1000;
 
     protected long period = 60 * 1000;
 
     private InfluxDBReporter reporter;
 
     public void start() {
+        log.info( "host = {}", host );
+        log.info( "database = {}", database );
+        log.info( "login = {}", login );
+        log.info( "aggregates = {}", aggregates );
+        log.info( "period = {} ms", period );
+
         InfluxDBReporter.Builder builder = InfluxDBReporter
             .forRegistry( Metrics.registry )
             .withFilter( new ReporterFilter( include, exclude ) )
@@ -53,7 +64,10 @@ public class InfluxReporter {
             .withTag( "host", Inet.HOSTNAME )
             .convertRatesTo( TimeUnit.MINUTES )
             .convertDurationsTo( TimeUnit.MICROSECONDS )
-            .withConnect( this.host, port, database, login, password );
+            .withConnect( this.host, port, database, login, password )
+            .withConnectionTimeout( connectionTimeout )
+            .withReadTimeout( readTimeout )
+            .withWriteTimeout( writeTimeout );
         tags.forEach( ( name, value ) -> builder.withTag( name, String.valueOf( value ) ) );
         reporter = builder.build();
         reporter.start( period, TimeUnit.MILLISECONDS );

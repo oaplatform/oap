@@ -30,10 +30,12 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 
+import static oap.io.IoStreams.DEFAULT_BUFFER;
+
 public class FileExport extends OutputStreamExport<OutputStream> {
 
-    public FileExport( Path path, IoStreams.Encoding encoding ) {
-        super( IoStreams.out( path, encoding ) );
+    public FileExport( Path path, IoStreams.Encoding encoding, boolean safe, boolean removeEmpty ) {
+        super( IoStreams.out( path, encoding, DEFAULT_BUFFER, false, safe, removeEmpty ) );
     }
 
     @Override

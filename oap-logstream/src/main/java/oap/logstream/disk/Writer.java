@@ -81,8 +81,8 @@ public class Writer implements Closeable {
             log.trace( "closing output {} ({} bytes)", this, out.getCount() );
             stopwatch.measure( out::flush );
             stopwatch.measure( out::close );
-            Metrics.measureHistogram( "logger_server_bucket_size", out.getCount() );
-            Metrics.measureHistogram( "logger_server_bucket_time", stopwatch.elapsed() / 1000000L );
+            Metrics.measureHistogram( "logging.server_bucket_size", out.getCount() );
+            Metrics.measureHistogram( "logging.server_bucket_time", stopwatch.elapsed() / 1000000L );
             out = null;
         }
     }

@@ -112,7 +112,7 @@ public class Buffers implements Closeable {
 
     public synchronized void forEachReadyData( Predicate<Buffer> consumer ) {
         flush();
-        Metrics.measureHistogram( Metrics.name( "logging_buffers_count" ), readyBuffers.size() );
+        Metrics.measureHistogram( Metrics.name( "logging.buffers_count" ), readyBuffers.size() );
         log.debug( "buffers to go " + readyBuffers.size() );
         Iterator<Buffer> iterator = readyBuffers.iterator();
         while( iterator.hasNext() && !closed ) {

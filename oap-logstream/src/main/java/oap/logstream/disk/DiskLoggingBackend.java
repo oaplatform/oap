@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class DiskLoggingBackend implements LoggingBackend {
     public static final int DEFAULT_BUFFER = 1024 * 100;
-    public static final String METRICS_LOGGING_DISK = "logging_disk";
+    public static final String METRICS_LOGGING_DISK = "logging.disk";
     final Path logDirectory;
     final String ext;
     final int bufferSize;

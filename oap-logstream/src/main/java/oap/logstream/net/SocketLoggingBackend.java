@@ -54,7 +54,7 @@ public class SocketLoggingBackend implements LoggingBackend {
         this.port = port;
         this.buffers = new Buffers( location, bufferSize );
         this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::send );
-        Metrics.measureGauge( Metrics.name( "logging_buffers_cache" ), () -> buffers.cache.size() );
+        Metrics.measureGauge( Metrics.name( "logging.buffers_cache" ), () -> buffers.cache.size() );
 
     }
 
@@ -97,11 +97,11 @@ public class SocketLoggingBackend implements LoggingBackend {
     }
 
     private Boolean sendBuffer( Buffer buffer ) {
-        return Metrics.measureTimer( Metrics.name( "logging_buffer_send_time" ), () -> {
+        return Metrics.measureTimer( Metrics.name( "logging.buffer_send_time" ), () -> {
             try {
                 log.trace( "sending {}", buffer );
                 connection.write( buffer.data(), 0, buffer.length() );
-                Metrics.measureCounterIncrement( Metrics.name( "logging_socket" ), buffer.length() );
+                Metrics.measureCounterIncrement( Metrics.name( "logging.socket" ), buffer.length() );
                 loggingAvailable = true;
                 return true;
             } catch( Exception e ) {

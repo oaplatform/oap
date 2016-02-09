@@ -26,6 +26,7 @@ package oap.application;
 import com.fasterxml.jackson.core.type.TypeReference;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
+import oap.io.Files;
 import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
@@ -36,13 +37,7 @@ import org.slf4j.Logger;
 
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.stream.Collectors.toSet;
@@ -173,8 +168,28 @@ public class Kernel {
         Application.unregisterServices();
     }
 
-    public void start( Path configPath ) {
-        start( configPath.toFile().exists() ? Binder.hocon.unmarshal(
+    public void start( Path configPath, Optional<Path> configDirectoryPath ) {
+        configDirectoryPath.ifPresent( cdp -> logger.info( "global configuration directory = {}", cdp ) );
+
+        final String config = Files.readString( configPath );
+
+        final String[] configs = configDirectoryPath.map(
+            dir -> {
+                ArrayList<Path> paths = Files.fastWildcard( dir, "*.conf" );
+
+                logger.info( "global configurations = {}", paths );
+
+                return Stream
+                    .of( paths.stream() )
+                    .map( Files::readString )
+                    .concat( Stream.of( config ) )
+                    .toArray( String[]::new );
+            }
+        ).orElse( new String[]{ config } );
+
+        logger.info( "application configurations = {}", configPath );
+
+        start( configPath.toFile().exists() ? Binder.hoconWithConfig( configs ).unmarshal(
             new TypeReference<Map<String, Map<String, Object>>>() {
             }, configPath ) : Maps.of() );
     }

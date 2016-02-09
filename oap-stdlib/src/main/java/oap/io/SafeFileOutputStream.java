@@ -30,16 +30,26 @@ import java.nio.file.Path;
 
 public class SafeFileOutputStream extends FileOutputStream {
     private final Path path;
+    private final boolean removeEmpty;
 
-    public SafeFileOutputStream( Path path, boolean append ) throws FileNotFoundException {
+    public SafeFileOutputStream( Path path, boolean append, boolean removeEmpty ) throws FileNotFoundException {
         super( path + ".unsafe", append );
         this.path = path;
+        this.removeEmpty = removeEmpty;
+    }
+
+    public SafeFileOutputStream( Path path, boolean append ) throws FileNotFoundException {
+        this( path, append, false );
     }
 
     @Override
     public void close() throws IOException {
         super.close();
-        Files.rename( Files.path( path + ".unsafe" ), path );
+        final Path unsafePath = Files.path( this.path + ".unsafe" );
+        if( removeEmpty && unsafePath.toFile().length() == 0 )
+            Files.delete( unsafePath );
+        else
+            Files.rename( unsafePath, this.path );
     }
 
 

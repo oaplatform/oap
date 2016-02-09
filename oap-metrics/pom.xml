@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.6.72</version>
+        <version>1.6.82</version>
     </parent>
 
     <dependencies>
@@ -48,9 +48,15 @@
             <version>${metrics.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.github.influxdb</groupId>
+            <groupId>org.influxdb</groupId>
             <artifactId>influxdb-java</artifactId>
-            <version>influxdb-java-2.0</version>
+            <version>2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

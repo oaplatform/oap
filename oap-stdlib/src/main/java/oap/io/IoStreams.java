@@ -28,36 +28,18 @@ import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
+import java.util.zip.*;
 
 public class IoStreams {
 
     public static final int DEFAULT_BUFFER = 8192;
-
-    public enum Encoding {
-        PLAIN, ZIP, GZIP
-    }
 
     public static Stream<String> lines( URL url ) {
         return lines( url, Encoding.PLAIN, p -> {
@@ -137,14 +119,16 @@ public class IoStreams {
     }
 
     public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) {
-        return out( path, encoding, bufferSize, append, false );
+        return out( path, encoding, bufferSize, append, false, false );
     }
 
-    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe ) {
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe, boolean removeEmptyIfSafe ) {
+        assert ( !removeEmptyIfSafe || safe );
+
         path.toAbsolutePath().getParent().toFile().mkdirs();
         try {
             OutputStream fos = new BufferedOutputStream( safe ?
-                new SafeFileOutputStream( path, append ) :
+                new SafeFileOutputStream( path, append, removeEmptyIfSafe ) :
                 new FileOutputStream( path.toFile(), append ),
                 bufferSize );
             switch( encoding ) {
@@ -188,6 +172,10 @@ public class IoStreams {
             throw new UncheckedIOException( e );
         }
 
+    }
+
+    public enum Encoding {
+        PLAIN, ZIP, GZIP
     }
 
 

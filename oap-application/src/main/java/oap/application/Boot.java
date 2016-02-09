@@ -28,6 +28,8 @@ import oap.cli.Option;
 import oap.io.Files;
 import org.slf4j.Logger;
 
+import java.util.Optional;
+
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class Boot {
@@ -38,13 +40,16 @@ public class Boot {
     public static void main( String[] args ) {
         Cli.create()
             .group( "Starting service",
-                params -> Boot.start( (String) params.get( "config" ) ),
+                params ->
+                    Boot.start( ( String ) params.get( "config" ), Optional.ofNullable( ( String ) params.get( "config-directory" ) ) ),
                 Option.simple( "start" ).required(),
-                Option.string( "config" ).required() )
+                Option.string( "config" ).required(),
+                Option.string( "config-directory" )
+            )
             .act( args );
     }
 
-    public static void start( String config ) {
+    public static void start( String config, Optional<String> configdir ) {
         Runtime.getRuntime().addShutdownHook( new Thread( "shutdown-hook" ) {
             @Override
             public void run() {
@@ -53,7 +58,7 @@ public class Boot {
         } );
         try {
             kernel = new Kernel( Module.fromClassPath() );
-            kernel.start( Files.path( config ) );
+            kernel.start( Files.path( config ), configdir.map( Files::path ) );
             logger.debug( "started" );
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
