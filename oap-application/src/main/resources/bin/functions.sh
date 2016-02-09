@@ -15,6 +15,8 @@ then
     done
 fi
 
+[ -f $APPHOME/bin/env.sh ] && . $APPHOME/bin/env.sh
+
 if [ 0 -eq $UID ]
 then
     PIDFILE=/var/run/$APPNAME.pid
