@@ -37,7 +37,7 @@ public class Metadata<T> implements Comparable<Metadata<T>> {
     public int version = 0;
     public long modified = DateTimeUtils.currentTimeMillis();
     public boolean deleted;
-    @JsonTypeInfo( use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type")
+    @JsonTypeInfo( use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
     public T object;
 
     public Metadata( String id, T object ) {
@@ -55,6 +55,11 @@ public class Metadata<T> implements Comparable<Metadata<T>> {
 
     public void update( T t ) {
         this.object = t;
+        this.modified = DateTimeUtils.currentTimeMillis();
+    }
+
+    public void delete() {
+        this.deleted = true;
         this.modified = DateTimeUtils.currentTimeMillis();
     }
 }
