@@ -169,6 +169,7 @@ public class Kernel {
     }
 
     public void start( Path configPath, Optional<Path> configDirectoryPath ) {
+        configDirectoryPath.ifPresent( cdp -> logger.info( "global configuration directory = {}", cdp ) );
 
         final String config = Files.readString( configPath );
 
