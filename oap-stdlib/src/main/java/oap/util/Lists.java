@@ -23,13 +23,9 @@
  */
 package oap.util;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
@@ -38,6 +34,8 @@ import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
 
 public class Lists {
+
+    private static Random random = new Random();
 
     public static <T> Pair<List<T>, List<T>> partition( List<T> list, Predicate<T> p ) {
         ArrayList<T> left = new ArrayList<>();
@@ -71,8 +69,6 @@ public class Lists {
         return Stream.of( list ).collect( java.util.stream.Collectors.groupingBy( classifier ) );
     }
 
-    private static Random random = new Random();
-
     public static <E> Optional<E> random( List<E> list ) {
         return list.isEmpty() ? Optional.empty() :
             Optional.of( list.get( random.nextInt( list.size() ) ) );
@@ -104,6 +100,15 @@ public class Lists {
     public static class Collectors {
         public static <T> Collector<T, ?, ArrayList<T>> toArrayList() {
             return new oap.util.Collectors.CollectorImpl<T, ArrayList<T>, ArrayList<T>>( ArrayList::new, ArrayList::add,
+                ( left, right ) -> {
+                    left.addAll( right );
+                    return left;
+                },
+                oap.util.Collectors.CH_ID );
+        }
+
+        public static Collector<Integer, ?, IntArrayList> toIntArrayList() {
+            return new oap.util.Collectors.CollectorImpl<>( IntArrayList::new, ( v, c ) -> v.add( c ),
                 ( left, right ) -> {
                     left.addAll( right );
                     return left;
