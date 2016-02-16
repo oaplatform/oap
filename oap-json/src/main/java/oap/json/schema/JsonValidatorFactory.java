@@ -149,6 +149,6 @@ public class JsonValidatorFactory {
     }
 
     private SchemaAST parse( String schema ) {
-        return Binder.hocon.unmarshal( SchemaAST.class, schema );
+        return parse( (Object)Binder.hocon.unmarshal( Object.class, schema ) );
     }
 }
