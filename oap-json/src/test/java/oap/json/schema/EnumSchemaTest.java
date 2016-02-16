@@ -29,7 +29,7 @@ import org.testng.annotations.Test;
 public class EnumSchemaTest extends AbstractSchemaTest {
     @Test
     public void testStaticEnum() {
-        String schema = "{'type': 'string', 'enum': ['test', 'test1']}";
+        String schema = "{type: string, enum: [test, test1]}";
 
         vOk( schema, "null" );
         vOk( schema, "'test'" );
@@ -41,14 +41,14 @@ public class EnumSchemaTest extends AbstractSchemaTest {
     @Test
     public void testDynamicEnumPathSingleton() {
         String schema = "{" +
-            "'type':'object'," +
-            "'properties':{" +
-            "  'a':{" +
-            "    'type':'string'," +
+            "type:object," +
+            "properties:{" +
+            "  a:{" +
+            "    type:string," +
             "  }," +
-            "  'b':{" +
-            "    'type': 'string', " +
-            "    'enum': {'json-path':'a'}" +
+            "  b:{" +
+            "    type: string, " +
+            "    enum: {json-path:a}" +
             "  }" +
             "}" +
             "}";
@@ -62,20 +62,20 @@ public class EnumSchemaTest extends AbstractSchemaTest {
     @Test
     public void testDynamicEnumPathListObjects() {
         String schema = "{" +
-            "'type':'object'," +
-            "'properties':{" +
-            "  'a':{" +
-            "    'type':'array'," +
-            "    'items': {" +
-            "      'type':'object'," +
-            "      'properties':{" +
-            "        'c': {'type':'string'}" +
+            "type:object," +
+            "properties:{" +
+            "  a:{" +
+            "    type:array," +
+            "    items: {" +
+            "      type:object," +
+            "      properties:{" +
+            "        c: {type:string}" +
             "      }" +
             "    }" +
             "  }," +
-            "  'b':{" +
-            "    'type': 'string', " +
-            "    'enum': {'json-path':'a.c'}" +
+            "  b:{" +
+            "    type: string, " +
+            "    enum: {json-path:a.c}" +
             "  }" +
             "}" +
             "}";
@@ -89,17 +89,17 @@ public class EnumSchemaTest extends AbstractSchemaTest {
     @Test
     public void testDynamicEnumPathList() {
         String schema = "{" +
-            "'type':'object'," +
-            "'properties':{" +
-            "  'a':{" +
-            "    'type':'array'," +
-            "    'items': {" +
-            "      'type':'string'" +
+            "type:object," +
+            "properties:{" +
+            "  a:{" +
+            "    type:array," +
+            "    items: {" +
+            "      type:string" +
             "    }" +
             "  }," +
-            "  'b':{" +
-            "    'type': 'string', " +
-            "    'enum': {'json-path':'a'}" +
+            "  b:{" +
+            "    type: string, " +
+            "    enum: {json-path:a}" +
             "  }" +
             "}" +
             "}";

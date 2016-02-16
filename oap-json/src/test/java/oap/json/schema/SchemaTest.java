@@ -29,42 +29,42 @@ import org.testng.annotations.Test;
 public class SchemaTest extends AbstractSchemaTest {
     @Test
     public void testRequiredNull() {
-        String schema = "{'type': 'boolean', 'required': true}";
+        String schema = "{type: boolean, required: true}";
 
         vFail( schema, "null", "required property is missing" );
     }
 
     @Test
     public void testRequiredNull_ignore_required_default() {
-        String schema = "{'type': 'boolean', 'required': true}";
+        String schema = "{type: boolean, required: true}";
 
         vOk( schema, "null", NO_STORAGE, true );
     }
 
     @Test
     public void testRequiredPropertyNull() {
-        String schema = "{'type': 'object', 'properties': {'a': {'type': 'boolean', 'required': true}}}";
+        String schema = "{type: object, properties: {a: {type: boolean, required: true}}}";
 
         vFail( schema, "{'a':null}", "/a: required property is missing" );
     }
 
     @Test
     public void testRequiredPropertyEmpty() {
-        String schema = "{'type': 'object', 'properties': {'a': {'type': 'boolean', 'required': true}}}";
+        String schema = "{type: object, properties: {a: {type: boolean, required: true}}}";
 
         vFail( schema, "{}", "/a: required property is missing" );
     }
 
     @Test
     public void testDefault() {
-        String schema = "{'type': 'boolean', 'default': true}";
+        String schema = "{type: boolean, default: true}";
 
         Assert.assertEquals( vOk( schema, "null" ), true );
     }
 
     @Test
     public void testDefault_ignore_required_default() {
-        String schema = "{'type': 'boolean', 'default': true}";
+        String schema = "{type: boolean, default: true}";
 
         Assert.assertNull( vOk( schema, "null", NO_STORAGE, true) );
     }
