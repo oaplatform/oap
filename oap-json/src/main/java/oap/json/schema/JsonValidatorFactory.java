@@ -23,7 +23,7 @@
  */
 package oap.json.schema;
 
-import oap.json.Parser;
+import oap.json.Binder;
 import oap.json.schema._array.ArrayJsonValidator;
 import oap.json.schema._boolean.BooleanJsonValidator;
 import oap.json.schema._date.DateJsonValidator;
@@ -46,18 +46,6 @@ import static oap.util.Pair.__;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class JsonValidatorFactory {
-    private static org.slf4j.Logger logger = getLogger( JsonValidatorFactory.class );
-
-    private final SchemaAST schema;
-    private final SchemaStorage storage;
-
-    private static Map<String, JsonValidatorFactory> schemas = new ConcurrentHashMap<>();
-
-    private JsonValidatorFactory( String schema, SchemaStorage storage ) {
-        this.storage = storage;
-        this.schema = parse( schema );
-    }
-
     private static final Map<String, JsonSchemaValidator> validators = Maps.ofStrings(
         __( "boolean", new BooleanJsonValidator() ),
         __( "string", new StringJsonValidator() ),
@@ -68,6 +56,15 @@ public class JsonValidatorFactory {
         __( "long", new LongJsonValidator() ),
         __( "double", new DoubleJsonValidator() )
     );
+    private static org.slf4j.Logger logger = getLogger( JsonValidatorFactory.class );
+    private static Map<String, JsonValidatorFactory> schemas = new ConcurrentHashMap<>();
+    private final SchemaAST schema;
+    private final SchemaStorage storage;
+
+    private JsonValidatorFactory( String schema, SchemaStorage storage ) {
+        this.storage = storage;
+        this.schema = parse( schema );
+    }
 
     public static JsonValidatorFactory schema( String url, SchemaStorage storage ) {
         return schemas.computeIfAbsent( url, u -> schemaFromString( storage.get( url ), storage ) );
@@ -78,20 +75,8 @@ public class JsonValidatorFactory {
     }
 
     @SuppressWarnings( "unchecked" )
-    public Either<List<String>, Object> validate( Object json, boolean ignore_required_default ) {
-        JsonValidatorProperties properties = new JsonValidatorProperties(
-            json,
-            Optional.empty(),
-            Optional.empty(),
-            ignore_required_default,
-            JsonValidatorFactory::validate
-        );
-        return validate( properties, schema, json );
-    }
-
-    @SuppressWarnings( "unchecked" )
     private static Either<List<String>, Object> validate( JsonValidatorProperties properties, SchemaAST schema,
-        Object json ) {
+                                                          Object json ) {
         JsonSchemaValidator jsonSchemaValidator = validators.get( schema.common.schemaType );
         if( jsonSchemaValidator == null ) {
             if( logger.isTraceEnabled() ) logger.trace( "registered validators: " + validators.keySet() );
@@ -111,31 +96,43 @@ public class JsonValidatorFactory {
             return result
                 .right()
                 .flatMap( v -> schema.common.enumValue
-                        .filter( e -> !e.apply( properties.rootJson ).contains( v ) )
-                        .map( e ->
-                            Either.left( Collections.singletonList(
-                                properties.error( "instance does not match any member of the enumeration [" +
-                                    String.join( ",", e.apply( properties.rootJson ).stream()
-                                            .map( Object::toString )
-                                            .collect( Collectors.toList() )
-                                    ) + "]" )
-                            ) ) )
-                        .orElse( result )
+                    .filter( e -> !e.apply( properties.rootJson ).contains( v ) )
+                    .map( e ->
+                        Either.left( Collections.singletonList(
+                            properties.error( "instance does not match any member of the enumeration [" +
+                                String.join( ",", e.apply( properties.rootJson ).stream()
+                                    .map( Object::toString )
+                                    .collect( Collectors.toList() )
+                                ) + "]" )
+                        ) ) )
+                    .orElse( result )
                 );
         }
     }
 
+    @SuppressWarnings( "unchecked" )
+    public Either<List<String>, Object> validate( Object json, boolean ignore_required_default ) {
+        JsonValidatorProperties properties = new JsonValidatorProperties(
+            json,
+            Optional.empty(),
+            Optional.empty(),
+            ignore_required_default,
+            JsonValidatorFactory::validate
+        );
+        return validate( properties, schema, json );
+    }
+
     private SchemaAST parse( Object mapObject ) {
-        if( !(mapObject instanceof Map<?, ?>) )
+        if( !( mapObject instanceof Map<?, ?> ) )
             throw new IllegalArgumentException( "object expected, but " + mapObject );
-        Map<?, ?> map = (Map<?, ?>) mapObject;
+        Map<?, ?> map = ( Map<?, ?> ) mapObject;
         Object schemaType = map.get( "type" );
         if( schemaType instanceof String ) {
             JsonSchemaValidator<?> schemaParser = validators.get( schemaType );
             if( schemaParser != null ) {
                 return schemaParser.parse(
                     new JsonSchemaParserProperties(
-                        map, (String) schemaType,
+                        map, ( String ) schemaType,
                         this::parse,
                         ( url ) -> JsonValidatorFactory.schema( url, storage ).schema
                     ) );
@@ -146,14 +143,12 @@ public class JsonValidatorFactory {
             }
         } else {
             throw new UnknownTypeValidationSyntaxException(
-                "Unknown type" + (schemaType == null ? "nothing" : schemaType.getClass())
+                "Unknown type" + ( schemaType == null ? "nothing" : schemaType.getClass() )
             );
         }
     }
 
     private SchemaAST parse( String schema ) {
-        Object mapObject = Parser.parse( schema );
-
-        return parse( mapObject );
+        return Binder.hocon.unmarshal( SchemaAST.class, schema );
     }
 }

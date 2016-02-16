@@ -23,22 +23,16 @@
  */
 package oap.json.schema;
 
-import oap.json.Parser;
+import oap.json.Binder;
 import oap.testng.AbstractTest;
 import oap.util.Either;
 import org.apache.commons.lang3.NotImplementedException;
 import org.testng.Assert;
 
 import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractSchemaTest extends AbstractTest {
-    private static class NoStorage implements SchemaStorage {
-        @Override
-        public String get( String name ) {
-            throw new NotImplementedException( "" );
-        }
-    }
-
     protected static final SchemaStorage NO_STORAGE = new NoStorage();
 
     protected static Object vOk( String schema, String json ) {
@@ -47,8 +41,8 @@ public abstract class AbstractSchemaTest extends AbstractTest {
 
     protected static Object vOk( String schema, String json, SchemaStorage storage, boolean ignore_required_default ) {
         Either<List<String>, ?> result =
-                JsonValidatorFactory.schemaFromString( schema, storage ).validate( Parser.parse( json ),
-                        ignore_required_default );
+            JsonValidatorFactory.schemaFromString( schema, storage ).validate( Binder.hocon.unmarshal( Map.class, json ),
+                ignore_required_default );
         if( result.isLeft() ) throw new AssertionError( String.join( "\n", result.left().get() ) );
         else return result.right().get();
     }
@@ -59,10 +53,17 @@ public abstract class AbstractSchemaTest extends AbstractTest {
 
     protected static void vFail( String schema, String json, String error, SchemaStorage storage ) {
         Either<List<String>, ?> result =
-                JsonValidatorFactory.schemaFromString( schema, storage ).validate( Parser.parse( json ), false );
+            JsonValidatorFactory.schemaFromString( schema, storage ).validate( Binder.hocon.unmarshal( Map.class, json ), false );
         if( result.isRight() ) Assert.fail( json + " -> " + error );
         List<String> errors = result.left().get();
         Assert.assertEquals( errors.size(), 1 );
         Assert.assertEquals( errors.get( 0 ), error );
+    }
+
+    private static class NoStorage implements SchemaStorage {
+        @Override
+        public String get( String name ) {
+            throw new NotImplementedException( "" );
+        }
     }
 }

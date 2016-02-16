@@ -22,16 +22,29 @@
  * SOFTWARE.
  */
 
-package oap.json;
+package oap.ws;
 
-import oap.testng.AbstractPerformance;
+import oap.testng.AbstractTest;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.Optional;
 
-public class FormatterPerformance extends AbstractPerformance {
+import static org.testng.Assert.assertEquals;
+
+public class ServiceUtilTest extends AbstractTest {
     @Test
-    public void performance() {
-        benchmark( "format", 2000, ( i ) -> Formatter.format( ParserTest.yearJson ) );
+    public void compile() {
+        Assert.assertEquals( ServiceUtil.compile( "/y/{year:(\\d\\d\\d\\d)}/{month}/{date}" ).toString(), "^/y/(\\d\\d\\d\\d)/([^/]+)/([^/]+)$" );
+        assertEquals( ServiceUtil.compile( "/y/{year:(\\d{4})}/{month}/{date}" ).toString(), "^/y/(\\d{4})/([^/]+)/([^/]+)$" );
+    }
+
+    @Test
+    public void pathParam() {
+        String mapping = "/y/{year:(\\d{4})}/{month}/{date}";
+        String path = "/y/2009/April/12";
+        assertEquals( Optional.of( "2009" ), ServiceUtil.pathParam( mapping, path, "year" ) );
+        assertEquals( Optional.of( "April" ), ServiceUtil.pathParam( mapping, path, "month" ) );
+        assertEquals( Optional.of( "12" ), ServiceUtil.pathParam( mapping, path, "date" ) );
     }
 }
-
