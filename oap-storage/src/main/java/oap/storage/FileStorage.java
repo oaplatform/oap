@@ -56,7 +56,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     private final org.slf4j.Logger logger = getLogger( getClass() );
     private final AtomicLong lastFSync = new AtomicLong( 0 );
     private final AtomicLong lastRSync = new AtomicLong( 0 );
-    private final Storage master;
+    private final Storage<T> master;
     private final Scheduled rsync;
     private final Scheduled fsync;
     protected Function<T, String> identify;
@@ -64,14 +64,14 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     private Path path;
     private List<DataListener<T>> dataListeners = new ArrayList<>();
 
-    public FileStorage( Path path, Function<T, String> identify, long fsync, Storage master, long rsync ) {
+    public FileStorage( Path path, Function<T, String> identify, long fsync, Storage<T> master, long rsync ) {
         this.path = path;
         this.identify = identify;
         load();
         this.fsync = Scheduler.scheduleWithFixedDelay( fsync, TimeUnit.MILLISECONDS, this::fsync );
         this.master = master;
         if( master != null )
-            this.rsync = Scheduler.scheduleWithFixedDelay( fsync, TimeUnit.MILLISECONDS, this::rsync );
+            this.rsync = Scheduler.scheduleWithFixedDelay( rsync, TimeUnit.MILLISECONDS, this::rsync );
         else this.rsync = null;
     }
 
@@ -113,12 +113,10 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         long current = DateTimeUtils.currentTimeMillis() - 1000;
         long last = lastRSync.get();
 
-
-        data.values()
-            .stream()
-            .filter( m -> m.modified > last )
-            .forEach( Try.consume( m -> Binder.json.marshal( path.resolve( m.id + ".json" ), m ) ) );
-
+        List<Metadata<T>> updates = master.updatedSince( last );
+        for( Metadata<T> metadata : updates )
+            data.put( metadata.id, metadata );
+        fireUpdated( Stream.of( updates ).map( m -> m.object ).toList() );
         lastFSync.set( current );
     }
 
