@@ -25,11 +25,16 @@
 package oap.storage;
 
 import oap.concurrent.Threads;
+import oap.concurrent.scheduler.Scheduler;
 import oap.io.Resources;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Stream;
+import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
+
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static oap.testng.Asserts.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -81,12 +86,15 @@ public class FileStorageTest extends AbstractTest {
     public void masterSlave() {
         try( FileStorage<Bean> master = new FileStorage<>( Env.tmpPath( "master" ), b -> b.id, 50 );
              FileStorage<Bean> slave = new FileStorage<>( Env.tmpPath( "slave" ), b -> b.id, 50, master, 50 ) ) {
+            slave.rsyncSafeInterval = 0;
+            Threads.sleepSafely( 100 );
             master.store( new Bean( "111" ) );
+            master.store( new Bean( "222" ) );
             Threads.sleepSafely( 100 );
-            assertEquals( slave.select(), Stream.of( new Bean( "111" ) ) );
-            master.store( new Bean( "111", "aaa" ) );
-            Threads.sleepSafely( 100 );
-            assertEquals( slave.select(), Stream.of( new Bean( "111", "aaa" ) ) );
+            assertEquals( slave.select(), Stream.of( new Bean( "111" ), new Bean( "222" ) ) );
+            master.store( new Bean( "111", "bbb" ) );
+            Threads.sleepSafely( 1000 );
+            assertEquals( slave.select(), Stream.of( new Bean( "111", "bbb" ), new Bean( "222" ) ) );
         }
     }
 }

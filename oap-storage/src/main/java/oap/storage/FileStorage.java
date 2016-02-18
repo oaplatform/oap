@@ -24,6 +24,7 @@
 package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Files;
@@ -52,13 +53,15 @@ import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
 import static org.slf4j.LoggerFactory.getLogger;
 
+@Slf4j
 public class FileStorage<T> implements Storage<T>, Closeable {
-    private final org.slf4j.Logger logger = getLogger( getClass() );
     private final AtomicLong lastFSync = new AtomicLong( 0 );
     private final AtomicLong lastRSync = new AtomicLong( 0 );
     private final Storage<T> master;
     private final Scheduled rsync;
     private final Scheduled fsync;
+    protected long rsyncSafeInterval = 1000;
+    protected long fsyncSafeInterval = 1000;
     protected Function<T, String> identify;
     protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
     private Path path;
@@ -94,11 +97,11 @@ public class FileStorage<T> implements Storage<T>, Closeable {
             .sorted( reverseOrder() )
             .map( x -> __( x.id, x ) )
             .collect( toConcurrentMap() );
-        logger.info( data.size() + " object(s) loaded." );
+        log.info( data.size() + " object(s) loaded." );
     }
 
     private synchronized void fsync() {
-        long current = DateTimeUtils.currentTimeMillis() - 1000;
+        long current = DateTimeUtils.currentTimeMillis() - fsyncSafeInterval;
         long last = lastFSync.get();
 
         data.values()
@@ -110,14 +113,16 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
     private void rsync() {
-        long current = DateTimeUtils.currentTimeMillis() - 1000;
+        long current = DateTimeUtils.currentTimeMillis() - rsyncSafeInterval;
         long last = lastRSync.get();
-
         List<Metadata<T>> updates = master.updatedSince( last );
-        for( Metadata<T> metadata : updates )
+        log.trace( "current: {}, last: {}, to sync {}", current, last, updates.size() );
+        for( Metadata<T> metadata : updates ) {
+            log.trace( "rsync {}", metadata );
             data.put( metadata.id, metadata );
+        }
         fireUpdated( Stream.of( updates ).map( m -> m.object ).toList() );
-        lastFSync.set( current );
+        lastRSync.set( current );
     }
 
 
@@ -256,7 +261,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
 
     @Override
     public List<Metadata<T>> updatedSince( long time ) {
-        return data.values().stream().filter( m -> m.modified > time ).collect( toList() );
+        return Stream.of( data.values() ).filter( m -> m.modified > time ).toList();
     }
 
     @Override

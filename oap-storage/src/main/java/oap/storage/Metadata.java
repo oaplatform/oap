@@ -29,8 +29,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.joda.time.DateTimeUtils;
 
-@EqualsAndHashCode
-@ToString
+@EqualsAndHashCode( exclude = "object" )
+@ToString( exclude = "object" )
 public class Metadata<T> implements Comparable<Metadata<T>> {
     public String id;
     //        @todo migration
