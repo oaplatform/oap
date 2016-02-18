@@ -84,6 +84,9 @@ public class FileStorageTest extends AbstractTest {
             master.store( new Bean( "111" ) );
             Threads.sleepSafely( 100 );
             assertEquals( slave.select(), Stream.of( new Bean( "111" ) ) );
+            master.store( new Bean( "111", "aaa" ) );
+            Threads.sleepSafely( 100 );
+            assertEquals( slave.select(), Stream.of( new Bean( "111", "aaa" ) ) );
         }
     }
 }
