@@ -118,7 +118,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         List<Metadata<T>> updates = master.updatedSince( last );
         log.trace( "current: {}, last: {}, to sync {}", current, last, updates.size() );
         for( Metadata<T> metadata : updates ) {
-            log.trace( "rsync {}", metadata );
+            log.debug( "rsync {}", metadata );
             data.put( metadata.id, metadata );
         }
         fireUpdated( Stream.of( updates ).map( m -> m.object ).toList() );
@@ -238,8 +238,9 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
     protected void fireUpdated( Collection<T> objects ) {
-        for( DataListener<T> dataListener : this.dataListeners )
-            dataListener.updated( objects );
+        if( !objects.isEmpty() )
+            for( DataListener<T> dataListener : this.dataListeners )
+                dataListener.updated( objects );
     }
 
 
@@ -248,7 +249,9 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
     protected void fireDeleted( List<T> objects ) {
-        for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( objects );
+        if( !objects.isEmpty() )
+            for( DataListener<T> dataListener : this.dataListeners )
+                dataListener.deleted( objects );
     }
 
     public void addDataListener( DataListener<T> dataListener ) {
@@ -273,13 +276,19 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
     public interface DataListener<T> {
-        void updated( T object );
+        default void updated( T object ) {
+        }
 
-        void updated( Collection<T> objects );
 
-        void deleted( T object );
+        default void updated( Collection<T> objects ) {
+        }
 
-        void deleted( Collection<T> objects );
+
+        default void deleted( T object ) {
+        }
+
+        default void deleted( Collection<T> objects ) {
+        }
 
     }
 }

@@ -25,18 +25,17 @@
 package oap.storage;
 
 import oap.concurrent.Threads;
-import oap.concurrent.scheduler.Scheduler;
 import oap.io.Resources;
 import oap.testng.AbstractTest;
+import oap.testng.Asserts;
 import oap.testng.Env;
 import oap.util.Stream;
-import org.joda.time.DateTimeUtils;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static oap.testng.Asserts.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class FileStorageTest extends AbstractTest {
@@ -44,7 +43,7 @@ public class FileStorageTest extends AbstractTest {
     public void load() {
         try( FileStorage<Bean> storage =
                  new FileStorage<>( Resources.filePath( FileStorageTest.class, "data" ).get(), b -> b.id ) ) {
-            assertEquals( storage.select(), Stream.of( new Bean( "t1" ), new Bean( "t2" ) ) );
+            Asserts.assertEquals( storage.select(), Stream.of( new Bean( "t1" ), new Bean( "t2" ) ) );
         }
     }
 
@@ -57,7 +56,7 @@ public class FileStorageTest extends AbstractTest {
         }
 
         try( FileStorage<Bean> storage2 = new FileStorage<>( Env.tmpPath( "data" ), b -> b.id ) ) {
-            assertEquals( storage2.select(), Stream.of( new Bean( "1" ), new Bean( "2" ) ) );
+            Asserts.assertEquals( storage2.select(), Stream.of( new Bean( "1" ), new Bean( "2" ) ) );
         }
     }
 
@@ -69,7 +68,7 @@ public class FileStorageTest extends AbstractTest {
         }
 
         try( FileStorage<Bean> storage2 = new FileStorage<>( Env.tmpPath( "data" ), b -> b.id ) ) {
-            assertEquals( storage2.select(), Stream.of( new Bean( "111", "bbb" ) ) );
+            Asserts.assertEquals( storage2.select(), Stream.of( new Bean( "111", "bbb" ) ) );
         }
     }
 
@@ -86,15 +85,23 @@ public class FileStorageTest extends AbstractTest {
     public void masterSlave() {
         try( FileStorage<Bean> master = new FileStorage<>( Env.tmpPath( "master" ), b -> b.id, 50 );
              FileStorage<Bean> slave = new FileStorage<>( Env.tmpPath( "slave" ), b -> b.id, 50, master, 50 ) ) {
+            AtomicInteger updates = new AtomicInteger();
+            slave.addDataListener( new FileStorage.DataListener<Bean>() {
+                public void updated( Collection<Bean> objects ) {
+                    updates.set( objects.size() );
+                }
+            } );
             slave.rsyncSafeInterval = 0;
             Threads.sleepSafely( 100 );
             master.store( new Bean( "111" ) );
             master.store( new Bean( "222" ) );
             Threads.sleepSafely( 100 );
-            assertEquals( slave.select(), Stream.of( new Bean( "111" ), new Bean( "222" ) ) );
+            Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111" ), new Bean( "222" ) ) );
+            Assert.assertEquals( updates.get(), 2 );
             master.store( new Bean( "111", "bbb" ) );
             Threads.sleepSafely( 1000 );
-            assertEquals( slave.select(), Stream.of( new Bean( "111", "bbb" ), new Bean( "222" ) ) );
+            Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111", "bbb" ), new Bean( "222" ) ) );
+            Assert.assertEquals( updates.get(), 1 );
         }
     }
 }
