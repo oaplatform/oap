@@ -33,8 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
-import static oap.io.Files.version;
-
 public class TableJoin implements Join {
     private HashMap<String, List<Object>> map = new HashMap<>();
     private List<Object> defaults;

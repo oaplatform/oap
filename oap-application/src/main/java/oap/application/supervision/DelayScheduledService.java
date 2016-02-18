@@ -25,11 +25,8 @@ package oap.application.supervision;
 
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
-import org.slf4j.Logger;
 
 import java.util.concurrent.TimeUnit;
-
-import static org.slf4j.LoggerFactory.getLogger;
 
 public class DelayScheduledService extends ScheduledService {
     private final long delay;

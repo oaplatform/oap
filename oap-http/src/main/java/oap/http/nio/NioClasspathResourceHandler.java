@@ -23,9 +23,9 @@
  */
 package oap.http.nio;
 
+import oap.http.ClasspathResourceHandler;
 import oap.io.Resources;
 import oap.util.Strings;
-import oap.http.ClasspathResourceHandler;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.entity.ByteArrayEntity;

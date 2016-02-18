@@ -24,9 +24,7 @@
 
 package oap.concurrent.scheduler;
 
-import org.quartz.Job;
-import org.quartz.JobDetail;
-import org.quartz.JobKey;
+import org.quartz.*;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.simpl.SimpleJobFactory;

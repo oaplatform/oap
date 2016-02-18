@@ -48,7 +48,7 @@ public class WriterTest extends AbstractTest {
     public void testWrite( IoStreams.Encoding encoding ) throws IOException {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1234567890";
-        Writer writer = new Writer( Env.tmpPath( "logs" ), "file", "log", 10, 12, GZIP == encoding );
+        Writer writer = new Writer( Env.tmpPath( "logs" ), "test/file", "log", 10, 12, GZIP == encoding );
 
         writer.write( content.getBytes() );
 
@@ -60,7 +60,7 @@ public class WriterTest extends AbstractTest {
 
         writer.close();
 
-        writer = new Writer( Env.tmpPath( "logs" ), "file", "log", 10, 12, GZIP == encoding );
+        writer = new Writer( Env.tmpPath( "logs" ), "test/file", "log", 10, 12, GZIP == encoding );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
         writer.write( content.getBytes() );
@@ -68,9 +68,9 @@ public class WriterTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 59 );
         writer.write( content.getBytes() );
         writer.close();
-        assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-00.log" ), encoding, content );
-        assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-01.log" ), encoding, content );
-        assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-02.log" ), encoding, content + content );
-        assertFileContent( Env.tmpPath( "logs/2015-10/10/file-2015-10-10-01-11.log" ), encoding, content );
+        assertFileContent( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-00.log" ), encoding, content );
+        assertFileContent( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-01.log" ), encoding, content );
+        assertFileContent( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-02.log" ), encoding, content + content );
+        assertFileContent( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-11.log" ), encoding, content );
     }
 }

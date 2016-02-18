@@ -27,7 +27,7 @@ package oap.util;
 import org.testng.annotations.Test;
 
 import static oap.util.Pair.__;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
 
 public class PairTest {
 
