@@ -34,7 +34,7 @@ import static oap.util.Pair.__;
 public class ObjectSchemaTest extends AbstractSchemaTest {
     @Test
     public void testObject() {
-        String schema = "{'type': 'object', 'properties': {}}}";
+        String schema = "{type: object, properties: {}}";
 
         vOk( schema, "{}" );
         vOk( schema, "null" );
@@ -44,7 +44,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
 
     @Test
     public void testObjectWithField() {
-        String schema = "{'type': 'object', 'properties': {'a': {'type': 'string'}}}";
+        String schema = "{type: object, properties: {a: {type: string}}}";
 
         vOk( schema, "{}" );
         vOk( schema, "{'a': 'test'}" );
@@ -55,13 +55,13 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     @Test
     public void testObjectObjectWithField() {
         String schema = "{" +
-                "'type': 'object', " +
-                "'properties': {" +
-                "  'a': {" +
-                "    'type': 'object', " +
-                "    'properties': {" +
-                "      'a': {" +
-                "        'type': 'string'" +
+                "type: object, " +
+                "properties: {" +
+                "  a: {" +
+                "    type: object, " +
+                "    properties: {" +
+                "      a: {" +
+                "        type: string" +
                 "      }" +
                 "    }" +
                 "  }" +
@@ -76,7 +76,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
 
     @Test
     public void testAdditionalProperties_true() {
-        String schema = "{'type': 'object', 'properties': {'a': {'type': 'string'}}}";
+        String schema = "{type: object, properties: {a: {type: string}}}";
 
         vOk( schema, "{}" );
         Assert.assertEquals( vOk( schema, "{'b': 'test'}" ), Maps.addAll( new HashMap<>(), __( "b", "test" ) ) );
@@ -84,7 +84,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
 
     @Test
     public void testAdditionalProperties_false() {
-        String schema = "{'additionalProperties': false, 'type': 'object', 'properties': {'a': {'type': 'string'}}}";
+        String schema = "{additionalProperties: false, type: object, properties: {a: {type: string}}}";
 
         vOk( schema, "{}" );
         vFail( schema, "{'b': 'test', 'c': 10}", "additional properties are not permitted [b,c]" );
@@ -93,14 +93,14 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     @Test
     public void testAdditionalProperties_false_inheritance() {
         String schema = "{" +
-                "'additionalProperties': false, " +
-                "'type': 'object', " +
-                "'properties': {" +
-                " 'a': {" +
-                "  'type': 'object'" +
-                "  'properties': {" +
-                "   'b': {" +
-                "    'type': 'string'" +
+                "additionalProperties: false, " +
+                "type: object, " +
+                "properties: {" +
+                " a: {" +
+                "  type: object," +
+                "  properties: {" +
+                "   b: {" +
+                "    type: string" +
                 "   }" +
                 "  }" +
                 " }" +
@@ -114,16 +114,16 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     @Test
     public void testExtends() {
         String schema = "{" +
-                "'type': 'object'," +
-                "'extends': 'schema/test2.json'" +
-                "'properties': {}" +
+                "type: object," +
+                "extends: \"schema/test2.json\"," +
+                "properties: {}" +
                 "}";
 
         String schema2 = "{" +
-                "'type':'object'," +
-                "'properties': {" +
-                "  'a': {" +
-                "    'type': 'string'" +
+                "type:object," +
+                "properties: {" +
+                "  a: {" +
+                "    type: string" +
                 "  }" +
                 "}" +
                 "}";

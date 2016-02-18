@@ -41,12 +41,12 @@ public class ArraySchemaTest extends AbstractSchemaTest {
     @Test
     public void testArrayMinItems() {
         String schema = "{" +
-            "'type':'object'," +
-            "'properties':{" +
-            "  'a':{" +
-            "    'type': 'array', " +
-            "    'minItems': 2, " +
-            "    'items': {'type': 'boolean'}" +
+            "type:object," +
+            "properties:{" +
+            "  a:{" +
+            "    type: array, " +
+            "    minItems: 2, " +
+            "    items: {type: boolean}" +
             "  }" +
             "}" +
             "}";
@@ -60,12 +60,12 @@ public class ArraySchemaTest extends AbstractSchemaTest {
     @Test
     public void testArrayMaxItems() {
         String schema = "{" +
-            "'type':'object'," +
-            "'properties':{" +
-            "  'a':{" +
-            "    'type': 'array', " +
-            "    'maxItems': 2, " +
-            "    'items': {'type': 'boolean'}" +
+            "type:object," +
+            "properties:{" +
+            "  a:{" +
+            "    type: array, " +
+            "    maxItems: 2, " +
+            "    items: {type: boolean}" +
             "  }" +
             "}" +
             "}";
@@ -78,16 +78,16 @@ public class ArraySchemaTest extends AbstractSchemaTest {
     @Test
     public void testInnerArrayMessagePath() {
         String schema = "{" +
-            "'type': 'array', " +
-            "'items': {" +
-            "  'type': 'object'," +
-            "  'properties':{" +
-            "    'test': {" +
-            "      'type':'array'," +
-            "      'items': {" +
-            "        'type':'object'," +
-            "        'properties': {" +
-            "          'a': {'type':'string'}" +
+            "type: array, " +
+            "items: {" +
+            "  type: object," +
+            "  properties:{" +
+            "    test: {" +
+            "      type:array," +
+            "      items: {" +
+            "        type:object," +
+            "        properties: {" +
+            "          a: {type:string}" +
             "        }" +
             "      }" +
             "    }" +
