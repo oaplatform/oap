@@ -70,10 +70,14 @@ public class Timestamp {
             .map( b -> format( since.minusMinutes( b * 60 / bucketsPerHour ), bucketsPerHour ) );
     }
 
-    public static Path path( Path directory, String pattern, String filename, String ext ) {
+    public static Path path( Path directory, String timestamp, String filename, String ext ) {
         Path path = Files.path( filename );
         return ( path.getParent() != null ? directory.resolve( path.getParent() ) : directory )
-            .resolve( Timestamp.directoryName( pattern ) )
-            .resolve( path.getFileName() + "-" + pattern + "." + ext );
+            .resolve( Timestamp.directoryName( timestamp ) )
+            .resolve( path.getFileName() + "-" + timestamp + "." + ext );
+    }
+
+    public static Path path( Path directory, DateTime date, String filename, String ext, int bucketsPerHour ) {
+        return path( directory, format( date, bucketsPerHour ), filename, ext );
     }
 }

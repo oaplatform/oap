@@ -48,9 +48,13 @@ public class TimestampTest extends AbstractTest {
 
     @Test
     public void path() {
-        assertEquals( Timestamp.path( Files.path( "log" ), "2015-12-03-11-05", "dir/dir/file", "log.gz" ),
+        DateTime date = new DateTime( 2015, 12, 3, 11, 28, 30 );
+        String timestamp = Timestamp.format( date, 12 );
+        assertEquals( Timestamp.path( Files.path( "log" ), date, "dir/dir/file", "log.gz", 12 ),
             Files.path( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
-        assertEquals( Timestamp.path( Files.path( "log" ), "2015-12-03-11-05", "file", "log.gz" ),
+        assertEquals( Timestamp.path( Files.path( "log" ), timestamp, "dir/dir/file", "log.gz" ),
+            Files.path( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
+        assertEquals( Timestamp.path( Files.path( "log" ), timestamp, "file", "log.gz" ),
             Files.path( "log/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
     }
 
