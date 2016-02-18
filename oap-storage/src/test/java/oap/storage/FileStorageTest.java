@@ -99,7 +99,7 @@ public class FileStorageTest extends AbstractTest {
             Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111" ), new Bean( "222" ) ) );
             Assert.assertEquals( updates.get(), 2 );
             master.store( new Bean( "111", "bbb" ) );
-            Threads.sleepSafely( 1000 );
+            Threads.sleepSafely( 100 );
             Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111", "bbb" ), new Bean( "222" ) ) );
             Assert.assertEquals( updates.get(), 1 );
         }
