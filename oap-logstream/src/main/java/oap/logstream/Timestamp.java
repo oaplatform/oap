@@ -23,22 +23,25 @@
  */
 package oap.logstream;
 
+import oap.io.Files;
 import oap.util.Stream;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.nio.file.Path;
+
 public class Timestamp {
-    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" ).withZoneUTC();
-    private static final DateTimeFormatter directoryFormatter = DateTimeFormat.forPattern( "yyyy-MM/dd" ).withZoneUTC();
+    public static final DateTimeFormatter FILE_FORMATTER = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" ).withZoneUTC();
+    public static final DateTimeFormatter DIRECTORY_FORMATTER = DateTimeFormat.forPattern( "yyyy-MM/dd" ).withZoneUTC();
 
     public static String format( DateTime date, int bucketsPerHour ) {
         int bucket = currentBucket( date, bucketsPerHour );
-        return formatter.print( date ) + "-" + ( bucket > 9 ? bucket : "0" + bucket );
+        return FILE_FORMATTER.print( date ) + "-" + ( bucket > 9 ? bucket : "0" + bucket );
     }
 
     public static DateTime parse( String timestamp, int bucketsPerHour ) {
-        return formatter.parseDateTime( timestamp.substring( 0, 13 ) )
+        return FILE_FORMATTER.parseDateTime( timestamp.substring( 0, 13 ) )
             .plusMinutes( Integer.parseInt( timestamp.substring( 14, 16 ) ) * 60 / bucketsPerHour );
     }
 
@@ -55,7 +58,7 @@ public class Timestamp {
     }
 
     public static String directoryName( String timestamp ) {
-        return directoryFormatter.print( formatter.parseDateTime( timestamp.substring( 0, 13 ) ) );
+        return DIRECTORY_FORMATTER.print( FILE_FORMATTER.parseDateTime( timestamp.substring( 0, 13 ) ) );
     }
 
     public static Stream<String> timestamps( int back, int bucketsPerHour ) {
@@ -65,5 +68,16 @@ public class Timestamp {
     public static Stream<String> timestamps( DateTime since, int back, int bucketsPerHour ) {
         return Stream.of( back, b -> b >= 0, b -> b - 1 )
             .map( b -> format( since.minusMinutes( b * 60 / bucketsPerHour ), bucketsPerHour ) );
+    }
+
+    public static Path path( Path directory, String timestamp, String filename, String ext ) {
+        Path path = Files.path( filename );
+        return ( path.getParent() != null ? directory.resolve( path.getParent() ) : directory )
+            .resolve( Timestamp.directoryName( timestamp ) )
+            .resolve( path.getFileName() + "-" + timestamp + "." + ext );
+    }
+
+    public static Path path( Path directory, DateTime date, String filename, String ext, int bucketsPerHour ) {
+        return path( directory, format( date, bucketsPerHour ), filename, ext );
     }
 }

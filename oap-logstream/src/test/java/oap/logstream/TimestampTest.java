@@ -24,6 +24,7 @@
 
 package oap.logstream;
 
+import oap.io.Files;
 import oap.testng.AbstractTest;
 import oap.testng.Asserts;
 import org.joda.time.DateTime;
@@ -43,6 +44,18 @@ public class TimestampTest extends AbstractTest {
     @Test
     public void directoryName() throws Exception {
         assertEquals( Timestamp.directoryName( "2015-12-03-11-05" ), "2015-12/03" );
+    }
+
+    @Test
+    public void path() {
+        DateTime date = new DateTime( 2015, 12, 3, 11, 28, 30 );
+        String timestamp = Timestamp.format( date, 12 );
+        assertEquals( Timestamp.path( Files.path( "log" ), date, "dir/dir/file", "log.gz", 12 ),
+            Files.path( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
+        assertEquals( Timestamp.path( Files.path( "log" ), timestamp, "dir/dir/file", "log.gz" ),
+            Files.path( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
+        assertEquals( Timestamp.path( Files.path( "log" ), timestamp, "file", "log.gz" ),
+            Files.path( "log/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
     }
 
     @Test

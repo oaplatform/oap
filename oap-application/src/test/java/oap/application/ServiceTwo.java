@@ -26,8 +26,6 @@ package oap.application;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.testng.Assert.assertNotNull;
-
 public class ServiceTwo implements Hello {
     public ServiceOne one;
     int j;

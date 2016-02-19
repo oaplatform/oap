@@ -27,17 +27,9 @@ import oap.json.schema.JsonSchemaParserProperties;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
 import oap.json.schema.SchemaAST;
-import oap.util.Either;
-import oap.util.Lists;
-import oap.util.Maps;
-import oap.util.Pair;
-import oap.util.Stream;
+import oap.util.*;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static oap.util.Pair.__;

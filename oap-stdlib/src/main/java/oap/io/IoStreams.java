@@ -23,6 +23,7 @@
  */
 package oap.io;
 
+import com.google.common.io.ByteStreams;
 import com.google.common.io.CountingInputStream;
 import oap.util.Stream;
 import oap.util.Strings;
@@ -98,13 +99,23 @@ public class IoStreams {
 
     public static void write( Path path, Encoding encoding, String value ) {
         path.toAbsolutePath().getParent().toFile().mkdirs();
-        try( OutputStream os = out( path, encoding ) ) {
-            os.write( Strings.toByteArray( value ) );
+        try( OutputStream out = out( path, encoding ) ) {
+            out.write( Strings.toByteArray( value ) );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
 
     }
+
+    public static void write( Path path, Encoding encoding, InputStream in ) {
+        path.toAbsolutePath().getParent().toFile().mkdirs();
+        try( OutputStream out = out( path, encoding ) ) {
+            ByteStreams.copy( in, out );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
 
     public static OutputStream out( Path path, Encoding encoding ) {
         return out( path, encoding, DEFAULT_BUFFER );

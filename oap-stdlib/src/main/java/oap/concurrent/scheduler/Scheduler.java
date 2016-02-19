@@ -24,11 +24,7 @@
 
 package oap.concurrent.scheduler;
 
-import org.quartz.CronScheduleBuilder;
-import org.quartz.JobDetail;
-import org.quartz.ScheduleBuilder;
-import org.quartz.SimpleScheduleBuilder;
-import org.quartz.Trigger;
+import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 
 import java.util.Properties;

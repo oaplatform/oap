@@ -24,11 +24,7 @@
 package oap.ws;
 
 import oap.application.Application;
-import oap.http.Handler;
-import oap.http.HttpResponse;
-import oap.http.Request;
-import oap.http.Response;
-import oap.http.Server;
+import oap.http.*;
 import oap.io.Resources;
 import oap.metrics.Metrics;
 import oap.testng.Env;

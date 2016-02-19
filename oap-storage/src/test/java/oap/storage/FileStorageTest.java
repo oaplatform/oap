@@ -24,63 +24,84 @@
 
 package oap.storage;
 
-import oap.io.Files;
+import oap.concurrent.Threads;
 import oap.io.Resources;
 import oap.testng.AbstractTest;
+import oap.testng.Asserts;
 import oap.testng.Env;
+import oap.util.Stream;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.nio.file.Path;
+import java.util.Collection;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.testng.Assert.assertEqualsNoOrder;
+import static org.testng.Assert.assertTrue;
 
 public class FileStorageTest extends AbstractTest {
     @Test
     public void load() {
         try( FileStorage<Bean> storage =
                  new FileStorage<>( Resources.filePath( FileStorageTest.class, "data" ).get(), b -> b.id ) ) {
-            storage.start();
-            assertEqualsNoOrder( storage.select().toArray(),
-                new Bean[]{ new Bean( "t2" ), new Bean( "t1" ) } );
+            Asserts.assertEquals( storage.select(), Stream.of( new Bean( "t1" ), new Bean( "t2" ) ) );
         }
     }
 
     @Test
-    public void persist() throws InterruptedException {
-        Path dataLocation = Files.path( Env.tmp( "data" ) );
-        try( FileStorage<Bean> storage1 = new FileStorage<>( dataLocation, b -> b.id ) ) {
-            storage1.fsync = 50;
-            storage1.start();
+    public void persist() {
+        try( FileStorage<Bean> storage1 = new FileStorage<>( Env.tmpPath( "data" ), b -> b.id, 50 ) ) {
             storage1.store( new Bean( "1" ) );
             storage1.store( new Bean( "2" ) );
-            Thread.sleep( 100 );
+            Threads.sleepSafely( 100 );
         }
 
-        try( FileStorage<Bean> storage2 = new FileStorage<>( dataLocation, b -> b.id ) ) {
-            storage2.start();
-            assertEqualsNoOrder( storage2.select().toArray(),
-                new Bean[]{ new Bean( "2" ), new Bean( "1" ) } );
+        try( FileStorage<Bean> storage2 = new FileStorage<>( Env.tmpPath( "data" ), b -> b.id ) ) {
+            Asserts.assertEquals( storage2.select(), Stream.of( new Bean( "1" ), new Bean( "2" ) ) );
         }
     }
 
     @Test
-    public void storeAndUpdate() throws InterruptedException {
-        Path dataLocation = Files.path( Env.tmp( "data" ) );
-        try( FileStorage<Bean> storage = new FileStorage<>( dataLocation, b -> b.id ) ) {
-            storage.fsync = 50;
-            storage.start();
+    public void storeAndUpdate() {
+        try( FileStorage<Bean> storage = new FileStorage<>( Env.tmpPath( "data" ), b -> b.id, 50 ) ) {
             storage.store( new Bean( "111" ) );
-// !!! Storage::persist
-//             long current = DateTimeUtils.currentTimeMillis() - 1000;
-            Thread.sleep( 2000 );
-
-            storage.update( "111", ( u ) -> u.s = "bbb" );
+            storage.update( "111", u -> u.s = "bbb" );
         }
 
-        try( FileStorage<Bean> storage2 = new FileStorage<>( dataLocation, b -> b.id ) ) {
-            storage2.start();
-            assertEqualsNoOrder( storage2.select().toArray(),
-                new Bean[]{ new Bean( "111", "bbb" ) } );
+        try( FileStorage<Bean> storage2 = new FileStorage<>( Env.tmpPath( "data" ), b -> b.id ) ) {
+            Asserts.assertEquals( storage2.select(), Stream.of( new Bean( "111", "bbb" ) ) );
+        }
+    }
+
+    @Test
+    public void delete() {
+        try( FileStorage<Bean> storage = new FileStorage<>( Env.tmpPath( "data" ), b -> b.id, 50 ) ) {
+            storage.store( new Bean( "111" ) );
+            storage.delete( "111" );
+            assertTrue( storage.select().toList().isEmpty() );
+        }
+    }
+
+    @Test
+    public void masterSlave() {
+        try( FileStorage<Bean> master = new FileStorage<>( Env.tmpPath( "master" ), b -> b.id, 50 );
+             FileStorage<Bean> slave = new FileStorage<>( Env.tmpPath( "slave" ), b -> b.id, 50, master, 50 ) ) {
+            AtomicInteger updates = new AtomicInteger();
+            slave.addDataListener( new FileStorage.DataListener<Bean>() {
+                public void updated( Collection<Bean> objects ) {
+                    updates.set( objects.size() );
+                }
+            } );
+            slave.rsyncSafeInterval = 0;
+            Threads.sleepSafely( 100 );
+            master.store( new Bean( "111" ) );
+            master.store( new Bean( "222" ) );
+            Threads.sleepSafely( 100 );
+            Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111" ), new Bean( "222" ) ) );
+            Assert.assertEquals( updates.get(), 2 );
+            master.store( new Bean( "111", "bbb" ) );
+            Threads.sleepSafely( 100 );
+            Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111", "bbb" ), new Bean( "222" ) ) );
+            Assert.assertEquals( updates.get(), 1 );
         }
     }
 }

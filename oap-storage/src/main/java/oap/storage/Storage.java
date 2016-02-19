@@ -48,7 +48,7 @@ public interface Storage<T> {
 
     Optional<T> get( String id );
 
-    void remove( String id );
+    void delete( String id );
 
     void clear();
 

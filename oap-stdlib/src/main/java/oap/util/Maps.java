@@ -23,11 +23,7 @@
  */
 package oap.util;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.*;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;

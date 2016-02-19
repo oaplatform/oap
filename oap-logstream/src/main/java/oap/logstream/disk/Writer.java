@@ -115,8 +115,7 @@ public class Writer implements Closeable {
     }
 
     private Path filename() {
-        return logDirectory.resolve( Timestamp.directoryName( lastPattern ) )
-            .resolve( filename + "-" + lastPattern + "." + ext );
+        return Timestamp.path( logDirectory, lastPattern, filename, ext );
     }
 
     private synchronized void refresh() {

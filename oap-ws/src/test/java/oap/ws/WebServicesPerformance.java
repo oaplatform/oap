@@ -24,11 +24,11 @@
 package oap.ws;
 
 import oap.http.Cors;
+import oap.http.Server;
+import oap.http.nio.NioServer;
+import oap.http.testng.HttpAsserts;
 import oap.testng.AbstractPerformance;
 import oap.testng.Env;
-import oap.http.nio.NioServer;
-import oap.http.Server;
-import oap.http.testng.HttpAsserts;
 import org.apache.http.entity.ContentType;
 import org.testng.annotations.Test;
 

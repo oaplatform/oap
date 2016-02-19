@@ -23,10 +23,10 @@
  */
 package oap.ws;
 
+import oap.http.Url;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
-import oap.http.Url;
 import org.testng.annotations.Test;
 
 import static oap.util.Pair.__;
