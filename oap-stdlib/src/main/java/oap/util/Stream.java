@@ -24,6 +24,11 @@
 package oap.util;
 
 import java.util.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.*;
 import java.util.stream.*;
@@ -188,6 +193,14 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return of( underlying.distinct() );
     }
 
+    public Stream<E> distinctByProperty(Function<? super E,Object> distinctPropertyExtractor) {
+        return of(
+                underlying
+                        .map(e -> new DistinctWrapper(e, distinctPropertyExtractor.apply(e)))
+                        .distinct()
+                        .map(DistinctWrapper::getValue));
+    }
+    
     @Override
     public Stream<E> sorted() {
         return of( underlying.sorted() );
@@ -417,4 +430,22 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         } );
         close();
     }
+
+
+    /**
+     * Wrapper used in #distinctByProperty method.
+     * It adds custom equals/hash code which does comparison by distinct property only
+     */
+    @EqualsAndHashCode(of = "distinctProperty")
+    @Getter
+    private class DistinctWrapper {
+        public DistinctWrapper(E value, Object distinctProperty) {
+            this.value = value;
+            this.distinctProperty = distinctProperty;
+        }
+
+        E value;
+        Object distinctProperty;
+    }
+
 }
