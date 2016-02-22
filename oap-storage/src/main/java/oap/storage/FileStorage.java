@@ -34,6 +34,7 @@ import oap.util.Try;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
+import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -69,13 +70,9 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         this.path = path;
         this.identify = identify;
         load();
-        if( fsync > 0 )
-            this.fsync = Scheduler.scheduleWithFixedDelay( fsync, TimeUnit.MILLISECONDS, this::fsync );
-        else this.fsync = null;
+        this.fsync = fsync > 0 ? Scheduler.scheduleWithFixedDelay( fsync, TimeUnit.MILLISECONDS, this::fsync ) : null;
         this.master = master;
-        if( master != null )
-            this.rsync = Scheduler.scheduleWithFixedDelay( rsync, TimeUnit.MILLISECONDS, this::rsync );
-        else this.rsync = null;
+        this.rsync = master != null ? Scheduler.scheduleWithFixedDelay( rsync, TimeUnit.MILLISECONDS, this::rsync ) : null;
     }
 
     public FileStorage( Path path, Function<T, String> identify, long fsync ) {
@@ -147,8 +144,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
             if( metadata != null ) {
                 metadata.update( object );
                 metadata.deleted = false;
-            }
-            else {
+            } else {
                 data.put( id, new Metadata<>( id, object ) );
             }
             fireUpdated( object );
@@ -164,8 +160,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
                 if( metadata != null ) {
                     metadata.update( object );
                     metadata.deleted = false;
-                }
-                else {
+                } else {
                     data.put( id, new Metadata<>( id, object ) );
                 }
             }
@@ -218,8 +213,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
             Metadata<T> metadata = data.get( id );
             if( metadata == null || metadata.deleted ) {
                 return Optional.empty();
-            }
-            else return Optional.of( metadata.object );
+            } else return Optional.of( metadata.object );
         }
     }
 
@@ -236,7 +230,8 @@ public class FileStorage<T> implements Storage<T>, Closeable {
             .stream()
             .filter( metadata -> metadata.deleted )
             .forEach( metadata -> {
-                Files.delete( path.resolve( metadata.id + ".json" ) );
+                File resolve = path.resolve( metadata.id + ".json" ).toFile();
+                if( resolve.exists() ) resolve.delete();
                 data.remove( metadata.id );
             } );
     }

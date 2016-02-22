@@ -64,6 +64,7 @@ public class Scheduler {
         return schedule( runnable,
             SimpleScheduleBuilder.simpleSchedule()
                 .withIntervalInMilliseconds( unit.toMillis( delay ) )
+                .withMisfireHandlingInstructionIgnoreMisfires()
                 .repeatForever() );
     }
 
