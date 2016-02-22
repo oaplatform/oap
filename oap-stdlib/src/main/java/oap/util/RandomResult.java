@@ -10,7 +10,7 @@ import java.util.Random;
 /**
  * @author togrul.meherremov
  */
-public class RandomRunner {
+public class RandomResult {
 
     private static Random rnd = new Random();
 
