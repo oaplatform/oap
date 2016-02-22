@@ -27,10 +27,7 @@ package oap.util;
 import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
-import java.util.AbstractCollection;
-import java.util.AbstractList;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.*;
 
 import static oap.util.Pair.__;
 import static org.testng.Assert.assertEquals;
@@ -60,23 +57,23 @@ public class StreamTest extends AbstractTest {
     }
 
     @Test
-    public void testDistinctByProperty() throws Exception {
-        LinkedHashMap<String, String> kievUA = Maps.of(__("name", "kiev"), __("localized", "Kyiv"));
-        LinkedHashMap<String, String> kievRU = Maps.of(__("name", "kiev"), __("localized", "Kiev"));
-        LinkedHashMap<String, String> odessa = Maps.of(__("name", "odessa"), __("localized", "Odessa"));
-        LinkedHashMap<String, String> odessaDupe = Maps.of(__("name", "odessa"), __("localized", "Odessa"));
-        LinkedHashMap<String, String> kharkiv = Maps.of(__("name", "kharkiv"), __("localized", "Kharkiv"));
+    public void testDistinctByProperty() {
+        LinkedHashMap<String, String> kievUA = Maps.of( __( "name", "kiev" ), __( "localized", "Kyiv" ) );
+        LinkedHashMap<String, String> kievRU = Maps.of( __( "name", "kiev" ), __( "localized", "Kiev" ) );
+        LinkedHashMap<String, String> odessa = Maps.of( __( "name", "odessa" ), __( "localized", "Odessa" ) );
+        LinkedHashMap<String, String> odessaDupe = Maps.of( __( "name", "odessa" ), __( "localized", "Odessa" ) );
+        LinkedHashMap<String, String> kharkiv = Maps.of( __( "name", "kharkiv" ), __( "localized", "Kharkiv" ) );
 
-        Stream<LinkedHashMap<String, String>> cities = Stream.of(kievRU, kievUA, odessa, odessaDupe, kharkiv);
-        ArrayList distinctCities = cities
-                .distinctByProperty(city -> city.get("name"))
-                .collect(Lists.Collectors.toArrayList());
+        Stream<LinkedHashMap<String, String>> cities = Stream.of( kievRU, kievUA, odessa, odessaDupe, kharkiv );
+        List<LinkedHashMap<String, String>> distinctCities = cities
+            .distinctByProperty( city -> city.get( "name" ) )
+            .toList();
 
-        assertEquals(distinctCities.size(), 3);
-        assertTrue(distinctCities.contains(kievRU)); //distinct preserves order, so first entry should be kept
-        assertFalse(distinctCities.contains(kievUA)); //distinct preserves order, second entry is thrown out
+        assertEquals( distinctCities.size(), 3 );
+        assertTrue( distinctCities.contains( kievRU ) ); //distinct preserves order, so first entry should be kept
+        assertFalse( distinctCities.contains( kievUA ) ); //distinct preserves order, second entry is thrown out
 
-        assertTrue(distinctCities.contains(odessa));
-        assertTrue(distinctCities.contains(kharkiv));
+        assertTrue( distinctCities.contains( odessa ) );
+        assertTrue( distinctCities.contains( kharkiv ) );
     }
 }

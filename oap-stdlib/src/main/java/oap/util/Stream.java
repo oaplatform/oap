@@ -23,12 +23,9 @@
  */
 package oap.util;
 
-import java.util.*;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.*;
 import java.util.stream.*;
@@ -44,7 +41,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     public <B, C> Stream<C> zip( java.util.stream.Stream<? extends B> b,
-        BiFunction<? super E, ? super B, ? extends C> zipper ) {
+                                 BiFunction<? super E, ? super B, ? extends C> zipper ) {
         Objects.requireNonNull( zipper );
         Spliterator<E> aSpliterator = underlying.spliterator();
         @SuppressWarnings( "unchecked" )
@@ -52,9 +49,9 @@ public class Stream<E> implements java.util.stream.Stream<E> {
 
         // Zipping looses DISTINCT and SORTED characteristics
         int both = aSpliterator.characteristics() & bSpliterator.characteristics() &
-            ~(Spliterator.DISTINCT | Spliterator.SORTED);
+            ~( Spliterator.DISTINCT | Spliterator.SORTED );
 
-        long zipSize = ((both & Spliterator.SIZED) != 0)
+        long zipSize = ( ( both & Spliterator.SIZED ) != 0 )
             ? Math.min( aSpliterator.getExactSizeIfKnown(), bSpliterator.getExactSizeIfKnown() )
             : -1;
 
@@ -193,14 +190,14 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return of( underlying.distinct() );
     }
 
-    public Stream<E> distinctByProperty(Function<? super E,Object> distinctPropertyExtractor) {
+    public Stream<E> distinctByProperty( Function<? super E, Object> distinctPropertyExtractor ) {
         return of(
-                underlying
-                        .map(e -> new DistinctWrapper(e, distinctPropertyExtractor.apply(e)))
-                        .distinct()
-                        .map(DistinctWrapper::getValue));
+            underlying
+                .map( e -> new DistinctWrapper<>( e, distinctPropertyExtractor.apply( e ) ) )
+                .distinct()
+                .map( d -> d.value ) );
     }
-    
+
     @Override
     public Stream<E> sorted() {
         return of( underlying.sorted() );
@@ -436,10 +433,9 @@ public class Stream<E> implements java.util.stream.Stream<E> {
      * Wrapper used in #distinctByProperty method.
      * It adds custom equals/hash code which does comparison by distinct property only
      */
-    @EqualsAndHashCode(of = "distinctProperty")
-    @Getter
-    private class DistinctWrapper {
-        public DistinctWrapper(E value, Object distinctProperty) {
+    @EqualsAndHashCode( of = "distinctProperty" )
+    private static class DistinctWrapper<E> {
+        public DistinctWrapper( E value, Object distinctProperty ) {
             this.value = value;
             this.distinctProperty = distinctProperty;
         }
