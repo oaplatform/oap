@@ -56,6 +56,8 @@ public class TimestampTest extends AbstractTest {
             Files.path( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
         assertEquals( Timestamp.path( Files.path( "log" ), timestamp, "file", "log.gz" ),
             Files.path( "log/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
+        assertEquals( Timestamp.path( Files.path( "*" ), timestamp, "dir/dir/file", "log.gz" ).toString(),
+            "*/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" );
     }
 
     @Test
