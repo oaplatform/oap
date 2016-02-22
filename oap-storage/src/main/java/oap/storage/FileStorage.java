@@ -139,10 +139,13 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         String id = this.identify.apply( object );
         synchronized( id.intern() ) {
             Metadata<T> metadata = data.get( id );
-            if( metadata != null )
+            if( metadata != null ) {
                 metadata.update( object );
-            else
+                metadata.deleted = false;
+            }
+            else {
                 data.put( id, new Metadata<>( id, object ) );
+            }
             fireUpdated( object );
         }
     }
@@ -153,10 +156,13 @@ public class FileStorage<T> implements Storage<T>, Closeable {
             String id = this.identify.apply( object );
             synchronized( id.intern() ) {
                 Metadata<T> metadata = data.get( id );
-                if( metadata != null )
+                if( metadata != null ) {
                     metadata.update( object );
-                else
+                    metadata.deleted = false;
+                }
+                else {
                     data.put( id, new Metadata<>( id, object ) );
+                }
             }
         }
         fireUpdated( objects );
@@ -205,7 +211,9 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     public Optional<T> get( String id ) {
         synchronized( id.intern() ) {
             Metadata<T> metadata = data.get( id );
-            if( metadata == null ) return Optional.empty();
+            if( metadata == null || metadata.deleted ) {
+                return Optional.empty();
+            }
             else return Optional.of( metadata.object );
         }
     }
@@ -220,8 +228,11 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     private Optional<Metadata<T>> remove( String id ) {
         synchronized( id.intern() ) {
             Metadata<T> metadata = data.get( id );
-            if( metadata != null ) metadata.delete();
-            return Optional.ofNullable( metadata );
+            if( metadata != null && !metadata.deleted ) {
+                metadata.delete();
+                return Optional.of( metadata );
+            }
+            return Optional.empty();
         }
     }
 

@@ -95,7 +95,7 @@ public class FileStorageTest extends AbstractTest {
             Threads.sleepSafely( 100 );
             master.store( new Bean( "111" ) );
             master.store( new Bean( "222" ) );
-            Threads.sleepSafely( 100 );
+            Threads.sleepSafely( 120 ); //50+50 is not always enough
             Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111" ), new Bean( "222" ) ) );
             Assert.assertEquals( updates.get(), 2 );
             master.store( new Bean( "111", "bbb" ) );
