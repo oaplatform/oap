@@ -56,12 +56,13 @@ public class TimestampTest extends AbstractTest {
             Files.path( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
         assertEquals( Timestamp.path( Files.path( "log" ), timestamp, "file", "log.gz" ),
             Files.path( "log/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
+        assertEquals( Timestamp.path( Files.path( "*" ), timestamp, "dir/dir/file", "log.gz" ).toString(),
+            "*/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" );
     }
 
     @Test
     public void timestamps() {
-        Asserts.assertEquals( Timestamp.timestamps( new DateTime( 2016, 2, 1, 1, 1, 1 ), 10, 12 ), Stream.of(
-            "2016-02-01-00-02",
+        Asserts.assertEquals( Timestamp.timestampsBefore( new DateTime( 2016, 2, 1, 1, 1, 1 ), 10, 12 ), Stream.of(
             "2016-02-01-00-03",
             "2016-02-01-00-04",
             "2016-02-01-00-05",
@@ -72,6 +73,18 @@ public class TimestampTest extends AbstractTest {
             "2016-02-01-00-10",
             "2016-02-01-00-11",
             "2016-02-01-01-00"
+        ) );
+        Asserts.assertEquals( Timestamp.timestampsAfter( new DateTime( 2016, 2, 1, 1, 1, 1 ), 10, 12 ), Stream.of(
+            "2016-02-01-01-00",
+            "2016-02-01-01-01",
+            "2016-02-01-01-02",
+            "2016-02-01-01-03",
+            "2016-02-01-01-04",
+            "2016-02-01-01-05",
+            "2016-02-01-01-06",
+            "2016-02-01-01-07",
+            "2016-02-01-01-08",
+            "2016-02-01-01-09"
         ) );
     }
 

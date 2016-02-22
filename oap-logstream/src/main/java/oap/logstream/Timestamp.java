@@ -30,6 +30,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.nio.file.Path;
+import java.util.stream.IntStream;
 
 public class Timestamp {
     public static final DateTimeFormatter FILE_FORMATTER = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" ).withZoneUTC();
@@ -61,13 +62,20 @@ public class Timestamp {
         return DIRECTORY_FORMATTER.print( FILE_FORMATTER.parseDateTime( timestamp.substring( 0, 13 ) ) );
     }
 
-    public static Stream<String> timestamps( int back, int bucketsPerHour ) {
-        return timestamps( DateTime.now(), back, bucketsPerHour );
+    public static Stream<String> timestampsBeforeNow( int back, int bucketsPerHour ) {
+        return timestampsBefore( DateTime.now(), back, bucketsPerHour );
     }
 
-    public static Stream<String> timestamps( DateTime since, int back, int bucketsPerHour ) {
-        return Stream.of( back, b -> b >= 0, b -> b - 1 )
-            .map( b -> format( since.minusMinutes( b * 60 / bucketsPerHour ), bucketsPerHour ) );
+    public static Stream<String> timestampsBefore( DateTime since, int back, int bucketsPerHour ) {
+        return Stream.of( IntStream.rangeClosed( 1, back )
+            .mapToObj( b -> format( since.minusMinutes( ( back - b ) * 60 / bucketsPerHour ), bucketsPerHour ) )
+        );
+    }
+
+    public static Stream<String> timestampsAfter( DateTime since, int fore, int bucketsPerHour ) {
+        return Stream.of( IntStream.range( 0, fore )
+            .mapToObj( b -> format( since.plusMinutes( b * 60 / bucketsPerHour ), bucketsPerHour ) )
+        );
     }
 
     public static Path path( Path directory, String timestamp, String filename, String ext ) {

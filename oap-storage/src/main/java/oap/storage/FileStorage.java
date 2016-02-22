@@ -51,7 +51,6 @@ import static java.util.Comparator.reverseOrder;
 import static java.util.stream.Collectors.toList;
 import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
-import static org.slf4j.LoggerFactory.getLogger;
 
 @Slf4j
 public class FileStorage<T> implements Storage<T>, Closeable {
@@ -61,7 +60,6 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     private final Scheduled rsync;
     private final Scheduled fsync;
     protected long rsyncSafeInterval = 1000;
-    protected long fsyncSafeInterval = 1000;
     protected Function<T, String> identify;
     protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
     private Path path;
@@ -71,11 +69,9 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         this.path = path;
         this.identify = identify;
         load();
-        this.fsync = Scheduler.scheduleWithFixedDelay( fsync, TimeUnit.MILLISECONDS, this::fsync );
+        this.fsync = fsync > 0 ? Scheduler.scheduleWithFixedDelay( fsync, TimeUnit.MILLISECONDS, this::fsync ) : null;
         this.master = master;
-        if( master != null )
-            this.rsync = Scheduler.scheduleWithFixedDelay( rsync, TimeUnit.MILLISECONDS, this::rsync );
-        else this.rsync = null;
+        this.rsync = master != null ? Scheduler.scheduleWithFixedDelay( rsync, TimeUnit.MILLISECONDS, this::rsync ) : null;
     }
 
     public FileStorage( Path path, Function<T, String> identify, long fsync ) {
@@ -101,13 +97,19 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
     private synchronized void fsync() {
-        long current = DateTimeUtils.currentTimeMillis() - fsyncSafeInterval;
+        long current = DateTimeUtils.currentTimeMillis();
         long last = lastFSync.get();
+        log.trace( "fsync current: {}, last: {}, storage size: {}", current, last, data.size() );
 
         data.values()
             .stream()
-            .filter( m -> m.modified > last )
-            .forEach( Try.consume( m -> Binder.json.marshal( path.resolve( m.id + ".json" ), m ) ) );
+            .filter( m -> m.modified >= last )
+            .forEach( m -> {
+                log.trace( "fsync storing {} with modification time {}", m.id, m.modified );
+                Binder.json.marshal( path.resolve( m.id + ".json" ), m );
+                log.trace( "fsync storing {} done", m.id );
+
+            } );
 
         lastFSync.set( current );
     }
@@ -116,7 +118,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         long current = DateTimeUtils.currentTimeMillis() - rsyncSafeInterval;
         long last = lastRSync.get();
         List<Metadata<T>> updates = master.updatedSince( last );
-        log.trace( "current: {}, last: {}, to sync {}", current, last, updates.size() );
+        log.trace( "rsync current: {}, last: {}, to sync {}", current, last, updates.size() );
         for( Metadata<T> metadata : updates ) {
             log.debug( "rsync {}", metadata );
             data.put( metadata.id, metadata );
@@ -138,10 +140,12 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         String id = this.identify.apply( object );
         synchronized( id.intern() ) {
             Metadata<T> metadata = data.get( id );
-            if( metadata != null )
+            if( metadata != null ) {
                 metadata.update( object );
-            else
+                metadata.deleted = false;
+            } else {
                 data.put( id, new Metadata<>( id, object ) );
+            }
             fireUpdated( object );
         }
     }
@@ -152,10 +156,12 @@ public class FileStorage<T> implements Storage<T>, Closeable {
             String id = this.identify.apply( object );
             synchronized( id.intern() ) {
                 Metadata<T> metadata = data.get( id );
-                if( metadata != null )
+                if( metadata != null ) {
                     metadata.update( object );
-                else
+                    metadata.deleted = false;
+                } else {
                     data.put( id, new Metadata<>( id, object ) );
+                }
             }
         }
         fireUpdated( objects );
@@ -204,28 +210,57 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     public Optional<T> get( String id ) {
         synchronized( id.intern() ) {
             Metadata<T> metadata = data.get( id );
-            if( metadata == null ) return Optional.empty();
-            else return Optional.of( metadata.object );
+            if( metadata == null || metadata.deleted ) {
+                return Optional.empty();
+            } else return Optional.of( metadata.object );
         }
     }
 
     @Override
-    public void clear() {
+    public void removeAll() {
         List<T> objects = new ArrayList<>();
-        for( String id : data.keySet() ) remove( id ).ifPresent( m -> objects.add( m.object ) );
+        for( String id : data.keySet() ) remove( id, false ).ifPresent( m -> objects.add( m.object ) );
         fireDeleted( objects );
     }
 
-    private Optional<Metadata<T>> remove( String id ) {
+
+    void vacuum() {
+        data.values()
+            .stream()
+            .filter( metadata -> metadata.deleted )
+            .forEach( metadata -> remove( metadata.id, true ) );
+    }
+
+    @Override
+    public void clear() {
+        removeAll();
+        vacuum();
+    }
+
+    private Optional<Metadata<T>> remove( String id, boolean expunge ) {
         synchronized( id.intern() ) {
             Metadata<T> metadata = data.get( id );
-            if( metadata != null ) metadata.delete();
-            return Optional.ofNullable( metadata );
+            if( metadata != null ) {
+                if( !expunge && !metadata.deleted ) {
+                    metadata.delete();
+                    return Optional.of( metadata );
+                } else if( expunge ) {
+                    data.remove( metadata.id );
+                    Path resolve = path.resolve( metadata.id + ".json" );
+                    if( java.nio.file.Files.exists( resolve ) ) Files.delete( resolve );
+                    return Optional.of( metadata );
+                }
+            }
+            return Optional.empty();
         }
     }
 
     public void delete( String id ) {
-        remove( id ).ifPresent( m -> fireDeleted( m.object ) );
+        remove( id, false ).ifPresent( m -> fireDeleted( m.object, false ) );
+    }
+
+    public void expunge( String id ) {
+        remove( id, true ).ifPresent( m -> fireDeleted( m.object, true ) );
     }
 
     @Override
@@ -244,8 +279,8 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
 
-    protected void fireDeleted( T object ) {
-        for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( object );
+    protected void fireDeleted( T object, boolean expunge ) {
+        for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( object, expunge );
     }
 
     protected void fireDeleted( List<T> objects ) {
@@ -284,7 +319,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         }
 
 
-        default void deleted( T object ) {
+        default void deleted( T object, boolean expunge ) {
         }
 
         default void deleted( Collection<T> objects ) {

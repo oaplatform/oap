@@ -29,6 +29,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.joda.time.DateTimeUtils;
 
+import java.util.UUID;
+
 @EqualsAndHashCode( exclude = "object" )
 @ToString( exclude = "object" )
 public class Metadata<T> implements Comparable<Metadata<T>> {
@@ -39,6 +41,7 @@ public class Metadata<T> implements Comparable<Metadata<T>> {
     public boolean deleted;
     @JsonTypeInfo( use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
     public T object;
+    public String uniqueId = UUID.randomUUID().toString();
 
     public Metadata( String id, T object ) {
         this.id = id;

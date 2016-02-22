@@ -24,6 +24,7 @@
 package oap.util;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.*;
 import java.util.stream.*;
@@ -39,7 +40,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     public <B, C> Stream<C> zip( java.util.stream.Stream<? extends B> b,
-        BiFunction<? super E, ? super B, ? extends C> zipper ) {
+                                 BiFunction<? super E, ? super B, ? extends C> zipper ) {
         Objects.requireNonNull( zipper );
         Spliterator<E> aSpliterator = underlying.spliterator();
         @SuppressWarnings( "unchecked" )
@@ -47,9 +48,9 @@ public class Stream<E> implements java.util.stream.Stream<E> {
 
         // Zipping looses DISTINCT and SORTED characteristics
         int both = aSpliterator.characteristics() & bSpliterator.characteristics() &
-            ~(Spliterator.DISTINCT | Spliterator.SORTED);
+            ~( Spliterator.DISTINCT | Spliterator.SORTED );
 
-        long zipSize = ((both & Spliterator.SIZED) != 0)
+        long zipSize = ( ( both & Spliterator.SIZED ) != 0 )
             ? Math.min( aSpliterator.getExactSizeIfKnown(), bSpliterator.getExactSizeIfKnown() )
             : -1;
 
@@ -186,6 +187,11 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     @Override
     public Stream<E> distinct() {
         return of( underlying.distinct() );
+    }
+
+    public <T> Stream<E> distinctByProperty( Function<? super E, T> distinctPropertyExtractor ) {
+        final Map<T, Boolean> seen = underlying.isParallel() ? new ConcurrentHashMap<>() : new HashMap<>();
+        return filter( e -> seen.putIfAbsent( distinctPropertyExtractor.apply( e ), Boolean.TRUE ) == null );
     }
 
     @Override
