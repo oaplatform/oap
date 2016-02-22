@@ -51,7 +51,6 @@ import static java.util.Comparator.reverseOrder;
 import static java.util.stream.Collectors.toList;
 import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
-import static org.slf4j.LoggerFactory.getLogger;
 
 @Slf4j
 public class FileStorage<T> implements Storage<T>, Closeable {
@@ -71,7 +70,9 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         this.path = path;
         this.identify = identify;
         load();
-        this.fsync = Scheduler.scheduleWithFixedDelay( fsync, TimeUnit.MILLISECONDS, this::fsync );
+        if( fsync > 0 )
+            this.fsync = Scheduler.scheduleWithFixedDelay( fsync, TimeUnit.MILLISECONDS, this::fsync );
+        else this.fsync = null;
         this.master = master;
         if( master != null )
             this.rsync = Scheduler.scheduleWithFixedDelay( rsync, TimeUnit.MILLISECONDS, this::rsync );
