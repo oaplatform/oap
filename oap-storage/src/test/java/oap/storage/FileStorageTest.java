@@ -33,9 +33,11 @@ import oap.util.Stream;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class FileStorageTest extends AbstractTest {
@@ -74,10 +76,15 @@ public class FileStorageTest extends AbstractTest {
 
     @Test
     public void delete() {
-        try( FileStorage<Bean> storage = new FileStorage<>( Env.tmpPath( "data" ), b -> b.id, 50 ) ) {
+        Path data = Env.tmpPath( "data" );
+        try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50 ) ) {
             storage.store( new Bean( "111" ) );
             storage.delete( "111" );
+            Threads.sleepSafely( 500 );
             assertTrue( storage.select().toList().isEmpty() );
+            assertTrue( data.resolve( "111.json" ).toFile().exists() );
+            storage.vacuum();
+            assertFalse( data.resolve( "111.json" ).toFile().exists() );
         }
     }
 

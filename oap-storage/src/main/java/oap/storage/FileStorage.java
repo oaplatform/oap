@@ -51,7 +51,6 @@ import static java.util.Comparator.reverseOrder;
 import static java.util.stream.Collectors.toList;
 import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
-import static org.slf4j.LoggerFactory.getLogger;
 
 @Slf4j
 public class FileStorage<T> implements Storage<T>, Closeable {
@@ -61,7 +60,6 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     private final Scheduled rsync;
     private final Scheduled fsync;
     protected long rsyncSafeInterval = 1000;
-    protected long fsyncSafeInterval = 1000;
     protected Function<T, String> identify;
     protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
     private Path path;
@@ -101,13 +99,19 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
     private synchronized void fsync() {
-        long current = DateTimeUtils.currentTimeMillis() - fsyncSafeInterval;
+        long current = DateTimeUtils.currentTimeMillis();
         long last = lastFSync.get();
+        log.trace( "fsync current: {}, last: {}, storage size: {}", current, last, data.size() );
 
         data.values()
             .stream()
-            .filter( m -> m.modified > last )
-            .forEach( Try.consume( m -> Binder.json.marshal( path.resolve( m.id + ".json" ), m ) ) );
+            .filter( m -> m.modified >= last )
+            .forEach( m -> {
+                log.trace( "fsync storing {} with modification time {}", m.id, m.modified );
+                Binder.json.marshal( path.resolve( m.id + ".json" ), m );
+                log.trace( "fsync storing {} done", m.id );
+
+            } );
 
         lastFSync.set( current );
     }
@@ -116,7 +120,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         long current = DateTimeUtils.currentTimeMillis() - rsyncSafeInterval;
         long last = lastRSync.get();
         List<Metadata<T>> updates = master.updatedSince( last );
-        log.trace( "current: {}, last: {}, to sync {}", current, last, updates.size() );
+        log.trace( "rsync current: {}, last: {}, to sync {}", current, last, updates.size() );
         for( Metadata<T> metadata : updates ) {
             log.debug( "rsync {}", metadata );
             data.put( metadata.id, metadata );
@@ -210,10 +214,27 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
     @Override
-    public void clear() {
+    public void removeAll() {
         List<T> objects = new ArrayList<>();
         for( String id : data.keySet() ) remove( id ).ifPresent( m -> objects.add( m.object ) );
         fireDeleted( objects );
+    }
+
+
+    void vacuum() {
+        data.values()
+            .stream()
+            .filter( metadata -> metadata.deleted )
+            .forEach( metadata -> {
+                Files.delete( path.resolve( metadata.id + ".json" ) );
+                data.remove( metadata.id );
+            } );
+    }
+
+    @Override
+    public void clear() {
+        removeAll();
+        vacuum();
     }
 
     private Optional<Metadata<T>> remove( String id ) {
