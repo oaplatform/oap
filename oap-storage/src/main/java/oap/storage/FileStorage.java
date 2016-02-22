@@ -220,7 +220,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     @Override
     public void removeAll() {
         List<T> objects = new ArrayList<>();
-        for( String id : data.keySet() ) remove( id ).ifPresent( m -> objects.add( m.object ) );
+        for( String id : data.keySet() ) remove( id, false ).ifPresent( m -> objects.add( m.object ) );
         fireDeleted( objects );
     }
 
@@ -229,11 +229,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         data.values()
             .stream()
             .filter( metadata -> metadata.deleted )
-            .forEach( metadata -> {
-                File resolve = path.resolve( metadata.id + ".json" ).toFile();
-                if( resolve.exists() ) resolve.delete();
-                data.remove( metadata.id );
-            } );
+            .forEach( metadata -> remove( metadata.id, true ) );
     }
 
     @Override
@@ -242,19 +238,29 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         vacuum();
     }
 
-    private Optional<Metadata<T>> remove( String id ) {
+    private Optional<Metadata<T>> remove( String id, boolean expunge ) {
         synchronized( id.intern() ) {
             Metadata<T> metadata = data.get( id );
-            if( metadata != null && !metadata.deleted ) {
-                metadata.delete();
-                return Optional.of( metadata );
+            if( metadata != null ) {
+                if( !expunge && !metadata.deleted ) {
+                    metadata.delete();
+                    return Optional.of( metadata );
+                } else if( expunge ) {
+                    data.remove( metadata.id );
+                    File resolve = path.resolve( metadata.id + ".json" ).toFile();
+                    if( resolve.exists() ) resolve.delete();
+                }
             }
             return Optional.empty();
         }
     }
 
     public void delete( String id ) {
-        remove( id ).ifPresent( m -> fireDeleted( m.object ) );
+        remove( id, false ).ifPresent( m -> fireDeleted( m.object, false ) );
+    }
+
+    public void expunge( String id ) {
+        remove( id, true ).ifPresent( m -> fireDeleted( m.object, true ) );
     }
 
     @Override
@@ -273,8 +279,8 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     }
 
 
-    protected void fireDeleted( T object ) {
-        for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( object );
+    protected void fireDeleted( T object, boolean expunge ) {
+        for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( object, expunge );
     }
 
     protected void fireDeleted( List<T> objects ) {
@@ -313,7 +319,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         }
 
 
-        default void deleted( T object ) {
+        default void deleted( T object, boolean expunge ) {
         }
 
         default void deleted( Collection<T> objects ) {

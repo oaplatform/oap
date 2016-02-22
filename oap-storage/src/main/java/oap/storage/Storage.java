@@ -50,6 +50,8 @@ public interface Storage<T> {
 
     void delete( String id );
 
+    void expunge( String id );
+
     void removeAll();
 
     void clear();
