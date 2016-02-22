@@ -34,7 +34,6 @@ import oap.util.Try;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -247,8 +246,9 @@ public class FileStorage<T> implements Storage<T>, Closeable {
                     return Optional.of( metadata );
                 } else if( expunge ) {
                     data.remove( metadata.id );
-                    File resolve = path.resolve( metadata.id + ".json" ).toFile();
-                    if( resolve.exists() ) resolve.delete();
+                    Path resolve = path.resolve( metadata.id + ".json" );
+                    if( java.nio.file.Files.exists( resolve ) ) Files.delete( resolve );
+                    return Optional.of( metadata );
                 }
             }
             return Optional.empty();

@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static oap.testng.Asserts.assertEventually;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -79,8 +80,8 @@ public class FileStorageTest extends AbstractTest {
         Path data = Env.tmpPath( "data" );
         try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50 ) ) {
             storage.store( new Bean( "111" ) );
+            assertEventually( 10, 100, () -> assertTrue( data.resolve( "111.json" ).toFile().exists() ));
             storage.delete( "111" );
-            Threads.sleepSafely( 500 );
             assertTrue( storage.select().toList().isEmpty() );
             assertTrue( data.resolve( "111.json" ).toFile().exists() );
             storage.vacuum();
