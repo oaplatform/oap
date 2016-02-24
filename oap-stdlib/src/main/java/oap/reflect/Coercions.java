@@ -186,6 +186,10 @@ public class Coercions {
                         case "day":
                         case "days":
                             return Long.parseLong( number ) * 1000 * 60 * 60 * 24;
+                        case "month":
+                        case "months":
+                        case "M":
+                            return Long.parseLong( number ) * 1000 * 60 * 60 * 24 * 30.4167;
                         case "":
                             return Long.parseLong( number );
                         default:
