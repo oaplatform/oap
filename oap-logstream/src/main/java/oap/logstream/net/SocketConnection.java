@@ -40,6 +40,7 @@ public class SocketConnection implements Connection {
         this.socket = new Socket();
         try {
             this.socket.setKeepAlive( true );
+            this.socket.setTcpNoDelay( true );
             this.socket.connect( new InetSocketAddress( host, port ) );
             this.out = new DataOutputStream( this.socket.getOutputStream() );
         } catch( IOException e ) {
