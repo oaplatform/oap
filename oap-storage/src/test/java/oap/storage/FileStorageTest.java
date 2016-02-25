@@ -38,6 +38,7 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.testng.Asserts.assertEventually;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -46,7 +47,7 @@ public class FileStorageTest extends AbstractTest {
     public void load() {
         try( FileStorage<Bean> storage =
                  new FileStorage<>( Resources.filePath( FileStorageTest.class, "data" ).get(), b -> b.id ) ) {
-            Asserts.assertEquals( storage.select(), Stream.of( new Bean( "t1" ), new Bean( "t2" ) ) );
+            assertThat( storage.select() ).containsOnlyOnce( new Bean( "t1" ), new Bean( "t2" ) );
         }
     }
 
@@ -59,7 +60,7 @@ public class FileStorageTest extends AbstractTest {
         }
 
         try( FileStorage<Bean> storage2 = new FileStorage<>( Env.tmpPath( "data" ), b -> b.id ) ) {
-            Asserts.assertEquals( storage2.select(), Stream.of( new Bean( "1" ), new Bean( "2" ) ) );
+            assertThat( storage2.select() ).containsOnlyOnce( new Bean( "1" ), new Bean( "2" ) );
         }
     }
 
@@ -80,7 +81,7 @@ public class FileStorageTest extends AbstractTest {
         Path data = Env.tmpPath( "data" );
         try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50 ) ) {
             storage.store( new Bean( "111" ) );
-            assertEventually( 10, 100, () -> assertTrue( data.resolve( "111.json" ).toFile().exists() ));
+            assertEventually( 10, 100, () -> assertTrue( data.resolve( "111.json" ).toFile().exists() ) );
             storage.delete( "111" );
             assertTrue( storage.select().toList().isEmpty() );
             assertTrue( data.resolve( "111.json" ).toFile().exists() );
@@ -103,13 +104,15 @@ public class FileStorageTest extends AbstractTest {
             Threads.sleepSafely( 100 );
             master.store( new Bean( "111" ) );
             master.store( new Bean( "222" ) );
-            Threads.sleepSafely( 120 ); //50+50 is not always enough
-            Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111" ), new Bean( "222" ) ) );
-            Assert.assertEquals( updates.get(), 2 );
+            assertEventually( 120, 5, () -> {
+                Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111" ), new Bean( "222" ) ) );
+                Assert.assertEquals( updates.get(), 2 );
+            } );
             master.store( new Bean( "111", "bbb" ) );
-            Threads.sleepSafely( 100 );
-            Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111", "bbb" ), new Bean( "222" ) ) );
-            Assert.assertEquals( updates.get(), 1 );
+            assertEventually( 120, 5, () -> {
+                Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111", "bbb" ), new Bean( "222" ) ) );
+                Assert.assertEquals( updates.get(), 1 );
+            } );
         }
     }
 }

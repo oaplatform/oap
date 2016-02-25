@@ -81,7 +81,7 @@ public class SocketConnection implements Connection {
     @Override
     public int read() {
         try {
-            return in.read();
+            return in.readInt();
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }

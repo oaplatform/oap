@@ -42,7 +42,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     private final Scheduled scheduled;
     protected int maxBuffers = 5000;
     protected long flushInterval = 5000;
-    protected long timeout = 10000;
+    protected long timeout = 5000;
     protected boolean blocking = true;
     private Connection connection;
     private Buffers buffers;
@@ -102,9 +102,9 @@ public class SocketLoggingBackend implements LoggingBackend {
                 log.trace( "sending {}", buffer );
                 connection.write( buffer.data(), 0, buffer.length() );
                 int size = connection.read();
-                if( size != buffer.length() ) {
+                if( size <= 0 ) {
                     loggingAvailable = false;
-                    log.error( "logger server: buffer overflow?" );
+                    log.error( "pong size {}. The end of the stream is reached.", size );
                     return false;
                 }
                 Metrics.measureCounterIncrement( Metrics.name( "logging.socket" ), buffer.length() );

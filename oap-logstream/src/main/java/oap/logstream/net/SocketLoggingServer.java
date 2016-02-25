@@ -123,8 +123,8 @@ public class SocketLoggingServer implements Runnable {
         public void run() {
             String hostName = null;
             try {
-                DataInputStream in = new DataInputStream( socket.getInputStream() );
                 DataOutputStream out = new DataOutputStream( socket.getOutputStream() );
+                DataInputStream in = new DataInputStream( socket.getInputStream() );
                 socket.setSoTimeout( soTimeout );
                 socket.setKeepAlive( true );
                 socket.setTcpNoDelay( true );
@@ -136,7 +136,8 @@ public class SocketLoggingServer implements Runnable {
                     int size = in.readInt();
                     String selector = in.readUTF();
                     if( size > bufferSize ) {
-                        out.write( -1 );
+                        log.trace( "pong size {}", -10 );
+                        out.writeInt( -10 );
                         throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize + " from " + hostName );
                     }
                     in.readFully( buffer, 0, size );
@@ -145,7 +146,8 @@ public class SocketLoggingServer implements Runnable {
                         backend.log( hostName, selector, buffer, 0, size );
                         control.put( hostName, digestionId );
                     } else log.warn( "[{}] buffer {} already written ({})", hostName, digestionId, lastId );
-                    out.write( size );
+                    log.trace( "pong size {}", size );
+                    out.writeInt( size );
                 }
             } catch( EOFException e ) {
                 log.debug( "[{}] {} closed", hostName, socket );
