@@ -124,7 +124,10 @@ public class SocketLoggingServer implements Runnable {
             String hostName = null;
             try {
                 DataInputStream in = new DataInputStream( socket.getInputStream() );
+                DataOutputStream out = new DataOutputStream( socket.getOutputStream() );
                 socket.setSoTimeout( soTimeout );
+                socket.setKeepAlive( true );
+                socket.setTcpNoDelay( true );
                 hostName = socket.getInetAddress().getCanonicalHostName();
                 log.debug( "[{}] start logging... ", hostName );
                 while( !closed ) {
@@ -132,14 +135,17 @@ public class SocketLoggingServer implements Runnable {
                     long lastId = control.computeIfAbsent( hostName, h -> 0L );
                     int size = in.readInt();
                     String selector = in.readUTF();
-                    if( size > bufferSize )
+                    if( size > bufferSize ) {
+                        out.write( -1 );
                         throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize + " from " + hostName );
+                    }
                     in.readFully( buffer, 0, size );
                     if( lastId < digestionId ) {
                         log.trace( "[{}] logging ({}, {}, {})", hostName, digestionId, selector, size );
                         backend.log( hostName, selector, buffer, 0, size );
                         control.put( hostName, digestionId );
                     } else log.warn( "[{}] buffer {} already written ({})", hostName, digestionId, lastId );
+                    out.write( size );
                 }
             } catch( EOFException e ) {
                 log.debug( "[{}] {} closed", hostName, socket );

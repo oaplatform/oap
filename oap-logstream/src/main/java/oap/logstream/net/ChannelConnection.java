@@ -26,6 +26,7 @@ package oap.logstream.net;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 import oap.io.Closeables;
+import org.apache.commons.lang3.NotImplementedException;
 import org.joda.time.DateTimeUtils;
 
 import java.io.IOException;
@@ -79,6 +80,11 @@ public class ChannelConnection implements Connection {
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
+    }
+
+    @Override
+    public int read() {
+        throw new NotImplementedException( "read" );
     }
 
     @Override

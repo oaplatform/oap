@@ -36,4 +36,6 @@ public interface Connection extends Closeable {
     String toString();
 
     void write( byte[] buffer, int off, int length );
+
+    int read();
 }

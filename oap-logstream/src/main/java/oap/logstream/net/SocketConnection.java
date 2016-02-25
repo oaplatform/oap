@@ -26,6 +26,7 @@ package oap.logstream.net;
 import oap.io.Closeables;
 import oap.io.Sockets;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,14 +36,17 @@ import java.net.Socket;
 public class SocketConnection implements Connection {
     private final Socket socket;
     private final DataOutputStream out;
+    private final DataInputStream in;
 
-    public SocketConnection( String host, int port ) {
+    public SocketConnection( String host, int port, long soTimeout ) {
         this.socket = new Socket();
         try {
             this.socket.setKeepAlive( true );
             this.socket.setTcpNoDelay( true );
             this.socket.connect( new InetSocketAddress( host, port ) );
+            this.socket.setSoTimeout( ( int ) soTimeout );
             this.out = new DataOutputStream( this.socket.getOutputStream() );
+            this.in = new DataInputStream( this.socket.getInputStream() );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
@@ -56,6 +60,7 @@ public class SocketConnection implements Connection {
     @Override
     public void close() throws IOException {
         Closeables.close( this.out );
+        Closeables.close( this.in );
         Sockets.close( this.socket );
     }
 
@@ -68,6 +73,15 @@ public class SocketConnection implements Connection {
     public void write( byte[] buffer, int off, int length ) {
         try {
             out.write( buffer, off, length );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Override
+    public int read() {
+        try {
+            return in.read();
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
