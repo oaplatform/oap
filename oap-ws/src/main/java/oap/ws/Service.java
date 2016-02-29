@@ -57,8 +57,8 @@ public class Service implements Handler {
     private final Reflection reflection;
     private final Coercions coercions = Coercions.basic()
         .with( r -> true, ( r, value ) -> Binder.hocon.unmarshal( r.underlying,
-            value instanceof String ? (String) value :
-                new String( (byte[]) value, StandardCharsets.UTF_8 ) ) );
+            value instanceof String ? ( String ) value :
+                new String( ( byte[] ) value, StandardCharsets.UTF_8 ) ) );
     private final Validators validators = new Validators();
     private HashMap<String, Pattern> compiledPaths = new HashMap<>();
 
@@ -97,9 +97,9 @@ public class Service implements Handler {
         if( e instanceof ReflectException && e.getCause() != null )
             wsError( response, e.getCause() );
         else if( e instanceof InvocationTargetException )
-            wsError( response, ((InvocationTargetException) e).getTargetException() );
+            wsError( response, ( ( InvocationTargetException ) e ).getTargetException() );
         else if( e instanceof WsClientException ) {
-            WsClientException e1 = (WsClientException) e;
+            WsClientException e1 = ( WsClientException ) e;
             if( logger.isDebugEnabled() ) logger.debug( e.toString(), e );
             HttpResponse wsResponse = HttpResponse.status( e1.code, e.getMessage() );
             if( !e1.errors.isEmpty() ) wsResponse.withContent( String.join( "\n", e1.errors ),
@@ -116,7 +116,7 @@ public class Service implements Handler {
     private boolean methodMatches( String requestLine, Request.HttpMethod httpMethod, Reflection.Method m ) {
         return m.findAnnotation( WsMethod.class )
             .map( a -> oap.util.Arrays.contains( httpMethod, a.method() ) && (
-                    (Strings.isUndefined( a.path() ) && Objects.equals( requestLine, "/" + m.name() ))
+                    ( Strings.isUndefined( a.path() ) && Objects.equals( requestLine, "/" + m.name() ) )
                         || compiledPaths.get( a.path() ).matcher( requestLine ).find()
                 )
             ).orElse( m.isPublic() && Objects.equals( requestLine, "/" + m.name() ) );
@@ -159,7 +159,7 @@ public class Service implements Handler {
                                                             WsMethod.class.getName() + " annotation" ) );
                                             case BODY:
                                                 return parameter.type().assignableFrom( byte[].class ) ?
-                                                    (parameter.type().isOptional() ? request.readBody() :
+                                                    ( parameter.type().isOptional() ? request.readBody() :
                                                         request.readBody()
                                                             .orElseThrow( () -> new WsClientException(
                                                                 "no body for " + parameter.name() ) )
@@ -203,10 +203,10 @@ public class Service implements Handler {
                                     .withCharset( StandardCharsets.UTF_8 ) )
                                     .orElse( ContentType.APPLICATION_JSON );
                             if( method.isVoid() ) response.respond( HttpResponse.NO_CONTENT );
-                            else if( result instanceof HttpResponse ) response.respond( (HttpResponse) result );
+                            else if( result instanceof HttpResponse ) response.respond( ( HttpResponse ) result );
                             else if( result instanceof Optional<?> ) {
                                 response.respond(
-                                    ((Optional<?>) result)
+                                    ( ( Optional<?> ) result )
                                         .map( r -> HttpResponse.ok( result, isRaw, produces ) )
                                         .orElseGet( () -> HttpResponse.NOT_FOUND )
                                 );

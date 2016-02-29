@@ -23,15 +23,11 @@
  */
 package oap.io;
 
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 
 import static org.testng.Assert.*;
 
 public class IoAsserts {
-    public static String contentOf( Path path ) {
-        return org.assertj.core.util.Files.contentOf( path.toFile(), Charset.defaultCharset() );
-    }
 
     public static void assertFileContent( Path path, String content ) {
         assertFileContent( path, IoStreams.Encoding.PLAIN, content );
@@ -47,11 +43,6 @@ public class IoAsserts {
             Resources.readString( contextClass, contextClass.getSimpleName() + "/" + expectedResource ).get() );
     }
 
-    @Deprecated
-    /**
-     * assertj:
-     * assertThat( contentOf(path) ).isEqualTo(...)
-     */
     public static void assertFileContent( Path path, IoStreams.Encoding encoding, String content ) {
         assertTrue( path.toFile().exists(), "file " + path + " does not exist" );
         assertEquals( Files.readString( path, encoding ), content );

@@ -28,14 +28,12 @@ import oap.logstream.disk.DiskLoggingBackend;
 import oap.logstream.net.SocketLoggingBackend;
 import oap.logstream.net.SocketLoggingServer;
 import oap.testng.AbstractTest;
+import oap.testng.Env;
 import oap.util.Dates;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-
 import static oap.io.IoAsserts.assertFileContent;
-import static oap.io.IoAsserts.contentOf;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_BUFFER;
@@ -43,7 +41,6 @@ import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Env.tmpPath;
 import static oap.util.Dates.formatDateWihMillis;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeUtils.currentTimeMillis;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -78,7 +75,7 @@ public class LoggerTest extends AbstractTest {
     }
 
     @Test
-    public void net() throws IOException {
+    public void net() {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "12345678";
 
@@ -105,15 +102,13 @@ public class LoggerTest extends AbstractTest {
             }
         }
 
-        assertThat( contentOf( tmpPath( "logs/localhost/2015-10/10/a-2015-10-10-01-00.log" ) ) )
-            .isEqualTo( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
+        assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/a-2015-10-10-01-00.log" ),
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
                 formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-
-        assertThat( contentOf( tmpPath( "logs/localhost/2015-10/10/b-2015-10-10-01-00.log" ) ) )
-            .isEqualTo( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-
-        assertThat( contentOf( tmpPath( "logs/localhost/2015-10/10/d-2015-10-10-01-00.log" ) ) )
-            .isEqualTo( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+        assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/b-2015-10-10-01-00.log" ),
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+        assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/d-2015-10-10-01-00.log" ),
+            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
     }
 
 

@@ -51,7 +51,7 @@ public class Response {
         if( !response.headers.isEmpty() )
             for( Pair<String, String> header : response.headers )
                 resp.setHeader( header._1, header._2 );
-        resp.setEntity( response.getEntity() );
+        if( response.contentEntity != null ) resp.setEntity( response.contentEntity );
     }
 
 }

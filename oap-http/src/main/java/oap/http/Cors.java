@@ -31,8 +31,11 @@ import lombok.ToString;
 public class Cors {
     public static final Cors DEFAULT = new Cors();
     public String allowOrigin = "*";
+    public String allowHeaders = "Content-type";
+    public boolean autoOptions = true;
 
     void setHeaders( org.apache.http.HttpResponse response ) {
         response.setHeader( "Access-Control-Allow-Origin", allowOrigin );
+        response.setHeader( "Access-Control-Allow-Headers", allowHeaders );
     }
 }

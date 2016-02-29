@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 
 import static oap.http.HttpResponse.HTTP_FORBIDDEN;
+import static oap.http.HttpResponse.NO_CONTENT;
 import static org.apache.http.protocol.HttpCoreContext.HTTP_CONNECTION;
 
 @Slf4j
@@ -56,14 +57,14 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
         log.trace( "handling {}", req );
 
         HttpInetConnection connection = ( HttpInetConnection ) ctx.getAttribute( HTTP_CONNECTION );
-        final Response response = new Response( resp, cors );
-        final InetAddress remoteAddress = connection.getRemoteAddress();
+        Response response = new Response( resp, cors );
+        InetAddress remoteAddress = connection.getRemoteAddress();
+        Request request = new Request( req, new Context( location, remoteAddress ) );
 
         if( local && !Inet.isLocalAddress( remoteAddress ) ) response.respond( HTTP_FORBIDDEN );
-        else handler.handle(
-            new Request( req, new Context( location, remoteAddress ) ),
-            new Response( resp, cors )
-        );
+        else if( cors.autoOptions && request.httpMethod == Request.HttpMethod.OPTIONS )
+            response.respond( NO_CONTENT );
+        else handler.handle( request, response );
     }
 
 }

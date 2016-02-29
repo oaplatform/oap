@@ -55,7 +55,7 @@ public class HttpResponse {
     public String reasonPhrase;
     public List<Pair<String, String>> headers = new ArrayList<>();
     public int code;
-    private HttpEntity entity;
+    HttpEntity contentEntity;
 
     public HttpResponse( int code ) {
         this.code = code;
@@ -67,31 +67,31 @@ public class HttpResponse {
 
     public static HttpResponse ok( Object content, boolean raw, ContentType contentType ) {
         HttpResponse response = ok( content );
-        response.entity = new StringEntity( content( raw, content, contentType ), contentType );
+        response.contentEntity = new StringEntity( content( raw, content, contentType ), contentType );
         return response;
     }
 
     public static HttpResponse ok( Object content ) {
         HttpResponse response = new HttpResponse( HTTP_OK );
-        response.entity = new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON );
+        response.contentEntity = new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON );
         return response;
     }
 
     public static HttpResponse stream( InputStream stream, ContentType contentType ) {
         HttpResponse response = new HttpResponse( HTTP_OK );
-        response.entity = new InputStreamEntity( stream, contentType );
+        response.contentEntity = new InputStreamEntity( stream, contentType );
         return response;
     }
 
     public static HttpResponse stream( Stream<String> stream, ContentType contentType ) {
         HttpResponse response = new HttpResponse( HTTP_OK );
-        response.entity = new HttpStreamEntity( stream, contentType );
+        response.contentEntity = new HttpStreamEntity( stream, contentType );
         return response;
     }
 
     public static HttpResponse bytes( byte[] bytes, ContentType contentType ) {
         HttpResponse response = new HttpResponse( HTTP_OK );
-        response.entity = new ByteArrayEntity( bytes, contentType );
+        response.contentEntity = new ByteArrayEntity( bytes, contentType );
         return response;
     }
 
@@ -105,7 +105,7 @@ public class HttpResponse {
         HttpResponse response = new HttpResponse( code );
         final BasicHttpEntity basicHttpEntity = new BasicHttpEntity();
         basicHttpEntity.setContentType( TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ).toString() );
-        response.entity = basicHttpEntity;
+        response.contentEntity = basicHttpEntity;
         return response;
     }
 
@@ -124,15 +124,7 @@ public class HttpResponse {
     }
 
     public HttpResponse withContent( String content, ContentType contentType ) {
-        this.entity = new StringEntity( content( false, content, contentType ), contentType );
+        this.contentEntity = new StringEntity( content( false, content, contentType ), contentType );
         return this;
-    }
-
-    public boolean hasContent() {
-        return entity != null;
-    }
-
-    public HttpEntity getEntity() {
-        return entity;
     }
 }
