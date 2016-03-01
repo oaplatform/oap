@@ -32,17 +32,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class StringBits {
     private static final int UNKNOWN = 0;
-    private static final HashMap<String, StringBits> instances = new HashMap<>();
 
     private final HashMap<String, Integer> bits = new HashMap<>();
     private final AtomicInteger bit = new AtomicInteger( 1 );
 
-    private StringBits() {
+    public StringBits() {
         bits.put( Strings.UNKNOWN, UNKNOWN );
-    }
-
-    public static StringBits l( String name ) {
-        return instances.computeIfAbsent( name, n -> new StringBits() );
     }
 
     public final synchronized int computeIfAbsent( String name ) {
