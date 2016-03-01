@@ -55,7 +55,7 @@ public class HttpResponse {
     public String reasonPhrase;
     public List<Pair<String, String>> headers = new ArrayList<>();
     public int code;
-    HttpEntity contentEntity;
+    public HttpEntity contentEntity;
 
     public HttpResponse( int code ) {
         this.code = code;
