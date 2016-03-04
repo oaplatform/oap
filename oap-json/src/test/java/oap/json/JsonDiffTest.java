@@ -169,6 +169,22 @@ public class JsonDiffTest extends AbstractSchemaTest {
     }
 
     @Test
+    public void testEmptyArrays() throws Exception {
+        final String schema = "{" +
+            "\"type\":\"object\"," +
+            "\"properties\":{" +
+            "  \"test\": {" +
+            "    \"type\":\"array\"," +
+            "    \"items\":{" +
+            "      \"type\":\"string\"" +
+            "    }" +
+            "  }" +
+            "}}";
+
+        assertThat( __diff( schema, "{}", "{}" ) ).isEmpty();
+    }
+
+    @Test
     public void testDelArrayItem() throws Exception {
         final String schema = "{" +
             "\"type\":\"object\"," +

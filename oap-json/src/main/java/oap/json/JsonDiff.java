@@ -167,7 +167,7 @@ public class JsonDiff {
 
             if( ( fromProperty == null && toProperty != null ) || ( toProperty == null && fromProperty != null ) ) {
                 diffField( newPrefix, schemaAST, result, toProperty, fromProperty );
-            } else {
+            } else if( fromProperty != null ) {
                 diff( newPrefix, schemaAST, result, toProperty, fromProperty );
             }
         }
