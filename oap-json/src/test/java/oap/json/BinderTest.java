@@ -141,6 +141,11 @@ public class BinderTest extends AbstractTest {
     }
 
     @Test
+    public void bindEmptyObject() {
+        assertBind( EmptyBean.class, new EmptyBean() );
+    }
+
+    @Test
     public void bindAtomicLong() {
         assertBind( AtomicLongBean.class, new AtomicLongBean( 10 ) );
         assertBindWithTyping( AtomicLongBean.class, new AtomicLongBean( 10 ) );
@@ -184,6 +189,11 @@ public class BinderTest extends AbstractTest {
         assertBind( OptBean.class, new OptBean() );
     }
 
+}
+
+@ToString
+@EqualsAndHashCode
+class EmptyBean {
 }
 
 @EqualsAndHashCode
@@ -282,7 +292,7 @@ class BeanGB2 {
     }
 
     public BeanGB2( BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg,
-        BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg2 ) {
+                    BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg2 ) {
         this.bg = bg;
         this.bg2 = bg2;
     }
@@ -373,7 +383,7 @@ class AtomicLongBean {
         if( this == o ) return true;
         if( o == null || getClass() != o.getClass() ) return false;
 
-        AtomicLongBean that = (AtomicLongBean) o;
+        AtomicLongBean that = ( AtomicLongBean ) o;
 
         return v.get() == that.v.get();
 

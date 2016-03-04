@@ -90,6 +90,7 @@ public class Binder {
         mapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
         mapper.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
         mapper.disable( SerializationFeature.WRITE_EMPTY_JSON_ARRAYS );
+        mapper.disable( SerializationFeature.FAIL_ON_EMPTY_BEANS );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
         mapper.registerModule( new PathModule() );
