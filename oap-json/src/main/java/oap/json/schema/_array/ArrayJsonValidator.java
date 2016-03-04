@@ -40,14 +40,14 @@ public class ArrayJsonValidator implements JsonSchemaValidator<ArraySchemaAST> {
     @SuppressWarnings( "unchecked" )
     @Override
     public Either<List<String>, Object> validate( JsonValidatorProperties properties, ArraySchemaAST schema,
-        Object value ) {
-        if( !(value instanceof Collection<?>) ) return Either.left(
+                                                  Object value ) {
+        if( !( value instanceof Collection<?> ) ) return Either.left(
             Lists.of(
                 properties.error( "instance is of type " + getType( value ) +
                     ", which is none of the allowed primitive types ([" + schema.common.schemaType +
                     "])" ) ) );
 
-        Collection<?> arrayValue = (Collection<?>) value;
+        Collection<?> arrayValue = ( Collection<?> ) value;
 
         Optional<String> minItemsResult = schema.minItems
             .filter( minItems -> arrayValue.size() < minItems )
@@ -64,16 +64,16 @@ public class ArrayJsonValidator implements JsonSchemaValidator<ArraySchemaAST> {
             .toEigher( value );
 
         return result.right().flatMap( r -> Either.fold2(
-                Stream
-                    .of( arrayValue.stream() )
-                    .zipWithIndex()
-                    .<Either<List<String>, Object>>map(
-                        pair -> properties.validator.apply( properties.withPath(
-                                String.valueOf( pair._2 ) ), schema.items,
-                            pair._1 ) )
+            Stream
+                .of( arrayValue.stream() )
+                .zipWithIndex()
+                .<Either<List<String>, Object>>map(
+                    pair -> properties.validator.apply( properties.withPath(
+                        String.valueOf( pair._2 ) ), schema.items,
+                        pair._1 ) )
             )
                 .right()
-                .map( l -> (Object) l )
+                .map( l -> ( Object ) l )
         );
     }
 
@@ -82,8 +82,9 @@ public class ArrayJsonValidator implements JsonSchemaValidator<ArraySchemaAST> {
         SchemaAST.CommonSchemaAST common = node( properties ).asCommon();
         Optional<Integer> minItems = node( properties ).asInt( "minItems" ).optional();
         Optional<Integer> maxItems = node( properties ).asInt( "maxItems" ).optional();
+        Optional<String> idField = node( properties ).asString( "id" ).optional();
         SchemaAST items = node( properties ).asAST( "items" ).required();
 
-        return new ArraySchemaAST( common, minItems, maxItems, items );
+        return new ArraySchemaAST( common, minItems, maxItems, idField, items );
     }
 }

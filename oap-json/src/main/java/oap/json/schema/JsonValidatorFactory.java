@@ -58,7 +58,7 @@ public class JsonValidatorFactory {
     );
     private static org.slf4j.Logger logger = getLogger( JsonValidatorFactory.class );
     private static Map<String, JsonValidatorFactory> schemas = new ConcurrentHashMap<>();
-    private final SchemaAST schema;
+    public final SchemaAST schema;
     private final SchemaStorage storage;
 
     private JsonValidatorFactory( String schema, SchemaStorage storage ) {
