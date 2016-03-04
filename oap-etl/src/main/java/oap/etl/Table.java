@@ -26,7 +26,7 @@ package oap.etl;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import oap.io.IoStreams;
-import oap.tsv.ModelSet;
+import oap.tsv.Model;
 import oap.tsv.Tsv;
 import oap.util.Stream;
 
@@ -44,27 +44,27 @@ public class Table {
         this.lines = lines;
     }
 
-    public static Optional<Table> fromResource( Class<?> contextClass, String name, ModelSet modelSet ) {
-        return Tsv.fromResource( contextClass, name, modelSet ).map( Table::new );
+    public static Optional<Table> fromResource( Class<?> contextClass, String name, Model model ) {
+        return Tsv.fromResource( contextClass, name, model ).map( Table::new );
     }
 
-    public static Table fromFile( Path path, ModelSet modelSet) {
-        return new Table( Tsv.fromPath( path, modelSet ) );
+    public static Table fromPath( Path path, Model model ) {
+        return new Table( Tsv.fromPath( path, model ) );
     }
 
-    public static Table fromFiles( List<Path> paths, IoStreams.Encoding encoding, ModelSet modelSet) {
-        return new Table( Tsv.fromPaths( paths, encoding, modelSet) );
+    public static Table fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model.Complex complexModel ) {
+        return new Table( Tsv.fromPaths( paths, encoding, complexModel ) );
     }
 
-    public static Table fromFiles( List<Path> paths, IoStreams.Encoding encoding, ModelSet.Model model) {
-        return new Table( Tsv.fromPaths( paths, encoding, model) );
+    public static Table fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model model ) {
+        return new Table( Tsv.fromPaths( paths, encoding, model ) );
     }
 
     @SuppressWarnings( "unchecked" )
     public Table sort( int[] fields ) {
         this.lines = lines.sorted( ( l1, l2 ) -> {
             for( int field : fields ) {
-                int result = ((Comparable) l1.get( field )).compareTo( l2.get( field ) );
+                int result = ( ( Comparable ) l1.get( field ) ).compareTo( l2.get( field ) );
                 if( result != 0 ) return result;
             }
             return 0;
@@ -132,12 +132,12 @@ public class Table {
 
     public Table join( int keyPos, Join... joins ) {
         return transform( line -> {
-            for( Join join : joins ) line.addAll( join.on( (String) line.get( keyPos ) ) );
+            for( Join join : joins ) line.addAll( join.on( ( String ) line.get( keyPos ) ) );
         } );
     }
 
     public void compute() {
         lines.drain();
-        for( Runnable closeHandler : closeHandlers ) closeHandler.run();
+        closeHandlers.forEach( Runnable::run );
     }
 }

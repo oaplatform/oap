@@ -25,58 +25,71 @@ package oap.tsv;
 
 import oap.io.IoStreams;
 import oap.io.Resources;
+import oap.util.Lists;
 import oap.util.Stream;
-import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-
-import static java.util.stream.Collectors.toList;
+import java.util.stream.Collectors;
 
 public class Tsv {
 
-    public static Optional<Stream<List<Object>>> fromResource( Class<?> contextClass, String name, ModelSet modelSet ) {
-        return Resources.url( contextClass, name ).map( url -> fromUrl( url, modelSet.modelForName( name ) ) );
+    public static Optional<Stream<List<Object>>> fromResource( Class<?> contextClass, String name, Model model ) {
+        return Resources.url( contextClass, name ).map( url -> fromUrl( url, model ) );
     }
 
-    public static Stream<List<Object>> fromPath( Path path, ModelSet modelSet ) {
-        return fromPath( path, IoStreams.Encoding.PLAIN, modelSet );
+    public static Stream<List<Object>> fromPath( Path path, Model model ) {
+        return fromPath( path, IoStreams.Encoding.PLAIN, model );
     }
 
-    public static Stream<List<Object>> fromPath( Path path, IoStreams.Encoding encoding, ModelSet modelSet ) {
-        return fromStream( path.toString(), IoStreams.lines( path, encoding ), modelSet.modelForPath( path ) );
+    public static Stream<List<Object>> fromPath( Path path, IoStreams.Encoding encoding, Model model ) {
+        return fromStream( path, IoStreams.lines( path, encoding ), model );
     }
 
-    public static Stream<List<Object>> fromPaths( List<Path> paths, ModelSet modelSet ) {
-        return fromPaths( paths, IoStreams.Encoding.PLAIN, modelSet );
+    public static Stream<List<Object>> fromPaths( List<Path> paths, Model.Complex complexModel ) {
+        return fromPaths( paths, IoStreams.Encoding.PLAIN, complexModel );
     }
 
-    public static Stream<List<Object>> fromPaths( List<Path> paths, IoStreams.Encoding encoding, ModelSet modelSet ) {
-        return Stream.of( paths ).flatMap( path -> fromStream( path.toString(), IoStreams.lines( path, encoding ), modelSet.modelForPath( path ) ) );
+    public static Stream<List<Object>> fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model.Complex complexModel ) {
+        return Stream.of( paths )
+            .flatMap( path -> fromStream(
+                path,
+                IoStreams.lines( path, encoding ),
+                complexModel.modelFor( path )
+            ) );
     }
 
-    public static Stream<List<Object>> fromPaths( List<Path> paths, IoStreams.Encoding encoding, ModelSet.Model model ) {
-        return Stream.of( paths ).flatMap( path -> fromStream( path.toString(), IoStreams.lines( path, encoding ), model ) );
+    public static Stream<List<Object>> fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model model ) {
+        return Stream.of( paths )
+            .flatMap( path -> fromStream(
+                path,
+                IoStreams.lines( path, encoding ),
+                model )
+            );
     }
 
-    public static Stream<List<Object>> fromUrl( URL url, ModelSet.Model model ) {
+    public static Stream<List<Object>> fromUrl( URL url, Model model ) {
         return fromUrl( url, model, IoStreams.Encoding.PLAIN, p -> {
         } );
     }
 
-    public static Stream<List<Object>> fromUrl( URL url, ModelSet.Model model, IoStreams.Encoding encoding,
+    public static Stream<List<Object>> fromUrl( URL url, Model model, IoStreams.Encoding encoding,
                                                 Consumer<Integer> progressCallback ) {
-        return fromStream( url.toString(), IoStreams.lines( url, encoding, progressCallback ), model );
+        return fromStream( url, IoStreams.lines( url, encoding, progressCallback ), model );
     }
 
-    public static Stream<List<Object>> fromStream( String source, Stream<String> stream, ModelSet.Model model ) {
+    public static Stream<List<Object>> fromStream( Stream<String> stream, Model model ) {
+        return fromStream( "unknown", stream, model );
+    }
+
+    private static Stream<List<Object>> fromStream( Object source, Stream<String> stream, Model model ) {
         int skip = model.withHeader ? 1 : 0;
-        return fromStream( stream ).skip( skip )
+        return fromStream( stream )
+            .skip( skip )
             .filter( model.filter() )
             .mapWithIndex( ( index, line ) -> {
                 try {
@@ -94,31 +107,38 @@ public class Tsv {
     }
 
     public static List<String> parse( String tsv ) {
-        return Arrays.asList( StringUtils.splitByWholeSeparatorPreserveAllTokens( tsv, "\t" ) );
+        return Lists.of( StringUtils.splitByWholeSeparatorPreserveAllTokens( tsv, "\t" ) );
+    }
+
+    public static String print( Stream<List<Object>> stream ) {
+        return stream.map( Tsv::print ).collect( Collectors.joining() );
     }
 
     public static String print( List<?> list ) {
-        return Strings.join( "\t", list.stream().map( e -> {
-            String value = e == null ? "" : String.valueOf( e );
-            String result = "";
-            for( int i = 0; i < value.length(); i++ ) {
-                char c = value.charAt( i );
-                switch( c ) {
-                    case '\r':
-                        result += "\\r";
-                        break;
-                    case '\n':
-                        result += "\\n";
-                        break;
-                    case '\t':
-                        result += "\\t";
-                        break;
-                    default:
-                        result += c;
+        return Stream.of( list )
+            .map( e -> {
+                String value = e == null ? "" : String.valueOf( e );
+                String result = "";
+                for( int i = 0; i < value.length(); i++ ) {
+                    char c = value.charAt( i );
+                    switch( c ) {
+                        case '\r':
+                            result += "\\r";
+                            break;
+                        case '\n':
+                            result += "\\n";
+                            break;
+                        case '\t':
+                            result += "\\t";
+                            break;
+                        default:
+                            result += c;
+                    }
                 }
-            }
-            return result;
-        } ).collect( toList() ) ) + "\n";
+                return result;
+            } )
+            .collect( Collectors.joining( "\t" ) ) + "\n";
+
     }
 
 }

@@ -24,81 +24,63 @@
 
 package oap.etl;
 
-import oap.io.Resources;
-import oap.tsv.ModelSet;
+import oap.tsv.Model;
 import oap.util.Lists;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static oap.io.IoAsserts.assertContentResource;
 import static org.testng.Assert.assertEquals;
 
 public class TableTest {
     @Test
     public void testSorted() {
-        ModelSet modelSetOne = ModelSet.withoutHeader();
-        modelSetOne.modelForName(getClass().getSimpleName() + "/2.tsv").s(0);
-        ModelSet modelSetTwo = ModelSet.withoutHeader();
-        modelSetTwo.modelForName(getClass().getSimpleName() + "/1.tsv").s( 1, 2, 3 );
-
         CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
-            getClass().getSimpleName() + "/2.tsv", modelSetOne ).get();
+            getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( 0 ) ).get();
         StringExport export = new StringExport();
         List<Long> progress = new ArrayList<>();
         Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
-                modelSetTwo )
+            Model.withoutHeader().s( 1, 2, 3 ) )
             .get()
             .progress( 2, progress::add )
             .sort( new int[]{ 0, 1 } )
-            .transform( l -> l.addAll( join.on( (String) l.get( 1 ) ) ) )
+            .transform( l -> l.addAll( join.on( ( String ) l.get( 1 ) ) ) )
             .export( export )
             .compute();
-        assertEquals( export.toString(),
-            Resources.readString( getClass(), getClass().getSimpleName() + "/sorted.tsv" ).get() );
-        assertEquals( progress, Lists.of( 2l, 4l, 6l, 7l ) );
+        assertContentResource( getClass(), export.toString(), "sorted.tsv" );
+        assertEquals( progress, Lists.of( 2L, 4L, 6L, 7L ) );
     }
 
     @Test
     public void testDistincted() {
-        ModelSet modelSet = ModelSet.withoutHeader();
-        modelSet.modelForName(getClass().getSimpleName() + "/2.tsv").s( 0 );
-
-        ModelSet modelSetTwo = ModelSet.withoutHeader();
-        modelSetTwo.modelForName(getClass().getSimpleName() + "/1.tsv").s(1, 2).i(3);
-
         CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
-            getClass().getSimpleName() + "/2.tsv", modelSet ).get();
+            getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( 0 ) ).get();
         StringExport export = new StringExport();
-        Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv", modelSetTwo )
+        Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
+            Model.withoutHeader().s( 1, 2 ).i( 3 ) )
             .get()
             .sort( new int[]{ 0, 1 } )
             .join( 1, join )
             .groupBy( new int[]{ 0, 1 }, Accumulator.count(), Accumulator.intSum( 2 ), Accumulator.intSum( 3 ) )
             .export( export )
             .compute();
-        assertEquals( export.toString(),
-            Resources.readString( getClass(), getClass().getSimpleName() + "/distincted.tsv" ).get() );
+        assertContentResource( getClass(), export.toString(), "distincted.tsv" );
     }
 
     @Test
     public void testJoined() {
-        ModelSet modelSet = ModelSet.withoutHeader();
-        modelSet.modelForName(getClass().getSimpleName() + "/2.tsv").s( 1, 2, 0 );
-
-        ModelSet modelSetTwo = ModelSet.withoutHeader();
-        modelSetTwo.modelForName(getClass().getSimpleName() + "/1.tsv").s( 1, 2, 3 );
-
         TableJoin join = TableJoin.fromResource( getClass(), getClass().getSimpleName() + "/2.tsv",
-                modelSet, Lists.of( "0", "x" ) ).get();
+            Model.withoutHeader().s( 1, 2, 0 ), Lists.of( "0", "x" ) ).get();
         StringExport export = new StringExport();
-        Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv", modelSetTwo )
+        Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
+            Model.withoutHeader().s( 1, 2, 3 ) )
             .get()
             .sort( new int[]{ 0, 1 } )
             .join( 1, join )
             .export( export )
             .compute();
-        assertEquals( export.toString(),
-            Resources.readString( getClass(), getClass().getSimpleName() + "/joined.tsv" ).get() );
+        assertContentResource( getClass(), export.toString(), "joined.tsv" );
     }
 }

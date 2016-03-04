@@ -36,9 +36,11 @@ import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
-import java.util.regex.Matcher;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -78,13 +80,6 @@ public final class Files {
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
-    }
-
-    public static String version( Path path ) {
-        return Optional.of( path.getFileName().toString() ).map( s -> {
-            Matcher m = java.util.regex.Pattern.compile( "_(v.*?)-" ).matcher( s );
-            return m.find() ? m.group( 1 ) : "";
-        } ).get();
     }
 
     @SuppressWarnings( "unchecked" )

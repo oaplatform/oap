@@ -24,6 +24,7 @@
 
 package oap.tsv;
 
+import oap.io.IoAsserts;
 import oap.io.IoStreams;
 import oap.testng.Asserts;
 import oap.testng.Env;
@@ -35,6 +36,7 @@ import org.testng.annotations.Test;
 import java.nio.file.Path;
 import java.util.List;
 
+import static oap.io.IoAsserts.assertFileContent;
 import static org.testng.Assert.assertEquals;
 
 public class TsvTest {
@@ -56,21 +58,11 @@ public class TsvTest {
 
     @Test( dataProvider = "files" )
     public void loadTsv( String file, IoStreams.Encoding encoding ) {
-        ModelSet modelSet = ModelSet.withoutHeader();
-        modelSet.modelForName("").s( 1 ).i( 3 ).columns( 4 );
+        Model model = Model.withoutHeader().s( 1 ).i( 3 ).filterColumnCount( 4 );
         Path path = Env.deployTestData( getClass() );
-        Asserts.assertEquals( Tsv.fromPath(
-                path.resolve( file ),
-                encoding, modelSet ),
-            Stream.of(
-                Lists.of( "B", 1 ),
-                Lists.of( "A", 1 ),
-                Lists.of( "B", 2 ),
-                Lists.of( "A", 2 ),
-                Lists.of( "B", 3 ),
-                Lists.of( "B", 3 ),
-                Lists.of( "B", 3 )
-            ) );
+
+        Stream<List<Object>> tsv = Tsv.fromPath( path.resolve( file ), encoding, model );
+        assertFileContent( path.resolve( "result.tsv" ), Tsv.print( tsv ) );
     }
 
 }
