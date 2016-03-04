@@ -289,47 +289,47 @@ public class JsonDiffTest extends AbstractSchemaTest {
         return diff( from, to, ast ).getDiff();
     }
 
-    private JsonDiff.Line __newF( String path, Object value ) {
+    private JsonDiff.Line __newF( String path, String value ) {
         return ___new( path, value, JsonDiff.Line.LineType.FIELD );
     }
 
-    private JsonDiff.Line __newO( String path, Object value ) {
+    private JsonDiff.Line __newO( String path, String value ) {
         return ___new( path, value, JsonDiff.Line.LineType.OBJECT );
     }
 
-    private JsonDiff.Line __newA( String path, Object value ) {
+    private JsonDiff.Line __newA( String path, String value ) {
         return ___new( path, value, JsonDiff.Line.LineType.ARRAY );
     }
 
-    private JsonDiff.Line ___new( String path, Object value, JsonDiff.Line.LineType lineType ) {
+    private JsonDiff.Line ___new( String path, String value, JsonDiff.Line.LineType lineType ) {
         return new JsonDiff.Line( path, lineType, empty(), of( value ) );
     }
 
-    private JsonDiff.Line __delF( String path, Object value ) {
+    private JsonDiff.Line __delF( String path, String value ) {
         return __del( path, JsonDiff.Line.LineType.FIELD, of( value ), empty() );
     }
 
-    private JsonDiff.Line __delO( String path, Object value ) {
+    private JsonDiff.Line __delO( String path, String value ) {
         return __del( path, JsonDiff.Line.LineType.OBJECT, of( value ), empty() );
     }
 
-    private JsonDiff.Line __delA( String path, Object value ) {
+    private JsonDiff.Line __delA( String path, String value ) {
         return __del( path, JsonDiff.Line.LineType.ARRAY, of( value ), empty() );
     }
 
-    private JsonDiff.Line __del( String path, JsonDiff.Line.LineType object, Optional<Object> value2, Optional<Object> empty ) {
+    private JsonDiff.Line __del( String path, JsonDiff.Line.LineType object, Optional<String> value2, Optional<String> empty ) {
         return new JsonDiff.Line( path, object, value2, empty );
     }
 
-    private JsonDiff.Line __updF( String path, Object oldValue, Object newValue ) {
+    private JsonDiff.Line __updF( String path, String oldValue, String newValue ) {
         return __upd( path, oldValue, newValue, JsonDiff.Line.LineType.FIELD );
     }
 
-    private JsonDiff.Line __updA( String path, Object oldValue, Object newValue ) {
+    private JsonDiff.Line __updA( String path, String oldValue, String newValue ) {
         return __upd( path, oldValue, newValue, JsonDiff.Line.LineType.ARRAY );
     }
 
-    private JsonDiff.Line __upd( String path, Object oldValue, Object newValue, JsonDiff.Line.LineType lineType ) {
+    private JsonDiff.Line __upd( String path, String oldValue, String newValue, JsonDiff.Line.LineType lineType ) {
         return new JsonDiff.Line( path, lineType, of( oldValue ), of( newValue ) );
     }
 }

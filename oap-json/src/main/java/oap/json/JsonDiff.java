@@ -187,11 +187,11 @@ public class JsonDiff {
     @ToString
     public static class Line {
         public final String path;
-        public final Optional<Object> oldValue;
+        public final Optional<String> oldValue;
         public final LineType lineType;
-        public final Optional<Object> newValue;
+        public final Optional<String> newValue;
 
-        Line( String path, LineType lineType, Optional<Object> oldValue, Optional<Object> newValue ) {
+        Line( String path, LineType lineType, Optional<String> oldValue, Optional<String> newValue ) {
             this.path = path;
             this.lineType = lineType;
             this.newValue = newValue;
