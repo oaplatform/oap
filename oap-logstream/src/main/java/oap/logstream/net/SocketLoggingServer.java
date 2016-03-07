@@ -29,7 +29,7 @@ import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.Sockets;
 import oap.logstream.LoggingBackend;
-import oap.util.concurrent.ThreadPoolExecutor;
+import oap.concurrent.ThreadPoolExecutor;
 
 import java.io.*;
 import java.net.InetSocketAddress;

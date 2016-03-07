@@ -28,7 +28,7 @@ import com.google.common.base.Throwables;
 import oap.concurrent.Threads;
 import oap.io.Closeables;
 import oap.metrics.Metrics;
-import oap.util.concurrent.ThreadPoolExecutor;
+import oap.concurrent.ThreadPoolExecutor;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpConnection;

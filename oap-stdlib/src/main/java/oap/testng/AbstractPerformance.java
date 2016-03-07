@@ -24,7 +24,7 @@
 package oap.testng;
 
 import oap.util.Try;
-import oap.util.concurrent.ThreadPoolExecutor;
+import oap.concurrent.ThreadPoolExecutor;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.testng.Assert;
 

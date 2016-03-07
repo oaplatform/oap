@@ -37,9 +37,11 @@ import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.InterruptedIOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.ConnectException;
+import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -116,7 +118,8 @@ class InfluxDBReporter extends ScheduledReporter {
             );
             influxDB.write( points );
         } catch( Exception e ) {
-            if( e.getCause() instanceof ConnectException ) {
+            Throwable rootCause = Throwables.getRootCause( e );
+            if( rootCause instanceof SocketException || rootCause instanceof InterruptedIOException ) {
                 logger.error( e.getMessage() );
             } else {
                 logger.error( e.getMessage(), e );
