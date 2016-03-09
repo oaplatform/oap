@@ -32,6 +32,7 @@ import org.apache.http.entity.*;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -86,6 +87,12 @@ public class HttpResponse {
     public static HttpResponse stream( Stream<String> stream, ContentType contentType ) {
         HttpResponse response = new HttpResponse( HTTP_OK );
         response.contentEntity = new HttpStreamEntity( stream, contentType );
+        return response;
+    }
+
+    public static HttpResponse file( Path file, ContentType contentType ) {
+        HttpResponse response = new HttpResponse( HTTP_OK );
+        response.contentEntity = new FileEntity( file.toFile(), contentType );
         return response;
     }
 
