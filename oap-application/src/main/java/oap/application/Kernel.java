@@ -39,6 +39,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static java.util.stream.Collectors.toSet;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -102,14 +103,29 @@ public class Kernel {
     }
 
     private void initializeServiceLinks( String name, Module.Service service ) {
-        for( Map.Entry<String, Object> entry : service.parameters.entrySet() )
-            if( entry.getValue() instanceof String && ( ( String ) entry.getValue() ).startsWith( "@service:" ) ) {
-                logger.debug( "for " + name + " linking " + entry );
-                Object link = Application.service( ( ( String ) entry.getValue() ).substring( "@service:".length() ) );
-                if( link == null ) throw new ApplicationException(
-                    "for " + name + " service link " + entry.getValue() + " is not initialized yet" );
-                entry.setValue( link );
+        for( Map.Entry<String, Object> entry : service.parameters.entrySet() ) {
+            final Object value = entry.getValue();
+            final String key = entry.getKey();
+
+            if( value instanceof String ) initValue( name, key, value, entry::setValue );
+            else if( value instanceof List<?> ) {
+                final List list = ( List<?> ) value;
+                for( int i = 0; i < list.size(); i++ ) {
+                    final int finalI = i;
+                    initValue( name, key + "[" + i + "]", list.get( i ), ( link ) -> list.set( finalI, link ) );
+                }
             }
+        }
+    }
+
+    private void initValue( String name, String key, Object value, Consumer<Object> s ) {
+        if( value instanceof String && ( ( String ) value ).startsWith( "@service:" ) ) {
+            logger.debug( "for " + name + " linking " + key + " -> " + value );
+            Object link = Application.service( ( ( String ) value ).substring( "@service:".length() ) );
+            if( link == null ) throw new ApplicationException(
+                "for " + name + " service link " + value + " is not initialized yet" );
+            s.accept( link );
+        }
     }
 
     private Set<Module> initialize( Set<Module> modules, Set<String> initialized ) {

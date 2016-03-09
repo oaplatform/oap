@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static oap.testng.Asserts.assertEventually;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -69,6 +70,23 @@ public class KernelTest extends AbstractTest {
         try {
             kernel.start( Resources.filePath( getClass(), "application.conf" ).get(), Optional.empty() );
             validate();
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
+    public void testResolveRefs() {
+        List<URL> modules = Module.fromClassPath();
+        modules.add( Resources.url( KernelTest.class, "modules/list-refs.conf" ).get() );
+        Kernel kernel = new Kernel( modules );
+        try {
+            kernel.start( Resources.filePath( getClass(), "application.conf" ).get(), Optional.empty() );
+            assertEventually( 50, 10, () -> {
+                assertThat( Application.service( RefService.class ).getRefs() )
+                    .hasAtLeastOneElementOfType( ServiceOne.class )
+                    .hasAtLeastOneElementOfType( ServiceTwo.class );
+            } );
         } finally {
             kernel.stop();
         }
