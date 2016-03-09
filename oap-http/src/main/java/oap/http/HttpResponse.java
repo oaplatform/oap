@@ -109,11 +109,7 @@ public class HttpResponse {
     }
 
     public static HttpResponse status( int code ) {
-        HttpResponse response = new HttpResponse( code );
-        final BasicHttpEntity basicHttpEntity = new BasicHttpEntity();
-        basicHttpEntity.setContentType( TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ).toString() );
-        response.contentEntity = basicHttpEntity;
-        return response;
+        return new HttpResponse( code );
     }
 
     public static void registerProducer( String mimeType, Function<Object, String> producer ) {
