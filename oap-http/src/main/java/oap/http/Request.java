@@ -51,10 +51,12 @@ public class Request {
     public final Context context;
     public final Optional<InputStream> body;
     protected final Header[] headers;
+    public final String uri;
 
     public Request( HttpRequest req, Context context ) {
         this.headers = req.getAllHeaders();
         this.baseUrl = "http://" + req.getFirstHeader( "Host" ).getValue();
+        this.uri = req.getRequestLine().getUri();
         this.requestLine = Strings.substringBefore( req.getRequestLine().getUri(), "?" ).substring(
             context.location.length() );
         this.httpMethod = HttpMethod.valueOf( req.getRequestLine().getMethod().toUpperCase() );
