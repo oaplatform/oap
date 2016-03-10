@@ -24,6 +24,7 @@
 package oap.testng;
 
 import com.google.common.base.Throwables;
+import lombok.extern.java.Log;
 import oap.io.Files;
 import oap.io.Resources;
 
@@ -36,6 +37,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Log
 public class Env {
     public static final String LOCALHOST;
     static final Path tmp = Files.path( "/tmp/test" );
@@ -55,7 +57,13 @@ public class Env {
     }
 
     public static Path tmpPath( String name ) {
-        return tmpRoot.resolve( name.startsWith( "/" ) || name.startsWith( "\\" ) ? name.substring( 1 ) : name );
+        Path tmpPath = tmpRoot.resolve( name.startsWith( "/" ) || name.startsWith( "\\" ) ? name.substring( 1 ) : name );
+        try {
+            java.nio.file.Files.createDirectories( tmpPath.getParent() );
+        } catch( IOException e ) {
+            log.warning( "Cannot create temp dirs: " + tmpPath );
+        }
+        return tmpPath;
     }
 
     public static Path deployTestData( Class<?> contextClass ) {
