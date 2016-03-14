@@ -73,10 +73,7 @@ public class Env {
     public static Path deployTestData( Class<?> contextClass, String name ) {
         Path to = tmpPath( name );
         Resources.filePath( contextClass, contextClass.getSimpleName() + "/" + name )
-            .ifPresent( path -> {
-                System.out.println( path );
-                Files.copyDirectory( path, to );
-            } );
+            .ifPresent( path -> Files.copyDirectory( path, to ) );
         return to;
     }
 

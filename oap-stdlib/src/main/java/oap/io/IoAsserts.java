@@ -29,8 +29,8 @@ import static org.testng.Assert.*;
 
 public class IoAsserts {
 
-    public static void assertFileContent( Path path, String content ) {
-        assertFileContent( path, IoStreams.Encoding.PLAIN, content );
+    public static void assertFileContent( Path actual, String content ) {
+        assertFileContent( actual, IoStreams.Encoding.PLAIN, content );
     }
 
     public static void assertFileResource( Class<?> contextClass, Path actual, String expectedResource ) {
@@ -43,9 +43,14 @@ public class IoAsserts {
             Resources.readString( contextClass, contextClass.getSimpleName() + "/" + expectedResource ).get() );
     }
 
-    public static void assertFileContent( Path path, IoStreams.Encoding encoding, String content ) {
-        assertTrue( path.toFile().exists(), "file " + path + " does not exist" );
-        assertEquals( Files.readString( path, encoding ), content );
+    public static void assertContentResource( Class<?> contextClass, String actual, String expectedResource ) {
+        assertEquals( actual,
+            Resources.readString( contextClass, contextClass.getSimpleName() + "/" + expectedResource ).get() );
+    }
+
+    public static void assertFileContent( Path actual, IoStreams.Encoding encoding, String content ) {
+        assertTrue( actual.toFile().exists(), "file " + actual + " does not exist" );
+        assertEquals( Files.readString( actual, encoding ), content );
     }
 
     public static void assertFileDoesNotExist( Path path ) {

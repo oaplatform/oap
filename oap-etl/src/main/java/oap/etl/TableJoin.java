@@ -24,7 +24,7 @@
 package oap.etl;
 
 import oap.io.IoStreams;
-import oap.tsv.ModelSet;
+import oap.tsv.Model;
 import oap.tsv.Tsv;
 import oap.util.Stream;
 
@@ -42,21 +42,21 @@ public class TableJoin implements Join {
     }
 
     public static Optional<TableJoin> fromResource( Class<?> contextClass, String name,
-        ModelSet modelSet, List<Object> defaults ) {
-        return Tsv.fromResource( contextClass, name, modelSet)
-            .map( s -> s.foldLeft( new TableJoin( defaults ), ( l, line ) -> {
-                l.map.put( (String) line.remove( modelSet.size() - 1 ), line );
-                return l;
-            } ) );
+                                                    Model model, List<Object> defaults ) {
+        return Tsv.fromResource( contextClass, name, model )
+            .map( tsv -> fromTsv( tsv, defaults ) );
     }
 
-    public static TableJoin fromFiles( List<Path> files, IoStreams.Encoding encoding, ModelSet modelSet, List<Object> defaults ) {
-        return Stream.of( files.stream() )
-            .foldLeft( new TableJoin( defaults ), ( t, path ) -> {
-                Tsv.fromPath( path, encoding, modelSet )
-                        .forEach( line -> t.map.put( (String) line.remove( modelSet.size() - 1 ), line ) );
-                return t;
-            } );
+    public static TableJoin fromPaths( List<Path> paths, IoStreams.Encoding encoding,
+                                       Model.Complex complexModel, List<Object> defaults ) {
+        return fromTsv( Tsv.fromPaths( paths, encoding, complexModel ), defaults );
+    }
+
+    private static TableJoin fromTsv( Stream<List<Object>> tsv, List<Object> defaults ) {
+        return tsv.foldLeft( new TableJoin( defaults ), ( t, line ) -> {
+            t.map.put( ( String ) line.remove( line.size() - 1 ), line );
+            return t;
+        } );
     }
 
     public List<Object> on( String key ) {

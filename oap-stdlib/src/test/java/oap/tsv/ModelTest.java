@@ -21,15 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.util;
 
-import org.apache.commons.lang3.mutable.MutableLong;
+package oap.tsv;
 
-import java.util.HashMap;
+import oap.io.IoAsserts;
+import oap.testng.Env;
+import oap.util.Stream;
+import org.testng.annotations.Test;
 
-public class LongMap extends HashMap<String, MutableLong> {
-    public void increment( String key ) {
-        putIfAbsent( key, new MutableLong() );
-        get( key ).increment();
+import java.nio.file.Path;
+import java.util.List;
+
+public class ModelTest {
+    @Test
+    public void load() {
+        Path path = Env.deployTestData( getClass() );
+        List<Path> paths = Stream.of( "1.tsv", "2.tsv", "3.tsv" ).map( path::resolve ).toList();
+        Model.Complex complexModel = Model.complex( file -> {
+            switch( file.getFileName().toString() ) {
+                case "1.tsv":
+                    return Model.withoutHeader().s( 1 ).i( 3 );
+                case "2.tsv":
+                    return Model.withoutHeader().s( 1 ).i( 4 );
+                case "3.tsv":
+                    return Model.withHeader().s( 1 ).v( 0 );
+                default:
+                    throw new IllegalArgumentException();
+
+            }
+        } );
+        Stream<List<Object>> tsv = Tsv.fromPaths( paths, complexModel );
+        IoAsserts.assertFileContent( path.resolve( "result.tsv" ), Tsv.print( tsv ) );
     }
 }

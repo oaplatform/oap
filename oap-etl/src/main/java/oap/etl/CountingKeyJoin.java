@@ -24,39 +24,39 @@
 package oap.etl;
 
 import oap.io.IoStreams;
-import oap.tsv.ModelSet;
+import oap.tsv.Model;
 import oap.tsv.Tsv;
 import oap.util.Lists;
-import oap.util.LongMap;
 import oap.util.Stream;
+import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
 public class CountingKeyJoin implements Join {
-    private LongMap map = new LongMap();
+    private HashMap<String, MutableLong> map = new HashMap<>();
 
-    public static Optional<CountingKeyJoin> fromResource( Class<?> contextClass, String name, ModelSet modelSet ) {
-        return Tsv.fromResource( contextClass, name, modelSet )
-            .map( s -> s.foldLeft( new CountingKeyJoin(), ( l, list ) -> {
-                l.map.increment( (String) list.get( 0 ) );
-                return l;
-            } ) );
+    public static Optional<CountingKeyJoin> fromResource( Class<?> contextClass, String name, Model model ) {
+        return Tsv.fromResource( contextClass, name, model )
+            .map( CountingKeyJoin::fromTsv );
     }
 
-    public static CountingKeyJoin fromFiles( List<Path> paths, IoStreams.Encoding encoding, ModelSet modelSet ) {
-        return Stream.of( paths.stream() )
-            .foldLeft( new CountingKeyJoin(), ( l, path ) -> {
-                Tsv.fromPath( path, encoding, modelSet )
-                    .forEach( list -> l.map.increment( (String) list.get( 0 ) ) );
-                return l;
-            } );
+    public static CountingKeyJoin fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model.Complex complexModel ) {
+        return fromTsv( Tsv.fromPaths( paths, encoding, complexModel ) );
+    }
+
+    private static CountingKeyJoin fromTsv( Stream<List<Object>> tsv ) {
+        return tsv.foldLeft( new CountingKeyJoin(), ( j, list ) -> {
+            j.map.computeIfAbsent( ( String ) list.get( 0 ), k -> new MutableLong() ).increment();
+            return j;
+        } );
     }
 
     @Override
     public List<Object> on( String key ) {
-        return map.containsKey( key ) ? Lists.of( map.get( key ) ) : Lists.of( 0l );
+        return map.containsKey( key ) ? Lists.of( map.get( key ) ) : Lists.of( 0L );
     }
 
     @Override
