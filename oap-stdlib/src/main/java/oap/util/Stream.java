@@ -74,7 +74,6 @@ public class Stream<E> implements java.util.stream.Stream<E> {
             underlying.isParallel() || b.isParallel() ) );
     }
 
-
     public <B> Stream<Pair<E, B>> zip( java.util.stream.Stream<? extends B> b ) {
         return zip( b, Pair::__ );
     }
@@ -315,6 +314,9 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return underlying.findAny();
     }
 
+    public Optional<E> random() {
+        return Lists.random( toList() );
+    }
 
     public static <T> Stream<T> empty() {
         return of( java.util.stream.Stream.empty() );
