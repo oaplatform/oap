@@ -34,34 +34,43 @@ import oap.storage.migration.JsonMetadata;
  */
 @ToString
 @EqualsAndHashCode
-class Bean {
-    public String id;
-    public String s = "aaa";
+class Bean2 {
+    public String id2;
+    public BeanIn in;
 
-    public Bean( String id, String s ) {
-        this.id = id;
-        this.s = s;
+    public Bean2( String id, String s ) {
+        this.id2 = id;
+        this.in = new BeanIn();
+        this.in.s = s;
     }
 
-    public Bean( String id ) {
+    public Bean2( String id ) {
         this( id, "aaa" );
     }
 
-    public Bean() {
+    public Bean2() {
     }
 
-    public static class BeanMigration implements FileStorageMigration {
+    @ToString
+    @EqualsAndHashCode
+    public static class BeanIn {
+        public String s = "aaa";
+    }
+
+    public static class Bean2Migration implements FileStorageMigration {
 
         @Override
         public long fromVersion() {
-            return 0;
+            return 1;
         }
 
         @Override
         public JsonMetadata run( JsonMetadata oldV ) {
             return oldV
+                .mapS( "object:type", ( str ) -> "oap.storage.Bean2" )
                 .object()
-                .mapS( "id", s -> s + "1" )
+                .rename( "id", "id2" )
+                .rename( "s", "in.s" )
                 .topParent();
         }
     }

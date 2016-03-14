@@ -59,4 +59,6 @@ public interface Storage<T> {
     long size();
 
     List<Metadata<T>> updatedSince( long time );
+
+    long version();
 }

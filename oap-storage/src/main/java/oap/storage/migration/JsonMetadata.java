@@ -22,47 +22,38 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.storage.migration;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.storage.migration.FileStorageMigration;
-import oap.storage.migration.JsonMetadata;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 
 /**
- * Created by Igor Petrenko on 05.10.2015.
+ * Created by Igor Petrenko on 14.03.2016.
  */
-@ToString
-@EqualsAndHashCode
-class Bean {
-    public String id;
-    public String s = "aaa";
-
-    public Bean( String id, String s ) {
-        this.id = id;
-        this.s = s;
+public class JsonMetadata extends JsonObject {
+    public JsonMetadata( Map<String, Object> underlying ) {
+        super( Optional.empty(), Optional.empty(), underlying );
     }
 
-    public Bean( String id ) {
-        this( id, "aaa" );
+    public JsonObject object() {
+        return ( JsonObject ) field( "object" ).get();
     }
 
-    public Bean() {
+    public String id() {
+        return s( "id" );
     }
 
-    public static class BeanMigration implements FileStorageMigration {
+    public long version() {
+        return l( "version" );
+    }
 
-        @Override
-        public long fromVersion() {
-            return 0;
-        }
+    public void incVersion() {
+        this.mapL( "version", v -> v + 1 );
+    }
 
-        @Override
-        public JsonMetadata run( JsonMetadata oldV ) {
-            return oldV
-                .object()
-                .mapS( "id", s -> s + "1" )
-                .topParent();
-        }
+    @Override
+    public <T> JsonMetadata mapS( String field, Function<String, T> func ) {
+        return ( JsonMetadata ) super.mapS( field, func );
     }
 }

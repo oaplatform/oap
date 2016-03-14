@@ -22,47 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.storage;
-
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.storage.migration.FileStorageMigration;
-import oap.storage.migration.JsonMetadata;
+package oap.storage.migration;
 
 /**
- * Created by Igor Petrenko on 05.10.2015.
+ * Created by Igor Petrenko on 14.03.2016.
  */
-@ToString
-@EqualsAndHashCode
-class Bean {
-    public String id;
-    public String s = "aaa";
-
-    public Bean( String id, String s ) {
-        this.id = id;
-        this.s = s;
-    }
-
-    public Bean( String id ) {
-        this( id, "aaa" );
-    }
-
-    public Bean() {
-    }
-
-    public static class BeanMigration implements FileStorageMigration {
-
-        @Override
-        public long fromVersion() {
-            return 0;
-        }
-
-        @Override
-        public JsonMetadata run( JsonMetadata oldV ) {
-            return oldV
-                .object()
-                .mapS( "id", s -> s + "1" )
-                .topParent();
-        }
+public class FileStorageMigrationException extends RuntimeException {
+    public FileStorageMigrationException( String message ) {
+        super( message );
     }
 }

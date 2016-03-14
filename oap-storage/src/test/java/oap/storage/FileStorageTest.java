@@ -26,28 +26,26 @@ package oap.storage;
 
 import oap.concurrent.Threads;
 import oap.io.Resources;
+import oap.storage.Bean.BeanMigration;
+import oap.storage.Bean2.Bean2Migration;
 import oap.testng.AbstractTest;
-import oap.testng.Asserts;
 import oap.testng.Env;
-import oap.util.Stream;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 
 public class FileStorageTest extends AbstractTest {
     @Test
     public void load() {
         try( FileStorage<Bean> storage =
                  new FileStorage<>( Resources.filePath( FileStorageTest.class, "data" ).get(), b -> b.id ) ) {
-            assertThat( storage.select() ).containsOnlyOnce( new Bean( "t1" ), new Bean( "t2" ) );
+            assertThat( storage.select() ).containsExactly( new Bean( "t1" ), new Bean( "t2" ) );
         }
     }
 
@@ -60,7 +58,7 @@ public class FileStorageTest extends AbstractTest {
         }
 
         try( FileStorage<Bean> storage2 = new FileStorage<>( Env.tmpPath( "data" ), b -> b.id ) ) {
-            assertThat( storage2.select() ).containsOnlyOnce( new Bean( "1" ), new Bean( "2" ) );
+            assertThat( storage2.select() ).containsExactly( new Bean( "1" ), new Bean( "2" ) );
         }
     }
 
@@ -72,7 +70,7 @@ public class FileStorageTest extends AbstractTest {
         }
 
         try( FileStorage<Bean> storage2 = new FileStorage<>( Env.tmpPath( "data" ), b -> b.id ) ) {
-            Asserts.assertEquals( storage2.select(), Stream.of( new Bean( "111", "bbb" ) ) );
+            assertThat( storage2.select() ).containsExactly( new Bean( "111", "bbb" ) );
         }
     }
 
@@ -81,12 +79,12 @@ public class FileStorageTest extends AbstractTest {
         Path data = Env.tmpPath( "data" );
         try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50 ) ) {
             storage.store( new Bean( "111" ) );
-            assertEventually( 10, 100, () -> assertTrue( data.resolve( "111.json" ).toFile().exists() ) );
+            assertEventually( 10, 100, () -> assertThat( data.resolve( "111.json" ).toFile() ).exists() );
             storage.delete( "111" );
-            assertTrue( storage.select().toList().isEmpty() );
-            assertTrue( data.resolve( "111.json" ).toFile().exists() );
+            assertThat( storage.select() ).isEmpty();
+            assertThat( data.resolve( "111.json" ).toFile() ).exists();
             storage.vacuum();
-            assertFalse( data.resolve( "111.json" ).toFile().exists() );
+            assertThat( data.resolve( "111.json" ).toFile() ).exists();
         }
     }
 
@@ -105,15 +103,43 @@ public class FileStorageTest extends AbstractTest {
             master.store( new Bean( "111" ) );
             master.store( new Bean( "222" ) );
             assertEventually( 120, 5, () -> {
-                Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111" ), new Bean( "222" ) ) );
-                Assert.assertEquals( updates.get(), 2 );
+                assertThat( slave.select() ).containsExactly( new Bean( "111" ), new Bean( "222" ) );
+                assertThat( updates.get() ).isEqualTo( 2 );
             } );
             master.store( new Bean( "111", "bbb" ) );
             assertEventually( 120, 5, () -> {
-                Asserts.assertEquals( slave.select(), Stream.of( new Bean( "111", "bbb" ), new Bean( "222" ) ) );
-                Assert.assertEquals( updates.get(), 1 );
+                assertThat( slave.select() ).containsExactly( new Bean( "111", "bbb" ), new Bean( "222" ) );
+                assertThat( updates.get() ).isEqualTo( 1 );
             } );
         }
+    }
+
+    @Test
+    public void testMigration() {
+        final Path data = Env.tmpPath( "data" );
+        try( FileStorage<Bean> storage1 = new FileStorage<>( data, b -> b.id, -1 ) ) {
+            storage1.store( new Bean( "1" ) );
+            storage1.store( new Bean( "2" ) );
+        }
+
+        assertThat( data.resolve( "1.json" ).toFile() ).exists();
+        assertThat( data.resolve( "2.json" ).toFile() ).exists();
+
+        try( FileStorage<Bean2> storage2 = new FileStorage<>( data, b -> b.id2, -1, 2, Arrays.asList(
+            BeanMigration.class.getName(),
+            Bean2Migration.class.getName()
+        ) ) ) {
+            assertThat( storage2.select() ).containsExactly( new Bean2( "11" ), new Bean2( "21" ) );
+        }
+
+        assertThat( data.resolve( "1.json" ).toFile() ).doesNotExist();
+        assertThat( data.resolve( "2.json" ).toFile() ).doesNotExist();
+
+        assertThat( data.resolve( "1.v1.json" ).toFile() ).doesNotExist();
+        assertThat( data.resolve( "2.v1.json" ).toFile() ).doesNotExist();
+
+        assertThat( data.resolve( "1.v2.json" ).toFile() ).exists();
+        assertThat( data.resolve( "2.v2.json" ).toFile() ).exists();
     }
 }
 

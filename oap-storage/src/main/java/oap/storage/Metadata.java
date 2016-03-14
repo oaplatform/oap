@@ -35,7 +35,6 @@ import java.util.UUID;
 @ToString( exclude = "object" )
 public class Metadata<T> implements Comparable<Metadata<T>> {
     public String id;
-    //        @todo migration
     public int version = 0;
     public long modified = DateTimeUtils.currentTimeMillis();
     public boolean deleted;
