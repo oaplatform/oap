@@ -26,21 +26,33 @@ package oap.storage;
 
 import oap.concurrent.Threads;
 import oap.io.Resources;
+import oap.json.TypeIdFactory;
 import oap.storage.Bean.BeanMigration;
 import oap.storage.Bean2.Bean2Migration;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.Collections.emptyList;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FileStorageTest extends AbstractTest {
+    @BeforeMethod
+    @Override
+    public void beforeMethod() {
+        super.beforeMethod();
+
+        TypeIdFactory.register( Bean.class, Bean.class.toString() );
+    }
+
     @Test
     public void load() {
         try( FileStorage<Bean> storage =
@@ -84,7 +96,21 @@ public class FileStorageTest extends AbstractTest {
             assertThat( storage.select() ).isEmpty();
             assertThat( data.resolve( "111.json" ).toFile() ).exists();
             storage.vacuum();
-            assertThat( data.resolve( "111.json" ).toFile() ).exists();
+            assertThat( data.resolve( "111.json" ).toFile() ).doesNotExist();
+        }
+    }
+
+    @Test
+    public void delete_version() {
+        Path data = Env.tmpPath( "data" );
+        try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50, 1, emptyList() ) ) {
+            storage.store( new Bean( "111" ) );
+            assertEventually( 10, 100, () -> assertThat( data.resolve( "111.v1.json" ).toFile() ).exists() );
+            storage.delete( "111" );
+            assertThat( storage.select() ).isEmpty();
+            assertThat( data.resolve( "111.v1.json" ).toFile() ).exists();
+            storage.vacuum();
+            assertThat( data.resolve( "111.v1.json" ).toFile() ).doesNotExist();
         }
     }
 

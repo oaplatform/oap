@@ -46,6 +46,11 @@ public class TypeIdFactory implements TypeIdResolver {
         classToId.put( bean, id );
     }
 
+    public static void clear() {
+        idToClass.clear();
+        classToId.clear();
+    }
+
     @Override
     public void init( JavaType baseType ) {
         this.baseType = baseType;
