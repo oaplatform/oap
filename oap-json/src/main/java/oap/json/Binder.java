@@ -29,10 +29,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
@@ -78,6 +76,10 @@ public class Binder {
     }
 
     private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping ) {
+        AnnotationIntrospector introspector = new JacksonAnnotationIntrospector();
+        mapper.getDeserializationConfig().with( introspector );
+        mapper.getSerializationConfig().with( introspector );
+
         mapper.registerModule( new AfterburnerModule() );
 
         mapper.registerModule( new Jdk8Module() );
@@ -103,7 +105,7 @@ public class Binder {
 
     @SuppressWarnings( "unchecked" )
     private static <T extends ReadableInstant> JsonDeserializer<T> forType( Class<T> cls ) {
-        return (JsonDeserializer<T>) new DateTimeDeserializer( cls, jodaDateFormat );
+        return ( JsonDeserializer<T> ) new DateTimeDeserializer( cls, jodaDateFormat );
     }
 
     public String canonicalize( Class<?> clazz, String json ) {
@@ -128,7 +130,7 @@ public class Binder {
 
 
     public void marshal( Path path, Object object ) {
-        Files.writeString( path,  marshal( object ) );
+        Files.writeString( path, marshal( object ) );
     }
 
     public <T> T unmarshal( Class<T> clazz, Path path ) {
@@ -142,7 +144,7 @@ public class Binder {
     @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( TypeReference<T> ref, String string ) {
         try {
-            return (T) mapper.readValue( string, ref );
+            return ( T ) mapper.readValue( string, ref );
         } catch( IOException e ) {
             log.debug( "json: " + string );
             throw new JsonException( "json error: " + e.getMessage(), e );
@@ -156,7 +158,7 @@ public class Binder {
     @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( TypeReference<T> ref, InputStream is ) {
         try {
-            return (T) mapper.readValue( is, ref );
+            return ( T ) mapper.readValue( is, ref );
         } catch( IOException e ) {
             throw new JsonException( e.getMessage(), e );
         }
@@ -165,24 +167,24 @@ public class Binder {
     @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( Class<?> clazz, String string ) {
         try {
-            return (T) mapper.readValue( string, clazz );
+            return ( T ) mapper.readValue( string, clazz );
         } catch( Exception e ) {
             log.trace( string );
-            throw new JsonException(e.getMessage(), e );
+            throw new JsonException( e.getMessage(), e );
         }
     }
 
     @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( Class<?> clazz, InputStream json ) {
         try {
-            return (T) mapper.readValue( json, clazz );
+            return ( T ) mapper.readValue( json, clazz );
         } catch( IOException e ) {
             throw new JsonException( e.getMessage(), e );
         }
     }
 
     public <T> Optional<T> unmarshalResource( Class<?> context, Class<T> clazz,
-        String resourceJsonPath ) {
+                                              String resourceJsonPath ) {
         return Resources.readString( context, resourceJsonPath ).
             map( json -> unmarshal( clazz, json ) );
 
@@ -190,7 +192,7 @@ public class Binder {
 
     @SuppressWarnings( "unchecked" )
     public <T> T clone( T object ) {
-        return unmarshal( (Class<T>) object.getClass(), marshal( object ) );
+        return unmarshal( ( Class<T> ) object.getClass(), marshal( object ) );
     }
 
     public void update( Object obj, Map<String, Object> values ) {

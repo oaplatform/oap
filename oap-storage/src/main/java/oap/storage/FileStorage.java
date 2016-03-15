@@ -316,7 +316,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
                     return Optional.of( metadata );
                 } else if( expunge ) {
                     data.remove( metadata.id );
-                    Path resolve = path.resolve( metadata.id + ".json" );
+                    Path resolve = fileName( metadata.id, version );
                     if( java.nio.file.Files.exists( resolve ) ) Files.delete( resolve );
                     return Optional.of( metadata );
                 }

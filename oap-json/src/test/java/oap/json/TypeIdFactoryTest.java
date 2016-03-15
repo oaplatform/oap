@@ -22,49 +22,53 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.json;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.json.TypeIdFactory;
-import org.joda.time.DateTimeUtils;
+import oap.testng.AbstractTest;
+import org.testng.annotations.Test;
 
-import java.util.UUID;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@EqualsAndHashCode( exclude = "object" )
-@ToString( exclude = "object" )
-public class Metadata<T> implements Comparable<Metadata<T>> {
-    public String id;
-    public int version = 0;
-    public long modified = DateTimeUtils.currentTimeMillis();
-    public boolean deleted;
-    @JsonTypeIdResolver( TypeIdFactory.class )
-    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "@object:type" )
-    public T object;
-    public String uniqueId = UUID.randomUUID().toString();
+/**
+ * Created by Igor Petrenko on 14.03.2016.
+ */
+public class TypeIdFactoryTest extends AbstractTest {
+    @Test
+    public void testClassMapping() {
+        TypeIdFactory.register( TestBean.class, "b" );
 
-    public Metadata( String id, T object ) {
-        this.id = id;
-        this.object = object;
+        final TestBean b = new TestBean( "1" );
+        final String marshal = Binder.json.marshal( new TestContainer( b ) );
+        assertThat( marshal ).isEqualTo( "{\"ref\":{\"@object:type\":\"b\",\"id\":\"1\"}}" );
+
+        final TestContainer unmarshal = Binder.json.unmarshal( TestContainer.class, marshal );
+        assertThat( unmarshal.ref ).isEqualTo( b );
     }
 
-    public Metadata() {
+    @ToString
+    @EqualsAndHashCode
+    public static class TestContainer {
+        @JsonTypeIdResolver( TypeIdFactory.class )
+        @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "@object:type" )
+        public final Object ref;
+
+        public TestContainer( @JsonProperty( "ref" ) Object ref ) {
+            this.ref = ref;
+        }
     }
 
-    @Override
-    public int compareTo( Metadata<T> o ) {
-        return this.id.compareTo( o.id );
-    }
+    @ToString
+    @EqualsAndHashCode
+    public static class TestBean {
+        public final String id;
 
-    public void update( T t ) {
-        this.object = t;
-        this.modified = DateTimeUtils.currentTimeMillis();
-    }
-
-    public void delete() {
-        this.deleted = true;
-        this.modified = DateTimeUtils.currentTimeMillis();
+        public TestBean( @JsonProperty( "id" ) String id ) {
+            this.id = id;
+        }
     }
 }
