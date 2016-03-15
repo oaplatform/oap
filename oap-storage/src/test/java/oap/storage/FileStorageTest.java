@@ -50,7 +50,8 @@ public class FileStorageTest extends AbstractTest {
     public void beforeMethod() {
         super.beforeMethod();
 
-        TypeIdFactory.register( Bean.class, Bean.class.toString() );
+        TypeIdFactory.register( Bean.class, Bean.class.getName() );
+        TypeIdFactory.register( Bean2.class, Bean2.class.getName() );
     }
 
     @Test
