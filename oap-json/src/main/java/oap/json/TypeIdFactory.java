@@ -41,6 +41,14 @@ public class TypeIdFactory implements TypeIdResolver {
     private final static ConcurrentHashMap<Class<?>, String> classToId = new ConcurrentHashMap<>();
     private JavaType baseType;
 
+    public static boolean containsId( String id ) {
+        return idToClass.contains( id );
+    }
+
+    public static Class<?> get( String id ) {
+        return idToClass.get( id );
+    }
+
     public static void register( Class<?> bean, String id ) {
         idToClass.put( id, bean );
         classToId.put( bean, id );
