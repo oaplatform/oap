@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -52,6 +53,10 @@ public class TypeIdFactory implements TypeIdResolver {
     public static void register( Class<?> bean, String id ) {
         idToClass.put( id, bean );
         classToId.put( bean, id );
+    }
+
+    public static Set<String> ids() {
+        return idToClass.keySet();
     }
 
     public static void clear() {
