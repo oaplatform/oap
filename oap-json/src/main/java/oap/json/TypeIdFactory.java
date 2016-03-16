@@ -43,7 +43,11 @@ public class TypeIdFactory implements TypeIdResolver {
     private JavaType baseType;
 
     public static boolean containsId( String id ) {
-        return idToClass.contains( id );
+        return idToClass.containsKey( id );
+    }
+
+    public static boolean containsClass( Class<?> clazz ) {
+        return classToId.containsKey( clazz );
     }
 
     public static Class<?> get( String id ) {
@@ -55,8 +59,12 @@ public class TypeIdFactory implements TypeIdResolver {
         classToId.put( bean, id );
     }
 
-    public static Set<String> ids() {
+    public static Set<String> keys() {
         return idToClass.keySet();
+    }
+
+    public static Set<Class<?>> values() {
+        return classToId.keySet();
     }
 
     public static void clear() {
