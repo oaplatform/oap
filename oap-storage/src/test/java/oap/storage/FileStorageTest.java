@@ -134,8 +134,7 @@ public class FileStorageTest extends AbstractTest {
                     updates.set( objects.size() );
                 }
             } );
-            slave.rsyncSafeInterval = 0;
-            Threads.sleepSafely( 100 );
+            slave.rsyncSafeInterval = 100;
             master.store( new Bean( "111" ) );
             master.store( new Bean( "222" ) );
             assertEventually( 120, 5, () -> {
