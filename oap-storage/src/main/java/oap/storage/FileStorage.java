@@ -63,8 +63,10 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     private final AtomicLong lastFSync = new AtomicLong( 0 );
     private final AtomicLong lastRSync = new AtomicLong( 0 );
     private final Storage<T> master;
-    private final Scheduled rsync;
-    private final Scheduled fsync;
+    private Scheduled rsyncScheduled;
+    private Scheduled fsyncScheduled;
+    private final long fsync;
+    private final long rsync;
     private final long version;
     private final List<FileStorageMigration> migrations;
     protected long rsyncSafeInterval = 1000;
@@ -80,16 +82,15 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     public FileStorage( Path path, Function<T, String> identify, long fsync, Storage<T> master, long rsync, long version, List<String> migrations ) {
         this.path = path;
         this.identify = identify;
+        this.fsync = fsync;
+        this.rsync = rsync;
         this.version = version;
         this.migrations = migrations
             .stream()
             .map( Try.map( cn -> ( FileStorageMigration ) Class.forName( cn ).newInstance() ) )
             .collect( toList() );
 
-        load();
-        this.fsync = fsync > 0 ? Scheduler.scheduleWithFixedDelay( fsync, MILLISECONDS, this::fsync ) : null;
         this.master = master;
-        this.rsync = master != null ? Scheduler.scheduleWithFixedDelay( rsync, MILLISECONDS, this::rsync ) : null;
     }
 
     public FileStorage( Path path, Function<T, String> identify, long fsync ) {
@@ -106,6 +107,12 @@ public class FileStorage<T> implements Storage<T>, Closeable {
 
     public FileStorage( Path path, Function<T, String> identify, long version, List<String> migrations ) {
         this( path, identify, 60000, version, migrations );
+    }
+
+    public void start() {
+        load();
+        this.fsyncScheduled = fsync > 0 ? Scheduler.scheduleWithFixedDelay( fsync, MILLISECONDS, this::fsync ) : null;
+        this.rsyncScheduled = master != null ? Scheduler.scheduleWithFixedDelay( rsync, MILLISECONDS, this::rsync ) : null;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -379,8 +386,8 @@ public class FileStorage<T> implements Storage<T>, Closeable {
 
     @Override
     public synchronized void close() {
-        Scheduled.cancel( rsync );
-        Scheduled.cancel( fsync );
+        Scheduled.cancel( rsyncScheduled );
+        Scheduled.cancel( fsyncScheduled );
         fsync();
         data.clear();
     }
