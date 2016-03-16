@@ -98,12 +98,12 @@ public class FileStorageTest extends AbstractTest {
         try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50 ) ) {
             storage.start();
             storage.store( new Bean( "111" ) );
-            assertEventually( 10, 100, () -> assertThat( data.resolve( "111.json" ).toFile() ).exists() );
+            assertEventually( 10, 100, () -> assertThat( data.resolve( "111.json" ) ).exists() );
             storage.delete( "111" );
             assertThat( storage.select() ).isEmpty();
-            assertThat( data.resolve( "111.json" ).toFile() ).exists();
+            assertThat( data.resolve( "111.json" ) ).exists();
             storage.vacuum();
-            assertThat( data.resolve( "111.json" ).toFile() ).doesNotExist();
+            assertThat( data.resolve( "111.json" ) ).doesNotExist();
         }
     }
 
@@ -113,12 +113,12 @@ public class FileStorageTest extends AbstractTest {
         try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50, 1, emptyList() ) ) {
             storage.start();
             storage.store( new Bean( "111" ) );
-            assertEventually( 10, 100, () -> assertThat( data.resolve( "111.v1.json" ).toFile() ).exists() );
+            assertEventually( 10, 100, () -> assertThat( data.resolve( "111.v1.json" ) ).exists() );
             storage.delete( "111" );
             assertThat( storage.select() ).isEmpty();
-            assertThat( data.resolve( "111.v1.json" ).toFile() ).exists();
+            assertThat( data.resolve( "111.v1.json" ) ).exists();
             storage.vacuum();
-            assertThat( data.resolve( "111.v1.json" ).toFile() ).doesNotExist();
+            assertThat( data.resolve( "111.v1.json" ) ).doesNotExist();
         }
     }
 
@@ -158,8 +158,8 @@ public class FileStorageTest extends AbstractTest {
             storage1.store( new Bean( "2" ) );
         }
 
-        assertThat( data.resolve( "1.json" ).toFile() ).exists();
-        assertThat( data.resolve( "2.json" ).toFile() ).exists();
+        assertThat( data.resolve( "1.json" ) ).exists();
+        assertThat( data.resolve( "2.json" ) ).exists();
 
         try( FileStorage<Bean2> storage2 = new FileStorage<>( data, b -> b.id2, -1, 2, Arrays.asList(
             BeanMigration.class.getName(),
@@ -169,14 +169,14 @@ public class FileStorageTest extends AbstractTest {
             assertThat( storage2.select() ).containsExactly( new Bean2( "11" ), new Bean2( "21" ) );
         }
 
-        assertThat( data.resolve( "1.json" ).toFile() ).doesNotExist();
-        assertThat( data.resolve( "2.json" ).toFile() ).doesNotExist();
+        assertThat( data.resolve( "1.json" ) ).doesNotExist();
+        assertThat( data.resolve( "2.json" ) ).doesNotExist();
 
-        assertThat( data.resolve( "1.v1.json" ).toFile() ).doesNotExist();
-        assertThat( data.resolve( "2.v1.json" ).toFile() ).doesNotExist();
+        assertThat( data.resolve( "1.v1.json" ) ).doesNotExist();
+        assertThat( data.resolve( "2.v1.json" ) ).doesNotExist();
 
-        assertThat( data.resolve( "1.v2.json" ).toFile() ).exists();
-        assertThat( data.resolve( "2.v2.json" ).toFile() ).exists();
+        assertThat( data.resolve( "1.v2.json" ) ).exists();
+        assertThat( data.resolve( "2.v2.json" ) ).exists();
     }
 }
 
