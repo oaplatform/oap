@@ -101,11 +101,13 @@ public class JsonObject extends Json<Map<String, Object>> {
                 JsonObject np = root;
                 for( String nf : newName.subList( 0, newName.size() - 1 ) ) {
                     final JsonObject finalParent = np;
-                    np = objOpt( nf ).orElseGet( () -> {
+                    np = finalParent.objOpt( nf ).orElseGet( () -> {
                         final JsonObject jsonObject = new JsonObject( Optional.of( nf ), Optional.of( finalParent ), new HashMap<>() );
                         finalParent.underlying.put( nf, jsonObject.underlying );
                         return jsonObject;
                     } );
+
+                    finalParent.underlying.put( nf, np.underlying );
                 }
 
                 np.underlying.put( newName.get( newName.size() - 1 ), f.underlying );

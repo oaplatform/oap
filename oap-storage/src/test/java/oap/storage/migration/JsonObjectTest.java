@@ -68,4 +68,15 @@ public class JsonObjectTest extends AbstractTest {
         assertThat( obj.rename( "obj.field1", "obj.newObj.field2" ).underlying )
             .isEqualTo( map( "{obj = [{newObj.field2 = v1}, {newObj.field2 = v2}]}" ) );
     }
+
+    @Test
+    public void testMultipleRenameIntoArray() throws Exception {
+        final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1, field2 = v1}, {field1 = v2, field2 = v2}]}" ) );
+        assertThat( obj
+            .rename( "obj.field1", "obj.newObj.newfield1" )
+            .rename( "obj.field2", "obj.newObj.newfield2" )
+            .underlying )
+            .isEqualTo( map( "{obj = [{newObj {newfield1 = v1, newfield2 = v1}}, {newObj {newfield1 = v2, newfield2 = v2}}]}" ) );
+    }
+
 }
