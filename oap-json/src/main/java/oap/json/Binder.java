@@ -37,6 +37,7 @@ import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
 import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
 import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.Resources;
@@ -59,6 +60,8 @@ public class Binder {
 
     public static final Binder hocon =
         new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties() ), false ) );
+    public static final Binder hoconWithoutSystemProperties =
+        new Binder( initialize( new ObjectMapper( new HoconFactory() ), false ) );
     public static final Binder json = new Binder( initialize( new ObjectMapper(), false ) );
     public static final Binder jsonWithTyping = new Binder( initialize( new ObjectMapper(), true ) );
     private ObjectMapper mapper;

@@ -37,6 +37,18 @@ public class Lists {
 
     private static Random random = new Random();
 
+    public static <T> List<T> tail( List<T> list ) {
+        if( list.isEmpty() ) throw new NoSuchElementException();
+
+        return list.subList( 1, list.size() );
+    }
+
+    public static <T> T first( List<T> list ) {
+        if( list.isEmpty() ) throw new NoSuchElementException();
+
+        return list.get( 0 );
+    }
+
     public static <T> Pair<List<T>, List<T>> partition( List<T> list, Predicate<T> p ) {
         ArrayList<T> left = new ArrayList<>();
         ArrayList<T> right = new ArrayList<>();

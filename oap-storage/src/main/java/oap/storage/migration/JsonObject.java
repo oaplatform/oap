@@ -24,14 +24,24 @@
 
 package oap.storage.migration;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
+
+import static java.util.Arrays.asList;
+import static oap.util.Lists.first;
+import static oap.util.Lists.tail;
 
 /**
  * Created by Igor Petrenko on 14.03.2016.
  */
+@Slf4j
 public class JsonObject extends Json<Map<String, Object>> {
     public final Map<String, Object> underlying;
 
@@ -45,33 +55,75 @@ public class JsonObject extends Json<Map<String, Object>> {
         return map( Optional.of( name ), o, Optional.of( this ) );
     }
 
-    public JsonObject rename( String oldName, String newName ) {
-        final Optional<Json<?>> field = field( oldName );
-        field.ifPresent( f -> {
-            underlying.remove( oldName );
-            traverseOrCreateParent( newName ).underlying.put( getName( newName ), f.underlying );
-        } );
+    private boolean rename( JsonObject root, JsonObject parent, List<String> oldName, List<String> newName ) {
+        if( oldName.size() > 1 ) {
+            final String oldFirst = first( oldName );
+            final String newFirst = first( newName );
+            final boolean equals = oldFirst.equals( newFirst ) && root == parent;
 
-        return this;
-    }
+            final Optional<Json<?>> v = parent.field( oldFirst );
+            if( !v.isPresent() ) {
+                return false;
+            }
 
-    private String getName( String newName ) {
-        final int i = newName.lastIndexOf( '.' );
-        return i > 0 ? newName.substring( i + 1 ) : newName;
-    }
+            final Json<?> json = v.get();
 
-    private JsonObject traverseOrCreateParent( String path ) {
-        final List<String> strings = Arrays.asList( path.split( "\\." ) );
-        JsonObject parent = this;
-        for( String f : strings.subList( 0, strings.size() - 1 ) ) {
-            final JsonObject finalParent = parent;
-            parent = objOpt( f ).orElseGet( () -> {
-                final JsonObject jsonObject = new JsonObject( Optional.of( f ), Optional.of( finalParent ), new HashMap<>() );
-                finalParent.underlying.put( f, jsonObject.underlying );
-                return jsonObject;
+            if( json instanceof JsonObject ) {
+                final JsonObject jo = ( JsonObject ) json;
+                return rename(
+                    equals ? jo : root,
+                    jo,
+                    tail( oldName ),
+                    equals ? tail( newName ) : newName
+                );
+            } else if( json instanceof JsonArray ) {
+                if( !equals ) {
+                    log.error( "array chains" );
+                    return false;
+                }
+
+                final JsonArray jsonA = ( JsonArray ) json;
+                jsonA
+                    .stream()
+                    .filter( j -> j instanceof JsonObject )
+                    .map( j -> ( JsonObject ) j )
+                    .forEach( jo -> rename( jo, jo, tail( oldName ), tail( newName ) ) );
+            } else {
+                return false;
+            }
+        } else {
+            final String oldField = oldName.get( oldName.size() - 1 );
+            final Optional<Json<?>> field = parent.field( oldField );
+            final JsonObject finalP = parent;
+            field.ifPresent( f -> {
+                finalP.deleteField( oldField );
+
+                JsonObject np = root;
+                for( String nf : newName.subList( 0, newName.size() - 1 ) ) {
+                    final JsonObject finalParent = np;
+                    np = objOpt( nf ).orElseGet( () -> {
+                        final JsonObject jsonObject = new JsonObject( Optional.of( nf ), Optional.of( finalParent ), new HashMap<>() );
+                        finalParent.underlying.put( nf, jsonObject.underlying );
+                        return jsonObject;
+                    } );
+                }
+
+                np.underlying.put( newName.get( newName.size() - 1 ), f.underlying );
             } );
         }
-        return parent;
+
+        return true;
+    }
+
+    public JsonObject rename( String oldName, String newName ) {
+        rename(
+            this,
+            this,
+            asList( StringUtils.split( oldName, '.' ) ),
+            asList( StringUtils.split( newName, '.' ) )
+        );
+
+        return this;
     }
 
     public JsonObject deleteField( String field ) {

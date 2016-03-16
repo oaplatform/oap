@@ -24,8 +24,12 @@
 
 package oap.storage.migration;
 
+import oap.util.Stream;
+
 import java.util.List;
 import java.util.Optional;
+
+import static oap.util.Optionals.toStream;
 
 /**
  * Created by Igor Petrenko on 14.03.2016.
@@ -33,5 +37,12 @@ import java.util.Optional;
 public class JsonArray extends Json<List<?>> {
     public JsonArray( Optional<String> field, Optional<Json<?>> parent, List<?> array ) {
         super( array, field, parent );
+    }
+
+    public Stream<Json<?>> stream() {
+        return Stream
+            .of( underlying.stream() )
+            .zipWithIndex()
+            .flatMap( p -> toStream( map( Optional.of( "[" + p._2 + "]" ), p._1, parent ) ) );
     }
 }
