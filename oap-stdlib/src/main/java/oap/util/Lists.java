@@ -43,7 +43,7 @@ public class Lists {
         return list.subList( 1, list.size() );
     }
 
-    public static <T> T first( List<T> list ) {
+    public static <T> T head( List<T> list ) {
         if( list.isEmpty() ) throw new NoSuchElementException();
 
         return list.get( 0 );

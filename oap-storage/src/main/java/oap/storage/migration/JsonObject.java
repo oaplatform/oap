@@ -35,7 +35,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static java.util.Arrays.asList;
-import static oap.util.Lists.first;
+import static oap.util.Lists.head;
 import static oap.util.Lists.tail;
 
 /**
@@ -57,8 +57,8 @@ public class JsonObject extends Json<Map<String, Object>> {
 
     private boolean rename( JsonObject root, JsonObject parent, List<String> oldName, List<String> newName ) {
         if( oldName.size() > 1 ) {
-            final String oldFirst = first( oldName );
-            final String newFirst = first( newName );
+            final String oldFirst = head( oldName );
+            final String newFirst = head( newName );
             final boolean equals = oldFirst.equals( newFirst ) && root == parent;
 
             final Optional<Json<?>> v = parent.field( oldFirst );
