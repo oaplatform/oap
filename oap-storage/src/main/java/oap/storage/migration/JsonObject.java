@@ -101,7 +101,7 @@ public class JsonObject extends Json<Map<String, Object>> {
                 JsonObject np = root;
                 for( String nf : newName.subList( 0, newName.size() - 1 ) ) {
                     final JsonObject finalParent = np;
-                    np = finalParent.objOpt( nf ).orElseGet( () -> {
+                    np = finalParent.objectOpt( nf ).orElseGet( () -> {
                         final JsonObject jsonObject = new JsonObject( Optional.of( nf ), Optional.of( finalParent ), new HashMap<>() );
                         finalParent.underlying.put( nf, jsonObject.underlying );
                         return jsonObject;
@@ -141,42 +141,42 @@ public class JsonObject extends Json<Map<String, Object>> {
         return this;
     }
 
-    public Optional<String> sOpt( String field ) {
+    public Optional<String> stringOpt( String field ) {
         final Optional<Json<?>> f = field( field );
         return f.filter( ff -> ff.underlying instanceof String ).map( ff -> ( String ) ff.underlying );
     }
 
-    public Optional<Long> lOpt( String field ) {
+    public Optional<Long> longOpt( String field ) {
         final Optional<Json<?>> f = field( field );
         return f.filter( ff -> ff.underlying instanceof Number ).map( ff -> ( ( Number ) ff.underlying ).longValue() );
     }
 
-    public Optional<JsonObject> objOpt( String field ) {
+    public Optional<JsonObject> objectOpt( String field ) {
         final Optional<Json<?>> f = field( field );
         return f.filter( ff -> ff.underlying instanceof Map ).map( ff -> ( JsonObject ) ff );
     }
 
-    public String s( String field ) {
-        return sOpt( field ).orElseThrow( () -> new FileStorageMigrationException( "String field " + field + " not found" ) );
+    public String stringField( String field ) {
+        return stringOpt( field ).orElseThrow( () -> new FileStorageMigrationException( "String field " + field + " not found" ) );
     }
 
-    public long l( String field ) {
-        return lOpt( field ).orElseThrow( () -> new FileStorageMigrationException( "String field " + field + " not found" ) );
+    public long longField( String field ) {
+        return longOpt( field ).orElseThrow( () -> new FileStorageMigrationException( "String field " + field + " not found" ) );
     }
 
-    public <T> JsonObject mapS( String field, Function<String, T> func ) {
+    public <T> JsonObject mapString( String field, Function<String, T> func ) {
         field( field ).ifPresent( in -> underlying.put( field, func.apply( ( String ) in.underlying ) ) );
 
         return this;
     }
 
-    public <T> JsonObject mapL( String field, Function<Long, T> func ) {
+    public <T> JsonObject mapLong( String field, Function<Long, T> func ) {
         field( field ).ifPresent( in -> underlying.put( field, func.apply( ( Long ) in.underlying ) ) );
 
         return this;
     }
 
-    public <T> JsonObject mapD( String field, Function<Double, T> func ) {
+    public <T> JsonObject mapDouble( String field, Function<Double, T> func ) {
         field( field ).ifPresent( in -> underlying.put( field, func.apply( ( Double ) in.underlying ) ) );
 
         return this;

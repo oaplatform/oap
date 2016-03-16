@@ -61,7 +61,7 @@ class Bean {
         public JsonMetadata run( JsonMetadata oldV ) {
             return oldV
                 .object()
-                .mapS( "id", s -> s + "1" )
+                .mapString( "id", s -> s + "1" )
                 .topParent();
         }
     }

@@ -31,13 +31,12 @@ import oap.storage.Bean.BeanMigration;
 import oap.storage.Bean2.Bean2Migration;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.util.Lists;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Collections.emptyList;
@@ -161,7 +160,7 @@ public class FileStorageTest extends AbstractTest {
         assertThat( data.resolve( "1.json" ) ).exists();
         assertThat( data.resolve( "2.json" ) ).exists();
 
-        try( FileStorage<Bean2> storage2 = new FileStorage<>( data, b -> b.id2, -1, 2, Arrays.asList(
+        try( FileStorage<Bean2> storage2 = new FileStorage<>( data, b -> b.id2, -1, 2, Lists.of(
             BeanMigration.class.getName(),
             Bean2Migration.class.getName()
         ) ) ) {

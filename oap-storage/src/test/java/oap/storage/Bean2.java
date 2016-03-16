@@ -67,7 +67,7 @@ class Bean2 {
         @Override
         public JsonMetadata run( JsonMetadata oldV ) {
             return oldV
-                .mapS( "object:type", ( str ) -> "oap.storage.Bean2" )
+                .mapString( "object:type", ( str ) -> "oap.storage.Bean2" )
                 .object()
                 .rename( "id", "id2" )
                 .rename( "s", "in.s" )

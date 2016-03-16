@@ -41,19 +41,19 @@ public class JsonMetadata extends JsonObject {
     }
 
     public String id() {
-        return s( "id" );
+        return stringField( "id" );
     }
 
     public long version() {
-        return l( "version" );
+        return longField( "version" );
     }
 
     public void incVersion() {
-        this.mapL( "version", v -> v + 1 );
+        this.mapLong( "version", v -> v + 1 );
     }
 
     @Override
-    public <T> JsonMetadata mapS( String field, Function<String, T> func ) {
-        return ( JsonMetadata ) super.mapS( field, func );
+    public <T> JsonMetadata mapString( String field, Function<String, T> func ) {
+        return ( JsonMetadata ) super.mapString( field, func );
     }
 }
