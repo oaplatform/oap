@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.io.IOContext;
 import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import com.jasonclawson.jackson.dataformat.hocon.HoconTreeTraversingParser;
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigParseOptions;
 import org.slf4j.Logger;
@@ -39,16 +40,25 @@ import java.io.Reader;
  * Created by Igor Petrenko on 11.11.2015.
  */
 public class HoconFactoryWithSystemProperties extends HoconFactory {
+    private final Logger log;
+
     public HoconFactoryWithSystemProperties( Logger log ) {
-        if(log.isTraceEnabled()) System.setProperty( "config.trace", "loads" );
+        this.log = log;
+        if( log.isTraceEnabled() ) System.setProperty( "config.trace", "loads" );
     }
 
     @Override
     protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) throws IOException {
-        ConfigParseOptions options = ConfigParseOptions.defaults();
-        Config config = ConfigFactory.parseReader( r, options );
+        final ConfigParseOptions options = ConfigParseOptions.defaults();
+        final Config config = ConfigFactory.parseReader( r, options );
 
-        Config resolvedConfig = config.withFallback( ConfigFactory.systemProperties() ).resolve();
-        return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
+        final Config unresolvedConfig = config.withFallback( ConfigFactory.systemProperties() );
+        try {
+            final Config resolvedConfig = unresolvedConfig.resolve();
+            return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
+        } catch( ConfigException e ) {
+            log.error( unresolvedConfig.root().render() );
+            throw e;
+        }
     }
 }
