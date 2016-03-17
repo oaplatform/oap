@@ -28,8 +28,10 @@ import com.fasterxml.jackson.core.io.IOContext;
 import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import com.jasonclawson.jackson.dataformat.hocon.HoconTreeTraversingParser;
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigParseOptions;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -40,17 +42,28 @@ import java.util.Map;
  */
 public class HoconFactoryWithFallback extends HoconFactory {
     private final Config additinal;
+    private final Logger log;
 
-    public HoconFactoryWithFallback( Map<String, Map<String, Object>> config ) {
-        additinal = ConfigFactory.parseMap( config );
+    public HoconFactoryWithFallback( Logger log, Map<String, Map<String, Object>> config ) {
+        this( log, ConfigFactory.parseMap( config ) );
     }
 
-    public HoconFactoryWithFallback( String... config ) {
+    public HoconFactoryWithFallback( Logger log, String... config ) {
+        this( log, init( config ) );
+    }
+
+    public HoconFactoryWithFallback( Logger log, Config additinal ) {
+        this.log = log;
+        this.additinal = additinal;
+
+        if( log.isTraceEnabled() ) System.setProperty( "config.trace", "loads" );
+    }
+
+    private static Config init( String[] config ) {
         Config a = ConfigFactory.empty();
 
         for( String c : config ) a = a.withFallback( ConfigFactory.parseString( c ) );
-
-        additinal = a;
+        return a;
     }
 
     @Override
@@ -58,10 +71,18 @@ public class HoconFactoryWithFallback extends HoconFactory {
         ConfigParseOptions options = ConfigParseOptions.defaults();
         Config config = ConfigFactory.parseReader( r, options );
 
-        Config resolvedConfig = additinal
+        final Config unresolvedConfig = additinal
             .withFallback( config )
-            .withFallback( ConfigFactory.systemProperties() )
-            .resolve();
-        return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
+            .withFallback( ConfigFactory.systemProperties() );
+
+        log.trace( unresolvedConfig.root().render() );
+
+        try {
+            Config resolvedConfig = unresolvedConfig.resolve();
+            return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
+        } catch( ConfigException e ) {
+            log.error( unresolvedConfig.root().render() );
+            throw e;
+        }
     }
 }

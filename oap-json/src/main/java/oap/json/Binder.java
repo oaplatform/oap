@@ -71,11 +71,11 @@ public class Binder {
     }
 
     public static Binder hoconWithConfig( String... config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( config ) ), false ) );
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false ) );
     }
 
     public static Binder hoconWithConfig( Map<String, Map<String, Object>> config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( config ) ), false ) );
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false ) );
     }
 
     private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping ) {

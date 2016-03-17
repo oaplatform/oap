@@ -53,6 +53,7 @@ public class HoconFactoryWithSystemProperties extends HoconFactory {
         final Config config = ConfigFactory.parseReader( r, options );
 
         final Config unresolvedConfig = config.withFallback( ConfigFactory.systemProperties() );
+        log.trace( unresolvedConfig.root().render() );
         try {
             final Config resolvedConfig = unresolvedConfig.resolve();
             return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
