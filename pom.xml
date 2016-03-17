@@ -101,6 +101,7 @@
                 <configuration>
                     <argLine>
                         -ea -Xmx1000m -XX:+UseConcMarkSweepGC -XX:+CMSParallelRemarkEnabled
+                        -Dlogback.configurationFile=${session.executionRootDirectory}/oap-stdlib/src/test/resources/logback-test.xml
                     </argLine>
                     <testFailureIgnore>true</testFailureIgnore>
                     <useFile>true</useFile>
