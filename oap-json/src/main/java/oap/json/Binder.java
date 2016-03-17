@@ -59,7 +59,7 @@ public class Binder {
     private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( Dates.FORMAT_SIMPLE );
 
     public static final Binder hocon =
-        new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties() ), false ) );
+        new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false ) );
     public static final Binder hoconWithoutSystemProperties =
         new Binder( initialize( new ObjectMapper( new HoconFactory() ), false ) );
     public static final Binder json = new Binder( initialize( new ObjectMapper(), false ) );

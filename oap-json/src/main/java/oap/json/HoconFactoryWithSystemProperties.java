@@ -30,6 +30,7 @@ import com.jasonclawson.jackson.dataformat.hocon.HoconTreeTraversingParser;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigParseOptions;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -38,6 +39,10 @@ import java.io.Reader;
  * Created by Igor Petrenko on 11.11.2015.
  */
 public class HoconFactoryWithSystemProperties extends HoconFactory {
+    public HoconFactoryWithSystemProperties( Logger log ) {
+        if(log.isTraceEnabled()) System.setProperty( "config.trace", "loads" );
+    }
+
     @Override
     protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) throws IOException {
         ConfigParseOptions options = ConfigParseOptions.defaults();
