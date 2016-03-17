@@ -28,6 +28,7 @@ import com.google.common.collect.*;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
@@ -81,17 +82,24 @@ public class Maps {
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <K,V> Map<K,V> deepMerge(Map original, Map newMap) {
-        for (Object key : newMap.keySet()) {
-            if (newMap.get(key) instanceof Map && original.get(key) instanceof Map) {
-                Map originalChild = (Map) original.get(key);
-                Map newChild = (Map) newMap.get(key);
-                original.put(key, deepMerge(originalChild, newChild));
+    public static <K, V> Map<K, V> deepMerge( Map original, Map newMap ) {
+        for( Object key : newMap.keySet() ) {
+            if( newMap.get( key ) instanceof Map && original.get( key ) instanceof Map ) {
+                Map originalChild = ( Map ) original.get( key );
+                Map newChild = ( Map ) newMap.get( key );
+                original.put( key, deepMerge( originalChild, newChild ) );
             } else {
-                original.put(key, newMap.get(key));
+                original.put( key, newMap.get( key ) );
             }
         }
-        return (Map<K,V>)original;
+        return ( Map<K, V> ) original;
+    }
+
+    public static <K, V> Optional<K> byValue( Map<K, ? extends V> map, V value ) {
+        return Stream.of( map.entrySet() )
+            .filter( e -> value.equals( e.getValue() ) )
+            .map( Map.Entry::getKey )
+            .findFirst();
     }
 
     public static class Collectors {

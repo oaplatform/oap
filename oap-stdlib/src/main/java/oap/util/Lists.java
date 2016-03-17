@@ -37,6 +37,12 @@ public class Lists {
 
     private static Random random = new Random();
 
+    @SafeVarargs
+    public static <T> List<T> addAll( List<T> list, T... array ) {
+        list.addAll( of( array ) );
+        return list;
+    }
+
     public static <T> List<T> tail( List<T> list ) {
         if( list.isEmpty() ) throw new NoSuchElementException();
 
