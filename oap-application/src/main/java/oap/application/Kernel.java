@@ -205,8 +205,16 @@ public class Kernel {
 
         logger.info( "application configurations = {}", configPath );
 
-        start( configPath.toFile().exists() ? Binder.hoconWithConfig( configs ).unmarshal(
-            new TypeReference<Map<String, Map<String, Object>>>() {
-            }, configPath ) : Maps.of() );
+        start( configPath.toFile().exists() ? toMap( configPath, configs ) : Maps.of() );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private Map<String, Map<String, Object>> toMap( Path configPath, String[] configs ) {
+        final Map<String, Object> map = Binder.hoconWithConfig( configs ).unmarshal(
+            new TypeReference<Map<String, Object>>() {
+            }, configPath );
+        final Map<String, Object> filteredMap = com.google.common.collect.Maps.filterValues( map, ( v -> v instanceof Map ) );
+
+        return ( Map<String, Map<String, Object>> ) ( Object ) filteredMap;
     }
 }

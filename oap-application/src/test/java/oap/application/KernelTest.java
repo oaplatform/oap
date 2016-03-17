@@ -47,6 +47,7 @@ public class KernelTest extends AbstractTest {
     @BeforeMethod
     @Override
     public void beforeMethod() {
+        System.setProperty( "localRepository", "/home/teamcity/.m2/repository" );
         Metrics.resetAll();
 
         super.beforeMethod();
