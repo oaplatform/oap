@@ -31,57 +31,61 @@ import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.Serializers;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import oap.io.Files;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.io.IOException;
-import java.nio.file.Path;
 
-public class PathModule {
-    public static class PathSerializer extends StdSerializer<Path> {
-        public PathSerializer( JavaType type ) {
+public class MutableIntModule {
+    public static class MutableIntSerializer extends StdSerializer<MutableInt> {
+        public MutableIntSerializer( JavaType type ) {
             super( type );
         }
 
         @Override
-        public void serialize( Path value, JsonGenerator gen, SerializerProvider provider ) throws IOException {
-            gen.writeString( value.toString() );
+        public void serialize( MutableInt value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
+            gen.writeNumber( value.intValue() );
         }
     }
 
-    public static class PathSerializers extends Serializers.Base {
+    public static class MutableIntSerializers extends Serializers.Base {
         @Override
         public JsonSerializer<?> findSerializer( SerializationConfig config, JavaType type, BeanDescription beanDesc ) {
             final Class<?> raw = type.getRawClass();
-            if( Path.class.isAssignableFrom( raw ) ) {
-                return new PathSerializer( type );
+            if( MutableInt.class.isAssignableFrom( raw ) ) {
+                return new MutableIntSerializer( type );
             }
 
             return super.findSerializer( config, type, beanDesc );
         }
     }
 
-    public static class PathDeserializer extends StdDeserializer<Path> {
+    public static class MutableIntDeserializer extends StdDeserializer<MutableInt> {
 
-        protected PathDeserializer( JavaType valueType ) {
+        protected MutableIntDeserializer( JavaType valueType ) {
             super( valueType );
         }
 
         @Override
-        public Path deserialize( JsonParser p,
-                                 DeserializationContext ctxt ) throws IOException {
-            return Files.path( p.getValueAsString() );
+        public MutableInt deserialize( JsonParser p,
+                                       DeserializationContext ctxt ) throws IOException {
+            try {
+                final MutableInt mi = ( MutableInt ) this.handledType().newInstance();
+                mi.setValue( p.getIntValue() );
+                return mi;
+            } catch( InstantiationException | IllegalAccessException e ) {
+                throw ctxt.mappingException( e.getMessage() );
+            }
         }
     }
 
-    public static class PathDeserializers extends Deserializers.Base {
+    public static class MutableIntDeserializers extends Deserializers.Base {
         @Override
         public JsonDeserializer<?> findBeanDeserializer( JavaType type, DeserializationConfig config,
                                                          BeanDescription beanDesc ) throws JsonMappingException {
             final Class<?> raw = type.getRawClass();
-            if( raw == Path.class ) {
-                return new PathDeserializer( type );
+            if( MutableInt.class.isAssignableFrom( raw ) ) {
+                return new MutableIntDeserializer( type );
             }
-
 
             return super.findBeanDeserializer( type, config, beanDesc );
         }

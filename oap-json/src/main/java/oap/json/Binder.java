@@ -98,7 +98,7 @@ public class Binder {
         mapper.disable( SerializationFeature.FAIL_ON_EMPTY_BEANS );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-        mapper.registerModule( new PathModule() );
+        mapper.registerModule( new OapJsonModule() );
 
         if( defaultTyping )
             mapper.enableDefaultTyping( ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY );
