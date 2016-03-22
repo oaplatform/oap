@@ -31,69 +31,75 @@ import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.Serializers;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
-public class MutableIntModule {
-    public static class MutableIntSerializer extends StdSerializer<MutableInt> {
-        public MutableIntSerializer( JavaType type ) {
+public class MutableObjectModule {
+    public static class MutableObjectSerializer extends StdSerializer<MutableObject> {
+        public MutableObjectSerializer( JavaType type ) {
             super( type );
         }
 
         @Override
-        public void serialize( MutableInt value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
-            gen.writeNumber( value.intValue() );
+        public void serialize( MutableObject value, JsonGenerator gen, SerializerProvider serializers ) throws IOException {
+            gen.writeObject( value.getValue() );
         }
     }
 
-    public static class MutableIntSerializers extends Serializers.Base {
+    public static class MutableObjectSerializers extends Serializers.Base {
         @Override
         public JsonSerializer<?> findSerializer( SerializationConfig config, JavaType type, BeanDescription beanDesc ) {
             final Class<?> raw = type.getRawClass();
-            if( MutableInt.class.isAssignableFrom( raw ) ) {
-                return new MutableIntSerializer( type );
+            if( MutableObject.class.isAssignableFrom( raw ) ) {
+                return new MutableObjectSerializer( type );
             }
 
             return super.findSerializer( config, type, beanDesc );
         }
     }
 
-    public static class MutableIntDeserializer extends StdDeserializer<MutableInt> {
+    public static class MutableObjectDeserializer extends StdDeserializer<MutableObject> {
+        private final JavaType valueType;
+        private final JavaType refType;
 
-        protected MutableIntDeserializer( JavaType valueType ) {
+        protected MutableObjectDeserializer( JavaType valueType, JavaType refType ) {
             super( valueType );
+            this.valueType = valueType;
+            this.refType = refType;
         }
 
         @Override
-        public MutableInt deserialize( JsonParser p,
-                                       DeserializationContext ctxt ) throws IOException {
+        public MutableObject deserialize( JsonParser p,
+                                          DeserializationContext ctxt ) throws IOException {
+
             try {
-                final MutableInt mi = ( MutableInt ) this.handledType().newInstance();
-                mi.setValue( p.getIntValue() );
-                return mi;
+                final MutableObject vc = ( MutableObject ) _valueClass.newInstance();
+
+                vc.setValue( ctxt.readValue( p, refType ) );
+
+                return vc;
             } catch( InstantiationException | IllegalAccessException e ) {
-                throw ctxt.mappingException( e.getMessage() );
+                throw ctxt.instantiationException( _valueClass, e );
             }
         }
 
-        @Override
-        public MutableInt deserialize( JsonParser p, DeserializationContext ctxt, MutableInt intoValue ) throws IOException {
-            intoValue.setValue( p.getIntValue() );
-            return intoValue;
-        }
     }
 
-    public static class MutableIntDeserializers extends Deserializers.Base {
+    public static class MutableObjectDeserializers extends Deserializers.Base {
         @Override
         public JsonDeserializer<?> findBeanDeserializer( JavaType type, DeserializationConfig config,
                                                          BeanDescription beanDesc ) throws JsonMappingException {
             final Class<?> raw = type.getRawClass();
-            if( MutableInt.class.isAssignableFrom( raw ) ) {
-                return new MutableIntDeserializer( type );
+            if( MutableObject.class.isAssignableFrom( raw ) ) {
+                final Type[] actualTypeArguments = ( ( ParameterizedType ) raw.getGenericSuperclass() ).getActualTypeArguments();
+                final JavaType refType = config.constructType( ( Class ) actualTypeArguments[0] );
+                return new MutableObjectDeserializer( type, refType );
             }
 
-            return super.findBeanDeserializer( type, config, beanDesc );
+            return super.findBeanDeserializer( type.getReferencedType(), config, beanDesc );
         }
     }
 }

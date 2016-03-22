@@ -25,15 +25,17 @@
 package oap.json;
 
 import oap.testng.AbstractTest;
-import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.testng.annotations.Test;
+
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by Igor Petrenko on 22.03.2016.
  */
-public class MutableIntModuleTest extends AbstractTest {
+public class MutableObjectModuleTest extends AbstractTest {
     @Test
     public void testSerializeDeserialize() {
         final TestMutableIntBean b = new TestMutableIntBean();
@@ -55,7 +57,7 @@ public class MutableIntModuleTest extends AbstractTest {
         assertThat( b.i.getValue() ).isEqualTo( 102 );
     }
 
-    public static class TestMutableInt extends MutableInt {
+    public static class TestMutableInt extends MutableObject<Integer> {
 
     }
 

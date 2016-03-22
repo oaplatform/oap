@@ -47,7 +47,7 @@ public class OapJsonModule extends Module {
         context.addSerializers( new PathModule.PathSerializers() );
         context.addDeserializers( new PathModule.PathDeserializers() );
 
-        context.addSerializers( new MutableIntModule.MutableIntSerializers() );
-        context.addDeserializers( new MutableIntModule.MutableIntDeserializers() );
+        context.addSerializers( new MutableObjectModule.MutableObjectSerializers() );
+        context.addDeserializers( new MutableObjectModule.MutableObjectDeserializers() );
     }
 }
