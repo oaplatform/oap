@@ -28,8 +28,6 @@ import oap.testng.AbstractTest;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.testng.annotations.Test;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -38,30 +36,30 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MutableObjectModuleTest extends AbstractTest {
     @Test
     public void testSerializeDeserialize() {
-        final TestMutableIntBean b = new TestMutableIntBean();
+        final TestMutableObjectBean b = new TestMutableObjectBean();
         b.i.setValue( 101 );
 
         final String marshal = Binder.json.marshal( b );
         assertThat( marshal ).isEqualTo( "{\"i\":101}" );
 
-        final TestMutableIntBean ub = Binder.json.unmarshal( TestMutableIntBean.class, marshal );
+        final TestMutableObjectBean ub = Binder.json.unmarshal( TestMutableObjectBean.class, marshal );
         assertThat( ub.i.getValue() ).isEqualTo( 101 );
     }
 
     @Test
     public void testUpdate() {
-        final TestMutableIntBean b = new TestMutableIntBean();
+        final TestMutableObjectBean b = new TestMutableObjectBean();
         b.i.setValue( 101 );
 
-        Binder.json.update( b, "{\"i\":102}" );
+        Binder.json.update( b.i, "102" );
         assertThat( b.i.getValue() ).isEqualTo( 102 );
     }
 
-    public static class TestMutableInt extends MutableObject<Integer> {
+    public static class TestMutableObject extends MutableObject<Integer> {
 
     }
 
-    public static class TestMutableIntBean {
-        public TestMutableInt i = new TestMutableInt();
+    public static class TestMutableObjectBean {
+        public TestMutableObject i = new TestMutableObject();
     }
 }

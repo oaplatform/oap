@@ -26,6 +26,7 @@ package oap.json;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
@@ -86,6 +87,12 @@ public class MutableObjectModule {
             }
         }
 
+        @Override
+        public MutableObject deserialize( JsonParser p, DeserializationContext ctxt, MutableObject intoValue ) throws IOException, JsonProcessingException {
+            intoValue.setValue( ctxt.readValue( p, refType ) );
+
+            return intoValue;
+        }
     }
 
     public static class MutableObjectDeserializers extends Deserializers.Base {
