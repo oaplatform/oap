@@ -76,6 +76,12 @@ public class MutableIntModule {
                 throw ctxt.mappingException( e.getMessage() );
             }
         }
+
+        @Override
+        public MutableInt deserialize( JsonParser p, DeserializationContext ctxt, MutableInt intoValue ) throws IOException {
+            intoValue.setValue( p.getIntValue() );
+            return intoValue;
+        }
     }
 
     public static class MutableIntDeserializers extends Deserializers.Base {

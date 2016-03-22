@@ -208,5 +208,13 @@ public class Binder {
             throw new UncheckedIOException( e );
         }
     }
+
+    public void update( Object obj, String json ) {
+        try {
+            mapper.readerForUpdating( obj ).readValue( json );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 }
 

@@ -41,8 +41,18 @@ public class MutableIntModuleTest extends AbstractTest {
 
         final String marshal = Binder.json.marshal( b );
         assertThat( marshal ).isEqualTo( "{\"i\":101}" );
+
         final TestMutableIntBean ub = Binder.json.unmarshal( TestMutableIntBean.class, marshal );
         assertThat( ub.i.getValue() ).isEqualTo( 101 );
+    }
+
+    @Test
+    public void testUpdate() {
+        final TestMutableIntBean b = new TestMutableIntBean();
+        b.i.setValue( 101 );
+
+        Binder.json.update( b, "{\"i\":102}" );
+        assertThat( b.i.getValue() ).isEqualTo( 102 );
     }
 
     public static class TestMutableInt extends MutableInt {
