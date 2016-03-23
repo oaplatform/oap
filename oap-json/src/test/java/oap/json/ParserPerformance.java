@@ -68,7 +68,7 @@ public class ParserPerformance extends AbstractPerformance {
         mapper.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-        mapper.registerModule( new PathModule() );
+        mapper.registerModule( new OapJsonModule() );
 
         benchmark( "mapParser-jackson", 5000, 5,
             i -> mapper.writeValueAsString( mapper.readValue( yearJson, Map.class ) ) );
@@ -81,7 +81,7 @@ public class ParserPerformance extends AbstractPerformance {
         mapper2.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
         mapper2.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         mapper2.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-        mapper2.registerModule( new PathModule() );
+        mapper2.registerModule( new OapJsonModule() );
 
         mapper2.registerModule( new AfterburnerModule() );
 

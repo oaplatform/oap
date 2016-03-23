@@ -98,7 +98,7 @@ public class Binder {
         mapper.disable( SerializationFeature.FAIL_ON_EMPTY_BEANS );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-        mapper.registerModule( new PathModule() );
+        mapper.registerModule( new OapJsonModule() );
 
         if( defaultTyping )
             mapper.enableDefaultTyping( ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY );
@@ -204,6 +204,14 @@ public class Binder {
             final String vs = json.marshal( values );
 
             hoconWithConfig( vs ).mapper.readerForUpdating( obj ).readValue( marshal );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public void update( Object obj, String json ) {
+        try {
+            mapper.readerForUpdating( obj ).readValue( json );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
