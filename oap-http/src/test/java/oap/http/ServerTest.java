@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.security.*;
 import java.security.cert.CertificateException;
 
+import static org.testng.Assert.assertEquals;
+
 public class ServerTest {
 
     private final Server server = new Server( 10 );
@@ -69,7 +71,7 @@ public class ServerTest {
 
         final CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute( httpGet );
 
-        System.out.println( "Status code is " + closeableHttpResponse.getStatusLine().getStatusCode() );
+        assertEquals( closeableHttpResponse.getStatusLine().getStatusCode(), 200 );
     }
 
     @AfterTest
