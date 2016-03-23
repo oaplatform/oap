@@ -33,9 +33,9 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-import static oap.io.IoAsserts.assertFileContent;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
+import static oap.testng.Asserts.assertFile;
 
 public class WriterTest extends AbstractTest {
 
@@ -68,9 +68,10 @@ public class WriterTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 59 );
         writer.write( content.getBytes() );
         writer.close();
-        assertFileContent( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-00.log" ), encoding, content );
-        assertFileContent( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-01.log" ), encoding, content );
-        assertFileContent( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-02.log" ), encoding, content + content );
-        assertFileContent( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-11.log" ), encoding, content );
+        assertFile( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-00.log" ) ).hasContent( content, encoding );
+        assertFile( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-00.log" ) ).hasContent( content, encoding );
+        assertFile( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-01.log" ) ).hasContent( content, encoding );
+        assertFile( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-02.log" ) ).hasContent( content + content, encoding );
+        assertFile( Env.tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-11.log" ) ).hasContent( content, encoding );
     }
 }

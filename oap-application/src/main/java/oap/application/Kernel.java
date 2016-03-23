@@ -39,7 +39,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -101,30 +100,29 @@ public class Kernel {
         return deferred.size() == services.size() ? deferred : initializeServices( deferred, initialized );
     }
 
+    @SuppressWarnings( "unchecked" )
     private void initializeServiceLinks( String name, Module.Service service ) {
         for( Map.Entry<String, Object> entry : service.parameters.entrySet() ) {
             final Object value = entry.getValue();
             final String key = entry.getKey();
 
-            if( value instanceof String ) initValue( name, key, value, entry::setValue );
+            if( value instanceof String ) entry.setValue( resolve( name, key, value ) );
             else if( value instanceof List<?> ) {
-                final List list = ( List<?> ) value;
-                for( int i = 0; i < list.size(); i++ ) {
-                    final int finalI = i;
-                    initValue( name, key + "[" + i + "]", list.get( i ), ( link ) -> list.set( finalI, link ) );
-                }
+                ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
+                while( it.hasNext() ) it.set( resolve( name, key, it.next() ) );
             }
         }
     }
 
-    private void initValue( String name, String key, Object value, Consumer<Object> s ) {
+    private Object resolve( String name, String key, Object value ) {
         if( value instanceof String && ( ( String ) value ).startsWith( "@service:" ) ) {
             log.debug( "for " + name + " linking " + key + " -> " + value );
             Object link = Application.service( ( ( String ) value ).substring( "@service:".length() ) );
-            if( link == null ) throw new ApplicationException(
-                "for " + name + " service link " + value + " is not initialized yet" );
-            s.accept( link );
+            if( link == null )
+                throw new ApplicationException( "for " + name + " service link " + value + " is not found" );
+            return link;
         }
+        return value;
     }
 
     private Set<Module> initialize( Set<Module> modules, Set<String> initialized, Set<String> initializedServices ) {

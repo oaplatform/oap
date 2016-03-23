@@ -34,10 +34,9 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 
-import static oap.io.IoAsserts.assertFileContent;
-import static oap.io.IoAsserts.assertFileDoesNotExist;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
+import static oap.testng.Asserts.assertFile;
 
 public class ArchiverTest extends AbstractTest {
 
@@ -71,17 +70,17 @@ public class ArchiverTest extends AbstractTest {
         Archiver archiver = new Archiver( logs, archives, 10000, "**/*.log", compress, 12 );
         archiver.run();
 
-        for( String file : files ) assertFileDoesNotExist( archives.resolve( file + ( compress ? ".gz" : "" ) ) );
+        for( String file : files ) assertFile( archives.resolve( file + ( compress ? ".gz" : "" ) ) ).doesNotExist();
 
         DateTimeUtils.setCurrentMillisFixed( now.plusSeconds( 11 ).getMillis() );
         archiver.run();
 
         for( String file : files ) {
             Path path = archives.resolve( file + ( compress ? ".gz" : "" ) );
-            if( file.contains( "12-00" ) ) assertFileDoesNotExist( path );
+            if( file.contains( "12-00" ) ) assertFile( path ).doesNotExist();
             else {
-                assertFileContent( path, compress ? GZIP : PLAIN, "data" );
-                assertFileDoesNotExist( logs.resolve( file ) );
+                assertFile( path ).hasContent( "data", compress ? GZIP : PLAIN );
+                assertFile( logs.resolve( file ) ).doesNotExist();
             }
         }
     }

@@ -25,13 +25,18 @@ package oap.testng;
 
 import com.google.common.base.Throwables;
 import oap.concurrent.Threads;
+import oap.io.Files;
+import oap.io.IoStreams;
+import oap.io.Resources;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.AbstractCharSequenceAssert;
+import org.assertj.core.api.AbstractFileAssert;
 import org.testng.Assert;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -77,8 +82,12 @@ public final class Asserts {
 
     }
 
-    public static StringAssertion assertString( CharSequence value ) {
-        return new StringAssertion( value );
+    public static StringAssertion assertString( CharSequence actual ) {
+        return new StringAssertion( actual );
+    }
+
+    public static FileAssertion assertFile( Path actual ) {
+        return new FileAssertion( actual );
     }
 
     public static void failNotEquals( Object actual, Object expected, String message ) {
@@ -99,7 +108,7 @@ public final class Asserts {
     }
 
     public static class StringAssertion extends AbstractCharSequenceAssert<StringAssertion, CharSequence> {
-        public StringAssertion( CharSequence value ) {
+        protected StringAssertion( CharSequence value ) {
             super( value, StringAssertion.class );
         }
 
@@ -112,6 +121,39 @@ public final class Asserts {
         @Override
         public StringAssertion isEqualToIgnoringCase( CharSequence expected ) {
             if( !StringUtils.equalsIgnoreCase( this.actual, expected ) ) failNotEquals( this.actual, expected );
+            return this;
+        }
+
+        public StringAssertion isEqualToResource( Class<?> contextClass, String expectedResource ) {
+            return isEqualTo( Resources.readString( contextClass, contextClass.getSimpleName() + "/" + expectedResource )
+                .orElseThrow( () -> new AssertionError( "resource " + expectedResource + " not found" ) ) );
+        }
+
+    }
+
+    public static class FileAssertion extends AbstractFileAssert<FileAssertion> {
+        protected FileAssertion( Path actual ) {
+            super( actual.toFile(), FileAssertion.class );
+        }
+
+        @Override
+        public FileAssertion hasContent( String expected ) {
+            return hasContent( expected, IoStreams.Encoding.PLAIN );
+        }
+
+        public FileAssertion hasContent( String expected, IoStreams.Encoding encoding ) {
+            Assert.assertEquals( Files.readString( this.actual.toPath(), encoding ), expected );
+            return this;
+        }
+
+        public FileAssertion hasContentOfResource( Class<?> contextClass, String expectedResource ) {
+            return hasContentOfResource( contextClass, expectedResource, IoStreams.Encoding.PLAIN );
+        }
+
+        public FileAssertion hasContentOfResource( Class<?> contextClass, String expectedResource, IoStreams.Encoding encoding ) {
+            Assert.assertEquals( Files.readString( this.actual.toPath(), encoding ),
+                Resources.readString( contextClass, contextClass.getSimpleName() + "/" + expectedResource )
+                    .orElseThrow( () -> new AssertionError( "resource " + expectedResource + " not found" ) ) );
             return this;
         }
     }

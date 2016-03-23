@@ -33,12 +33,12 @@ import oap.util.Dates;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import static oap.io.IoAsserts.assertFileContent;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_BUFFER;
 import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertEventually;
+import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
 import static oap.util.Dates.formatDateWihMillis;
 import static org.joda.time.DateTimeUtils.currentTimeMillis;
@@ -65,13 +65,13 @@ public class LoggerTest extends AbstractTest {
             logger.log( "d", content );
         }
 
-        assertFileContent( tmpPath( "logs/" + HOSTNAME + "/2015-10/10/a-2015-10-10-01-00.log" ), compress ? GZIP : PLAIN,
-            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
-                formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-        assertFileContent( tmpPath( "logs/" + HOSTNAME + "/2015-10/10/b-2015-10-10-01-00.log" ), compress ? GZIP : PLAIN,
-            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-        assertFileContent( tmpPath( "logs/" + HOSTNAME + "/2015-10/10/d-2015-10-10-01-00.log" ), compress ? GZIP : PLAIN,
-            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+        assertFile( tmpPath( "logs/" + HOSTNAME + "/2015-10/10/a-2015-10-10-01-00.log" ) )
+            .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
+                formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n", compress ? GZIP : PLAIN );
+        assertFile( tmpPath( "logs/" + HOSTNAME + "/2015-10/10/b-2015-10-10-01-00.log" ) )
+            .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n", compress ? GZIP : PLAIN );
+        assertFile( tmpPath( "logs/" + HOSTNAME + "/2015-10/10/d-2015-10-10-01-00.log" ) )
+            .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n", compress ? GZIP : PLAIN );
     }
 
     @Test
@@ -102,13 +102,13 @@ public class LoggerTest extends AbstractTest {
             }
         }
 
-        assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/a-2015-10-10-01-00.log" ),
-            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
+        assertFile( Env.tmpPath( "logs/localhost/2015-10/10/a-2015-10-10-01-00.log" ) )
+            .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
                 formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-        assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/b-2015-10-10-01-00.log" ),
-            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-        assertFileContent( Env.tmpPath( "logs/localhost/2015-10/10/d-2015-10-10-01-00.log" ),
-            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+        assertFile( Env.tmpPath( "logs/localhost/2015-10/10/b-2015-10-10-01-00.log" ) )
+            .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+        assertFile( Env.tmpPath( "logs/localhost/2015-10/10/d-2015-10-10-01-00.log" ))
+            .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
     }
 
 
