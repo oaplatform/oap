@@ -44,18 +44,18 @@ import java.util.List;
 import java.util.Optional;
 
 public class Request {
-    private final ListMultimap<String, String> params;
     public final String requestLine;
     public final HttpMethod httpMethod;
     public final String baseUrl;
     public final Context context;
     public final Optional<InputStream> body;
-    protected final Header[] headers;
     public final String uri;
+    protected final Header[] headers;
+    private final ListMultimap<String, String> params;
 
     public Request( HttpRequest req, Context context ) {
         this.headers = req.getAllHeaders();
-        this.baseUrl = "http://" + req.getFirstHeader( "Host" ).getValue();
+        this.baseUrl = context.protocol.toLowerCase() + "://" + req.getFirstHeader( "Host" ).getValue();
         this.uri = req.getRequestLine().getUri();
         this.requestLine = Strings.substringBefore( req.getRequestLine().getUri(), "?" ).substring(
             context.location.length() );
@@ -69,7 +69,7 @@ public class Request {
     private static Optional<InputStream> content( HttpRequest req ) {
         try {
             return req instanceof HttpEntityEnclosingRequest ?
-                Optional.of( ((HttpEntityEnclosingRequest) req).getEntity().getContent() )
+                Optional.of( ( ( HttpEntityEnclosingRequest ) req ).getEntity().getContent() )
                 : Optional.empty();
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
@@ -84,7 +84,7 @@ public class Request {
             && req instanceof HttpEntityEnclosingRequest )
             try {
                 return Maps.add( query, Url.parseQuery(
-                    EntityUtils.toString( ((HttpEntityEnclosingRequest) req).getEntity() ) ) );
+                    EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) req ).getEntity() ) ) );
             } catch( IOException e ) {
                 throw new UncheckedIOException( e );
             }

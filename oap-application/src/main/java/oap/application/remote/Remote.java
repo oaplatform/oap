@@ -37,50 +37,57 @@ import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class Remote implements Handler {
-    private static ThreadLocal<FST> fst = new ThreadLocal<FST>() {
+    private static final ThreadLocal<FST> FST = new ThreadLocal<FST>() {
         public FST initialValue() {
             return new FST();
         }
     };
-    private HttpServer server;
-    private String context;
-    private Cors cors = new Cors();
 
-    public Remote( HttpServer server, String context ) {
+    private final Cors cors = new Cors();
+
+    private final HttpServer server;
+    private final String context;
+
+    public Remote( final HttpServer server, final String context ) {
         this.server = server;
         this.context = context;
     }
 
     public void start() {
-        server.bind( context, cors, this, false );
+        server.bind( context, cors, this, Protocol.HTTP );
     }
 
     @Override
-    public void handle( Request request, Response response ) {
-        final FST fst = Remote.fst.get();
+    public void handle( final Request request, final Response response ) {
+        final FST fst = Remote.FST.get();
 
-        RemoteInvocation invocation = request.body
+        final RemoteInvocation invocation = request.body
             .map( Try.map( bytes -> ( RemoteInvocation ) fst.conf.asObject( ByteStreams.toByteArray( bytes ) ) ) )
             .orElseThrow( () -> new RemoteInvocationException( "no invocation data" ) );
 
-        if( log.isTraceEnabled() ) log.trace( "invoke:" + invocation );
+        if( log.isTraceEnabled() ) {
+            log.trace( "invoke:" + invocation );
+        }
 
-        Object service = Application.service( invocation.service );
+        final Object service = Application.service( invocation.service );
 
-        if( service == null ) response.respond( HttpResponse.status( HTTP_NOT_FOUND,
-            invocation.service + " not found" ) );
-        else try {
-            Object result = service.getClass()
-                .getMethod( invocation.method, invocation.types() )
-                .invoke( service, invocation.values() );
-            response.respond( HttpResponse.bytes( fst.conf.asByteArray( result ), APPLICATION_OCTET_STREAM ) );
-        } catch( NoSuchMethodException e ) {
-            log.debug( e.getMessage(), e );
+        if( service == null ) {
             response.respond( HttpResponse.status( HTTP_NOT_FOUND,
-                "service " + invocation.service + "." + invocation.method + " not found." ) );
-        } catch( InvocationTargetException | IllegalAccessException e ) {
-            log.debug( e.getMessage(), e );
-            response.respond( HttpResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() ) );
+                invocation.service + " not found" ) );
+        } else {
+            try {
+                final Object result = service.getClass()
+                    .getMethod( invocation.method, invocation.types() )
+                    .invoke( service, invocation.values() );
+                response.respond( HttpResponse.bytes( fst.conf.asByteArray( result ), APPLICATION_OCTET_STREAM ) );
+            } catch( NoSuchMethodException e ) {
+                log.debug( e.getMessage(), e );
+                response.respond( HttpResponse.status( HTTP_NOT_FOUND,
+                    "service " + invocation.service + "." + invocation.method + " not found." ) );
+            } catch( InvocationTargetException | IllegalAccessException e ) {
+                log.debug( e.getMessage(), e );
+                response.respond( HttpResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() ) );
+            }
         }
     }
 

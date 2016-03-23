@@ -23,9 +23,8 @@
  */
 package oap.ws.validate;
 
-import oap.http.Cors;
-import oap.http.HttpResponse;
-import oap.http.Server;
+import oap.http.*;
+import oap.http.testng.HttpAsserts;
 import oap.metrics.Metrics;
 import oap.testng.Env;
 import oap.util.Lists;
@@ -49,20 +48,25 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class ValidatePeerParamTest {
-    protected final Server server = new Server( Env.port(), 100 );
-    protected final WebServices ws = new WebServices( server );
+    private final Server server = new Server( 100 );
+    private final WebServices ws = new WebServices( server );
+    private PlainHttpRequestListener plainHttpRequestListener;
 
     @BeforeClass
     public void startServer() {
         Metrics.resetAll();
 
-        ws.bind( "test", Cors.DEFAULT, new TestWS(), false );
-        server.start();
+        ws.bind( "test", Cors.DEFAULT, new TestWS(), Protocol.HTTP );
+        plainHttpRequestListener = new PlainHttpRequestListener( server, Env.port() );
+        plainHttpRequestListener.start();
     }
 
     @AfterClass
     public void stopServer() {
+        plainHttpRequestListener.stop();
         server.stop();
+        HttpAsserts.reset();
+
         server.unbind( "test" );
 
         Metrics.resetAll();

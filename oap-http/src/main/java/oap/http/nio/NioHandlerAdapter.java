@@ -39,44 +39,57 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.util.Objects;
 
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
-    private static Logger logger = getLogger( NioHandlerAdapter.class );
-    private final boolean local;
-    private String location;
-    private Handler handler;
-    private Cors cors;
 
-    public NioHandlerAdapter( String location, Handler handler, Cors cors, boolean local ) {
+    private static final Logger LOGGER = getLogger( NioHandlerAdapter.class );
+
+    private final Protocol protocol;
+    private final String location;
+    private final Handler handler;
+    private final Cors cors;
+
+    public NioHandlerAdapter( final String location, final Handler handler, final Cors cors,
+                              final Protocol protocol ) {
         this.location = location;
         this.handler = handler;
         this.cors = cors;
-        this.local = local;
+        this.protocol = protocol;
     }
 
     @Override
-    public HttpAsyncRequestConsumer<HttpRequest> processRequest( HttpRequest httpRequest,
-        HttpContext httpContext ) throws HttpException, IOException {
+    public HttpAsyncRequestConsumer<HttpRequest> processRequest( final HttpRequest httpRequest,
+                                                                 final HttpContext httpContext )
+        throws HttpException, IOException {
+
         return new BasicAsyncRequestConsumer();
     }
 
     @Override
-    public void handle( HttpRequest req, HttpAsyncExchange httpAsyncExchange,
-        HttpContext ctx ) throws HttpException, IOException {
-        logger.trace( "handling {}", req );
+    public void handle( final HttpRequest httpRequest, final HttpAsyncExchange httpAsyncExchange,
+                        final HttpContext httpContext ) throws HttpException, IOException {
 
-        HttpInetConnection connection = (HttpInetConnection) ctx.getAttribute( HttpCoreContext.HTTP_CONNECTION );
-        InetAddress remoteAddress = connection.getRemoteAddress();
-        HttpResponse response = httpAsyncExchange.getResponse();
+        LOGGER.trace( "handling [{}]", httpRequest );
 
-        if( local && !Inet.isLocalAddress( remoteAddress ) ) response.setStatusCode( HTTP_FORBIDDEN );
-        else handler.handle(
-            new Request( req, new Context( location, remoteAddress ) ),
+        final HttpInetConnection connection = ( HttpInetConnection ) httpContext
+            .getAttribute( HttpCoreContext.HTTP_CONNECTION );
+        final InetAddress remoteAddress = connection.getRemoteAddress();
+        final HttpResponse response = httpAsyncExchange.getResponse();
+
+        final String httpContextProtocol = httpContext.getAttribute( "protocol" ).toString();
+        if( ProtocolUtils.isLocal( remoteAddress, this.protocol ) ||
+            ProtocolUtils.isWrongProtocolConfigured( httpContextProtocol, protocol ) ) {
+
+            response.setStatusCode( HTTP_FORBIDDEN );
+        } else handler.handle(
+            new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) ),
             new Response( response, cors )
         );
+
         httpAsyncExchange.submitResponse();
     }
 }

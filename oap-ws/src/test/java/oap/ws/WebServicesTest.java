@@ -42,11 +42,12 @@ import static org.apache.http.entity.ContentType.*;
 import static org.testng.Assert.assertEquals;
 
 public class WebServicesTest {
-    protected final Server server = new Server( Env.port(), 100  );
-    protected final WebServices ws = new WebServices( server, Lists.of(
+    private final Server server = new Server( 100 );
+    private final WebServices ws = new WebServices( server, Lists.of(
         Resources.readString( getClass(), "ws.json" ).map( WsConfig::parse ).get() ) );
-    protected final WebServices wsHoconConf = new WebServices( server, Lists.of(
+    private final WebServices wsHoconConf = new WebServices( server, Lists.of(
         Resources.readString( getClass(), "ws.conf" ).map( WsConfig::parse ).get() ) );
+    private PlainHttpRequestListener plainHttpRequestListener;
 
     @BeforeClass
     public void startServer() {
@@ -54,11 +55,14 @@ public class WebServicesTest {
         Application.register( "handler", new TestHandler() );
         ws.start();
         wsHoconConf.start();
-        server.start();
+
+        plainHttpRequestListener = new PlainHttpRequestListener( server, Env.port() );
+        plainHttpRequestListener.start();
     }
 
     @AfterClass
     public void stopServer() {
+        plainHttpRequestListener.stop();
         server.stop();
         ws.stop();
         wsHoconConf.stop();
