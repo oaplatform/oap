@@ -24,7 +24,10 @@
 package oap.application.supervision;
 
 import oap.concurrent.SynchronizedThread;
+import oap.io.Closeables;
 import org.slf4j.Logger;
+
+import java.io.Closeable;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -64,6 +67,7 @@ public class ThreadService implements Runnable, Supervised {
 
     public synchronized void stop() {
         logger.debug( "stopping " + thread.getName() );
+        if( thread instanceof Closeable ) Closeables.close( ( Closeable ) thread );
         thread.stop();
     }
 }
