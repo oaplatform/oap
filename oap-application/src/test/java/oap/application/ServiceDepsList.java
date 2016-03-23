@@ -24,17 +24,12 @@
 
 package oap.application;
 
-import java.util.Collections;
 import java.util.List;
 
-public class RefService {
-    private final List<Object> refs;
+public class ServiceDepsList {
+    public final List<Object> deps;
 
-    public RefService( List<Object> refs ) {
-        this.refs = refs;
-    }
-
-    public List<Object> getRefs() {
-        return Collections.unmodifiableList( refs );
+    public ServiceDepsList( List<Object> deps ) {
+        this.deps = deps;
     }
 }

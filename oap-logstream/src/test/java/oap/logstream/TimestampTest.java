@@ -32,6 +32,7 @@ import org.testng.annotations.Test;
 
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 
 public class TimestampTest extends AbstractTest {
@@ -62,6 +63,19 @@ public class TimestampTest extends AbstractTest {
 
     @Test
     public void timestamps() {
+        assertThat( Timestamp.timestampsBefore( new DateTime( 2016, 2, 1, 1, 1, 1 ), 10, 12 ) )
+            .containsExactly(
+                "2016-02-01-00-03",
+                "2016-02-01-00-04",
+                "2016-02-01-00-05",
+                "2016-02-01-00-06",
+                "2016-02-01-00-07",
+                "2016-02-01-00-08",
+                "2016-02-01-00-09",
+                "2016-02-01-00-10",
+                "2016-02-01-00-11",
+                "2016-02-01-01-00"
+            );
         Asserts.assertEquals( Timestamp.timestampsBefore( new DateTime( 2016, 2, 1, 1, 1, 1 ), 10, 12 ), Stream.of(
             "2016-02-01-00-03",
             "2016-02-01-00-04",
@@ -74,18 +88,19 @@ public class TimestampTest extends AbstractTest {
             "2016-02-01-00-11",
             "2016-02-01-01-00"
         ) );
-        Asserts.assertEquals( Timestamp.timestampsAfter( new DateTime( 2016, 2, 1, 1, 1, 1 ), 10, 12 ), Stream.of(
-            "2016-02-01-01-00",
-            "2016-02-01-01-01",
-            "2016-02-01-01-02",
-            "2016-02-01-01-03",
-            "2016-02-01-01-04",
-            "2016-02-01-01-05",
-            "2016-02-01-01-06",
-            "2016-02-01-01-07",
-            "2016-02-01-01-08",
-            "2016-02-01-01-09"
-        ) );
+        assertThat( Timestamp.timestampsAfter( new DateTime( 2016, 2, 1, 1, 1, 1 ), 10, 12 ) )
+            .containsExactly(
+                "2016-02-01-01-00",
+                "2016-02-01-01-01",
+                "2016-02-01-01-02",
+                "2016-02-01-01-03",
+                "2016-02-01-01-04",
+                "2016-02-01-01-05",
+                "2016-02-01-01-06",
+                "2016-02-01-01-07",
+                "2016-02-01-01-08",
+                "2016-02-01-01-09"
+            );
     }
 
     @Test

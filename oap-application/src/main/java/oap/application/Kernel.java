@@ -24,6 +24,7 @@
 package oap.application;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.io.Files;
@@ -33,7 +34,6 @@ import oap.reflect.Reflection;
 import oap.util.Maps;
 import oap.util.Stream;
 import org.apache.commons.collections4.CollectionUtils;
-import org.slf4j.Logger;
 
 import java.net.URL;
 import java.nio.file.Path;
@@ -42,15 +42,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static java.util.stream.Collectors.toSet;
-import static org.slf4j.LoggerFactory.getLogger;
 
+@Slf4j
 public class Kernel {
-    private static Logger logger = getLogger( Kernel.class );
     private final List<URL> modules;
     private Supervisor supervisor = new Supervisor();
 
     public Kernel( List<URL> modules ) {
-        logger.debug( "modules = " + modules );
+        log.debug( "modules = " + modules );
         this.modules = modules;
     }
 
@@ -63,7 +62,7 @@ public class Kernel {
             Module.Service service = entry.getValue();
             String serviceName = entry.getKey();
             if( initialized.containsAll( service.dependsOn ) ) {
-                logger.debug( "initializing " + serviceName );
+                log.debug( "initializing " + serviceName );
 
                 Reflection reflect = Reflect.reflect( service.implementation );
 
@@ -93,8 +92,8 @@ public class Kernel {
                 }
                 initialized.add( serviceName );
             } else {
-                logger.debug( "dependencies are not ready - deferring " + serviceName + " -> " +
-                    CollectionUtils.subtract( service.dependsOn, initialized ) );
+                log.debug( "dependencies are not ready - deferring " + serviceName + ": "
+                    + CollectionUtils.subtract( service.dependsOn, initialized ) );
                 deferred.put( entry.getKey(), service );
             }
         }
@@ -120,7 +119,7 @@ public class Kernel {
 
     private void initValue( String name, String key, Object value, Consumer<Object> s ) {
         if( value instanceof String && ( ( String ) value ).startsWith( "@service:" ) ) {
-            logger.debug( "for " + name + " linking " + key + " -> " + value );
+            log.debug( "for " + name + " linking " + key + " -> " + value );
             Object link = Application.service( ( ( String ) value ).substring( "@service:".length() ) );
             if( link == null ) throw new ApplicationException(
                 "for " + name + " service link " + value + " is not initialized yet" );
@@ -128,29 +127,30 @@ public class Kernel {
         }
     }
 
-    private Set<Module> initialize( Set<Module> modules, Set<String> initialized ) {
+    private Set<Module> initialize( Set<Module> modules, Set<String> initialized, Set<String> initializedServices ) {
         HashSet<Module> deferred = new HashSet<>();
 
         for( Module module : modules ) {
-            logger.debug( "initializing module " + module.name );
+            log.debug( "initializing module " + module.name );
             if( initialized.containsAll( module.dependsOn ) ) {
 
                 Map<String, Module.Service> def =
-                    initializeServices( module.services, new LinkedHashSet<>() );
+                    initializeServices( module.services, initializedServices );
                 if( !def.isEmpty() ) {
                     List<String> names = Stream.of( def.entrySet().stream() ).map( Map.Entry::getKey ).toList();
-                    logger.error( "failed to initialize: " + names );
+                    log.error( "failed to initialize: " + names );
                     throw new ApplicationException( "failed to initialize services: " + names );
                 }
 
                 initialized.add( module.name );
             } else {
-                logger.debug( "dependencies are not ready - deferring " + module.name );
+                log.debug( "dependencies are not ready - deferring " + module.name + ": "
+                    + CollectionUtils.subtract( module.dependsOn, initialized ) );
                 deferred.add( module );
             }
         }
 
-        return deferred.size() == modules.size() ? deferred : initialize( deferred, initialized );
+        return deferred.size() == modules.size() ? deferred : initialize( deferred, initialized, initializedServices );
     }
 
     public void start() {
@@ -163,16 +163,16 @@ public class Kernel {
     }
 
     public void start( Map<String, Map<String, Object>> config ) {
-        logger.debug( "initializing application kernel..." );
+        log.debug( "initializing application kernel..." );
 
         Set<Module> moduleConfigs = Stream.of( modules )
             .map( m -> Module.parse( m, config ) )
             .collect( toSet() );
-        logger.trace( "modules = " + Stream.of( moduleConfigs ).map( m -> m.name ).toList() );
+        log.trace( "modules = " + Stream.of( moduleConfigs ).map( m -> m.name ).toList() );
 
-        Set<Module> def = initialize( moduleConfigs, new HashSet<>() );
+        Set<Module> def = initialize( moduleConfigs, new HashSet<>(), new HashSet<>() );
         if( !def.isEmpty() ) {
-            logger.error( "failed to initialize: " + Stream.of( def ).map( m -> m.name ).toList() );
+            log.error( "failed to initialize: " + Stream.of( def ).map( m -> m.name ).toList() );
             throw new ApplicationException( "failed to initialize modules" );
         }
 
@@ -185,7 +185,7 @@ public class Kernel {
     }
 
     public void start( Path configPath, Optional<Path> configDirectoryPath ) {
-        configDirectoryPath.ifPresent( cdp -> logger.info( "global configuration directory = {}", cdp ) );
+        configDirectoryPath.ifPresent( cdp -> log.info( "global configuration directory = {}", cdp ) );
 
         final String config = Files.readString( configPath );
 
@@ -193,7 +193,7 @@ public class Kernel {
             dir -> {
                 ArrayList<Path> paths = Files.fastWildcard( dir, "*.conf" );
 
-                logger.info( "global configurations = {}", paths );
+                log.info( "global configurations = {}", paths );
 
                 return Stream
                     .of( paths.stream() )
@@ -203,7 +203,7 @@ public class Kernel {
             }
         ).orElse( new String[]{ config } );
 
-        logger.info( "application configurations = {}", configPath );
+        log.info( "application configurations = {}", configPath );
 
         start( configPath.toFile().exists() ? toMap( configPath, configs ) : Maps.of() );
     }

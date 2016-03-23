@@ -26,33 +26,18 @@ package oap.testng;
 import com.google.common.base.Throwables;
 import oap.concurrent.Threads;
 import oap.util.Try;
+import org.apache.commons.lang3.StringUtils;
+import org.assertj.core.api.AbstractCharSequenceAssert;
 import org.testng.Assert;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.testng.Assert.fail;
 
 public final class Asserts {
-    public static void assertException( Class<? extends Throwable> e, Runnable code ) {
-        try {
-            code.run();
-            Assert.fail( e.getName() + " should be thrown" );
-        } catch( Throwable t ) {
-            if( !e.isInstance( t ) ) throw t;
-        }
-    }
-
-    public static void assertException( Throwable e, Runnable code ) {
-        try {
-            code.run();
-            Assert.fail( e + " should be thrown" );
-        } catch( Throwable t ) {
-            Assert.assertEquals( t.getClass(), e.getClass() );
-            Assert.assertEquals( t.getCause(), e.getCause() );
-            Assert.assertEquals( t.getMessage(), e.getMessage() );
-        }
-    }
 
     public static void assertEventually( long retryTimeout, int retries, Try.ThrowingRunnable asserts ) {
         boolean passed = false;
@@ -74,12 +59,14 @@ public final class Asserts {
             else throw new AssertionError( "timeout" );
     }
 
+    @Deprecated
     public static <A> void assertEquals( Stream<? extends A> actual, Stream<? extends A> expected ) {
         if( actual == null && expected != null ) fail( "actual stream is null" );
         else if( actual != null && expected != null )
             Assert.assertEquals( actual.collect( toList() ), expected.collect( toList() ) );
     }
 
+    @Deprecated
     public static void assertEquals( int[] actual, int[] expected ) {
         Assert.assertNotNull( actual );
         Assert.assertNotNull( expected );
@@ -88,5 +75,44 @@ public final class Asserts {
             Assert.assertEquals( actual[i], expected[i], " at index " + i );
         }
 
+    }
+
+    public static StringAssertion assertString( CharSequence value ) {
+        return new StringAssertion( value );
+    }
+
+    public static void failNotEquals( Object actual, Object expected, String message ) {
+        try {
+            Method failNotEquals = Assert.class.getDeclaredMethod( "failNotEquals", Object.class, Object.class, String.class );
+            failNotEquals.setAccessible( true );
+            failNotEquals.invoke( null, actual, expected, message );
+        } catch( NoSuchMethodException | IllegalAccessException e ) {
+            throw new Error( e );
+        } catch( InvocationTargetException e ) {
+            if( e.getTargetException() instanceof AssertionError ) throw ( AssertionError ) e.getTargetException();
+            else throw new Error( e );
+        }
+    }
+
+    public static void failNotEquals( Object actual, Object expected ) {
+        failNotEquals( actual, expected, null );
+    }
+
+    public static class StringAssertion extends AbstractCharSequenceAssert<StringAssertion, CharSequence> {
+        public StringAssertion( CharSequence value ) {
+            super( value, StringAssertion.class );
+        }
+
+        @Override
+        public StringAssertion isEqualTo( Object expected ) {
+            Assert.assertEquals( this.actual, expected );
+            return this;
+        }
+
+        @Override
+        public StringAssertion isEqualToIgnoringCase( CharSequence expected ) {
+            if( !StringUtils.equalsIgnoreCase( this.actual, expected ) ) failNotEquals( this.actual, expected );
+            return this;
+        }
     }
 }

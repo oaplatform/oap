@@ -26,12 +26,13 @@ package oap.util;
 
 import org.testng.annotations.Test;
 
-import static oap.testng.Asserts.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 public class ArraysTest {
     @Test
     public void reversed() {
-        assertEquals( Arrays.ints().range( 0, 10 ).reversed(), new int[]{ 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 } );
+        assertThat( Arrays.ints().range( 0, 10 ).reversed() )
+            .containsExactly( 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 );
     }
 }
