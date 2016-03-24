@@ -14,7 +14,7 @@ public class LocalHttpListener extends AbstractHttpListener {
 
             final ServerSocket serverSocket = ServerSocketUtils.createLocalSocket(port);
 
-            log.info( "Ready to accept plain connections on [{}]", serverSocket.getLocalSocketAddress() );
+            log.info( "Ready to accept localhost connections on [{}]", serverSocket.getLocalSocketAddress() );
 
             return serverSocket;
         } );
