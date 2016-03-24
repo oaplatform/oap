@@ -24,6 +24,7 @@
 package oap.ws;
 
 import oap.application.Application;
+import oap.application.supervision.ThreadService;
 import oap.http.*;
 import oap.io.Resources;
 import oap.metrics.Metrics;
@@ -42,11 +43,13 @@ import static org.apache.http.entity.ContentType.*;
 import static org.testng.Assert.assertEquals;
 
 public class WebServicesTest {
-    protected final Server server = new Server( Env.port(), 100  );
-    protected final WebServices ws = new WebServices( server, Lists.of(
+    private final Server server = new Server( 100 );
+    private final WebServices ws = new WebServices( server, Lists.of(
         Resources.readString( getClass(), "ws.json" ).map( WsConfig::parse ).get() ) );
-    protected final WebServices wsHoconConf = new WebServices( server, Lists.of(
+    private final WebServices wsHoconConf = new WebServices( server, Lists.of(
         Resources.readString( getClass(), "ws.conf" ).map( WsConfig::parse ).get() ) );
+
+    private ThreadService threadService;
 
     @BeforeClass
     public void startServer() {
@@ -54,14 +57,18 @@ public class WebServicesTest {
         Application.register( "handler", new TestHandler() );
         ws.start();
         wsHoconConf.start();
-        server.start();
+
+        threadService = new ThreadService( "plain-http-listener", new PlainHttpListener( server, Env.port() ), null);
+        threadService.start();
     }
 
     @AfterClass
     public void stopServer() {
+        threadService.stop();
         server.stop();
         ws.stop();
         wsHoconConf.stop();
+
         reset();
     }
 

@@ -23,8 +23,12 @@
  */
 package oap.http;
 
+import java.net.Socket;
+
 public interface HttpServer {
-    void bind( String context, Cors cors, Handler handler, boolean local );
+    void bind( String context, Cors cors, Handler handler, Protocol protocol );
 
     void unbind( String context );
+
+    void accept( Socket socket);
 }

@@ -27,6 +27,7 @@ import oap.application.Application;
 import oap.http.Cors;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
+import oap.http.Protocol;
 import oap.json.Binder;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
@@ -64,11 +65,11 @@ public class WebServices {
                 final WsConfig.Service value = entry.getValue();
                 final Object service = Application.service( value.service );
                 if( service == null ) throw new IllegalStateException( "Unknown service " + value.service );
-                bind( entry.getKey(), value.cors, service, value.local );
+                bind( entry.getKey(), value.cors, service, value.protocol );
             }
             for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
                 final WsConfig.Service value = entry.getValue();
-                server.bind( entry.getKey(), value.cors, Application.service( value.service ), value.local );
+                server.bind( entry.getKey(), value.cors, Application.service( value.service ), value.protocol );
             }
         }
     }
@@ -81,8 +82,8 @@ public class WebServices {
 
     }
 
-    public void bind( String context, Cors cors, Object impl, boolean local ) {
-        server.bind( context, cors, new Service( impl ), local );
+    public void bind( String context, Cors cors, Object impl, Protocol protocol ) {
+        server.bind( context, cors, new Service( impl ), protocol );
     }
 
 }

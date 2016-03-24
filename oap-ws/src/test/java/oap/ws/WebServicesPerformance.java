@@ -23,7 +23,10 @@
  */
 package oap.ws;
 
+import oap.application.supervision.ThreadService;
 import oap.http.Cors;
+import oap.http.PlainHttpListener;
+import oap.http.Protocol;
 import oap.http.Server;
 import oap.http.nio.NioServer;
 import oap.http.testng.HttpAsserts;
@@ -38,14 +41,15 @@ public class WebServicesPerformance extends AbstractPerformance {
     private final int samples = 100000;
     private final int experiments = 5;
 
-
     @Test
     public void blocking_threads() {
-        Server server = new Server( Env.port(), 100 );
+        final Server server = new Server( 100 );
+        final ThreadService threadService = new ThreadService( "plain-http-listener",
+            new PlainHttpListener( server, Env.port() ), null );
+        threadService.start();
         try {
             WebServices ws = new WebServices( server );
-            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false );
-            server.start();
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), Protocol.HTTP );
 
             HttpAsserts.reset();
             benchmark( "Server.invocations", samples, experiments, 5000,
@@ -54,6 +58,7 @@ public class WebServicesPerformance extends AbstractPerformance {
 
             HttpAsserts.reset();
         } finally {
+            threadService.stop();
             server.stop();
         }
     }
@@ -63,7 +68,7 @@ public class WebServicesPerformance extends AbstractPerformance {
         NioServer server = new NioServer( Env.port() );
         try {
             WebServices ws = new WebServices( server );
-            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false );
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), Protocol.HTTP );
             server.start();
             Thread.sleep( 3000 ); // ??? TODO: fix me
 

@@ -25,6 +25,7 @@ package oap.http.nio;
 
 import oap.http.Cors;
 import oap.http.Handler;
+import oap.http.Protocol;
 import oap.http.Server;
 import org.apache.http.ExceptionLogger;
 import org.apache.http.impl.nio.bootstrap.HttpServer;
@@ -34,6 +35,7 @@ import org.apache.http.nio.protocol.UriHttpAsyncRequestHandlerMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.Socket;
 import java.util.concurrent.TimeUnit;
 
 public class NioServer implements oap.http.HttpServer {
@@ -62,15 +64,21 @@ public class NioServer implements oap.http.HttpServer {
     }
 
     @Override
-    public void bind( String context, Cors cors, Handler handler, boolean local ) {
+    public void bind( String context, Cors cors, Handler handler, Protocol protocol ) {
         String location = "/" + context + "/*";
-        this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler, cors, local ) );
+        this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler, cors, protocol ) );
         logger.info( handler + " bound to " + location );
 
     }
 
+    @Override
     public void unbind( String context ) {
         this.mapper.unregister( "/" + context + "/*" );
+    }
+
+    @Override
+    public void accept( Socket socket ) {
+        throw new UnsupportedOperationException("NioServer is not yet supported");
     }
 
     public void start() {

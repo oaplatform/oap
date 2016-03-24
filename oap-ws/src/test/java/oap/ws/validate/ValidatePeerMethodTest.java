@@ -23,9 +23,8 @@
  */
 package oap.ws.validate;
 
-import oap.http.Cors;
-import oap.http.HttpResponse;
-import oap.http.Server;
+import oap.application.supervision.ThreadService;
+import oap.http.*;
 import oap.http.testng.HttpAsserts;
 import oap.metrics.Metrics;
 import oap.testng.AbstractTest;
@@ -47,24 +46,28 @@ import static oap.ws.WsParam.From.BODY;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class ValidatePeerMethodTest extends AbstractTest {
-    protected final Server server = new Server( Env.port(), 100 );
-    protected final WebServices ws = new WebServices( server );
+    private final Server server = new Server( 100 );
+    private final WebServices ws = new WebServices( server );
+
+    private ThreadService threadService;
 
     @BeforeClass
     public void startServer() {
         Metrics.resetAll();
-
-        ws.bind( "test", Cors.DEFAULT, new TestWS(), false );
         server.start();
+        ws.bind( "test", Cors.DEFAULT, new TestWS(), Protocol.HTTP );
+
+        threadService = new ThreadService( "plain-http-listener", new PlainHttpListener( server, Env.port() ), null );
+        threadService.start();
     }
 
     @AfterClass
     public void stopServer() {
+        threadService.stop();
         server.stop();
-        HttpAsserts.reset();
-
         server.unbind( "test" );
 
+        HttpAsserts.reset();
         Metrics.resetAll();
     }
 

@@ -26,12 +26,15 @@ package oap.http;
 
 import java.net.InetAddress;
 
-public class Context {
+public final class Context {
+
     public final String location;
     public final InetAddress remoteAddress;
+    public final String protocol;
 
-    public Context( String location, InetAddress remoteAddress ) {
+    public Context(final String location, final InetAddress remoteAddress, final String protocol ) {
         this.location = location;
         this.remoteAddress = remoteAddress;
+        this.protocol = protocol;
     }
 }

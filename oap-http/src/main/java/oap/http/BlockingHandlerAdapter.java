@@ -24,7 +24,6 @@
 package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.net.Inet;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -40,31 +39,38 @@ import static org.apache.http.protocol.HttpCoreContext.HTTP_CONNECTION;
 
 @Slf4j
 class BlockingHandlerAdapter implements HttpRequestHandler {
-    private final boolean local;
-    protected String location;
-    private Handler handler;
-    private Cors cors;
+    private final Protocol protocol;
+    private final String location;
+    private final Handler handler;
+    private final Cors cors;
 
-    public BlockingHandlerAdapter( String location, Handler handler, Cors cors, boolean local ) {
+    public BlockingHandlerAdapter( final String location, final Handler handler,
+                                   final Cors cors, final Protocol protocol ) {
         this.location = location;
         this.handler = handler;
         this.cors = cors;
-        this.local = local;
+        this.protocol = protocol;
     }
 
     @Override
-    public void handle( HttpRequest req, HttpResponse resp, HttpContext ctx ) throws IOException {
-        log.trace( "handling {}", req );
+    public void handle( final HttpRequest httpRequest, final HttpResponse httpResponse,
+                        final HttpContext httpContext ) throws IOException {
+        log.trace( "Handling [{}]", httpRequest );
 
-        HttpInetConnection connection = ( HttpInetConnection ) ctx.getAttribute( HTTP_CONNECTION );
-        Response response = new Response( resp, cors );
-        InetAddress remoteAddress = connection.getRemoteAddress();
-        Request request = new Request( req, new Context( location, remoteAddress ) );
+        final HttpInetConnection connection = ( HttpInetConnection ) httpContext.getAttribute( HTTP_CONNECTION );
+        final Response response = new Response( httpResponse, cors );
+        final InetAddress remoteAddress = connection.getRemoteAddress();
 
-        if( local && !Inet.isLocalAddress( remoteAddress ) ) response.respond( HTTP_FORBIDDEN );
-        else if( cors.autoOptions && request.httpMethod == Request.HttpMethod.OPTIONS )
+        final String httpContextProtocol = httpContext.getAttribute( "protocol" ).toString();
+        final Request request = new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) );
+
+        if( ProtocolUtils.isLocal( remoteAddress, this.protocol ) ||
+            ProtocolUtils.isWrongProtocolConfigured( httpContextProtocol, this.protocol ) ) {
+            response.respond( HTTP_FORBIDDEN );
+        } else if( cors.autoOptions && request.httpMethod == Request.HttpMethod.OPTIONS ) {
             response.respond( NO_CONTENT );
-        else handler.handle( request, response );
+        } else {
+            handler.handle( request, response );
+        }
     }
-
 }

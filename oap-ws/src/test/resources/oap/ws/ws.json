@@ -4,12 +4,14 @@
       "service": "math",
       "cors": {
         "allowOrigin": "*"
-      }
+      },
+      "protocol": "HTTP"
     }
   },
   "handlers": {
     "x/h": {
-      "service": "handler"
+      "service": "handler",
+      "protocol": "HTTP"
     }
   }
 }

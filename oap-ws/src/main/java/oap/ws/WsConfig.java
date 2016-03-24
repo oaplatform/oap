@@ -26,6 +26,7 @@ package oap.ws;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.http.Cors;
+import oap.http.Protocol;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.util.Stream;
@@ -65,7 +66,7 @@ public class WsConfig {
     @ToString
     public static class Service {
         public String service;
-        public Cors cors = new Cors();
-        public boolean local = false;
+        public Cors cors = Cors.DEFAULT;
+        public Protocol protocol;
     }
 }
