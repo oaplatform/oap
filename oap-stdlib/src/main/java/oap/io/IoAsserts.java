@@ -27,32 +27,39 @@ import java.nio.file.Path;
 
 import static org.testng.Assert.*;
 
+@Deprecated
 public class IoAsserts {
 
+    @Deprecated
     public static void assertFileContent( Path actual, String content ) {
         assertFileContent( actual, IoStreams.Encoding.PLAIN, content );
     }
 
+    @Deprecated
     public static void assertFileResource( Class<?> contextClass, Path actual, String expectedResource ) {
         assertFileResource( contextClass, actual, IoStreams.Encoding.PLAIN, expectedResource );
     }
 
+    @Deprecated
     public static void assertFileResource( Class<?> contextClass, Path actual, IoStreams.Encoding encoding,
                                            String expectedResource ) {
         assertEquals( Files.readString( actual, encoding ),
             Resources.readString( contextClass, contextClass.getSimpleName() + "/" + expectedResource ).get() );
     }
 
+    @Deprecated
     public static void assertContentResource( Class<?> contextClass, String actual, String expectedResource ) {
         assertEquals( actual,
             Resources.readString( contextClass, contextClass.getSimpleName() + "/" + expectedResource ).get() );
     }
 
+    @Deprecated
     public static void assertFileContent( Path actual, IoStreams.Encoding encoding, String content ) {
         assertTrue( actual.toFile().exists(), "file " + actual + " does not exist" );
         assertEquals( Files.readString( actual, encoding ), content );
     }
 
+    @Deprecated
     public static void assertFileDoesNotExist( Path path ) {
         assertFalse( path.toFile().exists() );
     }

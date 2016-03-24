@@ -61,7 +61,7 @@ public class Env {
         try {
             java.nio.file.Files.createDirectories( tmpPath.getParent() );
         } catch( IOException e ) {
-            log.warning( "Cannot create temp dirs: " + tmpPath );
+            throw new UncheckedIOException( e );
         }
         return tmpPath;
     }

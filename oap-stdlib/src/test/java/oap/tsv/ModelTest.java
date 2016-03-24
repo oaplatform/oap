@@ -24,13 +24,14 @@
 
 package oap.tsv;
 
-import oap.io.IoAsserts;
 import oap.testng.Env;
 import oap.util.Stream;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 import java.util.List;
+
+import static oap.testng.Asserts.assertFile;
 
 public class ModelTest {
     @Test
@@ -50,7 +51,6 @@ public class ModelTest {
 
             }
         } );
-        Stream<List<Object>> tsv = Tsv.fromPaths( paths, complexModel );
-        IoAsserts.assertFileContent( path.resolve( "result.tsv" ), Tsv.print( tsv ) );
+        assertFile( path.resolve( "result.tsv" ) ).hasContent( Tsv.print( Tsv.fromPaths( paths, complexModel ) ) );
     }
 }

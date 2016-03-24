@@ -31,8 +31,8 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static oap.io.IoAsserts.assertContentResource;
-import static org.testng.Assert.assertEquals;
+import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class TableTest {
     @Test
@@ -49,8 +49,8 @@ public class TableTest {
             .transform( l -> l.addAll( join.on( ( String ) l.get( 1 ) ) ) )
             .export( export )
             .compute();
-        assertContentResource( getClass(), export.toString(), "sorted.tsv" );
-        assertEquals( progress, Lists.of( 2L, 4L, 6L, 7L ) );
+        assertString( export.toString() ).isEqualToResource( getClass(), "sorted.tsv" );
+        assertThat( progress ).containsExactly( 2L, 4L, 6L, 7L );
     }
 
     @Test
@@ -66,7 +66,7 @@ public class TableTest {
             .groupBy( new int[]{ 0, 1 }, Accumulator.count(), Accumulator.intSum( 2 ), Accumulator.intSum( 3 ) )
             .export( export )
             .compute();
-        assertContentResource( getClass(), export.toString(), "distincted.tsv" );
+        assertString( export.toString() ).isEqualToResource( getClass(), "distincted.tsv" );
     }
 
     @Test
@@ -81,6 +81,6 @@ public class TableTest {
             .join( 1, join )
             .export( export )
             .compute();
-        assertContentResource( getClass(), export.toString(), "joined.tsv" );
+        assertString( export.toString() ).isEqualToResource( getClass(), "joined.tsv" );
     }
 }

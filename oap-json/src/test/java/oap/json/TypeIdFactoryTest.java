@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TypeIdFactoryTest extends AbstractTest {
     @Test
     public void testClassMapping() {
-        TypeIdFactory.register( TestBean.class, "b" );
+        new TypeIdFactory().start();
 
         final TestBean b = new TestBean( "1" );
         final String marshal = Binder.json.marshal( new TestContainer( b ) );

@@ -30,6 +30,7 @@ import oap.testng.Asserts;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Stream;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.lang.annotation.ElementType;
@@ -71,10 +72,8 @@ public class ReflectTest extends AbstractTest {
     @Test
     public void fields() {
         Bean bean = new Bean( 10 );
-        Asserts.assertEquals(
-            Reflect.reflect( bean.getClass() ).fields.stream().map( f -> f.get( bean ) ),
-            Stream.of( 10, 1, "aaa", null )
-        );
+        Assertions.assertThat( Reflect.reflect( bean.getClass() ).fields.stream().map( f -> f.get( bean ) ))
+            .containsExactly( 10, 1, "aaa", null );
     }
 
     @Test

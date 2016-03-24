@@ -31,6 +31,7 @@ public class ServiceTwo implements Hello {
     int j;
     boolean started;
     String test;
+    List<TestBean> beans = new ArrayList<>();
 
 
     public ServiceTwo() {
@@ -44,9 +45,8 @@ public class ServiceTwo implements Hello {
 
     @Override
     public List<TestBean> hello( List<TestBean> beans ) {
-        final ArrayList<TestBean> testBeans = new ArrayList<>( beans );
-        testBeans.add( new TestBean( String.valueOf( j ), j ) );
-        return testBeans;
+        this.beans = new ArrayList<>( beans );
+        return this.beans;
     }
 
     @Override

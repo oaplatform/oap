@@ -88,7 +88,7 @@ public class MutableObjectModule {
         }
 
         @Override
-        public MutableObject deserialize( JsonParser p, DeserializationContext ctxt, MutableObject intoValue ) throws IOException, JsonProcessingException {
+        public MutableObject deserialize( JsonParser p, DeserializationContext ctxt, MutableObject intoValue ) throws IOException {
             intoValue.setValue( ctxt.readValue( p, refType ) );
 
             return intoValue;
