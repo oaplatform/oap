@@ -43,7 +43,7 @@ public class Remote implements Handler {
         }
     };
 
-    private final Cors cors = new Cors();
+    private final Cors cors = Cors.DEFAULT;
 
     private final HttpServer server;
     private final String context;

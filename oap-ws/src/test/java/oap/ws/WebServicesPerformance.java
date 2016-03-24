@@ -23,8 +23,9 @@
  */
 package oap.ws;
 
+import oap.application.supervision.ThreadService;
 import oap.http.Cors;
-import oap.http.PlainHttpRequestListener;
+import oap.http.PlainHttpListener;
 import oap.http.Protocol;
 import oap.http.Server;
 import oap.http.nio.NioServer;
@@ -43,9 +44,9 @@ public class WebServicesPerformance extends AbstractPerformance {
     @Test
     public void blocking_threads() {
         final Server server = new Server( 100 );
-        final PlainHttpRequestListener plainHttpRequestListener =
-            new PlainHttpRequestListener( server, Env.port() );
-        plainHttpRequestListener.start();
+        final ThreadService threadService = new ThreadService( "plain-http-listener",
+            new PlainHttpListener( server, Env.port() ), null );
+        threadService.start();
         try {
             WebServices ws = new WebServices( server );
             ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), Protocol.HTTP );
@@ -57,7 +58,7 @@ public class WebServicesPerformance extends AbstractPerformance {
 
             HttpAsserts.reset();
         } finally {
-            plainHttpRequestListener.stop();
+            threadService.stop();
             server.stop();
         }
     }

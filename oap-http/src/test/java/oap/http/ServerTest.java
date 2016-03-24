@@ -15,6 +15,7 @@ import org.testng.annotations.Test;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.security.*;
 import java.security.cert.CertificateException;
 
@@ -22,9 +23,9 @@ import static org.testng.Assert.assertEquals;
 
 public class ServerTest {
 
-    private final Server server = new Server( 10 );
+    private static final String KEYSTORE_PASSWORD = "123456";
 
-    private SecureHttpRequestListener secureHttpRequestListener;
+    private final Server server = new Server( 10 );
 
     @BeforeTest
     public void setUp() {
@@ -43,8 +44,8 @@ public class ServerTest {
             response.respond( new HttpResponse( 200 ) );
         }, Protocol.HTTPS );
 
-        secureHttpRequestListener = new SecureHttpRequestListener( server, "server_keystore.jks", "123456", Env.port() );
-        secureHttpRequestListener.start();
+        new Thread( new SecureHttpListener( server, Paths.get( "server_keystore.jks" ),
+            KEYSTORE_PASSWORD, Env.port() ) ).start();
     }
 
     @Test
@@ -56,7 +57,7 @@ public class ServerTest {
 
         final KeyStore keyStore = KeyStore.getInstance( "JKS" );
         keyStore.load( Resources.getResource( "client_truststore.jks" ).openStream(),
-            "123456".toCharArray() );
+            KEYSTORE_PASSWORD.toCharArray() );
 
         final TrustManagerFactory trustManagerFactory =
             TrustManagerFactory.getInstance( TrustManagerFactory
@@ -76,7 +77,6 @@ public class ServerTest {
 
     @AfterTest
     public void tearDown() {
-        secureHttpRequestListener.stop();
         server.stop();
     }
 }

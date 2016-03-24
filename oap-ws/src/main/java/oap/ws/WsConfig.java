@@ -66,7 +66,7 @@ public class WsConfig {
     @ToString
     public static class Service {
         public String service;
-        public Cors cors = new Cors();
+        public Cors cors = Cors.DEFAULT;
         public Protocol protocol;
     }
 }

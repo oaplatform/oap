@@ -23,47 +23,54 @@
  */
 package oap.application.supervision;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
-import org.slf4j.Logger;
+import oap.io.Closeables;
 
-import static org.slf4j.LoggerFactory.getLogger;
+import java.io.Closeable;
 
+@Slf4j
 public class ThreadService implements Runnable, Supervised {
-    private SynchronizedThread thread = new SynchronizedThread( this );
-    private Runnable supervisee;
+
     private final Supervisor supervisor;
-    private static Logger logger = getLogger( ThreadService.class );
+    private final SynchronizedThread thread = new SynchronizedThread( this );
+    private Runnable supervisee;
     private int maxFailures = 100;
 
-    public ThreadService( String name, Runnable supervisee, Supervisor supervisor ) {
+    public ThreadService( final String name, final Runnable supervisee, final Supervisor supervisor ) {
         this.supervisee = supervisee;
         this.supervisor = supervisor;
         this.thread.setName( name );
     }
 
-
     @Override
     public void run() {
-        while( thread.isRunning() && maxFailures > 0 ) try {
-            supervisee.run();
-        } catch( Exception e ) {
-            maxFailures--;
-            logger.error( "Crushed unexpectedly with message: " + e.getMessage() + ". Restarting...", e );
+        while( thread.isRunning() && maxFailures > 0 ) {
+            try {
+                supervisee.run();
+            } catch( Exception e ) {
+                maxFailures--;
+                log.error( "Crushed unexpectedly with message: " + e.getMessage() + ". Restarting...", e );
+            }
         }
         if( maxFailures <= 0 ) {
-            logger.error( this + " constantly crushing. Requesting shutdown..." );
+            log.error( this + " constantly crushing. Requesting shutdown..." );
             supervisor.stop();
         }
     }
 
 
     public synchronized void start() {
-        logger.debug( "starting " + thread.getName() );
+        log.debug( "starting " + thread.getName() );
         thread.start();
     }
 
     public synchronized void stop() {
-        logger.debug( "stopping " + thread.getName() );
+        log.debug( "stopping " + thread.getName() );
+
+        if( supervisee instanceof Closeable ) {
+            Closeables.close( ( Closeable ) supervisee );
+        }
         thread.stop();
     }
 }

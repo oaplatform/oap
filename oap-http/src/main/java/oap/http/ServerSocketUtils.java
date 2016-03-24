@@ -1,6 +1,7 @@
 package oap.http;
 
 import com.google.common.io.Resources;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,22 +11,22 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.nio.file.Path;
 import java.security.KeyStore;
 
+@Slf4j
 final class ServerSocketUtils {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( ServerSocketUtils.class );
 
     private ServerSocketUtils() {
     }
 
-    public static ServerSocket createLocalSocket() {
+    public static ServerSocket createLocalSocket( final int port ) {
         return handleSocketExceptions( () -> {
-                final ServerSocket serverSocket = new ServerSocket( 9090, 0, InetAddress.getByName( "127.0.0.1" ) );
+                final ServerSocket serverSocket = new ServerSocket( port, 0, InetAddress.getByName( "127.0.0.1" ) );
                 serverSocket.setReuseAddress( true );
 
                 return serverSocket;
-            }, 9090
+            }, port
         );
     }
 
@@ -39,11 +40,11 @@ final class ServerSocketUtils {
         }, port );
     }
 
-    public static ServerSocket createSecureSocket( final String certificateLocation, final String keystorePassword,
+    public static ServerSocket createSecureSocket( final Path keystoreLocation, final String keystorePassword,
                                                    final int port ) {
         return handleSocketExceptions( () -> {
             final KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
-            keyStore.load( Resources.getResource( certificateLocation ).openStream(),
+            keyStore.load( Resources.getResource( keystoreLocation.toString() ).openStream(),
                 keystorePassword.toCharArray() );
 
             final KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
@@ -66,10 +67,10 @@ final class ServerSocketUtils {
         try {
             return resultSupplier.get();
         } catch( final BindException e ) {
-            LOGGER.error( "Cannot bind to port [{}]", port, e );
+            log.error( "Cannot bind to port [{}]", port, e );
             throw new RuntimeException( e.getMessage(), e );
         } catch( final Exception e ) {
-            LOGGER.error( e.getMessage(), e );
+            log.error( e.getMessage(), e );
             throw new RuntimeException( e.getMessage(), e );
         }
     }

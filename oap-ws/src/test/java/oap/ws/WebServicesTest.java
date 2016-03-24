@@ -24,6 +24,7 @@
 package oap.ws;
 
 import oap.application.Application;
+import oap.application.supervision.ThreadService;
 import oap.http.*;
 import oap.io.Resources;
 import oap.metrics.Metrics;
@@ -47,7 +48,8 @@ public class WebServicesTest {
         Resources.readString( getClass(), "ws.json" ).map( WsConfig::parse ).get() ) );
     private final WebServices wsHoconConf = new WebServices( server, Lists.of(
         Resources.readString( getClass(), "ws.conf" ).map( WsConfig::parse ).get() ) );
-    private PlainHttpRequestListener plainHttpRequestListener;
+
+    private ThreadService threadService;
 
     @BeforeClass
     public void startServer() {
@@ -56,16 +58,17 @@ public class WebServicesTest {
         ws.start();
         wsHoconConf.start();
 
-        plainHttpRequestListener = new PlainHttpRequestListener( server, Env.port() );
-        plainHttpRequestListener.start();
+        threadService = new ThreadService( "plain-http-listener", new PlainHttpListener( server, Env.port() ), null);
+        threadService.start();
     }
 
     @AfterClass
     public void stopServer() {
-        plainHttpRequestListener.stop();
+        threadService.stop();
         server.stop();
         ws.stop();
         wsHoconConf.stop();
+
         reset();
     }
 

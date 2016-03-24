@@ -25,6 +25,7 @@ package oap.http;
 
 
 import com.google.common.base.Throwables;
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.ThreadPoolExecutor;
 import oap.io.Closeables;
 import oap.metrics.Metrics;
@@ -36,8 +37,6 @@ import org.apache.http.impl.DefaultBHttpServerConnectionFactory;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.protocol.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
@@ -51,14 +50,14 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author Vladimir Kirichenko <vladimir.kirichenko@gmail.com>
  */
+@Slf4j
 public class Server implements HttpServer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( Server.class );
-    private static final UriHttpRequestHandlerMapper MAPPER = new UriHttpRequestHandlerMapper();
     private static final DefaultBHttpServerConnectionFactory CONNECTION_FACTORY =
         DefaultBHttpServerConnectionFactory.INSTANCE;
 
     private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
+    private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
         .add( new ResponseDate() )
         .add( new ResponseServer( "OAP Server/1.0" ) )
@@ -67,7 +66,7 @@ public class Server implements HttpServer {
         .build(),
         DefaultConnectionReuseStrategy.INSTANCE,
         DefaultHttpResponseFactory.INSTANCE,
-        MAPPER );
+        mapper );
 
     private final ThreadPoolExecutor threadPoolExecutor;
 
@@ -75,21 +74,21 @@ public class Server implements HttpServer {
         this.threadPoolExecutor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS,
             new SynchronousQueue<>() );
 
-        MAPPER.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
+        mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
     }
 
     @Override
     public void bind( final String context, final Cors cors, final Handler handler,
                       final Protocol protocol ) {
         final String location = "/" + context + "/*";
-        MAPPER.register( location, new BlockingHandlerAdapter( "/" + context, handler, cors, protocol ) );
+        mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, cors, protocol ) );
 
-        LOGGER.info( handler + " bound to " + location );
+        log.info( handler + " bound to " + location );
     }
 
     @Override
     public void unbind( final String context ) {
-        MAPPER.unregister( "/" + context + "/*" );
+        mapper.unregister( "/" + context + "/*" );
     }
 
     public void start() {
@@ -106,33 +105,33 @@ public class Server implements HttpServer {
                 try {
                     connections.put( connectionName, connection );
 
-                    LOGGER.trace( "connection accepted: " + connection );
+                    log.trace( "connection accepted: " + connection );
 
                     final HttpContext httpContext = createHttpContext( socket );
 
                     Thread.currentThread().setName( connection.toString() );
 
-                    LOGGER.trace( "start handling " + connectionName );
+                    log.trace( "start handling " + connectionName );
                     while( !Thread.interrupted() && connection.isOpen() )
                         httpService.handleRequest( connection, httpContext );
                 } catch( SocketException e ) {
                     if( "Socket closed".equals( e.getMessage() ) )
-                        LOGGER.trace( "se:connection closed: " + connectionName, e );
+                        log.trace( "se:connection closed: " + connectionName, e );
                     else if( "Connection reset".equals( e.getMessage() ) )
-                        LOGGER.warn( "Connection reset: " + connectionName );
-                    else LOGGER.error( e.getMessage(), e );
+                        log.warn( "Connection reset: " + connectionName );
+                    else log.error( e.getMessage(), e );
                 } catch( ConnectionClosedException e ) {
-                    LOGGER.trace( "cce:connection closed: " + connectionName, e );
+                    log.trace( "cce:connection closed: " + connectionName, e );
                 } catch( Throwable e ) {
-                    LOGGER.error( e.getMessage(), e );
+                    log.error( e.getMessage(), e );
                 } finally {
                     connections.remove( connectionName );
                     Closeables.close( connection );
-                    LOGGER.trace( "f:connection closed: " + connectionName );
+                    log.trace( "f:connection closed: " + connectionName );
                 }
             } );
         } catch( final IOException e ) {
-            LOGGER.warn( e.getMessage() );
+            log.warn( e.getMessage() );
 
             connections.values().forEach( Closeables::close );
             connections.clear();
@@ -146,7 +145,7 @@ public class Server implements HttpServer {
 
         Closeables.close( threadPoolExecutor );
 
-        LOGGER.info( "server gone down" );
+        log.info( "server gone down" );
     }
 
     private static HttpContext createHttpContext( final Socket socket ) {
