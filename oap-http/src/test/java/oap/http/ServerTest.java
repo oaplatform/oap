@@ -29,17 +29,14 @@ public class ServerTest {
 
     @BeforeTest
     public void setUp() {
-        server.bind( "test", new Cors(), ( request, response ) -> {
+        server.bind( "test", Cors.DEFAULT, ( request, response ) -> {
 
             System.out.println( "Base URL " + request.baseUrl );
-
-            System.out.println( "------------------------" );
             System.out.println( "Headers:" );
 
             for( final Header header : request.headers ) {
                 System.out.println( header.getName() + " " + header.getValue() );
             }
-            System.out.println( "------------------------" );
 
             response.respond( new HttpResponse( 200 ) );
         }, Protocol.HTTPS );
@@ -49,11 +46,8 @@ public class ServerTest {
     }
 
     @Test
-    public void test() throws KeyStoreException, IOException, CertificateException,
+    public void testShouldVerifySSLCommunication() throws KeyStoreException, IOException, CertificateException,
         NoSuchAlgorithmException, KeyManagementException, UnrecoverableKeyException {
-        final HttpGet httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
-
-        System.out.println( httpGet.getRequestLine().getUri() );
 
         final KeyStore keyStore = KeyStore.getInstance( "JKS" );
         keyStore.load( Resources.getResource( "client_truststore.jks" ).openStream(),
@@ -69,6 +63,8 @@ public class ServerTest {
 
         final CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext )
             .setSSLHostnameVerifier( NoopHostnameVerifier.INSTANCE ).build();
+
+        final HttpGet httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
 
         final CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute( httpGet );
 

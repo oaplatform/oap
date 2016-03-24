@@ -18,7 +18,6 @@ public class SecureHttpListener extends AbstractHttpListener {
 
             log.info( "Ready to accept ssl connections on [{}]", serverSocket.getLocalSocketAddress() );
 
-
             return serverSocket;
         } );
     }
