@@ -21,42 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.util;
 
-import java.util.function.Consumer;
-import java.util.function.Function;
+package oap.concurrent;
 
-public class Functions {
+import org.testng.annotations.Test;
 
-   @SuppressWarnings( "unchecked" )
-   public static class empty {
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-      private static final Consumer<?> CONSUMER = v -> {
-      };
+import static org.assertj.core.api.Assertions.assertThat;
 
-      public static <T> Consumer<T> consume() {
-         return ( Consumer<T> ) CONSUMER;
-      }
-
-      public static Runnable run = () -> {
-      };
-
-      static <I, R> Function<I, R> id() {
-         return i -> ( R ) i;
-      }
-   }
-
-   @FunctionalInterface
-   public interface TriFunction<T, U, S, R> {
-
-      /**
-       * Applies this function to the given arguments.
-       *
-       * @param t the first function argument
-       * @param u the second function argument
-       * @param s the third function argument
-       * @return the function result
-       */
-      R apply( T t, U u, S s );
+public class LimitedTimeExecutorTest {
+   @Test
+   public void execute() {
+      AtomicInteger success = new AtomicInteger();
+      AtomicInteger timeout = new AtomicInteger();
+      LimitedTimeExecutor executor = new LimitedTimeExecutor( 100, TimeUnit.MILLISECONDS )
+         .onSuccess( success::incrementAndGet )
+         .onTimeout( timeout::incrementAndGet );
+      executor.execute( () -> Threads.sleepSafely( 10 ) );
+      assertThat( success.get() ).isEqualTo( 1 );
+      executor.execute( () -> Threads.sleepSafely( 200 ) );
+      assertThat( success.get() ).isEqualTo( 1 );
+      assertThat( timeout.get() ).isEqualTo( 1 );
    }
 }
