@@ -72,7 +72,9 @@ public class Kernel {
                 } else instance = RemoteInvocationHandler.proxy(
                     service.remoteUrl,
                     service.remoteName,
-                    reflect.underlying
+                    reflect.underlying,
+                    service.certificateLocation,
+                    service.certificatePassword
                 );
                 Application.register( serviceName, instance );
                 if( service.supervision.supervise )
