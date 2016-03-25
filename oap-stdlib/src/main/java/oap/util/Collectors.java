@@ -56,7 +56,7 @@ public class Collectors {
         public CollectorImpl( Supplier<A> supplier, BiConsumer<A, T> accumulator,
                               BinaryOperator<A> combiner,
                               Set<Characteristics> characteristics ) {
-            this(supplier, accumulator, combiner, Functions.castingIdentity(), characteristics);
+            this(supplier, accumulator, combiner, Functions.empty.id(), characteristics);
         }
 
         @Override
