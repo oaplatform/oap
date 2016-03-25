@@ -34,15 +34,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class LimitedTimeExecutorTest {
    @Test
    public void execute() {
+      assertExecution( 1, 0, 0, () -> Threads.sleepSafely( 10 ) );
+      assertExecution( 0, 1, 0, () -> Threads.sleepSafely( 200 ) );
+      assertExecution( 0, 0, 1, () -> {
+         throw new RuntimeException( "expected" );
+      } );
+   }
+
+   private void assertExecution( int expectedSuccess, int expectedTimeout, int expectedError, Runnable code ) {
       AtomicInteger success = new AtomicInteger();
       AtomicInteger timeout = new AtomicInteger();
+      AtomicInteger error = new AtomicInteger();
       LimitedTimeExecutor executor = new LimitedTimeExecutor( 100, TimeUnit.MILLISECONDS )
          .onSuccess( success::incrementAndGet )
+         .onError( error::incrementAndGet )
          .onTimeout( timeout::incrementAndGet );
-      executor.execute( () -> Threads.sleepSafely( 10 ) );
-      assertThat( success.get() ).isEqualTo( 1 );
-      executor.execute( () -> Threads.sleepSafely( 200 ) );
-      assertThat( success.get() ).isEqualTo( 1 );
-      assertThat( timeout.get() ).isEqualTo( 1 );
+      try {
+         executor.execute( code );
+      } catch( RuntimeException e ) {
+         assertThat( e.getMessage() ).isEqualTo( "expected" );
+      }
+      assertThat( success.get() ).isEqualTo( expectedSuccess );
+      assertThat( timeout.get() ).isEqualTo( expectedTimeout );
+      assertThat( error.get() ).isEqualTo( expectedError );
    }
 }

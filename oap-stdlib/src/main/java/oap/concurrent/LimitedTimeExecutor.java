@@ -36,6 +36,7 @@ public class LimitedTimeExecutor {
    private final TimeUnit unit;
    private Runnable onTimeout = Functions.empty.run;
    private Runnable onSuccess = Functions.empty.run;
+   private Runnable onError = Functions.empty.run;
 
    public LimitedTimeExecutor() {
       this( Long.MAX_VALUE, TimeUnit.MILLISECONDS );
@@ -53,6 +54,11 @@ public class LimitedTimeExecutor {
 
    public LimitedTimeExecutor onSuccess( Runnable onSuccess ) {
       this.onSuccess = onSuccess;
+      return this;
+   }
+
+   public LimitedTimeExecutor onError( Runnable onError ) {
+      this.onError = onError;
       return this;
    }
 
@@ -84,6 +90,7 @@ public class LimitedTimeExecutor {
       } catch( InterruptedException | TimeoutException e ) {
          onTimeout.run();
       } catch( ExecutionException e ) {
+         onError.run();
          throw Throwables.propagate( e.getCause() );
       }
    }
