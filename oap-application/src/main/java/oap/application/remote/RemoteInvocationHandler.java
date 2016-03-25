@@ -134,8 +134,8 @@ public class RemoteInvocationHandler implements InvocationHandler {
 
             return sslContext;
         } catch( final Exception e ) {
-            log.error( "An error occurred while setting up SSL Context for cetificate [{}]",
-                certificateLocation, e );
+            log.error( "An error occurred while setting up SSL Context for certificate [{}]",
+                certificateLocation == null ? null : certificateLocation.toString(), e );
             throw new RuntimeException( e );
         }
     }
