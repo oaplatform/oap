@@ -61,8 +61,7 @@ public class ServerTest {
         final SSLContext sslContext = SSLContext.getInstance( "TLS" );
         sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
 
-        final CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext )
-            .setSSLHostnameVerifier( NoopHostnameVerifier.INSTANCE ).build();
+        final CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
 
         final HttpGet httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
 

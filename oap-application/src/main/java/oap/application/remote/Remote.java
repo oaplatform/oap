@@ -54,7 +54,7 @@ public class Remote implements Handler {
     }
 
     public void start() {
-        server.bind( context, cors, this, Protocol.HTTP );
+        server.bind( context, cors, this, Protocol.HTTPS );
     }
 
     @Override
