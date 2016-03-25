@@ -100,6 +100,8 @@ public class Module {
         public ArrayList<String> dependsOn = new ArrayList<>();
         public URI remoteUrl;
         public String remoteName;
+        public Path certificateLocation;
+        public String certificatePassword;
 
         public Service() {
         }

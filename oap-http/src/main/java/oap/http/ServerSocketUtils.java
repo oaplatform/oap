@@ -20,7 +20,7 @@ final class ServerSocketUtils {
     private ServerSocketUtils() {
     }
 
-    public static ServerSocket createLocalSocket( final int port ) {
+    static ServerSocket createLocalSocket( final int port ) {
         return handleSocketExceptions( () -> {
                 final ServerSocket serverSocket = new ServerSocket( port, 0, InetAddress.getByName( "127.0.0.1" ) );
                 serverSocket.setReuseAddress( true );
@@ -30,7 +30,7 @@ final class ServerSocketUtils {
         );
     }
 
-    public static ServerSocket createPlainSocket( final int port ) {
+    static ServerSocket createPlainSocket( final int port ) {
         return handleSocketExceptions( () -> {
             final ServerSocket serverSocket = new ServerSocket();
             serverSocket.setReuseAddress( true );
@@ -40,8 +40,8 @@ final class ServerSocketUtils {
         }, port );
     }
 
-    public static ServerSocket createSecureSocket( final Path keystoreLocation, final String keystorePassword,
-                                                   final int port ) {
+    static ServerSocket createSecureSocket( final Path keystoreLocation, final String keystorePassword,
+                                            final int port ) {
         return handleSocketExceptions( () -> {
             final KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
             keyStore.load( Resources.getResource( keystoreLocation.toString() ).openStream(),

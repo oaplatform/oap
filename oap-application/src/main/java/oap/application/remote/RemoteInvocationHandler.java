@@ -24,17 +24,26 @@
 package oap.application.remote;
 
 import com.google.common.base.Throwables;
+import com.google.common.io.Resources;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.SimpleAsyncHttpClient;
 import oap.http.SimpleClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClients;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.nio.file.Path;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,49 +52,91 @@ import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class RemoteInvocationHandler implements InvocationHandler {
+
+    private final URI uri;
     private final FST fst;
+    private final String service;
+    private final CloseableHttpAsyncClient closeableHttpAsyncClient;
 
-    private URI uri;
-    private String service;
-
-    public RemoteInvocationHandler( URI uri, String service ) {
+    private RemoteInvocationHandler( final URI uri, final String service,
+                                     final Path certificateLocation, final String certificatePassword ) {
         this.uri = uri;
         this.service = service;
         this.fst = new FST();
-    }
+        this.closeableHttpAsyncClient = HttpAsyncClients
+            .custom()
+            .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
+            .setMaxConnPerRoute( 1000 )
+            .setMaxConnTotal( 10000 )
+            .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
+            .setDefaultRequestConfig( RequestConfig.custom().setRedirectsEnabled( false ).build() )
+            .build();
 
-    public static Object proxy( URI uri, String service, Class<?> clazz ) {
-        return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{ clazz },
-            new RemoteInvocationHandler( uri, service ) );
+        closeableHttpAsyncClient.start();
     }
 
     @Override
-    public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
-        Parameter[] parameters = method.getParameters();
-        List<RemoteInvocation.Argument> arguments = new ArrayList<>();
+    public Object invoke( final Object proxy, final Method method, final Object[] args ) throws Throwable {
+        final Parameter[] parameters = method.getParameters();
+        final List<RemoteInvocation.Argument> arguments = new ArrayList<>();
+
         for( int i = 0; i < parameters.length; i++ ) {
-            Parameter parameter = parameters[i];
-            arguments.add( new RemoteInvocation.Argument( parameter.getName(), parameter.getType(), args[i] ) );
+            arguments.add( new RemoteInvocation.Argument( parameters[i].getName(),
+                parameters[i].getType(), args[i] ) );
         }
 
         try {
-            HttpPost post = new HttpPost( uri );
+            final HttpPost post = new HttpPost( uri );
+
             post.setEntity( new ByteArrayEntity(
                 fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) ),
                 APPLICATION_OCTET_STREAM
             ) );
-            SimpleClient.Response response = SimpleAsyncHttpClient.execute( post );
+
+            final SimpleClient.Response response = SimpleAsyncHttpClient.execute( closeableHttpAsyncClient, post );
             switch( response.code ) {
                 case HTTP_OK:
                     return method.getReturnType().equals( void.class ) ? null :
                         fst.conf.asObject( response.raw );
                 default:
-                    throw new RemoteInvocationException( "code: " + response.code + ", message: " + response.reasonPhrase + "\n" + response.body );
+                    throw new RemoteInvocationException( "code: " + response.code + ", message: " +
+                        response.reasonPhrase + "\n" + response.body );
             }
-        } catch( Exception e ) {
-            if( log.isTraceEnabled() ) log.trace( e.getMessage(), e );
-            else log.error( e.getMessage() );
+        } catch( final Exception e ) {
+            if( log.isTraceEnabled() ) {
+                log.trace( e.getMessage(), e );
+            } else {
+                log.error( e.getMessage() );
+            }
             throw Throwables.propagate( e );
+        }
+    }
+
+    public static Object proxy( final URI uri, final String service, final Class<?> clazz,
+                                final Path certificateLocation, final String certificatePassword ) {
+        return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{ clazz },
+            new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword ) );
+    }
+
+    private static SSLContext createSSLContext( final Path certificateLocation, final String certificatePassword ) {
+        try {
+            final KeyStore keyStore = KeyStore.getInstance( "JKS" );
+            keyStore.load( Resources.getResource( certificateLocation.toString() ).openStream(),
+                certificatePassword.toCharArray() );
+
+            final TrustManagerFactory trustManagerFactory =
+                TrustManagerFactory.getInstance( TrustManagerFactory
+                    .getDefaultAlgorithm() );
+            trustManagerFactory.init( keyStore );
+
+            final SSLContext sslContext = SSLContext.getInstance( "TLS" );
+            sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
+
+            return sslContext;
+        } catch( final Exception e ) {
+            log.error( "An error occurred while setting up SSL Context for certificate [{}]",
+                certificateLocation == null ? null : certificateLocation.toString(), e );
+            throw new RuntimeException( e );
         }
     }
 }
