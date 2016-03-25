@@ -28,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.io.Files;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -36,6 +35,7 @@ import oap.util.Pair;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Optional;
@@ -88,7 +88,7 @@ public class BinderTest extends AbstractTest {
         assertBind( int.class, 10 );
         assertBind( double.class, 10.3 );
         assertBind( char.class, 'a' );
-        assertBind( Path.class, Files.path( "/var/lib" ) );
+        assertBind( Path.class, Paths.get( "/var/lib" ) );
     }
 
     @Test

@@ -35,6 +35,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Properties;
 
@@ -55,7 +56,7 @@ public class StartupScriptsMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Properties properties = project.getProperties();
         String serviceBin = properties.getOrDefault( "oap.service.home", "/opt/oap-service" ) + "/bin";
-        Path functions = Files.path( destinationDirectory, serviceBin, "functions.sh" );
+        Path functions = Paths.get( destinationDirectory, serviceBin, "functions.sh" );
         Resources.readString( getClass(), "/bin/functions.sh" )
             .ifPresent( value -> Files.writeString( functions, value ) );
         PosixFilePermission[] permissions = {
@@ -69,8 +70,7 @@ public class StartupScriptsMojo extends AbstractMojo {
 
     private void script( String script, String preffix, String suffix, PosixFilePermission... permissions ) {
         Properties properties = project.getProperties();
-        Path path = Files.path( destinationDirectory, preffix,
-            properties.getOrDefault( "oap.service.name", "oap-service" ) + suffix );
+        Path path = Paths.get( destinationDirectory, preffix, properties.getOrDefault( "oap.service.name", "oap-service" ) + suffix );
         Resources.readString( getClass(), script )
             .ifPresent( value -> Files.writeString( path,
                 Strings.substitute( value, properties::getProperty ) ) );

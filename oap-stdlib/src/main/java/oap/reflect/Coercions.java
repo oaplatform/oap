@@ -23,7 +23,6 @@
  */
 package oap.reflect;
 
-import oap.io.Files;
 import oap.util.Dates;
 import oap.util.Pair;
 import org.joda.time.DateTime;
@@ -34,6 +33,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -300,7 +300,7 @@ public class Coercions {
         @Override
         public Object apply( Object value ) {
             if( value instanceof Path ) return value;
-            else if( value instanceof String ) return Files.path( (String) value );
+            else if( value instanceof String ) return Paths.get( (String) value );
             else throw new ReflectException( "cannot cast " + value + " to Path.class" );
         }
     }

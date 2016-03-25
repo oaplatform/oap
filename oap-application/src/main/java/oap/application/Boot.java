@@ -25,9 +25,9 @@ package oap.application;
 
 import oap.cli.Cli;
 import oap.cli.Option;
-import oap.io.Files;
 import org.slf4j.Logger;
 
+import java.nio.file.Paths;
 import java.util.Optional;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -58,7 +58,7 @@ public class Boot {
         } );
         try {
             kernel = new Kernel( Module.fromClassPath() );
-            kernel.start( Files.path( config ), configdir.map( Files::path ) );
+            kernel.start( Paths.get( config ), configdir.map( ( path ) -> Paths.get( path ) ) );
             logger.debug( "started" );
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );

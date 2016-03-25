@@ -29,6 +29,8 @@ import oap.util.Lists;
 import oap.util.Sets;
 import org.testng.annotations.Test;
 
+import java.nio.file.Paths;
+
 import static java.nio.file.attribute.PosixFilePermission.*;
 import static oap.testng.Asserts.assertFile;
 import static org.testng.Assert.assertEquals;
@@ -71,7 +73,7 @@ public class FilesTest extends AbstractTest {
 
     @Test
     public void path() {
-        assertEquals( Files.path( "a", "b/c", "d" ), Files.path( "a", "b", "c", "d" ) );
+        assertEquals( Paths.get( "a", "b/c", "d" ), Paths.get( "a", "b", "c", "d" ) );
     }
 
     @Test

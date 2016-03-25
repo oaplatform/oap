@@ -23,13 +23,13 @@
  */
 package oap.logstream;
 
-import oap.io.Files;
 import oap.util.Stream;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.stream.IntStream;
 
 public class Timestamp {
@@ -79,7 +79,7 @@ public class Timestamp {
     }
 
     public static Path path( Path directory, String timestamp, String filename, String ext ) {
-        Path path = Files.path( filename );
+        Path path = Paths.get( filename );
         return ( path.getParent() != null ? directory.resolve( path.getParent() ) : directory )
             .resolve( Timestamp.directoryName( timestamp ) )
             .resolve( path.getFileName() + "-" + timestamp + "." + ext );

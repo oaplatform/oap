@@ -6,6 +6,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
@@ -35,7 +36,7 @@ public class FileWalkerTest extends AbstractTest {
     @Test
     public void testWalkFileTree_basePath_not_found() throws Exception {
         final MockVisitor visitor = new MockVisitor();
-        new FileWalker( Files.path( "/aaa" ), "*.txt" ).walkFileTree( visitor );
+        new FileWalker( Paths.get( "/aaa" ), "*.txt" ).walkFileTree( visitor );
 
         assertEquals( visitor.files, emptyList() );
     }

@@ -31,10 +31,10 @@ import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.Serializers;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import oap.io.Files;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class PathModule {
     public static class PathSerializer extends StdSerializer<Path> {
@@ -69,7 +69,7 @@ public class PathModule {
         @Override
         public Path deserialize( JsonParser p,
                                  DeserializationContext ctxt ) throws IOException {
-            return Files.path( p.getValueAsString() );
+            return Paths.get( p.getValueAsString() );
         }
     }
 

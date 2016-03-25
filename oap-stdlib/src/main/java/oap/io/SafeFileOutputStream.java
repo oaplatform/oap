@@ -27,6 +27,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class SafeFileOutputStream extends FileOutputStream {
     private final Path path;
@@ -45,7 +46,7 @@ public class SafeFileOutputStream extends FileOutputStream {
     @Override
     public void close() throws IOException {
         super.close();
-        final Path unsafePath = Files.path( this.path + ".unsafe" );
+        final Path unsafePath = Paths.get( this.path + ".unsafe" );
         if( removeEmpty && unsafePath.toFile().length() == 0 )
             Files.delete( unsafePath );
         else

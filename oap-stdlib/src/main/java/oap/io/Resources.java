@@ -34,6 +34,7 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -51,7 +52,7 @@ public final class Resources {
     }
 
     public static Optional<Path> filePath( Class<?> contextClass, String name ) {
-        return url( contextClass, name ).map( u -> Files.path( path( u ) ) );
+        return url( contextClass, name ).map( u -> Paths.get( path( u ) ) );
     }
 
     public static Optional<URL> url( Class<?> contextClass, String name ) {
