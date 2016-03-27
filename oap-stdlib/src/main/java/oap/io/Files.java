@@ -37,7 +37,6 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -47,14 +46,14 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 @Slf4j
 public final class Files {
+   @Deprecated
    public static ArrayList<Path> fastWildcard( String basePath, String wildcard ) {
-      return fastWildcard( Paths.get( basePath ), wildcard );
+      return wildcard( Paths.get( basePath ), wildcard );
    }
 
+   @Deprecated
    public static ArrayList<Path> fastWildcard( Path basePath, String wildcard ) {
-      final ArrayList<Path> result = new ArrayList<>();
-      new FileWalker( basePath, wildcard ).walkFileTree( result::add );
-      return result;
+      return wildcard( basePath, wildcard );
    }
 
    public static ArrayList<Path> wildcard( String basePath, String wildcard ) {
@@ -62,24 +61,9 @@ public final class Files {
    }
 
    public static ArrayList<Path> wildcard( Path basePath, String wildcard ) {
-      try {
-         PathMatcher pm = FileSystems.getDefault()
-            .getPathMatcher( ( "glob:" + basePath + File.separator + wildcard ).replace( "\\", "\\\\" ) );
-         ArrayList<Path> result = new ArrayList<>();
-         SimpleFileVisitor2<Path> visitor = new SimpleFileVisitor2<Path>() {
-            @Override
-            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException {
-               if( pm.matches( file ) ) result.add( file );
-               return super.visitFile( file, attrs );
-            }
-         };
-         if( basePath.toFile().exists() && basePath.toFile().canExecute() )
-            java.nio.file.Files.walkFileTree( basePath, visitor );
-         Collections.sort( result );
-         return result;
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
+      final ArrayList<Path> result = new ArrayList<>();
+      new FileWalker( basePath, wildcard ).walkFileTree( result::add );
+      return result;
    }
 
    @SuppressWarnings( "unchecked" )

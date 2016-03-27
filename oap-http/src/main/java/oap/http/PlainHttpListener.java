@@ -2,21 +2,32 @@ package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 
 @Slf4j
 public class PlainHttpListener extends AbstractHttpListener {
 
-    public PlainHttpListener( final HttpServer httpServer, final int port ) {
-        super( httpServer, () -> {
-            log.info( "Binding to [{}] ...", port );
+   private final int port;
 
-            final ServerSocket serverSocket = ServerSocketUtils.createPlainSocket( port );
+   public PlainHttpListener( HttpServer server, int port ) {
+      super( server );
+      this.port = port;
+   }
 
-            log.info( "Ready to accept plain connections on [{}]", serverSocket.getLocalSocketAddress() );
+   @Override
+   protected ServerSocket createSocket() {
+      try {
+         ServerSocket serverSocket = new ServerSocket();
+         serverSocket.setReuseAddress( true );
+         serverSocket.setSoTimeout( timeout );
+         serverSocket.bind( new InetSocketAddress( port ) );
 
-            return serverSocket;
-
-        } );
-    }
+         return serverSocket;
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
+   }
 }

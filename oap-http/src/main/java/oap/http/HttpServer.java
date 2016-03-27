@@ -30,5 +30,5 @@ public interface HttpServer {
 
     void unbind( String context );
 
-    void accept( Socket socket);
+    void accepted( Socket socket);
 }

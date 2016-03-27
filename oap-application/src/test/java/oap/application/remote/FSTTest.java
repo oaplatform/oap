@@ -25,10 +25,11 @@
 package oap.application.remote;
 
 import oap.testng.AbstractTest;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Optional;
+
+import static org.testng.Assert.assertEquals;
 
 /**
  * Created by Igor Petrenko on 15.01.2016.
@@ -38,7 +39,7 @@ public class FSTTest extends AbstractTest {
     public void testOptional() {
         final FST fst = new FST();
 
-        Assert.assertEquals( fst.conf.asObject( fst.conf.asByteArray( Optional.empty() ) ), Optional.empty() );
-        Assert.assertEquals( fst.conf.asObject( fst.conf.asByteArray( Optional.of( "1" ) ) ), Optional.of( "1" ) );
+        assertEquals( fst.conf.asObject( fst.conf.asByteArray( Optional.empty() ) ), Optional.empty() );
+        assertEquals( fst.conf.asObject( fst.conf.asByteArray( Optional.of( "1" ) ) ), Optional.of( "1" ) );
     }
 }

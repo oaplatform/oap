@@ -3,20 +3,32 @@ package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 
 @Slf4j
 public class LocalHttpListener extends AbstractHttpListener {
 
-    public LocalHttpListener( final HttpServer httpServer, final int port ) {
-        super( httpServer, () -> {
-            log.info( "Binding port [{}]...", port );
+   private final int port;
 
-            final ServerSocket serverSocket = ServerSocketUtils.createLocalSocket(port);
+   public LocalHttpListener( HttpServer server, int port ) {
+      super( server );
+      this.port = port;
+   }
 
-            log.info( "Ready to accept localhost connections on [{}]", serverSocket.getLocalSocketAddress() );
+   @Override
+   protected ServerSocket createSocket() {
+      try {
+         ServerSocket serverSocket = new ServerSocket();
+         serverSocket.setReuseAddress( true );
+         serverSocket.setSoTimeout( timeout );
+         serverSocket.bind( new InetSocketAddress( "localhost", port ) );
 
-            return serverSocket;
-        } );
-    }
+         return serverSocket;
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
+   }
 }

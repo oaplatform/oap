@@ -6,40 +6,36 @@ import oap.io.Closeables;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.function.Supplier;
+import java.net.SocketTimeoutException;
 
 @Slf4j
-class AbstractHttpListener implements Runnable, Closeable {
+public abstract class AbstractHttpListener implements Runnable, Closeable {
 
-    private final ServerSocket serverSocket;
-    private final HttpServer httpServer;
+   private ServerSocket serverSocket;
+   private final HttpServer server;
+   protected int timeout = 1000;
 
-    AbstractHttpListener( final HttpServer httpServer,
-                          final Supplier<ServerSocket> socketSupplier ) {
-        this.httpServer = httpServer;
-        this.serverSocket = socketSupplier.get();
-    }
+   AbstractHttpListener( HttpServer server ) {
+      this.server = server;
+   }
 
-    @Override
-    public void run() {
-        while( !Thread.interrupted() && !serverSocket.isClosed() ) {
-            try {
-                final Socket socket = serverSocket.accept();
+   protected abstract ServerSocket createSocket();
 
-                httpServer.accept( socket );
-            } catch( final IOException e ) {
-                log.error( "An error occurred when processing socket connection on port [{}]",
-                    serverSocket.getLocalPort() );
-                close();
-            }
-        }
-    }
+   @Override
+   public void run() {
+      serverSocket = createSocket();
+      log.debug( "ready to rock [{}]", serverSocket );
 
-    @Override
-    public void close() {
-        Closeables.close( serverSocket );
+      while( !Thread.interrupted() && !serverSocket.isClosed() ) try {
+         server.accepted( serverSocket.accept() );
+      } catch( final SocketTimeoutException ignore ) {
+      } catch( final IOException e ) {
+         log.error( e.getMessage(), e );
+      }
+   }
 
-        log.info( "Socket is closed" );
-    }
+   @Override
+   public void close() {
+      Closeables.close( serverSocket );
+   }
 }

@@ -77,7 +77,7 @@ public class NioServer implements oap.http.HttpServer {
     }
 
     @Override
-    public void accept( Socket socket ) {
+    public void accepted( Socket socket ) {
         throw new UnsupportedOperationException("NioServer is not yet supported");
     }
 

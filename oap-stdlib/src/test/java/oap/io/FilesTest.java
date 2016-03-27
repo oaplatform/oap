@@ -33,80 +33,64 @@ import java.nio.file.Paths;
 
 import static java.nio.file.attribute.PosixFilePermission.*;
 import static oap.testng.Asserts.assertFile;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 
 
 public class FilesTest extends AbstractTest {
-    @Test
-    public void wildcard() {
-        Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
-        assertEquals( Files.wildcard( Env.tmp( "/wildcard" ), "*.txt" ),
-            Lists.of( Env.tmpPath( "/wildcard/1.txt" ) ) );
-        assertEquals( Files.wildcard( "/aaa", "*.txt" ), Lists.empty() );
+   @Test
+   public void wildcard() {
+      Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
+      assertThat( Files.wildcard( Env.tmp( "/wildcard" ), "*.txt" ) )
+         .containsOnly( Env.tmpPath( "/wildcard/1.txt" ) );
+      assertThat( Files.wildcard( "/aaa", "*.txt" ) ).isEmpty();
 
-        Files.writeString( Env.tmp( "/wildcard/a/1.txt" ), "1" );
-        Files.writeString( Env.tmp( "/wildcard/b/1.txt" ), "1" );
-        Files.wildcard( Env.tmp( "/wildcard" ), "*/*.txt" ).forEach( System.out::println );
-        assertEquals( Files.wildcard( Env.tmp( "/wildcard" ), "*/*.txt" ),
-            Lists.of(
-                Env.tmpPath( "/wildcard/a/1.txt" ),
-                Env.tmpPath( "/wildcard/b/1.txt" )
-            ) );
-    }
+      Files.writeString( Env.tmp( "/wildcard/a/1.txt" ), "1" );
+      Files.writeString( Env.tmp( "/wildcard/b/1.txt" ), "1" );
+      Files.wildcard( Env.tmp( "/wildcard" ), "*/*.txt" ).forEach( System.out::println );
+      assertThat( Files.wildcard( Env.tmp( "/wildcard" ), "*/*.txt" ) )
+         .containsOnly(
+            Env.tmpPath( "/wildcard/a/1.txt" ),
+            Env.tmpPath( "/wildcard/b/1.txt" )
+         );
+   }
 
-    @Test
-    public void fast_wildcard() {
-        Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
-        assertEquals( Files.fastWildcard( Env.tmp( "/wildcard" ), "*.txt" ),
-            Lists.of( Env.tmpPath( "/wildcard/1.txt" ) ) );
-        assertEquals( Files.fastWildcard( "/aaa", "*.txt" ), Lists.empty() );
+   @Test
+   public void path() {
+      assertEquals( Paths.get( "a", "b/c", "d" ), Paths.get( "a", "b", "c", "d" ) );
+   }
 
-        Files.writeString( Env.tmp( "/wildcard/a/1.txt" ), "1" );
-        Files.writeString( Env.tmp( "/wildcard/b/1.txt" ), "1" );
-        Files.fastWildcard( Env.tmp( "/wildcard" ), "*/*.txt" ).forEach( System.out::println );
-        assertEquals( Files.fastWildcard( Env.tmp( "/wildcard" ), "*/*.txt" ),
-            Lists.of(
-                Env.tmpPath( "/wildcard/a/1.txt" ),
-                Env.tmpPath( "/wildcard/b/1.txt" )
-            ) );
-    }
+   @Test
+   public void copy() {
+      Files.writeString( Env.tmpPath( "src/a/1.txt" ), "1" );
+      Files.writeString( Env.tmpPath( "src/a/2.txt" ), "1" );
+      Files.writeString( Env.tmpPath( "src/2.txt" ), "${x}" );
+      Files.setPosixPermissions( Env.tmpPath( "src/2.txt" ), OWNER_EXECUTE, OWNER_READ, OWNER_WRITE );
 
-    @Test
-    public void path() {
-        assertEquals( Paths.get( "a", "b/c", "d" ), Paths.get( "a", "b", "c", "d" ) );
-    }
+      Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "all" ) );
+      assertFile( Env.tmpPath( "all/a/1.txt" ) ).hasContent( "1" );
+      assertFile( Env.tmpPath( "all/a/2.txt" ) ).hasContent( "1" );
+      assertFile( Env.tmpPath( "all/2.txt" ) ).hasContent( "${x}" );
+      assertEquals( Files.getPosixPermissions( Env.tmpPath( "all/2.txt" ) ),
+         Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
 
-    @Test
-    public void copy() {
-        Files.writeString( Env.tmpPath( "src/a/1.txt" ), "1" );
-        Files.writeString( Env.tmpPath( "src/a/2.txt" ), "1" );
-        Files.writeString( Env.tmpPath( "src/2.txt" ), "${x}" );
-        Files.setPosixPermissions( Env.tmpPath( "src/2.txt" ), OWNER_EXECUTE, OWNER_READ, OWNER_WRITE );
+      Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "selected" ), Lists.of( "**/2.txt" ), Lists.of() );
+      assertFile( Env.tmpPath( "selected/a/2.txt" ) ).hasContent( "1" );
+      assertFile( Env.tmpPath( "selected/2.txt" ) ).hasContent( "${x}" );
+      assertEquals( Files.getPosixPermissions( Env.tmpPath( "selected/2.txt" ) ),
+         Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
 
-        Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "all" ) );
-        assertFile( Env.tmpPath( "all/a/1.txt" ) ).hasContent( "1" );
-        assertFile( Env.tmpPath( "all/a/2.txt" ) ).hasContent( "1" );
-        assertFile( Env.tmpPath( "all/2.txt" ) ).hasContent( "${x}" );
-        assertEquals( Files.getPosixPermissions( Env.tmpPath( "all/2.txt" ) ),
-            Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
+      Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "selected" ), Lists.of(), Lists.of( "**/1.txt" ) );
+      assertFile( Env.tmpPath( "selected/a/2.txt" ) ).hasContent( "1" );
+      assertFile( Env.tmpPath( "selected/2.txt" ) ).hasContent( "${x}" );
+      assertEquals( Files.getPosixPermissions( Env.tmpPath( "selected/2.txt" ) ),
+         Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
 
-        Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "selected" ), Lists.of( "**/2.txt" ), Lists.of() );
-        assertFile( Env.tmpPath( "selected/a/2.txt" ) ).hasContent( "1" );
-        assertFile( Env.tmpPath( "selected/2.txt" ) ).hasContent( "${x}" );
-        assertEquals( Files.getPosixPermissions( Env.tmpPath( "selected/2.txt" ) ),
-            Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
-
-        Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "selected" ), Lists.of(), Lists.of( "**/1.txt" ) );
-        assertFile( Env.tmpPath( "selected/a/2.txt" ) ).hasContent( "1" );
-        assertFile( Env.tmpPath( "selected/2.txt" ) ).hasContent( "${x}" );
-        assertEquals( Files.getPosixPermissions( Env.tmpPath( "selected/2.txt" ) ),
-            Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
-
-        Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "filtered" ), Lists.of( "**/2.txt" ), Lists.of(), true,
-            macro -> "x".equals( macro ) ? "y" : macro );
-        assertFile( Env.tmpPath( "filtered/a/2.txt" ) ).hasContent( "1" );
-        assertFile( Env.tmpPath( "filtered/2.txt" ) ).hasContent( "y" );
-        assertEquals( Files.getPosixPermissions( Env.tmpPath( "filtered/2.txt" ) ),
-            Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
-    }
+      Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "filtered" ), Lists.of( "**/2.txt" ), Lists.of(), true,
+         macro -> "x".equals( macro ) ? "y" : macro );
+      assertFile( Env.tmpPath( "filtered/a/2.txt" ) ).hasContent( "1" );
+      assertFile( Env.tmpPath( "filtered/2.txt" ) ).hasContent( "y" );
+      assertEquals( Files.getPosixPermissions( Env.tmpPath( "filtered/2.txt" ) ),
+         Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
+   }
 }

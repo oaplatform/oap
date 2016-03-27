@@ -28,36 +28,75 @@ import oap.json.Binder;
 import oap.json.Formatter;
 import oap.util.Pair;
 import oap.util.Strings;
+import org.assertj.core.api.AbstractAssert;
 import org.testng.Assert;
 
+import static oap.testng.Asserts.assertString;
+
 public class JsonAsserts {
-    public static void assertEquals( String actual, String expected ) {
-        Assert.assertEquals( Formatter.format( actual ), Formatter.format( expected ) );
-    }
+   @Deprecated
+   public static void assertEquals( String actual, String expected ) {
+      Assert.assertEquals( Formatter.format( actual ), Formatter.format( expected ) );
+   }
 
-    @SafeVarargs
-    public static void assertEqualsCanonical( Class<?> context, Class<?> clazz,
-        String actual, String expectedResourcePath,
-        Pair<String, Object>... substitutions ) {
-        assertEquals( Binder.json.canonicalize( clazz, actual ),
-            readCanonical( context, clazz, expectedResourcePath, substitutions ) );
-    }
+   @Deprecated
+   @SafeVarargs
+   public static void assertEqualsCanonical( Class<?> context, Class<?> clazz,
+                                             String actual, String expectedResourcePath,
+                                             Pair<String, Object>... substitutions ) {
+      assertEquals( Binder.json.canonicalize( clazz, actual ),
+         readCanonical( context, clazz, expectedResourcePath, substitutions ) );
+   }
 
-    public static void assertEqualsCanonical( Class<?> clazz, String actual, String expected ) {
-        assertEquals( Binder.json.canonicalize( clazz, actual ), Binder.json.canonicalize( clazz, expected ) );
-    }
+   @Deprecated
+   public static void assertEqualsCanonical( Class<?> clazz, String actual, String expected ) {
+      assertEquals( Binder.json.canonicalize( clazz, actual ), Binder.json.canonicalize( clazz, expected ) );
+   }
 
-    @SafeVarargs
-    public static String readCanonical( Class<?> context, Class<?> clazz, String resourcePath,
-        Pair<String, Object>... substitutions ) {
-        return Resources.readString( context, resourcePath )
-            .map( json -> Binder.json.canonicalize( clazz, Strings.substitute( json, substitutions ) ) )
-            .orElseThrow( () -> new AssertionError( "not found " + resourcePath ) );
-    }
+   @SafeVarargs
+   public static String readCanonical( Class<?> context, Class<?> clazz, String resourcePath,
+                                       Pair<String, Object>... substitutions ) {
+      return Resources.readString( context, resourcePath )
+         .map( json -> Binder.json.canonicalize( clazz, Strings.substitute( json, substitutions ) ) )
+         .orElseThrow( () -> new AssertionError( "not found " + resourcePath ) );
+   }
 
-    public static <T> T readObject( Class<?> context, Class<T> clazz, String resourcePath ) {
-        return Binder.json.unmarshalResource( context, clazz, resourcePath )
-            .orElseThrow( () -> new AssertionError( "not found " + resourcePath ) );
+   public static <T> T readObject( Class<?> context, Class<T> clazz, String resourcePath ) {
+      return Binder.json.unmarshalResource( context, clazz, resourcePath )
+         .orElseThrow( () -> new AssertionError( "not found " + resourcePath ) );
 
-    }
+   }
+
+   public static JsonAssertion assertJson( String json ) {
+      return new JsonAssertion( json );
+   }
+
+   public static class JsonAssertion extends AbstractAssert<JsonAssertion, String> {
+
+      public JsonAssertion( String json ) {
+         super( json, JsonAssertion.class );
+      }
+
+      public JsonAssertion isEqualTo( String expected ) {
+         assertString( Formatter.format( actual ) )
+            .isEqualTo( Formatter.format( expected ) );
+         return this;
+
+      }
+
+      @Override
+      public JsonAssertion isEqualTo( Object expected ) {
+         return isEqualTo( String.valueOf( expected ) );
+      }
+
+      public JsonAssertion isEqualCanonically( Class<?> clazz, String expected ) {
+         assertString( Binder.json.canonicalize( clazz, actual ) )
+            .isEqualTo( Binder.json.canonicalize( clazz, expected ) );
+         return this;
+      }
+
+      public JsonAssertion isEqualCanonically( Class<?> clazz, String expected, Pair<String, Object>... substitutions ) {
+         return isEqualCanonically( clazz, Strings.substitute( expected, substitutions ) );
+      }
+   }
 }
