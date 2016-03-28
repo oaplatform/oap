@@ -11,9 +11,9 @@ import java.net.SocketTimeoutException;
 @Slf4j
 public abstract class AbstractHttpListener implements Runnable, Closeable {
 
-   private ServerSocket serverSocket;
    private final HttpServer server;
    protected int timeout = 1000;
+   private ServerSocket serverSocket;
 
    AbstractHttpListener( HttpServer server ) {
       this.server = server;
@@ -25,13 +25,16 @@ public abstract class AbstractHttpListener implements Runnable, Closeable {
    public void run() {
       try {
          serverSocket = createSocket();
-         log.debug( "ready to rock [{}]", serverSocket );
 
-         while( !Thread.interrupted() && !serverSocket.isClosed() ) try {
-            server.accepted( serverSocket.accept() );
-         } catch( final SocketTimeoutException ignore ) {
-         } catch( final IOException e ) {
-            log.error( e.getMessage(), e );
+         if( serverSocket != null ) {
+            log.debug( "ready to rock [{}]", serverSocket );
+
+            while( !Thread.interrupted() && !serverSocket.isClosed() ) try {
+               server.accepted( serverSocket.accept() );
+            } catch( final SocketTimeoutException ignore ) {
+            } catch( final IOException e ) {
+               log.error( e.getMessage(), e );
+            }
          }
       } finally {
          close();

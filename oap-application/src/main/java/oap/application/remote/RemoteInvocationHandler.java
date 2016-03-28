@@ -63,11 +63,13 @@ public class RemoteInvocationHandler implements InvocationHandler {
    private final FST fst;
    private final String service;
    private final CloseableHttpAsyncClient closeableHttpAsyncClient;
+   private final long timeout;
 
    private RemoteInvocationHandler( URI uri, String service,
-                                    Path certificateLocation, String certificatePassword ) {
+                                    Path certificateLocation, String certificatePassword, Long timeout ) {
       this.uri = uri;
       this.service = service;
+      this.timeout = timeout == null ? 5000 : timeout;
       this.fst = new FST();
       this.closeableHttpAsyncClient = HttpAsyncClients
          .custom()
@@ -99,7 +101,7 @@ public class RemoteInvocationHandler implements InvocationHandler {
             APPLICATION_OCTET_STREAM
          ) );
 
-         SimpleClient.Response response = SimpleAsyncHttpClient.execute( closeableHttpAsyncClient, post );
+         SimpleClient.Response response = SimpleAsyncHttpClient.execute( closeableHttpAsyncClient, post, timeout );
          switch( response.code ) {
             case HTTP_OK:
                return method.getReturnType().equals( void.class ) ? null :
@@ -116,9 +118,9 @@ public class RemoteInvocationHandler implements InvocationHandler {
    }
 
    public static Object proxy( URI uri, String service, Class<?> clazz,
-                               Path certificateLocation, String certificatePassword ) {
+                               Path certificateLocation, String certificatePassword, Long timeout ) {
       return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{ clazz },
-         new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword ) );
+         new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout ) );
    }
 
    private static SSLContext createSSLContext( Path certificateLocation, String certificatePassword ) {

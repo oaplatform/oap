@@ -23,9 +23,9 @@ import static org.testng.Assert.assertEquals;
 
 public class SecureHttpListenerTest {
 
-   private static String KEYSTORE_PASSWORD = "123456";
+   private static final String KEYSTORE_PASSWORD = "123456";
 
-   private Server server = new Server( 10 );
+   private final Server server = new Server( 10 );
 
    @BeforeTest
    public void setUp() {
@@ -54,8 +54,7 @@ public class SecureHttpListenerTest {
          KEYSTORE_PASSWORD.toCharArray() );
 
       TrustManagerFactory trustManagerFactory =
-         TrustManagerFactory.getInstance( TrustManagerFactory
-            .getDefaultAlgorithm() );
+         TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
       trustManagerFactory.init( keyStore );
 
       SSLContext sslContext = SSLContext.getInstance( "TLS" );
