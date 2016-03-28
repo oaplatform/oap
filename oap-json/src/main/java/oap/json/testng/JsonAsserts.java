@@ -95,7 +95,8 @@ public class JsonAsserts {
          return this;
       }
 
-      public JsonAssertion isEqualCanonically( Class<?> clazz, String expected, Pair<String, Object>... substitutions ) {
+      @SafeVarargs
+      public final JsonAssertion isEqualCanonically( Class<?> clazz, String expected, Pair<String, Object>... substitutions ) {
          return isEqualCanonically( clazz, Strings.substitute( expected, substitutions ) );
       }
    }
