@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.*;
 import java.security.cert.CertificateException;
@@ -32,27 +33,33 @@ public class SecureHttpListener extends AbstractHttpListener {
 
    @Override
    protected ServerSocket createSocket() {
-      try {
-         KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
-         keyStore.load( IoStreams.in( keystoreLocation, PLAIN ), keystorePassword.toCharArray() );
 
-         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
-            KeyManagerFactory.getDefaultAlgorithm() );
-         keyManagerFactory.init( keyStore, keystorePassword.toCharArray() );
+      if( Files.exists( keystoreLocation ) ) {
+         try {
+            KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
+            keyStore.load( IoStreams.in( keystoreLocation, PLAIN ), keystorePassword.toCharArray() );
 
-         SSLContext sslContext = SSLContext.getInstance( "TLS" );
-         sslContext.init( keyManagerFactory.getKeyManagers(), null, null );
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
+               KeyManagerFactory.getDefaultAlgorithm() );
+            keyManagerFactory.init( keyStore, keystorePassword.toCharArray() );
 
-         ServerSocket serverSocket = sslContext.getServerSocketFactory().createServerSocket();
-         serverSocket.setReuseAddress( true );
-         serverSocket.setSoTimeout( timeout );
-         serverSocket.bind( new InetSocketAddress( port ) );
+            SSLContext sslContext = SSLContext.getInstance( "TLS" );
+            sslContext.init( keyManagerFactory.getKeyManagers(), null, null );
 
-         return serverSocket;
-      } catch( KeyStoreException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e ) {
-         throw Throwables.propagate( e );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
+            ServerSocket serverSocket = sslContext.getServerSocketFactory().createServerSocket();
+            serverSocket.setReuseAddress( true );
+            serverSocket.setSoTimeout( timeout );
+            serverSocket.bind( new InetSocketAddress( port ) );
+
+            return serverSocket;
+         } catch( KeyStoreException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e ) {
+            throw Throwables.propagate( e );
+         } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+         }
+      } else {
+         log.debug( "Certificate location [{}] doesn't exist, socket will not be opened", keystoreLocation.toString() );
+         return null;
       }
    }
 }

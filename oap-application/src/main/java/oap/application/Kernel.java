@@ -74,7 +74,8 @@ public class Kernel {
                service.remoteName,
                reflect.underlying,
                service.certificateLocation,
-               service.certificatePassword
+               service.certificatePassword,
+               service.timeout //TODO refactor to have Remoting class with related properties
             );
             Application.register( serviceName, instance );
             if( service.supervision.supervise )

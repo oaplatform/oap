@@ -102,6 +102,7 @@ public class Module {
         public String remoteName;
         public Path certificateLocation;
         public String certificatePassword;
+        public Long timeout;
 
         public Service() {
         }
