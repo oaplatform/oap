@@ -23,14 +23,18 @@ public abstract class AbstractHttpListener implements Runnable, Closeable {
 
    @Override
    public void run() {
-      serverSocket = createSocket();
-      log.debug( "ready to rock [{}]", serverSocket );
+      try {
+         serverSocket = createSocket();
+         log.debug( "ready to rock [{}]", serverSocket );
 
-      while( !Thread.interrupted() && !serverSocket.isClosed() ) try {
-         server.accepted( serverSocket.accept() );
-      } catch( final SocketTimeoutException ignore ) {
-      } catch( final IOException e ) {
-         log.error( e.getMessage(), e );
+         while( !Thread.interrupted() && !serverSocket.isClosed() ) try {
+            server.accepted( serverSocket.accept() );
+         } catch( final SocketTimeoutException ignore ) {
+         } catch( final IOException e ) {
+            log.error( e.getMessage(), e );
+         }
+      } finally {
+         close();
       }
    }
 
