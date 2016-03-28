@@ -29,8 +29,6 @@ import lombok.ToString;
 import oap.http.SimpleAsyncHttpClient;
 import oap.http.SimpleClient;
 import oap.http.Uri;
-import oap.io.Resources;
-import oap.json.testng.JsonAsserts;
 import oap.testng.Env;
 import oap.util.Pair;
 import org.apache.http.client.methods.HttpGet;
@@ -44,101 +42,113 @@ import org.apache.http.entity.StringEntity;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static org.testng.Assert.assertEquals;
+import static oap.json.testng.JsonAsserts.assertJson;
+import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class HttpAsserts {
 
-    public static final String HTTP_PREFIX = "http://localhost:" + Env.port();
+   public static final String HTTP_PREFIX = "http://localhost:" + Env.port();
 
-    public static void reset() {
-        SimpleAsyncHttpClient.reset();
-    }
+   public static void reset() {
+      SimpleAsyncHttpClient.reset();
+   }
 
 
-    @SafeVarargs
-    public static ResponseAssert get( String url, Pair<String, Object>... params ) {
-        return invoke( new HttpGet( Uri.uri( url, params ) ) );
-    }
+   @SafeVarargs
+   public static HttpAssertion assertGet( String url, Pair<String, Object>... params ) {
+      return assertRequest( new HttpGet( Uri.uri( url, params ) ) );
+   }
 
-    public static ResponseAssert post( String url, String requestBody, ContentType contentType ) {
-        HttpPost post = new HttpPost( url );
-        post.setEntity( new StringEntity( requestBody, contentType ) );
-        return invoke( post );
-    }
+   public static HttpAssertion assertPost( String url, String requestBody, ContentType contentType ) {
+      HttpPost post = new HttpPost( url );
+      post.setEntity( new StringEntity( requestBody, contentType ) );
+      return assertRequest( post );
+   }
 
-    public static ResponseAssert post( String url, InputStream requestBody, ContentType contentType ) {
-        HttpPost post = new HttpPost( url );
-        post.setEntity( new InputStreamEntity( requestBody, contentType ) );
-        return invoke( post );
-    }
+   public static HttpAssertion assertPost( String url, InputStream requestBody, ContentType contentType ) {
+      HttpPost post = new HttpPost( url );
+      post.setEntity( new InputStreamEntity( requestBody, contentType ) );
+      return assertRequest( post );
+   }
 
-    public static ResponseAssert put( String url, String requestBody, ContentType contentType ) {
-        HttpPut put = new HttpPut( url );
-        put.setEntity( new StringEntity( requestBody, contentType ) );
-        return invoke( put );
-    }
+   public static HttpAssertion assertPut( String url, String requestBody, ContentType contentType ) {
+      HttpPut put = new HttpPut( url );
+      put.setEntity( new StringEntity( requestBody, contentType ) );
+      return assertRequest( put );
+   }
 
-    private static ResponseAssert invoke( HttpUriRequest http ) {
-        try {
-            return new ResponseAssert( SimpleAsyncHttpClient.execute( http ) );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        } catch( TimeoutException e ) {
-            throw Throwables.propagate( e );
-        }
-    }
+   private static HttpAssertion assertRequest( HttpUriRequest http ) {
+      try {
+         return new HttpAssertion( SimpleAsyncHttpClient.execute( http ) );
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      } catch( TimeoutException e ) {
+         throw Throwables.propagate( e );
+      }
+   }
 
-    @EqualsAndHashCode
-    @ToString
-    public static class ResponseAssert {
-        public final SimpleClient.Response response;
+   @EqualsAndHashCode
+   @ToString
+   public static class HttpAssertion {
+      private final SimpleClient.Response response;
 
-        public ResponseAssert( SimpleClient.Response response ) {
-            this.response = response;
-        }
+      public HttpAssertion( SimpleClient.Response response ) {
+         this.response = response;
+      }
 
-        public ResponseAssert assertOk() {
-            assertResponse( HTTP_OK );
-            return this;
-        }
+      public HttpAssertion isOk() {
+         hasCode( HTTP_OK );
+         return this;
+      }
 
-        public ResponseAssert assertResponse( int code ) {
-            assertEquals( response.code, code, "body: " + response.body );
-            return this;
-        }
+      public HttpAssertion hasCode( int code ) {
+         assertThat( response.code ).isEqualTo( code );
+         return this;
+      }
 
-        public ResponseAssert assertResponse( int code, String reasonPhrase, ContentType contentType, String body ) {
-            assertEquals( response.reasonPhrase, reasonPhrase );
-            assertEquals( response.code, code );
-            assertEquals( response.contentType, contentType != null ? contentType.toString() : null );
-            if( Objects.equals( ContentType.APPLICATION_JSON.toString(), response.contentType ) )
-                JsonAsserts.assertEquals( response.body, body );
-            else
-                assertEquals( response.body, body );
-            return this;
-        }
+      public HttpAssertion isJson( String json ) {
+         assertString( response.contentType ).isEqualTo( ContentType.APPLICATION_JSON.toString() );
+         assertJson( response.body ).isEqualTo( json );
+         return this;
+      }
 
-        public ResponseAssert assertResponse( int code, String reasonPhrase, ContentType contentType,
-                                              Class<?> context, String resourcePath ) {
-            assertResponse( code, reasonPhrase, contentType,
-                Resources.readString( context, context.getSimpleName() + "/" + resourcePath ).get() );
-            return this;
-        }
+      public HttpAssertion hasReason( String reasonPhrase ) {
+         assertString( response.reasonPhrase ).isEqualTo( reasonPhrase );
+         return this;
+      }
 
-        public ResponseAssert assertResponse( int code, String reasonPhrase ) {
-            assertResponse( code, reasonPhrase, null, null );
-            return this;
-        }
+      public HttpAssertion hasContentType( ContentType contentType ) {
+         assertString( response.contentType ).isEqualTo( contentType.toString() );
+         return this;
+      }
 
-        public ResponseAssert assertContent( int code, Consumer<String> assertor ) {
-            assertEquals( response.code, code );
-            assertor.accept( response.body );
-            return this;
-        }
-    }
+      public HttpAssertion hasBody( String body ) {
+         assertString( response.body ).isEqualTo( body );
+         return this;
+      }
+
+      public HttpAssertion containsHeader( String name, String value ) {
+         response.getHeader( name )
+            .map( header -> assertString( header ).isEqualTo( value ) )
+            .orElseThrow( () -> new AssertionError( "no header present: " + name ) );
+         return this;
+      }
+
+      public HttpAssertion is( Consumer<SimpleClient.Response> condition ) {
+         condition.accept( response );
+         return this;
+      }
+
+      public HttpAssertion responded( int code, String reasonPhrase, ContentType contentType, String body ) {
+         return this.hasCode( code )
+            .hasReason( reasonPhrase )
+            .hasContentType( contentType )
+            .hasBody( body );
+      }
+   }
 }

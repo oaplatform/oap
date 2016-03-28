@@ -24,10 +24,11 @@
 
 package oap.logstream;
 
-import oap.io.Files;
 import oap.testng.AbstractTest;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
+
+import java.nio.file.Paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
@@ -48,13 +49,13 @@ public class TimestampTest extends AbstractTest {
     public void path() {
         DateTime date = new DateTime( 2015, 12, 3, 11, 28, 30 );
         String timestamp = Timestamp.format( date, 12 );
-        assertEquals( Timestamp.path( Files.path( "log" ), date, "dir/dir/file", "log.gz", 12 ),
-            Files.path( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
-        assertEquals( Timestamp.path( Files.path( "log" ), timestamp, "dir/dir/file", "log.gz" ),
-            Files.path( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
-        assertEquals( Timestamp.path( Files.path( "log" ), timestamp, "file", "log.gz" ),
-            Files.path( "log/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
-        assertEquals( Timestamp.path( Files.path( "*" ), timestamp, "dir/dir/file", "log.gz" ).toString(),
+        assertEquals( Timestamp.path( Paths.get( "log" ), date, "dir/dir/file", "log.gz", 12 ),
+           Paths.get( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
+        assertEquals( Timestamp.path( Paths.get( "log" ), timestamp, "dir/dir/file", "log.gz" ),
+           Paths.get( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
+        assertEquals( Timestamp.path( Paths.get( "log" ), timestamp, "file", "log.gz" ),
+           Paths.get( "log/2015-12/03/file-2015-12-03-11-05.log.gz" ) );
+        assertEquals( Timestamp.path( Paths.get( "*" ), timestamp, "dir/dir/file", "log.gz" ).toString(),
             "*/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" );
     }
 

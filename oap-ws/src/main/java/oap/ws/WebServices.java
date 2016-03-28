@@ -29,6 +29,7 @@ import oap.http.HttpResponse;
 import oap.http.HttpServer;
 import oap.http.Protocol;
 import oap.json.Binder;
+import oap.util.Lists;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 
@@ -38,52 +39,56 @@ import java.util.Map;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class WebServices {
-    private static Logger logger = getLogger( WebServices.class );
+   private static Logger logger = getLogger( WebServices.class );
 
-    static {
-        HttpResponse.registerProducer( ContentType.APPLICATION_JSON.getMimeType(), Binder.json::marshal );
-    }
+   static {
+      HttpResponse.registerProducer( ContentType.APPLICATION_JSON.getMimeType(), Binder.json::marshal );
+   }
 
-    private final List<WsConfig> wsConfigs;
-    private final HttpServer server;
+   private final List<WsConfig> wsConfigs;
+   private final HttpServer server;
 
-    public WebServices( HttpServer server ) {
-        this( server, WsConfig.fromClassPath() );
-    }
+   public WebServices( HttpServer server ) {
+      this( server, WsConfig.CONFIGURATION.fromClassPath() );
+   }
 
-    public WebServices( HttpServer server, List<WsConfig> wsConfigs ) {
-        this.wsConfigs = wsConfigs;
-        this.server = server;
-    }
+   public WebServices( HttpServer server, WsConfig... wsConfigs ) {
+      this( server, Lists.of( wsConfigs ) );
+   }
+
+   public WebServices( HttpServer server, List<WsConfig> wsConfigs ) {
+      this.wsConfigs = wsConfigs;
+      this.server = server;
+   }
 
 
-    public void start() {
-        logger.info( "binding web services..." );
+   public void start() {
+      logger.info( "binding web services..." );
 
-        for( WsConfig config : wsConfigs ) {
-            for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
-                final WsConfig.Service value = entry.getValue();
-                final Object service = Application.service( value.service );
-                if( service == null ) throw new IllegalStateException( "Unknown service " + value.service );
-                bind( entry.getKey(), value.cors, service, value.protocol );
-            }
-            for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
-                final WsConfig.Service value = entry.getValue();
-                server.bind( entry.getKey(), value.cors, Application.service( value.service ), value.protocol );
-            }
-        }
-    }
+      for( WsConfig config : wsConfigs ) {
+         for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
+            final WsConfig.Service value = entry.getValue();
+            final Object service = Application.service( value.service );
+            if( service == null ) throw new IllegalStateException( "Unknown service " + value.service );
+            bind( entry.getKey(), value.cors, service, value.protocol );
+         }
+         for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
+            final WsConfig.Service value = entry.getValue();
+            server.bind( entry.getKey(), value.cors, Application.service( value.service ), value.protocol );
+         }
+      }
+   }
 
-    public void stop() {
-        for( WsConfig config : wsConfigs ) {
-            config.handlers.keySet().forEach( server::unbind );
-            config.services.keySet().forEach( server::unbind );
-        }
+   public void stop() {
+      for( WsConfig config : wsConfigs ) {
+         config.handlers.keySet().forEach( server::unbind );
+         config.services.keySet().forEach( server::unbind );
+      }
 
-    }
+   }
 
-    public void bind( String context, Cors cors, Object impl, Protocol protocol ) {
-        server.bind( context, cors, new Service( impl ), protocol );
-    }
+   public void bind( String context, Cors cors, Object impl, Protocol protocol ) {
+      server.bind( context, cors, new Service( impl ), protocol );
+   }
 
 }

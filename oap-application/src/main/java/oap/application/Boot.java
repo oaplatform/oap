@@ -25,55 +25,58 @@ package oap.application;
 
 import oap.cli.Cli;
 import oap.cli.Option;
-import oap.io.Files;
 import org.slf4j.Logger;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class Boot {
-    public static boolean terminated = false;
-    private static Logger logger = getLogger( Boot.class );
-    private static Kernel kernel;
+   public static boolean terminated = false;
+   private static Logger logger = getLogger( Boot.class );
+   private static Kernel kernel;
 
-    public static void main( String[] args ) {
-        Cli.create()
-            .group( "Starting service",
-                params ->
-                    Boot.start( ( String ) params.get( "config" ), Optional.ofNullable( ( String ) params.get( "config-directory" ) ) ),
-                Option.simple( "start" ).required(),
-                Option.string( "config" ).required(),
-                Option.string( "config-directory" )
-            )
-            .act( args );
-    }
+   public static void main( String[] args ) {
+      Cli.create()
+         .group( "Starting service",
+            params -> {
+               Path config = ( Path ) params.get( "config" );
+               Boot.start( config, ( Path ) params.getOrDefault( "config-directory", config.getParent().resolve( "conf.d" ) ) );
+            },
+            Option.simple( "start" ).required(),
+            Option.path( "config" ).required(),
+            Option.path( "config-directory" )
+         )
+         .act( args );
+   }
 
-    public static void start( String config, Optional<String> configdir ) {
-        Runtime.getRuntime().addShutdownHook( new Thread( "shutdown-hook" ) {
-            @Override
-            public void run() {
-                Boot.stop();
-            }
-        } );
-        try {
-            kernel = new Kernel( Module.fromClassPath() );
-            kernel.start( Files.path( config ), configdir.map( Files::path ) );
-            logger.debug( "started" );
-        } catch( Exception e ) {
+   public static void start( Path config, Path confd ) {
+      Runtime.getRuntime().addShutdownHook( new Thread( "shutdown-hook" ) {
+         @Override
+         public void run() {
+            Boot.stop();
+         }
+      } );
+      try {
+         kernel = new Kernel( Module.fromClassPath() );
+         kernel.start( config, confd );
+         logger.debug( "started" );
+      } catch( Exception e ) {
+         logger.error( e.getMessage(), e );
+      }
+   }
+
+   public static synchronized void stop() {
+      if( !terminated ) {
+         terminated = true;
+         try {
+            kernel.stop();
+            logger.debug( "stopped" );
+         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
-        }
-    }
-
-    public static synchronized void stop() {
-        if( !terminated ) {
-            terminated = true;
-            try {
-                kernel.stop();
-                logger.debug( "stopped" );
-            } catch( Exception e ) {
-                logger.error( e.getMessage(), e );
-            }
-        }
-    }
+         }
+      }
+   }
 }

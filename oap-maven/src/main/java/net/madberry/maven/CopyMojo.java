@@ -33,6 +33,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
 
@@ -51,12 +52,12 @@ public class CopyMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Properties properties = project.getProperties();
         for( FileSet file : fileSets ) {
-            Path path = Files.path( file.getDirectory() ).toAbsolutePath();
+            Path path = Paths.get( file.getDirectory() ).toAbsolutePath();
             getLog().debug( "copy " + path + "(exists=" + path.toFile().exists() + ") to " + outputDirectory );
             getLog().debug( "includes = " + file.getIncludes() );
             getLog().debug( "excludes = " + file.getExcludes() );
             getLog().debug( "filtering = " + file.isFiltering() );
-            if( path.toFile().exists() ) Files.copyContent( path, Files.path( outputDirectory ),
+            if( path.toFile().exists() ) Files.copyContent( path, Paths.get( outputDirectory ),
                 file.getIncludes(), file.getExcludes(),
                 file.isFiltering(), properties::get );
         }

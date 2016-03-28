@@ -40,48 +40,45 @@ import static oap.testng.Asserts.assertFile;
 
 public class ArchiverTest extends AbstractTest {
 
-    @DataProvider
-    public Object[][] compress() {
-        return new Object[][]{
-            { true },
-            { false }
-        };
-    }
+   @DataProvider
+   public Object[][] compress() {
+      return new Object[][]{ { true }, { false } };
+   }
 
-    @Test( dataProvider = "compress" )
-    public void archive( boolean compress ) {
-        DateTime now = new DateTime( 2015, 10, 10, 12, 0, 0 );
-        DateTimeUtils.setCurrentMillisFixed( now.getMillis() );
-        Path logs = Env.tmpPath( "logs" );
-        Path archives = Env.tmpPath( "archives" );
-        String[] files = {
-            "a/a_2015-10-10-11-10.log",
-            "a/a_2015-10-10-11-11.log",
-            "a/a_2015-10-10-12-00.log",
-            "a/b_2015-10-10-11-11.log",
-            "b/c/a_2015-10-10-11-10.log",
-            "b/c/a_2015-10-10-11-11.log",
-            "b/c/a_2015-10-10-12-00.log",
-            "b/c/b_2015-10-10-11-11.log"
-        };
+   @Test( dataProvider = "compress" )
+   public void archive( boolean compress ) {
+      DateTime now = new DateTime( 2015, 10, 10, 12, 0, 0 );
+      DateTimeUtils.setCurrentMillisFixed( now.getMillis() );
+      Path logs = Env.tmpPath( "logs" );
+      Path archives = Env.tmpPath( "archives" );
+      String[] files = {
+         "a/a_2015-10-10-11-10.log",
+         "a/a_2015-10-10-11-11.log",
+         "a/a_2015-10-10-12-00.log",
+         "a/b_2015-10-10-11-11.log",
+         "b/c/a_2015-10-10-11-10.log",
+         "b/c/a_2015-10-10-11-11.log",
+         "b/c/a_2015-10-10-12-00.log",
+         "b/c/b_2015-10-10-11-11.log"
+      };
 
-        for( String file : files ) Files.writeString( logs.resolve( file ), "data" );
+      for( String file : files ) Files.writeString( logs.resolve( file ), "data" );
 
-        Archiver archiver = new Archiver( logs, archives, 10000, "**/*.log", compress, 12 );
-        archiver.run();
+      Archiver archiver = new Archiver( logs, archives, 10000, "**/*.log", compress, 12 );
+      archiver.run();
 
-        for( String file : files ) assertFile( archives.resolve( file + ( compress ? ".gz" : "" ) ) ).doesNotExist();
+      for( String file : files ) assertFile( archives.resolve( file + ( compress ? ".gz" : "" ) ) ).doesNotExist();
 
-        DateTimeUtils.setCurrentMillisFixed( now.plusSeconds( 11 ).getMillis() );
-        archiver.run();
+      DateTimeUtils.setCurrentMillisFixed( now.plusSeconds( 11 ).getMillis() );
+      archiver.run();
 
-        for( String file : files ) {
-            Path path = archives.resolve( file + ( compress ? ".gz" : "" ) );
-            if( file.contains( "12-00" ) ) assertFile( path ).doesNotExist();
-            else {
-                assertFile( path ).hasContent( "data", compress ? GZIP : PLAIN );
-                assertFile( logs.resolve( file ) ).doesNotExist();
-            }
-        }
-    }
+      for( String file : files ) {
+         Path path = archives.resolve( file + ( compress ? ".gz" : "" ) );
+         if( file.contains( "12-00" ) ) assertFile( path ).doesNotExist();
+         else {
+            assertFile( logs.resolve( file ) ).doesNotExist();
+            assertFile( path ).hasContent( "data", compress ? GZIP : PLAIN );
+         }
+      }
+   }
 }
