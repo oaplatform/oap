@@ -137,7 +137,8 @@ public final class Asserts {
       }
 
       public FileAssertion hasContent( String expected, IoStreams.Encoding encoding ) {
-         Assert.assertEquals( Files.readString( this.actual.toPath(), encoding ), expected );
+         exists();
+         assertString( Files.readString( this.actual.toPath(), encoding ) ).isEqualTo( expected );
          return this;
       }
 
