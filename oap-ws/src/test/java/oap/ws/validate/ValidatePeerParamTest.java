@@ -42,6 +42,7 @@ import java.util.Optional;
 
 import static oap.http.Request.HttpMethod.POST;
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
+import static oap.http.testng.HttpAsserts.assertPost;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
@@ -74,46 +75,46 @@ public class ValidatePeerParamTest {
    }
 
    @Test
-   public void testValidationDefault() {
-      HttpAsserts.assertPost( HTTP_PREFIX + "/test/run/validation/default?q=1", "test", TEXT_PLAIN )
+   public void validationDefault() {
+      assertPost( HTTP_PREFIX + "/test/run/validation/default?q=1", "test", TEXT_PLAIN )
          .responded( 200, "OK", APPLICATION_JSON, "\"1test\"" );
    }
 
    @Test
-   public void testValidationOk() {
-      HttpAsserts.assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1", "test", TEXT_PLAIN )
+   public void validationOk() {
+      assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1", "test", TEXT_PLAIN )
          .responded( 200, "OK", APPLICATION_JSON, "\"1test\"" );
    }
 
    @Test
-   public void testValidationOkList() {
-      HttpAsserts.assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1&ql=_11&ql=_12", "test", TEXT_PLAIN )
+   public void validationOkList() {
+      assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1&ql=_11&ql=_12", "test", TEXT_PLAIN )
          .responded( 200, "OK", APPLICATION_JSON, "\"1_11/_12test\"" );
    }
 
    @Test
-   public void testValidationOkOptional() {
-      HttpAsserts.assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1&q2=2", "test", TEXT_PLAIN )
+   public void validationOkOptional() {
+      assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1&q2=2", "test", TEXT_PLAIN )
          .responded( 200, "OK", APPLICATION_JSON, "\"12test\"" );
    }
 
    @Test
-   public void testValidationFail() {
-      HttpAsserts.assertPost( HTTP_PREFIX + "/test/run/validation/fail?q=1", "test", TEXT_PLAIN )
+   public void validationFail() {
+      assertPost( HTTP_PREFIX + "/test/run/validation/fail?q=1", "test", TEXT_PLAIN )
          .responded( 400, "validation failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ),
             "error:1\nerror:test" );
    }
 
    @Test
-   public void testValidationRequiredFailed() {
-      HttpAsserts.assertPost( HTTP_PREFIX + "/test/run/validation/ok", "test", TEXT_PLAIN )
+   public void validationRequiredFailed() {
+      assertPost( HTTP_PREFIX + "/test/run/validation/ok", "test", TEXT_PLAIN )
          .responded( 400, "q is required", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ),
             "q is required" );
    }
 
    @Test
-   public void testValidationTypeFailed() {
-      HttpAsserts.assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=test", "test", TEXT_PLAIN )
+   public void validationTypeFailed() {
+      assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=test", "test", TEXT_PLAIN )
          .responded( 400, "cannot cast test to int", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ),
             "cannot cast test to int" );
    }

@@ -73,19 +73,19 @@ public class ValidatePeerMethodTest extends AbstractTest {
    }
 
    @Test
-   public void testValidationDefault() throws InterruptedException {
+   public void validationDefault() throws InterruptedException {
       assertPost( HTTP_PREFIX + "/test/run/validation/default", "test", TEXT_PLAIN )
          .responded( 200, "OK", TEXT_PLAIN, "test" );
    }
 
    @Test
-   public void testValidationOk() {
+   public void validationOk() {
       assertPost( HTTP_PREFIX + "/test/run/validation/ok", "test", TEXT_PLAIN )
          .responded( 200, "OK", TEXT_PLAIN, "test" );
    }
 
    @Test
-   public void testValidationFail() {
+   public void validationFail() {
       assertPost( HTTP_PREFIX + "/test/run/validation/fail", "test", TEXT_PLAIN )
          .responded( 400, "validation failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "error:test" );
    }
