@@ -143,8 +143,13 @@ public final class Asserts {
 
    }
 
-   public static String contentOfTestResource( Class<?> contextClass, String expectedResource ) {
-      return Resources.readString( contextClass, contextClass.getSimpleName() + "/" + expectedResource )
-         .orElseThrow( () -> new AssertionError( "resource " + expectedResource + " not found" ) );
+   public static String contentOfTestResource( Class<?> contextClass, String resource ) {
+      return Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
+         .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+   }
+
+   public static Path pathOfTestResource( Class<?> contextClass, String resource ) {
+      return Resources.filePath( contextClass, contextClass.getSimpleName() + "/" + resource )
+         .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
    }
 }
