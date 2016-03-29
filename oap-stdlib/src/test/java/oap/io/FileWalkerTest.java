@@ -60,7 +60,7 @@ public class FileWalkerTest extends AbstractTest {
     @Test
     public void testWalkFileTree_any() throws Exception {
         final MockVisitor visitor = new MockVisitor();
-        new FileWalker( tmpPath( "wildcard" ), "w2/*" ).walkFileTree( visitor );
+        new FileWalker( tmpPath( "wildcard" ), "w2\\*" ).walkFileTree( visitor );
 
         assertEqualsNoOrder( visitor.files.toArray(), new Path[]{
             tmpPath( "/wildcard/w2/33.txt" ), tmpPath( "/wildcard/w2/w1" ), tmpPath( "/wildcard/w2/3.txt" )
