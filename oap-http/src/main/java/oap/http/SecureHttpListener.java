@@ -33,7 +33,6 @@ public class SecureHttpListener extends AbstractHttpListener {
 
    @Override
    protected ServerSocket createSocket() {
-
       if( Files.exists( keystoreLocation ) ) {
          try {
             KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
@@ -58,7 +57,6 @@ public class SecureHttpListener extends AbstractHttpListener {
             throw new UncheckedIOException( e );
          }
       } else {
-         log.debug( "Certificate location [{}] doesn't exist, socket will not be opened", keystoreLocation.toString() );
          return null;
       }
    }
