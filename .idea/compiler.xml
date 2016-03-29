@@ -33,6 +33,7 @@
         <module name="oap-stdlib" />
         <module name="oap-storage" />
         <module name="oap-ws" />
+        <module name="oap-ws-cat" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -48,6 +49,7 @@
       <module name="oap-stdlib" target="1.8" />
       <module name="oap-storage" target="1.8" />
       <module name="oap-ws" target="1.8" />
+      <module name="oap-ws-cat" target="1.8" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
