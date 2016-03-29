@@ -1,5 +1,6 @@
 package oap.http;
 
+import oap.concurrent.SynchronizedThread;
 import oap.io.IoStreams;
 import oap.testng.Env;
 import org.apache.http.Header;
@@ -62,7 +63,11 @@ public class SecureHttpListenerTest {
 
       CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
 
+      System.out.println();
+
       HttpGet httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
+
+      System.out.println( httpGet.getRequestLine() );
 
       CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute( httpGet );
 
