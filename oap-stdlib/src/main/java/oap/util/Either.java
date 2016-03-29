@@ -38,7 +38,7 @@ public final class Either<A, B> {
     public final B rightValue;
     private boolean isLeft;
 
-    Either( A leftValue, B rightValue, boolean isLeft ) {
+    public Either( A leftValue, B rightValue, boolean isLeft ) {
         this.leftValue = leftValue;
         this.rightValue = rightValue;
         this.isLeft = isLeft;
@@ -64,8 +64,19 @@ public final class Either<A, B> {
         return isLeft ? fa.apply( leftValue ) : fb.apply( rightValue );
     }
 
+    public void consume( Consumer<Object> c ) {
+        if( isLeft ) {
+            c.accept( leftValue );
+        } else
+            c.accept( rightValue );
+    }
+
     public Either<B, A> swap() {
         return isLeft ? right( leftValue ) : left( rightValue );
+    }
+
+    public static <A, B> Either<A, B> either( A leftValue, B rightValue, boolean isLeft ) {
+        return new Either<>( leftValue, rightValue, isLeft );
     }
 
     @Override
