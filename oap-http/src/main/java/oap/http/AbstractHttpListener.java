@@ -13,6 +13,7 @@ public abstract class AbstractHttpListener implements Runnable, Closeable {
 
    private final HttpServer server;
    protected int timeout = 1000;
+   protected long sleep = 60000;
    private ServerSocket serverSocket;
 
    AbstractHttpListener( HttpServer server ) {
@@ -26,16 +27,22 @@ public abstract class AbstractHttpListener implements Runnable, Closeable {
       try {
          serverSocket = createSocket();
 
-         if( serverSocket != null ) {
-            log.debug( "ready to rock [{}]", serverSocket );
+         while( !Thread.interrupted() && serverSocket == null ) {
+            Thread.sleep( sleep );
+            log.warn( "Server socket cannot be opened; trying again in [{}] millis", sleep );
+         }
 
-            while( !Thread.interrupted() && !serverSocket.isClosed() ) try {
+         log.debug( "ready to rock [{}]", serverSocket );
+
+         while( !Thread.interrupted() && !serverSocket.isClosed() )
+            try {
                server.accepted( serverSocket.accept() );
             } catch( final SocketTimeoutException ignore ) {
             } catch( final IOException e ) {
                log.error( e.getMessage(), e );
             }
-         }
+      } catch( InterruptedException e ) {
+         log.warn( "Sleep until next socket creation was interrupted", e );
       } finally {
          close();
       }
