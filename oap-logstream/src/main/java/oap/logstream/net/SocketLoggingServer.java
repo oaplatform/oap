@@ -25,11 +25,11 @@ package oap.logstream.net;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
+import oap.concurrent.ThreadPoolExecutor;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.Sockets;
 import oap.logstream.LoggingBackend;
-import oap.concurrent.ThreadPoolExecutor;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -47,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class SocketLoggingServer implements Runnable {
+
     private final ExecutorService executor =
         new ThreadPoolExecutor( 0, 1024, 100, TimeUnit.SECONDS, new SynchronousQueue<>() );
     private final SynchronizedThread thread = new SynchronizedThread( this );
