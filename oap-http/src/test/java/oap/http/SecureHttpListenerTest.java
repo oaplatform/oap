@@ -27,6 +27,7 @@ public class SecureHttpListenerTest {
    private static final String KEYSTORE_PASSWORD = "123456";
 
    private final Server server = new Server( 10 );
+   private SynchronizedThread listener;
 
    @BeforeTest
    public void setUp() {
@@ -42,8 +43,8 @@ public class SecureHttpListenerTest {
          response.respond( new HttpResponse( 200 ) );
       }, Protocol.HTTPS );
 
-      new Thread( new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ),
-         KEYSTORE_PASSWORD, Env.port() ) ).start();
+      listener = new SynchronizedThread( new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port() ) );
+      listener.start();
    }
 
    @Test
@@ -76,6 +77,7 @@ public class SecureHttpListenerTest {
 
    @AfterTest
    public void tearDown() {
+      listener.stop();
       server.stop();
    }
 }
