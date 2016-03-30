@@ -64,7 +64,7 @@ public class BitSet extends java.util.BitSet {
       return true;
    }
 
-   public boolean getOr( int[] bitIndex ) {
+   public final boolean getOr( int[] bitIndex ) {
       for( int i : bitIndex ) {
          if( get( i ) ) return true;
       }
@@ -72,12 +72,16 @@ public class BitSet extends java.util.BitSet {
       return false;
    }
 
-   public boolean getOr( long[] bitIndex ) {
+   public final boolean getOr( long[] bitIndex ) {
       for( long i : bitIndex ) {
-         if( get( ( int ) i ) ) return true;
+         if( get( i ) ) return true;
       }
 
       return false;
+   }
+
+   public final boolean get( long bitIndex ) {
+      return get( ( int ) bitIndex );
    }
 
    public final int max() {
