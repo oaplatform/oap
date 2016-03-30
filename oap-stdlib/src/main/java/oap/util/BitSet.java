@@ -56,6 +56,14 @@ public class BitSet extends java.util.BitSet {
       return true;
    }
 
+   public boolean getAnd( long[] bitIndex ) {
+      for( long i : bitIndex ) {
+         if( !get( i ) ) return false;
+      }
+
+      return true;
+   }
+
    public boolean xorAnd( int[] bitIndex ) {
       for( int i : bitIndex ) {
          if( get( i ) ) return false;
