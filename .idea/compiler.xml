@@ -38,17 +38,17 @@
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="oap" target="1.8" />
-      <module name="oap-application" target="1.5" />
-      <module name="oap-cli" target="1.5" />
+      <module name="oap-application" target="1.8" />
+      <module name="oap-cli" target="1.8" />
       <module name="oap-etl" target="1.8" />
       <module name="oap-http" target="1.8" />
-      <module name="oap-json" target="1.5" />
+      <module name="oap-json" target="1.8" />
       <module name="oap-logstream" target="1.8" />
       <module name="oap-maven" target="1.8" />
-      <module name="oap-metrics" target="1.5" />
+      <module name="oap-metrics" target="1.8" />
       <module name="oap-stdlib" target="1.8" />
-      <module name="oap-storage" target="1.5" />
-      <module name="oap-ws" target="1.5" />
+      <module name="oap-storage" target="1.8" />
+      <module name="oap-ws" target="1.8" />
       <module name="oap-ws-cat" target="1.8" />
     </bytecodeTargetLevel>
   </component>

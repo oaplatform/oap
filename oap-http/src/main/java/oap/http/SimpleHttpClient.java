@@ -48,76 +48,77 @@ import static oap.json.Binder.json;
 import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 
+@Deprecated
 public final class SimpleHttpClient implements SimpleClient {
-    private static CloseableHttpClient client = initialize();
-    private static ExecutorService executorService = Executors.newCachedThreadPool();
+   private static CloseableHttpClient client = initialize();
+   private static ExecutorService executorService = Executors.newCachedThreadPool();
 
-    private static CloseableHttpClient initialize() {
-        PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
-        cm.setDefaultMaxPerRoute( 1000 );
-        cm.setMaxTotal( 10000 );
+   private static CloseableHttpClient initialize() {
+      PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager();
+      cm.setDefaultMaxPerRoute( 1000 );
+      cm.setMaxTotal( 10000 );
 
-        return HttpClients
-            .custom()
-            .setMaxConnPerRoute( 1000 )
-            .setMaxConnTotal( 10000 )
-            .setConnectionManager( cm )
-            .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
-            .disableRedirectHandling()
-            .setRetryHandler( new DefaultHttpRequestRetryHandler( 0, false ) )
-            .build();
-    }
+      return HttpClients
+         .custom()
+         .setMaxConnPerRoute( 1000 )
+         .setMaxConnTotal( 10000 )
+         .setConnectionManager( cm )
+         .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
+         .disableRedirectHandling()
+         .setRetryHandler( new DefaultHttpRequestRetryHandler( 0, false ) )
+         .build();
+   }
 
-    public static void reset() {
-        Closeables.close( client );
-        client = initialize();
-    }
+   public static void reset() {
+      Closeables.close( client );
+      client = initialize();
+   }
 
-    public static Response execute( HttpUriRequest request ) throws IOException, TimeoutException {
-        return execute( client, request );
-    }
+   public static Response execute( HttpUriRequest request ) throws IOException, TimeoutException {
+      return execute( client, request );
+   }
 
-    public static Response execute( HttpUriRequest request, long timeout ) throws IOException, TimeoutException {
-        return execute( client, request, timeout );
-    }
+   public static Response execute( HttpUriRequest request, long timeout ) throws IOException, TimeoutException {
+      return execute( client, request, timeout );
+   }
 
-    public static Response execute( CloseableHttpClient client, HttpUriRequest request ) throws IOException, TimeoutException {
-        return execute( client, request, Long.MAX_VALUE );
-    }
+   public static Response execute( CloseableHttpClient client, HttpUriRequest request ) throws IOException, TimeoutException {
+      return execute( client, request, Long.MAX_VALUE );
+   }
 
-    public static Response execute( CloseableHttpClient client, HttpUriRequest request, long timeout ) throws IOException, TimeoutException {
-        try( CloseableHttpResponse response = executorService.submit( () -> client.execute( request ) ).get( timeout, TimeUnit.MILLISECONDS ) ) {
-            final Map<String, String> headers = Arrays.stream( response.getAllHeaders() )
-                .map( h -> __( h.getName(), h.getValue() ) )
-                .collect( toMap() );
+   public static Response execute( CloseableHttpClient client, HttpUriRequest request, long timeout ) throws IOException, TimeoutException {
+      try( CloseableHttpResponse response = executorService.submit( () -> client.execute( request ) ).get( timeout, TimeUnit.MILLISECONDS ) ) {
+         final Map<String, String> headers = Arrays.stream( response.getAllHeaders() )
+            .map( h -> __( h.getName(), h.getValue() ) )
+            .collect( toMap() );
 
-            if( response.getEntity() != null ) {
-                HttpEntity entity = response.getEntity();
-                try( InputStream is = entity.getContent() ) {
-                    return new Response(
-                        response.getStatusLine().getStatusCode(),
-                        response.getStatusLine().getReasonPhrase(),
-                        entity.getContentType() != null ?
-                            ContentType.parse( entity.getContentType().getValue() ) : null,
-                        headers,
-                        ByteStreams.toByteArray( is ) );
-                }
-            } else return new Response(
-                response.getStatusLine().getStatusCode(),
-                response.getStatusLine().getReasonPhrase(),
-                headers
-            );
-        } catch( InterruptedException | ExecutionException e ) {
-            throw new IOException( e );
-        }
-    }
+         if( response.getEntity() != null ) {
+            HttpEntity entity = response.getEntity();
+            try( InputStream is = entity.getContent() ) {
+               return new Response(
+                  response.getStatusLine().getStatusCode(),
+                  response.getStatusLine().getReasonPhrase(),
+                  entity.getContentType() != null ?
+                     ContentType.parse( entity.getContentType().getValue() ) : null,
+                  headers,
+                  ByteStreams.toByteArray( is ) );
+            }
+         } else return new Response(
+            response.getStatusLine().getStatusCode(),
+            response.getStatusLine().getReasonPhrase(),
+            headers
+         );
+      } catch( InterruptedException | ExecutionException e ) {
+         throw new IOException( e );
+      }
+   }
 
-    public static <T> Result<T, Throwable> get( Class<T> clazz, String url, long timeout ) {
-        HttpUriRequest uri = new HttpGet( Uri.uri( url ) );
+   public static <T> Result<T, Throwable> get( Class<T> clazz, String url, long timeout ) {
+      HttpUriRequest uri = new HttpGet( Uri.uri( url ) );
 
-        return Result.trying( () -> {
-            Response r = execute( uri, timeout );
-            return json.unmarshal( clazz, r.body );
-        } );
-    }
+      return Result.trying( () -> {
+         Response r = execute( uri, timeout );
+         return json.unmarshal( clazz, r.body );
+      } );
+   }
 }

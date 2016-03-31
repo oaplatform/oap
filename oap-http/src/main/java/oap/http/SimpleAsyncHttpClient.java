@@ -51,6 +51,7 @@ import static oap.json.Binder.json;
 import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 
+@Deprecated
 public final class SimpleAsyncHttpClient implements SimpleClient {
     private static CloseableHttpAsyncClient client = initialize();
 

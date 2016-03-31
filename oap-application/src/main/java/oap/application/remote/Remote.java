@@ -27,72 +27,68 @@ import com.google.common.io.ByteStreams;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Application;
 import oap.http.*;
+import oap.util.Result;
 import oap.util.Try;
 
 import java.lang.reflect.InvocationTargetException;
 
-import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class Remote implements Handler {
-    private static final ThreadLocal<FST> FST = new ThreadLocal<FST>() {
-        public FST initialValue() {
-            return new FST();
-        }
-    };
+   private static final ThreadLocal<FST> FST = new ThreadLocal<FST>() {
+      public FST initialValue() {
+         return new FST();
+      }
+   };
 
-    private final Cors cors = Cors.DEFAULT;
+   private final Cors cors = Cors.DEFAULT;
 
-    private final HttpServer server;
-    private final String context;
+   private final HttpServer server;
+   private final String context;
 
-    public Remote( final HttpServer server, final String context ) {
-        this.server = server;
-        this.context = context;
-    }
+   public Remote( final HttpServer server, final String context ) {
+      this.server = server;
+      this.context = context;
+   }
 
-    public void start() {
-        server.bind( context, cors, this, Protocol.HTTPS );
-    }
+   public void start() {
+      server.bind( context, cors, this, Protocol.HTTPS );
+   }
 
-    @Override
-    public void handle( final Request request, final Response response ) {
-        final FST fst = Remote.FST.get();
+   @Override
+   public void handle( final Request request, final Response response ) {
+      FST fst = Remote.FST.get();
 
-        final RemoteInvocation invocation = request.body
-            .map( Try.map( bytes -> ( RemoteInvocation ) fst.conf.asObject( ByteStreams.toByteArray( bytes ) ) ) )
-            .orElseThrow( () -> new RemoteInvocationException( "no invocation data" ) );
+      RemoteInvocation invocation = request.body
+         .map( Try.map( bytes -> ( RemoteInvocation ) fst.conf.asObject( ByteStreams.toByteArray( bytes ) ) ) )
+         .orElseThrow( () -> new RemoteInvocationException( "no invocation data" ) );
 
-        if( log.isTraceEnabled() ) {
-            log.trace( "invoke:" + invocation );
-        }
+      log.trace( "invoke {}", invocation );
 
-        final Object service = Application.service( invocation.service );
+      Object service = Application.service( invocation.service );
 
-        if( service == null ) {
-            response.respond( HttpResponse.status( HTTP_NOT_FOUND,
-                invocation.service + " not found" ) );
-        } else {
-            try {
-                final Object result = service.getClass()
-                    .getMethod( invocation.method, invocation.types() )
-                    .invoke( service, invocation.values() );
-                response.respond( HttpResponse.bytes( fst.conf.asByteArray( result ), APPLICATION_OCTET_STREAM ) );
-            } catch( NoSuchMethodException e ) {
-                log.debug( e.getMessage(), e );
-                response.respond( HttpResponse.status( HTTP_NOT_FOUND,
-                    "service " + invocation.service + "." + invocation.method + " not found." ) );
-            } catch( InvocationTargetException | IllegalAccessException e ) {
-                log.debug( e.getMessage(), e );
-                response.respond( HttpResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() ) );
-            }
-        }
-    }
+      if( service == null )
+         response.respond( HttpResponse.status( HTTP_NOT_FOUND, invocation.service + " not found" ) );
+      else {
+         Result<Object, Throwable> result;
+         try {
+            result = Result.success( service.getClass()
+               .getMethod( invocation.method, invocation.types() )
+               .invoke( service, invocation.values() ) );
+         } catch( NoSuchMethodException | IllegalAccessException e ) {
+            result = Result.failure( e );
+         } catch( InvocationTargetException e ) {
+            result = Result.failure( e.getCause() );
+         }
+         response.respond( HttpResponse.bytes( fst.conf.asByteArray( result ), APPLICATION_OCTET_STREAM ) );
+      }
+   }
 
-    @Override
-    public String toString() {
-        return getClass().getName();
-    }
+
+   @Override
+   public String toString() {
+      return getClass().getName();
+   }
 }

@@ -6,7 +6,10 @@ import oap.io.Closeables;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
+
+import static oap.io.Sockets.socketClosed;
 
 @Slf4j
 public abstract class AbstractHttpListener implements Runnable, Closeable {
@@ -37,8 +40,11 @@ public abstract class AbstractHttpListener implements Runnable, Closeable {
          while( !Thread.interrupted() && !serverSocket.isClosed() )
             try {
                server.accepted( serverSocket.accept() );
-            } catch( final SocketTimeoutException ignore ) {
-            } catch( final IOException e ) {
+            } catch( SocketTimeoutException ignore ) {
+            } catch( SocketException e ) {
+               if( socketClosed( e ) ) log.debug( e.getMessage() );
+               else log.error( e.getMessage(), e );
+            } catch( IOException e ) {
                log.error( e.getMessage(), e );
             }
       } catch( InterruptedException e ) {

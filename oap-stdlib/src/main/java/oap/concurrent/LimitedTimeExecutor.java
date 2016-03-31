@@ -24,19 +24,15 @@
 package oap.concurrent;
 
 import com.google.common.base.Throwables;
-import oap.util.Functions;
 
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 
-public class LimitedTimeExecutor {
+public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor> {
    private final ExecutorService executor = Executors.newCachedThreadPool();
    private final long timeout;
    private final TimeUnit unit;
-   private Runnable onTimeout = Functions.empty.run;
-   private Runnable onSuccess = Functions.empty.run;
-   private Runnable onError = Functions.empty.run;
 
    public LimitedTimeExecutor() {
       this( Long.MAX_VALUE, TimeUnit.MILLISECONDS );
@@ -45,21 +41,6 @@ public class LimitedTimeExecutor {
    public LimitedTimeExecutor( long timeout, TimeUnit unit ) {
       this.timeout = timeout;
       this.unit = unit;
-   }
-
-   public LimitedTimeExecutor onTimeout( Runnable onTimeout ) {
-      this.onTimeout = onTimeout;
-      return this;
-   }
-
-   public LimitedTimeExecutor onSuccess( Runnable onSuccess ) {
-      this.onSuccess = onSuccess;
-      return this;
-   }
-
-   public LimitedTimeExecutor onError( Runnable onError ) {
-      this.onError = onError;
-      return this;
    }
 
    public <T> Optional<T> execute( Supplier<T> code ) {
@@ -75,6 +56,7 @@ public class LimitedTimeExecutor {
          onTimeout.run();
          return Optional.empty();
       } catch( ExecutionException e ) {
+         onError.accept( e );
          throw Throwables.propagate( e.getCause() );
       }
    }
@@ -90,8 +72,10 @@ public class LimitedTimeExecutor {
       } catch( InterruptedException | TimeoutException e ) {
          onTimeout.run();
       } catch( ExecutionException e ) {
-         onError.run();
+         onError.accept( e );
          throw Throwables.propagate( e.getCause() );
       }
    }
+
+
 }

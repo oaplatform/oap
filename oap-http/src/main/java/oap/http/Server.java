@@ -46,6 +46,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
+import static oap.io.Sockets.connectionReset;
+import static oap.io.Sockets.socketClosed;
+
 
 /**
  * @author Vladimir Kirichenko <vladimir.kirichenko@gmail.com>
@@ -104,29 +107,28 @@ public class Server implements HttpServer {
             try {
                connections.put( connectionId, connection );
 
-               log.trace( "connection accepted: " + connection );
+               log.trace( "connection accepted: {}", connection );
 
                final HttpContext httpContext = createHttpContext( socket );
 
                Thread.currentThread().setName( connection.toString() );
 
-               log.trace( "start handling " + connection );
+               log.trace( "start handling {}", connection );
                while( !Thread.interrupted() && connection.isOpen() )
                   httpService.handleRequest( connection, httpContext );
             } catch( SocketException e ) {
-               if( "Socket closed".equals( e.getMessage() ) )
-                  log.trace( "socket closed: " + connection, e );
-               else if( "Connection reset".equals( e.getMessage() ) )
-                  log.warn( "Connection reset: " + connection );
+               if( socketClosed( e ) )
+                  log.trace( "іщслуе closed: {}", connection );
+               else if( connectionReset( e ) )
+                  log.warn( "Connection reset: {}", connection );
                else log.error( e.getMessage(), e );
             } catch( ConnectionClosedException e ) {
-               log.trace( "connection closed: " + connection, e );
+               log.trace( "connection closed: {}", connection );
             } catch( Throwable e ) {
                log.error( e.getMessage(), e );
             } finally {
                connections.remove( connectionId );
                Closeables.close( connection );
-               log.trace( "closed: " + connection );
             }
          } );
       } catch( final IOException e ) {
