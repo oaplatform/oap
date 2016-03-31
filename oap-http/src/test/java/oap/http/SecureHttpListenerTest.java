@@ -8,9 +8,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -29,7 +27,7 @@ public class SecureHttpListenerTest {
    private final Server server = new Server( 10 );
    private SynchronizedThread listener;
 
-   @BeforeTest
+   @BeforeClass
    public void setUp() {
       server.bind( "test", Cors.DEFAULT, ( request, response ) -> {
 
@@ -64,18 +62,14 @@ public class SecureHttpListenerTest {
 
       CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
 
-      System.out.println();
-
       HttpGet httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
-
-      System.out.println( httpGet.getRequestLine() );
 
       CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute( httpGet );
 
       assertEquals( closeableHttpResponse.getStatusLine().getStatusCode(), 200 );
    }
 
-   @AfterTest
+   @AfterClass
    public void tearDown() {
       listener.stop();
       server.stop();
