@@ -89,7 +89,7 @@ public class HttpAsserts {
          assertString( response.contentType
             .map( ContentType::toString )
             .orElse( null ) )
-            .isEqualTo( ContentType.APPLICATION_JSON );
+            .isEqualTo( ContentType.APPLICATION_JSON.toString() );
          assertJson( response.contentString.orElse( null ) ).isEqualTo( json );
          return this;
       }
