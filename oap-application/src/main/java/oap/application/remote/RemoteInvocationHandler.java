@@ -35,26 +35,36 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
 @Slf4j
 public class RemoteInvocationHandler implements InvocationHandler {
 
+   private static final long DEFAULT_TIMEOUT = 5000L;
+
    private final URI uri;
    private final FST fst;
    private final String service;
    private final Client client;
-   private long timeout = 5000;
+   private final long timeout;
 
-   private RemoteInvocationHandler( URI uri, String service, Path certificateLocation, String certificatePassword, long timeout ) {
+   private RemoteInvocationHandler( URI uri, String service, Path certificateLocation, String certificatePassword, Optional<Long> timeout ) {
       this.uri = uri;
       this.service = service;
-      this.timeout = timeout;
+      this.timeout = timeout.orElse( DEFAULT_TIMEOUT );
       this.fst = new FST();
       this.client = new Client( certificateLocation, certificatePassword )
          .onTimeout( () -> log.error( "timeout invoking {}", uri ) )
          .onError( e -> log.error( "error invoking {}: {}", uri, e ) );
+   }
+
+   public static Object proxy( URI uri, String service, Class<?> clazz,
+                               Path certificateLocation, String certificatePassword, Optional<Long> timeout ) {
+      log.debug( "remote interface for {} at {} wich certs {}", service, uri, certificateLocation );
+      return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{ clazz },
+         new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout ) );
    }
 
    @Override
@@ -84,13 +94,6 @@ public class RemoteInvocationHandler implements InvocationHandler {
          } )
          .orElseThrow( () -> new RemoteInvocationException( "invocation failed " + uri ) )
          .orElseThrow( t -> t );
-   }
-
-   public static Object proxy( URI uri, String service, Class<?> clazz,
-                               Path certificateLocation, String certificatePassword, long timeout ) {
-      log.debug( "remote interface for {} at {} wich certs {}", service, uri, certificateLocation );
-      return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{ clazz },
-         new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout ) );
    }
 
 }
