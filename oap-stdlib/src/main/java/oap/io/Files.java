@@ -255,4 +255,12 @@ public final class Files {
          throw new UncheckedIOException( e );
       }
    }
+
+   public static boolean isDirectoryEmpty( Path directory ) {
+      try( DirectoryStream<Path> dirStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
+         return !dirStream.iterator().hasNext();
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
+   }
 }
