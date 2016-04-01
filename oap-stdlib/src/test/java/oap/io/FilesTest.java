@@ -93,4 +93,15 @@ public class FilesTest extends AbstractTest {
       assertEquals( Files.getPosixPermissions( Env.tmpPath( "filtered/2.txt" ) ),
          Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
    }
+
+   @Test
+   public void testIsDirectoryEmpty() {
+      Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
+
+      assertThat( Files.isDirectoryEmpty( Env.tmpPath( "/wildcard" ) ) ).isFalse();
+
+      Files.delete( Env.tmpPath( "/wildcard/1.txt" ) );
+
+      assertThat( Files.isDirectoryEmpty( Env.tmpPath( "/wildcard" ) ) ).isTrue();
+   }
 }

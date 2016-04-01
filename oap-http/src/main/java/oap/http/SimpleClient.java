@@ -29,6 +29,7 @@ import org.apache.http.entity.ContentType;
 import java.util.Map;
 import java.util.Optional;
 
+@Deprecated
 public interface SimpleClient {
     class Response {
         public final int code;

@@ -26,17 +26,27 @@ package oap.tsv;
 
 import oap.testng.Env;
 import oap.util.Stream;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static oap.testng.Asserts.assertFile;
+import static org.testng.Assert.assertEquals;
 
 public class ModelTest {
+
+    private Path path;
+
+    @BeforeMethod
+    public void setUp () throws Exception {
+        path = Env.deployTestData( getClass() );
+    }
+
     @Test
     public void load() {
-        Path path = Env.deployTestData( getClass() );
         List<Path> paths = Stream.of( "1.tsv", "2.tsv", "3.tsv" ).map( path::resolve ).toList();
         Model.Complex complexModel = Model.complex( file -> {
             switch( file.getFileName().toString() ) {
@@ -52,5 +62,19 @@ public class ModelTest {
             }
         } );
         assertFile( path.resolve( "result.tsv" ) ).hasContent( Tsv.print( Tsv.fromPaths( paths, complexModel ) ) );
+    }
+
+    @Test
+    public void testDatatypes() {
+        Model model = Model.withoutHeader().b( 0 ).i( 1 ).d( 2 ).s( 3 ).l( 4 );
+        Path datatypesTsv = path.resolve( Paths.get( "datatypes.tsv" ) );
+        Tsv.fromPath( datatypesTsv, model ).forEach( row -> {
+            assertEquals( true,  row.get( 0 ));
+            assertEquals( 1,  row.get( 1 ));
+            assertEquals( 1.6,  row.get( 2 ));
+            assertEquals( "Some value",  row.get( 3 ));
+            assertEquals( 9223312036854775807L,  row.get( 4 ));
+        });
+
     }
 }

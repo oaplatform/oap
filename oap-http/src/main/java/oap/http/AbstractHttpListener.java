@@ -6,7 +6,11 @@ import oap.io.Closeables;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
+
+import static oap.concurrent.Once.once;
+import static oap.io.Sockets.socketClosed;
 
 @Slf4j
 public abstract class AbstractHttpListener implements Runnable, Closeable {
@@ -25,11 +29,9 @@ public abstract class AbstractHttpListener implements Runnable, Closeable {
    @Override
    public void run() {
       try {
-         serverSocket = createSocket();
-
-         while( !Thread.interrupted() && serverSocket == null ) {
+         while( !Thread.interrupted() && ( serverSocket = createSocket() ) == null ) {
             Thread.sleep( sleep );
-            log.warn( "Server socket cannot be opened; trying again in [{}] millis", sleep );
+            once( () -> log.warn( "Server socket cannot be opened; waiting for it..." ) );
          }
 
          log.debug( "ready to rock [{}]", serverSocket );
@@ -37,8 +39,11 @@ public abstract class AbstractHttpListener implements Runnable, Closeable {
          while( !Thread.interrupted() && !serverSocket.isClosed() )
             try {
                server.accepted( serverSocket.accept() );
-            } catch( final SocketTimeoutException ignore ) {
-            } catch( final IOException e ) {
+            } catch( SocketTimeoutException ignore ) {
+            } catch( SocketException e ) {
+               if( socketClosed( e ) ) log.debug( e.getMessage() );
+               else log.error( e.getMessage(), e );
+            } catch( IOException e ) {
                log.error( e.getMessage(), e );
             }
       } catch( InterruptedException e ) {

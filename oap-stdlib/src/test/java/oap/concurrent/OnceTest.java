@@ -22,33 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.http;
+package oap.concurrent;
 
-import com.google.common.base.Throwables;
-import oap.util.Maps;
-import oap.util.Pair;
-import org.apache.http.client.utils.URIBuilder;
+import org.testng.annotations.Test;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class Uri {
-   public static URI uri( String uri, Map<String, Object> params ) {
-      try {
-         URIBuilder uriBuilder = new URIBuilder( uri );
-         params.forEach( ( name, value ) ->
-            uriBuilder.addParameter( name, value == null ? "" : value.toString() )
-         );
-         return uriBuilder.build();
-      } catch( URISyntaxException e ) {
-         throw Throwables.propagate( e );
-      }
+import static org.assertj.core.api.Assertions.assertThat;
 
-   }
-
-   @SafeVarargs
-   public static URI uri( String uri, Pair<String, Object>... params ) {
-      return uri( uri, Maps.of( params ) );
+public class OnceTest {
+   @Test
+   public void once() {
+      AtomicInteger count0 = new AtomicInteger();
+      AtomicInteger count1 = new AtomicInteger();
+      AtomicInteger count2 = new AtomicInteger();
+      AtomicInteger count3 = new AtomicInteger();
+      for( int i = 0; i < 10; i++ )
+         Once.once( () -> {
+            System.out.println( "x" );
+            count0.incrementAndGet();
+         } );
+      for( int i = 0; i < 10; i++ ) Once.once( () -> count1.incrementAndGet() );
+      for( int i = 0; i < 10; i++ ) Once.once( count2::incrementAndGet );
+      Runnable incrementAndGet = count3::incrementAndGet;
+      for( int i = 0; i < 10; i++ ) Once.once( incrementAndGet );
+      Once.once( incrementAndGet );
+      Once.once( incrementAndGet );
+      assertThat( count0.get() ).isEqualTo( 1 );
+      assertThat( count1.get() ).isEqualTo( 1 );
+      assertThat( count2.get() ).isEqualTo( 1 );
+      assertThat( count3.get() ).isEqualTo( 1 );
    }
 }

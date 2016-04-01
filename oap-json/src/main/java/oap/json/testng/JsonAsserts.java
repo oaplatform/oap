@@ -78,6 +78,7 @@ public class JsonAsserts {
       }
 
       public JsonAssertion isEqualTo( String expected ) {
+         isNotNull();
          assertString( Formatter.format( actual ) )
             .isEqualTo( Formatter.format( expected ) );
          return this;

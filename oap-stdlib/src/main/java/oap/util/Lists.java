@@ -35,103 +35,107 @@ import static oap.util.Pair.__;
 
 public class Lists {
 
-    private static Random random = new Random();
+   private static Random random = new Random();
 
-    @SafeVarargs
-    public static <T> List<T> addAll( List<T> list, T... array ) {
-        list.addAll( of( array ) );
-        return list;
-    }
+   @SafeVarargs
+   public static <T> List<T> addAll( List<T> list, T... array ) {
+      list.addAll( of( array ) );
+      return list;
+   }
 
-    public static <T> List<T> tail( List<T> list ) {
-        if( list.isEmpty() ) throw new NoSuchElementException();
+   public static <T> List<T> tail( List<T> list ) {
+      if( list.isEmpty() ) throw new NoSuchElementException();
 
-        return list.subList( 1, list.size() );
-    }
+      return list.subList( 1, list.size() );
+   }
 
-    public static <T> T head( List<T> list ) {
-        if( list.isEmpty() ) throw new NoSuchElementException();
+   public static <T> T head( List<T> list ) {
+      if( list.isEmpty() ) throw new NoSuchElementException();
 
-        return list.get( 0 );
-    }
+      return list.get( 0 );
+   }
 
-    public static <T> Pair<List<T>, List<T>> partition( List<T> list, Predicate<T> p ) {
-        ArrayList<T> left = new ArrayList<>();
-        ArrayList<T> right = new ArrayList<>();
+   public static <T> Pair<List<T>, List<T>> partition( List<T> list, Predicate<T> p ) {
+      ArrayList<T> left = new ArrayList<>();
+      ArrayList<T> right = new ArrayList<>();
 
-        for( T item : list )
-            if( p.test( item ) ) left.add( item );
-            else right.add( item );
+      for( T item : list )
+         if( p.test( item ) ) left.add( item );
+         else right.add( item );
 
-        return __( left, right );
-    }
+      return __( left, right );
+   }
 
-    public static <E> Optional<E> find( List<E> list, Predicate<E> predicate ) {
-        for( E e : list ) if( predicate.test( e ) ) return Optional.ofNullable( e );
-        return Optional.empty();
-    }
+   public static <E> Optional<E> find( List<E> list, Predicate<E> predicate ) {
+      for( E e : list ) if( predicate.test( e ) ) return Optional.ofNullable( e );
+      return Optional.empty();
+   }
 
-    public static <E, R> List<R> map( List<? extends E> list, Function<? super E, R> mapper ) {
-        return list.stream().map( mapper ).collect( toList() );
-    }
+   public static <E, R> List<R> map( List<? extends E> list, Function<? super E, R> mapper ) {
+      return list.stream().map( mapper ).collect( toList() );
+   }
 
-    public static <E, R> List<R> map( E[] array, Function<? super E, R> mapper ) {
-        return map( of( array ), mapper );
-    }
+   public static <E, R> List<R> map( E[] array, Function<? super E, R> mapper ) {
+      return map( of( array ), mapper );
+   }
 
-    public static <E, R> List<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
-        return map( Collections.list( enumeration ), mapper );
-    }
+   public static <E, R> List<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
+      return map( Collections.list( enumeration ), mapper );
+   }
 
-    public static <G, E> Map<G, List<E>> groupBy( List<E> list, Function<E, G> classifier ) {
-        return Stream.of( list ).collect( java.util.stream.Collectors.groupingBy( classifier ) );
-    }
+   public static <G, E> Map<G, List<E>> groupBy( List<E> list, Function<E, G> classifier ) {
+      return Stream.of( list ).collect( java.util.stream.Collectors.groupingBy( classifier ) );
+   }
 
-    public static <E> Optional<E> random( List<E> list ) {
-        return list.isEmpty() ? Optional.empty() :
-            Optional.of( list.get( random.nextInt( list.size() ) ) );
-    }
+   public static <E> Optional<E> random( List<E> list ) {
+      return list.isEmpty() ? Optional.empty() :
+         Optional.of( list.get( random.nextInt( list.size() ) ) );
+   }
 
-    @SafeVarargs
-    public static <E> ArrayList<E> of( E... array ) {
-        ArrayList<E> list = new ArrayList<>( array.length );
-        Collections.addAll( list, array );
-        return list;
-    }
+   public static <E> ArrayList<E> distinct( List<E> list ) {
+      return new ArrayList<>( new HashSet<>( list ) );
+   }
 
-    public static ArrayList<Long> of( long[] array ) {
-        ArrayList<Long> list = new ArrayList<>( array.length );
-        for( long i : array ) list.add( i );
-        return list;
-    }
+   @SafeVarargs
+   public static <E> ArrayList<E> of( E... array ) {
+      ArrayList<E> list = new ArrayList<>( array.length );
+      Collections.addAll( list, array );
+      return list;
+   }
 
-    public static ArrayList<Integer> of( int[] array ) {
-        ArrayList<Integer> list = new ArrayList<>( array.length );
-        for( int i : array ) list.add( i );
-        return list;
-    }
+   public static ArrayList<Long> of( long[] array ) {
+      ArrayList<Long> list = new ArrayList<>( array.length );
+      for( long i : array ) list.add( i );
+      return list;
+   }
 
-    public static <T> ArrayList<T> empty() {
-        return new ArrayList<>();
-    }
+   public static ArrayList<Integer> of( int[] array ) {
+      ArrayList<Integer> list = new ArrayList<>( array.length );
+      for( int i : array ) list.add( i );
+      return list;
+   }
 
-    public static class Collectors {
-        public static <T> Collector<T, ?, ArrayList<T>> toArrayList() {
-            return new oap.util.Collectors.CollectorImpl<T, ArrayList<T>, ArrayList<T>>( ArrayList::new, ArrayList::add,
-                ( left, right ) -> {
-                    left.addAll( right );
-                    return left;
-                },
-                oap.util.Collectors.CH_ID );
-        }
+   public static <T> ArrayList<T> empty() {
+      return new ArrayList<>();
+   }
 
-        public static Collector<Integer, ?, IntArrayList> toIntArrayList() {
-            return new oap.util.Collectors.CollectorImpl<>( IntArrayList::new, ( v, c ) -> v.add( c ),
-                ( left, right ) -> {
-                    left.addAll( right );
-                    return left;
-                },
-                oap.util.Collectors.CH_ID );
-        }
-    }
+   public static class Collectors {
+      public static <T> Collector<T, ?, ArrayList<T>> toArrayList() {
+         return new oap.util.Collectors.CollectorImpl<T, ArrayList<T>, ArrayList<T>>( ArrayList::new, ArrayList::add,
+            ( left, right ) -> {
+               left.addAll( right );
+               return left;
+            },
+            oap.util.Collectors.CH_ID );
+      }
+
+      public static Collector<Integer, ?, IntArrayList> toIntArrayList() {
+         return new oap.util.Collectors.CollectorImpl<>( IntArrayList::new, ( v, c ) -> v.add( c ),
+            ( left, right ) -> {
+               left.addAll( right );
+               return left;
+            },
+            oap.util.Collectors.CH_ID );
+      }
+   }
 }

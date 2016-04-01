@@ -31,6 +31,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
@@ -82,14 +83,11 @@ public class Binder {
         AnnotationIntrospector introspector = new JacksonAnnotationIntrospector();
         mapper.getDeserializationConfig().with( introspector );
         mapper.getSerializationConfig().with( introspector );
-
         mapper.registerModule( new AfterburnerModule() );
-
-        mapper.registerModule( new Jdk8Module() );
-        final JodaModule module = new JodaModule();
-        module.addDeserializer( DateTime.class, forType( DateTime.class ) );
-        module.addSerializer( DateTime.class, new DateTimeSerializer( jodaDateFormat ) );
-        mapper.registerModule( module );
+        mapper.registerModule( new Jdk8Module().configureAbsentsAsNulls( true ) );
+        mapper.registerModule( new JodaModule()
+           .addDeserializer( DateTime.class, forType( DateTime.class ) )
+           .addSerializer( DateTime.class, new DateTimeSerializer( jodaDateFormat ) ) );
         mapper.enable( DeserializationFeature.USE_LONG_FOR_INTS );
         mapper.enable( JsonParser.Feature.ALLOW_SINGLE_QUOTES );
         mapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );

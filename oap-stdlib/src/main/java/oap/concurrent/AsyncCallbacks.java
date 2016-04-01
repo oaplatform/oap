@@ -21,34 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.concurrent;
 
-package oap.http;
+import oap.util.Functions;
 
-import com.google.common.base.Throwables;
-import oap.util.Maps;
-import oap.util.Pair;
-import org.apache.http.client.utils.URIBuilder;
+import java.util.function.Consumer;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Map;
+@SuppressWarnings( "unchecked" )
+public class AsyncCallbacks<T extends AsyncCallbacks<T>> {
+   protected Runnable onTimeout = Functions.empty.run;
+   protected Runnable onSuccess = Functions.empty.run;
+   protected Consumer<Exception> onError = Functions.empty.consume();
 
-public class Uri {
-   public static URI uri( String uri, Map<String, Object> params ) {
-      try {
-         URIBuilder uriBuilder = new URIBuilder( uri );
-         params.forEach( ( name, value ) ->
-            uriBuilder.addParameter( name, value == null ? "" : value.toString() )
-         );
-         return uriBuilder.build();
-      } catch( URISyntaxException e ) {
-         throw Throwables.propagate( e );
-      }
-
+   public T onTimeout( Runnable onTimeout ) {
+      this.onTimeout = onTimeout;
+      return ( T ) this;
    }
 
-   @SafeVarargs
-   public static URI uri( String uri, Pair<String, Object>... params ) {
-      return uri( uri, Maps.of( params ) );
+   public T onSuccess( Runnable onSuccess ) {
+      this.onSuccess = onSuccess;
+      return ( T ) this;
+   }
+
+   public T onError( Consumer<Exception> onError ) {
+      this.onError = onError;
+      return ( T ) this;
    }
 }

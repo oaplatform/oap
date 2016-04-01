@@ -27,44 +27,49 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 import static oap.util.Pair.__;
 
 public class PairStream<A, B> extends Stream<Pair<A, B>> {
-    protected PairStream( java.util.stream.Stream<Pair<A, B>> underlying ) {
-        super( underlying );
-    }
+   protected PairStream( java.util.stream.Stream<Pair<A, B>> underlying ) {
+      super( underlying );
+   }
 
-    public static <A, B> PairStream<A, B> of( Map<A, B> map ) {
-        return new PairStream<>( map.entrySet().stream().map( e -> __( e.getKey(), e.getValue() ) ) );
-    }
+   public static <A, B> PairStream<A, B> of( Map<A, B> map ) {
+      return new PairStream<>( map.entrySet().stream().map( e -> __( e.getKey(), e.getValue() ) ) );
+   }
 
-    public static <A, B> PairStream<A, B> reversed( Map<A, B> map ) {
-        return new PairStream<>( Stream.of( of( map )
-            .collect( java.util.stream.Collectors.toCollection( LinkedList::new ) )
-            .descendingIterator()
-        ) );
-    }
+   public static <A, B> PairStream<A, B> reversed( Map<A, B> map ) {
+      return new PairStream<>( Stream.of( of( map )
+         .collect( java.util.stream.Collectors.toCollection( LinkedList::new ) )
+         .descendingIterator()
+      ) );
+   }
 
-    public <R> Stream<R> mapToObj( BiFunction<A, B, R> mapper ) {
-        return super.map( p -> mapper.apply( p._1, p._2 ) );
-    }
+   public <R> Stream<R> mapToObj( BiFunction<A, B, R> mapper ) {
+      return super.map( p -> mapper.apply( p._1, p._2 ) );
+   }
 
-    public <R> Stream<R> flatMapToObj( BiFunction<A, B, Stream<? extends R>> mapper ) {
-        return super.flatMap( p -> mapper.apply( p._1, p._2 ) );
-    }
+   public <R> Stream<R> flatMapToObj( BiFunction<A, B, Stream<? extends R>> mapper ) {
+      return super.flatMap( p -> mapper.apply( p._1, p._2 ) );
+   }
 
-    public <A2, B2> PairStream<A2, B2> map( BiFunction<? super A, ? super B, Pair<A2, B2>> mapper ) {
-        return new PairStream<>( super.map( p -> mapper.apply( p._1, p._2 ) ) );
-    }
+   public <A2, B2> PairStream<A2, B2> map( BiFunction<? super A, ? super B, Pair<A2, B2>> mapper ) {
+      return new PairStream<>( super.map( p -> mapper.apply( p._1, p._2 ) ) );
+   }
 
-    @Override
-    public PairStream<A, B> filter( Predicate<? super Pair<A, B>> predicate ) {
-        return new PairStream<>( super.filter( predicate ) );
-    }
+   @Override
+   public PairStream<A, B> filter( Predicate<? super Pair<A, B>> predicate ) {
+      return new PairStream<>( super.filter( predicate ) );
+   }
 
-    public void forEach( BiConsumer<A, B> consumer ) {
-        super.forEach( p -> consumer.accept( p._1, p._2 ) );
-    }
+   public PairStream<A, B> filter( BiPredicate<? super A, ? super B> predicate ) {
+      return new PairStream<>( super.filter( p -> predicate.test( p._1, p._2 ) ) );
+   }
+
+   public void forEach( BiConsumer<A, B> consumer ) {
+      super.forEach( p -> consumer.accept( p._1, p._2 ) );
+   }
 }

@@ -1,5 +1,6 @@
 package oap.http;
 
+import oap.concurrent.SynchronizedThread;
 import oap.io.IoStreams;
 import oap.testng.Env;
 import org.apache.http.Header;
@@ -7,9 +8,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -26,8 +25,9 @@ public class SecureHttpListenerTest {
    private static final String KEYSTORE_PASSWORD = "123456";
 
    private final Server server = new Server( 10 );
+   private SynchronizedThread listener;
 
-   @BeforeTest
+   @BeforeClass
    public void setUp() {
       server.bind( "test", Cors.DEFAULT, ( request, response ) -> {
 
@@ -41,8 +41,8 @@ public class SecureHttpListenerTest {
          response.respond( new HttpResponse( 200 ) );
       }, Protocol.HTTPS );
 
-      new Thread( new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ),
-         KEYSTORE_PASSWORD, Env.port() ) ).start();
+      listener = new SynchronizedThread( new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port() ) );
+      listener.start();
    }
 
    @Test
@@ -69,8 +69,9 @@ public class SecureHttpListenerTest {
       assertEquals( closeableHttpResponse.getStatusLine().getStatusCode(), 200 );
    }
 
-   @AfterTest
+   @AfterClass
    public void tearDown() {
+      listener.stop();
       server.stop();
    }
 }

@@ -74,8 +74,8 @@ public class WebServicesPerformance extends AbstractPerformance {
          HttpAsserts.reset();
          benchmark( "NioServer.invocations", samples, experiments, 5000, ( number ) -> {
             try {
-               HttpAsserts.assertGet( HTTP_PREFIX + "/x/v/math/id?a=aaa" ).responded( 200, "OK",
-                  ContentType.APPLICATION_JSON, "\"aaa\"" );
+               HttpAsserts.assertGet( HTTP_PREFIX + "/x/v/math/id?a=aaa" )
+                  .responded( 200, "OK", ContentType.APPLICATION_JSON, "\"aaa\"" );
             } catch( Throwable e ) {
                e.printStackTrace();
             }

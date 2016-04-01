@@ -56,7 +56,7 @@ public class HoconFactoryWithFallback extends HoconFactory {
         this.log = log;
         this.additinal = additinal;
 
-        if( log.isTraceEnabled() ) System.setProperty( "config.trace", "loads" );
+//        if( log.isTraceEnabled() ) System.setProperty( "config.trace", "loads" );
     }
 
     private static Config init( String[] config ) {
@@ -75,7 +75,7 @@ public class HoconFactoryWithFallback extends HoconFactory {
             .withFallback( config )
             .withFallback( ConfigFactory.systemProperties() );
 
-        log.trace( unresolvedConfig.root().render() );
+//        log.trace( unresolvedConfig.root().render() );
 
         try {
             Config resolvedConfig = unresolvedConfig.resolve();

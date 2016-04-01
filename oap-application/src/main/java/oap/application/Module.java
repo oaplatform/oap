@@ -43,102 +43,102 @@ import java.util.*;
 @EqualsAndHashCode
 @ToString
 public class Module {
-    public String name;
-    public ArrayList<String> dependsOn = new ArrayList<>();
-    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
+   public String name;
+   public ArrayList<String> dependsOn = new ArrayList<>();
+   public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
 
-    public Module( String name, ArrayList<String> dependsOn, LinkedHashMap<String, Service> services ) {
-        this.name = name;
-        this.dependsOn = dependsOn;
-        this.services = new LinkedHashMap<>( services );
-    }
+   public Module( String name, ArrayList<String> dependsOn, LinkedHashMap<String, Service> services ) {
+      this.name = name;
+      this.dependsOn = dependsOn;
+      this.services = new LinkedHashMap<>( services );
+   }
 
-    public Module() {
-    }
+   public Module() {
+   }
 
-    public static List<URL> fromClassPath() {
-        return ListUtils.union(
-            Resources.urls( "META-INF/oap-module.conf" ),
-            Resources.urls( "META-INF/oap-module.conf" )
-        );
-    }
+   public static List<URL> fromClassPath() {
+      return ListUtils.union(
+         Resources.urls( "META-INF/oap-module.conf" ),
+         Resources.urls( "META-INF/oap-module.conf" )
+      );
+   }
 
-    public static Module parse( Path path ) throws IOException {
-        return parse( Files.readString( path ) );
-    }
+   public static Module parse( Path path ) throws IOException {
+      return parse( Files.readString( path ) );
+   }
 
-    public static Module parse( URL url ) {
-        return parse( Strings.readString( url ) );
-    }
+   public static Module parse( URL url ) {
+      return parse( Strings.readString( url ) );
+   }
 
-    public static Module parse( URL url, Map<String, Map<String, Object>> config ) {
-        return parse( Strings.readString( url ), config );
-    }
+   public static Module parse( URL url, Map<String, Map<String, Object>> config ) {
+      return parse( Strings.readString( url ), config );
+   }
 
-    public static Module parse( String json ) {
-        return Binder.hocon.unmarshal( Module.class, json );
-    }
+   public static Module parse( String json ) {
+      return Binder.hocon.unmarshal( Module.class, json );
+   }
 
-    public static Module parse( String json, Map<String, Map<String, Object>> config ) {
-        final Module module = Binder.hoconWithConfig( config ).unmarshal( Module.class, json );
+   public static Module parse( String json, Map<String, Map<String, Object>> config ) {
+      final Module module = Binder.hoconWithConfig( config ).unmarshal( Module.class, json );
 
-        module.services
-            .entrySet()
-            .stream()
-            .filter( e -> config.containsKey( e.getKey() ) )
-            .forEach( e -> Binder.hocon.update( e.getValue(), config.get( e.getKey() ) ) );
+      module.services
+         .entrySet()
+         .stream()
+         .filter( e -> config.containsKey( e.getKey() ) )
+         .forEach( e -> Binder.hocon.update( e.getValue(), config.get( e.getKey() ) ) );
 
-        return module;
-    }
+      return module;
+   }
 
-    @EqualsAndHashCode
-    @ToString
-    public static class Service {
-        public String implementation;
-        public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
-        public Supervision supervision = new Supervision();
-        public ArrayList<String> dependsOn = new ArrayList<>();
-        public URI remoteUrl;
-        public String remoteName;
-        public Path certificateLocation;
-        public String certificatePassword;
-        public Long timeout;
+   @EqualsAndHashCode
+   @ToString
+   public static class Service {
+      public String implementation;
+      public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
+      public Supervision supervision = new Supervision();
+      public ArrayList<String> dependsOn = new ArrayList<>();
+      public URI remoteUrl;
+      public String remoteName;
+      public Path certificateLocation;
+      public String certificatePassword;
+      public Optional<Long> timeout = Optional.empty();
 
-        public Service() {
-        }
+      public Service() {
+      }
 
-        public Service( String implementation, Map<String, Object> parameters, Supervision supervision,
-            ArrayList<String> dependsOn ) {
-            this.implementation = implementation;
-            this.dependsOn = dependsOn;
-            this.parameters = new LinkedHashMap<>( parameters );
-            this.supervision = supervision;
-        }
+      public Service( String implementation, Map<String, Object> parameters, Supervision supervision,
+                      ArrayList<String> dependsOn ) {
+         this.implementation = implementation;
+         this.dependsOn = dependsOn;
+         this.parameters = new LinkedHashMap<>( parameters );
+         this.supervision = supervision;
+      }
 
-    }
+   }
 
-    @EqualsAndHashCode
-    @ToString
-    public static class Supervision {
-        public boolean supervise;
-        public boolean thread;
-        public boolean schedule;
-        public String startWith = "start";
-        public String stopWith = "stop";
-        @JsonProperty
-        public String delay; //ms
-        public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
+   @EqualsAndHashCode
+   @ToString
+   public static class Supervision {
+      public boolean supervise;
+      public boolean thread;
+      public boolean schedule;
+      public String startWith = "start";
+      public String stopWith = "stop";
+      @JsonProperty
+      public String delay; //ms
+      public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
 
-        public Supervision() {
-        }
+      public Supervision() {
+      }
 
-        public Supervision( boolean supervise ) {
-            this.supervise = supervise;
-        }
+      public Supervision( boolean supervise ) {
+         this.supervise = supervise;
+      }
 
-        @JsonIgnore
-        public Optional<Long> getDelay() {
-            return Optional.ofNullable( delay ).map( d -> (long) Coercions.LongConvertor.DEFAULT.apply( d ) );
-        }
-    }
+      @JsonIgnore
+      public Optional<Long> getDelay() {
+         return Optional.ofNullable( delay ).map( d -> ( long ) Coercions.LongConvertor.DEFAULT.apply( d ) );
+      }
+   }
 }

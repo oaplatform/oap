@@ -23,9 +23,8 @@
  */
 package oap.testng;
 
-import oap.util.Try;
 import oap.concurrent.ThreadPoolExecutor;
-import org.apache.commons.math3.random.RandomDataGenerator;
+import oap.util.Try;
 import org.testng.Assert;
 
 import java.util.List;
@@ -46,9 +45,8 @@ public abstract class AbstractPerformance extends AbstractTest {
     protected final static Consumer<Integer> none = ( i ) -> {
     };
     private final static Function<Long, String> actions_s = ( rate ) -> rate + " action/s";
-    public static RandomDataGenerator random = new RandomDataGenerator();
 
-    public static void benchmark( String name, int samples, Try.ThrowingConsumer<Integer> code ) {
+   public static void benchmark( String name, int samples, Try.ThrowingConsumer<Integer> code ) {
         benchmark( name, samples, 5, code, none, none, actions_s );
     }
 

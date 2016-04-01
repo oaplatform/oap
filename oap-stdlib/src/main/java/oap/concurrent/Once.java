@@ -21,34 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.concurrent;
 
-package oap.http;
+import java.util.HashSet;
+import java.util.Set;
 
-import com.google.common.base.Throwables;
-import oap.util.Maps;
-import oap.util.Pair;
-import org.apache.http.client.utils.URIBuilder;
+public class Once {
+   private static Set<Object> done = new HashSet<>();
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Map;
-
-public class Uri {
-   public static URI uri( String uri, Map<String, Object> params ) {
-      try {
-         URIBuilder uriBuilder = new URIBuilder( uri );
-         params.forEach( ( name, value ) ->
-            uriBuilder.addParameter( name, value == null ? "" : value.toString() )
-         );
-         return uriBuilder.build();
-      } catch( URISyntaxException e ) {
-         throw Throwables.propagate( e );
+   public static void once( Runnable runnable ) {
+      if( !done.contains( runnable.getClass() ) ) {
+         runnable.run();
+         done.add( runnable.getClass() );
       }
-
-   }
-
-   @SafeVarargs
-   public static URI uri( String uri, Pair<String, Object>... params ) {
-      return uri( uri, Maps.of( params ) );
    }
 }

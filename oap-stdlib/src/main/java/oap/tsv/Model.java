@@ -93,6 +93,10 @@ public class Model {
         return column( Double::parseDouble, index, more );
     }
 
+    public Model b( int index, int... more ) {
+        return column( Boolean::parseBoolean, index, more );
+    }
+
     public Model v( Object value ) {
         return column( value );
     }

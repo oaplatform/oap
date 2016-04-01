@@ -30,41 +30,50 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class Sockets {
-    private static final Logger logger = getLogger( Sockets.class );
+   private static final Logger logger = getLogger( Sockets.class );
 
-    public static String send( String host, int port, String data ) throws IOException {
-        try( Socket socket = new Socket( host, port );
-             OutputStream os = socket.getOutputStream();
-             InputStream is = socket.getInputStream() ) {
-            os.write( Strings.toByteArray( data ) );
-            os.flush();
+   public static String send( String host, int port, String data ) throws IOException {
+      try( Socket socket = new Socket( host, port );
+           OutputStream os = socket.getOutputStream();
+           InputStream is = socket.getInputStream() ) {
+         os.write( Strings.toByteArray( data ) );
+         os.flush();
+         socket.shutdownOutput();
+         return Strings.readString( is );
+      }
+   }
+
+   public static void close( Socket socket ) {
+      if( !socket.isClosed() ) {
+         try {
+            socket.getInputStream().close();
+            socket.shutdownInput();
+         } catch( IOException e ) {
+            if( !"Socket is closed".equals( e.getMessage() ) )
+               logger.error( e.getMessage(), e );
+         }
+         try {
+            socket.getOutputStream().flush();
+            socket.getOutputStream().close();
             socket.shutdownOutput();
-            return Strings.readString( is );
-        }
-    }
+         } catch( IOException e ) {
+            if( !"Socket is closed".equals( e.getMessage() ) )
+               logger.error( e.getMessage(), e );
+         }
+         Closeables.close( socket );
+      }
+   }
 
-    public static void close( Socket socket ) {
-        if( !socket.isClosed() ) {
-            try {
-                socket.getInputStream().close();
-                socket.shutdownInput();
-            } catch( IOException e ) {
-                if( !"Socket is closed".equals( e.getMessage() ) )
-                    logger.error( e.getMessage(), e );
-            }
-            try {
-                socket.getOutputStream().flush();
-                socket.getOutputStream().close();
-                socket.shutdownOutput();
-            } catch( IOException e ) {
-                if( !"Socket is closed".equals( e.getMessage() ) )
-                    logger.error( e.getMessage(), e );
-            }
-            Closeables.close( socket );
-        }
-    }
+   public static boolean socketClosed( SocketException e ) {
+      return "Socket closed".equals( e.getMessage() );
+   }
+
+   public static boolean connectionReset( SocketException e ) {
+      return "Connection reset".equals( e.getMessage() );
+   }
 }
