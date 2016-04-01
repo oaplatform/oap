@@ -29,13 +29,26 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.io.File;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 public class Timestamp {
+   public static final Pattern FILE_NAME_WITH_TIMESTAMP = Pattern.compile( ".+-(\\d{4}-\\d\\d-\\d\\d-\\d\\d-\\d\\d)\\..+" );
    public static final DateTimeFormatter FILE_FORMATTER = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" ).withZoneUTC();
    public static final DateTimeFormatter DIRECTORY_FORMATTER = DateTimeFormat.forPattern( "yyyy-MM/dd" ).withZoneUTC();
    public static final char SEPARATOR_CHAR = '/';
+
+   public static Optional<DateTime> parseFileNameWithTimestamp( String fileName, int bucketsPerHour ) {
+      final Matcher matcher = FILE_NAME_WITH_TIMESTAMP.matcher( fileName );
+      if( matcher.find() ) {
+         final String timestamp = matcher.group( 1 );
+         return Optional.of( parse( timestamp, bucketsPerHour ) );
+      } else {
+         return Optional.empty();
+      }
+   }
 
    public static String format( DateTime date, int bucketsPerHour ) {
       int bucket = currentBucket( date, bucketsPerHour );

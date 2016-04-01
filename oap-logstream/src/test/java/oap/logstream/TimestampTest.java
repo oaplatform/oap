@@ -25,8 +25,12 @@
 package oap.logstream;
 
 import oap.testng.AbstractTest;
+import oap.testng.Asserts;
+import oap.testng.Env;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
+
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -108,5 +112,12 @@ public class TimestampTest extends AbstractTest {
          new DateTime( 2016, 2, 1, 1, 15 )
       };
       for( DateTime time : times ) assertThat( Timestamp.parse( Timestamp.format( time, 12 ), 12 ) ).isEqualTo( time );
+   }
+
+   @Test
+   public void testParseFileNameWithTimestamp() {
+      final Optional<DateTime> dateTime = Timestamp.parseFileNameWithTimestamp( "/tmp/test/2016-02/01/tes-t1-2016-02-01-01-00.tsv.gz", 12 );
+
+      assertThat( dateTime ).contains( new DateTime( 2016, 2, 1, 1, 0 ) );
    }
 }
