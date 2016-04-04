@@ -50,6 +50,7 @@
         <module>oap-logstream</module>
         <module>oap-maven</module>
         <module>oap-ws-cat</module>
+        <module>oap-security</module>
     </modules>
 
     <repositories>
