@@ -24,6 +24,7 @@
 
 package oap.http;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.Test;
@@ -34,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static oap.testng.Asserts.assertFile;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Slf4j
 public class ClientTest extends AbstractTest {
    @Test
    public void download() {

@@ -243,10 +243,9 @@ public class Client extends AsyncCallbacks<Client> {
 
    public void download( String url, Path file, Consumer<Integer> progress ) {
       try {
-
          HttpEntity entity = resolve( url ).getEntity();
-         try( InputStream in = entity.getContent() ) {
-            IoStreams.write( file, PLAIN, new BufferedInputStream( in ), progress( entity.getContentLength(), progress ) );
+         try( InputStream in = new BufferedInputStream( entity.getContent() ) ) {
+            IoStreams.write( file, PLAIN, in, progress( entity.getContentLength(), progress ) );
          }
          onSuccess.run();
       } catch( ExecutionException e ) {

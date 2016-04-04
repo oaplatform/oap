@@ -26,6 +26,7 @@ package oap.io;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static oap.util.Functions.empty.consume;
@@ -96,6 +97,12 @@ public class ProgressInputStream extends FilterInputStream {
       }
 
       public abstract void percent( int soFar );
+   }
 
+   public static Consumer<Integer> scale( int by, Consumer<Integer> progress ) {
+      AtomicInteger last = new AtomicInteger( 0 );
+      return p -> {
+         if( last.get() + by < p || p == 100 ) progress.accept( last.updateAndGet( x -> p ) );
+      };
    }
 }
