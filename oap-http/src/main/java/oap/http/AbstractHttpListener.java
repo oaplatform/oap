@@ -9,6 +9,7 @@ import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
+import static oap.concurrent.Once.once;
 import static oap.io.Sockets.socketClosed;
 
 @Slf4j
@@ -28,11 +29,9 @@ public abstract class AbstractHttpListener implements Runnable, Closeable {
    @Override
    public void run() {
       try {
-         serverSocket = createSocket();
-
-         while( !Thread.interrupted() && serverSocket == null ) {
+         while( !Thread.interrupted() && ( serverSocket = createSocket() ) == null ) {
             Thread.sleep( sleep );
-            log.warn( "Server socket cannot be opened; trying again in [{}] millis", sleep );
+            once( () -> log.warn( "Server socket cannot be opened; waiting for it..." ) );
          }
 
          log.debug( "ready to rock [{}]", serverSocket );
