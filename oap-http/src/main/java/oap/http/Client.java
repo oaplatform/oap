@@ -34,7 +34,9 @@ import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -199,8 +201,8 @@ public class Client extends AsyncCallbacks<Client> {
       try {
          headers.forEach( ( name, value ) -> request.setHeader( name, value == null ? "" : value.toString() ) );
 
-         Future<org.apache.http.HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
-         org.apache.http.HttpResponse response = timeout == FOREVER ? future.get() :
+         Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
+         HttpResponse response = timeout == FOREVER ? future.get() :
             future.get( timeout, MILLISECONDS );
 
          Map<String, String> responsHeaders = headers( response );
@@ -244,12 +246,8 @@ public class Client extends AsyncCallbacks<Client> {
 
    public void download( String url, Path file, Consumer<Integer> progress ) {
       try {
-         HttpGet request = new HttpGet( url );
-         Future<org.apache.http.HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
-         org.apache.http.HttpResponse response = future.get();
-         if( response.getEntity() == null )
-            throw new IOException( response.getStatusLine().toString() );
-         HttpEntity entity = response.getEntity();
+
+         HttpEntity entity = resolve( url ).getEntity();
          try( InputStream in = entity.getContent() ) {
             IoStreams.write( file, PLAIN, in, progress( entity.getContentLength(), progress ) );
          }
@@ -263,6 +261,19 @@ public class Client extends AsyncCallbacks<Client> {
       } catch( InterruptedException e ) {
          onTimeout.run();
       }
+   }
+
+   private HttpResponse resolve( String url ) throws InterruptedException, ExecutionException, IOException {
+      HttpGet request = new HttpGet( url );
+      Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
+      HttpResponse response = future.get();
+      if( response.getStatusLine().getStatusCode() == 200 && response.getEntity() != null ) return response;
+      else if( response.getStatusLine().getStatusCode() == 302 ) {
+         Header location = response.getFirstHeader( "Location" );
+         if( location == null ) throw new IOException( "redirect w/o location!" );
+         return resolve( location.getValue() );
+      } else
+         throw new IOException( response.getStatusLine().toString() );
    }
 
 
