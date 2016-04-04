@@ -1,6 +1,7 @@
 package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Threads;
 import oap.io.Closeables;
 
 import java.io.Closeable;
@@ -33,7 +34,7 @@ public abstract class AbstractHttpListener implements Runnable, Closeable {
             Thread.sleep( sleep );
             once( () -> log.warn( "Server socket cannot be opened; waiting for it..." ) );
          }
-
+         Threads.notifyAllFor( this );
          log.debug( "ready to rock [{}]", serverSocket );
 
          while( !Thread.interrupted() && !serverSocket.isClosed() )
@@ -51,6 +52,11 @@ public abstract class AbstractHttpListener implements Runnable, Closeable {
       } finally {
          close();
       }
+   }
+
+   public synchronized void waitUntilBound() {
+      if( serverSocket != null && serverSocket.isBound() ) return;
+      Threads.waitFor( this );
    }
 
    @Override

@@ -24,21 +24,39 @@
 
 package oap.concurrent;
 
-public class Threads {
-    public static void interruptAndJoin( Thread thread ) {
-        if( thread != null ) {
-            thread.interrupt();
-            try {
-                thread.join();
-            } catch( InterruptedException ignored ) {
-            }
-        }
-    }
+import com.google.common.base.Throwables;
 
-    public static void sleepSafely( long time ) {
-        try {
-            Thread.sleep( time );
-        } catch( InterruptedException ignored ) {
-        }
-    }
+public class Threads {
+   public static void interruptAndJoin( Thread thread ) {
+      if( thread != null ) {
+         thread.interrupt();
+         try {
+            thread.join();
+         } catch( InterruptedException ignored ) {
+         }
+      }
+   }
+
+   public static void sleepSafely( long time ) {
+      try {
+         Thread.sleep( time );
+      } catch( InterruptedException ignored ) {
+      }
+   }
+
+   public static void waitFor( Object monitor ) {
+      synchronized( monitor ) {
+         try {
+            monitor.wait();
+         } catch( InterruptedException e ) {
+            Throwables.propagate( e );
+         }
+      }
+   }
+
+   public static void notifyAllFor( Object monitor ) {
+      synchronized( monitor ) {
+         monitor.notifyAll();
+      }
+   }
 }
