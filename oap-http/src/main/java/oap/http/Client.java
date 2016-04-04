@@ -56,10 +56,7 @@ import org.apache.http.message.BasicNameValuePair;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.KeyManagementException;
@@ -249,7 +246,7 @@ public class Client extends AsyncCallbacks<Client> {
 
          HttpEntity entity = resolve( url ).getEntity();
          try( InputStream in = entity.getContent() ) {
-            IoStreams.write( file, PLAIN, in, progress( entity.getContentLength(), progress ) );
+            IoStreams.write( file, PLAIN, new BufferedInputStream( in ), progress( entity.getContentLength(), progress ) );
          }
          onSuccess.run();
       } catch( ExecutionException e ) {
@@ -271,6 +268,7 @@ public class Client extends AsyncCallbacks<Client> {
       else if( response.getStatusLine().getStatusCode() == 302 ) {
          Header location = response.getFirstHeader( "Location" );
          if( location == null ) throw new IOException( "redirect w/o location!" );
+         log.debug( "following {}", location.getValue() );
          return resolve( location.getValue() );
       } else
          throw new IOException( response.getStatusLine().toString() );
