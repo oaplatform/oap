@@ -119,7 +119,9 @@ public class ObjectJsonValidator implements JsonSchemaValidator<ObjectSchemaAST>
 
         LinkedHashMap<String, SchemaAST> objectProperties = extendsValue
                 .map( url -> ((ObjectSchemaAST) properties.urlParser.apply( url )).properties )
-                .orElse( node( properties ).asMapAST( "properties" ).required() );
+                .orElse( new LinkedHashMap<>(  ) );
+
+        objectProperties.putAll( node( properties ).asMapAST( "properties" ).required() );
 
         return new ObjectSchemaAST( common,
                 additionalProperties,
