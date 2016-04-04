@@ -24,7 +24,7 @@
 package oap.io;
 
 import com.google.common.io.ByteStreams;
-import com.google.common.io.CountingInputStream;
+import oap.util.Functions;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
@@ -34,160 +34,148 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.zip.*;
 
+import static oap.io.ProgressInputStream.progress;
+import static oap.util.Functions.empty.consume;
+
 public class IoStreams {
 
-    public static final int DEFAULT_BUFFER = 8192;
+   public static final int DEFAULT_BUFFER = 8192;
 
-    public static Stream<String> lines( URL url ) {
-        return lines( url, Encoding.PLAIN, p -> {
-        } );
-    }
+   public static Stream<String> lines( URL url ) {
+      return lines( url, Encoding.PLAIN, p -> {
+      } );
+   }
 
-    public static Stream<String> lines( URL url, Consumer<Integer> progressCallback ) {
-        return lines( url, Encoding.PLAIN, progressCallback );
-    }
+   public static Stream<String> lines( URL url, Consumer<Integer> progress ) {
+      return lines( url, Encoding.PLAIN, progress );
+   }
 
-    public static Stream<String> lines( URL url, Encoding encoding, Consumer<Integer> progressCallback ) {
-        try {
-            URLConnection connection = url.openConnection();
-            InputStream stream = connection.getInputStream();
-            return lines( stream, connection.getContentLengthLong(), encoding, progressCallback )
-                .onClose( Try.run( stream::close ) );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
-    }
-
-    public static Stream<String> lines( Path path ) {
-        return lines( path, Encoding.PLAIN, p -> {
-        } );
-    }
-
-    public static Stream<String> lines( Path path, Encoding encoding ) {
-        return lines( path, encoding, p -> {
-        } );
-    }
-
-    public static Stream<String> lines( Path path, Encoding encoding, Consumer<Integer> progressCallback ) {
-        InputStream stream = in( path, Encoding.PLAIN );
-        return lines( stream, path.toFile().length(), encoding, progressCallback )
+   public static Stream<String> lines( URL url, Encoding encoding, Consumer<Integer> progress ) {
+      try {
+         URLConnection connection = url.openConnection();
+         InputStream stream = connection.getInputStream();
+         return lines( stream, encoding, progress( connection.getContentLengthLong(), progress ) )
             .onClose( Try.run( stream::close ) );
-    }
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
+   }
 
-    private static Stream<String> lines( InputStream stream, long size, Encoding encoding,
-                                         Consumer<Integer> progressCallback ) {
-        long percent = size / 100;
-        AtomicInteger lastReport = new AtomicInteger();
-        CountingInputStream counting = new CountingInputStream( stream );
-        return lines( in( counting, encoding ) )
-            .map( l -> {
-                if( percent > 0 && counting.getCount() / percent > lastReport.get() ) {
-                    lastReport.set( ( int ) ( counting.getCount() / percent ) );
-                    progressCallback.accept( lastReport.get() );
-                }
-                return l;
-            } );
-    }
+   public static Stream<String> lines( Path path ) {
+      return lines( path, Encoding.PLAIN, p -> {
+      } );
+   }
 
-    public static Stream<String> lines( InputStream stream ) {
-        return Stream.of( new BufferedReader( new InputStreamReader( stream, StandardCharsets.UTF_8 ) ).lines() );
-    }
+   public static Stream<String> lines( Path path, Encoding encoding ) {
+      return lines( path, encoding, p -> {
+      } );
+   }
 
-    public static void write( Path path, Encoding encoding, String value ) {
-        path.toAbsolutePath().getParent().toFile().mkdirs();
-        try( OutputStream out = out( path, encoding ) ) {
-            out.write( Strings.toByteArray( value ) );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+   public static Stream<String> lines( Path path, Encoding encoding, Consumer<Integer> progress ) {
+      InputStream stream = in( path, Encoding.PLAIN );
+      return lines( stream, encoding, progress( path.toFile().length(), progress ) )
+         .onClose( Try.run( stream::close ) );
+   }
 
-    }
+   private static Stream<String> lines( InputStream stream, Encoding encoding, ProgressInputStream.Progress progress ) {
+      return lines( in( new ProgressInputStream( stream, progress ), encoding ) );
+   }
 
-    public static void write( Path path, Encoding encoding, InputStream in ) {
-        path.toAbsolutePath().getParent().toFile().mkdirs();
-        try( OutputStream out = out( path, encoding ) ) {
-            ByteStreams.copy( in, out );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
-    }
+   public static Stream<String> lines( InputStream stream ) {
+      return Stream.of( new BufferedReader( new InputStreamReader( stream, StandardCharsets.UTF_8 ) ).lines() );
+   }
+
+   public static void write( Path path, Encoding encoding, String value ) {
+      write( path, encoding, new ByteArrayInputStream( Strings.toByteArray( value ) ) );
+   }
+
+   public static void write( Path path, Encoding encoding, InputStream in ) {
+      write( path, encoding, in, ProgressInputStream.empty() );
+   }
+
+   public static void write( Path path, Encoding encoding, InputStream in, ProgressInputStream.Progress progress ) {
+      path.toAbsolutePath().getParent().toFile().mkdirs();
+      try( OutputStream out = out( path, encoding ) ) {
+         ByteStreams.copy( new ProgressInputStream( in, progress ), out );
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
+   }
 
 
-    public static OutputStream out( Path path, Encoding encoding ) {
-        return out( path, encoding, DEFAULT_BUFFER );
-    }
+   public static OutputStream out( Path path, Encoding encoding ) {
+      return out( path, encoding, DEFAULT_BUFFER );
+   }
 
-    public static OutputStream out( Path path, Encoding encoding, int bufferSize ) {
-        return out( path, encoding, bufferSize, false );
-    }
+   public static OutputStream out( Path path, Encoding encoding, int bufferSize ) {
+      return out( path, encoding, bufferSize, false );
+   }
 
-    public static OutputStream out( Path path, Encoding encoding, boolean append ) {
-        return out( path, encoding, DEFAULT_BUFFER, append );
-    }
+   public static OutputStream out( Path path, Encoding encoding, boolean append ) {
+      return out( path, encoding, DEFAULT_BUFFER, append );
+   }
 
-    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) {
-        return out( path, encoding, bufferSize, append, false, false );
-    }
+   public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) {
+      return out( path, encoding, bufferSize, append, false, false );
+   }
 
-    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe, boolean removeEmptyIfSafe ) {
-        assert ( !removeEmptyIfSafe || safe );
+   public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe, boolean removeEmptyIfSafe ) {
+      assert ( !removeEmptyIfSafe || safe );
 
-        path.toAbsolutePath().getParent().toFile().mkdirs();
-        try {
-            OutputStream fos = new BufferedOutputStream( safe ?
-                new SafeFileOutputStream( path, append, removeEmptyIfSafe ) :
-                new FileOutputStream( path.toFile(), append ),
-                bufferSize );
-            switch( encoding ) {
-                case GZIP:
-                    return new GZIPOutputStream( fos );
-                case ZIP:
-                    if( append ) throw new IllegalArgumentException( "cannot append zip file" );
-                    ZipOutputStream zip = new ZipOutputStream( fos );
-                    zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
-                    return zip;
-                default:
-                    return fos;
-            }
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
-    }
+      path.toAbsolutePath().getParent().toFile().mkdirs();
+      try {
+         OutputStream fos = new BufferedOutputStream( safe ?
+            new SafeFileOutputStream( path, append, removeEmptyIfSafe ) :
+            new FileOutputStream( path.toFile(), append ),
+            bufferSize );
+         switch( encoding ) {
+            case GZIP:
+               return new GZIPOutputStream( fos );
+            case ZIP:
+               if( append ) throw new IllegalArgumentException( "cannot append zip file" );
+               ZipOutputStream zip = new ZipOutputStream( fos );
+               zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
+               return zip;
+            default:
+               return fos;
+         }
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
+   }
 
-    public static InputStream in( Path path, Encoding encoding ) {
-        try {
-            return in( new BufferedInputStream( new FileInputStream( path.toFile() ) ), encoding );
-        } catch( FileNotFoundException e ) {
-            throw new UncheckedIOException( e );
-        }
-    }
+   public static InputStream in( Path path, Encoding encoding ) {
+      try {
+         return in( new BufferedInputStream( new FileInputStream( path.toFile() ) ), encoding );
+      } catch( FileNotFoundException e ) {
+         throw new UncheckedIOException( e );
+      }
+   }
 
-    public static InputStream in( InputStream stream, Encoding encoding ) {
-        try {
-            switch( encoding ) {
-                case GZIP:
-                    return new GZIPInputStream( stream );
-                case ZIP:
-                    ZipInputStream zip = new ZipInputStream( stream );
-                    if( zip.getNextEntry() == null )
-                        throw new IllegalArgumentException( "zip stream contains no entries" );
-                    return zip;
-                default:
-                    return stream;
-            }
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+   public static InputStream in( InputStream stream, Encoding encoding ) {
+      try {
+         switch( encoding ) {
+            case GZIP:
+               return new GZIPInputStream( stream );
+            case ZIP:
+               ZipInputStream zip = new ZipInputStream( stream );
+               if( zip.getNextEntry() == null )
+                  throw new IllegalArgumentException( "zip stream contains no entries" );
+               return zip;
+            default:
+               return stream;
+         }
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
 
-    }
+   }
 
-    public enum Encoding {
-        PLAIN, ZIP, GZIP
-    }
-
+   public enum Encoding {
+      PLAIN, ZIP, GZIP
+   }
 
 }

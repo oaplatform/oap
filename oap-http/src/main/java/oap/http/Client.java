@@ -71,9 +71,11 @@ import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.io.IoStreams.Encoding.PLAIN;
+import static oap.io.ProgressInputStream.progress;
 import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
@@ -238,6 +240,29 @@ public class Client extends AsyncCallbacks<Client> {
       return Arrays.stream( response.getAllHeaders() )
          .map( h -> __( h.getName(), h.getValue() ) )
          .collect( toMap() );
+   }
+
+   public void download( String url, Path file, Consumer<Integer> progress ) {
+      try {
+         HttpGet request = new HttpGet( url );
+         Future<org.apache.http.HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
+         org.apache.http.HttpResponse response = future.get();
+         if( response.getEntity() == null )
+            throw new IOException( response.getStatusLine().toString() );
+         HttpEntity entity = response.getEntity();
+         try( InputStream in = entity.getContent() ) {
+            IoStreams.write( file, PLAIN, in, progress( entity.getContentLength(), progress ) );
+         }
+         onSuccess.run();
+      } catch( ExecutionException e ) {
+         onError.accept( e );
+         throw Throwables.propagate( e );
+      } catch( IOException e ) {
+         onError.accept( e );
+         throw new UncheckedIOException( e );
+      } catch( InterruptedException e ) {
+         onTimeout.run();
+      }
    }
 
 
