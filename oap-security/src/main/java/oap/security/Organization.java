@@ -44,7 +44,7 @@ public class Organization implements Serializable {
 
       @Override
       protected String keyOf( User user) {
-         return user.username;
+         return user.email;
       }
    }
 }

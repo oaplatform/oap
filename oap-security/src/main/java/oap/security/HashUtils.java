@@ -26,6 +26,7 @@ package oap.security;
 
 
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Strings;
 
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
@@ -38,17 +39,14 @@ public final class HashUtils {
    }
 
    public static String hash( String salt, String input ) {
-      final StringBuilder stringBuilder = new StringBuilder();
       try {
          final MessageDigest messageDigest = MessageDigest.getInstance( "SHA-256" );
 
-         messageDigest.update( salt.getBytes("UTF-8") );
+         messageDigest.update( salt.getBytes( "UTF-8" ) );
 
          final byte[] hashedInput = messageDigest.digest( input.getBytes() );
 
-         for( byte b : hashedInput ) {
-            stringBuilder.append( String.format( "%02x", b & 0xff ) );
-         }
+         return Strings.toHexString( hashedInput );
       } catch( NoSuchAlgorithmException e ) {
          log.error( "No native SHA-256 algorithm support for this JVM", e );
          throw new RuntimeException( e );
@@ -56,7 +54,5 @@ public final class HashUtils {
          log.error( "UTF-8 encoding is not supported", e );
          throw new RuntimeException( e );
       }
-
-      return stringBuilder.toString();
    }
 }

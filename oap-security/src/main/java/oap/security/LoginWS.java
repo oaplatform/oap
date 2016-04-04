@@ -24,18 +24,18 @@
 
 package oap.security;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import lombok.extern.slf4j.Slf4j;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
-import oap.ws.validate.Validate;
-import org.joda.time.DateTime;
+import org.apache.commons.collections4.CollectionUtils;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Optional;
 
+import static java.lang.String.format;
 import static oap.http.Request.HttpMethod.GET;
-import static oap.ws.WsParam.From.PATH;
 import static oap.ws.WsParam.From.QUERY;
 
 @Slf4j
@@ -50,21 +50,28 @@ public class LoginWS extends OrganizationValidator {
       this.salt = salt;
    }
 
-   @WsMethod( method = GET, path = "/{oname}" )
-   @Validate( "organizationExists" )
-   public Token login( @WsParam( from = PATH ) String oname,
-                       @WsParam( from = QUERY ) String username,
-                       @WsParam( from = QUERY ) String password ) {
-      final Organization organization = organizationStorage.get( oname ).get();
+   @WsMethod( method = GET, path = "/" )
+   public Token login( @WsParam( from = QUERY ) String email, @WsParam( from = QUERY ) String password ) {
 
-      final Optional<User> userOptional = organization.users.get( username );
+      final List<Organization.Users> usersList = organizationStorage.select()
+         .map( organization -> organization.users )
+         .filter( users -> users.get( email ).isPresent() )
+         .toList();
 
-      if( userOptional.isPresent() ) {
-         final User user = userOptional.get();
+      Preconditions.checkState( usersList.size() < 2,
+         format( "There are multiple users with the same email [%s]", email ) );
 
-         final String inputPassword = HashUtils.hash( salt, password );
-         if( user.password.equals( inputPassword ) ) {
-            return authService.generateToken( user, oname );
+      if( CollectionUtils.isNotEmpty( usersList ) ) {
+         final Organization.Users users = Iterables.getOnlyElement( usersList );
+
+         final Optional<User> userOptional = users.get( email );
+         if( userOptional.isPresent() ) {
+            final User user = userOptional.get();
+
+            final String inputPassword = HashUtils.hash( salt, password );
+            if( user.password.equals( inputPassword ) ) {
+               return authService.generateToken( user );
+            }
          }
       }
 

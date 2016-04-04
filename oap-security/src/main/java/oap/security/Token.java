@@ -35,8 +35,7 @@ public class Token implements Serializable {
    private static final long serialVersionUID = -2221117654361445000L;
 
    public String id;
-   public String username;
-   public String organization;
+   public String userEmail;
    public Role role;
    public DateTime expire;
 }

@@ -27,6 +27,8 @@ package oap.security;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
 
+import java.util.Optional;
+
 import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.PATH;
 
@@ -39,7 +41,7 @@ public class AuthWS {
    }
 
    @WsMethod( method = GET, path = "/{tokenId}" )
-   public Token getToken( @WsParam( from = PATH ) String tokenId ) {
+   public Optional<Token> getToken( @WsParam( from = PATH ) String tokenId ) {
       return authService.getToken( tokenId );
    }
 

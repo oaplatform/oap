@@ -29,8 +29,8 @@ import com.google.common.collect.Iterables;
 import org.joda.time.DateTime;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 
@@ -42,20 +42,18 @@ public class AuthService {
       this.tokenStorage = tokenStorage;
    }
 
-   public Token generateToken( User user, String organization ) {
+   public Token generateToken( User user ) {
 
       final List<Token> userTokens = tokenStorage.select()
-         .filter( token -> token.username.equals( user.username ) )
-         .filter( token -> token.organization.equals( organization ) )
-         .collect( Collectors.toList() );
+         .filter( token -> token.userEmail.equals( user.email ))
+         .toList();
 
-      Preconditions.checkState( userTokens.size() < 1,
-         format( "There are multiple usernames [%s] within [%s] organization", user.username, organization ) );
+      Preconditions.checkState( userTokens.size() < 2,
+         format( "There are multiple users with the same email [%s]", user.email) );
 
       if( userTokens.isEmpty() ) {
          final Token token = new Token();
-         token.organization = organization;
-         token.username = user.username;
+         token.userEmail = user.email;
          token.role = user.role;
          token.expire = DateTime.now().plusHours( 1 );
          token.id = UUID.randomUUID().toString();
@@ -72,8 +70,8 @@ public class AuthService {
       }
    }
 
-   public Token getToken( String tokenId ) {
-      return tokenStorage.get( tokenId ).orElse( null );
+   public Optional<Token> getToken( String tokenId ) {
+      return tokenStorage.get( tokenId );
    }
 
 }

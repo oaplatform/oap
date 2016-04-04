@@ -29,8 +29,8 @@ import oap.ws.WsParam;
 import oap.ws.validate.Validate;
 
 import java.util.Objects;
+import java.util.Optional;
 
-import static java.lang.String.format;
 import static oap.http.Request.HttpMethod.*;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.PATH;
@@ -47,8 +47,8 @@ public class OrganizationWS extends OrganizationValidator {
    }
 
    @WsMethod( method = GET, path = "/{oname}" )
-   public Organization getOrganization( @WsParam( from = PATH ) @Validate( "organizationExists" ) String oname ) {
-      return organizationStorage.get( oname ).get();
+   public Optional<Organization> getOrganization( @WsParam( from = PATH ) String oname ) {
+      return organizationStorage.get( oname );
    }
 
    @WsMethod( method = DELETE, path = "/remove/{oname}" )
@@ -57,34 +57,36 @@ public class OrganizationWS extends OrganizationValidator {
    }
 
    @WsMethod( method = POST, path = "/{oname}/store-user" )
-   @Validate( "userAlreadyExists" )
    public void storeUser( @WsParam( from = BODY ) User user,
                           @WsParam( from = PATH ) @Validate( "organizationExists" ) String oname ) {
       organizationStorage.update( oname,
-         organization -> organization.users.get( user.username )
-            .ifPresent( u -> {
-                  u.username = user.username;
-                  u.password = user.password;
-                  u.role = user.role;
-               }
-            )
+         organization -> {
+            final Optional<User> userOptional = organization.users.get( user.email );
+            if( userOptional.isPresent() ) {
+               final User update = userOptional.get();
+               update.email = user.email;
+               update.password = user.password;
+               update.role = user.role;
+            } else {
+               organization.users.add( user );
+            }
+         }
       );
    }
 
-   @WsMethod( method = GET, path = "/{oname}/user/{username}" )
-   public User getUser( @WsParam( from = PATH ) @Validate( "organizationExists" ) String oname,
-                        @WsParam( from = PATH ) String username ) {
+   @WsMethod( method = GET, path = "/{oname}/user/{email}" )
+   public Optional<User> getUser( @WsParam( from = PATH ) @Validate( "organizationExists" ) String oname,
+                                  @WsParam( from = PATH ) String username ) {
       final Organization.Users users = organizationStorage.get( oname ).get().users;
 
-      return users.get( username ).orElseThrow( () ->
-         new RuntimeException( format( "User [%s] not found", username ) ) );
+      return users.get( username );
    }
 
-   @WsMethod( method = DELETE, path = "/{oname}/remove-user/{username}" )
+   @WsMethod( method = DELETE, path = "/{oname}/remove-user/{email}" )
    public void removeUser( @WsParam( from = PATH ) @Validate( "organizationExists" ) String oname,
                            @WsParam( from = PATH ) String username ) {
       organizationStorage.update( oname,
-         organization -> organization.users.removeIf( user -> Objects.equals( user.username, username ) )
+         organization -> organization.users.removeIf( user -> Objects.equals( user.email, username ) )
       );
    }
 

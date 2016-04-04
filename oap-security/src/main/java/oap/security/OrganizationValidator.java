@@ -27,7 +27,6 @@ package oap.security;
 import oap.util.Lists;
 
 import java.util.List;
-import java.util.Optional;
 
 public abstract class OrganizationValidator {
 
@@ -37,17 +36,10 @@ public abstract class OrganizationValidator {
       this.organizationStorage = organizationStorage;
    }
 
-   public List<String> organizationExists( String oname) {
+   public List<String> organizationExists( String oname ) {
       return organizationStorage
          .get( oname ).isPresent() ? Lists.empty() :
          Lists.of( "Organization " + oname + " does not exist." );
-   }
-
-   public List<String> userAlreadyExists( User user, String oname) {
-      final Organization organization = organizationStorage.get( oname ).get();
-      final Optional<User> userOptional = organization.users.get( user.username );
-
-      return userOptional.isPresent() ? Lists.of( "User " + user.username + " already exist" ) : Lists.empty();
    }
 
 }
