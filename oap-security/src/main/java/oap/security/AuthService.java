@@ -54,6 +54,7 @@ public class AuthService {
 
       if( userTokens.isEmpty() ) {
          final Token token = new Token();
+         token.organization = organization;
          token.username = user.username;
          token.role = user.role;
          token.expire = DateTime.now().plusHours( 1 );
