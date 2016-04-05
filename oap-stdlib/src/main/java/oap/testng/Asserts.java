@@ -40,6 +40,7 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.fail;
 
 public final class Asserts {
@@ -129,6 +130,11 @@ public final class Asserts {
    public static class FileAssertion extends AbstractFileAssert<FileAssertion> {
       protected FileAssertion( Path actual ) {
          super( actual.toFile(), FileAssertion.class );
+      }
+
+      public FileAssertion hasSize( long size ) {
+         assertThat( actual.length() ).isEqualTo( size );
+         return this;
       }
 
       @Override

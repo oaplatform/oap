@@ -8,7 +8,9 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -41,8 +43,10 @@ public class SecureHttpListenerTest {
          response.respond( new HttpResponse( 200 ) );
       }, Protocol.HTTPS );
 
-      listener = new SynchronizedThread( new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port() ) );
+      SecureHttpListener http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port() );
+      listener = new SynchronizedThread( http );
       listener.start();
+      http.waitUntilBound();
    }
 
    @Test

@@ -22,41 +22,27 @@
  * SOFTWARE.
  */
 
-package oap.concurrent;
+package oap.http;
 
-import com.google.common.base.Throwables;
+import lombok.extern.slf4j.Slf4j;
+import oap.testng.AbstractTest;
+import oap.testng.Env;
+import org.testng.annotations.Test;
 
-public class Threads {
-   public static void interruptAndJoin( Thread thread ) {
-      if( thread != null ) {
-         thread.interrupt();
-         try {
-            thread.join();
-         } catch( InterruptedException ignored ) {
-         }
-      }
-   }
+import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicInteger;
 
-   public static void sleepSafely( long time ) {
-      try {
-         Thread.sleep( time );
-      } catch( InterruptedException ignored ) {
-      }
-   }
+import static oap.testng.Asserts.assertFile;
+import static org.assertj.core.api.Assertions.assertThat;
 
-   public static void waitFor( Object monitor ) {
-      synchronized( monitor ) {
-         try {
-            monitor.wait();
-         } catch( InterruptedException e ) {
-            Throwables.propagate( e );
-         }
-      }
-   }
-
-   public static void notifyAllFor( Object monitor ) {
-      synchronized( monitor ) {
-         monitor.notifyAll();
-      }
+@Slf4j
+public class ClientTest extends AbstractTest {
+   @Test
+   public void download() {
+      Path path = Env.tmpPath( "flag.png" );
+      AtomicInteger progress = new AtomicInteger();
+      Client.DEFAULT.download( "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/OUN-r_Flag_1941.svg/250px-OUN-r_Flag_1941.svg.png", path, progress::set );
+      assertFile( path ).exists().hasSize( 560 );
+      assertThat( progress.get() ).isEqualTo( 100 );
    }
 }
