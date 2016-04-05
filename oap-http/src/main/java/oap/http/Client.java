@@ -38,10 +38,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.*;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
@@ -190,6 +187,14 @@ public class Client extends AsyncCallbacks<Client> {
       HttpPut request = new HttpPut( uri );
       request.setEntity( new StringEntity( content, contentType ) );
       return execute( request, Maps.empty(), FOREVER )
+         .orElseThrow( () -> new RuntimeException( "no response" ) );
+   }
+   public Response delete( String uri) {
+      return delete( uri, FOREVER );
+   }
+   public Response delete( String uri, long timeout) {
+      HttpDelete request = new HttpDelete( uri );
+      return execute( request, Maps.empty(), timeout )
          .orElseThrow( () -> new RuntimeException( "no response" ) );
    }
 

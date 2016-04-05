@@ -34,13 +34,14 @@ import java.util.UUID;
 public class AuthService {
 
    private final TokenStorage tokenStorage;
+   private final int expirationTime;
 
-   public AuthService( TokenStorage tokenStorage ) {
+   public AuthService( TokenStorage tokenStorage, int expirationTime ) {
       this.tokenStorage = tokenStorage;
+      this.expirationTime = expirationTime;
    }
 
    public Token generateToken( User user ) {
-
       final List<Token> userTokens = tokenStorage.select()
          .filter( token -> token.userEmail.equals( user.email ) )
          .toList();
@@ -49,7 +50,7 @@ public class AuthService {
          final Token token = new Token();
          token.userEmail = user.email;
          token.role = user.role;
-         token.expire = DateTime.now().plusHours( 1 );
+         token.expire = DateTime.now().plusMinutes( expirationTime );
          token.id = UUID.randomUUID().toString();
 
          tokenStorage.store( token );
@@ -59,13 +60,25 @@ public class AuthService {
          final Token existingToken = Iterables.getOnlyElement( userTokens );
 
          return tokenStorage.update( existingToken.id, token -> {
-            token.expire = DateTime.now().plusHours( 1 );
+            token.expire = DateTime.now().plusMinutes( expirationTime );
          } );
       }
    }
 
    public Optional<Token> getToken( String tokenId ) {
-      return tokenStorage.get( tokenId );
+      final Optional<Token> tokenOptional = tokenStorage.get( tokenId );
+
+      if( tokenOptional.isPresent() ) {
+         final Token token = tokenOptional.get();
+
+         if( token.expire.isAfterNow() ) {
+            return Optional.of( token );
+         } else {
+            deleteToken( token.id );
+         }
+      }
+
+      return Optional.empty();
    }
 
    public void deleteToken( String tokenId ) {

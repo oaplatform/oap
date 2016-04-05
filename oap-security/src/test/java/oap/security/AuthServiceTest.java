@@ -35,15 +35,16 @@ import static org.testng.Assert.*;
 
 public class AuthServiceTest extends AbstractTest {
 
+   private TokenStorage tokenStorage;
+
    private AuthService authService;
 
    @BeforeTest
    public void setUp() {
       TypeIdFactory.register( User.class, User.class.getName() );
 
-      TokenStorage tokenStorage = new TokenStorage( Resources.filePath( AuthServiceTest.class, "" ).get() );
-
-      authService = new AuthService( tokenStorage );
+      tokenStorage = new TokenStorage( Resources.filePath( AuthServiceTest.class, "" ).get() );
+      authService = new AuthService( tokenStorage, 1 );
 
       tokenStorage.start();
    }
@@ -71,8 +72,36 @@ public class AuthServiceTest extends AbstractTest {
       user.role = Role.ADMIN;
 
       final DateTime expire = authService.generateToken( user ).expire;
+      Thread.sleep( 100 );
       final DateTime updatedExpire = authService.generateToken( user ).expire;
 
       assertNotEquals( expire, updatedExpire );
+   }
+
+   @Test
+   public void testShouldNotDeleteNonExpiredTokenOnNextRequest() throws InterruptedException {
+      final User user = new User();
+      user.email = "test@example.com";
+      user.password = "12345";
+      user.role = Role.ADMIN;
+
+      final String id = authService.generateToken( user ).id;
+      Thread.sleep( 100 );
+
+      assertNotNull( authService.getToken( id ) );
+   }
+
+   @Test
+   public void testShouldDeleteExpiredTokenOnNextRequest() throws InterruptedException {
+      final User user = new User();
+      user.email = "test@example.com";
+      user.password = "12345";
+      user.role = Role.ADMIN;
+
+      authService = new AuthService( tokenStorage, 0 );
+
+      final String id = authService.generateToken( user ).id;
+      Thread.sleep( 1000 );
+      assertFalse( authService.getToken( id ).isPresent() );
    }
 }

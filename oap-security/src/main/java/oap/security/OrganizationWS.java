@@ -37,8 +37,11 @@ import static oap.ws.WsParam.From.PATH;
 
 public class OrganizationWS extends OrganizationValidator {
 
-   public OrganizationWS( OrganizationStorage organizationStorage ) {
+   private final String salt;
+
+   public OrganizationWS( OrganizationStorage organizationStorage, String salt ) {
       super( organizationStorage );
+      this.salt = salt;
    }
 
    @WsMethod( method = POST, path = "/store" )
@@ -65,9 +68,10 @@ public class OrganizationWS extends OrganizationValidator {
             if( userOptional.isPresent() ) {
                final User update = userOptional.get();
                update.email = user.email;
-               update.password = user.password;
+               update.password = HashUtils.hash( salt, user.password );
                update.role = user.role;
             } else {
+               user.password = HashUtils.hash( salt, user.password );
                organization.users.add( user );
             }
          }

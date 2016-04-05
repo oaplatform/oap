@@ -36,13 +36,12 @@ public class AuthWS {
 
    private final AuthService authService;
 
-   public AuthWS( AuthService authService) {
-      this.authService= authService;
+   public AuthWS( AuthService authService ) {
+      this.authService = authService;
    }
 
    @WsMethod( method = GET, path = "/{tokenId}" )
    public Optional<Token> getToken( @WsParam( from = PATH ) String tokenId ) {
       return authService.getToken( tokenId );
    }
-
 }
