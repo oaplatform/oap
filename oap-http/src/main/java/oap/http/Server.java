@@ -118,7 +118,7 @@ public class Server implements HttpServer {
                   httpService.handleRequest( connection, httpContext );
             } catch( SocketException e ) {
                if( socketClosed( e ) )
-                  log.trace( "іщслуе closed: {}", connection );
+                  log.trace( "Socket closed: {}", connection );
                else if( connectionReset( e ) )
                   log.warn( "Connection reset: {}", connection );
                else log.error( e.getMessage(), e );

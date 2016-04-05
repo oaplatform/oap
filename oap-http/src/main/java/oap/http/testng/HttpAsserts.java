@@ -65,6 +65,9 @@ public class HttpAsserts {
    public static HttpAssertion assertPut( String uri, String content, ContentType contentType ) {
       return new HttpAssertion( client.put( uri, content, contentType ) );
    }
+   public static HttpAssertion assertDelete( String uri) {
+      return new HttpAssertion( client.delete( uri) );
+   }
 
    @EqualsAndHashCode
    @ToString
