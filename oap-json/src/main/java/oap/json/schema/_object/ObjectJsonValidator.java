@@ -117,13 +117,17 @@ public class ObjectJsonValidator implements JsonSchemaValidator<ObjectSchemaAST>
         Optional<Boolean> additionalProperties = node( properties ).asBoolean( "additionalProperties" ).optional();
         Optional<String> extendsValue = node( properties ).asString( "extends" ).optional();
 
-        LinkedHashMap<String, SchemaAST> objectProperties = extendsValue
+        LinkedHashMap<String, SchemaAST> parentProperties = extendsValue
                 .map( url -> ((ObjectSchemaAST) properties.urlParser.apply( url )).properties )
                 .orElse( new LinkedHashMap<>(  ) );
 
-        objectProperties.putAll( node( properties ).asMapAST( "properties" ).required() );
+       LinkedHashMap<String, SchemaAST> declaredProperties = node( properties ).asMapAST( "properties" ).required();
 
-        return new ObjectSchemaAST( common,
+       LinkedHashMap<String, SchemaAST> objectProperties = new LinkedHashMap<>();
+       objectProperties.putAll( parentProperties );
+       objectProperties.putAll( declaredProperties );
+
+       return new ObjectSchemaAST( common,
                 additionalProperties,
                 extendsValue,
                 objectProperties
