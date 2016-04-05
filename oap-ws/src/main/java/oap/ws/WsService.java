@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
-public class Service implements Handler {
+public class WsService implements Handler {
     private final Object impl;
     private final Logger logger;
     private final Reflection reflection;
@@ -63,7 +63,7 @@ public class Service implements Handler {
     private HashMap<String, Pattern> compiledPaths = new HashMap<>();
 
 
-    public Service( Object impl ) {
+    public WsService( Object impl ) {
         this.impl = impl;
         this.logger = LoggerFactory.getLogger( impl.getClass() );
         this.reflection = Reflect.reflect( impl.getClass() );

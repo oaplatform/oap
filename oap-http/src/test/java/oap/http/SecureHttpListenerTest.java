@@ -46,7 +46,6 @@ public class SecureHttpListenerTest {
       SecureHttpListener http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port() );
       listener = new SynchronizedThread( http );
       listener.start();
-      http.waitUntilBound();
    }
 
    @Test

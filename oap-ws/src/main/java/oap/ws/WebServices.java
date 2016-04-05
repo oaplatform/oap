@@ -88,7 +88,7 @@ public class WebServices {
    }
 
    public void bind( String context, Cors cors, Object impl, Protocol protocol ) {
-      server.bind( context, cors, new Service( impl ), protocol );
+      server.bind( context, cors, new WsService( impl ), protocol );
    }
 
 }

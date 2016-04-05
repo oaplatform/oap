@@ -31,6 +31,11 @@ public class SynchronizedThread implements Runnable {
    private Semaphore semaphore = new Semaphore( 0 );
    private boolean stopped = true;
 
+   public SynchronizedThread( SynchronizedRunnable child ) {
+      this.child = child;
+      child.thread = this;
+   }
+
    public SynchronizedThread( Runnable child ) {
       this.child = child;
    }
@@ -50,7 +55,7 @@ public class SynchronizedThread implements Runnable {
       stopped = false;
       thread.start();
       try {
-         semaphore.acquire();
+         semaphore.acquire( child instanceof SynchronizedRunnable ? 2 : 1 );
       } catch( InterruptedException e ) {
          throw new ThreadException( e );
       }
@@ -76,5 +81,13 @@ public class SynchronizedThread implements Runnable {
 
    public boolean isRunning() {
       return !stopped;
+   }
+
+   public static abstract class SynchronizedRunnable implements Runnable {
+      protected SynchronizedThread thread;
+
+      protected void notifyReady() {
+         thread.semaphore.release();
+      }
    }
 }

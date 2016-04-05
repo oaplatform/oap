@@ -61,7 +61,6 @@ public class ValidatePeerMethodTest extends AbstractTest {
       PlainHttpListener http = new PlainHttpListener( server, Env.port() );
       listener = new SynchronizedThread( http );
       listener.start();
-      http.waitUntilBound();
    }
 
    @AfterClass
