@@ -60,8 +60,10 @@ public class ValidatePeerParamTest {
       server.start();
       ws.bind( "test", Cors.DEFAULT, new TestWS(), Protocol.HTTP );
 
-      listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
+      PlainHttpListener http = new PlainHttpListener( server, Env.port() );
+      listener = new SynchronizedThread( http );
       listener.start();
+      http.waitUntilBound();
    }
 
    @AfterClass
