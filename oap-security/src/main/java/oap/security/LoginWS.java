@@ -35,7 +35,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static java.lang.String.format;
+import static oap.http.Request.HttpMethod.DELETE;
 import static oap.http.Request.HttpMethod.GET;
+import static oap.ws.WsParam.From.PATH;
 import static oap.ws.WsParam.From.QUERY;
 
 @Slf4j
@@ -76,6 +78,11 @@ public class LoginWS extends OrganizationValidator {
       }
 
       return null;
+   }
+
+   @WsMethod( method = DELETE, path = "/{tokenId}" )
+   public void logout( @WsParam( from = PATH ) String tokenId ) {
+      authService.deleteToken( tokenId );
    }
 
 }

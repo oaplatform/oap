@@ -24,15 +24,12 @@
 
 package oap.security;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import org.joda.time.DateTime;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-
-import static java.lang.String.format;
 
 public class AuthService {
 
@@ -45,11 +42,8 @@ public class AuthService {
    public Token generateToken( User user ) {
 
       final List<Token> userTokens = tokenStorage.select()
-         .filter( token -> token.userEmail.equals( user.email ))
+         .filter( token -> token.userEmail.equals( user.email ) )
          .toList();
-
-      Preconditions.checkState( userTokens.size() < 2,
-         format( "There are multiple users with the same email [%s]", user.email) );
 
       if( userTokens.isEmpty() ) {
          final Token token = new Token();
@@ -74,4 +68,7 @@ public class AuthService {
       return tokenStorage.get( tokenId );
    }
 
+   public void deleteToken( String tokenId ) {
+      tokenStorage.delete( tokenId );
+   }
 }
