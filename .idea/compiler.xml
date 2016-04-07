@@ -22,8 +22,11 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="true" />
+        <module name="oap-alert" />
+        <module name="oap-alert-slack" />
         <module name="oap-application" />
         <module name="oap-cli" />
+        <module name="oap-cli (1)" />
         <module name="oap-etl" />
         <module name="oap-http" />
         <module name="oap-json" />
@@ -39,8 +42,11 @@
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="oap" target="1.8" />
+      <module name="oap-alert" target="1.8" />
+      <module name="oap-alert-slack" target="1.8" />
       <module name="oap-application" target="1.8" />
       <module name="oap-cli" target="1.8" />
+      <module name="oap-cli (1)" target="1.8" />
       <module name="oap-etl" target="1.8" />
       <module name="oap-http" target="1.8" />
       <module name="oap-json" target="1.8" />
@@ -48,6 +54,7 @@
       <module name="oap-maven" target="1.8" />
       <module name="oap-metrics" target="1.8" />
       <module name="oap-security" target="1.8" />
+      <module name="oap-slack" target="1.8" />
       <module name="oap-stdlib" target="1.8" />
       <module name="oap-storage" target="1.8" />
       <module name="oap-ws" target="1.8" />
