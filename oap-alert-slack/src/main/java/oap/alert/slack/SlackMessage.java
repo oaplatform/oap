@@ -21,7 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.slack;
+
+package oap.alert.slack;
 
 import flowctrl.integration.slack.SlackClientFactory;
 import flowctrl.integration.slack.type.Attachment;
