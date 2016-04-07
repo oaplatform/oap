@@ -73,9 +73,7 @@ public class ThreadService extends SynchronizedRunnable implements Supervised, S
    public synchronized void stop() {
       log.debug( "stopping " + thread.getName() );
 
-      if( supervisee instanceof Closeable ) {
-         Closeables.close( ( Closeable ) supervisee );
-      }
+      if( supervisee instanceof Closeable ) Closeables.close( ( Closeable ) supervisee );
       thread.stop();
    }
 }
