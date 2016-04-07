@@ -1,7 +1,7 @@
 package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.SynchronizedThread;
+import oap.concurrent.SynchronizedRunnable;
 import oap.io.Closeables;
 
 import java.io.Closeable;
@@ -14,7 +14,7 @@ import static oap.concurrent.Once.once;
 import static oap.io.Sockets.socketClosed;
 
 @Slf4j
-public abstract class AbstractHttpListener extends SynchronizedThread.SynchronizedRunnable implements Closeable {
+public abstract class AbstractHttpListener extends SynchronizedRunnable implements Closeable {
    private final HttpServer server;
    protected int timeout = 1000;
    protected long sleep = 60000;

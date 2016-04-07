@@ -51,7 +51,7 @@ public class KernelTest extends AbstractTest {
         try {
             kernel.start( Resources.filePath( getClass(), "application.conf" ).get(),
                 Resources.filePath( getClass(), "conf.d" ).get() );
-            assertEventually( 50, 10, () -> {
+            assertEventually( 50, 1, () -> {
                 assertThat( ServiceOne.instances ).isEqualTo( 1 );
                 ServiceOne one = Application.service( ServiceOne.class );
                 ServiceTwo two = Application.service( ServiceTwo.class );
