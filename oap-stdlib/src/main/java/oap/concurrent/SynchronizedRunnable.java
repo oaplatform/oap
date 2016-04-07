@@ -30,7 +30,7 @@ public abstract class SynchronizedRunnable implements Runnable {
       listener.notifyReady();
    }
 
-   public void setListener( SynchronizedChildReadyListener listener ) {
+   public void readyListener( SynchronizedChildReadyListener listener ) {
       this.listener = listener;
    }
 }

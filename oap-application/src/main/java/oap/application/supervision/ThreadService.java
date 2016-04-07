@@ -44,7 +44,7 @@ public class ThreadService extends SynchronizedRunnable implements Supervised, S
       this.supervisor = supervisor;
       this.thread.setName( name );
       if( supervisee instanceof SynchronizedRunnable )
-         ( ( SynchronizedRunnable ) supervisee ).setListener( this );
+         ( ( SynchronizedRunnable ) supervisee ).readyListener( this );
       else notifyReady();
    }
 
