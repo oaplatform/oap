@@ -25,7 +25,7 @@ package oap.concurrent;
 
 import java.util.concurrent.Semaphore;
 
-public class SynchronizedThread implements Runnable {
+public class SynchronizedThread implements Runnable, SynchronizedChildReadyListener {
    private Thread thread = new Thread( this );
    private Runnable child;
    private Semaphore semaphore = new Semaphore( 0 );
@@ -33,7 +33,7 @@ public class SynchronizedThread implements Runnable {
 
    public SynchronizedThread( SynchronizedRunnable child ) {
       this.child = child;
-      child.thread = this;
+      child.listener = this;
    }
 
    public SynchronizedThread( Runnable child ) {
@@ -83,11 +83,9 @@ public class SynchronizedThread implements Runnable {
       return !stopped;
    }
 
-   public static abstract class SynchronizedRunnable implements Runnable {
-      protected SynchronizedThread thread;
-
-      protected void notifyReady() {
-         thread.semaphore.release();
-      }
+   @Override
+   public void notifyReady() {
+      this.semaphore.release();
    }
+
 }

@@ -40,8 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TypeIdFactoryTest extends AbstractTest {
     @Test
     public void testClassMapping() {
-        new TypeIdFactory().start();
-
         final TestBean b = new TestBean( "1" );
         final String marshal = Binder.json.marshal( new TestContainer( b ) );
         assertThat( marshal ).isEqualTo( "{\"ref\":{\"@object:type\":\"b\",\"id\":\"1\"}}" );
