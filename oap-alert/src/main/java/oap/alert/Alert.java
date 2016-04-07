@@ -24,9 +24,14 @@
 
 package oap.alert;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 /**
  * Created by Igor Petrenko on 07.04.2016.
  */
+@EqualsAndHashCode
+@ToString
 public class Alert {
    public final Condition condition;
    public final String message;
