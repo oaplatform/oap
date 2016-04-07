@@ -23,6 +23,6 @@
  */
 package oap.concurrent;
 
-public interface SynchronizedChildReadyListener {
+public interface SynchronizedRunnableReadyListener {
    void notifyReady();
 }
