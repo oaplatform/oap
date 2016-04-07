@@ -78,7 +78,7 @@ public class TypeIdFactory implements TypeIdResolver {
       classToId.clear();
    }
 
-   public void start() {
+   static {
       Resources.urls( "META-INF/json-mapping.properties" )
          .forEach( url -> {
             try( InputStream is = url.openStream() ) {
