@@ -27,8 +27,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <name>oap-logstream</name>
-    <artifactId>oap-logstream</artifactId>
+    <name>oap-alert-slack</name>
+    <artifactId>oap-alert-slack</artifactId>
 
     <parent>
         <groupId>oap</groupId>
@@ -36,21 +36,31 @@
         <version>1.10.25</version>
     </parent>
 
+
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-stdlib</artifactId>
-            <version>${project.parent.version}</version>
+            <artifactId>oap-alert</artifactId>
+            <version>1.10.25</version>
         </dependency>
+
         <dependency>
-            <groupId>oap</groupId>
-            <artifactId>oap-metrics</artifactId>
-            <version>${project.parent.version}</version>
+            <groupId>com.github.flowctrl</groupId>
+            <artifactId>slack-api</artifactId>
+            <version>v1.1.0.RELEASE</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

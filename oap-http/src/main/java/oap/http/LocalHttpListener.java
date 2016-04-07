@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 
@@ -27,6 +28,9 @@ public class LocalHttpListener extends AbstractHttpListener {
          serverSocket.bind( new InetSocketAddress( "localhost", port ) );
 
          return serverSocket;
+      } catch( BindException e ) {
+         log.error( "Cannot bind to port [{}]", port );
+         throw new UncheckedIOException( e );
       } catch( IOException e ) {
          throw new UncheckedIOException( e );
       }

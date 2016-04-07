@@ -8,6 +8,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.file.Files;
@@ -53,6 +54,9 @@ public class SecureHttpListener extends AbstractHttpListener {
             return serverSocket;
          } catch( KeyStoreException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e ) {
             throw Throwables.propagate( e );
+         } catch( BindException e ) {
+            log.error( "Cannot bind to port [{}]", port );
+            throw new UncheckedIOException( e );
          } catch( IOException e ) {
             throw new UncheckedIOException( e );
          }
