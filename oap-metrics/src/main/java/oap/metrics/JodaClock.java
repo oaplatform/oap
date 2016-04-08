@@ -27,7 +27,7 @@ package oap.metrics;
 import com.codahale.metrics.Clock;
 import org.joda.time.DateTimeUtils;
 
-class JodaClock extends Clock {
+public class JodaClock extends Clock {
    @Override
    public long getTick() {
       return DateTimeUtils.currentTimeMillis() * 1000000;
