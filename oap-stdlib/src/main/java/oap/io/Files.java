@@ -73,7 +73,7 @@ public final class Files {
                return super.visitFile( file, attrs );
             }
          };
-         if( basePath.toFile().exists() && basePath.toFile().canExecute() )
+         if( java.nio.file.Files.exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
             java.nio.file.Files.walkFileTree( basePath, visitor );
          Collections.sort( result );
          return result;
