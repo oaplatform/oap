@@ -28,6 +28,7 @@ import com.google.common.collect.PeekingIterator;
 import oap.io.IoStreams;
 import oap.tsv.Model;
 import oap.tsv.Tsv;
+import oap.util.Lists;
 import oap.util.Stream;
 
 import java.nio.file.Path;
@@ -130,10 +131,14 @@ public class Table {
         return this;
     }
 
-    public Table join( int keyPos, Join... joins ) {
+    public Table join( int keyPos, List<Join> joins ) {
         return transform( line -> {
             for( Join join : joins ) line.addAll( join.on( ( String ) line.get( keyPos ) ) );
         } );
+    }
+
+    public Table join( int keyPos, Join... joins ) {
+        return join( keyPos, Lists.of( joins ) );
     }
 
     public void compute() {
