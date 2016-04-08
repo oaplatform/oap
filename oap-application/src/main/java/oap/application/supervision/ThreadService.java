@@ -24,7 +24,7 @@
 package oap.application.supervision;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.SynchronizedChildReadyListener;
+import oap.concurrent.SynchronizedRunnableReadyListener;
 import oap.concurrent.SynchronizedRunnable;
 import oap.concurrent.SynchronizedThread;
 import oap.io.Closeables;
@@ -32,7 +32,7 @@ import oap.io.Closeables;
 import java.io.Closeable;
 
 @Slf4j
-public class ThreadService extends SynchronizedRunnable implements Supervised, SynchronizedChildReadyListener {
+public class ThreadService extends SynchronizedRunnable implements Supervised, SynchronizedRunnableReadyListener {
 
    private final Supervisor supervisor;
    private final SynchronizedThread thread = new SynchronizedThread( this );

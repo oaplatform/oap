@@ -63,6 +63,11 @@ public class Strings {
             s.substring( 0, s.indexOf( delimiter ) ) : s;
     }
 
+    public static String substringBeforeLast( String s, String delimiter ) {
+        return s != null && s.contains( delimiter ) ?
+           s.substring( 0, s.lastIndexOf( delimiter ) ) : s;
+    }
+
     public static boolean isEmpty( String s ) {
         return s == null || s.equals( "" );
     }

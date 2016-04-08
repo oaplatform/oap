@@ -25,7 +25,7 @@ package oap.concurrent;
 
 import java.util.concurrent.Semaphore;
 
-public class SynchronizedThread implements Runnable, SynchronizedChildReadyListener {
+public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyListener {
    private Thread thread = new Thread( this );
    private Runnable child;
    private Semaphore semaphore = new Semaphore( 0 );

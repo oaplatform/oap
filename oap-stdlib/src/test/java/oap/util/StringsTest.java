@@ -43,6 +43,11 @@ public class StringsTest extends AbstractTest {
     }
 
     @Test
+    public void substringBeforeLast() {
+        assertEquals( Strings.substringBeforeLast( "aa.conf.bak", "." ), "aa.conf" );
+    }
+
+    @Test
     public void split() {
         assertEquals( Strings.split( "aaaa.bb.cc", "." ), __( "aaaa", "bb.cc" ) );
     }
