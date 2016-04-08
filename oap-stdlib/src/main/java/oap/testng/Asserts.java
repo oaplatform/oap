@@ -156,7 +156,11 @@ public final class Asserts {
    }
 
    public static Path pathOfTestResource( Class<?> contextClass, String resource ) {
-      return Resources.filePath( contextClass, contextClass.getSimpleName() + "/" + resource )
+      return Resources.filePath( contextClass, contextClass.getSimpleName() + ( resource == null ? "" : "/" + resource ) )
          .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+   }
+
+   public static Path pathOfTestResource( Class<?> contextClass ) {
+      return pathOfTestResource( contextClass, null );
    }
 }
