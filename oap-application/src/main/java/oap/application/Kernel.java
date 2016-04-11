@@ -81,12 +81,12 @@ public class Kernel {
             if( service.supervision.thread )
                supervisor.startThread( serviceName, instance );
             else {
-               if( service.supervision.schedule && service.supervision.getDelay().isPresent() )
-                  supervisor.scheduleWithFixedDelay( serviceName, ( Runnable ) instance,
-                     service.supervision.getDelay().get(), TimeUnit.MILLISECONDS );
-               else if( service.supervision.schedule && service.supervision.cron != null )
+               if( service.supervision.schedule && service.supervision.cron != null )
                   supervisor.scheduleCron( serviceName, ( Runnable ) instance,
                      service.supervision.cron );
+               else if( service.supervision.schedule && service.supervision.delay != 0 )
+                  supervisor.scheduleWithFixedDelay( serviceName, ( Runnable ) instance,
+                     service.supervision.delay, TimeUnit.MILLISECONDS );
             }
             initialized.add( serviceName );
          } else {

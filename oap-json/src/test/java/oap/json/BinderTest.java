@@ -180,14 +180,20 @@ public class BinderTest extends AbstractTest {
 
    @Test
    public void bindMap() {
-      assertBind( MapBean.class, new MapBean( __( "a", 1l ), __( "b", 2l ) ) );
-      assertEquals( Binder.json.marshal( new MapBean( __( "a", 1l ), __( "b", 2l ) ) ),
+      assertBind( MapBean.class, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
+      assertEquals( Binder.json.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ),
          "{\"map\":{\"a\":1,\"b\":2}}" );
    }
 
    @Test
    void optional() {
       assertBind( OptBean.class, new OptBean() );
+   }
+
+   @Test
+   public void customLong() {
+      assertEquals( Binder.hocon.unmarshal( LongBean.class, "{l = 2s}" ), new LongBean( 2000 ) );
+      assertEquals( Binder.json.unmarshal( LongBean.class, "{\"l\" : \"2kb\"}" ), new LongBean( 2048 ) );
    }
 }
 
@@ -394,5 +400,18 @@ class AtomicLongBean {
    @Override
    public int hashCode() {
       return Long.hashCode( v.get() );
+   }
+}
+
+@ToString
+@EqualsAndHashCode
+class LongBean {
+   long l;
+
+   public LongBean( long l ) {
+      this.l = l;
+   }
+
+   public LongBean() {
    }
 }

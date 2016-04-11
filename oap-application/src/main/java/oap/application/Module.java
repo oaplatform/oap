@@ -23,15 +23,14 @@
  */
 package oap.application;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.reflect.Coercions;
 
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Optional;
 
 @EqualsAndHashCode
 @ToString
@@ -40,15 +39,6 @@ public class Module {
    public String name;
    public ArrayList<String> dependsOn = new ArrayList<>();
    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
-
-   public Module( String name, ArrayList<String> dependsOn, LinkedHashMap<String, Service> services ) {
-      this.name = name;
-      this.dependsOn = dependsOn;
-      this.services = new LinkedHashMap<>( services );
-   }
-
-   public Module() {
-   }
 
    @EqualsAndHashCode
    @ToString
@@ -62,18 +52,6 @@ public class Module {
       public Path certificateLocation;
       public String certificatePassword;
       public Optional<Long> timeout = Optional.empty();
-
-      public Service() {
-      }
-
-      public Service( String implementation, Map<String, Object> parameters, Supervision supervision,
-                      ArrayList<String> dependsOn ) {
-         this.implementation = implementation;
-         this.dependsOn = dependsOn;
-         this.parameters = new LinkedHashMap<>( parameters );
-         this.supervision = supervision;
-      }
-
    }
 
    @EqualsAndHashCode
@@ -84,20 +62,7 @@ public class Module {
       public boolean schedule;
       public String startWith = "start";
       public String stopWith = "stop";
-      @JsonProperty
-      public String delay; //ms
+      public long delay; //ms
       public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
-
-      public Supervision() {
-      }
-
-      public Supervision( boolean supervise ) {
-         this.supervise = supervise;
-      }
-
-      @JsonIgnore
-      public Optional<Long> getDelay() {
-         return Optional.ofNullable( delay ).map( d -> ( long ) Coercions.LongConvertor.DEFAULT.apply( d ) );
-      }
    }
 }
