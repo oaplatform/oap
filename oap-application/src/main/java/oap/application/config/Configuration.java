@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -67,11 +66,6 @@ public class Configuration<T> {
       Objects.nonNull( hocon );
       return Binder.hocon.unmarshal( clazz, hocon );
    }
-
-   public T fromHocon( String hocon, Map<String, Map<String, Object>> config ) {
-      return Binder.hoconWithConfig( config ).unmarshal( clazz, hocon );
-   }
-
 
    public T fromResource( Class<?> contextClass, String name ) {
       return Resources.url( contextClass, name )

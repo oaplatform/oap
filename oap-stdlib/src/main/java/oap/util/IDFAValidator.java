@@ -24,6 +24,10 @@
 
 package oap.util;
 
+/**
+ * @see Strings#isGuid
+ */
+@Deprecated
 public final class IDFAValidator {
     public static String filter( String idfa ) {
         return isValid( idfa ) ? idfa : null;

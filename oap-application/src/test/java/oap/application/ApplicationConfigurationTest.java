@@ -21,33 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.application;
 
-import lombok.extern.slf4j.Slf4j;
-import oap.io.Files;
-import oap.json.Binder;
-import oap.util.Maps;
-import oap.util.Stream;
+import org.testng.annotations.Test;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Map;
+import static oap.testng.Asserts.pathOfTestResource;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@Slf4j
-public class ApplicationConfiguration {
-   Map<String, Map<String, Object>> services = Maps.empty();
-
-   //   @todo get this logic tested and sorted out
-   public static ApplicationConfiguration load( Path appConfigPath, Path confd ) {
-      log.info( "application configurations: {}", appConfigPath );
-      log.info( "global configuration directory: {}", confd );
-
-      ArrayList<Path> paths = Files.wildcard( confd, "*.conf" );
-      log.info( "global configurations = {}", paths );
-      final String[] configs = Stream.of( paths )
-         .map( Files::readString )
-         .toArray( String[]::new );
-      return Binder.hoconWithConfig( configs )
-         .unmarshal( ApplicationConfiguration.class, appConfigPath );
+public class ApplicationConfigurationTest {
+   @Test
+   public void load() {
+      ApplicationConfiguration config = ApplicationConfiguration.load(
+         pathOfTestResource( KernelTest.class, "application.conf" ),
+         pathOfTestResource( KernelTest.class, "conf.d" )
+      );
+      assertThat( config.services ).hasSize( 3 );
+      config.services.forEach( ( k, v ) -> System.out.println( k + " -> " + v ) );
    }
 }

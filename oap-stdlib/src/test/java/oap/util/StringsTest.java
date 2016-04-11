@@ -28,6 +28,8 @@ import org.testng.annotations.Test;
 
 import static oap.util.Pair.__;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class StringsTest extends AbstractTest {
     @Test
@@ -63,5 +65,11 @@ public class StringsTest extends AbstractTest {
         assertEquals( Strings.indexOfAny( "test", "e", 0 ), 1 );
         assertEquals( Strings.indexOfAny( "test", "et", 0 ), 0 );
         assertEquals( Strings.indexOfAny( "test", "bso", 1 ), 2 );
+    }
+
+    @Test
+    public void isGuid() {
+        assertTrue( Strings.isGuid( "22345200-abe8-4f60-90c8-0d43c5f6c0f6" ) );
+        assertFalse( Strings.isGuid( "2i345200-abe8-4f60-90c8-0d43c5f6c0f6" ) );
     }
 }

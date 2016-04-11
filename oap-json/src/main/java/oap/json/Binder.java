@@ -75,7 +75,7 @@ public class Binder {
         return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false ) );
     }
 
-    public static Binder hoconWithConfig( Map<String, Map<String, Object>> config ) {
+    public static Binder hoconWithConfig( Map<String, Object> config ) {
         return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false ) );
     }
 

@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.deser.std.NumberDeserializers;
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer;
 import com.fasterxml.jackson.databind.module.SimpleDeserializers;
-import oap.reflect.Coercions;
+import oap.util.Numbers;
 
 import java.io.IOException;
 
@@ -77,7 +77,7 @@ public class OapJsonModule extends Module {
       @Override
       public Long deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
          return p.hasToken( JsonToken.VALUE_STRING ) ?
-            ( Long ) Coercions.LongConvertor.DEFAULT.apply( p.getText().trim() )
+            Numbers.parseLongWithUnits( p.getText().trim() )
             : deserializer.deserialize( p, ctxt );
       }
    }

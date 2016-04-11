@@ -23,19 +23,23 @@
  */
 package oap.util;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 public class Numbers {
-   private static final Pattern numberPattern = Pattern.compile( "(\\d+)\\s*([^\\d]*)" );
 
    public static long parseLongWithUnits( String value ) {
-      final Matcher matcher = numberPattern.matcher( value );
-      if( matcher.find() ) {
-         final String mod = matcher.group( 2 );
-         final String number = matcher.group( 1 );
-
-         switch( mod.toLowerCase() ) {
+      if( value != null ) {
+         value = value.trim();
+         String unit = "";
+         String number = "";
+         boolean stillNumber = true;
+         for( int i = 0; i < value.length(); i++ ) {
+            char c = value.charAt( i );
+            if( Character.isDigit( c ) && stillNumber ) number += c;
+            else {
+               stillNumber = false;
+               unit += c;
+            }
+         }
+         switch( unit.trim().toLowerCase() ) {
             case "kb":
                return Long.parseLong( number ) * 1024;
             case "mb":
@@ -60,9 +64,12 @@ public class Numbers {
             case "day":
             case "days":
                return Long.parseLong( number ) * 1000 * 60 * 60 * 24;
-            default:
+            case "":
                return Long.parseLong( number );
+            default:
+               throw new NumberFormatException( value );
          }
-      } else throw new NumberFormatException( value );
+      }
+      throw new NumberFormatException( "value is null" );
    }
 }

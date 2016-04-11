@@ -31,6 +31,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigParseOptions;
+import oap.util.Stream;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -41,48 +42,47 @@ import java.util.Map;
  * Created by Igor Petrenko on 11.11.2015.
  */
 public class HoconFactoryWithFallback extends HoconFactory {
-    private final Config additinal;
-    private final Logger log;
+   private final Config additinal;
+   private final Logger log;
 
-    public HoconFactoryWithFallback( Logger log, Map<String, Map<String, Object>> config ) {
-        this( log, ConfigFactory.parseMap( config ) );
-    }
+   public HoconFactoryWithFallback( Logger log, Map<String, Object> config ) {
+      this( log, ConfigFactory.parseMap( config ) );
+   }
 
-    public HoconFactoryWithFallback( Logger log, String... config ) {
-        this( log, init( config ) );
-    }
+   public HoconFactoryWithFallback( Logger log, String... config ) {
+      this( log, init( config ) );
+   }
 
-    public HoconFactoryWithFallback( Logger log, Config additinal ) {
-        this.log = log;
-        this.additinal = additinal;
+   public HoconFactoryWithFallback( Logger log, Config additinal ) {
+      this.log = log;
+      this.additinal = additinal;
 
 //        if( log.isTraceEnabled() ) System.setProperty( "config.trace", "loads" );
-    }
+   }
 
-    private static Config init( String[] config ) {
-        Config a = ConfigFactory.empty();
+   private static Config init( String[] configs ) {
+      return Stream.of( configs )
+         .foldLeft( ConfigFactory.empty(),
+            ( config, value ) -> config.withFallback( ConfigFactory.parseString( value ) ) );
+   }
 
-        for( String c : config ) a = a.withFallback( ConfigFactory.parseString( c ) );
-        return a;
-    }
+   @Override
+   protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) throws IOException {
+      ConfigParseOptions options = ConfigParseOptions.defaults();
+      Config config = ConfigFactory.parseReader( r, options );
 
-    @Override
-    protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) throws IOException {
-        ConfigParseOptions options = ConfigParseOptions.defaults();
-        Config config = ConfigFactory.parseReader( r, options );
-
-        final Config unresolvedConfig = additinal
-            .withFallback( config )
-            .withFallback( ConfigFactory.systemProperties() );
+      final Config unresolvedConfig = additinal
+         .withFallback( config )
+         .withFallback( ConfigFactory.systemProperties() );
 
 //        log.trace( unresolvedConfig.root().render() );
 
-        try {
-            Config resolvedConfig = unresolvedConfig.resolve();
-            return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
-        } catch( ConfigException e ) {
-            log.error( unresolvedConfig.root().render() );
-            throw e;
-        }
-    }
+      try {
+         Config resolvedConfig = unresolvedConfig.resolve();
+         return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
+      } catch( ConfigException e ) {
+         log.error( unresolvedConfig.root().render() );
+         throw e;
+      }
+   }
 }

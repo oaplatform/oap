@@ -40,7 +40,7 @@ class ModuleConfiguration extends Configuration<Module> {
    }
 
    public Module fromHocon( String hocon, Map<String, Map<String, Object>> config ) {
-      Module module = super.fromHocon( hocon, config );
+      Module module = super.fromHocon( hocon );
 
       module.services
          .entrySet()

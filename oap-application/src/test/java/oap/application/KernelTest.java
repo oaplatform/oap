@@ -50,6 +50,7 @@ public class KernelTest extends AbstractTest {
          kernel.start( pathOfTestResource( getClass(), "application.conf" ),
             pathOfTestResource( getClass(), "conf.d" ) );
          assertEventually( 50, 1, () -> {
+//            assertThat( Application.<ServiceOne>service( "ServiceOptional" ) ).isNull();
             assertThat( ServiceOne.instances ).isEqualTo( 1 );
             ServiceOne one = Application.service( ServiceOne.class );
             ServiceTwo two = Application.service( ServiceTwo.class );
@@ -58,8 +59,7 @@ public class KernelTest extends AbstractTest {
             assertThat( one.i2 ).isEqualTo( 100 );
             assertNotNull( two );
             assertThat( two.j ).isEqualTo( 3000 );
-            assertThat( two.one )
-               .isSameAs( one );
+            assertThat( two.one ).isSameAs( one );
             assertTrue( two.started );
             ServiceScheduled scheduled = Application.service( ServiceScheduled.class );
             assertNotNull( scheduled );

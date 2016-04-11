@@ -26,7 +26,6 @@ package oap.application;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
-import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.util.Sets;
@@ -151,26 +150,22 @@ public class Kernel {
    }
 
    public void start() {
-      start( Collections.emptyMap() );
+      start( new ApplicationConfiguration() );
    }
 
-   @SuppressWarnings( "unchecked" )
-   public void start( String config ) {
-      start( ( Map<String, Map<String, Object>> ) Binder.hocon.unmarshal( Map.class, config ) );
-   }
-
-   public void start( Map<String, Map<String, Object>> config ) {
+   public void start( ApplicationConfiguration config ) {
       log.debug( "initializing application kernel..." );
 
       Set<Module> moduleConfigs = Stream.of( modules )
-         .map( m -> Module.CONFIGURATION.fromHocon( m, config ) )
+         .map( module -> Module.CONFIGURATION.fromHocon( module, config.services ) )
          .toSet();
       log.trace( "modules = " + Sets.map( moduleConfigs, m -> m.name ) );
 
       Set<Module> def = initialize( moduleConfigs, new HashSet<>(), new HashSet<>() );
       if( !def.isEmpty() ) {
-         log.error( "failed to initialize: " + Sets.map( def, m -> m.name ) );
-         throw new ApplicationException( "failed to initialize modules" );
+         Set<String> names = Sets.map( def, m -> m.name );
+         log.error( "failed to initialize: {} ", names );
+         throw new ApplicationException( "failed to initialize modules: " + names );
       }
 
       supervisor.start();
@@ -181,7 +176,7 @@ public class Kernel {
       Application.unregisterServices();
    }
 
-   public void start( Path configPath, Path confd ) {
-      start( ApplicationConfiguration.load( configPath, confd ) );
+   public void start( Path appConfigPath, Path confd ) {
+      start( ApplicationConfiguration.load( appConfigPath, confd ) );
    }
 }
