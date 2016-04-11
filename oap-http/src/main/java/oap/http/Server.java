@@ -85,7 +85,7 @@ public class Server implements HttpServer {
       final String location = "/" + context + "/*";
       mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, cors, protocol ) );
 
-      log.info( handler + " bound to " + location );
+      log.debug( handler + " bound to " + location );
    }
 
    @Override

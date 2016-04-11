@@ -54,13 +54,13 @@ public class Kernel {
 
       for( Map.Entry<String, Module.Service> entry : services.entrySet() ) {
          Module.Service service = entry.getValue();
-         String serviceName = entry.getKey();
+         String serviceName = service.name != null ? service.name : entry.getKey();
          if( service.profile != null && !config.profiles.contains( service.profile ) ) {
-            log.debug( "skipping " + serviceName + " with profile " + service.profile );
+            log.debug( "skipping " + entry.getKey() + " with profile " + service.profile );
             continue;
          }
          if( initialized.containsAll( service.dependsOn ) ) {
-            log.debug( "initializing " + serviceName );
+            log.debug( "initializing {} as {}", entry.getKey(), serviceName );
 
             Reflection reflect = Reflect.reflect( service.implementation );
 
@@ -77,6 +77,8 @@ public class Kernel {
                service.timeout //TODO refactor to have Remoting class with related properties
             );
             Application.register( serviceName, instance );
+            Application.register( entry.getKey(), instance );
+
             if( service.supervision.supervise )
                supervisor.startSupervised( serviceName, instance,
                   service.supervision.startWith,
@@ -173,11 +175,15 @@ public class Kernel {
       }
 
       supervisor.start();
+
+      log.debug( "application kernel started" );
    }
 
    public void stop() {
+      log.debug( "stopping application kernel..." );
       supervisor.stop();
       Application.unregisterServices();
+      log.debug( "application kernel stopped" );
    }
 
    public void start( Path appConfigPath, Path confd ) {

@@ -52,6 +52,7 @@ public class Module {
       public Path certificateLocation;
       public String certificatePassword;
       public String profile;
+      public String name;
       public Optional<Long> timeout = Optional.empty();
    }
 

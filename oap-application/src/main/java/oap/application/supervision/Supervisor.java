@@ -23,19 +23,17 @@
  */
 package oap.application.supervision;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.util.PairStream;
-import org.slf4j.Logger;
 
 import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
 //@todo per module supervisor hierarchy
 //@todo restart policy
 
+@Slf4j
 public class Supervisor {
-    private static Logger logger = getLogger( Supervisor.class );
 
     private LinkedHashMap<String, Supervised> supervised = new LinkedHashMap<>();
     private LinkedHashMap<String, Supervised> scheduled = new LinkedHashMap<>();
@@ -58,35 +56,37 @@ public class Supervisor {
     }
 
     public synchronized void start() {
+        log.debug( "starting..." );
         this.stopped = false;
         this.supervised.forEach( ( name, service ) -> {
-            logger.debug( "starting {}...", name );
+            log.debug( "starting {}...", name );
             service.start();
-            logger.debug( "started {}", name );
+            log.debug( "started {}", name );
         } );
 
         this.scheduled.forEach( ( name, service ) -> {
-            logger.debug( "schedule {}...", name );
+            log.debug( "schedule {}...", name );
             service.start();
-            logger.debug( "scheduled {}", name );
+            log.debug( "scheduled {}", name );
         } );
     }
 
     public synchronized void stop() {
         if( !stopped ) {
+            log.debug( "stopping..." );
             this.stopped = true;
             PairStream.reversed( this.scheduled )
                 .forEach( ( name, service ) -> {
-                    logger.debug( "stopping {}...", name );
+                    log.debug( "stopping {}...", name );
                     service.stop();
-                    logger.debug( "stopped {}", name );
+                    log.debug( "stopped {}", name );
                 } );
             this.scheduled.clear();
             PairStream.reversed( this.supervised )
                 .forEach( ( name, service ) -> {
-                    logger.debug( "stopping {}...", name );
+                    log.debug( "stopping {}...", name );
                     service.stop();
-                    logger.debug( "stopped {}", name );
+                    log.debug( "stopped {}", name );
                 } );
             this.supervised.clear();
         }
