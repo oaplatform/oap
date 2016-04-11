@@ -51,6 +51,7 @@ public class Module {
       public String remoteName;
       public Path certificateLocation;
       public String certificatePassword;
+      public String profile;
       public Optional<Long> timeout = Optional.empty();
    }
 

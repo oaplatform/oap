@@ -48,13 +48,17 @@ public class Kernel {
    }
 
    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
-                                                           Set<String> initialized ) {
+                                                           Set<String> initialized, ApplicationConfiguration config ) {
 
       HashMap<String, Module.Service> deferred = new HashMap<>();
 
       for( Map.Entry<String, Module.Service> entry : services.entrySet() ) {
          Module.Service service = entry.getValue();
          String serviceName = entry.getKey();
+         if( service.profile != null && !config.profiles.contains( service.profile ) ) {
+            log.debug( "skipping " + serviceName + " with profile " + service.profile );
+            continue;
+         }
          if( initialized.containsAll( service.dependsOn ) ) {
             log.debug( "initializing " + serviceName );
 
@@ -95,7 +99,7 @@ public class Kernel {
          }
       }
 
-      return deferred.size() == services.size() ? deferred : initializeServices( deferred, initialized );
+      return deferred.size() == services.size() ? deferred : initializeServices( deferred, initialized, config );
    }
 
    @SuppressWarnings( "unchecked" )
@@ -123,7 +127,7 @@ public class Kernel {
       return value;
    }
 
-   private Set<Module> initialize( Set<Module> modules, Set<String> initialized, Set<String> initializedServices ) {
+   private Set<Module> initialize( Set<Module> modules, Set<String> initialized, Set<String> initializedServices, ApplicationConfiguration config ) {
       HashSet<Module> deferred = new HashSet<>();
 
       for( Module module : modules ) {
@@ -131,7 +135,7 @@ public class Kernel {
          if( initialized.containsAll( module.dependsOn ) ) {
 
             Map<String, Module.Service> def =
-               initializeServices( module.services, initializedServices );
+               initializeServices( module.services, initializedServices, config );
             if( !def.isEmpty() ) {
                Set<String> names = Sets.map( def.entrySet(), Map.Entry::getKey );
                log.error( "failed to initialize: " + names );
@@ -146,7 +150,7 @@ public class Kernel {
          }
       }
 
-      return deferred.size() == modules.size() ? deferred : initialize( deferred, initialized, initializedServices );
+      return deferred.size() == modules.size() ? deferred : initialize( deferred, initialized, initializedServices, config );
    }
 
    public void start() {
@@ -161,7 +165,7 @@ public class Kernel {
          .toSet();
       log.trace( "modules = " + Sets.map( moduleConfigs, m -> m.name ) );
 
-      Set<Module> def = initialize( moduleConfigs, new HashSet<>(), new HashSet<>() );
+      Set<Module> def = initialize( moduleConfigs, new HashSet<>(), new HashSet<>(), config );
       if( !def.isEmpty() ) {
          Set<String> names = Sets.map( def, m -> m.name );
          log.error( "failed to initialize: {} ", names );

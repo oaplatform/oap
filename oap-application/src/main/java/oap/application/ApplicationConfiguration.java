@@ -26,15 +26,18 @@ package oap.application;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.json.Binder;
+import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Stream;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
 public class ApplicationConfiguration {
+   List<String> profiles = Lists.empty();
    Map<String, Map<String, Object>> services = Maps.empty();
 
    //   @todo get this logic tested and sorted out
