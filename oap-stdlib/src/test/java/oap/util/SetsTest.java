@@ -21,45 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application;
 
-import oap.util.Stream;
+package oap.util;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.testng.annotations.Test;
 
-public class Application {
+import static org.assertj.core.api.Assertions.assertThat;
 
-   final static Map<String, Object> services = new HashMap<>();
-
-   @SuppressWarnings( "unchecked" )
-   public static <T> T service( String name ) {
-      return ( T ) services.get( name );
-   }
-
-   @SuppressWarnings( "unchecked" )
-   public static <T> List<T> instancesOf( Class<T> clazz ) {
-      return Stream.of( services.values() )
-         .filter( clazz::isInstance )
-         .<T>map( x -> ( T ) x )
-         .toList();
-   }
-
-   public static <T> T service( Class<T> clazz ) {
-      List<T> services = instancesOf( clazz );
-      return services.isEmpty() ? null : services.get( 0 );
-   }
-
-   public static void register( String name, Object service ) {
-      services.put( name, service );
-   }
-
-   static void unregister( String name ) {
-      services.remove( name );
-   }
-
-   static void unregisterServices() {
-      services.clear();
+public class SetsTest {
+   @Test
+   public void map() {
+      assertThat( Sets.map( Sets.of( "1", "2", "3" ), x -> x + "1" ) )
+         .containsOnly( "11", "21", "31" );
    }
 }

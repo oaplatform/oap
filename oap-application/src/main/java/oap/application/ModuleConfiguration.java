@@ -23,19 +23,32 @@
  */
 package oap.application;
 
-import oap.io.Resources;
+import oap.application.config.Configuration;
+import oap.json.Binder;
+import oap.util.Strings;
 
-import java.util.List;
-import java.util.function.Supplier;
+import java.net.URL;
+import java.util.Map;
 
-import static java.util.stream.Collectors.toList;
+class ModuleConfiguration extends Configuration<Module> {
+   public ModuleConfiguration() {
+      super( Module.class, "oap-module" );
+   }
 
-public class WebInfModules implements Supplier<List<Module>> {
-    @Override
-    public List<Module> get() {
-        return Resources.readStrings( "/WEB-INF/module.oap" )
-                .stream()
-                .map( Module::parse )
-                .collect( toList() );
-    }
+   public Module fromHocon( URL hocon, Map<String, Map<String, Object>> config ) {
+      return fromHocon( Strings.readString( hocon ), config );
+   }
+
+   public Module fromHocon( String hocon, Map<String, Map<String, Object>> config ) {
+      Module module = super.fromHocon( hocon, config );
+
+      module.services
+         .entrySet()
+         .stream()
+         .filter( e -> config.containsKey( e.getKey() ) )
+         .forEach( e -> Binder.hocon.update( e.getValue(), config.get( e.getKey() ) ) );
+
+      return module;
+   }
+
 }

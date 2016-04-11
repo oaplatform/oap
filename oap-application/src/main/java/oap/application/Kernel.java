@@ -23,24 +23,21 @@
  */
 package oap.application;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
-import oap.io.Files;
 import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
-import oap.util.Maps;
+import oap.util.Sets;
 import oap.util.Stream;
-import org.apache.commons.collections4.CollectionUtils;
 
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.collections4.CollectionUtils.subtract;
 
 @Slf4j
 public class Kernel {
@@ -48,7 +45,6 @@ public class Kernel {
    private Supervisor supervisor = new Supervisor();
 
    public Kernel( List<URL> modules ) {
-      log.debug( "modules = " + modules );
       this.modules = modules;
    }
 
@@ -95,7 +91,7 @@ public class Kernel {
             initialized.add( serviceName );
          } else {
             log.debug( "dependencies are not ready - deferring " + serviceName + ": "
-               + CollectionUtils.subtract( service.dependsOn, initialized ) );
+               + subtract( service.dependsOn, initialized ) );
             deferred.put( entry.getKey(), service );
          }
       }
@@ -138,7 +134,7 @@ public class Kernel {
             Map<String, Module.Service> def =
                initializeServices( module.services, initializedServices );
             if( !def.isEmpty() ) {
-               List<String> names = Stream.of( def.entrySet().stream() ).map( Map.Entry::getKey ).toList();
+               Set<String> names = Sets.map( def.entrySet(), Map.Entry::getKey );
                log.error( "failed to initialize: " + names );
                throw new ApplicationException( "failed to initialize services: " + names );
             }
@@ -146,7 +142,7 @@ public class Kernel {
             initialized.add( module.name );
          } else {
             log.debug( "dependencies are not ready - deferring " + module.name + ": "
-               + CollectionUtils.subtract( module.dependsOn, initialized ) );
+               + subtract( module.dependsOn, initialized ) );
             deferred.add( module );
          }
       }
@@ -167,13 +163,13 @@ public class Kernel {
       log.debug( "initializing application kernel..." );
 
       Set<Module> moduleConfigs = Stream.of( modules )
-         .map( m -> Module.parse( m, config ) )
-         .collect( toSet() );
-      log.trace( "modules = " + Stream.of( moduleConfigs ).map( m -> m.name ).toList() );
+         .map( m -> Module.CONFIGURATION.fromHocon( m, config ) )
+         .toSet();
+      log.trace( "modules = " + Sets.map( moduleConfigs, m -> m.name ) );
 
       Set<Module> def = initialize( moduleConfigs, new HashSet<>(), new HashSet<>() );
       if( !def.isEmpty() ) {
-         log.error( "failed to initialize: " + Stream.of( def ).map( m -> m.name ).toList() );
+         log.error( "failed to initialize: " + Sets.map( def, m -> m.name ) );
          throw new ApplicationException( "failed to initialize modules" );
       }
 
@@ -186,29 +182,6 @@ public class Kernel {
    }
 
    public void start( Path configPath, Path confd ) {
-      log.info( "global configuration directory: {}", confd );
-
-      final String config = Files.readString( configPath );
-
-      ArrayList<Path> paths = Files.wildcard( confd, "*.conf" );
-      log.info( "global configurations = {}", paths );
-      final String[] configs = Stream.of( paths )
-         .map( Files::readString )
-         .concat( Stream.of( config ) )
-         .toArray( String[]::new );
-
-      log.info( "application configurations = {}", configPath );
-
-      start( configPath.toFile().exists() ? toMap( configPath, configs ) : Maps.of() );
-   }
-
-   @SuppressWarnings( "unchecked" )
-   private Map<String, Map<String, Object>> toMap( Path configPath, String[] configs ) {
-      final Map<String, Object> map = Binder.hoconWithConfig( configs ).unmarshal(
-         new TypeReference<Map<String, Object>>() {
-         }, configPath );
-      final Map<String, Object> filteredMap = com.google.common.collect.Maps.filterValues( map, v -> v instanceof Map );
-
-      return ( Map<String, Map<String, Object>> ) ( Object ) filteredMap;
+      start( ApplicationConfiguration.load( configPath, confd ) );
    }
 }

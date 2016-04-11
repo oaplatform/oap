@@ -36,6 +36,7 @@ import org.testng.Assert;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 
@@ -157,6 +158,12 @@ public final class Asserts {
 
    public static Path pathOfTestResource( Class<?> contextClass, String resource ) {
       return Resources.filePath( contextClass, contextClass.getSimpleName() + ( resource == null ? "" : "/" + resource ) )
+         .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+   }
+
+   public static URL urlOfTestResource( Class<?> contextClass, String resource ) {
+      return Resources.url( contextClass, contextClass.getSimpleName()
+         + ( resource == null ? "" : "/" + resource ) )
          .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
    }
 

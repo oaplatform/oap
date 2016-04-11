@@ -23,43 +23,39 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
+import oap.io.Files;
+import oap.json.Binder;
 import oap.util.Stream;
 
-import java.util.HashMap;
-import java.util.List;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Map;
 
-public class Application {
+@Slf4j
+public class ApplicationConfiguration {
 
-   final static Map<String, Object> services = new HashMap<>();
+   //   @todo get this logic tested and sorted out
+   public static Map<String, Map<String, Object>> load( Path configPath, Path confd ) {
+      log.info( "application configurations: {}", configPath );
+      log.info( "global configuration directory: {}", confd );
 
-   @SuppressWarnings( "unchecked" )
-   public static <T> T service( String name ) {
-      return ( T ) services.get( name );
+      ArrayList<Path> paths = Files.wildcard( confd, "*.conf" );
+      log.info( "global configurations = {}", paths );
+      final String[] configs = Stream.of( paths )
+         .map( Files::readString )
+         .concat( Stream.of( Files.readString( configPath ) ) )
+         .toArray( String[]::new );
+      return toMap( configPath, configs );
    }
 
    @SuppressWarnings( "unchecked" )
-   public static <T> List<T> instancesOf( Class<T> clazz ) {
-      return Stream.of( services.values() )
-         .filter( clazz::isInstance )
-         .<T>map( x -> ( T ) x )
-         .toList();
-   }
+   private static Map<String, Map<String, Object>> toMap( Path configPath, String[] configs ) {
+      Map<String, Object> map = Binder.hoconWithConfig( configs ).unmarshal(
+         new TypeReference<Map<String, Object>>() {
+         }, configPath );
 
-   public static <T> T service( Class<T> clazz ) {
-      List<T> services = instancesOf( clazz );
-      return services.isEmpty() ? null : services.get( 0 );
-   }
-
-   public static void register( String name, Object service ) {
-      services.put( name, service );
-   }
-
-   static void unregister( String name ) {
-      services.remove( name );
-   }
-
-   static void unregisterServices() {
-      services.clear();
+      return ( Map<String, Map<String, Object>> ) ( Object ) com.google.common.collect.Maps.filterValues( map, v -> v instanceof Map );
    }
 }

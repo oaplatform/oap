@@ -27,22 +27,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.io.Files;
-import oap.io.Resources;
-import oap.json.Binder;
 import oap.reflect.Coercions;
-import oap.util.Strings;
-import org.apache.commons.collections4.ListUtils;
 
-import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
 
 @EqualsAndHashCode
 @ToString
 public class Module {
+   public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
    public String name;
    public ArrayList<String> dependsOn = new ArrayList<>();
    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
@@ -54,41 +48,6 @@ public class Module {
    }
 
    public Module() {
-   }
-
-   public static List<URL> fromClassPath() {
-      return ListUtils.union(
-         Resources.urls( "META-INF/oap-module.conf" ),
-         Resources.urls( "META-INF/oap-module.conf" )
-      );
-   }
-
-   public static Module parse( Path path ) throws IOException {
-      return parse( Files.readString( path ) );
-   }
-
-   public static Module parse( URL url ) {
-      return parse( Strings.readString( url ) );
-   }
-
-   public static Module parse( URL url, Map<String, Map<String, Object>> config ) {
-      return parse( Strings.readString( url ), config );
-   }
-
-   public static Module parse( String json ) {
-      return Binder.hocon.unmarshal( Module.class, json );
-   }
-
-   public static Module parse( String json, Map<String, Map<String, Object>> config ) {
-      final Module module = Binder.hoconWithConfig( config ).unmarshal( Module.class, json );
-
-      module.services
-         .entrySet()
-         .stream()
-         .filter( e -> config.containsKey( e.getKey() ) )
-         .forEach( e -> Binder.hocon.update( e.getValue(), config.get( e.getKey() ) ) );
-
-      return module;
    }
 
    @EqualsAndHashCode

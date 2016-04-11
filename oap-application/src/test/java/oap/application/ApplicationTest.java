@@ -31,14 +31,14 @@ import static org.testng.Assert.assertSame;
 
 public class ApplicationTest extends AbstractTest {
 
-    @Test
-    public void instancesOf() throws Exception {
-        try {
-            Application.register( "ServiceTwo", new ServiceTwo() );
-            assertSame( Application.instancesOf( ServiceTwo.class ).get( 0 ),
-                Application.instancesOf( Hello.class ).get( 0 ) );
-        } finally {
-            Application.unregisterServices();
-        }
-    }
+   @Test
+   public void instancesOf() throws Exception {
+      try {
+         Application.register( "ServiceTwo", new ServiceTwo() );
+         assertSame( Application.instancesOf( ServiceTwo.class ).get( 0 ),
+            Application.instancesOf( Hello.class ).get( 0 ) );
+      } finally {
+         Application.unregister( "ServiceTwo" );
+      }
+   }
 }

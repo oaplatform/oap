@@ -26,6 +26,7 @@ package oap.http.testng;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.http.Client;
+import oap.json.testng.JsonAsserts;
 import oap.testng.Env;
 import oap.util.Pair;
 import org.apache.http.entity.ContentType;
@@ -65,8 +66,9 @@ public class HttpAsserts {
    public static HttpAssertion assertPut( String uri, String content, ContentType contentType ) {
       return new HttpAssertion( client.put( uri, content, contentType ) );
    }
-   public static HttpAssertion assertDelete( String uri) {
-      return new HttpAssertion( client.delete( uri) );
+
+   public static HttpAssertion assertDelete( String uri ) {
+      return new HttpAssertion( client.delete( uri ) );
    }
 
    @EqualsAndHashCode
@@ -88,12 +90,13 @@ public class HttpAsserts {
          return this;
       }
 
+      public JsonAsserts.JsonAssertion isJson() {
+         hasContentType( ContentType.APPLICATION_JSON );
+         return assertJson( response.contentString.orElse( null ) );
+      }
+
       public HttpAssertion isJson( String json ) {
-         assertString( response.contentType
-            .map( ContentType::toString )
-            .orElse( null ) )
-            .isEqualTo( ContentType.APPLICATION_JSON.toString() );
-         assertJson( response.contentString.orElse( null ) ).isEqualTo( json );
+         isJson().isEqualTo( json );
          return this;
       }
 

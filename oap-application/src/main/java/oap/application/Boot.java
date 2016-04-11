@@ -28,8 +28,6 @@ import oap.cli.Option;
 import org.slf4j.Logger;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Optional;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -60,7 +58,7 @@ public class Boot {
          }
       } );
       try {
-         kernel = new Kernel( Module.fromClassPath() );
+         kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
          kernel.start( config, confd );
          logger.debug( "started" );
       } catch( Exception e ) {
