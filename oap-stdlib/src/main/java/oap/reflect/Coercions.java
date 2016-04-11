@@ -152,7 +152,11 @@ public class Coercions {
       @Override
       public Object apply( Object value ) {
          if( value instanceof Number ) return ( ( Number ) value ).longValue();
-         else if( value instanceof String ) return Numbers.parseLongWithUnits( ( String ) value );
+         else if( value instanceof String ) try {
+            return Numbers.parseLongWithUnits( ( String ) value );
+         } catch( NumberFormatException e ) {
+            throw new ReflectException( "cannot cast " + value + " to " + name );
+         }
          else throw new ReflectException( "cannot cast " + value + " to " + name );
       }
    }
