@@ -30,7 +30,7 @@ import oap.util.Strings;
 import java.net.URL;
 import java.util.Map;
 
-class ModuleConfiguration extends Configuration<Module> {
+public class ModuleConfiguration extends Configuration<Module> {
    public ModuleConfiguration() {
       super( Module.class, "oap-module" );
    }
