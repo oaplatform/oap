@@ -159,7 +159,15 @@ public class Kernel {
       start( new ApplicationConfiguration() );
    }
 
-   public void start( ApplicationConfiguration config ) {
+   public void start( Path appConfigPath, Path confd ) {
+      start( ApplicationConfiguration.load( appConfigPath, confd ) );
+   }
+
+   public void start( Path appConfigPath ) {
+      start( ApplicationConfiguration.load( appConfigPath ) );
+   }
+
+   private void start( ApplicationConfiguration config ) {
       log.debug( "initializing application kernel..." );
 
       Set<Module> moduleConfigs = Stream.of( modules )
@@ -186,7 +194,4 @@ public class Kernel {
       log.debug( "application kernel stopped" );
    }
 
-   public void start( Path appConfigPath, Path confd ) {
-      start( ApplicationConfiguration.load( appConfigPath, confd ) );
-   }
 }

@@ -40,17 +40,21 @@ public class ApplicationConfiguration {
    List<String> profiles = Lists.empty();
    Map<String, Map<String, Object>> services = Maps.empty();
 
-   //   @todo get this logic tested and sorted out
-   public static ApplicationConfiguration load( Path appConfigPath, Path confd ) {
-      log.info( "application configurations: {}", appConfigPath );
-      log.info( "global configuration directory: {}", confd );
+   public static ApplicationConfiguration load( Path appConfigPath ) {
+      return load( appConfigPath, new String[0] );
+   }
 
-      ArrayList<Path> paths = Files.wildcard( confd, "*.conf" );
-      log.info( "global configurations = {}", paths );
-      final String[] configs = Stream.of( paths )
-         .map( Files::readString )
-         .toArray( String[]::new );
+   public static ApplicationConfiguration load( Path appConfigPath, String[] configs ) {
+      log.debug( "application configurations: {}", appConfigPath );
       return Binder.hoconWithConfig( configs )
          .unmarshal( ApplicationConfiguration.class, appConfigPath );
+   }
+
+   public static ApplicationConfiguration load( Path appConfigPath, Path confd ) {
+      ArrayList<Path> paths = Files.wildcard( confd, "*.conf" );
+      log.info( "global configurations: {}", paths );
+      return load( appConfigPath, Stream.of( paths )
+         .map( Files::readString )
+         .toArray( String[]::new ) );
    }
 }
