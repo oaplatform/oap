@@ -21,23 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.json.schema._object;
 
-import oap.json.schema.SchemaAST;
+package oap.json.schema._dictionary;
 
-import java.util.LinkedHashMap;
-import java.util.Optional;
+import java.util.Set;
 
-public class ObjectSchemaAST extends SchemaAST {
-   public final Optional<Boolean> additionalProperties;
-   public final Optional<String> extendsValue;
-   public final LinkedHashMap<String, SchemaAST> properties;
+/**
+ * Created by Igor Petrenko on 12.04.2016.
+ */
+public class Dictionary {
+   public final Set<String> values;
 
-   public ObjectSchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
-                           Optional<String> extendsValue, LinkedHashMap<String, SchemaAST> properties ) {
-      super( common );
-      this.additionalProperties = additionalProperties;
-      this.extendsValue = extendsValue;
-      this.properties = properties;
+   public Dictionary( Set<String> values ) {
+      this.values = values;
    }
 }
