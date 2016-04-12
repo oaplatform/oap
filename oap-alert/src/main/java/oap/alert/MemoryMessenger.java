@@ -33,16 +33,16 @@ import static oap.util.Pair.__;
 /**
  * Created by Igor Petrenko on 04.01.2016.
  */
-public class MemoryMessager implements Messager {
+public class MemoryMessenger implements Messenger {
    public boolean changesOnly;
    public ArrayList<Pair<String, Alert>> alerts = new ArrayList<>();
 
-   public MemoryMessager( boolean changesOnly ) {
+   public MemoryMessenger( boolean changesOnly ) {
       this.changesOnly = changesOnly;
    }
 
    @Override
-   public void notify( String host, String name, Alert alert, boolean changed ) {
+   public void send( String host, String name, Alert alert, boolean changed ) {
       if( !this.changesOnly || changed ) alerts.add( __( name + "/" + host, alert ) );
    }
 }

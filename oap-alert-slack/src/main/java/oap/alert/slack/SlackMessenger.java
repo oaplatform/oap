@@ -31,19 +31,19 @@ import flowctrl.integration.slack.type.Payload;
 import flowctrl.integration.slack.webhook.SlackWebhookClient;
 import lombok.extern.slf4j.Slf4j;
 import oap.alert.Alert;
-import oap.alert.Messager;
+import oap.alert.Messenger;
 
 /**
  * Created by Igor Petrenko on 04.01.2016.
  */
 @Slf4j
-public class SlackMessager implements Messager {
+public class SlackMessenger implements Messenger {
    private final String webhookUrl;
    private final String channel;
    private final String username;
    private SlackWebhookClient webhookClient;
 
-   public SlackMessager( String channel, String username, String webhookUrl ) {
+   public SlackMessenger( String channel, String username, String webhookUrl ) {
       this.channel = channel;
       this.username = username;
       this.webhookUrl = webhookUrl;
@@ -62,7 +62,7 @@ public class SlackMessager implements Messager {
    }
 
    @Override
-   public void notify( String host, String name, Alert alert, boolean changed ) {
+   public void send( String host, String name, Alert alert, boolean changed ) {
       if( !changed ) return;
 
       final Payload payload = new Payload();

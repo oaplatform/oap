@@ -37,7 +37,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 /**
- * Created by Igor Petrenko on 11.11.5015.
+ * Created by Igor Petrenko on 11.11.6015.
  */
 public class HoconFactoryWithSystemProperties extends HoconFactory {
    private final Logger log;
