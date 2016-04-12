@@ -24,9 +24,25 @@
 
 package oap.alert;
 
+import oap.util.Pair;
+
+import java.util.ArrayList;
+
+import static oap.util.Pair.__;
+
 /**
  * Created by Igor Petrenko on 04.01.2016.
  */
-public interface RegistryMessage {
-   void send( String host, String name, Alert alert, boolean changed );
+public class MemoryMessager implements Messager {
+   public boolean changesOnly;
+   public ArrayList<Pair<String, Alert>> alerts = new ArrayList<>();
+
+   public MemoryMessager( boolean changesOnly ) {
+      this.changesOnly = changesOnly;
+   }
+
+   @Override
+   public void notify( String host, String name, Alert alert, boolean changed ) {
+      if( !this.changesOnly || changed ) alerts.add( __( name + "/" + host, alert ) );
+   }
 }

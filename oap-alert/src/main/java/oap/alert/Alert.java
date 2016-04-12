@@ -33,15 +33,15 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 public class Alert {
-   public final Condition condition;
+   public final State state;
    public final String message;
 
-   public Alert( Condition condition, String message ) {
-      this.condition = condition;
+   public Alert( State state, String message ) {
+      this.state = state;
       this.message = message;
    }
 
-   public enum Condition {
+   public enum State {
       GREEN, YELLOW, RED
    }
 }

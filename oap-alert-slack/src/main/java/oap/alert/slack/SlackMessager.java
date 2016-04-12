@@ -31,19 +31,19 @@ import flowctrl.integration.slack.type.Payload;
 import flowctrl.integration.slack.webhook.SlackWebhookClient;
 import lombok.extern.slf4j.Slf4j;
 import oap.alert.Alert;
-import oap.alert.RegistryMessage;
+import oap.alert.Messager;
 
 /**
  * Created by Igor Petrenko on 04.01.2016.
  */
 @Slf4j
-public class SlackMessage implements RegistryMessage {
+public class SlackMessager implements Messager {
    private final String webhookUrl;
    private final String channel;
    private final String username;
    private SlackWebhookClient webhookClient;
 
-   public SlackMessage( String channel, String username, String webhookUrl ) {
+   public SlackMessager( String channel, String username, String webhookUrl ) {
       this.channel = channel;
       this.username = username;
       this.webhookUrl = webhookUrl;
@@ -62,7 +62,7 @@ public class SlackMessage implements RegistryMessage {
    }
 
    @Override
-   public void send( String host, String name, Alert alert, boolean changed ) {
+   public void notify( String host, String name, Alert alert, boolean changed ) {
       if( !changed ) return;
 
       final Payload payload = new Payload();
@@ -72,7 +72,7 @@ public class SlackMessage implements RegistryMessage {
 
       final Attachment attachment = new Attachment();
 
-      switch( alert.condition ) {
+      switch( alert.state ) {
          case GREEN:
             payload.setIcon_emoji( ":recycle:" );
             attachment.setColor( Color.GOOD );
