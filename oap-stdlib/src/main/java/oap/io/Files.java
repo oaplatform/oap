@@ -31,10 +31,12 @@ import oap.util.Strings;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.codehaus.plexus.util.DirectoryScanner;
+import org.joda.time.DateTime;
 
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -259,6 +261,18 @@ public final class Files {
    public static boolean isDirectoryEmpty( Path directory ) {
       try( DirectoryStream<Path> dirStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
          return !dirStream.iterator().hasNext();
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
+   }
+
+   public static void setLastModifiedTime( Path path, DateTime dateTime ) {
+      setLastModifiedTime( path, dateTime.getMillis() );
+   }
+
+   public static void setLastModifiedTime( Path path, long ms ) {
+      try {
+         java.nio.file.Files.setLastModifiedTime( path, FileTime.fromMillis( ms ) );
       } catch( IOException e ) {
          throw new UncheckedIOException( e );
       }
