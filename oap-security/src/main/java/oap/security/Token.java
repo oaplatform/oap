@@ -37,5 +37,5 @@ public class Token implements Serializable {
    public String id;
    public String userEmail;
    public Role role;
-   public DateTime expire;
+   public DateTime created;
 }

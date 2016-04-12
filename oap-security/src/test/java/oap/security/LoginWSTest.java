@@ -60,11 +60,9 @@ public class LoginWSTest {
       TypeIdFactory.register( User.class, User.class.getName() );
       TypeIdFactory.register( Organization.class, Organization.class.getName() );
 
-      TokenStorage tokenStorage = new TokenStorage( Resources.filePath( LoginWSTest.class, "" ).get() );
       organizationStorage = new OrganizationStorage( Resources.filePath( LoginWSTest.class, "" ).get() );
-      authService = new AuthService( tokenStorage, 1 );
+      authService = new AuthService( 1 );
 
-      tokenStorage.start();
       organizationStorage.start();
 
       Application.register( "ws-login", new LoginWS( organizationStorage, authService, SALT ) );
@@ -126,8 +124,8 @@ public class LoginWSTest {
       final String id = authService.generateToken( user ).id;
 
       assertNotNull( id );
-      assertDelete( HTTP_PREFIX + "/login/" + id).hasCode(204);
-      assertFalse( authService.getToken( id ).isPresent());
+      assertDelete( HTTP_PREFIX + "/login/" + id ).hasCode( 204 );
+      assertFalse( authService.getToken( id ).isPresent() );
    }
 
 }
