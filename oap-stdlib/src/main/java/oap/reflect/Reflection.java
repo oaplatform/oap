@@ -38,6 +38,7 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Predicate;
 
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class Reflection extends Annotated<Class<?>> {
@@ -121,10 +122,15 @@ public class Reflection extends Annotated<Class<?>> {
                ) );
             return instance;
          } catch( Exception e ) {
-            throw new ReflectException( constructor.toString() + ":", e );
+            throw new ReflectException( constructor.toString() + ":" + args.keySet(), e );
          }
       }
-      throw new ReflectException( "cannot find matching constructor: " + args + " in " + typeToken.getRawType() );
+      List<String> candidates = Stream.of( constructors )
+         .map( c -> c.getName() + "(" + Stream.of( c.getParameters() )
+            .map( parameter -> parameter.getParameterizedType() + " " + parameter.getName() ).collect( joining( "," ) ) + ")" )
+         .toList();
+
+      throw new ReflectException( "cannot find matching constructor: " + args + " in " + typeToken.getRawType() + " candidates: " + candidates );
    }
 
    public boolean assignableTo( Class<?> clazz ) {
