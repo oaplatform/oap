@@ -39,7 +39,7 @@ import java.io.Reader;
 import java.util.Map;
 
 /**
- * Created by Igor Petrenko on 11.11.4015.
+ * Created by Igor Petrenko on 11.11.5015.
  */
 public class HoconFactoryWithFallback extends HoconFactory {
    private final Config additinal;
