@@ -24,10 +24,7 @@
 package oap.ws;
 
 import com.google.common.base.Throwables;
-import oap.http.Handler;
-import oap.http.HttpResponse;
-import oap.http.Request;
-import oap.http.Response;
+import oap.http.*;
 import oap.json.Binder;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
@@ -40,10 +37,12 @@ import oap.util.Stream;
 import oap.util.Strings;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
+import org.apache.http.message.BasicHttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.InvocationTargetException;
+import java.net.HttpCookie;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -54,22 +53,25 @@ import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 public class WsService implements Handler {
     private final Object impl;
     private final Logger logger;
+    private final boolean sessionAware;
     private final Reflection reflection;
+    private final SessionManager sessionMananger;
     private final Coercions coercions = Coercions.basic()
         .with( r -> true, ( r, value ) -> Binder.hocon.unmarshal( r.underlying,
             value instanceof String ? ( String ) value :
                 new String( ( byte[] ) value, StandardCharsets.UTF_8 ) ) );
     private final Validators validators = new Validators();
-    private HashMap<String, Pattern> compiledPaths = new HashMap<>();
+    private Map<String, Pattern> compiledPaths = new HashMap<>();
 
-
-    public WsService( Object impl ) {
+    public WsService( Object impl, boolean sessionAware, SessionManager sessionManager ) {
         this.impl = impl;
         this.logger = LoggerFactory.getLogger( impl.getClass() );
         this.reflection = Reflect.reflect( impl.getClass() );
         this.reflection.methods.forEach( m -> m.findAnnotation( WsMethod.class )
             .ifPresent( a -> compiledPaths.put( a.path(), ServiceUtil.compile( a.path() ) ) )
         );
+        this.sessionAware = sessionAware;
+        this.sessionMananger = sessionManager;
     }
 
     private List<Object> convert( Reflection type, List<String> values ) {
@@ -135,87 +137,110 @@ public class WsService implements Handler {
                             .tag( "service", impl.getClass().getSimpleName() )
                             .tag( "method", method.name() );
 
-                        Metrics.measureTimer( name, () -> {
-                            Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
-                            Object[] paramValues = new Object[method.paramerers.size()];
-                            List<String> paramErrors = new ArrayList<>();
-                            List<Reflection.Parameter> paramerers = method.paramerers;
-                            for( int i = 0; i < paramerers.size(); i++ ) {
-                                Reflection.Parameter parameter = paramerers.get( i );
-                                Object value = parameter.findAnnotation( WsParam.class )
-                                    .<Object>map( wsParam -> {
-                                        switch( wsParam.from() ) {
-                                            case REQUEST:
-                                                return request;
-                                            case HEADER:
-                                                return convert( parameter.name(), parameter.type(),
-                                                    request.header( parameter.name() ) );
-                                            case PATH:
-                                                return wsMethod.map( wsm -> convert( parameter.name(), parameter.type(),
-                                                    ServiceUtil.pathParam( wsm.path(), request.requestLine,
-                                                        parameter.name() ) ) )
-                                                    .orElseThrow( () -> new WsException(
-                                                        "path parameter " + parameter.name() + " without " +
-                                                            WsMethod.class.getName() + " annotation" ) );
-                                            case BODY:
-                                                return parameter.type().assignableFrom( byte[].class ) ?
-                                                    ( parameter.type().isOptional() ? request.readBody() :
-                                                        request.readBody()
-                                                            .orElseThrow( () -> new WsClientException(
-                                                                "no body for " + parameter.name() ) )
-                                                    ) :
-                                                    convert( parameter.name(), parameter.type(), request.readBody() );
-                                            default:
-                                                return parameter.type().assignableTo( List.class ) ?
-                                                    convert( parameter.type(),
-                                                        request.parameters( parameter.name() ) ) :
-                                                    convert( parameter.name(), parameter.type(),
-                                                        request.parameter( parameter.name() ) );
+                        if( !sessionAware ) {
+                            handleInternal( request, response, method, name, null );
+                        } else {
+                            final Optional<HttpCookie> user =
+                                request.cookies().stream()
+                                    .filter( httpCookie -> httpCookie.getName().equals( "Session" ) )
+                                    .findFirst();
+                            if( user.isPresent() ) {
+                                handleInternal( request, response, method, name, user.get().getValue() );
+                            } else {
+                                final String cookieValue = UUID.randomUUID().toString();
+                                sessionMananger.put( cookieValue, new Session() );
 
-                                        }
-                                    } )
-                                    .orElseGet( () -> parameter.type().assignableTo( List.class ) ?
-                                        convert( parameter.type(), request.parameters( parameter.name() ) ) :
-                                        convert( parameter.name(), parameter.type(),
-                                            request.parameter( parameter.name() ) )
-                                    );
-
-                                paramErrors.addAll( validators.forParameter( parameter, impl )
-                                    .validate( value ) );
-
-                                paramValues[i] = value;
+                                response.respond( new HttpResponse( 200 ).withHeader(
+                                    "Set-Cookie", "Session=" + cookieValue ) );
                             }
-
-                            if( !paramErrors.isEmpty() )
-                                throw new WsClientException( "validation failed", paramErrors );
-
-                            List<String> methodErrors = validators.forMethod( method, impl )
-                                .validate( paramValues );
-
-                            if( !methodErrors.isEmpty() )
-                                throw new WsClientException( "validation failed", methodErrors );
-
-                            Object result = method.invoke( impl, paramValues );
-
-                            Boolean isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
-                            ContentType produces =
-                                wsMethod.map( wsm -> ContentType.create( wsm.produces() )
-                                    .withCharset( StandardCharsets.UTF_8 ) )
-                                    .orElse( ContentType.APPLICATION_JSON );
-                            if( method.isVoid() ) response.respond( HttpResponse.NO_CONTENT );
-                            else if( result instanceof HttpResponse ) response.respond( ( HttpResponse ) result );
-                            else if( result instanceof Optional<?> ) {
-                                response.respond(
-                                    ( ( Optional<?> ) result )
-                                        .map( r -> HttpResponse.ok( result, isRaw, produces ) )
-                                        .orElseGet( () -> HttpResponse.NOT_FOUND )
-                                );
-                            } else response.respond( HttpResponse.ok( result, isRaw, produces ) );
-                        } );
+                        }
                     } );
         } catch( Throwable e ) {
             wsError( response, e );
         }
+    }
+
+    private void handleInternal( Request request, Response response, Reflection.Method method,
+                                 Name name, String session ) {
+        Metrics.measureTimer( name, () -> {
+            Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
+            Object[] paramValues = new Object[method.paramerers.size()];
+            List<String> paramErrors = new ArrayList<>();
+            List<Reflection.Parameter> paramerers = method.paramerers;
+            for( int i = 0; i < paramerers.size(); i++ ) {
+                Reflection.Parameter parameter = paramerers.get( i );
+                Object value = parameter.findAnnotation( WsParam.class )
+                    .<Object>map( wsParam -> {
+                        switch( wsParam.from() ) {
+                            case REQUEST:
+                                return request;
+                            case SESSION:
+                                return session;
+                            case HEADER:
+                                return convert( parameter.name(), parameter.type(),
+                                    request.header( parameter.name() ) );
+                            case PATH:
+                                return wsMethod.map( wsm -> convert( parameter.name(), parameter.type(),
+                                    ServiceUtil.pathParam( wsm.path(), request.requestLine,
+                                        parameter.name() ) ) )
+                                    .orElseThrow( () -> new WsException(
+                                        "path parameter " + parameter.name() + " without " +
+                                            WsMethod.class.getName() + " annotation" ) );
+                            case BODY:
+                                return parameter.type().assignableFrom( byte[].class ) ?
+                                    ( parameter.type().isOptional() ? request.readBody() :
+                                        request.readBody()
+                                            .orElseThrow( () -> new WsClientException(
+                                                "no body for " + parameter.name() ) )
+                                    ) :
+                                    convert( parameter.name(), parameter.type(), request.readBody() );
+                            default:
+                                return parameter.type().assignableTo( List.class ) ?
+                                    convert( parameter.type(),
+                                        request.parameters( parameter.name() ) ) :
+                                    convert( parameter.name(), parameter.type(),
+                                        request.parameter( parameter.name() ) );
+
+                        }
+                    } )
+                    .orElseGet( () -> parameter.type().assignableTo( List.class ) ?
+                        convert( parameter.type(), request.parameters( parameter.name() ) ) :
+                        convert( parameter.name(), parameter.type(),
+                            request.parameter( parameter.name() ) )
+                    );
+
+                paramErrors.addAll( validators.forParameter( parameter, impl )
+                    .validate( value ) );
+
+                paramValues[i] = value;
+            }
+
+            if( !paramErrors.isEmpty() )
+                throw new WsClientException( "validation failed", paramErrors );
+
+            List<String> methodErrors = validators.forMethod( method, impl )
+                .validate( paramValues );
+
+            if( !methodErrors.isEmpty() )
+                throw new WsClientException( "validation failed", methodErrors );
+
+            Object result = method.invoke( impl, paramValues );
+
+            Boolean isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
+            ContentType produces =
+                wsMethod.map( wsm -> ContentType.create( wsm.produces() )
+                    .withCharset( StandardCharsets.UTF_8 ) )
+                    .orElse( ContentType.APPLICATION_JSON );
+            if( method.isVoid() ) response.respond( HttpResponse.NO_CONTENT );
+            else if( result instanceof HttpResponse ) response.respond( ( HttpResponse ) result );
+            else if( result instanceof Optional<?> ) {
+                response.respond(
+                    ( ( Optional<?> ) result )
+                        .map( r -> HttpResponse.ok( result, isRaw, produces ) )
+                        .orElseGet( () -> HttpResponse.NOT_FOUND )
+                );
+            } else response.respond( HttpResponse.ok( result, isRaw, produces ) );
+        } );
     }
 
     @Override

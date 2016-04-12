@@ -44,90 +44,90 @@ import static org.testng.Assert.*;
 
 public class LoginWSTest {
 
-   private static final String SALT = "test";
+    private static final String SALT = "test";
 
-   private final Server server = new Server( 100 );
-   private final WebServices webServices = new WebServices( server,
-      WsConfig.CONFIGURATION.fromResource( getClass(), "ws-login.conf" ) );
+    private final Server server = new Server( 100 );
+    private final WebServices webServices = new WebServices( server, null,
+        WsConfig.CONFIGURATION.fromResource( getClass(), "ws-login.conf" ) );
 
-   private OrganizationStorage organizationStorage;
-   private AuthService authService;
+    private OrganizationStorage organizationStorage;
+    private AuthService authService;
 
-   private SynchronizedThread listener;
+    private SynchronizedThread listener;
 
-   @BeforeClass
-   public void startServer() {
-      TypeIdFactory.register( User.class, User.class.getName() );
-      TypeIdFactory.register( Organization.class, Organization.class.getName() );
+    @BeforeClass
+    public void startServer() {
+        TypeIdFactory.register( User.class, User.class.getName() );
+        TypeIdFactory.register( Organization.class, Organization.class.getName() );
 
-      TokenStorage tokenStorage = new TokenStorage( Resources.filePath( LoginWSTest.class, "" ).get() );
-      organizationStorage = new OrganizationStorage( Resources.filePath( LoginWSTest.class, "" ).get() );
-      authService = new AuthService( tokenStorage, 1 );
+        TokenStorage tokenStorage = new TokenStorage( Resources.filePath( LoginWSTest.class, "" ).get() );
+        organizationStorage = new OrganizationStorage( Resources.filePath( LoginWSTest.class, "" ).get() );
+        authService = new AuthService( tokenStorage, 1 );
 
-      tokenStorage.start();
-      organizationStorage.start();
+        tokenStorage.start();
+        organizationStorage.start();
 
-      Application.register( "ws-login", new LoginWS( organizationStorage, authService, SALT ) );
+        Application.register( "ws-login", new LoginWS( organizationStorage, authService, SALT ) );
 
-      webServices.start();
-      listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
-      listener.start();
-   }
+        webServices.start();
+        listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
+        listener.start();
+    }
 
-   @AfterClass
-   public void stopServer() {
-      listener.stop();
-      server.stop();
-      webServices.stop();
-      reset();
-   }
+    @AfterClass
+    public void stopServer() {
+        listener.stop();
+        server.stop();
+        webServices.stop();
+        reset();
+    }
 
-   @BeforeMethod
-   public void setUp() {
-      organizationStorage.clear();
-   }
+    @BeforeMethod
+    public void setUp() {
+        organizationStorage.clear();
+    }
 
-   @Test
-   public void testShouldNotLoginNonExistingUser() {
-      assertGet( HTTP_PREFIX + "/login/?email=test@example.com&password=12345" ).isOk().hasBody( "null" );
-   }
+    @Test
+    public void testShouldNotLoginNonExistingUser() {
+        assertGet( HTTP_PREFIX + "/login/?email=test@example.com&password=12345" ).isOk().hasBody( "null" );
+    }
 
-   @Test
-   public void testShouldLoginExistingUser() {
-      final Organization organization = new Organization();
-      final User user = new User();
-      user.email = "test@example.com";
-      user.role = Role.ADMIN;
-      user.password = HashUtils.hash( SALT, "12345" );
+    @Test
+    public void testShouldLoginExistingUser() {
+        final Organization organization = new Organization();
+        final User user = new User();
+        user.email = "test@example.com";
+        user.role = Role.ADMIN;
+        user.password = HashUtils.hash( SALT, "12345" );
 
-      organization.name = "test";
-      organization.users.add( 0, user );
+        organization.name = "test";
+        organization.users.add( 0, user );
 
-      organizationStorage.store( organization );
+        organizationStorage.store( organization );
 
-      assertGet( HTTP_PREFIX + "/login/?email=test@example.com&password=12345" )
-         .isOk()
-         .is( response -> response.contentString.get().matches( "id|userEmail|role|expire" ) );
-   }
+        assertGet( HTTP_PREFIX + "/login/?email=test@example.com&password=12345" )
+            .isOk()
+            .is( response -> response.contentString.get().matches( "id|userEmail|role|expire" ) );
+    }
 
-   @Test
-   public void testShouldLogoutExistingUser() {
-      final Organization organization = new Organization();
-      final User user = new User();
-      user.email = "test@example.com";
-      user.role = Role.ADMIN;
-      user.password = HashUtils.hash( SALT, "12345" );
+    @Test
+    public void testShouldLogoutExistingUser() {
+        final Organization organization = new Organization();
+        final User user = new User();
+        user.email = "test@example.com";
+        user.role = Role.ADMIN;
+        user.password = HashUtils.hash( SALT, "12345" );
 
-      organization.name = "test";
-      organization.users.add( 0, user );
+        organization.name = "test";
+        organization.users.add( 0, user );
 
-      organizationStorage.store( organization );
+        organizationStorage.store( organization );
 
-      final String id = authService.generateToken( user ).id;
+        final String id = authService.generateToken( user ).id;
 
-      assertNotNull( id );
-      assertDelete( HTTP_PREFIX + "/login/" + id).hasCode(204);
-      assertFalse( authService.getToken( id ).isPresent());
-   }
+        assertNotNull( id );
+        assertDelete( HTTP_PREFIX + "/login/" + id ).hasCode( 204 );
+        assertFalse( authService.getToken( id ).isPresent() );
+    }
 
 }

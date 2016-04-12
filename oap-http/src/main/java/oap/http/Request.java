@@ -34,11 +34,13 @@ import oap.util.Try;
 import org.apache.http.Header;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
+import org.apache.http.impl.cookie.RFC6265StrictSpec;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.net.HttpCookie;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -107,6 +109,12 @@ public class Request {
     public Optional<String> header( String name ) {
         return Arrays.find( h -> name.equalsIgnoreCase( h.getName() ), headers )
             .map( Header::getValue );
+    }
+
+    public List<HttpCookie> cookies() {
+        final Optional<String> header = header( "Cookie" );
+
+        return header.isPresent() ? HttpCookie.parse( header.get() ) : Collections.emptyList();
     }
 
     @Override

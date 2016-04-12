@@ -41,6 +41,6 @@ public @interface WsParam {
     From from() default From.QUERY;
 
     enum From {
-        QUERY, PATH, BODY, HEADER, REQUEST
+        QUERY, PATH, BODY, HEADER, REQUEST, SESSION
     }
 }
