@@ -82,7 +82,7 @@ public class ExtendsTest extends AbstractSchemaTest {
          "}" +
          "}";
 
-      vOk( schema, "{o: {a1:'test'}}", ( url ) -> schema2, false );
-      vOk( schema, "{o: {a2:'test'}}", ( url ) -> schema2, false );
+      vOk( schema, "{'o': {'a1':'test'}}", ( url ) -> schema2, false );
+      vOk( schema, "{'o': {'a2':'test'}}", ( url ) -> schema2, false );
    }
 }
