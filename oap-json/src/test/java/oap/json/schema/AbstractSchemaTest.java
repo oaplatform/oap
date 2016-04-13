@@ -40,7 +40,7 @@ public abstract class AbstractSchemaTest extends AbstractTest {
 
     protected static Object vOk( String schema, String json, SchemaStorage storage, boolean ignore_required_default ) {
         Either<List<String>, ?> result =
-            JsonValidatorFactory.schemaFromString( schema, storage ).validate( Binder.hoconWithoutSystemProperties.unmarshal( Object.class, json ),
+            JsonValidatorFactory.schemaFromString( schema, storage ).validate( Binder.json.unmarshal( Object.class, json ),
                 ignore_required_default );
         if( result.isLeft() ) throw new AssertionError( String.join( "\n", result.left().get() ) );
         else return result.right().get();
@@ -52,7 +52,7 @@ public abstract class AbstractSchemaTest extends AbstractTest {
 
     protected static void vFail( String schema, String json, String error, SchemaStorage storage ) {
         Either<List<String>, ?> result =
-            JsonValidatorFactory.schemaFromString( schema, storage ).validate( Binder.hoconWithoutSystemProperties.unmarshal( Object.class, json ), false );
+            JsonValidatorFactory.schemaFromString( schema, storage ).validate( Binder.json.unmarshal( Object.class, json ), false );
         if( result.isRight() ) Assert.fail( json + " -> " + error );
         List<String> errors = result.left().get();
         Assert.assertEquals( errors.size(), 1 );
