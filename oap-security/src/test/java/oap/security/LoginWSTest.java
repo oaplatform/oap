@@ -47,7 +47,7 @@ public class LoginWSTest {
     private static final String SALT = "test";
 
    private final Server server = new Server( 100 );
-   private final WebServices webServices = new WebServices( server,
+   private final WebServices webServices = new WebServices( server, null,
       WsConfig.CONFIGURATION.fromResource( getClass(), "ws-login.conf" ) );
 
    private OrganizationStorage organizationStorage;
