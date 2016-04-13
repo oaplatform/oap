@@ -22,19 +22,41 @@
  * SOFTWARE.
  */
 
-package oap.json.schema._dictionary;
+package oap.json.schema;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import oap.io.Files;
+import oap.json.schema._dictionary.DictionaryJsonValidator;
+import oap.testng.Env;
+import org.testng.annotations.Test;
 
-import java.util.LinkedHashSet;
+import java.nio.file.Path;
 
-/**
- * Created by Igor Petrenko on 12.04.2016.
- */
-public class Dictionary {
-   public final LinkedHashSet<String> values;
+public class DictionarySchemaTest extends AbstractSchemaTest {
+   @Test
+   public void testDictionary() {
+      final Path test = Env.tmpPath( "test" );
+      Files.writeString( test.resolve( "dict.json" ), "{values = [test1, test2, test3]}" );
 
-   public Dictionary( @JsonProperty( "values" ) LinkedHashSet<String> values ) {
-      this.values = values;
+      new DictionaryJsonValidator( test );
+
+      String schema = "{type: dictionary, name: dict}";
+
+      vOk( schema, "null" );
+      vOk( schema, "'test1'" );
+      vOk( schema, "'test2'" );
+
+      vFail( schema, "'test4'", "instance does not match any member of the enumeration [test1,test2,test3]" );
+   }
+
+   @Test
+   public void testUnknownDictionary() {
+      final Path test = Env.tmpPath( "test" );
+      Files.writeString( test.resolve( "dict.json" ), "{values = [test1, test2, test3]}" );
+
+      new DictionaryJsonValidator( test );
+
+      String schema = "{type: dictionary, name: unknown}";
+
+      vFail( schema, "'test4'", "dictionary not found" );
    }
 }

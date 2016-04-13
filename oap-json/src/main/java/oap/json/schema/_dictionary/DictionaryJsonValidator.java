@@ -53,7 +53,7 @@ public class DictionaryJsonValidator implements JsonSchemaValidator<DictionarySc
    public DictionaryJsonValidator( Path path ) {
       try( DirectoryStream<Path> dirStream = java.nio.file.Files.newDirectoryStream( path ) ) {
          dirStream.forEach( p -> {
-            final Dictionary dictionary = Binder.json.unmarshal( Dictionary.class, p );
+            final Dictionary dictionary = Binder.hoconWithoutSystemProperties.unmarshal( Dictionary.class, p );
             dictionaries.put( FilenameUtils.getBaseName( p.toString() ), dictionary );
          } );
       } catch( IOException e ) {
@@ -67,7 +67,7 @@ public class DictionaryJsonValidator implements JsonSchemaValidator<DictionarySc
 
       if( dictionary == null ) return Either.left(
          Lists.of(
-            properties.error( "dictionary " + schema.name + "not found" ) ) );
+            properties.error( "dictionary not found" ) ) );
 
       if( dictionary.values.contains( value ) ) {
          return Either.right( value );
