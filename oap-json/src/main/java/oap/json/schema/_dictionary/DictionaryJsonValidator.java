@@ -24,6 +24,7 @@
 
 package oap.json.schema._dictionary;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
 import oap.json.schema.JsonSchemaParserProperties;
 import oap.json.schema.JsonSchemaValidator;
@@ -44,6 +45,7 @@ import java.util.List;
 /**
  * Created by Igor Petrenko on 12.04.2016.
  */
+@Slf4j
 public class DictionaryJsonValidator implements JsonSchemaValidator<DictionarySchemaAST> {
    private final static HashMap<String, Dictionary> dictionaries = new HashMap<>();
 
@@ -51,10 +53,14 @@ public class DictionaryJsonValidator implements JsonSchemaValidator<DictionarySc
    }
 
    public DictionaryJsonValidator( Path path ) {
+      log.debug( "dictionary path = {}", path );
       try( DirectoryStream<Path> dirStream = java.nio.file.Files.newDirectoryStream( path ) ) {
          dirStream.forEach( p -> {
+            log.trace( "found {}", p );
             final Dictionary dictionary = Binder.hoconWithoutSystemProperties.unmarshal( Dictionary.class, p );
-            dictionaries.put( FilenameUtils.getBaseName( p.toString() ), dictionary );
+            final String baseName = FilenameUtils.getBaseName( p.toString() );
+            log.debug( "add dictionary {}", baseName );
+            dictionaries.put( baseName, dictionary );
          } );
       } catch( IOException e ) {
          throw new UncheckedIOException( e );
@@ -69,7 +75,7 @@ public class DictionaryJsonValidator implements JsonSchemaValidator<DictionarySc
          Lists.of(
             properties.error( "dictionary not found" ) ) );
 
-      if( dictionary.values.contains( value ) ) {
+      if( dictionary.values.contains( value.toString() ) ) {
          return Either.right( value );
       } else {
          return Either.left( Collections.singletonList(
