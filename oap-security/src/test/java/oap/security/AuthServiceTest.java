@@ -25,11 +25,12 @@
 package oap.security;
 
 import oap.testng.AbstractTest;
-import org.joda.time.DateTime;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 public class AuthServiceTest extends AbstractTest {
 
@@ -69,6 +70,6 @@ public class AuthServiceTest extends AbstractTest {
 
       Thread.sleep( 100 );
 
-      assertNull( authService.getToken( id ) );
+      assertThat( authService.getToken( id ) ).isEmpty();
    }
 }
