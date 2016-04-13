@@ -29,24 +29,30 @@ import java.util.Optional;
 
 public class ArraySchemaAST extends SchemaAST<ArraySchemaAST> {
 
-    public final Optional<Integer> minItems;
-    public final Optional<Integer> maxItems;
-    public final SchemaAST items;
-    public final Optional<String> idField;
+   public final Optional<Integer> minItems;
+   public final Optional<Integer> maxItems;
+   public final SchemaAST items;
+   public final Optional<String> idField;
 
-    public ArraySchemaAST( CommonSchemaAST common,
-                           Optional<Integer> minItems, Optional<Integer> maxItems,
-                           Optional<String> idField,
-                           SchemaAST items ) {
-        super( common );
-        this.minItems = minItems;
-        this.maxItems = maxItems;
-        this.idField = idField;
-        this.items = items;
-    }
+   public ArraySchemaAST( CommonSchemaAST common,
+                          Optional<Integer> minItems, Optional<Integer> maxItems,
+                          Optional<String> idField,
+                          SchemaAST items ) {
+      super( common );
+      this.minItems = minItems;
+      this.maxItems = maxItems;
+      this.idField = idField;
+      this.items = items;
+   }
 
-    @Override
-    public ArraySchemaAST merge( ArraySchemaAST cs ) {
-        return this;
-    }
+   @Override
+   public ArraySchemaAST merge( ArraySchemaAST cs ) {
+      return new ArraySchemaAST(
+         common.merge( cs.common ),
+         minItems.isPresent() ? minItems : cs.minItems,
+         maxItems.isPresent() ? maxItems : cs.maxItems,
+         idField.isPresent() ? idField : cs.idField,
+         items.common.schemaType.equals( cs.items.common.schemaType ) ? items.merge( cs.items ) : items
+      );
+   }
 }

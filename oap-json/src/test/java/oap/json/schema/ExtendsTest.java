@@ -85,4 +85,42 @@ public class ExtendsTest extends AbstractSchemaTest {
       vOk( schema, "{'o': {'a1':'test'}}", ( url ) -> schema2, false );
       vOk( schema, "{'o': {'a2':'test'}}", ( url ) -> schema2, false );
    }
+   @Test
+
+   public void testMergeInnerArray() {
+      String schema = "{" +
+         "type: object," +
+         "additionalProperties: false," +
+         "extends: test2," +
+         "properties: {" +
+         "  o: {" +
+         "    type:array," +
+         "    items {" +
+         "      type: object," +
+         "      properties {" +
+         "        a1: {type:string}" +
+         "      }" +
+         "    }" +
+         "}" +
+         "}" +
+         "}";
+
+      String schema2 = "{" +
+         "type:object," +
+         "properties: {" +
+         "  o: {" +
+         "    type:array," +
+         "    items {" +
+         "      type: object," +
+         "      properties {" +
+         "        a2: {type:string}" +
+         "      }" +
+         "    }" +
+         "}" +
+         "}" +
+         "}";
+
+      vOk( schema, "{'o': [{'a1':'test'}]}", ( url ) -> schema2, false );
+      vOk( schema, "{'o': [{'a2':'test'}]}", ( url ) -> schema2, false );
+   }
 }
