@@ -27,7 +27,7 @@ import oap.json.schema.SchemaAST;
 
 import java.util.Optional;
 
-public class ArraySchemaAST extends SchemaAST {
+public class ArraySchemaAST extends SchemaAST<ArraySchemaAST> {
 
     public final Optional<Integer> minItems;
     public final Optional<Integer> maxItems;
@@ -43,5 +43,10 @@ public class ArraySchemaAST extends SchemaAST {
         this.maxItems = maxItems;
         this.idField = idField;
         this.items = items;
+    }
+
+    @Override
+    public ArraySchemaAST merge( ArraySchemaAST cs ) {
+        return this;
     }
 }

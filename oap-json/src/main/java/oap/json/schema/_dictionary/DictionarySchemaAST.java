@@ -29,11 +29,16 @@ import oap.json.schema.SchemaAST;
 /**
  * Created by Igor Petrenko on 12.04.2016.
  */
-public class DictionarySchemaAST extends SchemaAST {
+public class DictionarySchemaAST extends SchemaAST<DictionarySchemaAST> {
    public final String name;
 
    public DictionarySchemaAST( CommonSchemaAST common, String name ) {
       super( common );
       this.name = name;
+   }
+
+   @Override
+   public DictionarySchemaAST merge( DictionarySchemaAST cs ) {
+      return new DictionarySchemaAST( common.merge( cs.common ), name );
    }
 }
