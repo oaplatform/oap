@@ -24,25 +24,33 @@
 
 package oap.ws;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import oap.http.Session;
 
 import java.util.NoSuchElementException;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class SessionManager {
 
-    private static final ConcurrentHashMap<String, Session> sessionMap = new ConcurrentHashMap<>();
+    private final Cache<String, Session> sessions;
+
+    public SessionManager( int expirationTime ) {
+        this.sessions = CacheBuilder.newBuilder()
+            .expireAfterAccess( expirationTime, TimeUnit.MINUTES )
+            .build();
+    }
 
     public Session getSessionById( String id ) {
-        return sessionMap.get( id );
+        return sessions.getIfPresent( id );
     }
 
     public void put( String sessionId, Session session ) {
-        sessionMap.put( sessionId, session );
+        sessions.put( sessionId, session );
     }
 
     public void putSessionData( String sessionId, String key, Object value ) {
-        final Session session = sessionMap.get( sessionId );
+        final Session session = sessions.getIfPresent( sessionId );
 
         if( session != null ) {
             session.set( key, value );
@@ -50,17 +58,17 @@ public class SessionManager {
     }
 
     public Object getSessionData( String sessionId, String key ) {
-        final Session session = sessionMap.get( sessionId );
+        final Session session = sessions.getIfPresent( sessionId );
 
         return session != null ? session.get( key ) :
             new NoSuchElementException( "Element does not exist: " + sessionId );
     }
 
     public void clear() {
-        sessionMap.clear();
+        sessions.invalidateAll();
     }
 
     public void removeSessionById( String sessionId ) {
-        sessionMap.remove( sessionId );
+        sessions.invalidate( sessionId );
     }
 }

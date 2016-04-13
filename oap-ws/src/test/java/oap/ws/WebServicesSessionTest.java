@@ -25,7 +25,6 @@
 package oap.ws;
 
 import com.google.common.collect.Iterables;
-import com.google.common.io.ByteStreams;
 import oap.concurrent.SynchronizedThread;
 import oap.http.*;
 import oap.http.testng.HttpAsserts;
@@ -42,8 +41,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Optional;
 
 import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.SESSION;
@@ -56,7 +53,7 @@ public class WebServicesSessionTest {
 
     private final Server server = new Server( 100 );
     private final WebServices ws = new WebServices( server, null );
-    private final SessionManager sessionManager = new SessionManager();
+    private final SessionManager sessionManager = new SessionManager( 10 );
 
     private SynchronizedThread listener;
 
@@ -64,7 +61,7 @@ public class WebServicesSessionTest {
     public void startServer() {
         Metrics.resetAll();
         server.start();
-        ws.bind( "login", Cors.DEFAULT, new LoginWS(), true, sessionManager, Protocol.HTTP );
+        ws.bind( "test", Cors.DEFAULT, new TestWS(), true, sessionManager, Protocol.HTTP );
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );
         listener = new SynchronizedThread( http );
@@ -75,7 +72,7 @@ public class WebServicesSessionTest {
     public void stopServer() {
         listener.stop();
         server.stop();
-        server.unbind( "login" );
+        server.unbind( "test" );
 
         HttpAsserts.reset();
         Metrics.resetAll();
@@ -88,35 +85,28 @@ public class WebServicesSessionTest {
             .setDefaultCookieStore( basicCookieStore )
             .build();
 
-        final HttpGet httpGet = new HttpGet( HttpAsserts.HTTP_PREFIX + "/login/" );
+        final HttpGet httpGet = new HttpGet( HttpAsserts.HTTP_PREFIX + "/test/" );
 
         final CloseableHttpResponse response = client.execute( httpGet );
 
         final Cookie cookie = Iterables.getOnlyElement( basicCookieStore.getCookies() );
 
-        assertEquals( "Session",cookie.getName() );
-        assertNotNull( cookie.getValue() );
         assertEquals( response.getStatusLine().getStatusCode(), 200 );
+        assertEquals( "Session", cookie.getName() );
+        assertNotNull( cookie.getValue() );
 
-        String session;
-        try (InputStream inputStream = response.getEntity().getContent()) {
-            final byte[] bytes = ByteStreams.toByteArray( inputStream );
-            session = new String( bytes, "UTF-8" );
-        }
-        final Session sessionById = sessionManager.getSessionById( session );
-        final Optional<Object> username = sessionById.get( "username" );
+        final Session session = sessionManager.getSessionById( cookie.getValue() );
 
-        assertNotNull( sessionById );
-        assertTrue( username.isPresent() );
+        assertEquals( session.get( "username" ).get(), "test" );
     }
 
-    private class LoginWS {
+    private class TestWS {
 
         @WsMethod( path = "/", method = GET )
-        public Object login( @WsParam( from = SESSION ) String session ) {
-            sessionManager.putSessionData( session, "username","test" );
+        public Object test( @WsParam( from = SESSION ) Session session ) {
+            session.set( "username", "test" );
 
-            return HttpResponse.ok( session, true, TEXT_PLAIN );
+            return HttpResponse.ok( "response", true, TEXT_PLAIN );
         }
     }
 

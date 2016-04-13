@@ -176,7 +176,7 @@ public class WsService implements Handler {
                             case REQUEST:
                                 return request;
                             case SESSION:
-                                return cookieId;
+                                return sessionManager.getSessionById( cookieId );
                             case HEADER:
                                 return convert( parameter.name(), parameter.type(),
                                     request.header( parameter.name() ) );
