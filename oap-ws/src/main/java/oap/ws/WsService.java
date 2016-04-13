@@ -37,7 +37,6 @@ import oap.util.Stream;
 import oap.util.Strings;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
-import org.apache.http.message.BasicHttpResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,13 +54,14 @@ public class WsService implements Handler {
     private final Logger logger;
     private final boolean sessionAware;
     private final Reflection reflection;
-    private final SessionManager sessionMananger;
+    private final SessionManager sessionManager;
     private final Coercions coercions = Coercions.basic()
         .with( r -> true, ( r, value ) -> Binder.hocon.unmarshal( r.underlying,
             value instanceof String ? ( String ) value :
                 new String( ( byte[] ) value, StandardCharsets.UTF_8 ) ) );
     private final Validators validators = new Validators();
     private Map<String, Pattern> compiledPaths = new HashMap<>();
+    private String cookieId;
 
     public WsService( Object impl, boolean sessionAware, SessionManager sessionManager ) {
         this.impl = impl;
@@ -71,7 +71,7 @@ public class WsService implements Handler {
             .ifPresent( a -> compiledPaths.put( a.path(), ServiceUtil.compile( a.path() ) ) )
         );
         this.sessionAware = sessionAware;
-        this.sessionMananger = sessionManager;
+        this.sessionManager = sessionManager;
     }
 
     private List<Object> convert( Reflection type, List<String> values ) {
@@ -138,20 +138,21 @@ public class WsService implements Handler {
                             .tag( "method", method.name() );
 
                         if( !sessionAware ) {
-                            handleInternal( request, response, method, name, null );
+                            handleInternal( request, response, method, name, false );
                         } else {
                             final Optional<HttpCookie> user =
                                 request.cookies().stream()
                                     .filter( httpCookie -> httpCookie.getName().equals( "Session" ) )
                                     .findFirst();
                             if( user.isPresent() ) {
-                                handleInternal( request, response, method, name, user.get().getValue() );
-                            } else {
-                                final String cookieValue = UUID.randomUUID().toString();
-                                sessionMananger.put( cookieValue, new Session() );
+                                this.cookieId = user.get().getValue();
 
-                                response.respond( new HttpResponse( 200 ).withHeader(
-                                    "Set-Cookie", "Session=" + cookieValue ) );
+                                handleInternal( request, response, method, name, false );
+                            } else {
+                                this.cookieId = UUID.randomUUID().toString();
+                                sessionManager.put( cookieId, new Session() );
+
+                                handleInternal( request, response, method, name, true );
                             }
                         }
                     } );
@@ -161,7 +162,7 @@ public class WsService implements Handler {
     }
 
     private void handleInternal( Request request, Response response, Reflection.Method method,
-                                 Name name, String session ) {
+                                 Name name, boolean setCookie ) {
         Metrics.measureTimer( name, () -> {
             Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
             Object[] paramValues = new Object[method.paramerers.size()];
@@ -175,7 +176,7 @@ public class WsService implements Handler {
                             case REQUEST:
                                 return request;
                             case SESSION:
-                                return session;
+                                return sessionManager.getSessionById( cookieId );
                             case HEADER:
                                 return convert( parameter.name(), parameter.type(),
                                     request.header( parameter.name() ) );
@@ -232,14 +233,20 @@ public class WsService implements Handler {
                     .withCharset( StandardCharsets.UTF_8 ) )
                     .orElse( ContentType.APPLICATION_JSON );
             if( method.isVoid() ) response.respond( HttpResponse.NO_CONTENT );
-            else if( result instanceof HttpResponse ) response.respond( ( HttpResponse ) result );
+            else if( result instanceof HttpResponse ) response.respond( setCookie ? ( ( HttpResponse ) result )
+                .withHeader( "Set-Cookie", "Session=" + cookieId ) : ( HttpResponse ) result );
             else if( result instanceof Optional<?> ) {
                 response.respond(
                     ( ( Optional<?> ) result )
-                        .map( r -> HttpResponse.ok( result, isRaw, produces ) )
+                        .map( r -> setCookie ?
+                            HttpResponse.ok( result, isRaw, produces ).withHeader( "Set-Cookie", "Session=" + cookieId ) :
+                            HttpResponse.ok( result, isRaw, produces ) )
                         .orElseGet( () -> HttpResponse.NOT_FOUND )
                 );
-            } else response.respond( HttpResponse.ok( result, isRaw, produces ) );
+            } else response.respond( setCookie ?
+                HttpResponse.ok( result, isRaw, produces ).withHeader( "Set-Cookie", "Session=" + cookieId ) :
+                HttpResponse.ok( result, isRaw, produces )
+            );
         } );
     }
 
