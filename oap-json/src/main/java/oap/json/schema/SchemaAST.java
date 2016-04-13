@@ -27,25 +27,36 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-public class SchemaAST {
-    public final CommonSchemaAST common;
+public abstract class SchemaAST<T extends SchemaAST<T>> {
+   public final CommonSchemaAST common;
 
-    public SchemaAST( CommonSchemaAST common ) {
-        this.common = common;
-    }
+   public SchemaAST( CommonSchemaAST common ) {
+      this.common = common;
+   }
 
-    public static class CommonSchemaAST {
-        public final String schemaType;
-        public final Optional<Boolean> required;
-        public final Optional<Object> defaultValue;
-        public final Optional<Function<Object, List<Object>>> enumValue;
+   public abstract T merge( T cs );
 
-        public CommonSchemaAST( String schemaType, Optional<Boolean> required, Optional<Object> defaultValue,
-            Optional<Function<Object, List<Object>>> enumValue ) {
-            this.schemaType = schemaType;
-            this.required = required;
-            this.defaultValue = defaultValue;
-            this.enumValue = enumValue;
-        }
-    }
+   public static class CommonSchemaAST {
+      public final String schemaType;
+      public final Optional<Boolean> required;
+      public final Optional<Object> defaultValue;
+      public final Optional<Function<Object, List<Object>>> enumValue;
+
+      public CommonSchemaAST( String schemaType, Optional<Boolean> required, Optional<Object> defaultValue,
+                              Optional<Function<Object, List<Object>>> enumValue ) {
+         this.schemaType = schemaType;
+         this.required = required;
+         this.defaultValue = defaultValue;
+         this.enumValue = enumValue;
+      }
+
+      public CommonSchemaAST merge( CommonSchemaAST common ) {
+         return new CommonSchemaAST(
+            schemaType,
+            required.isPresent() ? required : common.required,
+            defaultValue.isPresent() ? defaultValue : common.defaultValue,
+            enumValue.isPresent() ? enumValue : common.enumValue
+         );
+      }
+   }
 }

@@ -28,7 +28,7 @@ import oap.json.schema.SchemaAST;
 import java.util.LinkedHashMap;
 import java.util.Optional;
 
-public class ObjectSchemaAST extends SchemaAST {
+public class ObjectSchemaAST extends SchemaAST<ObjectSchemaAST> {
    public final Optional<Boolean> additionalProperties;
    public final Optional<String> extendsValue;
    public final LinkedHashMap<String, SchemaAST> properties;
@@ -39,5 +39,31 @@ public class ObjectSchemaAST extends SchemaAST {
       this.additionalProperties = additionalProperties;
       this.extendsValue = extendsValue;
       this.properties = properties;
+   }
+
+   @Override
+   public ObjectSchemaAST merge( ObjectSchemaAST cs ) {
+      return new ObjectSchemaAST(
+         common.merge( cs.common ),
+         additionalProperties.isPresent() ? additionalProperties : cs.additionalProperties,
+         extendsValue.isPresent() ? extendsValue : cs.extendsValue,
+         merge( properties, cs.properties )
+      );
+   }
+
+   private LinkedHashMap<String, SchemaAST> merge( LinkedHashMap<String, SchemaAST> parentProperties, LinkedHashMap<String, SchemaAST> current ) {
+      final LinkedHashMap<String, SchemaAST> result = new LinkedHashMap<>();
+
+      current.entrySet().stream().filter( e -> !parentProperties.containsKey( e.getKey() ) ).forEach( e -> result.put( e.getKey(), e.getValue() ) );
+
+      parentProperties.forEach( ( k, v ) -> {
+         final SchemaAST cs = current.get( k );
+         if( cs == null || !v.common.schemaType.equals( cs.common.schemaType ) )
+            result.put( k, v );
+         else
+            result.put( k, v.merge( cs ) );
+      } );
+
+      return result;
    }
 }

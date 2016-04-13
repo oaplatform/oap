@@ -108,6 +108,10 @@ public class JsonValidatorFactory {
       }
    }
 
+   public static void reset() {
+      schemas.clear();
+   }
+
    @SuppressWarnings( "unchecked" )
    public Either<List<String>, Object> validate( Object json, boolean ignore_required_default ) {
       JsonValidatorProperties properties = new JsonValidatorProperties(

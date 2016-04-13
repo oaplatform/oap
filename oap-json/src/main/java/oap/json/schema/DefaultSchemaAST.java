@@ -21,39 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.json.schema._number;
 
-import oap.json.schema.SchemaAST;
+package oap.json.schema;
 
-import java.util.Optional;
-
-public class NumberSchemaAST extends SchemaAST<NumberSchemaAST> {
-   public Optional<Boolean> exclusiveMinimum;
-
-   public Optional<Boolean> exclusiveMaximum;
-
-   public Optional<Double> minimum;
-
-   public Optional<Double> maximum;
-
-   public NumberSchemaAST( CommonSchemaAST common, Optional<Boolean> exclusiveMinimum,
-                           Optional<Boolean> exclusiveMaximum, Optional<Double> minimum,
-                           Optional<Double> maximum ) {
+/**
+ * Created by Igor Petrenko on 13.04.2016.
+ */
+public class DefaultSchemaAST extends SchemaAST<DefaultSchemaAST> {
+   public DefaultSchemaAST( CommonSchemaAST common ) {
       super( common );
-      this.exclusiveMinimum = exclusiveMinimum;
-      this.exclusiveMaximum = exclusiveMaximum;
-      this.minimum = minimum;
-      this.maximum = maximum;
    }
 
    @Override
-   public NumberSchemaAST merge( NumberSchemaAST cs ) {
-      return new NumberSchemaAST(
-         common.merge( cs.common ),
-         exclusiveMinimum.isPresent() ? exclusiveMinimum : cs.exclusiveMinimum,
-         exclusiveMaximum.isPresent() ? exclusiveMaximum : cs.exclusiveMaximum,
-         minimum.isPresent() ? minimum : cs.minimum,
-         maximum.isPresent() ? maximum : cs.maximum
-      );
+   public DefaultSchemaAST merge( DefaultSchemaAST cs ) {
+      return new DefaultSchemaAST( common.merge( cs.common ) );
    }
 }

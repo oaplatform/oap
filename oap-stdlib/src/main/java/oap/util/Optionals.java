@@ -32,6 +32,10 @@ public class Optionals {
         return opt.map( Stream::of ).orElse( Stream.empty() );
     }
 
+    public static <T> Optional<T> firstPresent(Optional<T>... optionals) {
+        return Stream.of( optionals ).flatMap( Optionals::toStream ).findFirst();
+    }
+
     public static <T> Fork<T> fork( Optional<T> opt ) {
         return new Fork<>( opt );
     }
