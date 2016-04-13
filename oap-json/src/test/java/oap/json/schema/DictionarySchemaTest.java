@@ -22,20 +22,41 @@
  * SOFTWARE.
  */
 
-package oap.security;
+package oap.json.schema;
 
-import lombok.ToString;
-import org.joda.time.DateTime;
+import oap.io.Files;
+import oap.json.schema._dictionary.DictionaryJsonValidator;
+import oap.testng.Env;
+import org.testng.annotations.Test;
 
-import java.io.Serializable;
+import java.nio.file.Path;
 
-@ToString
-public class Token implements Serializable {
+public class DictionarySchemaTest extends AbstractSchemaTest {
+   @Test
+   public void testDictionary() {
+      final Path test = Env.tmpPath( "test" );
+      Files.writeString( test.resolve( "dict.json" ), "{values = [test1, test2, test3]}" );
 
-   private static final long serialVersionUID = -2221117654361445000L;
+      new DictionaryJsonValidator( test );
 
-   public String id;
-   public String userEmail;
-   public Role role;
-   public DateTime created;
+      String schema = "{type: dictionary, name: dict}";
+
+      vOk( schema, "null" );
+      vOk( schema, "'test1'" );
+      vOk( schema, "'test2'" );
+
+      vFail( schema, "'test4'", "instance does not match any member of the enumeration [test1,test2,test3]" );
+   }
+
+   @Test
+   public void testUnknownDictionary() {
+      final Path test = Env.tmpPath( "test" );
+      Files.writeString( test.resolve( "dict.json" ), "{values = [test1, test2, test3]}" );
+
+      new DictionaryJsonValidator( test );
+
+      String schema = "{type: dictionary, name: unknown}";
+
+      vFail( schema, "'test4'", "dictionary not found" );
+   }
 }

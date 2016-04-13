@@ -22,20 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.security;
+package oap.json.schema;
 
-import lombok.ToString;
-import org.joda.time.DateTime;
+import oap.testng.Env;
+import org.testng.annotations.Test;
 
-import java.io.Serializable;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@ToString
-public class Token implements Serializable {
+/**
+ * Created by Igor Petrenko on 13.04.2016.
+ */
+public class DictionaryFromEnumGeneratorTest {
+   @Test
+   public void testMain() throws Exception {
+      DictionaryFromEnumGenerator.main( new String[]{
+         TestDictEnum.class.getName() + "," + TestDictEnum2.class.getName(),
+         "bbb,ccc",
+         Env.tmp( "tmp" )
+      } );
 
-   private static final long serialVersionUID = -2221117654361445000L;
+      assertThat( Env.tmpPath( "tmp" ).resolve( "bbb.json" ) ).hasContent( "{\"values\":[\"A\",\"B\",\"TEST\"]}" );
+      assertThat( Env.tmpPath( "tmp" ).resolve( "ccc.json" ) ).hasContent( "{\"values\":[\"TEST1\",\"TEST2\"]}" );
+   }
 
-   public String id;
-   public String userEmail;
-   public Role role;
-   public DateTime created;
+   public enum TestDictEnum {
+      A, B, UNKNOWN, TEST
+   }
+
+   public enum TestDictEnum2 {
+      TEST1, TEST2
+   }
+
 }

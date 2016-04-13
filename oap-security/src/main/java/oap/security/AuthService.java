@@ -24,64 +24,60 @@
 
 package oap.security;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Iterables;
 import org.joda.time.DateTime;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 public class AuthService {
 
-   private final TokenStorage tokenStorage;
-   private final int expirationTime;
+   private final Cache<String, Token> tokenStorage;
 
-   public AuthService( TokenStorage tokenStorage, int expirationTime ) {
-      this.tokenStorage = tokenStorage;
-      this.expirationTime = expirationTime;
+   public AuthService( int expirationTime ) {
+      this.tokenStorage = CacheBuilder.newBuilder()
+         .expireAfterAccess( expirationTime, TimeUnit.MINUTES )
+         .build();
    }
 
    public Token generateToken( User user ) {
-      final List<Token> userTokens = tokenStorage.select()
-         .filter( token -> token.userEmail.equals( user.email ) )
-         .toList();
+      final List<Token> tokens = new ArrayList<>();
 
-      if( userTokens.isEmpty() ) {
+      tokenStorage.asMap().forEach( ( s, token ) -> {
+         if( token.userEmail.equals( user.email ) ) {
+            tokens.add( token );
+         }
+      } );
+
+      if( tokens.isEmpty() ) {
          final Token token = new Token();
          token.userEmail = user.email;
          token.role = user.role;
-         token.expire = DateTime.now().plusMinutes( expirationTime );
+         token.created = DateTime.now();
          token.id = UUID.randomUUID().toString();
 
-         tokenStorage.store( token );
+         tokenStorage.put( token.id, token );
 
          return token;
       } else {
-         final Token existingToken = Iterables.getOnlyElement( userTokens );
+         final Token existingToken = Iterables.getOnlyElement( tokens );
 
-         return tokenStorage.update( existingToken.id, token -> {
-            token.expire = DateTime.now().plusMinutes( expirationTime );
-         } );
+         tokenStorage.put( existingToken.id, existingToken );
+
+         return existingToken;
       }
    }
 
    public Optional<Token> getToken( String tokenId ) {
-      final Optional<Token> tokenOptional = tokenStorage.get( tokenId );
-
-      if( tokenOptional.isPresent() ) {
-         final Token token = tokenOptional.get();
-
-         if( token.expire.isAfterNow() ) {
-            return Optional.of( token );
-         } else {
-            deleteToken( token.id );
-         }
-      }
-
-      return Optional.empty();
+      return Optional.ofNullable( tokenStorage.getIfPresent( tokenId ) );
    }
 
    public void deleteToken( String tokenId ) {
-      tokenStorage.delete( tokenId );
+      tokenStorage.invalidate( tokenId );
    }
 }

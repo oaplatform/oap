@@ -22,20 +22,18 @@
  * SOFTWARE.
  */
 
-package oap.security;
+package oap.json.schema._dictionary;
 
-import lombok.ToString;
-import org.joda.time.DateTime;
+import oap.json.schema.SchemaAST;
 
-import java.io.Serializable;
+/**
+ * Created by Igor Petrenko on 12.04.2016.
+ */
+public class DictionarySchemaAST extends SchemaAST {
+   public final String name;
 
-@ToString
-public class Token implements Serializable {
-
-   private static final long serialVersionUID = -2221117654361445000L;
-
-   public String id;
-   public String userEmail;
-   public Role role;
-   public DateTime created;
+   public DictionarySchemaAST( CommonSchemaAST common, String name ) {
+      super( common );
+      this.name = name;
+   }
 }

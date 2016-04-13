@@ -29,15 +29,15 @@ import java.util.LinkedHashMap;
 import java.util.Optional;
 
 public class ObjectSchemaAST extends SchemaAST {
-    public Optional<Boolean> additionalProperties;
-    public Optional<String> extendsValue;
-    public LinkedHashMap<String, SchemaAST> properties;
+   public final Optional<Boolean> additionalProperties;
+   public final Optional<String> extendsValue;
+   public final LinkedHashMap<String, SchemaAST> properties;
 
-    public ObjectSchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
-                            Optional<String> extendsValue, LinkedHashMap<String, SchemaAST> properties ) {
-        super( common );
-        this.additionalProperties = additionalProperties;
-        this.extendsValue = extendsValue;
-        this.properties = properties;
-    }
+   public ObjectSchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
+                           Optional<String> extendsValue, LinkedHashMap<String, SchemaAST> properties ) {
+      super( common );
+      this.additionalProperties = additionalProperties;
+      this.extendsValue = extendsValue;
+      this.properties = properties;
+   }
 }

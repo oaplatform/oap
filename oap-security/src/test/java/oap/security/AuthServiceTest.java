@@ -24,29 +24,21 @@
 
 package oap.security;
 
-import oap.io.Resources;
-import oap.json.TypeIdFactory;
 import oap.testng.AbstractTest;
-import org.joda.time.DateTime;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 public class AuthServiceTest extends AbstractTest {
-
-   private TokenStorage tokenStorage;
 
    private AuthService authService;
 
    @BeforeTest
    public void setUp() {
-      TypeIdFactory.register( User.class, User.class.getName() );
-
-      tokenStorage = new TokenStorage( Resources.filePath( AuthServiceTest.class, "" ).get() );
-      authService = new AuthService( tokenStorage, 1 );
-
-      tokenStorage.start();
+      authService = new AuthService( 1 );
    }
 
    @Test
@@ -61,47 +53,23 @@ public class AuthServiceTest extends AbstractTest {
       assertEquals( token.role, Role.ADMIN );
       assertEquals( token.userEmail, "test@example.com" );
       assertNotNull( token.id );
-      assertNotNull( token.expire );
+      assertNotNull( token.created );
    }
 
    @Test
-   public void testShouldUpdateExpirationTimeOfExistingToken() throws InterruptedException {
+   public void testShouldDeleteExpiredToken() throws InterruptedException {
       final User user = new User();
       user.email = "test@example.com";
       user.password = "12345";
       user.role = Role.ADMIN;
 
-      final DateTime expire = authService.generateToken( user ).expire;
-      Thread.sleep( 100 );
-      final DateTime updatedExpire = authService.generateToken( user ).expire;
-
-      assertNotEquals( expire, updatedExpire );
-   }
-
-   @Test
-   public void testShouldNotDeleteNonExpiredTokenOnNextRequest() throws InterruptedException {
-      final User user = new User();
-      user.email = "test@example.com";
-      user.password = "12345";
-      user.role = Role.ADMIN;
+      authService = new AuthService( 0 );
 
       final String id = authService.generateToken( user ).id;
+      assertNotNull( id );
+
       Thread.sleep( 100 );
 
-      assertNotNull( authService.getToken( id ) );
-   }
-
-   @Test
-   public void testShouldDeleteExpiredTokenOnNextRequest() throws InterruptedException {
-      final User user = new User();
-      user.email = "test@example.com";
-      user.password = "12345";
-      user.role = Role.ADMIN;
-
-      authService = new AuthService( tokenStorage, 0 );
-
-      final String id = authService.generateToken( user ).id;
-      Thread.sleep( 1000 );
-      assertFalse( authService.getToken( id ).isPresent() );
+      assertThat( authService.getToken( id ) ).isEmpty();
    }
 }

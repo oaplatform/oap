@@ -22,15 +22,19 @@
  * SOFTWARE.
  */
 
-package oap.security;
+package oap.json.schema._dictionary;
 
-import oap.storage.FileStorage;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.nio.file.Path;
+import java.util.LinkedHashSet;
 
-public class TokenStorage extends FileStorage<Token> {
+/**
+ * Created by Igor Petrenko on 12.04.2016.
+ */
+public class Dictionary {
+   public final LinkedHashSet<String> values;
 
-   public TokenStorage( Path path ) {
-      super( path, token -> token.id );
+   public Dictionary( @JsonProperty( "values" ) LinkedHashSet<String> values ) {
+      this.values = values;
    }
 }

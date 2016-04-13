@@ -43,6 +43,14 @@ public class Lists {
       return list;
    }
 
+   public static <T> List<T> concat( List<T>... lists) {
+      List<T> concatenated = empty();
+      for ( List<T> list : lists ) {
+         concatenated.addAll( list );
+      }
+      return concatenated;
+   }
+
    public static <T> List<T> tail( List<T> list ) {
       if( list.isEmpty() ) throw new NoSuchElementException();
 
