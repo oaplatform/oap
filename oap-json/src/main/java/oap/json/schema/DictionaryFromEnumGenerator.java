@@ -40,21 +40,30 @@ public class DictionaryFromEnumGenerator {
       final String name = args[1];
       final String path = args[2];
 
-      System.out.println("Class = " + clazz);
-      System.out.println("name = " + name);
-      System.out.println("path = " + path);
+      System.out.println( "Class = " + clazz );
+      System.out.println( "name = " + name );
+      System.out.println( "path = " + path );
 
-      final Object[] enumConstants = Class.forName( clazz ).getEnumConstants();
+      final String[] classes = clazz.split( "," );
+      final String[] names = name.split( "," );
 
-      final LinkedHashSet<String> values = new LinkedHashSet<>( enumConstants.length );
+      assert ( classes.length == names.length );
 
-      for( int i = 0; i < enumConstants.length; i++ ) {
-         final String e = enumConstants[i].toString();
-         if( Strings.UNKNOWN.equals( e ) ) continue;
+      for( int x = 0; x < classes.length; x++ ) {
+         final String c = classes[x];
+         final String n = names[x];
+         final Object[] enumConstants = Class.forName( c ).getEnumConstants();
 
-         values.add( e );
+         final LinkedHashSet<String> values = new LinkedHashSet<>( enumConstants.length );
+
+         for( int i = 0; i < enumConstants.length; i++ ) {
+            final String e = enumConstants[i].toString();
+            if( Strings.UNKNOWN.equals( e ) ) continue;
+
+            values.add( e );
+         }
+
+         Binder.json.marshal( Paths.get( path, n + ".json" ), new Dictionary( values ) );
       }
-
-      Binder.json.marshal( Paths.get( path, name + ".json" ), new Dictionary( values ) );
    }
 }

@@ -25,7 +25,6 @@
 package oap.json.schema;
 
 import oap.testng.Env;
-import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,13 +35,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class DictionaryFromEnumGeneratorTest {
    @Test
    public void testMain() throws Exception {
-      DictionaryFromEnumGenerator.main( new String[]{ TestDictEnum.class.getName(), "bbb", Env.tmp( "tmp" ) } );
+      DictionaryFromEnumGenerator.main( new String[]{
+         TestDictEnum.class.getName() + "," + TestDictEnum2.class.getName(),
+         "bbb,ccc",
+         Env.tmp( "tmp" )
+      } );
 
       assertThat( Env.tmpPath( "tmp" ).resolve( "bbb.json" ) ).hasContent( "{\"values\":[\"A\",\"B\",\"TEST\"]}" );
+      assertThat( Env.tmpPath( "tmp" ).resolve( "ccc.json" ) ).hasContent( "{\"values\":[\"TEST1\",\"TEST2\"]}" );
    }
 
-   public static enum TestDictEnum {
+   public enum TestDictEnum {
       A, B, UNKNOWN, TEST
+   }
+
+   public enum TestDictEnum2 {
+      TEST1, TEST2
    }
 
 }
