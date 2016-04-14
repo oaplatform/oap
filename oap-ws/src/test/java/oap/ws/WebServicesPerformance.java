@@ -38,53 +38,53 @@ import org.testng.annotations.Test;
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 
 public class WebServicesPerformance extends AbstractPerformance {
-   private final int samples = 100000;
-   private final int experiments = 5;
+    private final int samples = 100000;
+    private final int experiments = 5;
 
-   @Test
-   public void blocking_threads() {
-      Server server = new Server( 100 );
-      SynchronizedThread listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
-      listener.start();
-      try {
-         WebServices ws = new WebServices( server );
-         ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), Protocol.HTTP );
+    @Test
+    public void blocking_threads() {
+        Server server = new Server( 100 );
+        SynchronizedThread listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
+        listener.start();
+        try {
+            WebServices ws = new WebServices( server, null );
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false, null, Protocol.HTTP );
 
-         HttpAsserts.reset();
-         benchmark( "Server.invocations", samples, experiments, 5000,
-            number -> HttpAsserts.assertGet( HTTP_PREFIX + "/x/v/math/id?a=aaa" ).responded( 200, "OK",
-               ContentType.APPLICATION_JSON, "\"aaa\"" ) );
+            HttpAsserts.reset();
+            benchmark( "Server.invocations", samples, experiments, 5000,
+                number -> HttpAsserts.assertGet( HTTP_PREFIX + "/x/v/math/id?a=aaa" ).responded( 200, "OK",
+                    ContentType.APPLICATION_JSON, "\"aaa\"" ) );
 
-         HttpAsserts.reset();
-      } finally {
-         listener.stop();
-         server.stop();
-      }
-   }
+            HttpAsserts.reset();
+        } finally {
+            listener.stop();
+            server.stop();
+        }
+    }
 
-   @Test
-   public void nio_threads() throws Exception {
-      NioServer server = new NioServer( Env.port() );
-      try {
-         WebServices ws = new WebServices( server );
-         ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), Protocol.HTTP );
-         server.start();
-         Thread.sleep( 3000 ); // ??? TODO: fix me
+    @Test
+    public void nio_threads() throws Exception {
+        NioServer server = new NioServer( Env.port() );
+        try {
+            WebServices ws = new WebServices( server, null );
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false, null, Protocol.HTTP );
+            server.start();
+            Thread.sleep( 3000 ); // ??? TODO: fix me
 
-         HttpAsserts.reset();
-         benchmark( "NioServer.invocations", samples, experiments, 5000, ( number ) -> {
-            try {
-               HttpAsserts.assertGet( HTTP_PREFIX + "/x/v/math/id?a=aaa" )
-                  .responded( 200, "OK", ContentType.APPLICATION_JSON, "\"aaa\"" );
-            } catch( Throwable e ) {
-               e.printStackTrace();
-            }
-         } );
+            HttpAsserts.reset();
+            benchmark( "NioServer.invocations", samples, experiments, 5000, ( number ) -> {
+                try {
+                    HttpAsserts.assertGet( HTTP_PREFIX + "/x/v/math/id?a=aaa" )
+                        .responded( 200, "OK", ContentType.APPLICATION_JSON, "\"aaa\"" );
+                } catch( Throwable e ) {
+                    e.printStackTrace();
+                }
+            } );
 
-         HttpAsserts.reset();
-      } finally {
-         server.stop();
-      }
-   }
+            HttpAsserts.reset();
+        } finally {
+            server.stop();
+        }
+    }
 }
 

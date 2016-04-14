@@ -44,5 +44,6 @@ public class WsConfig {
       public String service;
       public Cors cors = Cors.DEFAULT;
       public Protocol protocol;
+      public boolean sessionAware;
    }
 }
