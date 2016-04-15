@@ -42,7 +42,7 @@ public class SessionManager {
     }
 
     public Session getSessionById( String id ) {
-        return sessions.getIfPresent( id );
+        return id == null ? null : sessions.getIfPresent( id );
     }
 
     public void put( String sessionId, Session session ) {
@@ -58,10 +58,9 @@ public class SessionManager {
     }
 
     public Object getSessionData( String sessionId, String key ) {
-        final Session session = sessions.getIfPresent( sessionId );
+        final Session session = sessionId == null ? null : sessions.getIfPresent( sessionId );
 
-        return session != null ? session.get( key ) :
-            new NoSuchElementException( "Element does not exist: " + sessionId );
+        return session == null ? null : session.get( key );
     }
 
     public void clear() {

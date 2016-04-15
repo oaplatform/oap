@@ -29,6 +29,7 @@ import oap.http.testng.HttpAsserts;
 import oap.metrics.Metrics;
 import oap.testng.Env;
 import oap.util.Lists;
+import oap.ws.SessionManager;
 import oap.ws.WebServices;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
@@ -37,6 +38,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -58,7 +60,8 @@ public class ValidatePeerParamTest {
     public void startServer() {
         Metrics.resetAll();
         server.start();
-        ws.bind( "test", Cors.DEFAULT, new TestWS(), false, null, Protocol.HTTP );
+        ws.bind( "test", Cors.DEFAULT, new TestWS(), false, new SessionManager( 10 ),
+            Collections.emptyList(), Protocol.HTTP );
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );
         listener = new SynchronizedThread( http );

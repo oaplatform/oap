@@ -21,32 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.ws;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.application.config.Configuration;
-import oap.http.Cors;
-import oap.http.Protocol;
+import oap.http.HttpResponse;
+import oap.http.Request;
+import oap.http.Session;
+import oap.reflect.Reflection;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
+import java.util.Optional;
 
-@EqualsAndHashCode
-@ToString
-public class WsConfig {
-    public static final Configuration<WsConfig> CONFIGURATION = new Configuration<>( WsConfig.class, "oap-ws" );
-    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
-    public LinkedHashMap<String, Service> handlers = new LinkedHashMap<>();
-    public List<String> interceptors = new ArrayList<>();
+public interface Interceptor {
 
-    @EqualsAndHashCode
-    @ToString
-    public static class Service {
-        public String service;
-        public Cors cors = Cors.DEFAULT;
-        public Protocol protocol;
-        public boolean sessionAware;
-    }
+    Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method );
 }

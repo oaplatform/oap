@@ -41,6 +41,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.Collections;
 
 import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.SESSION;
@@ -61,7 +62,7 @@ public class WebServicesSessionTest {
     public void startServer() {
         Metrics.resetAll();
         server.start();
-        ws.bind( "test", Cors.DEFAULT, new TestWS(), true, sessionManager, Protocol.HTTP );
+        ws.bind( "test", Cors.DEFAULT, new TestWS(), true, sessionManager, Collections.emptyList(), Protocol.HTTP );
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );
         listener = new SynchronizedThread( http );
