@@ -149,7 +149,7 @@ public class HttpResponse {
         private String domain;
         private String expires;
         private String path;
-        private StringBuilder custom = new StringBuilder();
+        private List<String> customs = new ArrayList<>();
 
         public CookieBuilder withSID( String SID ) {
             this.SID = StringUtils.isNotBlank( SID ) ? "SID=" + SID : null;
@@ -173,13 +173,13 @@ public class HttpResponse {
 
         public CookieBuilder withCustomValue( String name, String value ) {
             if( StringUtils.isNoneBlank( name, value ) ) {
-                this.custom.append( name ).append( "=" ).append( value );
+                this.customs.add( name + "=" + value );
             }
             return this;
         }
 
         public String build() {
-            return JOINER.join( custom.toString(), SID, domain, expires, path );
+            return JOINER.join( SID, domain, expires, path, Strings.join( ";", customs ) ).concat( ";" );
         }
 
     }
