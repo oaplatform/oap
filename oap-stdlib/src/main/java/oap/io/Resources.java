@@ -23,6 +23,7 @@
  */
 package oap.io;
 
+import com.google.common.hash.Hashing;
 import com.google.common.io.ByteStreams;
 import oap.util.Lists;
 import oap.util.Stream;
@@ -38,10 +39,27 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
 
 public final class Resources {
     private static final boolean IS_WINDOWS = System.getProperty( "os.name" ).contains( "indow" );
 
+   public static Path deepPath( Path basePath, String name ) {
+      BiFunction<Integer, Integer, String> f = ( hash, bits) -> String.valueOf( hash & ( ( 1 << bits ) - 1 ) );
+      int bitPerDir = 8;
+
+      int hash = Hashing.murmur3_32().hashBytes( name.getBytes() ).asInt();
+      String f1 = f.apply( hash, bitPerDir );
+      hash >>>= bitPerDir;
+      String f2 = f.apply( hash, bitPerDir );
+      hash >>>= bitPerDir;
+
+      return basePath
+         .resolve( f1 )
+         .resolve( f2 )
+         .resolve( f.apply( hash, bitPerDir ) )
+         .resolve( name );
+   }
     private static String path( URL url ) {
         String filePath = url.getPath();
         return IS_WINDOWS ? filePath.substring( 1 ) : filePath;
