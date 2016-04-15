@@ -57,11 +57,10 @@ public class StringBitsTest extends AbstractTest {
    @Test
    public void testValueOfLongs() throws Exception {
       final StringBits stringBits = new StringBits();
-      final long test1 = stringBits.computeIfAbsent( "test" );
-      final long test2 = stringBits.computeIfAbsent( "test2" );
+      final int[] test = stringBits.computeIfAbsent( java.util.Arrays.asList( "test", "test2" ) );
 
-      assertThat( stringBits.valueOf( new long[]{ test2, test1 } ) ).containsExactly( "test2", "test" );
-      assertThat( stringBits.valueOf( new long[]{ test1, test2 + 1 } ) ).containsExactly( "test", Strings.UNKNOWN );
+      assertThat( stringBits.valueOf( new long[]{ test[1], test[0] } ) ).containsExactly( "test2", "test" );
+      assertThat( stringBits.valueOf( new long[]{ test[0], test[1] + 1 } ) ).containsExactly( "test", Strings.UNKNOWN );
    }
 
    @Test

@@ -48,6 +48,16 @@ public class StringBits {
       return bits.computeIfAbsent( name, n -> bit.getAndIncrement() );
    }
 
+   public final synchronized int[] computeIfAbsent( List<String> name ) {
+      final int[] result = new int[name.size()];
+
+      for( int i = 0; i < name.size(); i++ ) {
+         result[i] = bits.computeIfAbsent( name.get( i ), n -> bit.getAndIncrement() );
+      }
+
+      return result;
+   }
+
    public final int get( String name ) {
       return bits.getOrDefault( name, UNKNOWN );
    }
