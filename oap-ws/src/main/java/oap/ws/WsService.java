@@ -146,7 +146,7 @@ public class WsService implements Handler {
                         } else {
                             final Optional<HttpCookie> user =
                                 request.cookies().stream()
-                                    .filter( httpCookie -> httpCookie.getName().equals( "Session" ) )
+                                    .filter( httpCookie -> httpCookie.getName().equals( "SID" ) )
                                     .findFirst();
                             if( user.isPresent() ) {
                                 this.cookieId = user.get().getValue();
