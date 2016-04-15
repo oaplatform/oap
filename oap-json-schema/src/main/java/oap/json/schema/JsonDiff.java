@@ -22,12 +22,12 @@
  * SOFTWARE.
  */
 
-package oap.json;
+package oap.json.schema;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.json.schema.SchemaAST;
+import oap.json.Binder;
 import oap.json.schema._array.ArraySchemaAST;
 import oap.json.schema._object.ObjectSchemaAST;
 

@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>1.11.17</version>
+    <version>1.12.0</version>
 
     <name>oap</name>
 
@@ -41,6 +41,8 @@
         <module>oap-stdlib</module>
         <module>oap-metrics</module>
         <module>oap-json</module>
+        <module>oap-dictionary</module>
+        <module>oap-json-schema</module>
         <module>oap-cli</module>
         <module>oap-http</module>
         <module>oap-ws</module>

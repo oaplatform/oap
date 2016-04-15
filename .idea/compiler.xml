@@ -27,13 +27,14 @@
         <module name="oap-application" />
         <module name="oap-cli" />
         <module name="oap-cli (1)" />
+        <module name="oap-dictionary" />
         <module name="oap-etl" />
         <module name="oap-http" />
         <module name="oap-json" />
+        <module name="oap-json-schema" />
         <module name="oap-logstream" />
         <module name="oap-maven" />
         <module name="oap-metrics" />
-        <module name="oap-security" />
         <module name="oap-stdlib" />
         <module name="oap-storage" />
         <module name="oap-ws" />
@@ -47,9 +48,11 @@
       <module name="oap-application" target="1.8" />
       <module name="oap-cli" target="1.8" />
       <module name="oap-cli (1)" target="1.8" />
+      <module name="oap-dictionary" target="1.8" />
       <module name="oap-etl" target="1.8" />
       <module name="oap-http" target="1.8" />
       <module name="oap-json" target="1.8" />
+      <module name="oap-json-schema" target="1.8" />
       <module name="oap-logstream" target="1.8" />
       <module name="oap-maven" target="1.8" />
       <module name="oap-metrics" target="1.8" />

@@ -1,0 +1,23 @@
+{
+  "name": "genders",
+  "values": [
+    {
+      "id": "MALE",
+      "title": "Males",
+      "enabled": true,
+      "rtb": "m"
+    },
+    {
+      "id": "FEMALE",
+      "title": "Females",
+      "enabled": true,
+      "rtb": "f"
+    },
+    {
+      "id": "UNKNOWN",
+      "title": "Unknown",
+      "enabled": true,
+      "rtb": 0
+    }
+  ]
+}

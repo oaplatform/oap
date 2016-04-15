@@ -21,33 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
 
-import oap.json.Binder;
-import oap.json.JsonException;
-import oap.json.schema.JsonValidatorFactory;
-import oap.json.schema.ResourceSchemaStorage;
-import oap.util.Lists;
-import oap.ws.WsClientException;
+package oap.dictionary;
 
-import java.util.List;
-import java.util.Map;
-
-public class ValidateJsonPeer implements ValidatorPeer {
-    private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
-    private final JsonValidatorFactory factory;
-
-    public ValidateJsonPeer( ValidateJson validate, Object instance ) {
-        factory = JsonValidatorFactory.schema( validate.schema(), storage );
-    }
-
-    @Override
-    public List<String> validate( Object value ) {
-        try {
-            Map<?, ?> unmarshal = Binder.json.unmarshal( Map.class, ( String ) value );
-            return factory.validate( unmarshal, false ).left().orElseGet( Lists::empty );
-        } catch( JsonException e ) {
-            throw new WsClientException( e.getMessage(), e );
-        }
-    }
+/**
+ * Created by Igor Petrenko on 15.04.2016.
+ */
+public class DictionaryNotFoundError extends DictionaryError {
+   public DictionaryNotFoundError( String dictionaryName ) {
+      super( "Dictionary '" + dictionaryName + "' not found " );
+   }
 }
