@@ -37,6 +37,7 @@ import oap.util.Stream;
 import oap.util.Strings;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -241,21 +242,26 @@ public class WsService implements Handler {
                     wsMethod.map( wsm -> ContentType.create( wsm.produces() )
                         .withCharset( StandardCharsets.UTF_8 ) )
                         .orElse( ContentType.APPLICATION_JSON );
+
+                final String cookie = setCookie ?
+                    new HttpResponse.CookieBuilder()
+                        .withSID( cookieId )
+                        .withPath( sessionManager.cookiePath )
+                        .withExpires( sessionManager.cookieExpiration )
+                        .withDomain( sessionManager.cookieDomain )
+                        .build()
+                    : null;
+
                 if( method.isVoid() ) response.respond( HttpResponse.NO_CONTENT );
-                else if( result instanceof HttpResponse ) response.respond( setCookie ? ( ( HttpResponse ) result )
-                    .withHeader( "Set-Cookie", "Session=" + cookieId ) : ( HttpResponse ) result );
+                else if( result instanceof HttpResponse )
+                    response.respond( ( ( HttpResponse ) result ).withCookie( cookie ) );
                 else if( result instanceof Optional<?> ) {
                     response.respond(
                         ( ( Optional<?> ) result )
-                            .map( r -> setCookie ?
-                                HttpResponse.ok( result, isRaw, produces ).withHeader( "Set-Cookie", "Session=" + cookieId ) :
-                                HttpResponse.ok( result, isRaw, produces ) )
+                            .map( r -> HttpResponse.ok( result, isRaw, produces ).withCookie( cookie ) )
                             .orElseGet( () -> HttpResponse.NOT_FOUND )
                     );
-                } else response.respond( setCookie ?
-                    HttpResponse.ok( result, isRaw, produces ).withHeader( "Set-Cookie", "Session=" + cookieId ) :
-                    HttpResponse.ok( result, isRaw, produces )
-                );
+                } else response.respond( HttpResponse.ok( result, isRaw, produces ).withCookie( cookie ) );
             } );
         }
     }

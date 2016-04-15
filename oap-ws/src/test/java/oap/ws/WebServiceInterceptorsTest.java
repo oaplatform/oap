@@ -41,7 +41,7 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class WebServiceInterceptorsTest {
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, new SessionManager( 10 ),
+    private final WebServices ws = new WebServices( server, new SessionManager( 10, null, "/" ),
         WsConfig.CONFIGURATION.fromResource( getClass(), "ws-interceptors.conf" )
     );
 

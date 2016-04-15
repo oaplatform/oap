@@ -40,6 +40,7 @@ import java.util.Collections;
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 
 public class WebServicesPerformance extends AbstractPerformance {
+    public static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
     private final int samples = 100000;
     private final int experiments = 5;
 
@@ -49,8 +50,8 @@ public class WebServicesPerformance extends AbstractPerformance {
         SynchronizedThread listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
         listener.start();
         try {
-            WebServices ws = new WebServices( server, null );
-            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false, new SessionManager( 10 ),
+            WebServices ws = new WebServices( server, SESSION_MANAGER );
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false, SESSION_MANAGER,
                 Collections.emptyList(), Protocol.HTTP );
 
             HttpAsserts.reset();
@@ -69,8 +70,8 @@ public class WebServicesPerformance extends AbstractPerformance {
     public void nio_threads() throws Exception {
         NioServer server = new NioServer( Env.port() );
         try {
-            WebServices ws = new WebServices( server, null );
-            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false, new SessionManager( 10 ),
+            WebServices ws = new WebServices( server, SESSION_MANAGER );
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false, SESSION_MANAGER,
                 Collections.emptyList(), Protocol.HTTP );
             server.start();
             Thread.sleep( 3000 ); // ??? TODO: fix me

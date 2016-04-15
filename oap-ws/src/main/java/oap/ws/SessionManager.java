@@ -27,6 +27,7 @@ package oap.ws;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import oap.http.Session;
+import org.joda.time.DateTime;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
@@ -34,11 +35,17 @@ import java.util.concurrent.TimeUnit;
 public class SessionManager {
 
     private final Cache<String, Session> sessions;
+    public final String cookieDomain;
+    public final String cookiePath;
+    public final DateTime cookieExpiration;
 
-    public SessionManager( int expirationTime ) {
+    public SessionManager( int expirationTime, String cookieDomain, String cookiePath ) {
         this.sessions = CacheBuilder.newBuilder()
             .expireAfterAccess( expirationTime, TimeUnit.MINUTES )
             .build();
+        this.cookieDomain = cookieDomain;
+        this.cookiePath = cookiePath;
+        this.cookieExpiration = DateTime.now().plusMinutes( expirationTime );
     }
 
     public Session getSessionById( String id ) {

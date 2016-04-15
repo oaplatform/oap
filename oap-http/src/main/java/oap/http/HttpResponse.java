@@ -23,15 +23,19 @@
  */
 package oap.http;
 
+import com.google.common.base.Joiner;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.*;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +47,6 @@ import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.util.Pair.__;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
-import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class HttpResponse {
     public static final HttpResponse NOT_FOUND = status( HttpURLConnection.HTTP_NOT_FOUND );
@@ -126,8 +129,56 @@ public class HttpResponse {
         return this;
     }
 
+    public HttpResponse withCookie( String cookie ) {
+        if( StringUtils.isNotBlank( cookie ) ) {
+            headers.add( __( "Set-Cookie", cookie ) );
+        }
+        return this;
+    }
+
     public HttpResponse withContent( String content, ContentType contentType ) {
         this.contentEntity = new StringEntity( content( false, content, contentType ), contentType );
         return this;
+    }
+
+    public static class CookieBuilder {
+        private static final Joiner JOINER = Joiner.on( ";" ).skipNulls();
+        private static final DateTimeFormatter FORMATTER =
+            DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss zzz" );
+        private String SID;
+        private String domain;
+        private String expires;
+        private String path;
+        private String custom;
+
+        public CookieBuilder withSID( String SID ) {
+            this.SID = StringUtils.isNotBlank( SID ) ? "SID=" + SID : null;
+            return this;
+        }
+
+        public CookieBuilder withDomain( String domain ) {
+            this.domain = StringUtils.isNotBlank( domain ) ? "domain=" + domain : null;
+            return this;
+        }
+
+        public CookieBuilder withExpires( DateTime expires ) {
+            this.expires = expires != null ? "expires=" + FORMATTER.print( expires ) : null;
+            return this;
+        }
+
+        public CookieBuilder withPath( String path ) {
+            this.path = StringUtils.isNotBlank( path ) ? "path=" + path : null;
+            return this;
+        }
+
+        public CookieBuilder withCustomValue( String name, String value ) {
+            this.custom = StringUtils.isNoneBlank( name, value ) ? name + "=" + value : null;
+            return this;
+        }
+
+        public String build() {
+            return JOINER.join( custom, SID, domain, expires, path );
+        }
+
     }
 }
