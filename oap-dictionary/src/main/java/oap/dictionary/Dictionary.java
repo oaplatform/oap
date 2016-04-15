@@ -24,11 +24,14 @@
 
 package oap.dictionary;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Igor Petrenko on 14.04.2016.
@@ -36,47 +39,50 @@ import java.util.List;
 @EqualsAndHashCode
 @ToString
 public final class Dictionary {
-   public final String name;
-   public final List<DictionaryValue> values;
+    public final String name;
+    public final List<DictionaryValue> values;
 
-   private final HashMap<Long, String> indexByRtb = new HashMap<>();
-   private final HashMap<String, Long> indexById = new HashMap<>();
+    @JsonIgnore
+    private final HashMap<Long, String> indexByExternalId = new HashMap<>();
+    @JsonIgnore
+    private final HashMap<String, Long> indexById = new HashMap<>();
 
-   public Dictionary( String name, List<DictionaryValue> values ) {
-      this.name = name;
-      this.values = values;
+    public Dictionary( String name, List<DictionaryValue> values ) {
+        this.name = name;
+        this.values = values;
 
-      for( DictionaryValue dv : values ) {
-         indexById.put( dv.id, dv.rtb );
-         indexByRtb.put( dv.rtb, dv.id );
-      }
-   }
+        for( DictionaryValue dv : values ) {
+            indexById.put( dv.id, dv.externalId );
+            indexByExternalId.put( dv.externalId, dv.id );
+        }
+    }
 
-   public final String getOrDefautl( long rtb, String defaultValue ) {
-      final String id = indexByRtb.get( rtb );
-      if( id == null ) return defaultValue;
-      return id;
-   }
+    public final String getOrDefault( long externlId, String defaultValue ) {
+        final String id = indexByExternalId.get( externlId );
+        if( id == null ) return defaultValue;
+        return id;
+    }
 
-   public final long getOrDefault( String id, long defaultValue ) {
-      final Long rtb = indexById.get( id );
-      if( rtb == null ) return defaultValue;
-      return rtb;
-   }
+    public final long getOrDefault( String id, long defaultValue ) {
+        final Long rtb = indexById.get( id );
+        if( rtb == null ) return defaultValue;
+        return rtb;
+    }
 
-   @EqualsAndHashCode
-   @ToString
-   public static class DictionaryValue {
-      public final String id;
-      public final String title;
-      public final boolean enabled;
-      public final long rtb;
+    @EqualsAndHashCode
+    @ToString
+    public static class DictionaryValue {
+        public final String id;
+        public final boolean enabled;
+        @JsonProperty( "eid" )
+        public final long externalId;
+        public final Map<String, Object> properties;
 
-      public DictionaryValue( String id, String title, boolean enabled, long rtb ) {
-         this.id = id;
-         this.title = title;
-         this.enabled = enabled;
-         this.rtb = rtb;
-      }
-   }
+        public DictionaryValue( String id, boolean enabled, long externalId, Map<String, Object> properties ) {
+            this.id = id;
+            this.enabled = enabled;
+            this.externalId = externalId;
+            this.properties = properties;
+        }
+    }
 }

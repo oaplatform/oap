@@ -26,89 +26,103 @@ package oap.dictionary;
 
 import oap.json.Binder;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 
 /**
  * Created by Igor Petrenko on 15.04.2016.
  */
 public class DictionaryParser {
-   public static final String NAME = "name";
-   public static final String VALUES = "values";
-   public static final String ID = "id";
-   public static final String TITLE = "title";
-   public static final String ENABLED = "enabled";
-   public static final String RTB = "rtb";
+    public static final String NAME = "name";
+    public static final String VALUES = "values";
+    public static final String ID = "id";
+    public static final String ENABLED = "enabled";
+    public static final String EXTERNAL_ID = "eid";
 
-   public static final Dictionary parse( String resource ) {
-      final Map map = Binder.json.unmarshalResource( DictionaryParser.class, Map.class, resource ).get();
+    private static final Set<String> defaultFields = new HashSet<>();
 
-      final String name = getString( map, NAME );
+    static {
+        defaultFields.add( ID );
+        defaultFields.add( ENABLED );
+        defaultFields.add( EXTERNAL_ID );
+    }
 
-      final List values = getList( map, VALUES );
-      final ArrayList<Dictionary.DictionaryValue> dv = new ArrayList<>();
+    public static final Dictionary parse( String resource ) {
+        final Map map = Binder.json.unmarshalResource( DictionaryParser.class, Map.class, resource ).get();
 
-      for( int i = 0; i < values.size(); i++ ) {
-         final Object value = values.get( i );
+        final String name = getString( map, NAME );
 
-         if( value instanceof Map ) {
-            final Map valueMap = ( Map ) value;
-            final String id = getString( valueMap, ID );
-            final String title = getString( valueMap, TITLE );
-            final boolean enabled = getBoolean( valueMap, ENABLED );
-            final long rtb = getLong( valueMap, RTB, true );
+        final List values = getList( map, VALUES );
+        final ArrayList<Dictionary.DictionaryValue> dv = new ArrayList<>();
 
-            dv.add( new Dictionary.DictionaryValue( id, title, enabled, rtb ) );
-         } else {
-            throw new DictionaryFormatError(
-               "value '" + i + "' type " +
-                  ( value == null ? "<NULL>" : value.getClass().toString() ) + " != " + Map.class
-            );
-         }
-      }
+        for( int i = 0; i < values.size(); i++ ) {
+            final Object value = values.get( i );
 
-      return new Dictionary( name, dv );
-   }
+            if( value instanceof Map ) {
+                final Map<Object, Object> valueMap = ( Map<Object, Object> ) value;
+                final String id = getString( valueMap, ID );
+                final boolean enabled = getBoolean( valueMap, ENABLED );
+                final long externalId = getLong( valueMap, EXTERNAL_ID, true );
 
-   private static String getString( Map map, String field ) {
-      return getValue( String.class, map, field, str -> Optional.empty() );
-   }
+                final HashMap<String, Object> properties = new HashMap<>();
+                for( Map.Entry e : valueMap.entrySet() ) {
+                    if( !defaultFields.contains( e.getKey().toString() ) ) {
+                        properties.put( e.getKey().toString(), e.getValue() );
+                    }
+                }
 
-   private static long getLong( Map map, String field, boolean convert ) {
-      return getValue( Long.class, map, field, ( str ) -> {
-         if( !convert ) return Optional.empty();
-         else if( str instanceof Integer ) return Optional.of( ( ( Integer ) str ).longValue() );
-         else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).longValue() );
-         else if( str instanceof String && ( ( String ) str ).length() == 1 )
-            return Optional.of( ( long ) ( ( String ) str ).charAt( 0 ) );
-         else return Optional.empty();
-      } );
-   }
+                dv.add( new Dictionary.DictionaryValue( id, enabled, externalId, properties.isEmpty() ? Collections.emptyMap() : properties ) );
+            } else {
+                throw new DictionaryFormatError(
+                    "value '" + i + "' type " +
+                        ( value == null ? "<NULL>" : value.getClass().toString() ) + " != " + Map.class
+                );
+            }
+        }
 
-   private static boolean getBoolean( Map map, String field ) {
-      return getValue( Boolean.class, map, field, str -> Optional.empty() );
-   }
+        return new Dictionary( name, dv );
+    }
 
-   private static List getList( Map map, String field ) {
-      return getValue( List.class, map, field, ( str ) -> Optional.empty() );
-   }
+    private static String getString( Map map, String field ) {
+        return getValue( String.class, map, field, str -> Optional.empty() );
+    }
 
-   @SuppressWarnings( "unchecked" )
-   private static <T> T getValue( Class<T> clazz, Map map, String field, Function<Object, Optional<T>> func ) {
-      final Object f = map.get( field );
+    private static long getLong( Map map, String field, boolean convert ) {
+        return getValue( Long.class, map, field, ( str ) -> {
+            if( !convert ) return Optional.empty();
+            else if( str instanceof Integer ) return Optional.of( ( ( Integer ) str ).longValue() );
+            else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).longValue() );
+            else if( str instanceof String && ( ( String ) str ).length() == 1 )
+                return Optional.of( ( long ) ( ( String ) str ).charAt( 0 ) );
+            else return Optional.empty();
+        } );
+    }
 
-      if( f == null ) throw new DictionaryFormatError( "field '" + field + "' not found" );
+    private static boolean getBoolean( Map map, String field ) {
+        return getValue( Boolean.class, map, field, str -> Optional.empty() );
+    }
 
-      if( clazz.isInstance( f ) ) {
-         return ( T ) f;
-      }
+    private static List getList( Map map, String field ) {
+        return getValue( List.class, map, field, ( str ) -> Optional.empty() );
+    }
 
-      final Optional<T> apply = func.apply( f );
-      if( apply.isPresent() ) return apply.get();
+    private static <T> T getValue( Class<T> clazz, Map map, String field, Function<Object, Optional<T>> func ) {
+        return getValueOpt( clazz, map, field, func ).orElseThrow( () -> new DictionaryFormatError( "field '" + field + "' not found" ) );
+    }
 
-      throw new DictionaryFormatError( "field '" + field + "' type " + f.getClass() + " != " + clazz );
-   }
+    @SuppressWarnings( "unchecked" )
+    private static <T> Optional<T> getValueOpt( Class<T> clazz, Map map, String field, Function<Object, Optional<T>> func ) {
+        final Object f = map.get( field );
+
+        if( f == null ) return Optional.empty();
+
+        if( clazz.isInstance( f ) ) {
+            return Optional.of( ( T ) f );
+        }
+
+        final Optional<T> apply = func.apply( f );
+        if( apply.isPresent() ) return Optional.ofNullable( apply.get() );
+
+        throw new DictionaryFormatError( "field '" + field + "' type " + f.getClass() + " != " + clazz );
+    }
 }

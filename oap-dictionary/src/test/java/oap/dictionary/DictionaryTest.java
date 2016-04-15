@@ -25,17 +25,21 @@
 package oap.dictionary;
 
 import oap.testng.AbstractTest;
+import oap.util.Maps;
 import org.testng.annotations.Test;
 
+import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by Igor Petrenko on 15.04.2016.
  */
 public class DictionaryTest extends AbstractTest {
-   @Test
-   public void testGenres() {
-      assertThat( Dictionaries.getDictionary( "genders" ).name ).isEqualTo( "genders" );
-      assertThat( Dictionaries.getDictionary( "genders" ).values ).contains( new Dictionary.DictionaryValue( "FEMALE", "Females", true, 'f' ) );
-   }
+    @Test
+    public void testGenres() {
+        assertThat( Dictionaries.getDictionary( "genders" ).name ).isEqualTo( "genders" );
+        assertThat( Dictionaries.getDictionary( "genders" ).values ).contains( new Dictionary.DictionaryValue( "FEMALE", true, 'f',
+            Maps.of( __( "title", "Females" ) ) )
+        );
+    }
 }
