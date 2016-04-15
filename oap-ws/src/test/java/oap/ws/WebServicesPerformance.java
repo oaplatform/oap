@@ -35,6 +35,8 @@ import oap.testng.Env;
 import org.apache.http.entity.ContentType;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
+
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 
 public class WebServicesPerformance extends AbstractPerformance {
@@ -48,7 +50,8 @@ public class WebServicesPerformance extends AbstractPerformance {
         listener.start();
         try {
             WebServices ws = new WebServices( server, null );
-            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false, null, Protocol.HTTP );
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false, new SessionManager( 10 ),
+                Collections.emptyList(), Protocol.HTTP );
 
             HttpAsserts.reset();
             benchmark( "Server.invocations", samples, experiments, 5000,
@@ -67,7 +70,8 @@ public class WebServicesPerformance extends AbstractPerformance {
         NioServer server = new NioServer( Env.port() );
         try {
             WebServices ws = new WebServices( server, null );
-            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false, null, Protocol.HTTP );
+            ws.bind( "x/v/math", Cors.DEFAULT, new MathWS(), false, new SessionManager( 10 ),
+                Collections.emptyList(), Protocol.HTTP );
             server.start();
             Thread.sleep( 3000 ); // ??? TODO: fix me
 

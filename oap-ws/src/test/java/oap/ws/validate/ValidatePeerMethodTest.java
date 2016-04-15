@@ -30,6 +30,7 @@ import oap.metrics.Metrics;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
+import oap.ws.SessionManager;
 import oap.ws.WebServices;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
@@ -38,6 +39,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 
 import static oap.http.Request.HttpMethod.POST;
@@ -48,7 +50,7 @@ import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class ValidatePeerMethodTest extends AbstractTest {
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, null );
+    private final WebServices ws = new WebServices( server, new SessionManager( 10 ) );
 
     private SynchronizedThread listener;
 
@@ -56,7 +58,8 @@ public class ValidatePeerMethodTest extends AbstractTest {
     public void startServer() {
         Metrics.resetAll();
         server.start();
-        ws.bind( "test", Cors.DEFAULT, new TestWS(), false, null, Protocol.HTTP );
+        ws.bind( "test", Cors.DEFAULT, new TestWS(), false, new SessionManager( 10 ),
+            Collections.emptyList(), Protocol.HTTP );
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );
         listener = new SynchronizedThread( http );
