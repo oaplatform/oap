@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -68,13 +69,19 @@ public class WebServices {
         logger.info( "binding web services..." );
 
         for( WsConfig config : wsConfigs ) {
+            final List<Interceptor> interceptors = config.interceptors.stream()
+                .map( Application::service )
+                .map( Interceptor.class::cast )
+                .collect( Collectors.toList() );
+
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
                 final WsConfig.Service value = entry.getValue();
                 final Object service = Application.service( value.service );
 
                 if( service == null ) throw new IllegalStateException( "Unknown service " + value.service );
 
-                bind( entry.getKey(), value.cors, service, value.sessionAware, sessionManager, value.protocol );
+                bind( entry.getKey(), value.cors, service, value.sessionAware,
+                    sessionManager, interceptors, value.protocol );
             }
             for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
                 final WsConfig.Service value = entry.getValue();
@@ -92,8 +99,8 @@ public class WebServices {
 
     @VisibleForTesting
     public void bind( String context, Cors cors, Object impl, boolean sessionAware, SessionManager sessionManager,
-               Protocol protocol ) {
-        server.bind( context, cors, new WsService( impl, sessionAware, sessionManager ), protocol );
+               List<Interceptor> interceptors,Protocol protocol ) {
+        server.bind( context, cors, new WsService( impl, sessionAware, sessionManager,interceptors ), protocol );
     }
 
 }
