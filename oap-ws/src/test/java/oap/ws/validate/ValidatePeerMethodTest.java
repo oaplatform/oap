@@ -49,8 +49,10 @@ import static oap.ws.WsParam.From.BODY;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class ValidatePeerMethodTest extends AbstractTest {
+    private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
+
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, new SessionManager( 10 ) );
+    private final WebServices ws = new WebServices( server, SESSION_MANAGER );
 
     private SynchronizedThread listener;
 
@@ -58,8 +60,7 @@ public class ValidatePeerMethodTest extends AbstractTest {
     public void startServer() {
         Metrics.resetAll();
         server.start();
-        ws.bind( "test", Cors.DEFAULT, new TestWS(), false, new SessionManager( 10 ),
-            Collections.emptyList(), Protocol.HTTP );
+        ws.bind( "test", Cors.DEFAULT, new TestWS(), false, SESSION_MANAGER, Collections.emptyList(), Protocol.HTTP );
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );
         listener = new SynchronizedThread( http );
