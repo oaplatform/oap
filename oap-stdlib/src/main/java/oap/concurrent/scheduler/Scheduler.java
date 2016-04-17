@@ -24,6 +24,8 @@
 
 package oap.concurrent.scheduler;
 
+import lombok.extern.slf4j.Slf4j;
+import oap.util.Try;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 
@@ -34,6 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.quartz.JobBuilder.newJob;
 import static org.quartz.TriggerBuilder.newTrigger;
 
+@Slf4j
 public class Scheduler {
    static final org.quartz.Scheduler scheduler;
    static final FunctionJobFactory jobFactory;
@@ -64,7 +67,9 @@ public class Scheduler {
    }
 
    public static Scheduled scheduleWithFixedDelay( long delay, TimeUnit unit, Runnable runnable ) {
-      return schedule( runnable,
+      return schedule( Try.catching( runnable )
+            .logOnException( log )
+            .propagate(),
          SimpleScheduleBuilder.simpleSchedule()
             .withIntervalInMilliseconds( unit.toMillis( delay ) )
             .withMisfireHandlingInstructionIgnoreMisfires()
@@ -95,7 +100,10 @@ public class Scheduler {
    }
 
    public static Scheduled scheduleCron( String cron, Runnable runnable ) {
-      return schedule( runnable, CronScheduleBuilder.cronSchedule( cron ) );
+      return schedule( Try.catching( runnable )
+            .logOnException( log )
+            .propagate(),
+         CronScheduleBuilder.cronSchedule( cron ) );
    }
 
    private static String identity( Runnable runnable ) {

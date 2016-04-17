@@ -50,16 +50,14 @@ public class ThreadService extends SynchronizedRunnable implements Supervised, S
 
    @Override
    public void run() {
-      while( thread.isRunning() && maxFailures > 0 ) {
-         try {
-            supervisee.run();
-         } catch( Exception e ) {
-            maxFailures--;
-            log.error( "Crushed unexpectedly with message: " + e.getMessage() + ". Restarting...", e );
-         }
+      while( thread.isRunning() && maxFailures > 0 ) try {
+         supervisee.run();
+      } catch( Exception e ) {
+         maxFailures--;
+         log.error( "Crushed unexpectedly with message: " + e.getMessage() + ". Restarting...", e );
       }
       if( maxFailures <= 0 ) {
-         log.error( this + " constantly crushing. Requesting shutdown..." );
+         log.error( supervisee + " constantly crushing. Requesting shutdown..." );
          supervisor.stop();
       }
    }

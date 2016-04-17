@@ -72,20 +72,22 @@ public class Writer implements Closeable {
 
 
    @Override
-   public void close() throws IOException {
+   public void close() {
       log.debug( "closing {}", this );
       Scheduled.cancel( refresher );
       closeOutput();
    }
 
-   private void closeOutput() throws IOException {
-      if( out != null ) {
+   private void closeOutput() {
+      if( out != null ) try {
          log.trace( "closing output {} ({} bytes)", this, out.getCount() );
          stopwatch.measure( out::flush );
          stopwatch.measure( out::close );
          Metrics.measureHistogram( "logging.server_bucket_size", out.getCount() );
          Metrics.measureHistogram( "logging.server_bucket_time", stopwatch.elapsed() / 1000000L );
          out = null;
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
       }
    }
 
@@ -105,8 +107,6 @@ public class Writer implements Closeable {
          log.error( e.getMessage(), e );
          try {
             closeOutput();
-         } catch( IOException e1 ) {
-            log.error( e1.getMessage(), e1 );
          } finally {
             out = null;
          }
@@ -120,11 +120,9 @@ public class Writer implements Closeable {
 
    private synchronized void refresh() {
       String currentPattern = currentPattern();
-      if( !Objects.equals( this.lastPattern, currentPattern ) ) try {
+      if( !Objects.equals( this.lastPattern, currentPattern ) ) {
          closeOutput();
          lastPattern = currentPattern;
-      } catch( IOException e ) {
-         log.error( e.getMessage(), e );
       }
    }
 
