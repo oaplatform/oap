@@ -36,6 +36,7 @@ import org.joda.time.DateTime;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
@@ -95,11 +96,8 @@ public class Writer implements Closeable {
    public synchronized void write( byte[] buffer, int offset, int length ) {
       try {
          refresh();
-         if( out == null ) {
-            out = new CountingOutputStream(
-               IoStreams.out( filename(), compress ? GZIP : PLAIN, bufferSize, true )
-            );
-         }
+         if( out == null )
+            out = new CountingOutputStream( IoStreams.out( filename(), compress ? GZIP : PLAIN, bufferSize, true ) );
          log.trace( "writing {} bytes to {}", length, this );
          out.write( buffer, offset, length );
 
@@ -112,6 +110,7 @@ public class Writer implements Closeable {
          } finally {
             out = null;
          }
+         throw new UncheckedIOException( e );
       }
    }
 

@@ -137,7 +137,7 @@ public class SocketLoggingServer implements Runnable {
                     int size = in.readInt();
                     String selector = in.readUTF();
                     if( size > bufferSize ) {
-                        log.trace( "pong size {}", -10 );
+                        log.trace( "chunk size {}", -10 );
                         out.writeInt( -10 );
                         throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize + " from " + hostName );
                     }
@@ -147,7 +147,7 @@ public class SocketLoggingServer implements Runnable {
                         backend.log( hostName, selector, buffer, 0, size );
                         control.put( hostName, digestionId );
                     } else log.warn( "[{}] buffer {} already written ({})", hostName, digestionId, lastId );
-                    log.trace( "pong size {}", size );
+                    log.trace( "chunk size {}", size );
                     out.writeInt( size );
                 }
             } catch( EOFException e ) {
