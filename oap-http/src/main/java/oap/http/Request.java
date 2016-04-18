@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.HttpCookie;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -112,9 +113,14 @@ public class Request {
     }
 
     public List<HttpCookie> cookies() {
-        final Optional<String> header = header( "Cookie" );
+        List<HttpCookie> cookies = new ArrayList<>();
+        for( Header header : headers ) {
+            if( header.getName().equals( "Cookie" ) ) {
+                cookies.add( HttpCookie.parse( header.getValue() ).get( 0 ) );
+            }
+        }
 
-        return header.isPresent() ? HttpCookie.parse( header.get() ) : Collections.emptyList();
+        return cookies;
     }
 
     @Override

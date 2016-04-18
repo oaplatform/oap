@@ -24,17 +24,14 @@
 
 package oap.ws;
 
-import com.google.common.collect.Iterables;
 import oap.concurrent.SynchronizedThread;
 import oap.http.*;
 import oap.http.testng.HttpAsserts;
 import oap.metrics.Metrics;
 import oap.testng.Env;
+import oap.ws.security.domain.User;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.cookie.Cookie;
-import org.apache.http.impl.client.BasicCookieStore;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -47,15 +44,13 @@ import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.SESSION;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.AssertJUnit.assertTrue;
 
 public class WebServicesSessionTest {
 
     private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
 
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, SESSION_MANAGER);
+    private final WebServices ws = new WebServices( server, SESSION_MANAGER );
 
     private SynchronizedThread listener;
 
@@ -82,34 +77,28 @@ public class WebServicesSessionTest {
 
     @Test
     public void testShouldVerifySessionPropagation() throws IOException {
-        final BasicCookieStore basicCookieStore = new BasicCookieStore();
-        final CloseableHttpClient client = HttpClientBuilder.create()
-            .setDefaultCookieStore( basicCookieStore )
-            .build();
-
         final HttpGet httpGet = new HttpGet( HttpAsserts.HTTP_PREFIX + "/test/" );
+        httpGet.addHeader(  "Cookie", "SID=123456;path=/" );
+        httpGet.addHeader( "Cookie", "Authorization=987654321;path=/" );
 
-        final CloseableHttpResponse response = client.execute( httpGet );
+        final User user = new User();
+        user.email = "test@example.com";
 
-        final Cookie cookie = Iterables.getOnlyElement( basicCookieStore.getCookies() );
+        final Session session = new Session();
+        session.set( "user", user );
+
+        SESSION_MANAGER.put( "123456", session );
+
+        final CloseableHttpResponse response = HttpClientBuilder.create().build().execute( httpGet );
 
         assertEquals( response.getStatusLine().getStatusCode(), 200 );
-        assertEquals( "SID", cookie.getName() );
-        assertNotNull( cookie.getValue() );
-
-        final Session session = SESSION_MANAGER.getSessionById( cookie.getValue() );
-
-        assertEquals( session.get( "username" ).get(), "test" );
     }
 
     private class TestWS {
 
         @WsMethod( path = "/", method = GET )
-        public Object test( @WsParam( from = SESSION ) Session session ) {
-            session.set( "username", "test" );
-
-            return HttpResponse.ok( "response", true, TEXT_PLAIN );
+        public Object test( @WsParam( from = SESSION ) User user ) {
+            return HttpResponse.ok( user.email, true, TEXT_PLAIN );
         }
     }
-
 }

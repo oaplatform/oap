@@ -45,10 +45,15 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.12.3</version>
+        <version>1.12.4</version>
     </parent>
 
     <dependencies>
+        <dependency>
+            <groupId>oap-ws-security</groupId>
+            <artifactId>oap-ws-security-domain</artifactId>
+            <version>1.0</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
