@@ -25,8 +25,11 @@
 package oap.dictionary;
 
 import oap.testng.AbstractTest;
+import oap.testng.Env;
 import oap.util.Maps;
 import org.testng.annotations.Test;
+
+import java.nio.file.Path;
 
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,15 +37,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Created by Igor Petrenko on 15.04.2016.
  */
-public class DictionaryTest extends AbstractTest {
+public class DictionaryParserTest extends AbstractTest {
     @Test
-    public void testParse() {
-        assertThat( Dictionaries.getDictionary( "test-dictionary" ).name ).isEqualTo( "test-dictionary" );
-        assertThat( Dictionaries.getDictionary( "test-dictionary" ).values ).contains( new Dictionary.DictionaryValue( "id2", true, '2',
+    public void testSerialize() {
+        final Path path = Env.tmpPath( "test/test.json" );
+        DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path );
+
+        final Dictionary dictionary = DictionaryParser.parse( path );
+
+        assertThat( dictionary.values ).contains( new Dictionary.DictionaryValue( "id2", true, '2',
             Maps.of( __( "title", "title2" ) ) )
         );
 
-        assertThat( Dictionaries.getDictionary( "test-dictionary" ).values.get( 0 ).values ).contains(
+        assertThat( dictionary.values.get( 0 ).values ).contains(
             new Dictionary.DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
         );
     }
