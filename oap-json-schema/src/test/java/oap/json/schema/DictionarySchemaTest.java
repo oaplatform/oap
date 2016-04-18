@@ -24,39 +24,24 @@
 
 package oap.json.schema;
 
-import oap.io.Files;
-import oap.json.schema._dictionary.DictionaryJsonValidator;
-import oap.testng.Env;
 import org.testng.annotations.Test;
 
-import java.nio.file.Path;
-
 public class DictionarySchemaTest extends AbstractSchemaTest {
-   @Test
-   public void testDictionary() {
-      final Path test = Env.tmpPath( "test" );
-      Files.writeString( test.resolve( "dict.json" ), "{values = [test1, test2, test3]}" );
+    @Test
+    public void testDictionary() {
+        String schema = "{type: dictionary, name: dict}";
 
-      new DictionaryJsonValidator( test );
+        vOk( schema, "null" );
+        vOk( schema, "'test1'" );
+        vOk( schema, "'test2'" );
 
-      String schema = "{type: dictionary, name: dict}";
+        vFail( schema, "'test4'", "instance does not match any member of the enumeration [test1,test2,test3]" );
+    }
 
-      vOk( schema, "null" );
-      vOk( schema, "'test1'" );
-      vOk( schema, "'test2'" );
+    @Test
+    public void testUnknownDictionary() {
+        String schema = "{type: dictionary, name: unknown}";
 
-      vFail( schema, "'test4'", "instance does not match any member of the enumeration [test1,test2,test3]" );
-   }
-
-   @Test
-   public void testUnknownDictionary() {
-      final Path test = Env.tmpPath( "test" );
-      Files.writeString( test.resolve( "dict.json" ), "{values = [test1, test2, test3]}" );
-
-      new DictionaryJsonValidator( test );
-
-      String schema = "{type: dictionary, name: unknown}";
-
-      vFail( schema, "'test4'", "dictionary not found" );
-   }
+        vFail( schema, "'test4'", "dictionary not found" );
+    }
 }

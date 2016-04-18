@@ -34,13 +34,13 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.12.4</version>
+        <version>1.12.7</version>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-json</artifactId>
+            <artifactId>oap-dictionary</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

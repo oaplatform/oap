@@ -1,0 +1,17 @@
+{
+  "name": "dict",
+  "values": [
+    {
+      "id": "test1",
+      "eid": 1
+    },
+    {
+      "id": "test2",
+      "eid": 2
+    },
+    {
+      "id": "test3",
+      "eid": 3
+    }
+  ]
+}

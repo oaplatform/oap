@@ -21,47 +21,47 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 @Slf4j
 public class SecureHttpListener extends AbstractHttpListener {
 
-   private final Path keystoreLocation;
-   private final String keystorePassword;
-   private final int port;
+    private final Path keystoreLocation;
+    private final String keystorePassword;
+    private final int port;
 
-   public SecureHttpListener( HttpServer server, Path keystoreLocation, String keystorePassword, int port ) {
-      super( server );
-      this.keystoreLocation = keystoreLocation;
-      this.keystorePassword = keystorePassword;
-      this.port = port;
-   }
+    public SecureHttpListener( HttpServer server, Path keystoreLocation, String keystorePassword, int port ) {
+        super( server );
+        this.keystoreLocation = keystoreLocation;
+        this.keystorePassword = keystorePassword;
+        this.port = port;
+    }
 
-   @Override
-   protected ServerSocket createSocket() {
-      if( Files.exists( keystoreLocation ) ) {
-         try {
-            KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
-            keyStore.load( IoStreams.in( keystoreLocation, PLAIN ), keystorePassword.toCharArray() );
+    @Override
+    protected ServerSocket createSocket() {
+        if( Files.exists( keystoreLocation ) ) {
+            try {
+                KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
+                keyStore.load( IoStreams.in( keystoreLocation, PLAIN ), keystorePassword.toCharArray() );
 
-            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
-               KeyManagerFactory.getDefaultAlgorithm() );
-            keyManagerFactory.init( keyStore, keystorePassword.toCharArray() );
+                KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
+                    KeyManagerFactory.getDefaultAlgorithm() );
+                keyManagerFactory.init( keyStore, keystorePassword.toCharArray() );
 
-            SSLContext sslContext = SSLContext.getInstance( "TLS" );
-            sslContext.init( keyManagerFactory.getKeyManagers(), null, null );
+                SSLContext sslContext = SSLContext.getInstance( "TLS" );
+                sslContext.init( keyManagerFactory.getKeyManagers(), null, null );
 
-            ServerSocket serverSocket = sslContext.getServerSocketFactory().createServerSocket();
-            serverSocket.setReuseAddress( true );
-            serverSocket.setSoTimeout( timeout );
-            serverSocket.bind( new InetSocketAddress( port ) );
+                ServerSocket serverSocket = sslContext.getServerSocketFactory().createServerSocket();
+                serverSocket.setReuseAddress( true );
+                serverSocket.setSoTimeout( timeout );
+                serverSocket.bind( new InetSocketAddress( port ) );
 
-            return serverSocket;
-         } catch( KeyStoreException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e ) {
-            throw Throwables.propagate( e );
-         } catch( BindException e ) {
-            log.error( "Cannot bind to port [{}]", port );
-            throw new UncheckedIOException( e );
-         } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-         }
-      } else {
-         return null;
-      }
-   }
+                return serverSocket;
+            } catch( KeyStoreException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e ) {
+                throw Throwables.propagate( e );
+            } catch( BindException e ) {
+                log.error( "Cannot bind to port [{}]", port );
+                throw new UncheckedIOException( e );
+            } catch( IOException e ) {
+                throw new UncheckedIOException( e );
+            }
+        } else {
+            throw Throwables.propagate( new CertificateException( keystoreLocation + " not found" ) );
+        }
+    }
 }

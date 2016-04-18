@@ -25,71 +25,51 @@
 package oap.json.schema._dictionary;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.json.Binder;
+import oap.dictionary.Dictionaries;
+import oap.dictionary.Dictionary;
+import oap.dictionary.DictionaryNotFoundError;
 import oap.json.schema.JsonSchemaParserProperties;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
 import oap.json.schema.SchemaAST;
 import oap.util.Either;
 import oap.util.Lists;
-import org.apache.commons.io.FilenameUtils;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
+
+import static java.util.Collections.singletonList;
 
 /**
  * Created by Igor Petrenko on 12.04.2016.
  */
 @Slf4j
 public class DictionaryJsonValidator implements JsonSchemaValidator<DictionarySchemaAST> {
-   private final static HashMap<String, Dictionary> dictionaries = new HashMap<>();
+    public DictionaryJsonValidator() {
+    }
 
-   public DictionaryJsonValidator() {
-   }
+    @Override
+    public Either<List<String>, Object> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
+        try {
+            final Dictionary dictionary = Dictionaries.getCachedDictionary( schema.name );
 
-   public DictionaryJsonValidator( Path path ) {
-      log.debug( "dictionary path = {}", path );
-      try( DirectoryStream<Path> dirStream = java.nio.file.Files.newDirectoryStream( path ) ) {
-         dirStream.forEach( p -> {
-            log.trace( "found {}", p );
-            final Dictionary dictionary = Binder.hoconWithoutSystemProperties.unmarshal( Dictionary.class, p );
-            final String baseName = FilenameUtils.getBaseName( p.toString() );
-            log.debug( "add dictionary {}", baseName );
-            dictionaries.put( baseName, dictionary );
-         } );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
+            if( dictionary.containsValueWithId( String.valueOf( value ) ) ) {
+                return Either.right( value );
+            } else {
+                return Either.left( singletonList(
+                    properties.error( "instance does not match any member of the enumeration [" +
+                        String.join( ",", dictionary.ids() ) + "]"
+                    ) ) );
+            }
+        } catch( DictionaryNotFoundError e ) {
+            return Either.left( Lists.of( properties.error( "dictionary not found" ) ) );
+        }
+    }
 
-   @Override
-   public Either<List<String>, Object> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
-      final Dictionary dictionary = dictionaries.get( schema.name );
+    @Override
+    public SchemaAST parse( JsonSchemaParserProperties properties ) {
+        SchemaAST.CommonSchemaAST common = node( properties ).asCommon();
+        final String name = node( properties ).asString( "name" ).required();
 
-      if( dictionary == null ) return Either.left(
-         Lists.of(
-            properties.error( "dictionary not found" ) ) );
-
-      if( dictionary.values.contains( value.toString() ) ) {
-         return Either.right( value );
-      } else {
-         return Either.left( Collections.singletonList(
-            properties.error( "instance does not match any member of the enumeration [" +
-               String.join( ",", dictionary.values ) + "]"
-            ) ) );
-      }
-   }
-
-   @Override
-   public SchemaAST parse( JsonSchemaParserProperties properties ) {
-      SchemaAST.CommonSchemaAST common = node( properties ).asCommon();
-      final String name = node( properties ).asString( "name" ).required();
-
-      return new DictionarySchemaAST( common, name );
-   }
+        return new DictionarySchemaAST( common, name );
+    }
 }
