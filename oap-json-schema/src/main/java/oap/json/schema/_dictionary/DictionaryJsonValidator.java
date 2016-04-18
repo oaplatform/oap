@@ -36,7 +36,6 @@ import oap.util.Either;
 import oap.util.Lists;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Collections.singletonList;
 
@@ -45,15 +44,13 @@ import static java.util.Collections.singletonList;
  */
 @Slf4j
 public class DictionaryJsonValidator implements JsonSchemaValidator<DictionarySchemaAST> {
-    private final static ConcurrentHashMap<String, Dictionary> dictionaries = new ConcurrentHashMap<>();
-
     public DictionaryJsonValidator() {
     }
 
     @Override
     public Either<List<String>, Object> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
         try {
-            final Dictionary dictionary = dictionaries.computeIfAbsent( schema.name, Dictionaries::getDictionary );
+            final Dictionary dictionary = Dictionaries.getCachedDictionary( schema.name );
 
             if( dictionary.containsValueWithId( String.valueOf( value ) ) ) {
                 return Either.right( value );
