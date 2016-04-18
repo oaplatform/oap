@@ -34,6 +34,7 @@ import java.util.Map;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Created by Igor Petrenko on 14.04.2016.
@@ -69,6 +70,14 @@ public final class Dictionary {
         final Long rtb = indexById.get( id );
         if( rtb == null ) return defaultValue;
         return rtb;
+    }
+
+    public boolean containsValueWithId( String id ) {
+        return indexById.containsKey( id );
+    }
+
+    public List<String> ids() {
+        return values.stream().map( v -> v.id ).collect( toList() );
     }
 
     @EqualsAndHashCode

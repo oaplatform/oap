@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static java.util.Collections.emptyList;
@@ -49,6 +50,15 @@ public class DictionaryParser {
     public static final String VALUES = "values";
 
     private static final Set<String> defaultFields = new HashSet<>();
+    private static final BiFunction<Boolean, Object, Optional<Long>> longFunc =
+        ( convert, str ) -> {
+            if( !convert ) return Optional.empty();
+            else if( str instanceof Integer ) return Optional.of( ( ( Integer ) str ).longValue() );
+            else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).longValue() );
+            else if( str instanceof String && ( ( String ) str ).length() == 1 )
+                return Optional.of( ( long ) ( ( String ) str ).charAt( 0 ) );
+            else return Optional.empty();
+        };
 
     static {
         defaultFields.add( ID );
@@ -61,7 +71,7 @@ public class DictionaryParser {
         if( value instanceof Map ) {
             final Map<Object, Object> valueMap = ( Map<Object, Object> ) value;
             final String id = getString( valueMap, ID );
-            final boolean enabled = getBoolean( valueMap, ENABLED );
+            final boolean enabled = getBooleanOpt( valueMap, ENABLED ).orElse( true );
             final long externalId = getLong( valueMap, EXTERNAL_ID, true );
             List<Dictionary.DictionaryValue> values = emptyList();
 
@@ -122,18 +132,11 @@ public class DictionaryParser {
     }
 
     private static long getLong( Map map, String field, boolean convert ) {
-        return getValue( Long.class, map, field, ( str ) -> {
-            if( !convert ) return Optional.empty();
-            else if( str instanceof Integer ) return Optional.of( ( ( Integer ) str ).longValue() );
-            else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).longValue() );
-            else if( str instanceof String && ( ( String ) str ).length() == 1 )
-                return Optional.of( ( long ) ( ( String ) str ).charAt( 0 ) );
-            else return Optional.empty();
-        } );
+        return getValue( Long.class, map, field, str -> longFunc.apply( convert, str ) );
     }
 
-    private static boolean getBoolean( Map map, String field ) {
-        return getValue( Boolean.class, map, field, str -> Optional.empty() );
+    private static Optional<Boolean> getBooleanOpt( Map map, String field ) {
+        return getValueOpt( Boolean.class, map, field, str -> Optional.empty() );
     }
 
     private static List getList( Map map, String field ) {
@@ -183,7 +186,7 @@ public class DictionaryParser {
         for( val value : values ) {
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField( ID, value.id );
-            jsonGenerator.writeBooleanField( ENABLED, value.enabled );
+            if( !value.enabled ) jsonGenerator.writeBooleanField( ENABLED, false );
             jsonGenerator.writeNumberField( EXTERNAL_ID, value.externalId );
             writeValues( jsonGenerator, value.values );
 

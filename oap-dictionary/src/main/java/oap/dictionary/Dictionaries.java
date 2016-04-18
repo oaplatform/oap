@@ -39,32 +39,32 @@ import java.util.Set;
  */
 @Slf4j
 public class Dictionaries {
-   public static final List<String> dictionaries = new ArrayList<>();
+    public static final List<String> dictionaries = new ArrayList<>();
 
-   private synchronized static void load() {
-      if( dictionaries.isEmpty() ) {
-         final Reflections reflections = new Reflections(
-            new ConfigurationBuilder()
-               .setUrls( ClasspathHelper.forPackage( "dictionary" ) )
-               .setScanners( new ResourcesScanner() )
-         );
+    private synchronized static void load() {
+        if( dictionaries.isEmpty() ) {
+            final Reflections reflections = new Reflections(
+                new ConfigurationBuilder()
+                    .setUrls( ClasspathHelper.forPackage( "dictionary" ) )
+                    .setScanners( new ResourcesScanner() )
+            );
 
-         final Set<String> resources = reflections.getResources( str -> str.endsWith( ".json" ) );
+            final Set<String> resources = reflections.getResources( str -> str.endsWith( ".json" ) );
 
-         log.info( "dictionaries: {}", resources );
+            log.info( "dictionaries: {}", resources );
 
-         dictionaries.addAll( resources );
-      }
-   }
+            dictionaries.addAll( resources );
+        }
+    }
 
-   public static Dictionary getDictionary( String name ) {
-      load();
+    public static Dictionary getDictionary( String name ) throws DictionaryNotFoundError {
+        load();
 
-      return dictionaries
-         .stream()
-         .filter( d -> d.contains( name ) )
-         .findAny()
-         .map( d -> DictionaryParser.parse( "/" + d ) )
-         .orElseThrow( () -> new DictionaryNotFoundError( name ) );
-   }
+        return dictionaries
+            .stream()
+            .filter( d -> d.contains( name ) )
+            .findAny()
+            .map( d -> DictionaryParser.parse( "/" + d ) )
+            .orElseThrow( () -> new DictionaryNotFoundError( name ) );
+    }
 }
