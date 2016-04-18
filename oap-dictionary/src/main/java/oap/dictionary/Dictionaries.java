@@ -33,6 +33,7 @@ import org.reflections.util.ConfigurationBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Igor Petrenko on 15.04.2016.
@@ -40,6 +41,7 @@ import java.util.Set;
 @Slf4j
 public class Dictionaries {
     public static final List<String> dictionaries = new ArrayList<>();
+    private static final ConcurrentHashMap<String, Dictionary> cache = new ConcurrentHashMap<>();
 
     private synchronized static void load() {
         if( dictionaries.isEmpty() ) {
@@ -66,5 +68,9 @@ public class Dictionaries {
             .findAny()
             .map( d -> DictionaryParser.parse( "/" + d ) )
             .orElseThrow( () -> new DictionaryNotFoundError( name ) );
+    }
+
+    public static Dictionary getCachedDictionary( String name ) throws DictionaryNotFoundError {
+        return cache.computeIfAbsent( name, Dictionaries::getDictionary );
     }
 }
