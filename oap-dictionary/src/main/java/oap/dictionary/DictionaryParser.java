@@ -31,6 +31,7 @@ import oap.util.Try;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.BiFunction;
@@ -98,6 +99,11 @@ public class DictionaryParser {
     }
 
     public static Dictionary parse( Path resource ) {
+        final Map map = Binder.json.unmarshal( Map.class, resource );
+        return parse( map );
+    }
+
+    public static Dictionary parse( URL resource ) {
         final Map map = Binder.json.unmarshal( Map.class, resource );
         return parse( map );
     }
