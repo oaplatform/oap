@@ -34,35 +34,31 @@ import org.testng.annotations.BeforeMethod;
 import java.io.IOException;
 
 public abstract class AbstractTest {
-    static {
-        DateTimeZone.setDefault( DateTimeZone.UTC );
-    }
+   protected boolean CLEANUP_TEMP = true;
 
-    protected boolean CLEANUP_TEMP = true;
+   @AfterSuite
+   public void afterSuite() {
+      if( CLEANUP_TEMP ) Files.delete( Env.tmp );
+   }
 
-    @AfterSuite
-    public void afterSuite() {
-        if( CLEANUP_TEMP ) Files.delete( Env.tmp );
-    }
+   @AfterClass
+   public void afterClass() {
+      if( CLEANUP_TEMP ) Files.delete( Env.tmpRoot );
+   }
 
-    @AfterClass
-    public void afterClass() {
-        if( CLEANUP_TEMP ) Files.delete( Env.tmpRoot );
-    }
+   @BeforeMethod
+   public void beforeMethod() {
+      DateTimeUtils.setCurrentMillisSystem();
+      DateTimeZone.setDefault( DateTimeZone.UTC );
+   }
 
-    @BeforeMethod
-    public void beforeMethod() {
-        DateTimeUtils.setCurrentMillisSystem();
-        DateTimeZone.setDefault( DateTimeZone.UTC );
-    }
+   @AfterMethod
+   public void afterMethod() throws IOException {
+      afterMethod( true );
+   }
 
-    @AfterMethod
-    public void afterMethod() throws IOException {
-        afterMethod( true );
-    }
-
-    protected void afterMethod( boolean cleanup ) throws IOException {
-        if( CLEANUP_TEMP && cleanup ) Files.delete( Env.tmpRoot );
-        DateTimeUtils.setCurrentMillisSystem();
-    }
+   protected void afterMethod( boolean cleanup ) throws IOException {
+      if( CLEANUP_TEMP && cleanup ) Files.delete( Env.tmpRoot );
+      DateTimeUtils.setCurrentMillisSystem();
+   }
 }
