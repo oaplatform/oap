@@ -44,4 +44,20 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
 
         vFail( schema, "'test4'", "dictionary not found" );
     }
+
+    @Test(enabled = false)
+    public void testHierarchical() {
+        String schema = "{type: object, properties: {" +
+            "parent: {type: dictionary, name: dict-h}, " +
+            "child: {type: dictionary, parent: {json-path: parent}}" +
+            "}}";
+
+        vOk( schema, "{'parent': 'p1'}" );
+        vOk( schema, "{'parent': 'p2'}" );
+        vOk( schema, "{'parent': 'p1', 'child':'c11'}" );
+        vOk( schema, "{'parent': 'p1', 'child':'c12'}" );
+        vOk( schema, "{'parent': 'p2', 'child':'c21'}" );
+
+        vFail( schema, "{'parent': 'p1', 'child':'oops'}", "instance does not match any member of the enumeration [c11,c12]" );
+    }
 }

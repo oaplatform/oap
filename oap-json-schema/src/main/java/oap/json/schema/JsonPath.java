@@ -24,47 +24,47 @@
 
 package oap.json.schema;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.*;
 
-public class EnumPath {
-    private final String path;
+public class JsonPath {
+    private final String[] paths;
 
-    public EnumPath( String path ) {
-        this.path = path;
+    public JsonPath( String path ) {
+        paths = StringUtils.split( path, '.' );
     }
 
     @SuppressWarnings( "unchecked" )
     public List<Object> traverse( Object json ) {
-        String[] paths = path.split( "\\." );
-
-        Optional<Object> result = traverse( json, paths );
+        final Optional<Object> result = traverse( json, 0 );
 
         return result.map( r -> {
-            if( r instanceof List<?> ) return (List<Object>) r;
+            if( r instanceof List<?> ) return ( List<Object> ) r;
 
             return Collections.singletonList( r );
         } ).orElseGet( Collections::emptyList );
 
     }
 
-    private Optional<Object> traverse( Object json, String[] paths ) {
+    private Optional<Object> traverse( Object json, int index ) {
         Object last = json;
 
-        for( int i = 0; i < paths.length; i++ ) {
-            String field = paths[i];
+        for( int i = index; i < paths.length; i++ ) {
+            final String field = paths[i];
 
             if( last == null ) return Optional.empty();
             else if( last instanceof Map<?, ?> ) {
-                Map<?, ?> map = (Map<?, ?>) last;
+                final Map<?, ?> map = ( Map<?, ?> ) last;
 
                 last = map.get( field );
             } else if( last instanceof List<?> ) {
-                List<?> list = (List<?>) last;
+                final List<?> list = ( List<?> ) last;
 
-                ArrayList<Object> result = new ArrayList<>();
+                final ArrayList<Object> result = new ArrayList<>();
 
                 for( Object item : list ) {
-                    Optional<Object> value = traverse( item, Arrays.copyOfRange( paths, i, paths.length ) );
+                    final Optional<Object> value = traverse( item, i );
                     value.ifPresent( result::add );
                 }
 
