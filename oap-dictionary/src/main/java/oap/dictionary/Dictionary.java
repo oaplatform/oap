@@ -25,13 +25,16 @@
 package oap.dictionary;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Created by Igor Petrenko on 14.04.2016.
@@ -69,20 +72,53 @@ public final class Dictionary {
         return rtb;
     }
 
+    public boolean containsValueWithId( String id ) {
+        return indexById.containsKey( id );
+    }
+
+    public List<String> ids() {
+        return values.stream().map( v -> v.id ).collect( toList() );
+    }
+
     @EqualsAndHashCode
     @ToString
     public static class DictionaryValue {
         public final String id;
         public final boolean enabled;
-        @JsonProperty( "eid" )
         public final long externalId;
+        public final List<DictionaryValue> values;
         public final Map<String, Object> properties;
 
-        public DictionaryValue( String id, boolean enabled, long externalId, Map<String, Object> properties ) {
+        public DictionaryValue( String id, boolean enabled, long externalId ) {
+            this( id, enabled, externalId, emptyList(), emptyMap() );
+        }
+
+        public DictionaryValue( String id, boolean enabled, long externalId, List<DictionaryValue> values ) {
+            this( id, enabled, externalId, values, emptyMap() );
+        }
+
+        public DictionaryValue(
+            String id,
+            boolean enabled,
+            long externalId,
+            Map<String, Object> properties
+        ) {
+            this( id, enabled, externalId, emptyList(), properties );
+        }
+
+        public DictionaryValue(
+            String id,
+            boolean enabled,
+            long externalId,
+            List<DictionaryValue> values,
+            Map<String, Object> properties
+        ) {
             this.id = id;
             this.enabled = enabled;
             this.externalId = externalId;
+            this.values = values;
             this.properties = properties;
         }
+
     }
 }

@@ -44,25 +44,26 @@ import java.util.function.BiFunction;
 public final class Resources {
     private static final boolean IS_WINDOWS = System.getProperty( "os.name" ).contains( "indow" );
 
-   public static Path deepPath( Path basePath, String name ) {
-      BiFunction<Integer, Integer, String> f = ( hash, bits) -> String.valueOf( hash & ( ( 1 << bits ) - 1 ) );
-      int bitPerDir = 8;
+    public static Path deepPath( Path basePath, String name ) {
+        BiFunction<Integer, Integer, String> f = ( hash, bits ) -> String.valueOf( hash & ( ( 1 << bits ) - 1 ) );
+        int bitPerDir = 8;
 
-      int hash = Hashing.murmur3_32().hashBytes( name.getBytes() ).asInt();
-      String f1 = f.apply( hash, bitPerDir );
-      hash >>>= bitPerDir;
-      String f2 = f.apply( hash, bitPerDir );
-      hash >>>= bitPerDir;
+        int hash = Hashing.murmur3_32().hashBytes( name.getBytes() ).asInt();
+        String f1 = f.apply( hash, bitPerDir );
+        hash >>>= bitPerDir;
+        String f2 = f.apply( hash, bitPerDir );
+        hash >>>= bitPerDir;
 
-      return basePath
-         .resolve( f1 )
-         .resolve( f2 )
-         .resolve( f.apply( hash, bitPerDir ) )
-         .resolve( name );
-   }
+        return basePath
+            .resolve( f1 )
+            .resolve( f2 )
+            .resolve( f.apply( hash, bitPerDir ) )
+            .resolve( name );
+    }
+
     private static String path( URL url ) {
         String filePath = url.getPath();
-        return IS_WINDOWS ? filePath.substring( 1 ) : filePath;
+        return IS_WINDOWS && filePath.startsWith( "/" ) ? filePath.substring( 1 ) : filePath;
     }
 
     public static Optional<String> path( Class<?> contextClass, String name ) {

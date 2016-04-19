@@ -111,7 +111,7 @@ public interface JsonSchemaValidator<A extends SchemaAST> {
          } else if( anEnum instanceof Map<?, ?> ) {
             String jsonPath = ( String ) ( ( Map<?, ?> ) anEnum ).get( "json-path" );
 
-            Function<Object, List<Object>> func = ( obj ) -> new EnumPath( jsonPath ).traverse( obj );
+            Function<Object, List<Object>> func = ( obj ) -> new JsonPath( jsonPath ).traverse( obj );
 
             return Optional.of( func );
          } else throw new ValidationSyntaxException( "Unknown enum type " + anEnum.getClass() );

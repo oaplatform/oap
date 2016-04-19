@@ -36,10 +36,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class DictionaryTest extends AbstractTest {
     @Test
-    public void testGenres() {
-        assertThat( Dictionaries.getDictionary( "genders" ).name ).isEqualTo( "genders" );
-        assertThat( Dictionaries.getDictionary( "genders" ).values ).contains( new Dictionary.DictionaryValue( "FEMALE", true, 'f',
-            Maps.of( __( "title", "Females" ) ) )
+    public void testParse() {
+        assertThat( Dictionaries.getDictionary( "test-dictionary" ).name ).isEqualTo( "test-dictionary" );
+        assertThat( Dictionaries.getDictionary( "test-dictionary" ).values ).contains( new Dictionary.DictionaryValue( "id2", true, '2',
+            Maps.of( __( "title", "title2" ) ) )
+        );
+
+        assertThat( Dictionaries.getDictionary( "test-dictionary" ).values.get( 0 ).values ).contains(
+            new Dictionary.DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
         );
     }
 }

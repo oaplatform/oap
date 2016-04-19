@@ -63,15 +63,15 @@ public class FileStorage<T> implements Storage<T>, Closeable {
     private final AtomicLong lastFSync = new AtomicLong( 0 );
     private final AtomicLong lastRSync = new AtomicLong( 0 );
     private final Storage<T> master;
-    private Scheduled rsyncScheduled;
-    private Scheduled fsyncScheduled;
     private final long fsync;
     private final long rsync;
-    private final long version;
+    private final int version;
     private final List<FileStorageMigration> migrations;
     protected long rsyncSafeInterval = 1000;
     protected Function<T, String> identify;
     protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
+    private Scheduled rsyncScheduled;
+    private Scheduled fsyncScheduled;
     private Path path;
     private List<DataListener<T>> dataListeners = new ArrayList<>();
 
@@ -79,7 +79,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         this( path, identify, fsync, master, rsync, VERSION, emptyList() );
     }
 
-    public FileStorage( Path path, Function<T, String> identify, long fsync, Storage<T> master, long rsync, long version, List<String> migrations ) {
+    public FileStorage( Path path, Function<T, String> identify, long fsync, Storage<T> master, long rsync, int version, List<String> migrations ) {
         this.path = path;
         this.identify = identify;
         this.fsync = fsync;
@@ -97,7 +97,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         this( path, identify, fsync, null, 0, VERSION, emptyList() );
     }
 
-    public FileStorage( Path path, Function<T, String> identify, long fsync, long version, List<String> migrations ) {
+    public FileStorage( Path path, Function<T, String> identify, long fsync, int version, List<String> migrations ) {
         this( path, identify, fsync, null, 0, version, migrations );
     }
 
@@ -105,7 +105,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
         this( path, identify, VERSION, emptyList() );
     }
 
-    public FileStorage( Path path, Function<T, String> identify, long version, List<String> migrations ) {
+    public FileStorage( Path path, Function<T, String> identify, int version, List<String> migrations ) {
         this( path, identify, 60000, version, migrations );
     }
 
@@ -221,7 +221,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
                 metadata.update( object );
                 metadata.deleted = false;
             } else {
-                data.put( id, new Metadata<>( id, object ) );
+                data.put( id, new Metadata<>( id, object, version ) );
             }
             fireUpdated( object );
         }
@@ -237,7 +237,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
                     metadata.update( object );
                     metadata.deleted = false;
                 } else {
-                    data.put( id, new Metadata<>( id, object ) );
+                    data.put( id, new Metadata<>( id, object, version ) );
                 }
             }
         }
@@ -260,7 +260,7 @@ public class FileStorage<T> implements Storage<T>, Closeable {
             if( m == null ) {
                 if( init == null ) return null;
                 T object = init.get();
-                m = new Metadata<>( identify.apply( object ), object );
+                m = new Metadata<>( identify.apply( object ), object, version );
                 data.put( m.id, m );
             } else {
                 update.accept( m.object );

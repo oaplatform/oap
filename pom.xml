@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>1.12.2</version>
+    <version>1.12.8</version>
 
     <name>oap</name>
 
@@ -60,6 +60,10 @@
         <repository>
             <id>jitpack</id>
             <url>https://jitpack.io</url>
+        </repository>
+        <repository>
+            <id>oap</id>
+            <url>http://mvn.oaplatform.org/artifactory/oap/</url>
         </repository>
     </repositories>
 

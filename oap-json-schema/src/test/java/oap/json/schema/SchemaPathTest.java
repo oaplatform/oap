@@ -24,33 +24,37 @@
 
 package oap.json.schema;
 
-import oap.testng.Env;
 import org.testng.annotations.Test;
+
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Created by Igor Petrenko on 13.04.2016.
+ * Created by Igor Petrenko on 19.04.2016.
  */
-public class DictionaryFromEnumGeneratorTest {
-   @Test
-   public void testMain() throws Exception {
-      DictionaryFromEnumGenerator.main( new String[]{
-         TestDictEnum.class.getName() + "," + TestDictEnum2.class.getName(),
-         "bbb,ccc",
-         Env.tmp( "tmp" )
-      } );
+public class SchemaPathTest extends AbstractSchemaTest {
+    @Test
+    public void testTraverseObject() throws Exception {
+        final String schema = "{type: object, properties: {a: {type: object, properties: {b: {type: string}}}}}";
 
-      assertThat( Env.tmpPath( "tmp" ).resolve( "bbb.json" ) ).hasContent( "{\"values\":[\"A\",\"B\",\"TEST\"]}" );
-      assertThat( Env.tmpPath( "tmp" ).resolve( "ccc.json" ) ).hasContent( "{\"values\":[\"TEST1\",\"TEST2\"]}" );
-   }
+        final Optional<SchemaAST> traverse = new SchemaPath( "a.b" ).traverse( schema( schema ) );
+        assertThat( traverse ).hasValueSatisfying( s -> assertThat( s.common.schemaType ).isEqualTo( "string" ) );
+    }
 
-   public enum TestDictEnum {
-      A, B, UNKNOWN, TEST
-   }
+    @Test
+    public void testTraverseArray() throws Exception {
+        final String schema = "{type: object, properties: {a: {type: array, items: {type: object, properties: {b: {type: string}}}}}}";
 
-   public enum TestDictEnum2 {
-      TEST1, TEST2
-   }
+        final Optional<SchemaAST> traverse = new SchemaPath( "a.b" ).traverse( schema( schema ) );
+        assertThat( traverse ).hasValueSatisfying( s -> assertThat( s.common.schemaType ).isEqualTo( "string" ) );
+    }
 
+    @Test
+    public void testTraverseNotFound() throws Exception {
+        final String schema = "{type: object, properties: {a: {type: string}}}";
+
+        final Optional<SchemaAST> traverse = new SchemaPath( "a.b" ).traverse( schema( schema ) );
+        assertThat( traverse ).isEmpty();
+    }
 }

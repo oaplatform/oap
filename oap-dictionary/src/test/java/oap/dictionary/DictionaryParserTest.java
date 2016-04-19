@@ -22,19 +22,35 @@
  * SOFTWARE.
  */
 
-package oap.json.schema._dictionary;
+package oap.dictionary;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import oap.testng.AbstractTest;
+import oap.testng.Env;
+import oap.util.Maps;
+import org.testng.annotations.Test;
 
-import java.util.LinkedHashSet;
+import java.nio.file.Path;
+
+import static oap.util.Pair.__;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Created by Igor Petrenko on 12.04.2016.
+ * Created by Igor Petrenko on 15.04.2016.
  */
-public class Dictionary {
-   public final LinkedHashSet<String> values;
+public class DictionaryParserTest extends AbstractTest {
+    @Test
+    public void testSerialize() {
+        final Path path = Env.tmpPath( "test/test.json" );
+        DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path );
 
-   public Dictionary( @JsonProperty( "values" ) LinkedHashSet<String> values ) {
-      this.values = values;
-   }
+        final Dictionary dictionary = DictionaryParser.parse( path );
+
+        assertThat( dictionary.values ).contains( new Dictionary.DictionaryValue( "id2", true, '2',
+            Maps.of( __( "title", "title2" ) ) )
+        );
+
+        assertThat( dictionary.values.get( 0 ).values ).contains(
+            new Dictionary.DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
+        );
+    }
 }

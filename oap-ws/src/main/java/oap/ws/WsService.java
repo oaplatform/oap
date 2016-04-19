@@ -35,9 +35,9 @@ import oap.reflect.Reflection;
 import oap.util.Optionals;
 import oap.util.Stream;
 import oap.util.Strings;
+import oap.ws.security.domain.User;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,8 +58,8 @@ public class WsService implements Handler {
     private final SessionManager sessionManager;
     private final List<Interceptor> interceptors;
     private final Coercions coercions = Coercions.basic()
-        .with( r -> true, ( r, value ) -> Binder.hocon.unmarshal( r.underlying,
-            value instanceof String ? ( String ) value :
+        .with( r -> true, ( r, value ) -> value instanceof User ? ( User ) value :
+            Binder.hocon.unmarshal( r.underlying, value instanceof String ? ( String ) value :
                 new String( ( byte[] ) value, StandardCharsets.UTF_8 ) ) );
     private final Validators validators = new Validators();
     private Map<String, Pattern> compiledPaths = new HashMap<>();
@@ -186,7 +186,9 @@ public class WsService implements Handler {
                                 case REQUEST:
                                     return request;
                                 case SESSION:
-                                    return sessionManager.getSessionById( cookieId );
+                                    final Session sessionById = sessionManager.getSessionById( cookieId );
+                                    return convert( parameter.name(), parameter.type(),
+                                        sessionById.get( parameter.name() ) );
                                 case HEADER:
                                     return convert( parameter.name(), parameter.type(),
                                         request.header( parameter.name() ) );

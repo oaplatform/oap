@@ -24,39 +24,40 @@
 
 package oap.json.schema;
 
-import oap.io.Files;
-import oap.json.schema._dictionary.DictionaryJsonValidator;
-import oap.testng.Env;
 import org.testng.annotations.Test;
 
-import java.nio.file.Path;
-
 public class DictionarySchemaTest extends AbstractSchemaTest {
-   @Test
-   public void testDictionary() {
-      final Path test = Env.tmpPath( "test" );
-      Files.writeString( test.resolve( "dict.json" ), "{values = [test1, test2, test3]}" );
+    @Test
+    public void testDictionary() {
+        String schema = "{type: dictionary, name: dict}";
 
-      new DictionaryJsonValidator( test );
+        vOk( schema, "null" );
+        vOk( schema, "'test1'" );
+        vOk( schema, "'test2'" );
 
-      String schema = "{type: dictionary, name: dict}";
+        vFail( schema, "'test4'", "instance does not match any member of the enumeration [test1,test2,test3]" );
+    }
 
-      vOk( schema, "null" );
-      vOk( schema, "'test1'" );
-      vOk( schema, "'test2'" );
+    @Test
+    public void testUnknownDictionary() {
+        String schema = "{type: dictionary, name: unknown}";
 
-      vFail( schema, "'test4'", "instance does not match any member of the enumeration [test1,test2,test3]" );
-   }
+        vFail( schema, "'test4'", "dictionary not found" );
+    }
 
-   @Test
-   public void testUnknownDictionary() {
-      final Path test = Env.tmpPath( "test" );
-      Files.writeString( test.resolve( "dict.json" ), "{values = [test1, test2, test3]}" );
+    @Test(enabled = false)
+    public void testHierarchical() {
+        String schema = "{type: object, properties: {" +
+            "parent: {type: dictionary, name: dict-h}, " +
+            "child: {type: dictionary, parent: {json-path: parent}}" +
+            "}}";
 
-      new DictionaryJsonValidator( test );
+        vOk( schema, "{'parent': 'p1'}" );
+        vOk( schema, "{'parent': 'p2'}" );
+        vOk( schema, "{'parent': 'p1', 'child':'c11'}" );
+        vOk( schema, "{'parent': 'p1', 'child':'c12'}" );
+        vOk( schema, "{'parent': 'p2', 'child':'c21'}" );
 
-      String schema = "{type: dictionary, name: unknown}";
-
-      vFail( schema, "'test4'", "dictionary not found" );
-   }
+        vFail( schema, "{'parent': 'p1', 'child':'oops'}", "instance does not match any member of the enumeration [c11,c12]" );
+    }
 }

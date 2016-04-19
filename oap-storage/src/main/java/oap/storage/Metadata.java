@@ -36,8 +36,8 @@ import java.util.UUID;
 @EqualsAndHashCode( exclude = "object" )
 @ToString( exclude = "object" )
 public class Metadata<T> implements Comparable<Metadata<T>> {
+    public int version;
     public String id;
-    public int version = 0;
     public long modified = DateTimeUtils.currentTimeMillis();
     public boolean deleted;
     @JsonTypeIdResolver( TypeIdFactory.class )
@@ -45,9 +45,10 @@ public class Metadata<T> implements Comparable<Metadata<T>> {
     public T object;
     public String uniqueId = UUID.randomUUID().toString();
 
-    public Metadata( String id, T object ) {
+    public Metadata( String id, T object, int version ) {
         this.id = id;
         this.object = object;
+        this.version = version;
     }
 
     public Metadata() {
