@@ -49,7 +49,6 @@ public abstract class AbstractTest {
    @BeforeMethod
    public void beforeMethod() {
       DateTimeUtils.setCurrentMillisSystem();
-      DateTimeZone.setDefault( DateTimeZone.UTC );
    }
 
    @AfterMethod
