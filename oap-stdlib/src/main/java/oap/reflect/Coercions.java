@@ -26,7 +26,6 @@ package oap.reflect;
 import oap.util.Dates;
 import oap.util.Numbers;
 import oap.util.Pair;
-import oap.ws.security.domain.User;
 import org.joda.time.DateTime;
 
 import java.net.MalformedURLException;
@@ -96,7 +95,6 @@ public class Coercions {
       convertors.put( URL.class, new URLConvertor() );
       convertors.put( URI.class, new URIConvertor() );
       convertors.put( Pattern.class, new PatternConvertor() );
-      convertors.put( User.class, new UserConvertor() );
    }
 
    private List<Pair<Predicate<Reflection>, BiFunction<Reflection, Object, Object>>> coersions =
@@ -303,14 +301,6 @@ public class Coercions {
             throw new ReflectException( "cannot cast " + value + " to Pattern.class" );
          }
          else throw new ReflectException( "cannot cast " + value + " to Pattern.class" );
-      }
-   }
-
-   private static class UserConvertor implements Function<Object, Object> {
-      @Override
-      public Object apply( Object value ) {
-         if( value instanceof User ) return value;
-         else throw new ReflectException( "cannot cast " + value + " to User.class" );
       }
    }
 }
