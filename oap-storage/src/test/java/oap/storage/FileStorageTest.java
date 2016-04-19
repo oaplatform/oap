@@ -27,11 +27,8 @@ package oap.storage;
 import oap.concurrent.Threads;
 import oap.io.Resources;
 import oap.json.TypeIdFactory;
-import oap.storage.Bean.BeanMigration;
-import oap.storage.Bean2.Bean2Migration;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import oap.util.Lists;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -147,35 +144,4 @@ public class FileStorageTest extends AbstractTest {
             } );
         }
     }
-
-    @Test
-    public void testMigration() {
-        final Path data = Env.tmpPath( "data" );
-        try( FileStorage<Bean> storage1 = new FileStorage<>( data, b -> b.id, -1 ) ) {
-            storage1.start();
-            storage1.store( new Bean( "1" ) );
-            storage1.store( new Bean( "2" ) );
-        }
-
-        assertThat( data.resolve( "1.json" ) ).exists();
-        assertThat( data.resolve( "2.json" ) ).exists();
-
-        try( FileStorage<Bean2> storage2 = new FileStorage<>( data, b -> b.id2, -1, 2, Lists.of(
-            BeanMigration.class.getName(),
-            Bean2Migration.class.getName()
-        ) ) ) {
-            storage2.start();
-            assertThat( storage2.select() ).containsExactly( new Bean2( "11" ), new Bean2( "21" ) );
-        }
-
-        assertThat( data.resolve( "1.json" ) ).doesNotExist();
-        assertThat( data.resolve( "2.json" ) ).doesNotExist();
-
-        assertThat( data.resolve( "1.v1.json" ) ).doesNotExist();
-        assertThat( data.resolve( "2.v1.json" ) ).doesNotExist();
-
-        assertThat( data.resolve( "1.v2.json" ) ).exists();
-        assertThat( data.resolve( "2.v2.json" ) ).exists();
-    }
 }
-
