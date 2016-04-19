@@ -61,6 +61,10 @@
             <id>jitpack</id>
             <url>https://jitpack.io</url>
         </repository>
+        <repository>
+            <id>oap</id>
+            <url>http://mvn.oaplatform.org/artifactory/oap/</url>
+        </repository>
     </repositories>
 
     <properties>
