@@ -64,7 +64,7 @@ public class Dictionaries {
 
         return dictionaries
             .stream()
-            .filter( d -> d.contains( name ) )
+            .filter( d -> d.endsWith( name + ".json" ) )
             .findAny()
             .map( d -> DictionaryParser.parse( "/" + d ) )
             .orElseThrow( () -> new DictionaryNotFoundError( name ) );
