@@ -28,14 +28,8 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 public class Optionals {
-    public static <T> java.util.stream.Stream<T> toStream( Optional<T> opt ) {
-        return opt.map( Stream::of ).orElse( Stream.empty() );
-    }
-
-    @Deprecated
-    @SafeVarargs
-    public static <T> Optional<T> firstPresent( Optional<T>... optionals ) {
-        return findFirst( optionals );
+    public static <T> Stream<T> toStream( Optional<T> opt ) {
+        return opt.map( value -> Stream.of( value ) ).orElse( Stream.empty() );
     }
 
     @SafeVarargs
