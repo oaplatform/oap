@@ -32,8 +32,14 @@ public class Optionals {
         return opt.map( Stream::of ).orElse( Stream.empty() );
     }
 
+    @Deprecated
     @SafeVarargs
-    public static <T> Optional<T> firstPresent( Optional<T>... optionals) {
+    public static <T> Optional<T> firstPresent( Optional<T>... optionals ) {
+        return findFirst( optionals );
+    }
+
+    @SafeVarargs
+    public static <T> Optional<T> findFirst( Optional<T>... optionals ) {
         return Stream.of( optionals ).flatMap( Optionals::toStream ).findFirst();
     }
 
