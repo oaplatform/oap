@@ -92,6 +92,11 @@ public class Timestamp {
       );
    }
 
+   public static Stream<String> timestampsBeforeNow( DateTime since, int bucketsPerHour ) {
+      return Stream.of( since, t -> t.isBeforeNow(), t -> t.plusMinutes( 60 / bucketsPerHour ) )
+         .map( t -> format( t, bucketsPerHour ) );
+   }
+
    public static String path( String directory, String timestamp, String filename, String ext ) {
       String parent = FilenameUtils.getFullPathNoEndSeparator( filename );
       return ( parent.length() > 0 ? directory
