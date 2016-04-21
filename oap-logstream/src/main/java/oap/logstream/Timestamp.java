@@ -36,8 +36,8 @@ import java.util.stream.IntStream;
 
 public class Timestamp {
    public static final Pattern FILE_NAME_WITH_TIMESTAMP = Pattern.compile( ".+-(\\d{4}-\\d\\d-\\d\\d-\\d\\d-\\d\\d)\\..+" );
-   public static final DateTimeFormatter FILE_FORMATTER = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" ).withZoneUTC();
-   public static final DateTimeFormatter DIRECTORY_FORMATTER = DateTimeFormat.forPattern( "yyyy-MM/dd" ).withZoneUTC();
+   public static final DateTimeFormatter FILE_FORMATTER = DateTimeFormat.forPattern( "yyyy-MM-dd-HH" );
+   public static final DateTimeFormatter DIRECTORY_FORMATTER = DateTimeFormat.forPattern( "yyyy-MM/dd" );
    public static final char SEPARATOR_CHAR = '/';
 
    public static Optional<DateTime> parseFileNameWithTimestamp( String fileName, int bucketsPerHour ) {
