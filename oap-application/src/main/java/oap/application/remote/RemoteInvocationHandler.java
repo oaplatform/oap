@@ -70,8 +70,8 @@ public class RemoteInvocationHandler implements InvocationHandler {
    @Override
    @SuppressWarnings( "unchecked" )
    public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
-      if ( method.getDeclaringClass().equals( Object.class ) ) {
-         return method.invoke( proxy );
+      if (method.getDeclaringClass().equals( Object.class ) ) {
+         return this.service;
       }
 
       Parameter[] parameters = method.getParameters();
