@@ -28,12 +28,24 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <name>oap-logstream</name>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
     <artifactId>oap-logstream</artifactId>
 
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.12.9</version>
+        <version>1.12.10</version>
     </parent>
 
     <dependencies>
