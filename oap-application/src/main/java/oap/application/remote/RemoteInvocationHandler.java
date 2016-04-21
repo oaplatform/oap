@@ -70,6 +70,10 @@ public class RemoteInvocationHandler implements InvocationHandler {
    @Override
    @SuppressWarnings( "unchecked" )
    public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
+      if ( method.getDeclaringClass().equals( Object.class ) ) {
+         return method.invoke( proxy );
+      }
+
       Parameter[] parameters = method.getParameters();
       List<RemoteInvocation.Argument> arguments = new ArrayList<>();
 
