@@ -23,6 +23,7 @@
  */
 package oap.application;
 
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.json.Binder;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
+@ToString
 public class ApplicationConfiguration {
    List<String> profiles = Lists.empty();
    Map<String, Map<String, Object>> services = Maps.empty();

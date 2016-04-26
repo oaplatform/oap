@@ -169,11 +169,13 @@ public class Kernel {
 
    private void start( ApplicationConfiguration config ) {
       log.debug( "initializing application kernel..." );
+      log.debug( "Application config: ", config );
 
       Set<Module> moduleConfigs = Stream.of( modules )
          .map( module -> Module.CONFIGURATION.fromHocon( module, config.services ) )
          .toSet();
-      log.trace( "modules = " + Sets.map( moduleConfigs, m -> m.name ) );
+      log.debug( "modules = " + Sets.map( moduleConfigs, m -> m.name ) );
+      log.trace( "modules configs = " + moduleConfigs );
 
       Set<Module> def = initialize( moduleConfigs, new HashSet<>(), new HashSet<>(), config );
       if( !def.isEmpty() ) {

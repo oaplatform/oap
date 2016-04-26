@@ -30,12 +30,16 @@ public class SecureHttpListener extends AbstractHttpListener {
         this.keystoreLocation = keystoreLocation;
         this.keystorePassword = keystorePassword;
         this.port = port;
+        log.info("Secure HTTP listener configured to use {} and bind to port {}",
+                keystoreLocation,
+                port);
     }
 
     @Override
     protected ServerSocket createSocket() {
         if( Files.exists( keystoreLocation ) ) {
             try {
+                log.info("Keystore {} exists, trying to initialize", keystoreLocation);
                 KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
                 keyStore.load( IoStreams.in( keystoreLocation, PLAIN ), keystorePassword.toCharArray() );
 
@@ -51,6 +55,7 @@ public class SecureHttpListener extends AbstractHttpListener {
                 serverSocket.setSoTimeout( timeout );
                 serverSocket.bind( new InetSocketAddress( port ) );
 
+                log.info("Successfully initialized secure http listener");
                 return serverSocket;
             } catch( KeyStoreException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e ) {
                 throw Throwables.propagate( e );

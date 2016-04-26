@@ -16,6 +16,7 @@ public class PlainHttpListener extends AbstractHttpListener {
    public PlainHttpListener( HttpServer server, int port ) {
       super( server );
       this.port = port;
+      log.info( "Plain HTTP listener configured to bind on {}", port );
    }
 
    @Override
@@ -25,7 +26,7 @@ public class PlainHttpListener extends AbstractHttpListener {
          serverSocket.setReuseAddress( true );
          serverSocket.setSoTimeout( timeout );
          serverSocket.bind( new InetSocketAddress( port ) );
-
+         log.info( "Successfully bound plain http listener to {}", port );
          return serverSocket;
       } catch( BindException e ) {
          log.error( "Cannot bind to port [{}]", port );
