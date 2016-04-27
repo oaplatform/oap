@@ -119,7 +119,7 @@ public class ReflectTest extends AbstractTest {
    public void constructor() {
       Assertions.assertThatExceptionOfType( ReflectException.class )
          .isThrownBy( () -> Reflect.reflect( MatchingConstructor.class ).newInstance( Maps.empty() ) )
-         .withMessage( "cannot find matching constructor: {} in class oap.reflect.MatchingConstructor candidates: [oap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list), oap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)]" );
+         .withMessage( "cannot find matching constructor: [] in class oap.reflect.MatchingConstructor candidates: [oap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list), oap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)]" );
    }
 }
 

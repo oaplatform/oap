@@ -43,6 +43,7 @@ public class Lists {
       return list;
    }
 
+   @SafeVarargs
    public static <T> List<T> concat( List<T>... lists) {
       List<T> concatenated = empty();
       for ( List<T> list : lists ) {
