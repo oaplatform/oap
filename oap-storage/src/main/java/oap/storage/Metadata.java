@@ -43,7 +43,6 @@ public class Metadata<T> implements Comparable<Metadata<T>> {
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
     public T object;
-    public String uniqueId = UUID.randomUUID().toString();
 
     public Metadata( String id, T object, int version ) {
         this.id = id;
