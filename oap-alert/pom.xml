@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.12.15</version>
+        <version>1.12.16</version>
     </parent>
 
 
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
-            <version>1.12.15</version>
+            <version>1.12.16</version>
         </dependency>
 
         <dependency>
