@@ -24,7 +24,6 @@
 package oap.http.nio;
 
 import oap.http.*;
-import oap.net.Inet;
 import org.apache.http.HttpException;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
@@ -39,7 +38,6 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.Objects;
 
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -81,8 +79,8 @@ public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
         final HttpResponse response = httpAsyncExchange.getResponse();
 
         final String httpContextProtocol = httpContext.getAttribute( "protocol" ).toString();
-        if( ProtocolUtils.isLocal( remoteAddress, this.protocol ) ||
-            ProtocolUtils.isWrongProtocolConfigured( httpContextProtocol, protocol ) ) {
+        if( Protocol.isLocal( remoteAddress, this.protocol ) ||
+            Protocol.doesNotMatch( httpContextProtocol, protocol ) ) {
 
             response.setStatusCode( HTTP_FORBIDDEN );
         } else handler.handle(

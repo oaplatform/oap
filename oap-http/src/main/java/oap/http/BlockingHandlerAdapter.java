@@ -64,8 +64,8 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
         final String httpContextProtocol = httpContext.getAttribute( "protocol" ).toString();
         final Request request = new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) );
 
-        if( ProtocolUtils.isLocal( remoteAddress, this.protocol ) ||
-            ProtocolUtils.isWrongProtocolConfigured( httpContextProtocol, this.protocol ) ) {
+        if( Protocol.isLocal( remoteAddress, this.protocol ) ||
+            Protocol.doesNotMatch( httpContextProtocol, this.protocol ) ) {
             response.respond( HTTP_FORBIDDEN );
         } else if( cors.autoOptions && request.httpMethod == Request.HttpMethod.OPTIONS ) {
             response.respond( NO_CONTENT );
