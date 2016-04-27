@@ -25,17 +25,18 @@ package oap.util;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 public class Dates {
     public static final DateTimeFormatter FORMAT_MILLIS = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSS" )
-        .withZoneUTC();
+        .withZone( DateTimeZone.getDefault() );
 
     public static final DateTimeFormatter FORMAT_SIMPLE = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss" )
-        .withZoneUTC();
+        .withZone( DateTimeZone.getDefault() );
 
     public static Result<DateTime, Exception> parseDateWithMillis( String date ) {
         return parse( date, FORMAT_MILLIS );
