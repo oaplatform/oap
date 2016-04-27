@@ -25,6 +25,10 @@ package oap.http;
 
 import org.apache.http.entity.ContentType;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class ContentTypes {
-    public static final ContentType TAB_SEPARATED_VALUES = ContentType.create( "text/tab-separated-values" );
+    public static final ContentType TEXT_TSV = ContentType.create( "text/tab-separated-values", UTF_8 );
+    public static final ContentType TEXT_PLAIN = ContentType.TEXT_PLAIN.withCharset( UTF_8 );
+
 }
