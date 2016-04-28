@@ -37,191 +37,201 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
-import static java.util.Arrays.asList;
-
 public class Table {
-    private Stream<List<Object>> lines;
-    private List<Runnable> closeHandlers = new ArrayList<>();
+   private Stream<List<Object>> lines;
+   private List<Runnable> closeHandlers = new ArrayList<>();
 
-    private Table( Stream<List<Object>> lines ) {
-        this.lines = lines;
-    }
+   private Table( Stream<List<Object>> lines ) {
+      this.lines = lines;
+   }
 
-    public static Optional<Table> fromResource( Class<?> contextClass, String name, Model model ) {
-        return Tsv.fromResource( contextClass, name, model ).map( Table::new );
-    }
+   public static Optional<Table> fromResource( Class<?> contextClass, String name, Model model ) {
+      return Tsv.fromResource( contextClass, name, model ).map( Table::new );
+   }
 
-    public static Table fromPath( Path path, Model model ) {
-        return new Table( Tsv.fromPath( path, model ) );
-    }
+   public static Table fromPath( Path path, Model model ) {
+      return new Table( Tsv.fromPath( path, model ) );
+   }
 
-    public static Table fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model.Complex complexModel ) {
-        return new Table( Tsv.fromPaths( paths, encoding, complexModel ) );
-    }
+   public static Table fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model.Complex complexModel ) {
+      return new Table( Tsv.fromPaths( paths, encoding, complexModel ) );
+   }
 
-    public static Table fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model model ) {
-        return new Table( Tsv.fromPaths( paths, encoding, model ) );
-    }
+   public static Table fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model model ) {
+      return new Table( Tsv.fromPaths( paths, encoding, model ) );
+   }
 
-    @SuppressWarnings( "unchecked" )
-    public Table sort( int[] fields ) {
-        this.lines = lines.sorted( ( l1, l2 ) -> {
-            for( int field : fields ) {
-                int result = ( ( Comparable ) l1.get( field ) ).compareTo( l2.get( field ) );
-                if( result != 0 ) return result;
+   @SuppressWarnings( "unchecked" )
+   public Table sort( int[] fields ) {
+      this.lines = lines.sorted( ( l1, l2 ) -> {
+         for( int field : fields ) {
+            int result = ( ( Comparable ) l1.get( field ) ).compareTo( l2.get( field ) );
+            if( result != 0 ) return result;
+         }
+         return 0;
+      } );
+      return this;
+   }
+
+   public Table export( Export export ) {
+      closeHandlers.add( export::close );
+      return transform( export::line );
+   }
+
+   public Table progress( long step, LongConsumer report ) {
+      AtomicLong total = new AtomicLong( 0 );
+      closeHandlers.add( () -> report.accept( total.get() ) );
+      return transform( l -> {
+         if( total.incrementAndGet() % step == 0 ) report.accept( total.get() );
+      } );
+   }
+
+   public Table transform( Consumer<List<Object>> consumer ) {
+      this.lines = this.lines.map( l -> {
+         consumer.accept( l );
+         return l;
+      } );
+      return this;
+   }
+
+   public Table sortedStreamGroupBy( int[] fields, Accumulator... accumulators ) {
+      PeekingIterator<List<Object>> iterator = Iterators.peekingIterator( sort( fields ).lines.iterator() );
+      class DistinctIterator implements Iterator<List<Object>> {
+
+         @Override
+         public boolean hasNext() {
+            return iterator.hasNext();
+         }
+
+         @Override
+         public List<Object> next() {
+            for( Accumulator formula : accumulators ) formula.reset();
+            while( iterator.hasNext() ) {
+               List<Object> current = iterator.next();
+               for( Accumulator accumulator : accumulators ) accumulator.accumulate( current );
+               if( !iterator.hasNext() || !distinctiveEquals( current, iterator.peek() ) )
+                  return result( current, accumulators );
             }
-            return 0;
-        } );
-        return this;
-    }
+            throw new NoSuchElementException();
+         }
 
-    public Table export( Export export ) {
-        closeHandlers.add( export::close );
-        return transform( export::line );
-    }
+         private List<Object> result( List<Object> l, Accumulator[] accumulators ) {
+            ArrayList<Object> result = new ArrayList<>();
+            for( int field : fields ) result.add( l.get( field ) );
+            for( Accumulator accumulator : accumulators ) result.add( accumulator.result() );
+            return result;
+         }
 
-    public Table progress( long step, LongConsumer report ) {
-        AtomicLong total = new AtomicLong( 0 );
-        closeHandlers.add( () -> report.accept( total.get() ) );
-        return transform( l -> {
-            if( total.incrementAndGet() % step == 0 ) report.accept( total.get() );
-        } );
-    }
+         private boolean distinctiveEquals( List<Object> a, List<Object> b ) {
+            for( int field : fields ) if( !Objects.equals( a.get( field ), b.get( field ) ) ) return false;
+            return true;
+         }
+      }
+      this.lines = Stream.of( new DistinctIterator() );
+      return this;
+   }
 
-    public Table transform( Consumer<List<Object>> consumer ) {
-        this.lines = this.lines.map( l -> {
-            consumer.accept( l );
-            return l;
-        } );
-        return this;
-    }
+   public Table groupBy( int[] fields, Accumulator... accumulators ) {
+      class HashCodeCache {
+         public Object[] values;
+         private int hashCode;
 
-    public Table sortedStreamGroupBy( int[] fields, Accumulator... accumulators ) {
-        PeekingIterator<List<Object>> iterator = Iterators.peekingIterator( sort( fields ).lines.iterator() );
-        class DistinctIterator implements Iterator<List<Object>> {
+         public void reset( Object[] values ) {
+            this.values = values;
 
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
+            int result = 1;
 
-            @Override
-            public List<Object> next() {
-                for( Accumulator formula : accumulators ) formula.reset();
-                while( iterator.hasNext() ) {
-                    List<Object> current = iterator.next();
-                    for( Accumulator accumulator : accumulators ) accumulator.accumulate( current );
-                    if( !iterator.hasNext() || !distinctiveEquals( current, iterator.peek() ) )
-                        return result( current, accumulators );
-                }
-                throw new NoSuchElementException();
-            }
+            for( Object element : values )
+               result = 31 * result + element.hashCode();
 
-            private List<Object> result( List<Object> l, Accumulator[] accumulators ) {
-                ArrayList<Object> result = new ArrayList<>();
-                for( int field : fields ) result.add( l.get( field ) );
-                for( Accumulator accumulator : accumulators ) result.add( accumulator.result() );
-                return result;
-            }
+            hashCode = result;
+         }
 
-            private boolean distinctiveEquals( List<Object> a, List<Object> b ) {
-                for( int field : fields ) if( !Objects.equals( a.get( field ), b.get( field ) ) ) return false;
-                return true;
-            }
-        }
-        this.lines = Stream.of( new DistinctIterator() );
-        return this;
-    }
+         @Override
+         public boolean equals( Object obj ) {
+            final HashCodeCache obj1 = ( HashCodeCache ) obj;
+            final Object[] values = obj1.values;
 
-    public Table groupBy( int[] fields, Accumulator... accumulators ) {
-        class HashCodeCache {
-            public final Object[] values;
-            private final int hashCode;
-
-            public HashCodeCache( Object[] values ) {
-                this.values = values;
-
-                int result = 1;
-
-                for( Object element : values )
-                    result = 31 * result + element.hashCode();
-
-                hashCode = result;
-            }
-
-            @Override
-            public boolean equals( Object obj ) {
-                final HashCodeCache obj1 = ( HashCodeCache ) obj;
-                final Object[] values = obj1.values;
-
-                for( int i = 0; i < values.length; i++ ) {
-                    if( !values[i].equals( this.values[i] ) ) return false;
-                }
-
-                return true;
+            for( int i = 0; i < values.length; i++ ) {
+               if( !values[i].equals( this.values[i] ) ) return false;
             }
 
-            @Override
-            public int hashCode() {
-                return hashCode;
+            return true;
+         }
+
+         @Override
+         public int hashCode() {
+            return hashCode;
+         }
+      }
+
+      class Data {
+         final Object[] keys;
+         final Accumulator[] accumulators;
+
+         public Data( Object[] keys, Accumulator[] accumulators ) {
+            this.keys = Arrays.copyOf( keys, keys.length );
+            this.accumulators = new Accumulator[accumulators.length];
+            for( int i = 0; i < accumulators.length; i++ ) {
+               this.accumulators[i] = accumulators[i].clone();
             }
-        }
+         }
 
-        class Data {
-            final Object[] keys;
-            final Accumulator[] accumulators;
+         public List<Object> values() {
+            final ArrayList<Object> result = new ArrayList<>( keys.length + accumulators.length );
+            Collections.addAll( result, keys );
+            for( Accumulator accumulator : accumulators ) result.add( accumulator.result() );
+            return result;
+         }
+      }
 
-            public Data( Object[] keys, Accumulator[] accumulators ) {
-                this.keys = Arrays.copyOf( keys, keys.length );
-                this.accumulators = new Accumulator[accumulators.length];
-                for(int i = 0; i < accumulators.length;i++) {
-                    this.accumulators[i] = accumulators[i].clone();
-                }
-            }
+      final HashMap<HashCodeCache, Data> agg = new HashMap<>();
 
-            public List<Object> values() {
-                final ArrayList<Object> result = new ArrayList<>( keys.length + accumulators.length );
-                Collections.addAll( result, keys );
-                for( Accumulator accumulator : accumulators ) result.add( accumulator.result() );
-                return result;
-            }
-        }
+      Object[] keys = new Object[fields.length];
+      HashCodeCache hashCodeCache = new HashCodeCache();
 
-        final HashMap<HashCodeCache, Data> agg = new HashMap<>();
+      final Iterator<List<Object>> iterator = lines.iterator();
+      while( iterator.hasNext() ) {
+         final List<Object> row = iterator.next();
 
-        final Object[] keys = new Object[fields.length];
+         fillKey( fields, row, keys );
+         hashCodeCache.reset( keys );
 
-        lines.forEach( row -> {
-            fillKey( fields, row, keys );
+         final HashCodeCache hck = hashCodeCache;
+         Data d = agg.get( hck );
+         if( d == null ) {
+            d = new Data( keys, accumulators );
+            agg.put( hck, d );
+            hashCodeCache = new HashCodeCache();
+            keys = new Object[fields.length];
+         }
 
-            for( Accumulator accumulator : agg
-                .computeIfAbsent( new HashCodeCache( keys ), ( i ) -> new Data( keys, accumulators ) )
-                .accumulators )
-                accumulator.accumulate( row );
-        } );
+         for( Accumulator accumulator : d.accumulators )
+            accumulator.accumulate( row );
+      }
 
-        this.lines = Stream.of( agg.values().stream().map( Data::values ) );
-        return this;
-    }
+      this.lines = Stream.of( agg.values().stream().map( Data::values ) );
+      return this;
+   }
 
-    private void fillKey( int[] fields, List<Object> row, Object[] key ) {
-        for( int i = 0; i < fields.length; i++ ) {
-            key[i] = row.get( fields[i] );
-        }
-    }
+   private void fillKey( int[] fields, List<Object> row, Object[] key ) {
+      for( int i = 0; i < fields.length; i++ ) {
+         key[i] = row.get( fields[i] );
+      }
+   }
 
-    public Table join( int keyPos, List<Join> joins ) {
-        return transform( line -> {
-            for( Join join : joins ) line.addAll( join.on( ( String ) line.get( keyPos ) ) );
-        } );
-    }
+   public Table join( int keyPos, List<Join> joins ) {
+      return transform( line -> {
+         for( Join join : joins ) line.addAll( join.on( ( String ) line.get( keyPos ) ) );
+      } );
+   }
 
-    public Table join( int keyPos, Join... joins ) {
-        return join( keyPos, Lists.of( joins ) );
-    }
+   public Table join( int keyPos, Join... joins ) {
+      return join( keyPos, Lists.of( joins ) );
+   }
 
-    public void compute() {
-        lines.drain();
-        closeHandlers.forEach( Runnable::run );
-    }
+   public void compute() {
+      lines.drain();
+      closeHandlers.forEach( Runnable::run );
+   }
 }

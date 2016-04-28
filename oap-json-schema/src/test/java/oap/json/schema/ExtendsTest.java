@@ -123,4 +123,76 @@ public class ExtendsTest extends AbstractSchemaTest {
       vOk( schema, "{'o': [{'a1':'test'}]}", ( url ) -> schema2, false );
       vOk( schema, "{'o': [{'a2':'test'}]}", ( url ) -> schema2, false );
    }
+
+   @Test
+   public void testMergeInnerSchema() {
+      String schema = "{" +
+         "type: object," +
+         "additionalProperties: false," +
+         "extends: test2," +
+         "properties: {" +
+         "  o: {" +
+         "    type:array," +
+         "    items {" +
+         "      type: object," +
+         "      extends: test11," +
+         "      properties {" +
+         "        a1: {type:string}" +
+         "      }" +
+         "    }" +
+         "}" +
+         "}" +
+         "}";
+
+      String schema2 = "{" +
+         "type:object," +
+         "properties: {" +
+         "  o: {" +
+         "    type:array," +
+         "    items {" +
+         "      type: object," +
+         "      extends: test22," +
+         "      properties {" +
+         "        a2: {type:string}" +
+         "      }" +
+         "    }" +
+         "}" +
+         "}" +
+         "}";
+
+      String schema11 = "{" +
+         "type:object," +
+         "extends: test22," +
+         "properties: {" +
+         "  a11: {type:string}" +
+         "}" +
+         "}";
+
+      String schema22 = "{" +
+         "type:object," +
+         "properties: {" +
+         "  a21: {type:string}" +
+         "}" +
+         "}";
+
+      SchemaStorage func = ( url ) -> {
+         switch( url ) {
+            case "test2":
+               return schema2;
+            case "test11":
+               return schema11;
+            case "test22":
+               return schema22;
+            default:
+               throw new IllegalAccessError();
+         }
+      };
+
+      vOk( schema, "{'o': [{'a1':'test'}]}", func, false );
+      vOk( schema, "{'o': [{'a2':'test'}]}", func, false );
+      vOk( schema, "{'o': [{'a11':'test'}]}", func, false );
+      vOk( schema, "{'o': [{'a21':'test'}]}", func, false );
+
+      vFail( schema, "{'o': [{'unknown':'test'}]}", "/o/0: additional properties are not permitted [unknown]", func );
+   }
 }

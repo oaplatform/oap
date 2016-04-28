@@ -44,7 +44,7 @@ import java.util.stream.IntStream;
 /**
  * Created by Igor Petrenko on 27.04.2016.
  */
-@Test( enabled = false )
+//@Test( enabled = false )
 public class AccumulatorPerformance extends AbstractPerformance {
 
     private Path path1;

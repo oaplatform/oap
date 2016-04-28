@@ -26,7 +26,7 @@ package oap.etl;
 import java.util.List;
 import java.util.function.Predicate;
 
-public interface Accumulator {
+public interface Accumulator<T extends Accumulator<T>> {
 
     static Accumulator count() {
         return new CountAccumulator();
@@ -58,9 +58,9 @@ public interface Accumulator {
 
     Object result();
 
-    Accumulator clone();
+    T clone();
 
-    class CountAccumulator implements Accumulator {
+    class CountAccumulator implements Accumulator<CountAccumulator> {
         private long count;
 
         @Override
@@ -79,12 +79,12 @@ public interface Accumulator {
         }
 
         @Override
-        public Accumulator clone() {
+        public CountAccumulator clone() {
             return new CountAccumulator();
         }
     }
 
-    class IntegerSumAccumulator implements Accumulator {
+    class IntegerSumAccumulator implements Accumulator<IntegerSumAccumulator> {
         private int field;
         private int sum;
 
@@ -108,12 +108,12 @@ public interface Accumulator {
         }
 
         @Override
-        public Accumulator clone() {
+        public IntegerSumAccumulator clone() {
             return new IntegerSumAccumulator( field );
         }
     }
 
-    class LongSumAccumulator implements Accumulator {
+    class LongSumAccumulator implements Accumulator<LongSumAccumulator> {
         private int field;
         private long sum;
 
@@ -137,12 +137,12 @@ public interface Accumulator {
         }
 
         @Override
-        public Accumulator clone() {
+        public LongSumAccumulator clone() {
             return new LongSumAccumulator( field );
         }
     }
 
-    class AvgAccumulator implements Accumulator {
+    class AvgAccumulator implements Accumulator<AvgAccumulator> {
         private int field;
         private double sum;
         private int count;
@@ -169,12 +169,12 @@ public interface Accumulator {
         }
 
         @Override
-        public Accumulator clone() {
+        public AvgAccumulator clone() {
             return new AvgAccumulator( field );
         }
     }
 
-    class CostAccumulator implements Accumulator {
+    class CostAccumulator implements Accumulator<CostAccumulator> {
         private int moneyField;
         private int eventField;
         private long money;
@@ -203,12 +203,12 @@ public interface Accumulator {
         }
 
         @Override
-        public Accumulator clone() {
+        public CostAccumulator clone() {
             return new CostAccumulator( moneyField, eventField );
         }
     }
 
-    class Filter<T> implements Accumulator {
+    class Filter<T> implements Accumulator<Filter<T>> {
         private final Accumulator accumulator;
         private final Predicate<T> filter;
         private int field;
@@ -236,7 +236,7 @@ public interface Accumulator {
         }
 
         @Override
-        public Accumulator clone() {
+        public Filter<T> clone() {
             return new Filter<>( accumulator, field, filter );
         }
     }
