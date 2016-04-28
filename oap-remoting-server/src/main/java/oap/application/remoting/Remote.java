@@ -21,11 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application.remote;
+package oap.application.remoting;
 
 import com.google.common.io.ByteStreams;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Application;
+import oap.application.remote.FST;
+import oap.application.remote.RemoteInvocation;
+import oap.application.remote.RemoteInvocationException;
 import oap.http.*;
 import oap.util.Result;
 import oap.util.Try;
@@ -37,7 +40,7 @@ import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class Remote implements Handler {
-   private static final ThreadLocal<FST> FST = new ThreadLocal<FST>() {
+   private static final ThreadLocal<oap.application.remote.FST> FST = new ThreadLocal<FST>() {
       public FST initialValue() {
          return new FST();
       }
