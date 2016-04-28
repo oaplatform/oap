@@ -32,8 +32,8 @@ import java.util.Optional;
 /**
  * Created by Igor Petrenko on 15.01.2016.
  */
-class FST {
-   FSTConfiguration conf;
+public class FST {
+   public FSTConfiguration conf;
 
    public FST() {
       conf = FSTConfiguration.createFastBinaryConfiguration();
