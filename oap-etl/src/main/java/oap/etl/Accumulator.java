@@ -237,7 +237,7 @@ public interface Accumulator<T extends Accumulator<T>> {
 
         @Override
         public Filter<T> clone() {
-            return new Filter<>( accumulator, field, filter );
+            return new Filter<>( accumulator.clone(), field, filter );
         }
     }
 }

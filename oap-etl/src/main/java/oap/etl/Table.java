@@ -170,7 +170,7 @@ public class Table {
          final Accumulator[] accumulators;
 
          public Data( Object[] keys, Accumulator[] accumulators ) {
-            this.keys = Arrays.copyOf( keys, keys.length );
+            this.keys = keys;
             this.accumulators = new Accumulator[accumulators.length];
             for( int i = 0; i < accumulators.length; i++ ) {
                this.accumulators[i] = accumulators[i].clone();
@@ -197,11 +197,10 @@ public class Table {
          fillKey( fields, row, keys );
          hashCodeCache.reset( keys );
 
-         final HashCodeCache hck = hashCodeCache;
-         Data d = agg.get( hck );
+         Data d = agg.get( hashCodeCache );
          if( d == null ) {
             d = new Data( keys, accumulators );
-            agg.put( hck, d );
+            agg.put( hashCodeCache, d );
             hashCodeCache = new HashCodeCache();
             keys = new Object[fields.length];
          }
