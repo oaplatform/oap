@@ -67,15 +67,6 @@ public class KernelTest extends AbstractTest {
             ServiceDepsList depsList = Application.service( ServiceDepsList.class );
             assertNotNull( depsList );
             assertThat( depsList.deps ).contains( one, two );
-
-            TestBean b1 = new TestBean( "v1", 1 );
-            TestBean b2 = new TestBean( "v2", 2 );
-
-            assertThat( Application.<Hello>service( "hello" ).hello( Lists.of( b1, b2 ) ) ).contains( b1, b2 );
-            assertThat( two.beans ).contains( b1, b2 );
-
-            Application.<Hello>service( "hello" ).voidMethod( "test" );
-            assertString( two.test ).isEqualTo( "test" );
          } );
       } finally {
          kernel.stop();

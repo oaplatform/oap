@@ -36,7 +36,7 @@ public class ApplicationConfigurationTest {
          pathOfTestResource( KernelTest.class, "application.conf" ),
          pathOfTestResource( KernelTest.class, "conf.d" )
       );
-      assertThat( config.services ).hasSize( 3 );
+      assertThat( config.services ).hasSize( 2 );
       config.services.forEach( ( k, v ) -> System.out.println( k + " -> " + v ) );
    }
 }
