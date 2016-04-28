@@ -37,6 +37,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import static java.util.Arrays.asList;
+
 public class Table {
     private Stream<List<Object>> lines;
     private List<Runnable> closeHandlers = new ArrayList<>();
@@ -94,7 +96,7 @@ public class Table {
         return this;
     }
 
-    public Table groupBy( int[] fields, Accumulator... accumulators ) {
+    public Table sortedStreamGroupBy( int[] fields, Accumulator... accumulators ) {
         PeekingIterator<List<Object>> iterator = Iterators.peekingIterator( sort( fields ).lines.iterator() );
         class DistinctIterator implements Iterator<List<Object>> {
 
@@ -129,6 +131,83 @@ public class Table {
         }
         this.lines = Stream.of( new DistinctIterator() );
         return this;
+    }
+
+    public Table groupBy( int[] fields, Accumulator... accumulators ) {
+        class HashCodeCache {
+            public final Object[] values;
+            private final int hashCode;
+
+            public HashCodeCache( Object[] values ) {
+                this.values = values;
+
+                int result = 1;
+
+                for( Object element : values )
+                    result = 31 * result + element.hashCode();
+
+                hashCode = result;
+            }
+
+            @Override
+            public boolean equals( Object obj ) {
+                final HashCodeCache obj1 = ( HashCodeCache ) obj;
+                final Object[] values = obj1.values;
+
+                for( int i = 0; i < values.length; i++ ) {
+                    if( !values[i].equals( this.values[i] ) ) return false;
+                }
+
+                return true;
+            }
+
+            @Override
+            public int hashCode() {
+                return hashCode;
+            }
+        }
+
+        class Data {
+            final Object[] keys;
+            final Accumulator[] accumulators;
+
+            public Data( Object[] keys, Accumulator[] accumulators ) {
+                this.keys = Arrays.copyOf( keys, keys.length );
+                this.accumulators = new Accumulator[accumulators.length];
+                for(int i = 0; i < accumulators.length;i++) {
+                    this.accumulators[i] = accumulators[i].clone();
+                }
+            }
+
+            public List<Object> values() {
+                final ArrayList<Object> result = new ArrayList<>( keys.length + accumulators.length );
+                Collections.addAll( result, keys );
+                for( Accumulator accumulator : accumulators ) result.add( accumulator.result() );
+                return result;
+            }
+        }
+
+        final HashMap<HashCodeCache, Data> agg = new HashMap<>();
+
+        final Object[] keys = new Object[fields.length];
+
+        lines.forEach( row -> {
+            fillKey( fields, row, keys );
+
+            for( Accumulator accumulator : agg
+                .computeIfAbsent( new HashCodeCache( keys ), ( i ) -> new Data( keys, accumulators ) )
+                .accumulators )
+                accumulator.accumulate( row );
+        } );
+
+        this.lines = Stream.of( agg.values().stream().map( Data::values ) );
+        return this;
+    }
+
+    private void fillKey( int[] fields, List<Object> row, Object[] key ) {
+        for( int i = 0; i < fields.length; i++ ) {
+            key[i] = row.get( fields[i] );
+        }
     }
 
     public Table join( int keyPos, List<Join> joins ) {

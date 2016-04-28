@@ -28,12 +28,6 @@ import java.util.function.Predicate;
 
 public interface Accumulator {
 
-    void accumulate( List<Object> values );
-
-    void reset();
-
-    Object result();
-
     static Accumulator count() {
         return new CountAccumulator();
     }
@@ -58,6 +52,14 @@ public interface Accumulator {
         return new Filter<>( accumulator, fileld, filter );
     }
 
+    void accumulate( List<Object> values );
+
+    void reset();
+
+    Object result();
+
+    Accumulator clone();
+
     class CountAccumulator implements Accumulator {
         private long count;
 
@@ -75,6 +77,11 @@ public interface Accumulator {
         public Long result() {
             return this.count;
         }
+
+        @Override
+        public Accumulator clone() {
+            return new CountAccumulator();
+        }
     }
 
     class IntegerSumAccumulator implements Accumulator {
@@ -87,7 +94,7 @@ public interface Accumulator {
 
         @Override
         public void accumulate( List<Object> values ) {
-            this.sum += ((Number) values.get( this.field )).intValue();
+            this.sum += ( ( Number ) values.get( this.field ) ).intValue();
         }
 
         @Override
@@ -98,6 +105,11 @@ public interface Accumulator {
         @Override
         public Integer result() {
             return this.sum;
+        }
+
+        @Override
+        public Accumulator clone() {
+            return new IntegerSumAccumulator( field );
         }
     }
 
@@ -111,7 +123,7 @@ public interface Accumulator {
 
         @Override
         public void accumulate( List<Object> values ) {
-            this.sum += ((Number) values.get( this.field )).longValue();
+            this.sum += ( ( Number ) values.get( this.field ) ).longValue();
         }
 
         @Override
@@ -122,6 +134,11 @@ public interface Accumulator {
         @Override
         public Long result() {
             return this.sum;
+        }
+
+        @Override
+        public Accumulator clone() {
+            return new LongSumAccumulator( field );
         }
     }
 
@@ -136,7 +153,7 @@ public interface Accumulator {
 
         @Override
         public void accumulate( List<Object> values ) {
-            this.sum += ((Number) values.get( this.field )).doubleValue();
+            this.sum += ( ( Number ) values.get( this.field ) ).doubleValue();
             this.count++;
         }
 
@@ -149,6 +166,11 @@ public interface Accumulator {
         @Override
         public Double result() {
             return this.count > 0 ? this.sum / this.count : 0.0;
+        }
+
+        @Override
+        public Accumulator clone() {
+            return new AvgAccumulator( field );
         }
     }
 
@@ -165,8 +187,8 @@ public interface Accumulator {
 
         @Override
         public void accumulate( List<Object> values ) {
-            this.money += ((Number) values.get( this.moneyField )).longValue();
-            this.events += ((Number) values.get( this.eventField )).longValue();
+            this.money += ( ( Number ) values.get( this.moneyField ) ).longValue();
+            this.events += ( ( Number ) values.get( this.eventField ) ).longValue();
         }
 
         @Override
@@ -179,12 +201,17 @@ public interface Accumulator {
         public Double result() {
             return this.events > 0 ? this.money / this.events : 0.0;
         }
+
+        @Override
+        public Accumulator clone() {
+            return new CostAccumulator( moneyField, eventField );
+        }
     }
 
     class Filter<T> implements Accumulator {
         private final Accumulator accumulator;
-        private int field;
         private final Predicate<T> filter;
+        private int field;
 
         public Filter( Accumulator accumulator, int field, Predicate<T> filter ) {
             this.accumulator = accumulator;
@@ -195,7 +222,7 @@ public interface Accumulator {
         @SuppressWarnings( "unchecked" )
         @Override
         public void accumulate( List<Object> values ) {
-            if( filter.test( (T) values.get( field ) ) ) accumulator.accumulate( values );
+            if( filter.test( ( T ) values.get( field ) ) ) accumulator.accumulate( values );
         }
 
         @Override
@@ -206,6 +233,11 @@ public interface Accumulator {
         @Override
         public Object result() {
             return accumulator.result();
+        }
+
+        @Override
+        public Accumulator clone() {
+            return new Filter<>( accumulator, field, filter );
         }
     }
 }

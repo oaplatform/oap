@@ -47,6 +47,10 @@ public class CountingKeyJoin implements Join {
         return fromTsv( Tsv.fromPaths( paths, encoding, complexModel ) );
     }
 
+    public static CountingKeyJoin fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model model ) {
+        return fromTsv( Tsv.fromPaths( paths, encoding, model ) );
+    }
+
     private static CountingKeyJoin fromTsv( Stream<List<Object>> tsv ) {
         return tsv.foldLeft( new CountingKeyJoin(), ( j, list ) -> {
             j.map.computeIfAbsent( ( String ) list.get( 0 ), k -> new MutableLong() ).increment();
