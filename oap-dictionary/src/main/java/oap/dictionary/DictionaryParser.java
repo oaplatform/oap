@@ -68,13 +68,13 @@ public class DictionaryParser {
     }
 
     @SuppressWarnings( "unchecked" )
-    private static Dictionary.DictionaryValue parseAsDictionaryValue( Object value, String path ) {
+    private static DictionaryValue parseAsDictionaryValue( Object value, String path ) {
         if( value instanceof Map ) {
             final Map<Object, Object> valueMap = ( Map<Object, Object> ) value;
             final String id = getString( valueMap, ID );
             final boolean enabled = getBooleanOpt( valueMap, ENABLED ).orElse( true );
             final long externalId = getLong( valueMap, EXTERNAL_ID, true );
-            List<Dictionary.DictionaryValue> values = emptyList();
+            List<DictionaryValue> values = emptyList();
 
             final HashMap<String, Object> properties = new HashMap<>();
             for( Map.Entry e : valueMap.entrySet() ) {
@@ -89,7 +89,7 @@ public class DictionaryParser {
                 }
             }
 
-            return new Dictionary.DictionaryValue( id, enabled, externalId, values, properties.isEmpty() ? emptyMap() : properties );
+            return new DictionaryValue( id, enabled, externalId, values, properties.isEmpty() ? emptyMap() : properties );
         } else {
             throw new DictionaryFormatError(
                 "value " + path + " type " +
@@ -98,32 +98,32 @@ public class DictionaryParser {
         }
     }
 
-    public static Dictionary parse( Path resource ) {
+    public static DictionaryRoot parse( Path resource ) {
         final Map map = Binder.json.unmarshal( Map.class, resource );
         return parse( map );
     }
 
-    public static Dictionary parse( URL resource ) {
+    public static DictionaryRoot parse( URL resource ) {
         final Map map = Binder.json.unmarshal( Map.class, resource );
         return parse( map );
     }
 
-    public static Dictionary parse( String resource ) {
+    public static DictionaryRoot parse( String resource ) {
         final Map map = Binder.json.unmarshalResource( DictionaryParser.class, Map.class, resource ).get();
 
         return parse( map );
     }
 
-    private static Dictionary parse( Map map ) {
+    private static DictionaryRoot parse( Map map ) {
         final String name = getString( map, NAME );
 
         final List values = getList( map, VALUES );
 
-        return new Dictionary( name, parseValues( values, "" ) );
+        return new DictionaryRoot( name, parseValues( values, "" ) );
     }
 
-    private static ArrayList<Dictionary.DictionaryValue> parseValues( List values, String path ) {
-        final ArrayList<Dictionary.DictionaryValue> dv = new ArrayList<>();
+    private static ArrayList<DictionaryValue> parseValues( List values, String path ) {
+        final ArrayList<DictionaryValue> dv = new ArrayList<>();
 
         for( int i = 0; i < values.size(); i++ ) {
             final Object value = values.get( i );
@@ -169,7 +169,7 @@ public class DictionaryParser {
         throw new DictionaryFormatError( "field '" + field + "' type " + f.getClass() + " != " + clazz );
     }
 
-    public static void serialize( Dictionary dictionary, Path path ) {
+    public static void serialize( DictionaryRoot dictionary, Path path ) {
         try( final JsonGenerator jsonGenerator = Binder.json.getJsonGenerator( path ) ) {
             jsonGenerator.writeStartObject();
 
@@ -183,7 +183,7 @@ public class DictionaryParser {
         }
     }
 
-    private static void writeValues( JsonGenerator jsonGenerator, List<Dictionary.DictionaryValue> values ) throws IOException {
+    private static void writeValues( JsonGenerator jsonGenerator, List<DictionaryValue> values ) throws IOException {
         if( values.isEmpty() ) return;
 
         jsonGenerator.writeFieldName( VALUES );

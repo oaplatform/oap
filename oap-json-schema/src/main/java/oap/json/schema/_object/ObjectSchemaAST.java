@@ -35,7 +35,7 @@ public class ObjectSchemaAST extends SchemaAST<ObjectSchemaAST> {
 
    public ObjectSchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
                            Optional<String> extendsValue, LinkedHashMap<String, SchemaAST> properties ) {
-      super( common );
+      super( common, path );
       this.additionalProperties = additionalProperties;
       this.extendsValue = extendsValue;
       this.properties = properties;

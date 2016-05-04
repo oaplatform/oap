@@ -22,13 +22,34 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.json.schema;
+
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Optional;
 
 /**
- * Created by Igor Petrenko on 15.04.2016.
+ * Created by Igor Petrenko on 19.04.2016.
  */
-public class DictionaryNotFoundError extends DictionaryError {
-   public DictionaryNotFoundError( String dictionaryName ) {
-      super( "DictionaryRoot '" + dictionaryName + "' not found " );
+public class SchemaWrapperPath {
+   private final String[] paths;
+
+   public SchemaWrapperPath( String path ) {
+      paths = StringUtils.split( path, '.' );
+   }
+
+   private static Optional<SchemaASTWrapper> traverse( SchemaASTWrapper schema, String[] paths, int index ) {
+      if( index >= paths.length ) return Optional.of( schema );
+
+      if( schema instanceof ContainerSchemaASTWrapper ) {
+         final String property = paths[index];
+         final SchemaASTWrapper s = ( ( ContainerSchemaASTWrapper ) schema ).getChildren().get( property );
+         if( s == null ) return Optional.empty();
+         return traverse( s, paths, index + 1 );
+      } else return Optional.empty();
+   }
+
+   public final Optional<SchemaASTWrapper> traverse( SchemaASTWrapper schema ) {
+      return traverse( schema, paths, 0 );
    }
 }

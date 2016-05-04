@@ -35,7 +35,7 @@ public class StringSchemaAST extends SchemaAST<StringSchemaAST> {
 
    public StringSchemaAST( SchemaAST.CommonSchemaAST common, Optional<Integer> minLength, Optional<Integer> maxLength,
                            Optional<Pattern> pattern ) {
-      super( common );
+      super( common, path );
       this.minLength = minLength;
       this.maxLength = maxLength;
       this.pattern = pattern;

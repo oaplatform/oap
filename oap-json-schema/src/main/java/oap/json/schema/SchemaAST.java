@@ -28,10 +28,12 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public abstract class SchemaAST<T extends SchemaAST<T>> {
+   public final String path;
    public final CommonSchemaAST common;
 
-   public SchemaAST( CommonSchemaAST common ) {
+   public SchemaAST( CommonSchemaAST common, String path ) {
       this.common = common;
+      this.path = path;
    }
 
    public abstract T merge( T cs );

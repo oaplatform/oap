@@ -38,12 +38,12 @@ public class DictionaryTest extends AbstractTest {
     @Test
     public void testParse() {
         assertThat( Dictionaries.getDictionary( "test-dictionary" ).name ).isEqualTo( "test-dictionary" );
-        assertThat( Dictionaries.getDictionary( "test-dictionary" ).values ).contains( new Dictionary.DictionaryValue( "id2", true, '2',
+        assertThat( Dictionaries.getDictionary( "test-dictionary" ).values ).contains( new DictionaryValue( "id2", true, '2',
             Maps.of( __( "title", "title2" ) ) )
         );
 
         assertThat( Dictionaries.getDictionary( "test-dictionary" ).values.get( 0 ).values ).contains(
-            new Dictionary.DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
+            new DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
         );
     }
 }

@@ -27,8 +27,9 @@ import oap.util.Either;
 
 import java.util.*;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
-public interface JsonSchemaValidator<A extends SchemaAST> {
+public interface JsonSchemaValidator<A extends SchemaAST<A>> {
    Either<List<String>, Object> validate( JsonValidatorProperties properties, A schema, Object value );
 
    default String getType( Object object ) {
@@ -42,16 +43,17 @@ public interface JsonSchemaValidator<A extends SchemaAST> {
          throw new Error( "Unknown type " + ( object != null ? object.getClass() : "<NULL???>" ) + ", fix me!!!" );
    }
 
-   SchemaAST parse( JsonSchemaParserProperties properties );
+   SchemaASTWrapper<A, ? extends SchemaASTWrapper> parse( JsonSchemaParserContext context );
 
-   default DefaultSchemaAST defaultParse( JsonSchemaParserProperties properties ) {
-      SchemaAST.CommonSchemaAST common = node( properties ).asCommon();
+   default DefaultSchemaASTWrapper defaultParse( JsonSchemaParserContext context ) {
+      final DefaultSchemaASTWrapper wrapper = new DefaultSchemaASTWrapper( context.getId() );
+      wrapper.common = node( context ).asCommon();
 
-      return new DefaultSchemaAST( common );
+      return wrapper;
    }
 
-   default NodeParser node( JsonSchemaParserProperties properties ) {
-      return new NodeParser( properties );
+   default NodeParser node( JsonSchemaParserContext context ) {
+      return new NodeParser( context );
    }
 
    class PropertyParser<A> {
@@ -71,9 +73,9 @@ public interface JsonSchemaValidator<A extends SchemaAST> {
    }
 
    class NodeParser {
-      private final JsonSchemaParserProperties properties;
+      private final JsonSchemaParserContext properties;
 
-      public NodeParser( JsonSchemaParserProperties properties ) {
+      public NodeParser( JsonSchemaParserContext properties ) {
          this.properties = properties;
       }
 
@@ -96,9 +98,20 @@ public interface JsonSchemaValidator<A extends SchemaAST> {
          return new PropertyParser<>( Optional.ofNullable( ( String ) properties.node.get( property ) ) );
       }
 
-      public PropertyParser<SchemaAST> asAST( String property ) {
+      public PropertyParser<Map<?, ?>> asMap( String property ) {
+         return new PropertyParser<>( Optional.ofNullable( ( Map<?, ?> ) properties.node.get( property ) ) );
+      }
+
+      public PropertyParser<Pattern> asPattern( String property ) {
+         return new PropertyParser<>( Optional.ofNullable( ( String ) properties.node.get( property ) ).map( Pattern::compile ) );
+      }
+
+      public PropertyParser<SchemaASTWrapper> asAST( String property, JsonSchemaParserContext context ) {
          return new PropertyParser<>(
-            Optional.ofNullable( properties.node.get( property ) ).map( properties.mapParser::apply ) );
+            Optional.ofNullable( context.node.get( property ) ).map( n -> {
+               final JsonSchemaParserContext newContext = context.withNode( property, n );
+               return newContext.ast.computeIfAbsent( newContext.getId(), ( id ) -> context.mapParser.apply( newContext ) );
+            } ) );
       }
 
       @SuppressWarnings( "unchecked" )
@@ -127,14 +140,19 @@ public interface JsonSchemaValidator<A extends SchemaAST> {
       }
 
       @SuppressWarnings( "unchecked" )
-      public PropertyParser<LinkedHashMap<String, SchemaAST>> asMapAST( String property ) {
-         LinkedHashMap<String, SchemaAST> p = new LinkedHashMap<>();
+      public PropertyParser<LinkedHashMap<String, SchemaASTWrapper>> asMapAST( String property, JsonSchemaParserContext context ) {
+         LinkedHashMap<String, SchemaASTWrapper> p = new LinkedHashMap<>();
 
          Optional<Map<Object, Object>> map =
-            Optional.ofNullable( ( Map<Object, Object> ) properties.node.get( property ) );
+            Optional.ofNullable( ( Map<Object, Object> ) context.node.get( property ) );
 
          map.ifPresent(
-            m -> m.forEach( ( key, value ) -> p.put( ( String ) key, properties.mapParser.apply( value ) ) )
+            m -> m.forEach( ( okey, value ) -> {
+               final String key = ( String ) okey;
+               final JsonSchemaParserContext newContext = context.withNode( key, value );
+               final SchemaASTWrapper astw = newContext.ast.computeIfAbsent( newContext.getId(), ( id ) -> context.mapParser.apply( newContext ) );
+               p.put( key, astw );
+            } )
          );
 
          return new PropertyParser<>( map.map( v -> p ) );

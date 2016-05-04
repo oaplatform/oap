@@ -26,19 +26,23 @@ package oap.json.schema._dictionary;
 
 import oap.json.schema.SchemaAST;
 
+import java.util.Optional;
+
 /**
  * Created by Igor Petrenko on 12.04.2016.
  */
 public class DictionarySchemaAST extends SchemaAST<DictionarySchemaAST> {
    public final String name;
+   public final Optional<DictionarySchemaAST> parent;
 
-   public DictionarySchemaAST( CommonSchemaAST common, String name ) {
-      super( common );
+   public DictionarySchemaAST( CommonSchemaAST common, String name, Optional<DictionarySchemaAST> parent ) {
+      super( common, path );
       this.name = name;
+      this.parent = parent;
    }
 
    @Override
    public DictionarySchemaAST merge( DictionarySchemaAST cs ) {
-      return new DictionarySchemaAST( common.merge( cs.common ), name );
+      return new DictionarySchemaAST( common.merge( cs.common ), name, parent );
    }
 }

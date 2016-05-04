@@ -24,101 +24,23 @@
 
 package oap.dictionary;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.stream.Collectors.toList;
+import java.util.Optional;
 
 /**
- * Created by Igor Petrenko on 14.04.2016.
+ * Created by Igor Petrenko on 29.04.2016.
  */
-@EqualsAndHashCode
-@ToString
-public final class Dictionary {
-    public final String name;
-    public final List<DictionaryValue> values;
+public interface Dictionary {
+   long getOrDefault( String id, long defaultValue );
 
-    @JsonIgnore
-    private final HashMap<Long, String> indexByExternalId = new HashMap<>();
-    @JsonIgnore
-    private final HashMap<String, Long> indexById = new HashMap<>();
+   String getOrDefault( long externlId, String defaultValue );
 
-    public Dictionary( String name, List<DictionaryValue> values ) {
-        this.name = name;
-        this.values = values;
+   boolean containsValueWithId( String id );
 
-        for( DictionaryValue dv : values ) {
-            indexById.put( dv.id, dv.externalId );
-            indexByExternalId.put( dv.externalId, dv.id );
-        }
-    }
+   List<String> ids();
 
-    public final String getOrDefault( long externlId, String defaultValue ) {
-        final String id = indexByExternalId.get( externlId );
-        if( id == null ) return defaultValue;
-        return id;
-    }
+   Map<String, Object> getProperties();
 
-    public final long getOrDefault( String id, long defaultValue ) {
-        final Long rtb = indexById.get( id );
-        if( rtb == null ) return defaultValue;
-        return rtb;
-    }
-
-    public boolean containsValueWithId( String id ) {
-        return indexById.containsKey( id );
-    }
-
-    public List<String> ids() {
-        return values.stream().map( v -> v.id ).collect( toList() );
-    }
-
-    @EqualsAndHashCode
-    @ToString
-    public static class DictionaryValue {
-        public final String id;
-        public final boolean enabled;
-        public final long externalId;
-        public final List<DictionaryValue> values;
-        public final Map<String, Object> properties;
-
-        public DictionaryValue( String id, boolean enabled, long externalId ) {
-            this( id, enabled, externalId, emptyList(), emptyMap() );
-        }
-
-        public DictionaryValue( String id, boolean enabled, long externalId, List<DictionaryValue> values ) {
-            this( id, enabled, externalId, values, emptyMap() );
-        }
-
-        public DictionaryValue(
-            String id,
-            boolean enabled,
-            long externalId,
-            Map<String, Object> properties
-        ) {
-            this( id, enabled, externalId, emptyList(), properties );
-        }
-
-        public DictionaryValue(
-            String id,
-            boolean enabled,
-            long externalId,
-            List<DictionaryValue> values,
-            Map<String, Object> properties
-        ) {
-            this.id = id;
-            this.enabled = enabled;
-            this.externalId = externalId;
-            this.values = values;
-            this.properties = properties;
-        }
-
-    }
+   Optional<Dictionary> getValues( String name );
 }

@@ -25,17 +25,14 @@
 package oap.json.schema._dictionary;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.dictionary.Dictionaries;
-import oap.dictionary.Dictionary;
-import oap.dictionary.DictionaryNotFoundError;
-import oap.json.schema.JsonSchemaParserProperties;
-import oap.json.schema.JsonSchemaValidator;
-import oap.json.schema.JsonValidatorProperties;
-import oap.json.schema.SchemaAST;
+import oap.dictionary.*;
+import oap.json.schema.*;
 import oap.util.Either;
 import oap.util.Lists;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Collections.singletonList;
 
@@ -44,32 +41,47 @@ import static java.util.Collections.singletonList;
  */
 @Slf4j
 public class DictionaryJsonValidator implements JsonSchemaValidator<DictionarySchemaAST> {
-    public DictionaryJsonValidator() {
-    }
+   public DictionaryJsonValidator() {
+   }
 
-    @Override
-    public Either<List<String>, Object> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
-        try {
-            final Dictionary dictionary = Dictionaries.getCachedDictionary( schema.name );
+   @Override
+   public Either<List<String>, Object> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
+      try {
+         Dictionary dictionary = Dictionaries.getCachedDictionary( schema.name );
 
-            if( dictionary.containsValueWithId( String.valueOf( value ) ) ) {
-                return Either.right( value );
-            } else {
-                return Either.left( singletonList(
-                    properties.error( "instance does not match any member of the enumeration [" +
-                        String.join( ",", dictionary.ids() ) + "]"
-                    ) ) );
-            }
-        } catch( DictionaryNotFoundError e ) {
-            return Either.left( Lists.of( properties.error( "dictionary not found" ) ) );
-        }
-    }
+         if( schema.parent.isPresent() ) {
+            final String path = schema.parent.get().path;
+            final Optional<Object> parentValue = new JsonPath( зфер ).traverse( properties.rootJson, path );
+            if( !parentValue.isPresent() && schema.common.required.orElse( false ) )
+               return Either.left( Collections.singletonList(
+                  properties.error( "required property is missing" )
+               ) );
 
-    @Override
-    public SchemaAST parse( JsonSchemaParserProperties properties ) {
-        SchemaAST.CommonSchemaAST common = node( properties ).asCommon();
-        final String name = node( properties ).asString( "name" ).required();
+            dictionary = dictionary.getValues(parentValue.get().toString()).get();
+         }
 
-        return new DictionarySchemaAST( common, name );
-    }
+         if( dictionary.containsValueWithId( String.valueOf( value ) ) ) {
+            return Either.right( value );
+         } else {
+            return Either.left( singletonList(
+               properties.error( "instance does not match any member of the enumeration [" +
+                  String.join( ",", dictionary.ids() ) + "]"
+               ) ) );
+         }
+      } catch( DictionaryNotFoundError e ) {
+         return Either.left( Lists.of( properties.error( "dictionary not found" ) ) );
+      }
+   }
+
+   @Override
+   public DictionarySchemaASTWrapper parse( JsonSchemaParserContext context ) {
+      final DictionarySchemaASTWrapper wrapper = context.createWrapper( DictionarySchemaASTWrapper::new );
+
+      wrapper.common = node( context ).asCommon();
+      wrapper.name = node( context ).asString( "name" ).optional();
+      wrapper.parent = node( context ).asMap( "parent" ).optional()
+         .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ) );
+
+      return wrapper;
+   }
 }

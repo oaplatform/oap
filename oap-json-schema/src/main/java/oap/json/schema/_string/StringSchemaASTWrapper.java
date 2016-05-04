@@ -22,13 +22,26 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.json.schema._string;
 
-/**
- * Created by Igor Petrenko on 15.04.2016.
- */
-public class DictionaryNotFoundError extends DictionaryError {
-   public DictionaryNotFoundError( String dictionaryName ) {
-      super( "DictionaryRoot '" + dictionaryName + "' not found " );
+import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.SchemaASTWrapper;
+import oap.json.schema.SchemaId;
+
+import java.util.Optional;
+import java.util.regex.Pattern;
+
+public class StringSchemaASTWrapper extends SchemaASTWrapper<StringSchemaAST, StringSchemaASTWrapper> {
+   Optional<Integer> minLength;
+   Optional<Integer> maxLength;
+   Optional<Pattern> pattern;
+
+   public StringSchemaASTWrapper( SchemaId id ) {
+      super( id );
+   }
+
+   @Override
+   public StringSchemaAST unwrap( JsonSchemaParserContext context ) {
+      return new StringSchemaAST( common, minLength, maxLength, pattern );
    }
 }

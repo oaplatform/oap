@@ -21,27 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.json.schema._boolean;
+
+package oap.json.schema._dictionary;
 
 import oap.json.schema.*;
-import oap.util.Either;
-import oap.util.Lists;
 
-import java.util.List;
+import java.util.Optional;
 
-public class BooleanJsonValidator implements JsonSchemaValidator<DefaultSchemaAST> {
-   @Override
-   public Either<List<String>, Object> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
-      if( !( value instanceof Boolean ) ) return Either.left(
-         Lists.of(
-            properties.error( "instance is of type " + getType( value ) +
-               ", which is none of the allowed primitive types ([" + schema.common.schemaType +
-               "])" ) ) );
-      return Either.right( value );
+/**
+ * Created by Igor Petrenko on 12.04.2016.
+ */
+public class DictionarySchemaASTWrapper extends SchemaASTWrapper<DictionarySchemaAST, DictionarySchemaASTWrapper> {
+   Optional<String> name;
+   Optional<String> parent;
+
+   public DictionarySchemaASTWrapper( SchemaId id ) {
+      super( id );
    }
 
    @Override
-   public DefaultSchemaASTWrapper parse( JsonSchemaParserContext context ) {
-      return defaultParse( context );
+   public DictionarySchemaAST unwrap( JsonSchemaParserContext context ) {
+      return new DictionarySchemaAST( common, getName( context ), parent.map( p -> getParent( context, p ).unwrap( context ) ) );
+   }
+
+   private String getName( JsonSchemaParserContext context ) {
+      final String name = parent
+         .map( p -> getParent( context, p )
+            .getName( context )
+         )
+         .orElseGet( () -> this.name.get() );
+
+      return name;
+   }
+
+   private DictionarySchemaASTWrapper getParent( JsonSchemaParserContext context, String parent ) {
+      return ( DictionarySchemaASTWrapper ) new SchemaWrapperPath( parent )
+         .traverse( context.getRoot() )
+         .orElseThrow( () -> new ValidationSyntaxException( "[" + id + "] json-path '" + this.parent.get() + "' not found" ) );
    }
 }

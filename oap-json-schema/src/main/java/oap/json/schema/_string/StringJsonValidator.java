@@ -23,57 +23,56 @@
  */
 package oap.json.schema._string;
 
-import oap.json.schema.JsonSchemaParserProperties;
+import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
-import oap.json.schema.SchemaAST;
 import oap.util.Either;
 import oap.util.Lists;
 import oap.util.OptionalList;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
 
 public class StringJsonValidator implements JsonSchemaValidator<StringSchemaAST> {
-    @Override
-    public Either<List<String>, Object> validate( JsonValidatorProperties properties, StringSchemaAST schema,
-        Object value ) {
-        if( !(value instanceof String) ) return Either.left(
-            Lists.of(
-                properties.error( "instance is of type " + getType( value ) +
-                    ", which is none of the allowed primitive types ([" + schema.common.schemaType +
-                    "])" ) ) );
+   @Override
+   public Either<List<String>, Object> validate( JsonValidatorProperties properties, StringSchemaAST schema,
+                                                 Object value ) {
+      if( !( value instanceof String ) ) return Either.left(
+         Lists.of(
+            properties.error( "instance is of type " + getType( value ) +
+               ", which is none of the allowed primitive types ([" + schema.common.schemaType +
+               "])" ) ) );
 
-        String strValue = (String) value;
+      String strValue = ( String ) value;
 
-        Optional<String> minLengthResult = schema.minLength
-            .filter( minLength -> strValue.length() < minLength )
-            .map( minLength -> "string is shorter than minLength " + minLength );
+      Optional<String> minLengthResult = schema.minLength
+         .filter( minLength -> strValue.length() < minLength )
+         .map( minLength -> "string is shorter than minLength " + minLength );
 
-        Optional<String> maxLengthResult = schema.maxLength
-            .filter( maxLength -> strValue.length() > maxLength )
-            .map( maxLength -> "string is longer than maxLength " + maxLength );
+      Optional<String> maxLengthResult = schema.maxLength
+         .filter( maxLength -> strValue.length() > maxLength )
+         .map( maxLength -> "string is longer than maxLength " + maxLength );
 
-        Optional<String> patternResult = schema.pattern
-            .filter( pattern -> !pattern.matcher( strValue ).matches() )
-            .map( pattern -> "string does not match specified regex " + pattern );
+      Optional<String> patternResult = schema.pattern
+         .filter( pattern -> !pattern.matcher( strValue ).matches() )
+         .map( pattern -> "string does not match specified regex " + pattern );
 
-        return OptionalList
-            .<String>builder()
-            .add( minLengthResult )
-            .add( maxLengthResult )
-            .add( patternResult )
-            .toEigher( value );
-    }
+      return OptionalList
+         .<String>builder()
+         .add( minLengthResult )
+         .add( maxLengthResult )
+         .add( patternResult )
+         .toEigher( value );
+   }
 
-    @Override
-    public SchemaAST parse( JsonSchemaParserProperties properties ) {
-        SchemaAST.CommonSchemaAST common = node( properties ).asCommon();
-        Optional<Integer> minLength = node( properties ).asInt( "minLength" ).optional();
-        Optional<Integer> maxLength = node( properties ).asInt( "maxLength" ).optional();
-        Optional<String> pattern = node( properties ).asString( "pattern" ).optional();
+   @Override
+   public StringSchemaASTWrapper parse( JsonSchemaParserContext context ) {
+      final StringSchemaASTWrapper wrapper = context.createWrapper( StringSchemaASTWrapper::new );
+      wrapper.common = node( context ).asCommon();
+      wrapper.minLength = node( context ).asInt( "minLength" ).optional();
+      wrapper.maxLength = node( context ).asInt( "maxLength" ).optional();
+      wrapper.pattern = node( context ).asPattern( "pattern" ).optional();
 
-        return new StringSchemaAST( common, minLength, maxLength, pattern.map( Pattern::compile ) );
-    }
+      return wrapper;
+   }
 }

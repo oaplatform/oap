@@ -38,7 +38,7 @@ public class ArraySchemaAST extends SchemaAST<ArraySchemaAST> {
                           Optional<Integer> minItems, Optional<Integer> maxItems,
                           Optional<String> idField,
                           SchemaAST items ) {
-      super( common );
+      super( common, path );
       this.minItems = minItems;
       this.maxItems = maxItems;
       this.idField = idField;

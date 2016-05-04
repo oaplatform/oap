@@ -22,13 +22,37 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.json.schema._object;
 
-/**
- * Created by Igor Petrenko on 15.04.2016.
- */
-public class DictionaryNotFoundError extends DictionaryError {
-   public DictionaryNotFoundError( String dictionaryName ) {
-      super( "DictionaryRoot '" + dictionaryName + "' not found " );
+import oap.json.schema.*;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+
+public class ObjectSchemaASTWrapper
+   extends SchemaASTWrapper<ObjectSchemaAST, ObjectSchemaASTWrapper>
+   implements ContainerSchemaASTWrapper {
+
+   Optional<ObjectSchemaASTWrapper> parentSchema;
+   LinkedHashMap<String, SchemaASTWrapper> declaredProperties;
+   Optional<Boolean> additionalProperties;
+   Optional<String> extendsValue;
+
+   public ObjectSchemaASTWrapper( SchemaId id ) {
+      super( id );
+   }
+
+   @Override
+   public ObjectSchemaAST unwrap( JsonSchemaParserContext context ) {
+      final LinkedHashMap<String, SchemaAST> p = new LinkedHashMap<>();
+      declaredProperties.forEach( ( key, value ) -> p.put( key, value.unwrap( context ) ) );
+      final ObjectSchemaAST objectSchemaAST = new ObjectSchemaAST( common, additionalProperties, extendsValue, p );
+      return parentSchema.map( ps -> objectSchemaAST.merge( ps.unwrap( context ) ) ).orElse( objectSchemaAST );
+   }
+
+   @Override
+   public Map<String, SchemaASTWrapper> getChildren() {
+      return declaredProperties;
    }
 }

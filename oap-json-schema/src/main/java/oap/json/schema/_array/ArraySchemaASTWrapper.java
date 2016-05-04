@@ -22,13 +22,36 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.json.schema._array;
 
-/**
- * Created by Igor Petrenko on 15.04.2016.
- */
-public class DictionaryNotFoundError extends DictionaryError {
-   public DictionaryNotFoundError( String dictionaryName ) {
-      super( "DictionaryRoot '" + dictionaryName + "' not found " );
+import oap.json.schema.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+
+public class ArraySchemaASTWrapper
+   extends SchemaASTWrapper<ArraySchemaAST, ArraySchemaASTWrapper>
+   implements ContainerSchemaASTWrapper {
+
+   SchemaASTWrapper items;
+   Optional<Integer> minItems;
+   Optional<Integer> maxItems;
+   Optional<String> idField;
+
+   public ArraySchemaASTWrapper( SchemaId id ) {
+      super( id );
+   }
+
+   @Override
+   public ArraySchemaAST unwrap( JsonSchemaParserContext context ) {
+      return new ArraySchemaAST( common, minItems, maxItems, idField, items.unwrap( context ) );
+   }
+
+   @Override
+   public Map<String, SchemaASTWrapper> getChildren() {
+      return new HashMap<String, SchemaASTWrapper>() {{
+         put( "items", items );
+      }};
    }
 }

@@ -24,11 +24,30 @@
 
 package oap.dictionary;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import javax.annotation.Nullable;
+import java.util.Collections;
+import java.util.Map;
+
 /**
- * Created by Igor Petrenko on 15.04.2016.
+ * Created by Igor Petrenko on 29.04.2016.
  */
-public class DictionaryNotFoundError extends DictionaryError {
-   public DictionaryNotFoundError( String dictionaryName ) {
-      super( "DictionaryRoot '" + dictionaryName + "' not found " );
+public class DictionaryLeaf {
+   public final String id;
+   public final boolean enabled;
+   public final long externalId;
+   public final Map<String, Object> properties;
+
+   public DictionaryLeaf( String id, boolean enabled, long externalId, @Nullable Map<String, Object> properties ) {
+      this.id = id;
+      this.enabled = enabled;
+      this.externalId = externalId;
+      this.properties = properties;
+   }
+
+   @JsonIgnore
+   public Map<String, Object> getProperties() {
+      return properties != null ? Collections.unmodifiableMap( properties ) : Collections.emptyMap();
    }
 }

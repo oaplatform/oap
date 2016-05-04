@@ -29,7 +29,7 @@ package oap.json.schema;
  */
 public class DefaultSchemaAST extends SchemaAST<DefaultSchemaAST> {
    public DefaultSchemaAST( CommonSchemaAST common ) {
-      super( common );
+      super( common, path );
    }
 
    @Override

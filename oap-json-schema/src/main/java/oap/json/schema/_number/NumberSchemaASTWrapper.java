@@ -22,13 +22,26 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.json.schema._number;
 
-/**
- * Created by Igor Petrenko on 15.04.2016.
- */
-public class DictionaryNotFoundError extends DictionaryError {
-   public DictionaryNotFoundError( String dictionaryName ) {
-      super( "DictionaryRoot '" + dictionaryName + "' not found " );
+import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.SchemaASTWrapper;
+import oap.json.schema.SchemaId;
+
+import java.util.Optional;
+
+public class NumberSchemaASTWrapper extends SchemaASTWrapper<NumberSchemaAST, NumberSchemaASTWrapper> {
+   Optional<Boolean> exclusiveMinimum;
+   Optional<Boolean> exclusiveMaximum;
+   Optional<Double> minimum;
+   Optional<Double> maximum;
+
+   public NumberSchemaASTWrapper( SchemaId id ) {
+      super( id );
+   }
+
+   @Override
+   public NumberSchemaAST unwrap( JsonSchemaParserContext context ) {
+      return new NumberSchemaAST( common, exclusiveMinimum, exclusiveMaximum, minimum, maximum );
    }
 }

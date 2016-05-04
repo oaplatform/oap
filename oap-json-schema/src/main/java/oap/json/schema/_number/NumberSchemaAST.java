@@ -39,7 +39,7 @@ public class NumberSchemaAST extends SchemaAST<NumberSchemaAST> {
    public NumberSchemaAST( CommonSchemaAST common, Optional<Boolean> exclusiveMinimum,
                            Optional<Boolean> exclusiveMaximum, Optional<Double> minimum,
                            Optional<Double> maximum ) {
-      super( common );
+      super( common, path );
       this.exclusiveMinimum = exclusiveMinimum;
       this.exclusiveMaximum = exclusiveMaximum;
       this.minimum = minimum;

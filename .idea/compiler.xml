@@ -35,6 +35,7 @@
         <module name="oap-logstream" />
         <module name="oap-maven" />
         <module name="oap-metrics" />
+        <module name="oap-remoting-server" />
         <module name="oap-stdlib" />
         <module name="oap-storage" />
         <module name="oap-ws" />
@@ -56,6 +57,7 @@
       <module name="oap-logstream" target="1.8" />
       <module name="oap-maven" target="1.8" />
       <module name="oap-metrics" target="1.8" />
+      <module name="oap-remoting-server" target="1.8" />
       <module name="oap-security" target="1.8" />
       <module name="oap-slack" target="1.8" />
       <module name="oap-stdlib" target="1.8" />

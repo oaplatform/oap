@@ -21,25 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.json.schema;
 
-import java.util.Map;
-import java.util.function.Function;
+/**
+ * Created by Igor Petrenko on 13.04.2016.
+ */
+public class DefaultSchemaASTWrapper extends SchemaASTWrapper<DefaultSchemaAST, DefaultSchemaASTWrapper> {
+   public DefaultSchemaASTWrapper( SchemaId id ) {
+      super( id );
+   }
 
-public class JsonSchemaParserProperties {
-    public final Map<?, ?> node;
-    public final String schemaType;
-    public final Function<Object, SchemaAST> mapParser;
-    public final Function<String, SchemaAST> urlParser;
-
-    public JsonSchemaParserProperties(
-            Map<?, ?> node,
-            String schemaType,
-            Function<Object, SchemaAST> mapParser,
-            Function<String, SchemaAST> urlParser ) {
-        this.node = node;
-        this.schemaType = schemaType;
-        this.mapParser = mapParser;
-        this.urlParser = urlParser;
-    }
+   @Override
+   public DefaultSchemaAST unwrap( JsonSchemaParserContext context ) {
+      return new DefaultSchemaAST( common );
+   }
 }

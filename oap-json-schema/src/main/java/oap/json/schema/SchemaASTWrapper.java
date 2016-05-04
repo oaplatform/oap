@@ -22,13 +22,18 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.json.schema;
 
 /**
- * Created by Igor Petrenko on 15.04.2016.
+ * Created by Igor Petrenko on 29.04.2016.
  */
-public class DictionaryNotFoundError extends DictionaryError {
-   public DictionaryNotFoundError( String dictionaryName ) {
-      super( "DictionaryRoot '" + dictionaryName + "' not found " );
+public abstract class SchemaASTWrapper<TAST extends SchemaAST<TAST>, TW extends SchemaASTWrapper<TAST, TW>> {
+   public final SchemaId id;
+   public SchemaAST.CommonSchemaAST common;
+
+   public SchemaASTWrapper( SchemaId id ) {
+      this.id = id;
    }
+
+   public abstract TAST unwrap( JsonSchemaParserContext context );
 }

@@ -45,7 +45,7 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
         vFail( schema, "'test4'", "dictionary not found" );
     }
 
-    @Test(enabled = false)
+    @Test
     public void testHierarchical() {
         String schema = "{type: object, properties: {" +
             "parent: {type: dictionary, name: dict-h}, " +

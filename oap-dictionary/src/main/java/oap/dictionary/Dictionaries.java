@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class Dictionaries {
     public static final List<String> dictionaries = new ArrayList<>();
-    private static final ConcurrentHashMap<String, Dictionary> cache = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, DictionaryRoot> cache = new ConcurrentHashMap<>();
 
     private synchronized static void load() {
         if( dictionaries.isEmpty() ) {
@@ -59,7 +59,7 @@ public class Dictionaries {
         }
     }
 
-    public static Dictionary getDictionary( String name ) throws DictionaryNotFoundError {
+    public static DictionaryRoot getDictionary( String name ) throws DictionaryNotFoundError {
         load();
 
         return dictionaries
@@ -70,7 +70,7 @@ public class Dictionaries {
             .orElseThrow( () -> new DictionaryNotFoundError( name ) );
     }
 
-    public static Dictionary getCachedDictionary( String name ) throws DictionaryNotFoundError {
+    public static DictionaryRoot getCachedDictionary( String name ) throws DictionaryNotFoundError {
         return cache.computeIfAbsent( name, Dictionaries::getDictionary );
     }
 }

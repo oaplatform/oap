@@ -22,13 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.json.schema;
+
+import java.util.Map;
 
 /**
- * Created by Igor Petrenko on 15.04.2016.
+ * Created by Igor Petrenko on 29.04.2016.
  */
-public class DictionaryNotFoundError extends DictionaryError {
-   public DictionaryNotFoundError( String dictionaryName ) {
-      super( "DictionaryRoot '" + dictionaryName + "' not found " );
-   }
+public interface ContainerSchemaASTWrapper {
+   Map<String, SchemaASTWrapper> getChildren();
 }
