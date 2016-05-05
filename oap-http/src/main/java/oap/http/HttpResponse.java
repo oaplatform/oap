@@ -181,6 +181,11 @@ public class HttpResponse {
         public String build() {
             return JOINER.join( SID, domain, expires, path, Strings.join( ";", customs ) ).concat( ";" );
         }
+    }
 
+    @Override
+    public String toString() {
+        return "HttpResponse{" + "reasonPhrase='" + reasonPhrase + '\'' + ", headers=" + headers + ", code=" + code +
+           '}';
     }
 }
