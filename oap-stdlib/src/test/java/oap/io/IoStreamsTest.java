@@ -25,8 +25,10 @@ package oap.io;
 
 import oap.io.IoStreams.Encoding;
 import oap.testng.AbstractTest;
+import oap.testng.Asserts;
 import oap.testng.Env;
 import oap.util.Lists;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -35,36 +37,50 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 
 import static oap.io.IoStreams.Encoding.GZIP;
+import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
+import static oap.testng.Asserts.assertFile;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 
 public class IoStreamsTest extends AbstractTest {
-    @Test
-    public void emptyGz() throws IOException {
-        Path path = Env.tmpPath( "test.gz" );
-        OutputStream out = IoStreams.out( path, GZIP );
-        out.flush();
-        out.close();
-        InputStream in = IoStreams.in( path, GZIP );
-        assertEquals( in.read(), -1 );
-        in.close();
-        assertEquals( Files.readString( path, GZIP ), "" );
-    }
+   @Test
+   public void emptyGz() throws IOException {
+      Path path = Env.tmpPath( "test.gz" );
+      OutputStream out = IoStreams.out( path, GZIP );
+      out.flush();
+      out.close();
+      InputStream in = IoStreams.in( path, GZIP );
+      assertThat( in.read() ).isEqualTo( -1 );
+      in.close();
+      assertFile( path ).hasContent( "", GZIP );
+   }
 
-    @Test
-    public void append() throws IOException {
-        Path path = Env.tmpPath( "test.gz" );
-        for( Encoding encoding : Lists.of( PLAIN, GZIP ) ) {
-            OutputStream out = IoStreams.out( path, encoding );
-            out.write( "12345".getBytes() );
-            out.flush();
-            out.close();
-            out = IoStreams.out( path, encoding, true );
-            out.write( "12345".getBytes() );
-            out.flush();
-            out.close();
-            assertEquals( Files.readString( path, encoding ), "1234512345", "for " + encoding );
-        }
+   @Test
+   public void append() throws IOException {
+      Path path = Env.tmpPath( "test.gz" );
+      for( Encoding encoding : Lists.of( PLAIN, GZIP ) ) {
+         OutputStream out = IoStreams.out( path, encoding );
+         out.write( "12345".getBytes() );
+         out.flush();
+         out.close();
+         out = IoStreams.out( path, encoding, true );
+         out.write( "12345".getBytes() );
+         out.flush();
+         out.close();
+         assertFile( path ).hasContent( "1234512345", encoding );
+      }
+   }
 
-    }
+   @Test
+   public void testLZ4() throws IOException {
+      Path path = Env.tmpPath( "test.lz4" );
+
+      OutputStream out = IoStreams.out( path, LZ4 );
+      out.write( "12345".getBytes() );
+      out.flush();
+      out.close();
+
+      assertFile( path ).hasContent( "12345", LZ4 );
+   }
 }
