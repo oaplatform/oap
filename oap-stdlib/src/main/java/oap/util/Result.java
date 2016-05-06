@@ -107,4 +107,16 @@ final public class Result<S, F> implements Serializable {
          return failure( e );
       }
    }
+
+   public static <S> Result<S, Throwable> blockingTrying( Try.ThrowingSupplier<S> supplier )
+      throws InterruptedException {
+
+      try {
+         return success( supplier.get() );
+      } catch( InterruptedException ie ) {
+         throw ie;
+      } catch( Throwable e ) {
+         return failure( e );
+      }
+   }
 }
