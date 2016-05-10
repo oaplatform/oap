@@ -93,7 +93,7 @@ public class AccumulatorPerformance extends AbstractPerformance {
          for( int x = 0; x < count; x++ ) {
             StringExport export = new StringExport();
 
-            Table.fromPaths( Arrays.asList( path1, path2 ), IoStreams.Encoding.GZIP,
+            Table.fromPaths( Arrays.asList( path1, path2 ),
                Model.withoutHeader().s( 0, 1, 2 ).i( 3, 4, 5 ) )
                .sort( new int[]{ 0, 1, 2 } )
                .sortedStreamGroupBy( new int[]{ 0, 1, 2 }, Accumulator.count(), Accumulator.intSum( 3 ), Accumulator.intSum( 4 ) )
@@ -112,7 +112,7 @@ public class AccumulatorPerformance extends AbstractPerformance {
             .limit( count )
             .toArray( Table.GroupBy[]::new );
 
-         List<Table> tables = Table.fromPaths( Arrays.asList( path1, path2 ), IoStreams.Encoding.GZIP,
+         List<Table> tables = Table.fromPaths( Arrays.asList( path1, path2 ),
             Model.withoutHeader().s( 0, 1, 2 ).i( 3, 4, 5 ) )
             .groupBy( groups );
 

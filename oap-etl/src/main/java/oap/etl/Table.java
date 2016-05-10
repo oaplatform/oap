@@ -25,7 +25,6 @@ package oap.etl;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
-import oap.io.IoStreams;
 import oap.tsv.Model;
 import oap.tsv.Tsv;
 import oap.util.Lists;
@@ -53,12 +52,12 @@ public class Table {
       return new Table( Tsv.fromPath( path, model ) );
    }
 
-   public static Table fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model.Complex complexModel ) {
-      return new Table( Tsv.fromPaths( paths, encoding, complexModel ) );
+   public static Table fromPaths( List<Path> paths, Model.Complex complexModel ) {
+      return new Table( Tsv.fromPaths( paths, complexModel ) );
    }
 
-   public static Table fromPaths( List<Path> paths, IoStreams.Encoding encoding, Model model ) {
-      return new Table( Tsv.fromPaths( paths, encoding, model ) );
+   public static Table fromPaths( List<Path> paths, Model model ) {
+      return new Table( Tsv.fromPaths( paths, model ) );
    }
 
    @SuppressWarnings( "unchecked" )
