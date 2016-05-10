@@ -25,6 +25,7 @@ package oap.logstream;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
+import oap.metrics.Metrics;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
@@ -35,54 +36,55 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 
 @Slf4j
 public class Archiver implements Runnable {
-    private final Path sourceDirectory;
-    private final Path destinationDirectory;
-    private final long safeInterval;
-    private final boolean compress;
-    private int bucketsPerHour;
-    private final String mask;
+   private final Path sourceDirectory;
+   private final Path destinationDirectory;
+   private final long safeInterval;
+   private final boolean compress;
+   private final String mask;
+   private int bucketsPerHour;
 
 
-    public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask, boolean compress, int bucketsPerHour ) {
-        this.sourceDirectory = sourceDirectory;
-        this.destinationDirectory = destinationDirectory;
-        this.safeInterval = safeInterval;
-        this.mask = mask;
-        this.compress = compress;
-        this.bucketsPerHour = bucketsPerHour;
-    }
+   public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask, boolean compress, int bucketsPerHour ) {
+      this.sourceDirectory = sourceDirectory;
+      this.destinationDirectory = destinationDirectory;
+      this.safeInterval = safeInterval;
+      this.mask = mask;
+      this.compress = compress;
+      this.bucketsPerHour = bucketsPerHour;
+   }
 
-    @Override
-    public void run() {
-        log.debug( "let's start packing of {} in {} into {}", mask, sourceDirectory, destinationDirectory );
-        String timestamp = Timestamp.format( DateTime.now(), bucketsPerHour );
+   @Override
+   public void run() {
+      log.debug( "let's start packing of {} in {} into {}", mask, sourceDirectory, destinationDirectory );
+      String timestamp = Timestamp.format( DateTime.now(), bucketsPerHour );
 
-        log.debug( "current timestamp is {}", timestamp );
-        long elapsed = DateTimeUtils.currentTimeMillis() - Timestamp.currentBucketStartMillis( bucketsPerHour );
-        if( elapsed < safeInterval )
-            log.debug( "not safe to process yet ({}ms), some of the files could still be open, waiting...", elapsed );
-        else for( Path path : Files.wildcard( sourceDirectory, mask ) ) {
-            if( path.getFileName().toString().contains( timestamp ) ) {
-                log.debug( "skipping (current timestamp) {}", path );
-                continue;
-            }
+      log.debug( "current timestamp is {}", timestamp );
+      long elapsed = DateTimeUtils.currentTimeMillis() - Timestamp.currentBucketStartMillis( bucketsPerHour );
+      if( elapsed < safeInterval )
+         log.debug( "not safe to process yet ({}ms), some of the files could still be open, waiting...", elapsed );
+      else for( Path path : Files.wildcard( sourceDirectory, mask ) ) {
+         if( path.getFileName().toString().contains( timestamp ) ) {
+            log.debug( "skipping (current timestamp) {}", path );
+            continue;
+         }
 
-            Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ( compress ? ".gz" : "" ) );
+         Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ( compress ? ".gz" : "" ) );
 
+         Metrics.measureTimer( Metrics.name( "archive" ), () -> {
             if( compress ) {
-                log.debug( "compressing {} ({} bytes)", path, path.toFile().length() );
-                Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".tmp" );
-                Files.copy( path, PLAIN, targetTemp, GZIP );
-                Files.rename( targetTemp, targetFile );
-                log.debug( "compressed {} ({} bytes)", path, targetFile.toFile().length() );
-                Files.delete( path );
+               log.debug( "compressing {} ({} bytes)", path, path.toFile().length() );
+               Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".tmp" );
+               Files.copy( path, PLAIN, targetTemp, GZIP );
+               Files.rename( targetTemp, targetFile );
+               log.debug( "compressed {} ({} bytes)", path, targetFile.toFile().length() );
+               Files.delete( path );
             } else {
-                log.debug( "moving {} ({} bytes)", path, path.toFile().length() );
-                Files.ensureFile( targetFile );
-                Files.rename( path, targetFile );
+               log.debug( "moving {} ({} bytes)", path, path.toFile().length() );
+               Files.ensureFile( targetFile );
+               Files.rename( path, targetFile );
             }
-        }
-        log.debug( "packing is done" );
-    }
-
+         } );
+      }
+      log.debug( "packing is done" );
+   }
 }
