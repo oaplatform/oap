@@ -131,7 +131,7 @@ public class Table {
       return this;
    }
 
-   public Table groupBy( int[] fields, Accumulator... accumulators ) {
+   public List<Table> groupBy( GroupBy... groups ) {
       class HashCodeCache {
          public Object[] values;
          private int hashCode;
@@ -185,32 +185,55 @@ public class Table {
          }
       }
 
-      final HashMap<HashCodeCache, Data> agg = new HashMap<>();
+      final HashMap<HashCodeCache, Data>[] agg = new HashMap[groups.length];
+      final Object[][] keys = new Object[groups.length][];
+      final HashCodeCache[] hashCodeCache = new HashCodeCache[groups.length];
 
-      Object[] keys = new Object[fields.length];
-      HashCodeCache hashCodeCache = new HashCodeCache();
+      for( int i = 0; i < groups.length; i++ ) {
+         final GroupBy gb = groups[i];
+
+         agg[i] = new HashMap<>();
+         keys[i] = new Object[gb.fields.length];
+         hashCodeCache[i] = new HashCodeCache();
+      }
+
 
       final Iterator<List<Object>> iterator = lines.iterator();
       while( iterator.hasNext() ) {
          final List<Object> row = iterator.next();
 
-         fillKey( fields, row, keys );
-         hashCodeCache.reset( keys );
+         for( int i = 0; i < groups.length; i++ ) {
+            final GroupBy gb = groups[i];
+            final int[] fields = gb.fields;
+            final Accumulator[] accumulators = gb.accumulators;
 
-         Data d = agg.get( hashCodeCache );
-         if( d == null ) {
-            d = new Data( keys, accumulators );
-            agg.put( hashCodeCache, d );
-            hashCodeCache = new HashCodeCache();
-            keys = new Object[fields.length];
+            final HashCodeCache gHashCodeCache = hashCodeCache[i];
+            final Object[] gkeys = keys[i];
+            fillKey( fields, row, gkeys );
+            gHashCodeCache.reset( gkeys );
+
+            final HashMap<HashCodeCache, Data> map = agg[i];
+            Data d = map.get( gHashCodeCache );
+            if( d == null ) {
+               d = new Data( gkeys, accumulators );
+               map.put( gHashCodeCache, d );
+               hashCodeCache[i] = new HashCodeCache();
+               keys[i] = new Object[fields.length];
+            }
+
+            for( Accumulator accumulator : d.accumulators )
+               accumulator.accumulate( row );
          }
 
-         for( Accumulator accumulator : d.accumulators )
-            accumulator.accumulate( row );
       }
 
-      this.lines = Stream.of( agg.values().stream().map( Data::values ) );
-      return this;
+      final ArrayList<Table> result = new ArrayList<>( groups.length );
+
+      for( int i = 0; i < groups.length; i++ ) {
+         result.add( new Table( Stream.of( agg[i].values().stream().map( Data::values ) ) ) );
+      }
+
+      return result;
    }
 
    private void fillKey( int[] fields, List<Object> row, Object[] key ) {
@@ -232,5 +255,15 @@ public class Table {
    public void compute() {
       lines.drain();
       closeHandlers.forEach( Runnable::run );
+   }
+
+   public static class GroupBy {
+      public final int[] fields;
+      public final Accumulator[] accumulators;
+
+      public GroupBy( int[] fields, Accumulator... accumulators ) {
+         this.fields = fields;
+         this.accumulators = accumulators;
+      }
    }
 }

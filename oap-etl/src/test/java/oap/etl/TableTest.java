@@ -26,7 +26,6 @@ package oap.etl;
 
 import oap.tsv.Model;
 import oap.util.Lists;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -81,12 +80,14 @@ public class TableTest {
          Model.withoutHeader().s( 1, 2 ).i( 3 ) )
          .get()
          .join( 1, join )
-         .groupBy( new int[]{ 0, 1 }, Accumulator.count(),
+         .groupBy( new Table.GroupBy( new int[]{ 0, 1 }, Accumulator.count(),
             Accumulator.<Integer>filter( Accumulator.intSum( 3 ), 2, i -> i == 2 ),
-            Accumulator.intSum( 3 ) )
-         .sort( new int[]{ 0, 1 } )
-         .export( export )
-         .compute();
+            Accumulator.intSum( 3 ) ) )
+         .forEach( t -> {
+            t.sort( new int[]{ 0, 1 } )
+               .export( export )
+               .compute();
+         } );
       assertString( export.toString() ).isEqualTo( contentOfTestResource( getClass(), "groupBy.tsv" ) );
    }
 
