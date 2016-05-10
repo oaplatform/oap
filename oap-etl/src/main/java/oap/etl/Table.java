@@ -248,7 +248,7 @@ public class Table {
    }
 
    public Table join( int keyPos, Join... joins ) {
-      return join( keyPos, Lists.of( joins ) );
+      return join( keyPos, Arrays.asList( joins ) );
    }
 
    public void compute() {

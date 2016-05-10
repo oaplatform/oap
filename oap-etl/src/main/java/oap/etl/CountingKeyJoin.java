@@ -30,9 +30,9 @@ import oap.util.Stream;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+
+import static java.util.Collections.singletonList;
 
 public class CountingKeyJoin implements Join {
    private HashMap<String, MutableLong> map = new HashMap<>();
@@ -59,7 +59,7 @@ public class CountingKeyJoin implements Join {
 
    @Override
    public List<Object> on( String key ) {
-      return map.containsKey( key ) ? Lists.of( map.get( key ) ) : Lists.of( 0L );
+      return map.containsKey( key ) ? singletonList( map.get( key ) ) : singletonList( 0L );
    }
 
    @Override
