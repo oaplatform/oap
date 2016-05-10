@@ -39,6 +39,51 @@ public class Stream<E> implements java.util.stream.Stream<E> {
       this.underlying = underlying;
    }
 
+   public static <T> Stream<T> empty() {
+      return of( java.util.stream.Stream.empty() );
+   }
+
+   public static <T> Stream<T> of( java.util.stream.Stream<T> stream ) {
+      return new Stream<>( stream );
+   }
+
+   public static <T> Stream<T> of( Iterator<T> iterator ) {
+      return of( StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, 0 ), false ) );
+   }
+
+   public static <T> Stream<T> of( Collection<T> collection ) {
+      return of( collection.stream() );
+   }
+
+   public static <T> Stream<T> of( Enumeration<T> enumeration ) {
+      return of( com.google.common.collect.Iterators.forEnumeration( enumeration ) );
+   }
+
+   public static <T> Stream<T> of( Supplier<Boolean> hasNext, Supplier<T> next ) {
+      return of( Iterators.of( hasNext, next ) );
+   }
+
+   public static <T> Stream<T> of( T initialState, Predicate<T> hasNext, UnaryOperator<T> next ) {
+      return of( Iterators.of( initialState, hasNext, next ) );
+   }
+
+   public static <T> Stream<T> traverse( T initialState, UnaryOperator<T> traverse ) {
+      return of( Iterators.traverse( initialState, traverse ) );
+   }
+
+   @SafeVarargs
+   public static <T> Stream<T> of( T... values ) {
+      return values == null ? empty() : of( java.util.stream.Stream.of( values ) );
+   }
+
+   public static <T> Stream<T> iterate( T seed, UnaryOperator<T> f ) {
+      return of( java.util.stream.Stream.iterate( seed, f ) );
+   }
+
+   public static <T> Stream<T> generate( Supplier<T> s ) {
+      return of( java.util.stream.Stream.generate( s ) );
+   }
+
    public <B, C> Stream<C> zip( java.util.stream.Stream<? extends B> b,
                                 BiFunction<? super E, ? super B, ? extends C> zipper ) {
       Objects.requireNonNull( zipper );
@@ -74,11 +119,11 @@ public class Stream<E> implements java.util.stream.Stream<E> {
          underlying.isParallel() || b.isParallel() ) );
    }
 
-   public <B> Stream<Pair<E, B>> zip( java.util.stream.Stream<? extends B> b ) {
-      return zip( b, Pair::__ );
+   public <B> BiStream<E, B> zip( java.util.stream.Stream<? extends B> b ) {
+      return BiStream.of2( zip( b, Pair::__ ) );
    }
 
-   public Stream<Pair<E, Integer>> zipWithIndex() {
+   public BiStream<E, Integer> zipWithIndex() {
       return zip( of( IntStream.iterate( 0, i -> i + 1 ).boxed() ) );
    }
 
@@ -320,51 +365,6 @@ public class Stream<E> implements java.util.stream.Stream<E> {
 
    public Optional<E> random() {
       return Lists.random( toList() );
-   }
-
-   public static <T> Stream<T> empty() {
-      return of( java.util.stream.Stream.empty() );
-   }
-
-   public static <T> Stream<T> of( java.util.stream.Stream<T> stream ) {
-      return new Stream<>( stream );
-   }
-
-   public static <T> Stream<T> of( Iterator<T> iterator ) {
-      return of( StreamSupport.stream( Spliterators.spliteratorUnknownSize( iterator, 0 ), false ) );
-   }
-
-   public static <T> Stream<T> of( Collection<T> collection ) {
-      return of( collection.stream() );
-   }
-
-   public static <T> Stream<T> of( Enumeration<T> enumeration ) {
-      return of( com.google.common.collect.Iterators.forEnumeration( enumeration ) );
-   }
-
-   public static <T> Stream<T> of( Supplier<Boolean> hasNext, Supplier<T> next ) {
-      return of( Iterators.of( hasNext, next ) );
-   }
-
-   public static <T> Stream<T> of( T initialState, Predicate<T> hasNext, UnaryOperator<T> next ) {
-      return of( Iterators.of( initialState, hasNext, next ) );
-   }
-
-   public static <T> Stream<T> traverse( T initialState, UnaryOperator<T> traverse ) {
-      return of( Iterators.traverse( initialState, traverse ) );
-   }
-
-   @SafeVarargs
-   public static <T> Stream<T> of( T... values ) {
-      return values == null ? empty() : of( java.util.stream.Stream.of( values ) );
-   }
-
-   public static <T> Stream<T> iterate( T seed, UnaryOperator<T> f ) {
-      return of( java.util.stream.Stream.iterate( seed, f ) );
-   }
-
-   public static <T> Stream<T> generate( Supplier<T> s ) {
-      return of( java.util.stream.Stream.generate( s ) );
    }
 
    public Stream<E> concat( java.util.stream.Stream<? extends E> b ) {
