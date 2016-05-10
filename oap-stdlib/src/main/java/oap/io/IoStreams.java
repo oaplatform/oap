@@ -36,6 +36,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.zip.*;
 
@@ -66,7 +67,7 @@ public class IoStreams {
    }
 
    public static Stream<String> lines( Path path ) {
-      return lines( path, Encoding.PLAIN, p -> {
+      return lines( path, Encoding.from( path ), p -> {
       } );
    }
 
@@ -186,7 +187,27 @@ public class IoStreams {
    }
 
    public enum Encoding {
-      PLAIN, ZIP, GZIP, LZ4
-   }
+      PLAIN( Optional.empty(), false ),
+      ZIP( Optional.of( "zip" ), true ),
+      GZIP( Optional.of( "gz" ), true ),
+      LZ4( Optional.of( "lz4" ), true );
 
+      public final Optional<String> extension;
+      public final boolean compress;
+
+      Encoding( Optional<String> extension, boolean compress ) {
+         this.extension = extension;
+         this.compress = compress;
+      }
+
+      public static Encoding from( Path path ) {
+         final String strPath = path.toString();
+
+         return Stream
+            .of( values() )
+            .filter( e -> e.extension.filter( strPath::endsWith ).isPresent() )
+            .findAny()
+            .orElse( PLAIN );
+      }
+   }
 }

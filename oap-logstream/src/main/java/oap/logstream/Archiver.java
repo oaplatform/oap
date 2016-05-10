@@ -25,13 +25,13 @@ package oap.logstream;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
+import oap.io.IoStreams;
 import oap.metrics.Metrics;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
 import java.nio.file.Path;
 
-import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
 
 @Slf4j
@@ -39,17 +39,17 @@ public class Archiver implements Runnable {
    private final Path sourceDirectory;
    private final Path destinationDirectory;
    private final long safeInterval;
-   private final boolean compress;
+   private final IoStreams.Encoding encoding;
    private final String mask;
    private int bucketsPerHour;
 
 
-   public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask, boolean compress, int bucketsPerHour ) {
+   public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask, IoStreams.Encoding encoding, int bucketsPerHour ) {
       this.sourceDirectory = sourceDirectory;
       this.destinationDirectory = destinationDirectory;
       this.safeInterval = safeInterval;
       this.mask = mask;
-      this.compress = compress;
+      this.encoding = encoding;
       this.bucketsPerHour = bucketsPerHour;
    }
 
@@ -68,13 +68,14 @@ public class Archiver implements Runnable {
             continue;
          }
 
-         Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ( compress ? ".gz" : "" ) );
+         Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path )
+            + encoding.extension.map( e -> "." + e ).orElse( "" ) );
 
          Metrics.measureTimer( Metrics.name( "archive" ), () -> {
-            if( compress ) {
+            if( encoding.compress ) {
                log.debug( "compressing {} ({} bytes)", path, path.toFile().length() );
                Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".tmp" );
-               Files.copy( path, PLAIN, targetTemp, GZIP );
+               Files.copy( path, PLAIN, targetTemp, encoding );
                Files.rename( targetTemp, targetFile );
                log.debug( "compressed {} ({} bytes)", path, targetFile.toFile().length() );
                Files.delete( path );

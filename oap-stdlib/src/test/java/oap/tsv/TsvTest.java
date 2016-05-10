@@ -58,7 +58,7 @@ public class TsvTest {
         Model model = Model.withoutHeader().s( 1 ).i( 3 ).filterColumnCount( 4 );
         Path path = Env.deployTestData( getClass() );
 
-        Stream<List<Object>> tsv = Tsv.fromPath( path.resolve( file ), encoding, model );
+        Stream<List<Object>> tsv = Tsv.fromPath( path.resolve( file ), model );
         assertFile( path.resolve( "result.tsv" ) ).hasContent( Tsv.print( tsv ) );
     }
 
