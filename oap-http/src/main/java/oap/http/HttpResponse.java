@@ -111,6 +111,13 @@ public class HttpResponse {
         return response;
     }
 
+    public static HttpResponse status(int code, String reason, Object content) {
+        HttpResponse response = status( code );
+        response.reasonPhrase = Strings.removeControl( reason );
+        response.contentEntity = new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON );
+        return response;
+    }
+
     public static HttpResponse status( int code ) {
         return new HttpResponse( code );
     }
@@ -179,7 +186,9 @@ public class HttpResponse {
         }
 
         public String build() {
-            return JOINER.join( SID, domain, expires, path, Strings.join( ";", customs ) ).concat( ";" );
+            final String cookie = JOINER.join( SID, domain, expires, path, Strings.join( ";", customs ) );
+            return cookie.charAt( cookie.length() - 1 ) == ';' ?
+                    cookie.substring( 0, cookie.length() - 1 ) : cookie;
         }
     }
 
