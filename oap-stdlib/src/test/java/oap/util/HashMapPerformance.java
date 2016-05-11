@@ -32,9 +32,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.IntStream;
 
-/**
- * Created by Admin on 10.05.2016.
- */
 @Test(enabled = false)
 public class HashMapPerformance extends AbstractPerformance {
    @Test

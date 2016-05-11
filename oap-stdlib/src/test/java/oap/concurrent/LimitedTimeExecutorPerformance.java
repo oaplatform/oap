@@ -22,30 +22,37 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.concurrent;
 
 import oap.testng.AbstractPerformance;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.testng.annotations.Test;
 
-import java.util.HashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
-@Test( enabled = false )
-public class MutableLongPerformance extends AbstractPerformance {
+@Test(enabled = false)
+public class LimitedTimeExecutorPerformance extends AbstractPerformance {
    @Test
-   public void testIncrement() {
-      final int SAMPLES = 1000000;
+   public void testPerf() {
+
+      final int SAMPLES = 100000;
       final int EXPERIMENTS = 5;
+      final int THREADS = 5000;
 
-      final HashMap<Integer, MutableLong> map1 = new HashMap<>();
-      final HashMap<Integer, Long> map2 = new HashMap<>();
-
-      benchmark( "mutable_long", SAMPLES, EXPERIMENTS, ( i ) -> {
-         map1.computeIfAbsent( i % 5, ( k ) -> new MutableLong() ).increment();
+      benchmark( "without-LimitedTime", SAMPLES, EXPERIMENTS, THREADS, ( i ) -> {
+         Thread.sleep( 10 );
       } );
 
-      benchmark( "Long_compute", SAMPLES, EXPERIMENTS, ( i ) -> {
-         map2.compute( i % 5, ( k, old ) -> old != null ? old + 1 : 1L );
+      LimitedTimeExecutor lt = new LimitedTimeExecutor( 100, TimeUnit.MILLISECONDS );
+
+      benchmark( "LimitedTime", SAMPLES, EXPERIMENTS, THREADS, ( i ) -> {
+         lt.execute( () -> {
+            try {
+               Thread.sleep( 10 );
+            } catch( InterruptedException e ) {
+               e.printStackTrace();
+            }
+         } );
       } );
    }
 }
