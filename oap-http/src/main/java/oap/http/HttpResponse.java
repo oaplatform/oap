@@ -149,7 +149,7 @@ public class HttpResponse {
     }
 
     public static class CookieBuilder {
-        private static final Joiner JOINER = Joiner.on( ";" ).skipNulls();
+        private static final Joiner JOINER = Joiner.on( "; " ).skipNulls();
         private static final DateTimeFormatter FORMATTER =
             DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss zzz" );
         private String SID;
@@ -186,9 +186,8 @@ public class HttpResponse {
         }
 
         public String build() {
-            final String cookie = JOINER.join( SID, domain, expires, path, Strings.join( ";", customs ) );
-            return cookie.charAt( cookie.length() - 1 ) == ';' ?
-                    cookie.substring( 0, cookie.length() - 1 ) : cookie;
+            return StringUtils.removeEnd( JOINER.join( SID, domain, expires, path, Strings.join( "; ", customs ) ),
+                    "; " );
         }
     }
 
