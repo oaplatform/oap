@@ -36,7 +36,7 @@ import java.nio.file.Path;
 
 import static oap.io.IoStreams.Encoding.*;
 
-@Test( enabled = true )
+@Test( enabled = false )
 public class CompressionPerformance extends AbstractPerformance {
    @DataProvider( name = "encodings" )
    public Object[][] encodings() {
