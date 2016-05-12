@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Optional;
 
 public class Session {
-    public static final Map<String, Object> params = Collections.synchronizedMap( new HashMap<>() );
+    public final Map<String, Object> params = Collections.synchronizedMap( new HashMap<>() );
 
     @SuppressWarnings( "unchecked" )
     public <A> Optional<A> get( String name ) {
@@ -42,5 +42,10 @@ public class Session {
 
     public void invalidate() {
         params.clear();
+    }
+
+    @Override
+    public String toString() {
+        return "Session{" + "params=" + params + '}';
     }
 }
