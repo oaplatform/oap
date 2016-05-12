@@ -1,6 +1,11 @@
 *.versionsBackup
+workspace.xml
 target
-.idea
 .surefire*
 *.iml
+modules.xml
+compiler.xml
+encodings.xml
+misc.xml
+libraries
 inspectionProfiles
