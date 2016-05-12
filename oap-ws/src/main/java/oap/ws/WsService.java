@@ -38,6 +38,7 @@ import oap.util.Strings;
 import oap.ws.security.domain.User;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,9 +152,13 @@ public class WsService implements Handler {
                             if( user.isPresent() ) {
                                 this.cookieId = user.get().getValue();
 
+                                logger.debug( "SID [{}] found in cookie", cookieId );
+
                                 handleInternal( request, response, method, name, false );
                             } else {
                                 this.cookieId = UUID.randomUUID().toString();
+
+                                logger.debug( "Creating new session with SID [{}]", cookieId);
                                 sessionManager.put( cookieId, new Session() );
 
                                 handleInternal( request, response, method, name, true );
@@ -167,8 +172,12 @@ public class WsService implements Handler {
 
     private void handleInternal( Request request, Response response, Reflection.Method method,
                                  Name name, boolean setCookie ) {
+        final Session sessionById = sessionManager.getSessionById( cookieId );
+
+        logger.trace("Internal session status: [{}] with content [{}]", cookieId, sessionById);
+
         final HttpResponse interceptorResponse =
-            runInterceptors( request, sessionManager.getSessionById( cookieId ), method );
+            runInterceptors( request, sessionById, method );
 
         if( interceptorResponse != null ) {
             response.respond( interceptorResponse );
@@ -186,7 +195,6 @@ public class WsService implements Handler {
                                 case REQUEST:
                                     return request;
                                 case SESSION:
-                                    final Session sessionById = sessionManager.getSessionById( cookieId );
                                     return convert( parameter.name(), parameter.type(),
                                         sessionById.get( parameter.name() ) );
                                 case HEADER:
@@ -249,7 +257,7 @@ public class WsService implements Handler {
                     new HttpResponse.CookieBuilder()
                         .withSID( cookieId )
                         .withPath( sessionManager.cookiePath )
-                        .withExpires( sessionManager.cookieExpiration )
+                        .withExpires( DateTime.now().plusMinutes( sessionManager.cookieExpiration ) )
                         .withDomain( sessionManager.cookieDomain )
                         .build()
                     : null;
