@@ -23,9 +23,12 @@
  */
 package oap.application;
 
+import lombok.ToString;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@ToString
 public class ServiceTwo implements Hello {
     public ServiceOne one;
     int j;

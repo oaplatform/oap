@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static oap.util.Pair.__;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.*;
 
 public class ReflectTest extends AbstractTest {
@@ -70,7 +71,7 @@ public class ReflectTest extends AbstractTest {
    @Test
    public void fields() {
       Bean bean = new Bean( 10 );
-      Assertions.assertThat( Reflect.reflect( bean.getClass() ).fields.stream().map( f -> f.get( bean ) ) )
+      assertThat( Reflect.reflect( bean.getClass() ).fields.stream().<Object>map( f -> f.get( bean ) ) )
          .containsExactly( 10, 1, "aaa", null );
    }
 
@@ -78,6 +79,16 @@ public class ReflectTest extends AbstractTest {
    public void reflectToString() {
       assertEquals( new Bean( 10 ).toString(), "Bean(i=10, x=1, str=aaa, l=null)" );
    }
+
+   @Test
+   public void assignableFrom() {
+      assertTrue( Reflect.reflect( Bean.class )
+         .field( "l" )
+         .get()
+         .type()
+         .assignableFrom( List.class ) );
+   }
+
 
    @Test
    public void annotation() {
