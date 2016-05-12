@@ -7,5 +7,6 @@ modules.xml
 compiler.xml
 encodings.xml
 misc.xml
+vcs.xml
 libraries
 inspectionProfiles
