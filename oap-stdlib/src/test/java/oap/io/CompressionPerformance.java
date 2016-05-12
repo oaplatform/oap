@@ -29,19 +29,14 @@ import oap.testng.Env;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 
-import static oap.io.IoStreams.Encoding.GZIP;
-import static oap.io.IoStreams.Encoding.LZ4;
+import static oap.io.IoStreams.Encoding.*;
 
-/**
- * Created by Admin on 06.05.2016.
- */
-@Test( enabled = false )
+@Test( enabled = true )
 public class CompressionPerformance extends AbstractPerformance {
    @DataProvider( name = "encodings" )
    public Object[][] encodings() {
@@ -53,14 +48,13 @@ public class CompressionPerformance extends AbstractPerformance {
       Path path = Env.tmpPath( "test." + encoding );
 
       benchmark( "compress " + encoding.name(), 2, 5, ( s ) -> {
-         try( InputStream is = Resources.url( getClass(), "/request_v9-2016-05-05-00-00.tsv" ).get().openStream();
-              BufferedInputStream bis = new BufferedInputStream( is );
+         try( InputStream is = IoStreams.in( Resources.filePath( getClass(), "/file.txt" ).get(), PLAIN );
               OutputStream out = IoStreams.out( path, encoding, 1024 * 1024 * 10, false ) ) {
 
             byte[] bytes = new byte[1024 * 64];
 
             int read = -1;
-            while( ( read = bis.read( bytes ) ) > 0 ) {
+            while( ( read = is.read( bytes ) ) > 0 ) {
                out.write( bytes, 0, read );
             }
          }
