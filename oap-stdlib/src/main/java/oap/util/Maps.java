@@ -66,6 +66,10 @@ public class Maps {
       return map;
    }
 
+   public static <K, V> Optional<V> get( Map<? super K, V> map, K key ) {
+      return Optional.ofNullable( map.get( key ) );
+   }
+
    @SafeVarargs
    public static <K, V> SetMultimap<K, V> setmmap( Pair<K, V>... pairs ) {
       return Stream.of( pairs ).collect( toSetMultimap() );

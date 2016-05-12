@@ -42,83 +42,75 @@ import static java.util.stream.Collectors.toList;
 @EqualsAndHashCode
 @ToString
 public final class Dictionary {
-    public final String name;
-    public final List<DictionaryValue> values;
+   public final String name;
+   public final List<DictionaryValue> values;
 
-    @JsonIgnore
-    private final HashMap<Long, String> indexByExternalId = new HashMap<>();
-    @JsonIgnore
-    private final HashMap<String, Long> indexById = new HashMap<>();
+   @JsonIgnore
+   private final HashMap<Long, String> indexByExternalId = new HashMap<>();
+   @JsonIgnore
+   private final HashMap<String, Long> indexById = new HashMap<>();
 
-    public Dictionary( String name, List<DictionaryValue> values ) {
-        this.name = name;
-        this.values = values;
+   public Dictionary( String name, List<DictionaryValue> values ) {
+      this.name = name;
+      this.values = values;
 
-        for( DictionaryValue dv : values ) {
-            indexById.put( dv.id, dv.externalId );
-            indexByExternalId.put( dv.externalId, dv.id );
-        }
-    }
+      for( DictionaryValue dv : values ) {
+         indexById.put( dv.id, dv.externalId );
+         indexByExternalId.put( dv.externalId, dv.id );
+      }
+   }
 
-    public final String getOrDefault( long externlId, String defaultValue ) {
-        final String id = indexByExternalId.get( externlId );
-        if( id == null ) return defaultValue;
-        return id;
-    }
+   public final String getOrDefault( long externlId, String defaultValue ) {
+      final String id = indexByExternalId.get( externlId );
+      if( id == null ) return defaultValue;
+      return id;
+   }
 
-    public final long getOrDefault( String id, long defaultValue ) {
-        final Long rtb = indexById.get( id );
-        if( rtb == null ) return defaultValue;
-        return rtb;
-    }
+   public final long getOrDefault( String id, long defaultValue ) {
+      final Long rtb = indexById.get( id );
+      if( rtb == null ) return defaultValue;
+      return rtb;
+   }
 
-    public boolean containsValueWithId( String id ) {
-        return indexById.containsKey( id );
-    }
+   public boolean containsValueWithId( String id ) {
+      return indexById.containsKey( id );
+   }
 
-    public List<String> ids() {
-        return values.stream().map( v -> v.id ).collect( toList() );
-    }
+   public List<String> ids() {
+      return values.stream().map( v -> v.id ).collect( toList() );
+   }
 
-    @EqualsAndHashCode
-    @ToString
-    public static class DictionaryValue {
-        public final String id;
-        public final boolean enabled;
-        public final long externalId;
-        public final List<DictionaryValue> values;
-        public final Map<String, Object> properties;
+   @EqualsAndHashCode
+   @ToString
+   public static class DictionaryValue {
+      public final String id;
+      public final boolean enabled;
+      public final long externalId;
+      public final List<DictionaryValue> values;
+      public final Map<String, Object> properties;
 
-        public DictionaryValue( String id, boolean enabled, long externalId ) {
-            this( id, enabled, externalId, emptyList(), emptyMap() );
-        }
+      public DictionaryValue( String id, boolean enabled, long externalId ) {
+         this( id, enabled, externalId, emptyList(), emptyMap() );
+      }
 
-        public DictionaryValue( String id, boolean enabled, long externalId, List<DictionaryValue> values ) {
-            this( id, enabled, externalId, values, emptyMap() );
-        }
+      public DictionaryValue( String id, boolean enabled, long externalId,
+                              List<DictionaryValue> values ) {
+         this( id, enabled, externalId, values, emptyMap() );
+      }
 
-        public DictionaryValue(
-            String id,
-            boolean enabled,
-            long externalId,
-            Map<String, Object> properties
-        ) {
-            this( id, enabled, externalId, emptyList(), properties );
-        }
+      public DictionaryValue( String id, boolean enabled, long externalId,
+                              Map<String, Object> properties ) {
+         this( id, enabled, externalId, emptyList(), properties );
+      }
 
-        public DictionaryValue(
-            String id,
-            boolean enabled,
-            long externalId,
-            List<DictionaryValue> values,
-            Map<String, Object> properties
-        ) {
-            this.id = id;
-            this.enabled = enabled;
-            this.externalId = externalId;
-            this.values = values;
-            this.properties = properties;
-        }
+      public DictionaryValue( String id, boolean enabled, long externalId,
+                              List<DictionaryValue> values, Map<String, Object> properties ) {
+         this.id = id;
+         this.enabled = enabled;
+         this.externalId = externalId;
+         this.values = values;
+         this.properties = properties;
+      }
 
-    }
+   }
 }

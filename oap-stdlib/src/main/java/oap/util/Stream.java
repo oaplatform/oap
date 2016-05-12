@@ -208,6 +208,10 @@ public class Stream<E> implements java.util.stream.Stream<E> {
       return underlying.mapToDouble( mapper );
    }
 
+   public <A, B> PairStream<A, B> mapToPairs( Function<E, Pair<A, B>> mapper ) {
+      return PairStream.of( map( mapper ) );
+   }
+
    @Override
    public <R> Stream<R> flatMap( Function<? super E, ? extends java.util.stream.Stream<? extends R>> mapper ) {
       return of( underlying.flatMap( mapper ) );

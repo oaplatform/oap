@@ -37,6 +37,11 @@ public class PairStream<A, B> extends Stream<Pair<A, B>> {
       super( underlying );
    }
 
+
+   public static <A, B> PairStream<A, B> of( Stream<Pair<A, B>> stream ) {
+      return new PairStream<>( stream );
+   }
+
    public static <A, B> PairStream<A, B> of( Map<A, B> map ) {
       return new PairStream<>( map.entrySet().stream().map( e -> __( e.getKey(), e.getValue() ) ) );
    }
@@ -71,5 +76,9 @@ public class PairStream<A, B> extends Stream<Pair<A, B>> {
 
    public void forEach( BiConsumer<A, B> consumer ) {
       super.forEach( p -> consumer.accept( p._1, p._2 ) );
+   }
+
+   public Map<A, B> toMap() {
+      return collect( Maps.Collectors.toMap() );
    }
 }

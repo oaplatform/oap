@@ -22,31 +22,21 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.io;
 
-import oap.testng.AbstractTest;
-import oap.util.Maps;
+import oap.testng.Asserts;
 import org.testng.annotations.Test;
 
-import static oap.util.Pair.__;
+import java.net.URL;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by Igor Petrenko on 15.04.2016.
- */
-public class DictionaryTest extends AbstractTest {
+public class ResourcesTest {
    @Test
-   public void testParse() {
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).name )
-         .isEqualTo( "test-dictionary" );
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).values )
-         .contains( new Dictionary.DictionaryValue( "id2", true, '2',
-            Maps.of( __( "title", "title2" ) ) )
-         );
-
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).values.get( 0 ).values )
-         .contains(
-            new Dictionary.DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
-         );
+   public void urls() {
+      List<URL> urls = Resources.urls( getClass().getName(), "txt" );
+      assertThat( urls )
+         .containsOnly( Asserts.urlOfTestResource( getClass(), "resource.txt" ) );
    }
 }

@@ -25,52 +25,44 @@
 package oap.dictionary;
 
 import lombok.extern.slf4j.Slf4j;
-import org.reflections.Reflections;
-import org.reflections.scanners.ResourcesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
+import oap.io.Files;
+import oap.io.Resources;
+import oap.util.Maps;
+import oap.util.Stream;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static oap.util.Pair.__;
 
 /**
  * Created by Igor Petrenko on 15.04.2016.
  */
 @Slf4j
 public class Dictionaries {
-    public static final List<String> dictionaries = new ArrayList<>();
-    private static final ConcurrentHashMap<String, Dictionary> cache = new ConcurrentHashMap<>();
+   private static final Map<String, URL> dictionaries = new HashMap<>();
+   private static final ConcurrentHashMap<String, Dictionary> cache = new ConcurrentHashMap<>();
 
-    private synchronized static void load() {
-        if( dictionaries.isEmpty() ) {
-            final Reflections reflections = new Reflections(
-                new ConfigurationBuilder()
-                    .setUrls( ClasspathHelper.forPackage( "dictionary" ) )
-                    .setScanners( new ResourcesScanner() )
-            );
+   private synchronized static void load() {
+      if( dictionaries.isEmpty() ) {
+         dictionaries.putAll( Stream.of( Resources.urls( "dictionary", "json" ) )
+            .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
+            .toMap() );
+         log.info( "dictionaries: {}", dictionaries );
+      }
+   }
 
-            final Set<String> resources = reflections.getResources( str -> str.endsWith( ".json" ) );
+   public static Dictionary getDictionary( String name ) throws DictionaryNotFoundError {
+      load();
 
-            log.info( "dictionaries: {}", resources );
+      return Maps.get( dictionaries, name )
+         .map( DictionaryParser::parse )
+         .orElseThrow( () -> new DictionaryNotFoundError( name ) );
+   }
 
-            dictionaries.addAll( resources );
-        }
-    }
-
-    public static Dictionary getDictionary( String name ) throws DictionaryNotFoundError {
-        load();
-
-        return dictionaries
-            .stream()
-            .filter( d -> d.endsWith( name + ".json" ) )
-            .findAny()
-            .map( d -> DictionaryParser.parse( "/" + d ) )
-            .orElseThrow( () -> new DictionaryNotFoundError( name ) );
-    }
-
-    public static Dictionary getCachedDictionary( String name ) throws DictionaryNotFoundError {
-        return cache.computeIfAbsent( name, Dictionaries::getDictionary );
-    }
+   public static Dictionary getCachedDictionary( String name ) throws DictionaryNotFoundError {
+      return cache.computeIfAbsent( name, Dictionaries::getDictionary );
+   }
 }
