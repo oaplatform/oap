@@ -26,6 +26,8 @@ package oap.util;
 
 import oap.testng.AbstractTest;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,10 +43,10 @@ public class DatesTest extends AbstractTest {
 
    @Test
    public void testCurrentTimeDay() {
-      Dates.setTimeFixed( 1970, 1, 1, 0 );
+      DateTimeUtils.setCurrentMillisFixed( new DateTime( 1970, 1, 1, 0, 0, DateTimeZone.UTC ).getMillis() );
       assertThat( Dates.currentTimeDay() ).isEqualTo( 0 );
 
-      Dates.setTimeFixed( 1970, 2, 10, 0 );
-      assertThat( Dates.currentTimeDay() ).isEqualTo( 39 );
+      DateTimeUtils.setCurrentMillisFixed( new DateTime( 1970, 2, 10, 0, 0, DateTimeZone.UTC ).getMillis() );
+      assertThat( Dates.currentTimeDay() ).isEqualTo( 40 );
    }
 }
