@@ -88,6 +88,10 @@ public final class Metrics {
       measureHistogram( name( metric ), count );
    }
 
+   public static <T extends Metric> T register( Name name, T metric ) {
+      return registry.register( MetricRegistry.name( name.line ), metric );
+   }
+
    public static void measureHistogram( Name metric, long count ) {
       registry.histogram( metric.line ).update( count );
    }
