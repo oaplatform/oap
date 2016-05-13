@@ -186,8 +186,8 @@ public class HttpResponse {
         }
 
         public String build() {
-            return StringUtils.removeEnd( JOINER.join( SID, domain, expires, path, Strings.join( "; ", customs ) ),
-                    "; " );
+            return StringUtils.removeEnd( JOINER.join( SID, customs.isEmpty() ? null : Strings.join( "; ", customs ),
+                    domain, expires, path ), "; " );
         }
     }
 
