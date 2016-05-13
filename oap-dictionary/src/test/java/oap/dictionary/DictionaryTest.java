@@ -28,6 +28,8 @@ import oap.testng.AbstractTest;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,12 +40,13 @@ public class DictionaryTest extends AbstractTest {
    @Test
    public void testParse() {
       assertThat( Dictionaries.getDictionary( "test-dictionary" ).name ).isEqualTo( "test-dictionary" );
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).getValues() ).contains( new DictionaryValue( "id2", true, '2',
-         Maps.of( __( "title", "title2" ) ) )
-      );
-
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).getValues().get( 0 ).getValues() ).contains(
-         new DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
+      assertThat( Dictionaries.getDictionary( "test-dictionary" ).getValues() ).contains( new DictionaryValue( "id1", true, '1',
+            Arrays.asList(
+               new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) ),
+               new DictionaryLeaf( "id12", true, 12, Maps.of( __( "title", "title12" ) ) )
+            ),
+            Maps.of( __( "title", "title1" ) ) )
+         , new DictionaryLeaf( "id2", true, 50, Maps.of( __( "title", "title2" ) ) )
       );
    }
 }

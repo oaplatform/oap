@@ -45,12 +45,12 @@ public class DictionaryParserTest extends AbstractTest {
 
       final DictionaryRoot dictionary = DictionaryParser.parse( path );
 
-      assertThat( dictionary.getValues() ).contains( new DictionaryValue( "id2", true, '2',
+      assertThat( dictionary.getValues() ).contains( new DictionaryLeaf( "id2", true, '2',
          Maps.of( __( "title", "title2" ) ) )
       );
 
       assertThat( dictionary.getValues().get( 0 ).getValues() ).contains(
-         new DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
+         new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
       );
    }
 }

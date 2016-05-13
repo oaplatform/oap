@@ -300,7 +300,7 @@ public final class Files {
    }
 
    public static String nameWithoutExtention( URL url ) {
-      Path path = Paths.get( url.getPath() );
-      return Strings.substringBeforeLast( path.getFileName().toString(), "." );
+      File path = new File( url.getPath() );
+      return Strings.substringBeforeLast( path.getName(), "." );
    }
 }
