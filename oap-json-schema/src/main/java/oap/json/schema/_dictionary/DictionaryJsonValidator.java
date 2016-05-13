@@ -56,7 +56,7 @@ public class DictionaryJsonValidator implements JsonSchemaValidator<DictionarySc
 
          if( schema.parent.isPresent() ) {
             final String path = schema.parent.get().path;
-            final Optional<Object> parentValue = Lists.headOpt( new JsonPath( path ).traverse( properties.rootJson ) );
+            final Optional<Object> parentValue = Lists.headOpt( new JsonPath( path, properties.path ).traverse( properties.rootJson ) );
             if( !parentValue.isPresent() )
                return Either.left( singletonList( properties.error( "required property is missing" ) ) );
 

@@ -25,55 +25,75 @@
 package oap.json.schema;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.util.*;
 
+import static java.util.Collections.singletonList;
+
 public class JsonPath {
-    private final String[] paths;
+   private final String[] path;
+   private final Optional<String[]> fromPath;
 
-    public JsonPath( String path ) {
-        paths = StringUtils.split( path, '.' );
-    }
+   public JsonPath( String path, Optional<String> fromPath ) {
+      this.path = StringUtils.split( path, '.' );
+      this.fromPath = fromPath.map( fp -> StringUtils.split( fp, '/' ) );
+   }
 
-    @SuppressWarnings( "unchecked" )
-    public List<Object> traverse( Object json ) {
-        final Optional<Object> result = traverse( json, 0 );
+   public JsonPath( String path ) {
+      this( path, Optional.empty() );
+   }
 
-        return result.map( r -> {
-            if( r instanceof List<?> ) return ( List<Object> ) r;
+   @SuppressWarnings( "unchecked" )
+   public List<Object> traverse( Object json ) {
+      final Optional<Object> result = traverse( json, 0, 0 );
 
-            return Collections.singletonList( r );
-        } ).orElseGet( Collections::emptyList );
+      return result.map( r -> {
+         if( r instanceof List<?> ) return ( List<Object> ) r;
 
-    }
+         return singletonList( r );
+      } ).orElseGet( Collections::emptyList );
 
-    private Optional<Object> traverse( Object json, int index ) {
-        Object last = json;
+   }
 
-        for( int i = index; i < paths.length; i++ ) {
-            final String field = paths[i];
+   private Optional<Object> traverse( Object json, int index, int fromIndex ) {
+      Object last = json;
 
-            if( last == null ) return Optional.empty();
-            else if( last instanceof Map<?, ?> ) {
-                final Map<?, ?> map = ( Map<?, ?> ) last;
+      int fi = fromIndex;
+      for( int i = index; i < path.length; i++, fi++ ) {
+         final String field = path[i];
+         final Optional<String> fromField = fromPath.isPresent() ? Optional.of( fromPath.get()[fi] ) : Optional.empty();
 
-                last = map.get( field );
-            } else if( last instanceof List<?> ) {
-                final List<?> list = ( List<?> ) last;
+         if( last == null ) return Optional.empty();
+         else if( last instanceof Map<?, ?> ) {
+            final Map<?, ?> map = ( Map<?, ?> ) last;
 
-                final ArrayList<Object> result = new ArrayList<>();
+            last = map.get( field );
+         } else if( last instanceof List<?> ) {
+            final List<?> list = ( List<?> ) last;
 
-                for( Object item : list ) {
-                    final Optional<Object> value = traverse( item, i );
-                    value.ifPresent( result::add );
-                }
+            final ArrayList<Object> result = new ArrayList<>();
 
-                last = result;
+            if( fromField.isPresent() ) {
+               final String arrayIndexStr = fromPath.get()[fi];
+               if( !NumberUtils.isDigits( arrayIndexStr ) ) return Optional.empty();
+               int arrayIndex = Integer.parseInt( arrayIndexStr );
 
-                i = paths.length;
-            } else return Optional.empty();
-        }
+               final Optional<Object> value = traverse( list.get( arrayIndex ), i + 1, fi );
+               value.ifPresent( result::add );
+            } else {
+               for( Object item : list ) {
+                  final Optional<Object> value = traverse( item, i, fi );
+                  value.ifPresent( result::add );
+               }
+            }
 
-        return Optional.ofNullable( last );
-    }
+            last = result;
+
+            i = path.length;
+         } else return Optional.empty();
+      }
+
+      return Optional.ofNullable( last );
+   }
 }
