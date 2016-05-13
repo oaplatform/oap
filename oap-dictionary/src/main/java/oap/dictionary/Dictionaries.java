@@ -42,8 +42,8 @@ import static oap.util.Pair.__;
  */
 @Slf4j
 public class Dictionaries {
-   private static final Map<String, URL> dictionaries = new HashMap<>();
-   private static final ConcurrentHashMap<String, Dictionary> cache = new ConcurrentHashMap<>();
+    public static final List<String> dictionaries = new ArrayList<>();
+    private static final ConcurrentHashMap<String, DictionaryRoot> cache = new ConcurrentHashMap<>();
 
    private synchronized static void load() {
       if( dictionaries.isEmpty() ) {
@@ -54,15 +54,15 @@ public class Dictionaries {
       }
    }
 
-   public static Dictionary getDictionary( String name ) throws DictionaryNotFoundError {
-      load();
+    public static DictionaryRoot getDictionary( String name ) throws DictionaryNotFoundError {
+        load();
 
       return Maps.get( dictionaries, name )
          .map( DictionaryParser::parse )
          .orElseThrow( () -> new DictionaryNotFoundError( name ) );
    }
 
-   public static Dictionary getCachedDictionary( String name ) throws DictionaryNotFoundError {
-      return cache.computeIfAbsent( name, Dictionaries::getDictionary );
-   }
+    public static DictionaryRoot getCachedDictionary( String name ) throws DictionaryNotFoundError {
+        return cache.computeIfAbsent( name, Dictionaries::getDictionary );
+    }
 }

@@ -38,8 +38,8 @@ public class NumberSchemaAST extends SchemaAST<NumberSchemaAST> {
 
    public NumberSchemaAST( CommonSchemaAST common, Optional<Boolean> exclusiveMinimum,
                            Optional<Boolean> exclusiveMaximum, Optional<Double> minimum,
-                           Optional<Double> maximum ) {
-      super( common );
+                           Optional<Double> maximum, String path ) {
+      super( common, path );
       this.exclusiveMinimum = exclusiveMinimum;
       this.exclusiveMaximum = exclusiveMaximum;
       this.minimum = minimum;
@@ -53,7 +53,8 @@ public class NumberSchemaAST extends SchemaAST<NumberSchemaAST> {
          exclusiveMinimum.isPresent() ? exclusiveMinimum : cs.exclusiveMinimum,
          exclusiveMaximum.isPresent() ? exclusiveMaximum : cs.exclusiveMaximum,
          minimum.isPresent() ? minimum : cs.minimum,
-         maximum.isPresent() ? maximum : cs.maximum
+         maximum.isPresent() ? maximum : cs.maximum,
+         path
       );
    }
 }

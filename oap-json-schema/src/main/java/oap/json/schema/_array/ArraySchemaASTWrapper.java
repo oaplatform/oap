@@ -22,28 +22,36 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.json.schema._array;
 
-import oap.testng.AbstractTest;
-import oap.util.Maps;
-import org.testng.annotations.Test;
+import oap.json.schema.*;
 
-import static oap.util.Pair.__;
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
-/**
- * Created by Igor Petrenko on 15.04.2016.
- */
-public class DictionaryTest extends AbstractTest {
-   @Test
-   public void testParse() {
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).name ).isEqualTo( "test-dictionary" );
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).getValues() ).contains( new DictionaryValue( "id2", true, '2',
-         Maps.of( __( "title", "title2" ) ) )
-      );
+public class ArraySchemaASTWrapper
+   extends SchemaASTWrapper<ArraySchemaAST, ArraySchemaASTWrapper>
+   implements ContainerSchemaASTWrapper {
 
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).getValues().get( 0 ).getValues() ).contains(
-         new DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
-      );
+   SchemaASTWrapper items;
+   Optional<Integer> minItems;
+   Optional<Integer> maxItems;
+   Optional<String> idField;
+
+   public ArraySchemaASTWrapper( SchemaId id ) {
+      super( id );
+   }
+
+   @Override
+   public ArraySchemaAST unwrap( JsonSchemaParserContext context ) {
+      return new ArraySchemaAST( common, minItems, maxItems, idField, items.unwrap( context ), id.toString() );
+   }
+
+   @Override
+   public Map<String, SchemaASTWrapper> getChildren() {
+      return new HashMap<String, SchemaASTWrapper>() {{
+         put( "items", items );
+      }};
    }
 }

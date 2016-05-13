@@ -22,28 +22,34 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.json.schema;
 
-import oap.testng.AbstractTest;
-import oap.util.Maps;
-import org.testng.annotations.Test;
+import org.apache.commons.lang3.StringUtils;
 
-import static oap.util.Pair.__;
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.Optional;
 
 /**
- * Created by Igor Petrenko on 15.04.2016.
+ * Created by Igor Petrenko on 19.04.2016.
  */
-public class DictionaryTest extends AbstractTest {
-   @Test
-   public void testParse() {
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).name ).isEqualTo( "test-dictionary" );
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).getValues() ).contains( new DictionaryValue( "id2", true, '2',
-         Maps.of( __( "title", "title2" ) ) )
-      );
+public class SchemaWrapperPath {
+   private final String[] paths;
 
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).getValues().get( 0 ).getValues() ).contains(
-         new DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
-      );
+   public SchemaWrapperPath( String path ) {
+      paths = StringUtils.split( path, '.' );
+   }
+
+   private static Optional<SchemaASTWrapper> traverse( SchemaASTWrapper schema, String[] paths, int index ) {
+      if( index >= paths.length ) return Optional.of( schema );
+
+      if( schema instanceof ContainerSchemaASTWrapper ) {
+         final String property = paths[index];
+         final SchemaASTWrapper s = ( ( ContainerSchemaASTWrapper ) schema ).getChildren().get( property );
+         if( s == null ) return Optional.empty();
+         return traverse( s, paths, index + 1 );
+      } else return Optional.empty();
+   }
+
+   public final Optional<SchemaASTWrapper> traverse( SchemaASTWrapper schema ) {
+      return traverse( schema, paths, 0 );
    }
 }

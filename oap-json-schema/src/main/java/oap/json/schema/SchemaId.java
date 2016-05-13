@@ -24,38 +24,24 @@
 
 package oap.json.schema;
 
-import oap.json.schema._array.ArraySchemaAST;
-import oap.json.schema._object.ObjectSchemaAST;
+import lombok.EqualsAndHashCode;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Optional;
+import java.util.Arrays;
 
 /**
- * Created by Igor Petrenko on 19.04.2016.
+ * Created by Igor Petrenko on 29.04.2016.
  */
-public class SchemaPath {
-    private final String[] paths;
+@EqualsAndHashCode
+public class SchemaId {
+   private final String[] id;
 
-    public SchemaPath( String path ) {
-        paths = StringUtils.split( path, '.' );
-    }
+   public SchemaId( String path ) {
+      id = StringUtils.split( path, '.' );
+   }
 
-    private static Optional<SchemaAST> traverse( SchemaAST schema, String[] paths, int index ) {
-        if( index >= paths.length ) return Optional.of( schema );
-
-        if( schema instanceof ObjectSchemaAST ) {
-            final String property = paths[index];
-            final SchemaAST s = ( ( ObjectSchemaAST ) schema ).properties.get( property );
-            if( s == null ) return Optional.empty();
-            return traverse( s, paths, index + 1 );
-        } else if( schema instanceof ArraySchemaAST ) {
-            return traverse( ( ( ArraySchemaAST ) schema ).items, paths, index );
-        } else if( index == paths.length ) {
-            return Optional.of( schema );
-        } else return Optional.empty();
-    }
-
-    public final Optional<SchemaAST> traverse( SchemaAST schema ) {
-        return traverse( schema, paths, 0 );
-    }
+   @Override
+   public String toString() {
+      return String.join( ".", id );
+   }
 }

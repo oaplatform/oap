@@ -23,13 +23,15 @@
  */
 package oap.json.schema._object;
 
-import oap.json.schema.JsonSchemaParserProperties;
+import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
-import oap.json.schema.SchemaAST;
 import oap.util.*;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static oap.util.Pair.__;
@@ -112,21 +114,18 @@ public class ObjectJsonValidator implements JsonSchemaValidator<ObjectSchemaAST>
    }
 
    @Override
-   public SchemaAST parse( JsonSchemaParserProperties properties ) {
-      SchemaAST.CommonSchemaAST common = node( properties ).asCommon();
-      Optional<Boolean> additionalProperties = node( properties ).asBoolean( "additionalProperties" ).optional();
-      Optional<String> extendsValue = node( properties ).asString( "extends" ).optional();
+   public ObjectSchemaASTWrapper parse( JsonSchemaParserContext context ) {
+      final ObjectSchemaASTWrapper wrapper = context.createWrapper( ObjectSchemaASTWrapper::new );
 
-      final Optional<ObjectSchemaAST> parentSchema = extendsValue
-         .map( url -> ( ( ObjectSchemaAST ) properties.urlParser.apply( url ) ) );
+      wrapper.common = node( context ).asCommon();
+      wrapper.additionalProperties = node( context ).asBoolean( "additionalProperties" ).optional();
+      wrapper.extendsValue = node( context ).asString( "extends" ).optional();
 
-      LinkedHashMap<String, SchemaAST> declaredProperties = node( properties ).asMapAST( "properties" ).required();
+      wrapper.parentSchema = wrapper.extendsValue
+         .map( url -> ( ( ObjectSchemaASTWrapper ) context.urlParser.apply( url ) ) );
 
-      final ObjectSchemaAST objectSchemaAST = new ObjectSchemaAST( common,
-         additionalProperties,
-         extendsValue,
-         declaredProperties
-      );
-      return parentSchema.map( objectSchemaAST::merge ).orElse( objectSchemaAST );
+      wrapper.declaredProperties = node( context ).asMapAST( "properties", context ).required();
+
+      return wrapper;
    }
 }

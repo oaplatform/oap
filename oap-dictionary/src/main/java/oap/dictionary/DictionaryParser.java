@@ -44,163 +44,169 @@ import static java.util.Collections.emptyMap;
  * Created by Igor Petrenko on 15.04.2016.
  */
 public class DictionaryParser {
-    public static final String NAME = "name";
-    public static final String ID = "id";
-    public static final String ENABLED = "enabled";
-    public static final String EXTERNAL_ID = "eid";
-    public static final String VALUES = "values";
+   public static final String NAME = "name";
+   public static final String ID = "id";
+   public static final String ENABLED = "enabled";
+   public static final String EXTERNAL_ID = "eid";
+   public static final String VALUES = "values";
 
-    private static final Set<String> defaultFields = new HashSet<>();
-    private static final BiFunction<Boolean, Object, Optional<Long>> longFunc =
-        ( convert, str ) -> {
-            if( !convert ) return Optional.empty();
-            else if( str instanceof Integer ) return Optional.of( ( ( Integer ) str ).longValue() );
-            else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).longValue() );
-            else if( str instanceof String && ( ( String ) str ).length() == 1 )
-                return Optional.of( ( long ) ( ( String ) str ).charAt( 0 ) );
-            else return Optional.empty();
-        };
+   private static final Set<String> defaultFields = new HashSet<>();
+   private static final BiFunction<Boolean, Object, Optional<Long>> longFunc =
+      ( convert, str ) -> {
+         if( !convert ) return Optional.empty();
+         else if( str instanceof Integer ) return Optional.of( ( ( Integer ) str ).longValue() );
+         else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).longValue() );
+         else if( str instanceof String && ( ( String ) str ).length() == 1 )
+            return Optional.of( ( long ) ( ( String ) str ).charAt( 0 ) );
+         else return Optional.empty();
+      };
 
-    static {
-        defaultFields.add( ID );
-        defaultFields.add( ENABLED );
-        defaultFields.add( EXTERNAL_ID );
-    }
+   static {
+      defaultFields.add( ID );
+      defaultFields.add( ENABLED );
+      defaultFields.add( EXTERNAL_ID );
+   }
 
-    @SuppressWarnings( "unchecked" )
-    private static Dictionary.DictionaryValue parseAsDictionaryValue( Object value, String path ) {
-        if( value instanceof Map ) {
-            final Map<Object, Object> valueMap = ( Map<Object, Object> ) value;
-            final String id = getString( valueMap, ID );
-            final boolean enabled = getBooleanOpt( valueMap, ENABLED ).orElse( true );
-            final long externalId = getLong( valueMap, EXTERNAL_ID, true );
-            List<Dictionary.DictionaryValue> values = emptyList();
+   @SuppressWarnings( "unchecked" )
+   private static DictionaryLeaf parseAsDictionaryValue( Object value, String path ) {
+      if( value instanceof Map ) {
+         final Map<Object, Object> valueMap = ( Map<Object, Object> ) value;
+         final String id = getString( valueMap, ID );
+         final boolean enabled = getBooleanOpt( valueMap, ENABLED ).orElse( true );
+         final long externalId = getLong( valueMap, EXTERNAL_ID, true );
+         List<DictionaryLeaf> values = emptyList();
 
-            final HashMap<String, Object> properties = new HashMap<>();
-            for( Map.Entry e : valueMap.entrySet() ) {
-                final String propertyName = e.getKey().toString();
-                if( !defaultFields.contains( propertyName ) ) {
-                    final Object propertyValue = e.getValue();
+         final HashMap<String, Object> properties = new HashMap<>();
+         for( Map.Entry e : valueMap.entrySet() ) {
+            final String propertyName = e.getKey().toString();
+            if( !defaultFields.contains( propertyName ) ) {
+               final Object propertyValue = e.getValue();
 
-                    if( VALUES.equals( propertyName ) )
-                        values = parseValues( ( List ) propertyValue, path );
-                    else
-                        properties.put( propertyName, propertyValue );
-                }
+               if( VALUES.equals( propertyName ) )
+                  values = parseValues( ( List ) propertyValue, path );
+               else
+                  properties.put( propertyName, propertyValue );
             }
+         }
 
-            return new Dictionary.DictionaryValue( id, enabled, externalId, values, properties.isEmpty() ? emptyMap() : properties );
-        } else {
-            throw new DictionaryFormatError(
-                "value " + path + " type " +
-                    ( value == null ? "<NULL>" : value.getClass().toString() ) + " != " + Map.class
-            );
-        }
-    }
 
-    public static Dictionary parse( Path resource ) {
-        final Map map = Binder.json.unmarshal( Map.class, resource );
-        return parse( map );
-    }
+         final Map<String, Object> p = properties.isEmpty() ? emptyMap() : properties;
+         return values.isEmpty() ?
+            new DictionaryLeaf( id, enabled, externalId, p ) :
+            new DictionaryValue( id, enabled, externalId, values, p );
+      } else {
+         throw new DictionaryFormatError(
+            "value " + path + " type " +
+               ( value == null ? "<NULL>" : value.getClass().toString() ) + " != " + Map.class
+         );
+      }
+   }
 
-    public static Dictionary parse( URL resource ) {
-        final Map map = Binder.json.unmarshal( Map.class, resource );
-        return parse( map );
-    }
+   public static DictionaryRoot parse( Path resource ) {
+      final Map map = Binder.json.unmarshal( Map.class, resource );
+      return parse( map );
+   }
 
-    public static Dictionary parse( String resource ) {
-        final Map map = Binder.json.unmarshalResource( DictionaryParser.class, Map.class, resource ).get();
+   public static DictionaryRoot parse( URL resource ) {
+      final Map map = Binder.json.unmarshal( Map.class, resource );
+      return parse( map );
+   }
 
-        return parse( map );
-    }
+   public static DictionaryRoot parse( String resource ) {
+      final Map map = Binder.json.unmarshalResource( DictionaryParser.class, Map.class, resource ).get();
 
-    private static Dictionary parse( Map map ) {
-        final String name = getString( map, NAME );
+      return parse( map );
+   }
 
-        final List values = getList( map, VALUES );
+   private static DictionaryRoot parse( Map map ) {
+      final String name = getString( map, NAME );
 
-        return new Dictionary( name, parseValues( values, "" ) );
-    }
+      final List values = getList( map, VALUES );
 
-    private static ArrayList<Dictionary.DictionaryValue> parseValues( List values, String path ) {
-        final ArrayList<Dictionary.DictionaryValue> dv = new ArrayList<>();
+      return new DictionaryRoot( name, parseValues( values, "" ) );
+   }
 
-        for( int i = 0; i < values.size(); i++ ) {
-            final Object value = values.get( i );
-            dv.add( parseAsDictionaryValue( value, path + "[" + i + "]" ) );
-        }
+   private static ArrayList<DictionaryLeaf> parseValues( List values, String path ) {
+      final ArrayList<DictionaryLeaf> dv = new ArrayList<>();
 
-        return dv;
-    }
+      for( int i = 0; i < values.size(); i++ ) {
+         final Object value = values.get( i );
+         dv.add( parseAsDictionaryValue( value, path + "[" + i + "]" ) );
+      }
 
-    private static String getString( Map map, String field ) {
-        return getValue( String.class, map, field, str -> Optional.empty() );
-    }
+      return dv;
+   }
 
-    private static long getLong( Map map, String field, boolean convert ) {
-        return getValue( Long.class, map, field, str -> longFunc.apply( convert, str ) );
-    }
+   private static String getString( Map map, String field ) {
+      return getValue( String.class, map, field, str -> Optional.empty() );
+   }
 
-    private static Optional<Boolean> getBooleanOpt( Map map, String field ) {
-        return getValueOpt( Boolean.class, map, field, str -> Optional.empty() );
-    }
+   private static long getLong( Map map, String field, boolean convert ) {
+      return getValue( Long.class, map, field, str -> longFunc.apply( convert, str ) );
+   }
 
-    private static List getList( Map map, String field ) {
-        return getValue( List.class, map, field, ( str ) -> Optional.empty() );
-    }
+   private static Optional<Boolean> getBooleanOpt( Map map, String field ) {
+      return getValueOpt( Boolean.class, map, field, str -> Optional.empty() );
+   }
 
-    private static <T> T getValue( Class<T> clazz, Map map, String field, Function<Object, Optional<T>> func ) {
-        return getValueOpt( clazz, map, field, func ).orElseThrow( () -> new DictionaryFormatError( "field '" + field + "' not found" ) );
-    }
+   private static List getList( Map map, String field ) {
+      return getValue( List.class, map, field, ( str ) -> Optional.empty() );
+   }
 
-    @SuppressWarnings( "unchecked" )
-    private static <T> Optional<T> getValueOpt( Class<T> clazz, Map map, String field, Function<Object, Optional<T>> func ) {
-        final Object f = map.get( field );
+   private static <T> T getValue( Class<T> clazz, Map map, String field, Function<Object, Optional<T>> func ) {
+      return getValueOpt( clazz, map, field, func ).orElseThrow( () -> new DictionaryFormatError( "field '" + field + "' not found" ) );
+   }
 
-        if( f == null ) return Optional.empty();
+   @SuppressWarnings( "unchecked" )
+   private static <T> Optional<T> getValueOpt( Class<T> clazz, Map map, String field, Function<Object, Optional<T>> func ) {
+      final Object f = map.get( field );
 
-        if( clazz.isInstance( f ) ) {
-            return Optional.of( ( T ) f );
-        }
+      if( f == null ) return Optional.empty();
 
-        final Optional<T> apply = func.apply( f );
-        if( apply.isPresent() ) return Optional.ofNullable( apply.get() );
+      if( clazz.isInstance( f ) ) {
+         return Optional.of( ( T ) f );
+      }
 
-        throw new DictionaryFormatError( "field '" + field + "' type " + f.getClass() + " != " + clazz );
-    }
+      final Optional<T> apply = func.apply( f );
+      if( apply.isPresent() ) return Optional.ofNullable( apply.get() );
 
-    public static void serialize( Dictionary dictionary, Path path ) {
-        try( final JsonGenerator jsonGenerator = Binder.json.getJsonGenerator( path ) ) {
-            jsonGenerator.writeStartObject();
+      throw new DictionaryFormatError( "field '" + field + "' type " + f.getClass() + " != " + clazz );
+   }
 
-            jsonGenerator.writeStringField( NAME, dictionary.name );
+   public static void serialize( DictionaryRoot dictionary, Path path ) {
+      try( final JsonGenerator jsonGenerator = Binder.json.getJsonGenerator( path ) ) {
+         jsonGenerator.writeStartObject();
 
-            writeValues( jsonGenerator, dictionary.values );
+         jsonGenerator.writeStringField( NAME, dictionary.name );
 
-            jsonGenerator.writeEndObject();
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
-    }
+         writeValues( jsonGenerator, dictionary.getValues() );
 
-    private static void writeValues( JsonGenerator jsonGenerator, List<Dictionary.DictionaryValue> values ) throws IOException {
-        if( values.isEmpty() ) return;
+         jsonGenerator.writeEndObject();
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
+   }
 
-        jsonGenerator.writeFieldName( VALUES );
-        jsonGenerator.writeStartArray();
+   private static void writeValues( JsonGenerator jsonGenerator, List<DictionaryLeaf> values ) throws IOException {
+      if( values.isEmpty() ) return;
 
-        for( val value : values ) {
-            jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField( ID, value.id );
-            if( !value.enabled ) jsonGenerator.writeBooleanField( ENABLED, false );
-            jsonGenerator.writeNumberField( EXTERNAL_ID, value.externalId );
-            writeValues( jsonGenerator, value.values );
+      jsonGenerator.writeFieldName( VALUES );
+      jsonGenerator.writeStartArray();
 
-            value.properties.forEach( Try.consume( jsonGenerator::writeObjectField ) );
+      for( val value : values ) {
+         jsonGenerator.writeStartObject();
+         jsonGenerator.writeStringField( ID, value.id );
+         if( !value.enabled ) jsonGenerator.writeBooleanField( ENABLED, false );
+         jsonGenerator.writeNumberField( EXTERNAL_ID, value.externalId );
+         if( value instanceof DictionaryValue ) {
+            writeValues( jsonGenerator, value.getValues() );
+         }
 
-            jsonGenerator.writeEndObject();
-        }
+         value.properties.forEach( Try.consume( jsonGenerator::writeObjectField ) );
 
-        jsonGenerator.writeEndArray();
-    }
+         jsonGenerator.writeEndObject();
+      }
+
+      jsonGenerator.writeEndArray();
+   }
 }

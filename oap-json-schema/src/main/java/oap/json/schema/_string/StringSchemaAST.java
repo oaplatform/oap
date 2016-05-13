@@ -34,8 +34,8 @@ public class StringSchemaAST extends SchemaAST<StringSchemaAST> {
    public final Optional<Pattern> pattern;
 
    public StringSchemaAST( SchemaAST.CommonSchemaAST common, Optional<Integer> minLength, Optional<Integer> maxLength,
-                           Optional<Pattern> pattern ) {
-      super( common );
+                           Optional<Pattern> pattern, String path ) {
+      super( common, path );
       this.minLength = minLength;
       this.maxLength = maxLength;
       this.pattern = pattern;
@@ -47,7 +47,8 @@ public class StringSchemaAST extends SchemaAST<StringSchemaAST> {
          common.merge( cs.common ),
          minLength.isPresent() ? minLength : cs.minLength,
          maxLength.isPresent() ? maxLength : cs.maxLength,
-         pattern.isPresent() ? pattern : cs.pattern
+         pattern.isPresent() ? pattern : cs.pattern,
+         path
       );
    }
 }

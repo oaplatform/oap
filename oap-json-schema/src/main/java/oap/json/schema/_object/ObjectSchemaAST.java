@@ -34,8 +34,9 @@ public class ObjectSchemaAST extends SchemaAST<ObjectSchemaAST> {
    public final LinkedHashMap<String, SchemaAST> properties;
 
    public ObjectSchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
-                           Optional<String> extendsValue, LinkedHashMap<String, SchemaAST> properties ) {
-      super( common );
+                           Optional<String> extendsValue, LinkedHashMap<String, SchemaAST> properties,
+                           String path) {
+      super( common, path );
       this.additionalProperties = additionalProperties;
       this.extendsValue = extendsValue;
       this.properties = properties;
@@ -47,7 +48,8 @@ public class ObjectSchemaAST extends SchemaAST<ObjectSchemaAST> {
          common.merge( cs.common ),
          additionalProperties.isPresent() ? additionalProperties : cs.additionalProperties,
          extendsValue.isPresent() ? extendsValue : cs.extendsValue,
-         merge( properties, cs.properties )
+         merge( properties, cs.properties ),
+         path
       );
    }
 

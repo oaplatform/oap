@@ -23,10 +23,9 @@
  */
 package oap.json.schema._array;
 
-import oap.json.schema.JsonSchemaParserProperties;
+import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
-import oap.json.schema.SchemaAST;
 import oap.util.Either;
 import oap.util.Lists;
 import oap.util.OptionalList;
@@ -37,54 +36,56 @@ import java.util.List;
 import java.util.Optional;
 
 public class ArrayJsonValidator implements JsonSchemaValidator<ArraySchemaAST> {
-    @SuppressWarnings( "unchecked" )
-    @Override
-    public Either<List<String>, Object> validate( JsonValidatorProperties properties, ArraySchemaAST schema,
-                                                  Object value ) {
-        if( !( value instanceof Collection<?> ) ) return Either.left(
-            Lists.of(
-                properties.error( "instance is of type " + getType( value ) +
-                    ", which is none of the allowed primitive types ([" + schema.common.schemaType +
-                    "])" ) ) );
+   @SuppressWarnings( "unchecked" )
+   @Override
+   public Either<List<String>, Object> validate( JsonValidatorProperties properties, ArraySchemaAST schema,
+                                                 Object value ) {
+      if( !( value instanceof Collection<?> ) ) return Either.left(
+         Lists.of(
+            properties.error( "instance is of type " + getType( value ) +
+               ", which is none of the allowed primitive types ([" + schema.common.schemaType +
+               "])" ) ) );
 
-        Collection<?> arrayValue = ( Collection<?> ) value;
+      Collection<?> arrayValue = ( Collection<?> ) value;
 
-        Optional<String> minItemsResult = schema.minItems
-            .filter( minItems -> arrayValue.size() < minItems )
-            .map( minItems -> properties.error( "array has less than minItems elements " + minItems ) );
+      Optional<String> minItemsResult = schema.minItems
+         .filter( minItems -> arrayValue.size() < minItems )
+         .map( minItems -> properties.error( "array has less than minItems elements " + minItems ) );
 
-        Optional<String> maxItemsResult = schema.maxItems
-            .filter( maxItems -> arrayValue.size() > maxItems )
-            .map( maxItems -> properties.error( "array has more than maxItems elements " + maxItems ) );
+      Optional<String> maxItemsResult = schema.maxItems
+         .filter( maxItems -> arrayValue.size() > maxItems )
+         .map( maxItems -> properties.error( "array has more than maxItems elements " + maxItems ) );
 
-        Either<List<String>, Object> result = OptionalList
-            .<String>builder()
-            .add( minItemsResult )
-            .add( maxItemsResult )
-            .toEigher( value );
+      Either<List<String>, Object> result = OptionalList
+         .<String>builder()
+         .add( minItemsResult )
+         .add( maxItemsResult )
+         .toEigher( value );
 
-        return result.right().flatMap( r -> Either.fold2(
-            Stream
-                .of( arrayValue.stream() )
-                .zipWithIndex()
-                .<Either<List<String>, Object>>map(
-                    pair -> properties.validator.apply( properties.withPath(
-                        String.valueOf( pair._2 ) ), schema.items,
-                        pair._1 ) )
-            )
-                .right()
-                .map( l -> ( Object ) l )
-        );
-    }
+      return result.right().flatMap( r -> Either.fold2(
+         Stream
+            .of( arrayValue.stream() )
+            .zipWithIndex()
+            .<Either<List<String>, Object>>map(
+               pair -> properties.validator.apply( properties.withPath(
+                  String.valueOf( pair._2 ) ), schema.items,
+                  pair._1 ) )
+         )
+            .right()
+            .map( l -> ( Object ) l )
+      );
+   }
 
-    @Override
-    public SchemaAST parse( JsonSchemaParserProperties properties ) {
-        SchemaAST.CommonSchemaAST common = node( properties ).asCommon();
-        Optional<Integer> minItems = node( properties ).asInt( "minItems" ).optional();
-        Optional<Integer> maxItems = node( properties ).asInt( "maxItems" ).optional();
-        Optional<String> idField = node( properties ).asString( "id" ).optional();
-        SchemaAST items = node( properties ).asAST( "items" ).required();
+   @Override
+   public ArraySchemaASTWrapper parse( JsonSchemaParserContext context ) {
+      final ArraySchemaASTWrapper wrapper = context.createWrapper( ArraySchemaASTWrapper::new );
 
-        return new ArraySchemaAST( common, minItems, maxItems, idField, items );
-    }
+      wrapper.common = node( context ).asCommon();
+      wrapper.minItems = node( context ).asInt( "minItems" ).optional();
+      wrapper.maxItems = node( context ).asInt( "maxItems" ).optional();
+      wrapper.idField = node( context ).asString( "id" ).optional();
+      wrapper.items = node( context ).asAST( "items", context ).required();
+
+      return wrapper;
+   }
 }

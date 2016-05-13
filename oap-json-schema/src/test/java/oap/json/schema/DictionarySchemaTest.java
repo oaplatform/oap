@@ -27,37 +27,59 @@ package oap.json.schema;
 import org.testng.annotations.Test;
 
 public class DictionarySchemaTest extends AbstractSchemaTest {
-    @Test
-    public void testDictionary() {
-        String schema = "{type: dictionary, name: dict}";
+   @Test
+   public void testDictionary() {
+      String schema = "{type: dictionary, name: dict}";
 
-        vOk( schema, "null" );
-        vOk( schema, "'test1'" );
-        vOk( schema, "'test2'" );
+      vOk( schema, "null" );
+      vOk( schema, "'test1'" );
+      vOk( schema, "'test2'" );
 
-        vFail( schema, "'test4'", "instance does not match any member of the enumeration [test1,test2,test3]" );
-    }
+      vFail( schema, "'test4'", "instance does not match any member of the enumeration [test1,test2,test3]" );
+   }
 
-    @Test
-    public void testUnknownDictionary() {
-        String schema = "{type: dictionary, name: unknown}";
+   @Test
+   public void testUnknownDictionary() {
+      String schema = "{type: dictionary, name: unknown}";
 
-        vFail( schema, "'test4'", "dictionary not found" );
-    }
+      vFail( schema, "'test4'", "dictionary not found" );
+   }
 
-    @Test(enabled = false)
-    public void testHierarchical() {
-        String schema = "{type: object, properties: {" +
-            "parent: {type: dictionary, name: dict-h}, " +
-            "child: {type: dictionary, parent: {json-path: parent}}" +
-            "}}";
+   @Test
+   public void testHierarchical() {
+      String schema = "{type: object, properties: {" +
+         "parent: {type: dictionary, name: dict-h}, " +
+         "child: {type: dictionary, parent: {json-path: parent}}" +
+         "}}";
 
-        vOk( schema, "{'parent': 'p1'}" );
-        vOk( schema, "{'parent': 'p2'}" );
-        vOk( schema, "{'parent': 'p1', 'child':'c11'}" );
-        vOk( schema, "{'parent': 'p1', 'child':'c12'}" );
-        vOk( schema, "{'parent': 'p2', 'child':'c21'}" );
+      vOk( schema, "{'parent': 'p1'}" );
+      vOk( schema, "{'parent': 'p2'}" );
+      vOk( schema, "{'parent': 'p1', 'child':'c11'}" );
+      vOk( schema, "{'parent': 'p1', 'child':'c12'}" );
+      vOk( schema, "{'parent': 'p2', 'child':'c21'}" );
 
-        vFail( schema, "{'parent': 'p1', 'child':'oops'}", "instance does not match any member of the enumeration [c11,c12]" );
-    }
+      vFail( schema, "{'parent': 'p1', 'child':'oops'}", "/child: instance does not match any member of the enumeration [c11,c12]" );
+   }
+
+   @Test
+   public void testHierarchicalArray() {
+      String schema = "{type: object, properties: {" +
+         "a:{" +
+         "  type: array," +
+         "  items: {" +
+         "    type: object," +
+         "    properties: {" +
+         "      parent: {type: dictionary, name: dict-h}, " +
+         "      child: {type: dictionary, parent: {json-path: a.items.parent}}" +
+         "    }" +
+         "  }" +
+         "}" +
+         "}}";
+
+      vOk( schema, "{'a':[{'parent': 'p1'}]}" );
+      vOk( schema, "{'a':[{'parent': 'p2'}]}" );
+      vOk( schema, "{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p1', 'child':'c12'}]}" );
+
+      vFail( schema, "{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}", "/a/1/child: instance does not match any member of the enumeration [c21,c22,c23]" );
+   }
 }

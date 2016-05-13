@@ -57,11 +57,15 @@ public class JsonValidatorFactory {
    }
 
    public final SchemaAST schema;
-   private final SchemaStorage storage;
 
    private JsonValidatorFactory( String schema, SchemaStorage storage ) {
-      this.storage = storage;
-      this.schema = parse( schema );
+      final JsonSchemaParserContext context = new JsonSchemaParserContext(
+         null, "",
+         JsonValidatorFactory::parse,
+         ( url ) -> parse( storage.get( url ), storage ),
+         "", new HashMap<>() );
+
+      this.schema = parse( schema, context ).unwrap( context );
    }
 
    public static JsonValidatorFactory schema( String url, SchemaStorage storage ) {
@@ -112,9 +116,34 @@ public class JsonValidatorFactory {
       schemas.clear();
    }
 
+   static SchemaASTWrapper parse( String schema, SchemaStorage storage ) {
+      final JsonSchemaParserContext context = new JsonSchemaParserContext(
+         null, "",
+         JsonValidatorFactory::parse,
+         ( url ) -> parse( storage.get( url ), storage ),
+         "", new HashMap<>() );
+      return parse( schema, context );
+   }
+
+   private static SchemaASTWrapper parse( String schema, JsonSchemaParserContext context ) {
+      return parse( context.withNode( "", Binder.hocon.unmarshal( Object.class, schema ) ) );
+   }
+
+   private static SchemaASTWrapper parse( JsonSchemaParserContext context ) {
+      JsonSchemaValidator<?> schemaParser = validators.get( context.schemaType );
+      if( schemaParser != null ) {
+         return schemaParser.parse( context );
+      } else {
+         if( logger.isTraceEnabled() ) logger.trace( "registered parsers: " + validators.keySet() );
+         throw new ValidationSyntaxException(
+            "[schema:type]: unknown simple type [" + context.schemaType + "]" );
+      }
+   }
+
    @SuppressWarnings( "unchecked" )
    public Either<List<String>, Object> validate( Object json, boolean ignore_required_default ) {
       JsonValidatorProperties properties = new JsonValidatorProperties(
+         schema,
          json,
          Optional.empty(),
          Optional.empty(),
@@ -122,35 +151,5 @@ public class JsonValidatorFactory {
          JsonValidatorFactory::validate
       );
       return validate( properties, schema, json );
-   }
-
-   private SchemaAST parse( Object mapObject ) {
-      if( !( mapObject instanceof Map<?, ?> ) )
-         throw new IllegalArgumentException( "object expected, but " + mapObject );
-      Map<?, ?> map = ( Map<?, ?> ) mapObject;
-      Object schemaType = map.get( "type" );
-      if( schemaType instanceof String ) {
-         JsonSchemaValidator<?> schemaParser = validators.get( schemaType );
-         if( schemaParser != null ) {
-            return schemaParser.parse(
-               new JsonSchemaParserProperties(
-                  map, ( String ) schemaType,
-                  this::parse,
-                  ( url ) -> JsonValidatorFactory.schema( url, storage ).schema
-               ) );
-         } else {
-            if( logger.isTraceEnabled() ) logger.trace( "registered parsers: " + validators.keySet() );
-            throw new ValidationSyntaxException(
-               "[schema:type]: unknown simple type [" + schemaType + "]" );
-         }
-      } else {
-         throw new UnknownTypeValidationSyntaxException(
-            "Unknown type" + ( schemaType == null ? "nothing" : schemaType.getClass() )
-         );
-      }
-   }
-
-   private SchemaAST parse( String schema ) {
-      return parse( ( Object ) Binder.hocon.unmarshal( Object.class, schema ) );
    }
 }

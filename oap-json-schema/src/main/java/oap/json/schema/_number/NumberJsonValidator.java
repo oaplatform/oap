@@ -23,10 +23,9 @@
  */
 package oap.json.schema._number;
 
-import oap.json.schema.JsonSchemaParserProperties;
+import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
-import oap.json.schema.SchemaAST;
 import oap.util.Either;
 import oap.util.Lists;
 import oap.util.OptionalList;
@@ -35,61 +34,58 @@ import java.util.List;
 import java.util.Optional;
 
 public abstract class NumberJsonValidator<T extends Number> implements JsonSchemaValidator<NumberSchemaAST> {
-    protected abstract boolean valid( Object value );
+   protected abstract boolean valid( Object value );
 
-    protected abstract T cast( Object value );
+   protected abstract T cast( Object value );
 
-    @Override
-    public Either<List<String>, Object> validate( JsonValidatorProperties properties, NumberSchemaAST schema,
-                                                  Object value ) {
-        if( !valid( value ) )
-            return Either.left(
-                    Lists.of(
-                        properties.error( "instance is of type " + getType( value ) +
-                            ", which is none of the allowed primitive types ([" + schema.common.schemaType +
-                            "])" ) ) );
+   @Override
+   public Either<List<String>, Object> validate( JsonValidatorProperties properties, NumberSchemaAST schema,
+                                                 Object value ) {
+      if( !valid( value ) )
+         return Either.left(
+            Lists.of(
+               properties.error( "instance is of type " + getType( value ) +
+                  ", which is none of the allowed primitive types ([" + schema.common.schemaType +
+                  "])" ) ) );
 
-        T castValue = cast( value );
-        Double doubleValue = castValue.doubleValue();
+      T castValue = cast( value );
+      Double doubleValue = castValue.doubleValue();
 
-        Optional<String> minimumResult = schema.minimum
-                .filter( minimum -> doubleValue < minimum && !schema.exclusiveMinimum.orElse( false ) )
-                .map( minimum -> "number is lower than the required minimum " + minimum );
+      Optional<String> minimumResult = schema.minimum
+         .filter( minimum -> doubleValue < minimum && !schema.exclusiveMinimum.orElse( false ) )
+         .map( minimum -> "number is lower than the required minimum " + minimum );
 
-        Optional<String> maximumResult = schema.maximum
-                .filter( maximum -> doubleValue > maximum && !schema.exclusiveMaximum.orElse( false ) )
-                .map( maximum -> "number is greater than the required maximum " + maximum );
+      Optional<String> maximumResult = schema.maximum
+         .filter( maximum -> doubleValue > maximum && !schema.exclusiveMaximum.orElse( false ) )
+         .map( maximum -> "number is greater than the required maximum " + maximum );
 
-        Optional<String> exclusiveMinimumResult = schema.minimum
-                .filter( minimum -> doubleValue <= minimum && schema.exclusiveMinimum.orElse( false ) )
-                .map( minimum -> "number is not strictly greater than the required minimum " + minimum );
+      Optional<String> exclusiveMinimumResult = schema.minimum
+         .filter( minimum -> doubleValue <= minimum && schema.exclusiveMinimum.orElse( false ) )
+         .map( minimum -> "number is not strictly greater than the required minimum " + minimum );
 
-        Optional<String> exclusiveMaximumResult = schema.maximum
-                .filter( maximum -> doubleValue >= maximum && schema.exclusiveMaximum.orElse( false ) )
-                .map( maximum -> "number is not strictly lower than the required maximum " + maximum );
+      Optional<String> exclusiveMaximumResult = schema.maximum
+         .filter( maximum -> doubleValue >= maximum && schema.exclusiveMaximum.orElse( false ) )
+         .map( maximum -> "number is not strictly lower than the required maximum " + maximum );
 
-        return OptionalList
-                .<String>builder()
-                .add( minimumResult )
-                .add( maximumResult )
-                .add( exclusiveMinimumResult )
-                .add( exclusiveMaximumResult )
-                .toEigher( castValue );
-    }
+      return OptionalList
+         .<String>builder()
+         .add( minimumResult )
+         .add( maximumResult )
+         .add( exclusiveMinimumResult )
+         .add( exclusiveMaximumResult )
+         .toEigher( castValue );
+   }
 
-    @Override
-    public SchemaAST parse( JsonSchemaParserProperties properties ) {
-        SchemaAST.CommonSchemaAST common = node( properties ).asCommon();
-        Optional<Boolean> exclusiveMinimum = node( properties ).asBoolean( "exclusiveMinimum" ).optional();
-        Optional<Boolean> exclusiveMaximum = node( properties ).asBoolean( "exclusiveMaximum" ).optional();
-        Optional<Double> minimum = node( properties ).asDouble( "minimum" ).optional();
-        Optional<Double> maximum = node( properties ).asDouble( "maximum" ).optional();
+   @Override
+   public NumberSchemaASTWrapper parse( JsonSchemaParserContext context ) {
+      final NumberSchemaASTWrapper wrapper = context.createWrapper( NumberSchemaASTWrapper::new );
 
-        return new NumberSchemaAST(
-                common,
-                exclusiveMinimum,
-                exclusiveMaximum,
-                minimum,
-                maximum );
-    }
+      wrapper.common = node( context ).asCommon();
+      wrapper.exclusiveMinimum = node( context ).asBoolean( "exclusiveMinimum" ).optional();
+      wrapper.exclusiveMaximum = node( context ).asBoolean( "exclusiveMaximum" ).optional();
+      wrapper.minimum = node( context ).asDouble( "minimum" ).optional();
+      wrapper.maximum = node( context ).asDouble( "maximum" ).optional();
+
+      return wrapper;
+   }
 }

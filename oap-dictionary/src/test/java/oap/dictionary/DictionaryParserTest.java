@@ -38,19 +38,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Created by Igor Petrenko on 15.04.2016.
  */
 public class DictionaryParserTest extends AbstractTest {
-    @Test
-    public void testSerialize() {
-        final Path path = Env.tmpPath( "test/test.json" );
-        DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path );
+   @Test
+   public void testSerialize() {
+      final Path path = Env.tmpPath( "test/test.json" );
+      DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path );
 
-        final Dictionary dictionary = DictionaryParser.parse( path );
+      final DictionaryRoot dictionary = DictionaryParser.parse( path );
 
-        assertThat( dictionary.values ).contains( new Dictionary.DictionaryValue( "id2", true, '2',
-            Maps.of( __( "title", "title2" ) ) )
-        );
+      assertThat( dictionary.getValues() ).contains( new DictionaryValue( "id2", true, '2',
+         Maps.of( __( "title", "title2" ) ) )
+      );
 
-        assertThat( dictionary.values.get( 0 ).values ).contains(
-            new Dictionary.DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
-        );
-    }
+      assertThat( dictionary.getValues().get( 0 ).getValues() ).contains(
+         new DictionaryValue( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
+      );
+   }
 }
