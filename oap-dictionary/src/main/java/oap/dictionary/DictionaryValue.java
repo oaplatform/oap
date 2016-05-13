@@ -38,8 +38,8 @@ import static java.util.stream.Collectors.toList;
 /**
  * Created by Igor Petrenko on 29.04.2016.
  */
-@EqualsAndHashCode
-@ToString
+@EqualsAndHashCode( callSuper = true )
+@ToString( callSuper = true )
 public class DictionaryValue extends DictionaryLeaf implements Dictionary {
    public final List<DictionaryLeaf> values;
 
