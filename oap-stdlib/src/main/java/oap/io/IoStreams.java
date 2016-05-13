@@ -24,7 +24,9 @@
 package oap.io;
 
 import com.google.common.io.ByteStreams;
-import oap.util.Functions;
+import net.jpountz.lz4.LZ4BlockInputStream;
+import net.jpountz.lz4.LZ4BlockOutputStream;
+import net.jpountz.lz4.LZ4Factory;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
@@ -34,11 +36,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.zip.*;
 
 import static oap.io.ProgressInputStream.progress;
-import static oap.util.Functions.empty.consume;
 
 public class IoStreams {
 
@@ -65,7 +67,7 @@ public class IoStreams {
    }
 
    public static Stream<String> lines( Path path ) {
-      return lines( path, Encoding.PLAIN, p -> {
+      return lines( path, Encoding.from( path ), p -> {
       } );
    }
 
@@ -139,8 +141,13 @@ public class IoStreams {
                ZipOutputStream zip = new ZipOutputStream( fos );
                zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
                return zip;
-            default:
+            case LZ4:
+               LZ4Factory factory = LZ4Factory.nativeInstance();
+               return new LZ4BlockOutputStream( fos, bufferSize, factory.highCompressor() );
+            case PLAIN:
                return fos;
+            default:
+               throw new IllegalArgumentException( "Unknown encoding " + encoding );
          }
       } catch( IOException e ) {
          throw new UncheckedIOException( e );
@@ -165,8 +172,13 @@ public class IoStreams {
                if( zip.getNextEntry() == null )
                   throw new IllegalArgumentException( "zip stream contains no entries" );
                return zip;
-            default:
+            case PLAIN:
                return stream;
+            case LZ4:
+               LZ4Factory factory = LZ4Factory.nativeInstance();
+               return new LZ4BlockInputStream( stream, factory.fastDecompressor() );
+            default:
+               throw new IllegalArgumentException( "Unknown encoding " + encoding );
          }
       } catch( IOException e ) {
          throw new UncheckedIOException( e );
@@ -175,7 +187,27 @@ public class IoStreams {
    }
 
    public enum Encoding {
-      PLAIN, ZIP, GZIP
-   }
+      PLAIN( Optional.empty(), false ),
+      ZIP( Optional.of( "zip" ), true ),
+      GZIP( Optional.of( "gz" ), true ),
+      LZ4( Optional.of( "lz4" ), true );
 
+      public final Optional<String> extension;
+      public final boolean compress;
+
+      Encoding( Optional<String> extension, boolean compress ) {
+         this.extension = extension;
+         this.compress = compress;
+      }
+
+      public static Encoding from( Path path ) {
+         final String strPath = path.toString();
+
+         return Stream
+            .of( values() )
+            .filter( e -> e.extension.filter( strPath::endsWith ).isPresent() )
+            .findAny()
+            .orElse( PLAIN );
+      }
+   }
 }

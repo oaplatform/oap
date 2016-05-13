@@ -23,6 +23,7 @@
  */
 package oap.io;
 
+import com.google.common.hash.Hashing;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Lists;
 import oap.util.Sets;
@@ -34,6 +35,7 @@ import org.codehaus.plexus.util.DirectoryScanner;
 import org.joda.time.DateTime;
 
 import java.io.*;
+import java.net.URL;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
@@ -42,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
@@ -49,6 +52,24 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 @Slf4j
 public final class Files {
+
+   public static Path deepPath( Path basePath, String name ) {
+      BiFunction<Integer, Integer, String> f = ( hash, bits ) -> String.valueOf( hash & ( ( 1 << bits ) - 1 ) );
+      int bitPerDir = 8;
+
+      int hash = Hashing.murmur3_32().hashBytes( name.getBytes() ).asInt();
+      String f1 = f.apply( hash, bitPerDir );
+      hash >>>= bitPerDir;
+      String f2 = f.apply( hash, bitPerDir );
+      hash >>>= bitPerDir;
+
+      return basePath
+         .resolve( f1 )
+         .resolve( f2 )
+         .resolve( f.apply( hash, bitPerDir ) )
+         .resolve( name );
+   }
+
    public static ArrayList<Path> fastWildcard( String basePath, String wildcard ) {
       return fastWildcard( Paths.get( basePath ), wildcard );
    }
@@ -276,5 +297,10 @@ public final class Files {
       } catch( IOException e ) {
          throw new UncheckedIOException( e );
       }
+   }
+
+   public static String nameWithoutExtention( URL url ) {
+      Path path = Paths.get( url.getPath() );
+      return Strings.substringBeforeLast( path.getFileName().toString(), "." );
    }
 }

@@ -62,7 +62,8 @@ public class Kernel {
          if( initialized.containsAll( service.dependsOn ) ) {
             log.debug( "initializing {} as {}", entry.getKey(), serviceName );
 
-            Reflection reflect = Reflect.reflect( service.implementation );
+            @SuppressWarnings( "unchecked" )
+            Reflection reflect = Reflect.reflect( service.implementation, Module.coersions );
 
             Object instance;
             if( service.remoteUrl == null ) {
@@ -120,8 +121,8 @@ public class Kernel {
 
    private Object resolve( String name, String key, Object value ) {
       if( value instanceof String && ( ( String ) value ).startsWith( "@service:" ) ) {
-         log.debug( "for " + name + " linking " + key + " -> " + value );
          Object link = Application.service( ( ( String ) value ).substring( "@service:".length() ) );
+         log.debug( "for {} linking {} -> {} as {}", name, key, value, link );
          if( link == null )
             throw new ApplicationException( "for " + name + " service link " + value + " is not found" );
          return link;

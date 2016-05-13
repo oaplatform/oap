@@ -30,7 +30,7 @@ import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor> {
-   private final ExecutorService executor = Executors.newCachedThreadPool();
+   private final ExecutorService executor;
    private final long timeout;
    private final TimeUnit unit;
 
@@ -39,8 +39,13 @@ public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor> {
    }
 
    public LimitedTimeExecutor( long timeout, TimeUnit unit ) {
+      this( timeout, unit, Executors.newCachedThreadPool() );
+   }
+
+   public LimitedTimeExecutor( long timeout, TimeUnit unit, ExecutorService executor ) {
       this.timeout = timeout;
       this.unit = unit;
+      this.executor = executor;
    }
 
    public <T> Optional<T> execute( Supplier<T> code ) {

@@ -23,12 +23,34 @@
  */
 package oap.application;
 
-public class ServiceOne {
-    static volatile int instances;
-    int i;
-    int i2;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-    public ServiceOne( int i ) {
-        this.i = i;
-    }
+import java.util.ArrayList;
+import java.util.List;
+
+@ToString
+public class ServiceOne {
+   static volatile int instances;
+   int i;
+   int i2;
+   Complex complex;
+   List<Complex> complexes = new ArrayList<>();
+
+   public ServiceOne( int i ) {
+      this.i = i;
+   }
+
+   @EqualsAndHashCode
+   @ToString
+   public static class Complex {
+      int i;
+
+      @JsonCreator
+      public Complex( @JsonProperty( "i" ) int i ) {
+         this.i = i;
+      }
+   }
 }

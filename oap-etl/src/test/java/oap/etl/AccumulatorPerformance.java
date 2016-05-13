@@ -29,81 +29,98 @@ import oap.testng.AbstractPerformance;
 import oap.testng.Env;
 import oap.tsv.Model;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Created by Igor Petrenko on 27.04.2016.
  */
-//@Test( enabled = false )
+@Test( enabled = false )
 public class AccumulatorPerformance extends AbstractPerformance {
 
-    private Path path1;
-    private Path path2;
-    private Random random;
+   public static final int SAMPLES = 200;
+   public static final int EXPERIMENTS = 5;
+   private Path path1;
+   private Path path2;
+   private Random random;
 
-    @BeforeMethod
-    @Override
-    public void beforeMethod() {
-        super.beforeMethod();
+   @BeforeMethod
+   @Override
+   public void beforeMethod() {
+      super.beforeMethod();
 
-        path1 = Env.tmpPath( "test.tsv" );
-        path2 = Env.tmpPath( "test2.tsv" );
+      path1 = Env.tmpPath( "test.tsv" );
+      path2 = Env.tmpPath( "test2.tsv" );
 
-        writeFile( path1 );
-        writeFile( path2 );
-    }
+      writeFile( path1 );
+      writeFile( path2 );
+   }
 
-    private void writeFile( Path path ) {
-        try( FileOutputStream out = new FileOutputStream( path.toFile() );
-             final BufferedOutputStream b = new BufferedOutputStream( out ) ) {
-            for( int y = 0; y < 10000; y++ ) {
-                random = new Random();
-                final String row = IntStream
-                    .range( 0, 5 )
-                    .mapToObj( x -> x > 1 ? String.valueOf( random.nextInt( 10 ) ) : "test-" + x + "-" + random.nextInt( 10 ) )
-                    .collect( Collectors.joining( "\t" ) ) + "\n";
-                b.write( row.getBytes() );
-            }
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
-    }
+   @DataProvider( name = "count" )
+   public Object[][] aggregates() {
+      return new Object[][]{ { 1 }, { 2 }, { 4 }, { 8 } };
+   }
 
-    @Test
-    public void testSorted() {
-        benchmark( "accumulator.sorted", 500, 5, ( i ) -> {
+   private void writeFile( Path path ) {
+      try( OutputStream out = IoStreams.out( path, IoStreams.Encoding.GZIP ) ) {
+         for( int y = 0; y < 10000; y++ ) {
+            random = new Random();
+            final String row = IntStream
+               .range( 0, 6 )
+               .mapToObj( x -> x > 2 ? String.valueOf( random.nextInt( 10 ) ) : "test-" + x + "-" + random.nextInt( 10 ) )
+               .collect( Collectors.joining( "\t" ) ) + "\n";
+            out.write( row.getBytes() );
+         }
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
+   }
+
+   @Test( dataProvider = "count" )
+   public void testSorted( int count ) {
+      benchmark( "accumulator.sorted", SAMPLES, EXPERIMENTS, ( i ) -> {
+         for( int x = 0; x < count; x++ ) {
             StringExport export = new StringExport();
 
-            Table.fromPaths( Arrays.asList( path1, path2 ), IoStreams.Encoding.PLAIN,
-                Model.withoutHeader().s( 0, 1 ).i( 2, 3, 4 ) )
-                .sort( new int[]{ 0, 1 } )
-                .sortedStreamGroupBy( new int[]{ 0, 1 }, Accumulator.count(), Accumulator.intSum( 2 ), Accumulator.intSum( 3 ) )
-                .export( export )
-                .compute();
-        } );
+            Table.fromPaths( Arrays.asList( path1, path2 ),
+               Model.withoutHeader().s( 0, 1, 2 ).i( 3, 4, 5 ) )
+               .sort( new int[]{ 0, 1, 2 } )
+               .sortedStreamGroupBy( new int[]{ 0, 1, 2 }, Accumulator.count(), Accumulator.intSum( 3 ), Accumulator.intSum( 4 ) )
+               .export( export )
+               .compute();
+         }
+      } );
+   }
 
-    }
+   @Test( dataProvider = "count" )
+   public void testAggregatedByHM( int count ) {
+      benchmark( "accumulator.without_sort", SAMPLES, EXPERIMENTS, ( i ) -> {
 
-    @Test
-    public void testAggregatedByHM() {
-        benchmark( "accumulator.without_sort", 500, 5, ( i ) -> {
+         Table.GroupBy[] groups = Stream
+            .generate( () -> new Table.GroupBy( new int[]{ 0, 1, 2 }, Accumulator.count(), Accumulator.intSum( 3 ), Accumulator.intSum( 4 ) ) )
+            .limit( count )
+            .toArray( Table.GroupBy[]::new );
+
+         List<Table> tables = Table.fromPaths( Arrays.asList( path1, path2 ),
+            Model.withoutHeader().s( 0, 1, 2 ).i( 3, 4, 5 ) )
+            .groupBy( groups );
+
+         for( int x = 0; x < count; x++ ) {
             StringExport export = new StringExport();
 
-            Table.fromPaths( Arrays.asList( path1, path2 ), IoStreams.Encoding.PLAIN,
-                Model.withoutHeader().s( 0, 1 ).i( 2, 3, 4 ) )
-                .groupBy( new int[]{ 0, 1 }, Accumulator.count(), Accumulator.intSum( 2 ), Accumulator.intSum( 3 ) )
-                .export( export )
-                .compute();
-        } );
-    }
+            tables.get( x ).sort( new int[]{ 0, 1, 2 } ).export( export ).compute();
+         }
+      } );
+   }
 }

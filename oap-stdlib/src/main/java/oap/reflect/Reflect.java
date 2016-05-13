@@ -34,43 +34,54 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Reflect {
 
-    private static HashMap<TypeToken<?>, Reflection> reflections = new HashMap<>();
-    private static Map<String, Class<?>> classes = new ConcurrentHashMap<>();
+   private static HashMap<TypeToken<?>, Reflection> reflections = new HashMap<>();
+   private static Map<String, Class<?>> classes = new ConcurrentHashMap<>();
 
-    public static Reflection reflect( TypeRef<?> ref ) {
-        return reflect( ref.token );
-    }
+   public static Reflection reflect( TypeRef<?> ref ) {
+      return reflect( ref.token );
+   }
 
-    public static Reflection reflect( Class<?> clazz ) {
-        return reflect( TypeToken.of( clazz ) );
-    }
+   public static Reflection reflect( Class<?> clazz ) {
+      return reflect( TypeToken.of( clazz ) );
+   }
 
-    protected static synchronized Reflection reflect( TypeToken<?> token ) {
-        return reflections.computeIfAbsent( token, Reflection::new );
-    }
+   public static Reflection reflect( Class<?> clazz, Coercions coercions ) {
+      return reflect( TypeToken.of( clazz ), coercions );
+   }
 
-    public static Reflection reflect( String className ) {
-        return reflect( classes.computeIfAbsent( className,
-            Try.map( Class::forName ) ) );
-    }
+   protected static synchronized Reflection reflect( TypeToken<?> token ) {
+      return reflections.computeIfAbsent( token, Reflection::new );
+   }
 
-    public static <T> T newInstance( Class<T> clazz, Object... args ) {
-        return reflect( clazz ).newInstance( args );
-    }
+   protected static synchronized Reflection reflect( TypeToken<?> token, Coercions coercions ) {
+      return reflections.computeIfAbsent( token, ( typeToken ) -> new Reflection( typeToken, coercions ) );
+   }
 
-    @SuppressWarnings( "unchecked" )
-    public static <T> T eval( Object o, String path ) {
-        for( String field : StringUtils.split(path, '.' ) ) {
-            if( o == null ) break;
-            final Object instance = o;
-            o = reflect( o.getClass() )
-                .field( field )
-                .map( f -> f.get( instance ) )
-                .map( v -> v instanceof Optional ? ((Optional) v).orElse( null ) : v )
-                .orElse( null );
-        }
-        return (T) o;
-    }
+   public static Reflection reflect( String className ) {
+      return reflect( classes.computeIfAbsent( className, Try.map( Class::forName ) ) );
+   }
+
+   public static Reflection reflect( String className, Coercions coercions ) {
+      return reflect( classes.computeIfAbsent( className, Try.map( Class::forName ) ), coercions );
+   }
+
+   public static <T> T newInstance( Class<T> clazz, Object... args ) {
+      return reflect( clazz ).newInstance( args );
+   }
+
+   @SuppressWarnings( "unchecked" )
+   public static <T> T eval( Object o, String path ) {
+      for( String field : StringUtils.split( path, '.' ) ) {
+         if( o == null ) break;
+         final Object instance = o;
+         o = reflect( o.getClass() )
+            .field( field )
+            .map( f -> f.get( instance ) )
+            .map( v -> v instanceof Optional ? ( ( Optional ) v ).orElse( null ) : v )
+            .orElse( null );
+      }
+      return ( T ) o;
+   }
 
 //    unapply - check possibility to parameterize with Function to pass parameters from class.
 //    implementation should be based on unapply/constructor. Probably wont help because of erasure.

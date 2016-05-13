@@ -24,13 +24,14 @@
 
 package oap.concurrent;
 
+import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class OnceTest {
+public class OnceTest extends AbstractTest {
    @Test
    public void once() {
       AtomicInteger count0 = new AtomicInteger();
@@ -42,7 +43,7 @@ public class OnceTest {
             System.out.println( "x" );
             count0.incrementAndGet();
          } );
-      for( int i = 0; i < 10; i++ ) Once.once( () -> count1.incrementAndGet() );
+      for( int i = 0; i < 10; i++ ) Once.once( count1::incrementAndGet );
       for( int i = 0; i < 10; i++ ) Once.once( count2::incrementAndGet );
       Runnable incrementAndGet = count3::incrementAndGet;
       for( int i = 0; i < 10; i++ ) Once.once( incrementAndGet );

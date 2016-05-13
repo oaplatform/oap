@@ -28,10 +28,7 @@ import oap.util.Try;
 import org.testng.Assert;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -124,7 +121,7 @@ public abstract class AbstractPerformance extends AbstractTest {
 
         return Teamcity.progress( name + "...", () -> {
             System.out.println( "pool threads = " + threads );
-            ExecutorService pool = new ThreadPoolExecutor( threads, threads, 0, TimeUnit.SECONDS, new SynchronousQueue<>() );
+            ExecutorService pool = new ThreadPoolExecutor( threads, threads, 0, TimeUnit.SECONDS, new LinkedBlockingQueue<>() );
             if( warming > 0 ) {
                 System.out.println( "warming up..." );
                 IntStream

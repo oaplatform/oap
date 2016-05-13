@@ -38,6 +38,7 @@ import java.util.stream.IntStream;
 /**
  * Created by Igor Petrenko on 08.04.2016.
  */
+@Test( enabled = false )
 public class FilesPerformance extends AbstractPerformance {
 
    public static final int SAMPLES = 100;

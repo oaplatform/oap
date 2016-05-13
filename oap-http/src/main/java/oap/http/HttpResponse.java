@@ -111,6 +111,13 @@ public class HttpResponse {
         return response;
     }
 
+    public static HttpResponse status(int code, String reason, Object content) {
+        HttpResponse response = status( code );
+        response.reasonPhrase = Strings.removeControl( reason );
+        response.contentEntity = new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON );
+        return response;
+    }
+
     public static HttpResponse status( int code ) {
         return new HttpResponse( code );
     }
@@ -142,7 +149,7 @@ public class HttpResponse {
     }
 
     public static class CookieBuilder {
-        private static final Joiner JOINER = Joiner.on( ";" ).skipNulls();
+        private static final Joiner JOINER = Joiner.on( "; " ).skipNulls();
         private static final DateTimeFormatter FORMATTER =
             DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss zzz" );
         private String SID;
@@ -179,8 +186,14 @@ public class HttpResponse {
         }
 
         public String build() {
-            return JOINER.join( SID, domain, expires, path, Strings.join( ";", customs ) ).concat( ";" );
+            return StringUtils.removeEnd( JOINER.join( SID, customs.isEmpty() ? null : Strings.join( "; ", customs ),
+                    domain, expires, path ), "; " );
         }
+    }
 
+    @Override
+    public String toString() {
+        return "HttpResponse{" + "reasonPhrase='" + reasonPhrase + '\'' + ", headers=" + headers + ", code=" + code +
+           '}';
     }
 }

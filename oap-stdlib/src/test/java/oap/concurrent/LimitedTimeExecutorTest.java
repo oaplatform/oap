@@ -24,6 +24,7 @@
 
 package oap.concurrent;
 
+import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -31,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LimitedTimeExecutorTest {
+public class LimitedTimeExecutorTest extends AbstractTest {
    @Test
    public void execute() {
       assertExecution( 1, 0, 0, () -> Threads.sleepSafely( 10 ) );

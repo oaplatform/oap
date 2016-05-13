@@ -25,7 +25,6 @@
 package oap.application;
 
 import oap.testng.AbstractTest;
-import oap.util.Lists;
 import org.testng.annotations.Test;
 
 import java.net.URL;
@@ -56,6 +55,8 @@ public class KernelTest extends AbstractTest {
             assertNotNull( one );
             assertThat( one.i ).isEqualTo( 2 );
             assertThat( one.i2 ).isEqualTo( 100 );
+            assertThat( one.complex ).isEqualTo( new ServiceOne.Complex( 2 ) );
+            assertThat( one.complexes ).contains( new ServiceOne.Complex( 2 ) );
             assertNotNull( two );
             assertThat( two.j ).isEqualTo( 3000 );
             assertThat( two.one ).isSameAs( one );

@@ -25,6 +25,7 @@
 package oap.logstream;
 
 import oap.io.Files;
+import oap.io.IoStreams;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.joda.time.DateTime;
@@ -41,12 +42,12 @@ import static oap.testng.Asserts.assertFile;
 public class ArchiverTest extends AbstractTest {
 
    @DataProvider
-   public Object[][] compress() {
-      return new Object[][]{ { true }, { false } };
+   public Object[][] encoding() {
+      return new Object[][]{ { GZIP }, { PLAIN } };
    }
 
-   @Test( dataProvider = "compress" )
-   public void archive( boolean compress ) {
+   @Test( dataProvider = "encoding" )
+   public void archive( IoStreams.Encoding encoding ) {
       DateTime now = new DateTime( 2015, 10, 10, 12, 0, 0 );
       DateTimeUtils.setCurrentMillisFixed( now.getMillis() );
       Path logs = Env.tmpPath( "logs" );
@@ -64,20 +65,21 @@ public class ArchiverTest extends AbstractTest {
 
       for( String file : files ) Files.writeString( logs.resolve( file ), "data" );
 
-      Archiver archiver = new Archiver( logs, archives, 10000, "**/*.log", compress, 12 );
+      Archiver archiver = new Archiver( logs, archives, 10000, "**/*.log", encoding, 12 );
       archiver.run();
 
-      for( String file : files ) assertFile( archives.resolve( file + ( compress ? ".gz" : "" ) ) ).doesNotExist();
+      for( String file : files )
+         assertFile( archives.resolve( file + encoding.extension.map( e -> "." + e ).orElse( "" ) ) ).doesNotExist();
 
       DateTimeUtils.setCurrentMillisFixed( now.plusSeconds( 11 ).getMillis() );
       archiver.run();
 
       for( String file : files ) {
-         Path path = archives.resolve( file + ( compress ? ".gz" : "" ) );
+         Path path = archives.resolve( file + encoding.extension.map( e -> "." + e ).orElse( "" ) );
          if( file.contains( "12-00" ) ) assertFile( path ).doesNotExist();
          else {
             assertFile( logs.resolve( file ) ).doesNotExist();
-            assertFile( path ).hasContent( "data", compress ? GZIP : PLAIN );
+            assertFile( path ).hasContent( "data", encoding );
          }
       }
    }

@@ -25,17 +25,33 @@ package oap.application;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.json.Binder;
+import oap.reflect.Coercions;
+import oap.util.Stream;
 
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.Optional;
+import java.util.*;
 
 @EqualsAndHashCode
 @ToString
 public class Module {
    public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
+   @SuppressWarnings( "unchecked" )
+   static final Coercions coersions = Coercions.basic()
+      .with( r -> r.underlying.isAssignableFrom( List.class ),
+         ( r, list ) -> {
+            if( list instanceof List<?>
+               && ( ( List<?> ) list ).stream().allMatch( o -> o instanceof Map<?, ?> ) ) {
+               return Stream.of( ( List<?> ) list )
+                  .map( map -> Binder.json.unmarshal(
+                     r.getCollectionComponentType().underlying, ( Map<String, Object> ) map ) )
+                  .toList();
+            } else return list;
+         } )
+      .with( r -> !r.assignableFrom( Map.class ),
+         ( r, map ) -> map instanceof Map<?, ?> ? Binder.json.unmarshal( r.underlying, ( Map<String, Object> ) map ) : map )
+      .withIdentity();
    public String name;
    public ArrayList<String> dependsOn = new ArrayList<>();
    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
