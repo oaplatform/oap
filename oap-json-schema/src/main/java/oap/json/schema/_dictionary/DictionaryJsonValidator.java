@@ -25,12 +25,17 @@
 package oap.json.schema._dictionary;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.dictionary.*;
-import oap.json.schema.*;
+import oap.dictionary.Dictionaries;
+import oap.dictionary.Dictionary;
+import oap.dictionary.DictionaryLeaf;
+import oap.dictionary.DictionaryNotFoundError;
+import oap.json.schema.JsonPath;
+import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.JsonSchemaValidator;
+import oap.json.schema.JsonValidatorProperties;
 import oap.util.Either;
 import oap.util.Lists;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,13 +56,17 @@ public class DictionaryJsonValidator implements JsonSchemaValidator<DictionarySc
 
          if( schema.parent.isPresent() ) {
             final String path = schema.parent.get().path;
-            final Optional<Object> parentValue = new JsonPath( зфер ).traverse( properties.rootJson, path );
-            if( !parentValue.isPresent() && schema.common.required.orElse( false ) )
-               return Either.left( Collections.singletonList(
-                  properties.error( "required property is missing" )
-               ) );
+            final Optional<Object> parentValue = Lists.headOpt( new JsonPath( path ).traverse( properties.rootJson ) );
+            if( !parentValue.isPresent() )
+               return Either.left( singletonList( properties.error( "required property is missing" ) ) );
 
-            dictionary = dictionary.getValues(parentValue.get().toString()).get();
+            final Optional<DictionaryLeaf> child = dictionary.getValue( parentValue.get().toString() );
+            if( !child.isPresent() ) return Either.left( singletonList(
+               properties.error( "instance does not match any member of the enumeration [" +
+                  String.join( ",", dictionary.ids() ) + "]"
+               ) ) );
+
+            dictionary = child.get();
          }
 
          if( dictionary.containsValueWithId( String.valueOf( value ) ) ) {

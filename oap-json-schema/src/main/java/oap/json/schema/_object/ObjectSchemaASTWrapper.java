@@ -47,7 +47,7 @@ public class ObjectSchemaASTWrapper
    public ObjectSchemaAST unwrap( JsonSchemaParserContext context ) {
       final LinkedHashMap<String, SchemaAST> p = new LinkedHashMap<>();
       declaredProperties.forEach( ( key, value ) -> p.put( key, value.unwrap( context ) ) );
-      final ObjectSchemaAST objectSchemaAST = new ObjectSchemaAST( common, additionalProperties, extendsValue, p );
+      final ObjectSchemaAST objectSchemaAST = new ObjectSchemaAST( common, additionalProperties, extendsValue, p, id.toString() );
       return parentSchema.map( ps -> objectSchemaAST.merge( ps.unwrap( context ) ) ).orElse( objectSchemaAST );
    }
 

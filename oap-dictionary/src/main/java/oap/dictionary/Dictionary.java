@@ -42,5 +42,7 @@ public interface Dictionary {
 
    Map<String, Object> getProperties();
 
-   Optional<Dictionary> getValues( String name );
+   Optional<DictionaryLeaf> getValue( String name );
+
+   List<DictionaryLeaf> getValues();
 }

@@ -28,10 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static java.util.stream.Collectors.toList;
 
@@ -42,19 +39,19 @@ import static java.util.stream.Collectors.toList;
 @ToString
 public final class DictionaryRoot implements Dictionary {
    public final String name;
-   public final List<DictionaryLeaf> values;
+   private final List<DictionaryLeaf> values;
 
    @JsonIgnore
    private final HashMap<Long, String> indexByExternalId = new HashMap<>();
    @JsonIgnore
-   private final HashMap<String, Long> indexById = new HashMap<>();
+   private final HashMap<String, DictionaryLeaf> indexById = new HashMap<>();
 
    public DictionaryRoot( String name, List<DictionaryLeaf> values ) {
       this.name = name;
       this.values = values;
 
       for( DictionaryLeaf dv : values ) {
-         indexById.put( dv.id, dv.externalId );
+         indexById.put( dv.id, dv );
          indexByExternalId.put( dv.externalId, dv.id );
       }
    }
@@ -68,9 +65,9 @@ public final class DictionaryRoot implements Dictionary {
 
    @Override
    public final long getOrDefault( String id, long defaultValue ) {
-      final Long rtb = indexById.get( id );
+      final DictionaryLeaf rtb = indexById.get( id );
       if( rtb == null ) return defaultValue;
-      return rtb;
+      return rtb.externalId;
    }
 
    @Override
@@ -88,4 +85,13 @@ public final class DictionaryRoot implements Dictionary {
       return Collections.emptyMap();
    }
 
+   @Override
+   public List<DictionaryLeaf> getValues() {
+      return values;
+   }
+
+   @Override
+   public Optional<DictionaryLeaf> getValue( String name ) {
+      return Optional.ofNullable( indexById.get( name ) );
+   }
 }

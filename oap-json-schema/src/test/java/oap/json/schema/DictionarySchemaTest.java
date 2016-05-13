@@ -58,6 +58,6 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
         vOk( schema, "{'parent': 'p1', 'child':'c12'}" );
         vOk( schema, "{'parent': 'p2', 'child':'c21'}" );
 
-        vFail( schema, "{'parent': 'p1', 'child':'oops'}", "instance does not match any member of the enumeration [c11,c12]" );
+        vFail( schema, "{'parent': 'p1', 'child':'oops'}", "/child: instance does not match any member of the enumeration [c11,c12]" );
     }
 }

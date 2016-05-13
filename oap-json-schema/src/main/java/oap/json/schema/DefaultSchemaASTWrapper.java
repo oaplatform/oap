@@ -34,6 +34,6 @@ public class DefaultSchemaASTWrapper extends SchemaASTWrapper<DefaultSchemaAST, 
 
    @Override
    public DefaultSchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new DefaultSchemaAST( common );
+      return new DefaultSchemaAST( common, id.toString() );
    }
 }

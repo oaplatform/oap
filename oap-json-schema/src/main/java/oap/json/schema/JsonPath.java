@@ -74,6 +74,6 @@ public class JsonPath {
             } else return Optional.empty();
         }
 
-        return Optional.of( last );
+        return Optional.ofNullable( last );
     }
 }

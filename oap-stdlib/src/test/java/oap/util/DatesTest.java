@@ -26,17 +26,16 @@ package oap.util;
 
 import oap.testng.AbstractTest;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DatesTest extends AbstractTest {
-    @Test
-    public void parseIsoDate() throws Exception {
-        assertThat( Dates.parseDateWithMillis( "2016-01-01T00:00:00.000" ).successValue )
-            .isEqualTo( new DateTime( 2016, 1, 1, 0, 0, 0 ) );
-        assertThat( Dates.parseDate( "2016-01-01T00:00:00" ).successValue )
-            .isEqualTo( new DateTime( 2016, 1, 1, 0, 0, 0 ) );
-    }
+   @Test
+   public void parseIsoDate() throws Exception {
+      assertThat( Dates.parseDateWithMillis( "2016-01-01T00:00:00.000" ).successValue )
+         .isEqualTo( new DateTime( 2016, 1, 1, 0, 0, 0 ) );
+      assertThat( Dates.parseDate( "2016-01-01T00:00:00" ).successValue )
+         .isEqualTo( new DateTime( 2016, 1, 1, 0, 0, 0 ) );
+   }
 }

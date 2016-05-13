@@ -37,7 +37,7 @@ public class ArraySchemaAST extends SchemaAST<ArraySchemaAST> {
    public ArraySchemaAST( CommonSchemaAST common,
                           Optional<Integer> minItems, Optional<Integer> maxItems,
                           Optional<String> idField,
-                          SchemaAST items ) {
+                          SchemaAST items, String path ) {
       super( common, path );
       this.minItems = minItems;
       this.maxItems = maxItems;
@@ -52,7 +52,8 @@ public class ArraySchemaAST extends SchemaAST<ArraySchemaAST> {
          minItems.isPresent() ? minItems : cs.minItems,
          maxItems.isPresent() ? maxItems : cs.maxItems,
          idField.isPresent() ? idField : cs.idField,
-         items.common.schemaType.equals( cs.items.common.schemaType ) ? items.merge( cs.items ) : items
+         items.common.schemaType.equals( cs.items.common.schemaType ) ? items.merge( cs.items ) : items,
+         path
       );
    }
 }

@@ -45,7 +45,7 @@ public class ArraySchemaASTWrapper
 
    @Override
    public ArraySchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new ArraySchemaAST( common, minItems, maxItems, idField, items.unwrap( context ) );
+      return new ArraySchemaAST( common, minItems, maxItems, idField, items.unwrap( context ), id.toString() );
    }
 
    @Override

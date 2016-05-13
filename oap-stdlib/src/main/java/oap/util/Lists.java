@@ -44,9 +44,9 @@ public class Lists {
    }
 
    @SafeVarargs
-   public static <T> List<T> concat( List<T>... lists) {
+   public static <T> List<T> concat( List<T>... lists ) {
       List<T> concatenated = empty();
-      for ( List<T> list : lists ) {
+      for( List<T> list : lists ) {
          concatenated.addAll( list );
       }
       return concatenated;
@@ -59,9 +59,13 @@ public class Lists {
    }
 
    public static <T> T head( List<T> list ) {
-      if( list.isEmpty() ) throw new NoSuchElementException();
+      return headOpt( list ).orElseThrow( NoSuchElementException::new );
+   }
 
-      return list.get( 0 );
+   public static <T> Optional<T> headOpt( List<T> list ) {
+      if( list.isEmpty() ) return Optional.empty();
+
+      return Optional.of( list.get( 0 ) );
    }
 
    public static <T> Pair<List<T>, List<T>> partition( List<T> list, Predicate<T> p ) {

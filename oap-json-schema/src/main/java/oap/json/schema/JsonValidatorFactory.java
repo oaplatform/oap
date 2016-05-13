@@ -143,6 +143,7 @@ public class JsonValidatorFactory {
    @SuppressWarnings( "unchecked" )
    public Either<List<String>, Object> validate( Object json, boolean ignore_required_default ) {
       JsonValidatorProperties properties = new JsonValidatorProperties(
+         schema,
          json,
          Optional.empty(),
          Optional.empty(),

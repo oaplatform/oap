@@ -28,12 +28,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Created by Igor Petrenko on 29.04.2016.
  */
-public class DictionaryLeaf {
+public class DictionaryLeaf implements Dictionary {
    public final String id;
    public final boolean enabled;
    public final long externalId;
@@ -46,8 +48,38 @@ public class DictionaryLeaf {
       this.properties = properties;
    }
 
+   @Override
+   public long getOrDefault( String id, long defaultValue ) {
+      return defaultValue;
+   }
+
+   @Override
+   public String getOrDefault( long externlId, String defaultValue ) {
+      return defaultValue;
+   }
+
+   @Override
+   public boolean containsValueWithId( String id ) {
+      return false;
+   }
+
+   @Override
+   public List<String> ids() {
+      return Collections.emptyList();
+   }
+
    @JsonIgnore
    public Map<String, Object> getProperties() {
       return properties != null ? Collections.unmodifiableMap( properties ) : Collections.emptyMap();
+   }
+
+   @Override
+   public Optional<DictionaryLeaf> getValue( String name ) {
+      return Optional.empty();
+   }
+
+   @Override
+   public List<DictionaryLeaf> getValues() {
+      return Collections.emptyList();
    }
 }

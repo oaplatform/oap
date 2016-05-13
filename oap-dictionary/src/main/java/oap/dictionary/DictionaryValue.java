@@ -29,9 +29,11 @@ import lombok.ToString;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Created by Igor Petrenko on 29.04.2016.
@@ -71,21 +73,31 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
 
    @Override
    public long getOrDefault( String id, long defaultValue ) {
-      return 0;
+      return getValue( id ).map( v -> v.externalId ).orElse( defaultValue );
    }
 
    @Override
    public String getOrDefault( long externlId, String defaultValue ) {
-      return null;
+      return values.stream().filter( v -> v.externalId == externlId ).findAny().map( d -> d.id ).orElse( defaultValue );
    }
 
    @Override
    public boolean containsValueWithId( String id ) {
-      return false;
+      return getValue( id ).isPresent();
    }
 
    @Override
    public List<String> ids() {
-      return null;
+      return values.stream().map( v -> v.id ).collect( toList() );
+   }
+
+   @Override
+   public List<DictionaryLeaf> getValues() {
+      return values;
+   }
+
+   @Override
+   public Optional<DictionaryLeaf> getValue( String name ) {
+      return values.stream().filter( l -> l.id.equals( name ) ).findAny();
    }
 }
