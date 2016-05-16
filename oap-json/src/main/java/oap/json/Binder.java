@@ -189,11 +189,22 @@ public class Binder {
    }
 
    public <T> T unmarshal( Class<?> clazz, Map<String, Object> map ) {
-      return unmarshal( clazz, marshal( map ) );
+      try {
+         return ( T ) mapper.convertValue( map, clazz );
+      } catch( Exception e ) {
+         log.trace( String.valueOf( map ) );
+         throw new JsonException( e.getMessage(), e );
+      }
    }
 
+   @SuppressWarnings( "unchecked" )
    public <T> T unmarshal( TypeReference<T> ref, Map<String, Object> map ) {
-      return unmarshal( ref, marshal( map ) );
+      try {
+         return ( T ) mapper.convertValue( map, ref );
+      } catch( Exception e ) {
+         log.trace( String.valueOf( map ) );
+         throw new JsonException( e.getMessage(), e );
+      }
    }
 
    @SuppressWarnings( "unchecked" )

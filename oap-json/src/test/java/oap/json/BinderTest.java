@@ -50,10 +50,10 @@ public class BinderTest extends AbstractTest {
    //todo generic map-list binding
    private static <T> void assertBind( Class<T> clazz, T source ) {
       System.out.println( "========================================" );
-      String json2 = Binder.json.marshal( source );
+      String json = Binder.json.marshal( source );
       System.out.println( "JSON2:" );
-      System.out.println( json2 );
-      T result = Binder.json.unmarshal( clazz, json2 );
+      System.out.println( json );
+      T result = Binder.json.unmarshal( clazz, json );
       System.out.println( "Object:" );
       System.out.println( result );
       assertEquals( result, source );
@@ -61,10 +61,10 @@ public class BinderTest extends AbstractTest {
 
    private static <T> void assertBindWithTyping( Class<T> clazz, T source ) {
       System.out.println( "========================================" );
-      String json2 = Binder.jsonWithTyping.marshal( source );
-      System.out.println( "JSON2:" );
-      System.out.println( json2 );
-      T result = Binder.jsonWithTyping.unmarshal( clazz, json2 );
+      String json = Binder.jsonWithTyping.marshal( source );
+      System.out.println( "JSON:" );
+      System.out.println( json );
+      T result = Binder.jsonWithTyping.unmarshal( clazz, json );
       System.out.println( "Object:" );
       System.out.println( result );
       assertEquals( result, source );
@@ -194,6 +194,20 @@ public class BinderTest extends AbstractTest {
    public void customLong() {
       assertEquals( Binder.hocon.unmarshal( LongBean.class, "{l = 2s}" ), new LongBean( 2000 ) );
       assertEquals( Binder.json.unmarshal( LongBean.class, "{\"l\" : \"2kb\"}" ), new LongBean( 2048 ) );
+   }
+
+   @Test
+   public void map() {
+      Bean bean = Binder.json.unmarshal( Bean.class, Maps.of(
+         __( "str", "aaa" ),
+         __( "i", 1 ),
+         __( "sb2", Maps.of(
+            __( "s2", "bbb" ),
+            __( "i2", 2 ),
+            __( "list", Lists.of( 1, 2, 3, 4 ) )
+         ) )
+      ) );
+      assertEquals( bean, new Bean( "aaa", 1, new Bean2( "bbb", 2, Lists.of( 1, 2, 3, 4 ) ) ) );
    }
 }
 
