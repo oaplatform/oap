@@ -23,12 +23,14 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.json.Binder;
 import oap.reflect.Coercions;
 import oap.util.Stream;
 
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.*;
@@ -50,7 +52,12 @@ public class Module {
             } else return list;
          } )
       .with( r -> !r.assignableFrom( Map.class ),
-         ( r, map ) -> map instanceof Map<?, ?> ? Binder.json.unmarshal( r.underlying, ( Map<String, Object> ) map ) : map )
+         ( r, map ) -> map instanceof Map<?, ?> ? Binder.json.unmarshal( new TypeReference<Object>() {
+            @Override
+            public Type getType() {
+               return r.getType();
+            }
+         }, ( Map<String, Object> ) map ) : map )
       .withIdentity();
    public String name;
    public ArrayList<String> dependsOn = new ArrayList<>();

@@ -29,7 +29,9 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @ToString
 public class ServiceOne {
@@ -47,7 +49,7 @@ public class ServiceOne {
    @ToString
    public static class Complex {
       int i;
-
+      Map<String, Complex> map = new HashMap<>(  );
       @JsonCreator
       public Complex( @JsonProperty( "i" ) int i ) {
          this.i = i;

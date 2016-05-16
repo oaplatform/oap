@@ -25,12 +25,14 @@
 package oap.application;
 
 import oap.testng.AbstractTest;
+import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import java.net.URL;
 import java.util.List;
 
 import static oap.testng.Asserts.*;
+import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -55,7 +57,9 @@ public class KernelTest extends AbstractTest {
             assertNotNull( one );
             assertThat( one.i ).isEqualTo( 2 );
             assertThat( one.i2 ).isEqualTo( 100 );
-            assertThat( one.complex ).isEqualTo( new ServiceOne.Complex( 2 ) );
+            ServiceOne.Complex expected = new ServiceOne.Complex( 2 );
+            expected.map = Maps.of( __( "a", new ServiceOne.Complex( 1 ) ) );
+            assertThat( one.complex ).isEqualTo( expected );
             assertThat( one.complexes ).contains( new ServiceOne.Complex( 2 ) );
             assertNotNull( two );
             assertThat( two.j ).isEqualTo( 3000 );

@@ -53,7 +53,6 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -191,6 +190,10 @@ public class Binder {
 
    public <T> T unmarshal( Class<?> clazz, Map<String, Object> map ) {
       return unmarshal( clazz, marshal( map ) );
+   }
+
+   public <T> T unmarshal( TypeReference<T> ref, Map<String, Object> map ) {
+      return unmarshal( ref, marshal( map ) );
    }
 
    @SuppressWarnings( "unchecked" )
