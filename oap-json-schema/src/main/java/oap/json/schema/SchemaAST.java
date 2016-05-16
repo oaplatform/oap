@@ -23,6 +23,8 @@
  */
 package oap.json.schema;
 
+import lombok.ToString;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -38,6 +40,7 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
 
    public abstract T merge( T cs );
 
+   @ToString
    public static class CommonSchemaAST {
       public final String schemaType;
       public final Optional<Boolean> required;

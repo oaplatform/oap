@@ -53,6 +53,11 @@ public class ObjectSchemaASTWrapper
 
    @Override
    public Map<String, SchemaASTWrapper> getChildren() {
-      return declaredProperties;
+      if( parentSchema.isPresent() ) {
+         final LinkedHashMap<String, SchemaASTWrapper> map = new LinkedHashMap<>();
+         parentSchema.get().getChildren().forEach( map::put );
+         declaredProperties.forEach( map::put );
+         return map;
+      } else return declaredProperties;
    }
 }
