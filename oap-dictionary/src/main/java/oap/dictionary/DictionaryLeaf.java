@@ -39,10 +39,10 @@ import java.util.Optional;
 @EqualsAndHashCode
 @ToString
 public class DictionaryLeaf implements Dictionary {
-   public final String id;
-   public final boolean enabled;
-   public final long externalId;
-   public final Map<String, Object> properties;
+   private final boolean enabled;
+   private final long externalId;
+   private final Map<String, Object> properties;
+   private final String id;
 
    public DictionaryLeaf( String id, boolean enabled, long externalId, Map<String, Object> properties ) {
       this.id = id;
@@ -84,5 +84,23 @@ public class DictionaryLeaf implements Dictionary {
    @Override
    public List<DictionaryLeaf> getValues() {
       return Collections.emptyList();
+   }
+
+   @Override
+   public String getId() {
+      return id;
+   }
+
+   @Override
+   public Optional<Object> getProperty( String name ) {
+      return Optional.ofNullable( getProperties().get( name ) );
+   }
+
+   public boolean isEnabled() {
+      return enabled;
+   }
+
+   public long getExternalId() {
+      return externalId;
    }
 }

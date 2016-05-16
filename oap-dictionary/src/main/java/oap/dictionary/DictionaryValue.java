@@ -73,12 +73,12 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
 
    @Override
    public long getOrDefault( String id, long defaultValue ) {
-      return getValue( id ).map( v -> v.externalId ).orElse( defaultValue );
+      return getValue( id ).map( v -> v.getExternalId() ).orElse( defaultValue );
    }
 
    @Override
    public String getOrDefault( long externlId, String defaultValue ) {
-      return values.stream().filter( v -> v.externalId == externlId ).findAny().map( d -> d.id ).orElse( defaultValue );
+      return values.stream().filter( v -> v.getExternalId() == externlId ).findAny().map( DictionaryLeaf::getId ).orElse( defaultValue );
    }
 
    @Override
@@ -88,7 +88,7 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
 
    @Override
    public List<String> ids() {
-      return values.stream().map( v -> v.id ).collect( toList() );
+      return values.stream().map( DictionaryLeaf::getId ).collect( toList() );
    }
 
    @Override
@@ -98,6 +98,6 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
 
    @Override
    public Optional<DictionaryLeaf> getValue( String name ) {
-      return values.stream().filter( l -> l.id.equals( name ) ).findAny();
+      return values.stream().filter( l -> l.getId().equals( name ) ).findAny();
    }
 }

@@ -51,8 +51,8 @@ public final class DictionaryRoot implements Dictionary {
       this.values = values;
 
       for( DictionaryLeaf dv : values ) {
-         indexById.put( dv.id, dv );
-         indexByExternalId.put( dv.externalId, dv.id );
+         indexById.put( dv.getId(), dv );
+         indexByExternalId.put( dv.getExternalId(), dv.getId() );
       }
    }
 
@@ -67,7 +67,7 @@ public final class DictionaryRoot implements Dictionary {
    public final long getOrDefault( String id, long defaultValue ) {
       final DictionaryLeaf rtb = indexById.get( id );
       if( rtb == null ) return defaultValue;
-      return rtb.externalId;
+      return rtb.getExternalId();
    }
 
    @Override
@@ -77,7 +77,7 @@ public final class DictionaryRoot implements Dictionary {
 
    @Override
    public List<String> ids() {
-      return values.stream().map( v -> v.id ).collect( toList() );
+      return values.stream().map( DictionaryLeaf::getId ).collect( toList() );
    }
 
    @Override
@@ -91,7 +91,27 @@ public final class DictionaryRoot implements Dictionary {
    }
 
    @Override
+   public String getId() {
+      return name;
+   }
+
+   @Override
+   public Optional<Object> getProperty( String name ) {
+      return Optional.empty();
+   }
+
+   @Override
    public Optional<DictionaryLeaf> getValue( String name ) {
       return Optional.ofNullable( indexById.get( name ) );
+   }
+
+   @Override
+   public boolean isEnabled() {
+      return true;
+   }
+
+   @Override
+   public long getExternalId() {
+      return -1;
    }
 }

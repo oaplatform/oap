@@ -45,4 +45,12 @@ public interface Dictionary {
    Optional<DictionaryLeaf> getValue( String name );
 
    List<DictionaryLeaf> getValues();
+
+   String getId();
+
+   Optional<Object> getProperty( String name );
+
+   boolean isEnabled();
+
+   long getExternalId();
 }

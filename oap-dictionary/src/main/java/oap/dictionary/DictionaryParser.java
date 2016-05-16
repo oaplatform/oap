@@ -195,14 +195,14 @@ public class DictionaryParser {
 
       for( val value : values ) {
          jsonGenerator.writeStartObject();
-         jsonGenerator.writeStringField( ID, value.id );
-         if( !value.enabled ) jsonGenerator.writeBooleanField( ENABLED, false );
-         jsonGenerator.writeNumberField( EXTERNAL_ID, value.externalId );
+         jsonGenerator.writeStringField( ID, value.getId() );
+         if( !value.isEnabled() ) jsonGenerator.writeBooleanField( ENABLED, false );
+         jsonGenerator.writeNumberField( EXTERNAL_ID, value.getExternalId() );
          if( value instanceof DictionaryValue ) {
             writeValues( jsonGenerator, value.getValues() );
          }
 
-         value.properties.forEach( Try.consume( jsonGenerator::writeObjectField ) );
+         value.getProperties().forEach( Try.consume( jsonGenerator::writeObjectField ) );
 
          jsonGenerator.writeEndObject();
       }
