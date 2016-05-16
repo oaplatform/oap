@@ -36,7 +36,6 @@ public class ResourcesTest {
    @Test
    public void urls() {
       List<URL> urls = Resources.urls( getClass().getName(), "txt" );
-      assertThat( urls )
-         .containsOnly( Asserts.urlOfTestResource( getClass(), "resource.txt" ) );
+      assertThat( urls ).containsOnly( Asserts.urlOfTestResource( getClass(), "resource.txt" ) );
    }
 }

@@ -28,6 +28,7 @@ import oap.logstream.disk.DiskLoggingBackend;
 import oap.logstream.net.SocketLoggingBackend;
 import oap.logstream.net.SocketLoggingServer;
 import oap.testng.AbstractTest;
+import oap.testng.Env;
 import oap.util.Dates;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -78,8 +79,8 @@ public class LoggerTest extends AbstractTest {
       String content = "12345678";
 
       try( LoggingBackend serverBackend = new DiskLoggingBackend( tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, false ) ) {
-         SocketLoggingServer server = new SocketLoggingServer( 7777, 1024, serverBackend, tmpPath( "control" ) );
-         try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", 7777, tmpPath( "buffers" ), 50 ) ) {
+         SocketLoggingServer server = new SocketLoggingServer( Env.port("net"), 1024, serverBackend, tmpPath( "control" ) );
+         try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", Env.port("net"), tmpPath( "buffers" ), 50 ) ) {
             Logger logger = new Logger( clientBackend );
             logger.log( "a", content );
             clientBackend.send();

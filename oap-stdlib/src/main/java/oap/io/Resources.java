@@ -29,6 +29,7 @@ import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
+import org.reflections.util.FilterBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -99,9 +100,11 @@ public final class Resources {
          new ConfigurationBuilder()
             .setUrls( ClasspathHelper.forPackage( atPackage ) )
             .setScanners( new ResourcesScanner() )
+            .filterInputsBy( new FilterBuilder().includePackage( atPackage ) )
+            .useParallelExecutor()
       );
 
-      final Set<String> resources = reflections.getResources( name -> name.endsWith( "." + ext ) );
+      final Set<String> resources = reflections.getResources( in -> in.endsWith( "." + ext ) );
       return new ArrayList<>( Sets.map( resources, r -> Thread.currentThread().getContextClassLoader().getResource( r ) ) );
    }
 
