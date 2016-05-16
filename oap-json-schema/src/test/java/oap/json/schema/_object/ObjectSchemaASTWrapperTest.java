@@ -43,19 +43,21 @@ public class ObjectSchemaASTWrapperTest extends AbstractTest {
    public void testGetChildren() throws Exception {
       final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "id" ) ) {{
          parentSchema = Optional.of(
-            new ObjectSchemaASTWrapper(new SchemaId( "id" )) {{
+            new ObjectSchemaASTWrapper( new SchemaId( "id" ) ) {{
                parentSchema = Optional.empty();
                declaredProperties = new LinkedHashMap<String, SchemaASTWrapper>() {{
                   put( "b", new DefaultSchemaASTWrapper( new SchemaId( "id.b" ) ) );
                }};
             }}
-            );
+         );
          declaredProperties = new LinkedHashMap<String, SchemaASTWrapper>() {{
             put( "a", new DefaultSchemaASTWrapper( new SchemaId( "id.a" ) ) );
+            put( "b", new DefaultSchemaASTWrapper( new SchemaId( "id.b" ) ) );
          }};
       }};
 
       assertThat( ow.getChildren() ).containsKeys( "a", "b" );
+      assertThat( ow.getChildren().get( "b" ) ).hasSize( 2 );
    }
 
    @Test

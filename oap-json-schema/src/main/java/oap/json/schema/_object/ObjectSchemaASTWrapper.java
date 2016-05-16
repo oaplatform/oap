@@ -26,9 +26,7 @@ package oap.json.schema._object;
 
 import oap.json.schema.*;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class ObjectSchemaASTWrapper
    extends SchemaASTWrapper<ObjectSchemaAST, ObjectSchemaASTWrapper>
@@ -52,12 +50,15 @@ public class ObjectSchemaASTWrapper
    }
 
    @Override
-   public Map<String, SchemaASTWrapper> getChildren() {
-      if( parentSchema.isPresent() ) {
-         final LinkedHashMap<String, SchemaASTWrapper> map = new LinkedHashMap<>();
-         parentSchema.get().getChildren().forEach( map::put );
-         declaredProperties.forEach( map::put );
-         return map;
-      } else return declaredProperties;
+   public Map<String, List<SchemaASTWrapper>> getChildren() {
+      final LinkedHashMap<String, List<SchemaASTWrapper>> map = new LinkedHashMap<>();
+
+      parentSchema.ifPresent( ps ->
+         ps.getChildren().forEach( ( key, value ) -> map.computeIfAbsent( key, ( k ) -> new ArrayList<>() ).addAll( value ) )
+      );
+
+      declaredProperties.forEach( ( key, value ) -> map.computeIfAbsent( key, ( k ) -> new ArrayList<>() ).add( value ) );
+
+      return map;
    }
 }

@@ -62,6 +62,18 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
    }
 
    @Test
+   public void testParentArray() {
+      String schema = "{type: object, properties: {" +
+         "parent: {type:array, items:{type: dictionary, name: dict-h}}, " +
+         "child: {type:array, items:{type: dictionary, parent: {json-path: parent.items}}}" +
+         "}}";
+
+      vOk( schema, "{'parent': ['p1','p2']}" );
+      vOk( schema, "{'parent': ['p1'], 'child':['c11']}" );
+      vOk( schema, "{'parent': ['p1', 'p2'], 'child':['c11','c21']}" );
+   }
+
+   @Test
    public void testHierarchicalArray() {
       String schema = "{type: object, properties: {" +
          "a:{" +

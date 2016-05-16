@@ -24,11 +24,17 @@
 
 package oap.json.schema._array;
 
-import oap.json.schema.*;
+import oap.json.schema.ContainerSchemaASTWrapper;
+import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.SchemaASTWrapper;
+import oap.json.schema.SchemaId;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static java.util.Collections.singletonList;
 
 public class ArraySchemaASTWrapper
    extends SchemaASTWrapper<ArraySchemaAST, ArraySchemaASTWrapper>
@@ -49,9 +55,9 @@ public class ArraySchemaASTWrapper
    }
 
    @Override
-   public Map<String, SchemaASTWrapper> getChildren() {
-      return new HashMap<String, SchemaASTWrapper>() {{
-         put( "items", items );
+   public Map<String, List<SchemaASTWrapper>> getChildren() {
+      return new HashMap<String, List<SchemaASTWrapper>>() {{
+         put( "items", singletonList( items ) );
       }};
    }
 }

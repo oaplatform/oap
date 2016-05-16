@@ -26,6 +26,7 @@ package oap.json.schema;
 
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -43,9 +44,9 @@ public class SchemaWrapperPath {
 
       if( schema instanceof ContainerSchemaASTWrapper ) {
          final String property = paths[index];
-         final SchemaASTWrapper s = ( ( ContainerSchemaASTWrapper ) schema ).getChildren().get( property );
-         if( s == null ) return Optional.empty();
-         return traverse( s, paths, index + 1 );
+         final List<SchemaASTWrapper> list = ( ( ContainerSchemaASTWrapper ) schema ).getChildren().get( property );
+         if( list == null ) return Optional.empty();
+         return list.stream().map( s -> traverse( s, paths, index + 1 ) ).filter( Optional::isPresent ).findFirst().map( Optional::get );
       } else return Optional.empty();
    }
 
