@@ -71,6 +71,11 @@ public class DictionaryLeaf implements Dictionary {
       return Collections.emptyList();
    }
 
+   @Override
+   public long[] externalIds() {
+      return new long[0];
+   }
+
    @JsonIgnore
    public Map<String, Object> getProperties() {
       return properties != null ? Collections.unmodifiableMap( properties ) : Collections.emptyMap();

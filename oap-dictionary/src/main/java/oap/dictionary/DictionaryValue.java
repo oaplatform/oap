@@ -92,6 +92,11 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
    }
 
    @Override
+   public long[] externalIds() {
+      return values.stream().mapToLong( DictionaryLeaf::getExternalId ).toArray();
+   }
+
+   @Override
    public List<DictionaryLeaf> getValues() {
       return values;
    }
