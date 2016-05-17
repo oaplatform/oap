@@ -35,7 +35,7 @@ import oap.reflect.Reflection;
 import oap.util.Optionals;
 import oap.util.Stream;
 import oap.util.Strings;
-import oap.ws.security.api.User;
+import oap.ws.security.User;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
 import org.joda.time.DateTime;
