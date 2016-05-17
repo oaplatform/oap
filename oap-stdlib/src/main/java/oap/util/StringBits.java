@@ -35,92 +35,89 @@ import java.util.stream.LongStream;
 import static java.util.stream.Collectors.toList;
 
 public class StringBits {
-    private static final long UNKNOWN = 0;
+   private static final long UNKNOWN = 0;
 
-    private final HashMap<String, Long> bits = new HashMap<>();
-    private final AtomicLong bit = new AtomicLong( 1L );
+   private final HashMap<String, Long> bits = new HashMap<>();
+   private final AtomicLong bit = new AtomicLong( 1L );
 
-    public StringBits() {
-        bits.put( Strings.UNKNOWN, UNKNOWN );
-    }
+   public StringBits() {
+      bits.put( Strings.UNKNOWN, UNKNOWN );
+   }
 
-    public final synchronized long computeIfAbsent( String name ) {
-        return bits.computeIfAbsent( name, n -> bit.getAndIncrement() );
-    }
+   public final synchronized long computeIfAbsent( String name ) {
+      return bits.computeIfAbsent( name, n -> bit.getAndIncrement() );
+   }
 
-    public final synchronized long[] computeIfAbsent( List<String> name ) {
-        final int size = name.size();
-        final long[] result = new long[size];
+   public final synchronized long[] computeIfAbsent( List<String> name ) {
+      return computeIfAbsent( name.stream() );
+   }
 
-        for( int i = 0; i < size; i++ ) {
-            result[i] = bits.computeIfAbsent( name.get( i ), n -> bit.getAndIncrement() );
-        }
+   public final synchronized long[] computeIfAbsent( java.util.stream.Stream<String> name ) {
+      return name.mapToLong( n -> bits.computeIfAbsent( n, k -> bit.getAndIncrement() ) ).toArray();
+   }
 
-        return result;
-    }
+   public final long get( String name ) {
+      return bits.getOrDefault( name, UNKNOWN );
+   }
 
-    public final long get( String name ) {
-        return bits.getOrDefault( name, UNKNOWN );
-    }
+   public final long[] get( List<String> name ) {
+      final int size = name.size();
+      final long[] result = new long[size];
 
-    public final long[] get( List<String> name ) {
-        final int size = name.size();
-        final long[] result = new long[size];
+      for( int i = 0; i < size; i++ ) {
+         result[i] = bits.getOrDefault( name.get( i ), UNKNOWN );
+      }
 
-        for( int i = 0; i < size; i++ ) {
-            result[i] = bits.getOrDefault( name.get( i ), UNKNOWN );
-        }
+      return result;
+   }
 
-        return result;
-    }
+   public final BitSet bits( Collection<String> values, boolean fill ) {
+      BitSet bitSet = new BitSet( bits.size() );
 
-    public final BitSet bits( Collection<String> values, boolean fill ) {
-        BitSet bitSet = new BitSet( bits.size() );
+      if( values == null || values.isEmpty() ) {
+         if( fill ) bitSet.set( 0, bits.size() );
+         return bitSet;
+      }
 
-        if( values == null || values.isEmpty() ) {
-            if( fill ) bitSet.set( 0, bits.size() );
-            return bitSet;
-        }
+      values.forEach( v -> bitSet.set( ( int ) get( v ) ) );
+      return bitSet;
+   }
 
-        values.forEach( v -> bitSet.set( ( int ) get( v ) ) );
-        return bitSet;
-    }
+   public int size() {
+      return bits.size();
+   }
 
-    public int size() {
-        return bits.size();
-    }
+   public String valueOf( long bit ) {
+      return bits.entrySet()
+         .stream()
+         .filter( e -> e.getValue() == bit )
+         .findAny()
+         .map( Map.Entry::getKey )
+         .orElse( Strings.UNKNOWN );
+   }
 
-    public String valueOf( long bit ) {
-        return bits.entrySet()
+   public List<String> valueOf( java.util.BitSet bits ) {
+      return valueOf( bits.stream().mapToLong( i -> i ) );
+   }
+
+   public List<String> valueOf( long[] bits ) {
+      return valueOf( LongStream.of( bits ) );
+   }
+
+   public List<String> valueOf( int[] bits ) {
+      return valueOf( IntStream.of( bits ).mapToLong( i -> i ) );
+   }
+
+   private List<String> valueOf( LongStream bits ) {
+      return bits
+         .mapToObj( b -> this.bits
+            .entrySet()
             .stream()
-            .filter( e -> e.getValue() == bit )
+            .filter( e -> e.getValue().equals( b ) )
             .findAny()
             .map( Map.Entry::getKey )
-            .orElse( Strings.UNKNOWN );
-    }
-
-    public List<String> valueOf( java.util.BitSet bits ) {
-        return valueOf( bits.stream().mapToLong( i -> i ) );
-    }
-
-    public List<String> valueOf( long[] bits ) {
-        return valueOf( LongStream.of( bits ) );
-    }
-
-    public List<String> valueOf( int[] bits ) {
-        return valueOf( IntStream.of( bits ).mapToLong( i -> i ) );
-    }
-
-    private List<String> valueOf( LongStream bits ) {
-        return bits
-            .mapToObj( b -> this.bits
-                .entrySet()
-                .stream()
-                .filter( e -> e.getValue().equals( b ) )
-                .findAny()
-                .map( Map.Entry::getKey )
-                .orElse( Strings.UNKNOWN )
-            )
-            .collect( toList() );
-    }
+            .orElse( Strings.UNKNOWN )
+         )
+         .collect( toList() );
+   }
 }
