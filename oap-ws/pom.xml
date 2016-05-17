@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.15.13</version>
+        <version>1.15.14</version>
     </parent>
 
     <dependencies>
@@ -65,7 +65,7 @@
         <dependency>
             <groupId>oap-ws-security</groupId>
             <artifactId>oap-ws-security-api</artifactId>
-            <version>1.5.0</version>
+            <version>1.5.1</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
