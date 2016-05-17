@@ -153,9 +153,9 @@ public class WsService implements Handler {
 
                                 handleInternal(request, response, method, name, false);
                             } else {
-                                logger.debug("Creating new session with SID [{}]", cookieId);
-
                                 cookieId = UUID.randomUUID().toString();
+
+                                logger.debug("Creating new session with SID [{}]", cookieId);
                                 sessionManager.put(cookieId, new Session());
 
                                 handleInternal(request, response, method, name, true);
