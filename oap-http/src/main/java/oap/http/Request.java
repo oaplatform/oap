@@ -25,6 +25,7 @@
 package oap.http;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
 import oap.util.Arrays;
@@ -34,19 +35,16 @@ import oap.util.Try;
 import org.apache.http.Header;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
-import org.apache.http.impl.cookie.RFC6265StrictSpec;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.net.HttpCookie;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class Request {
+    private static final Splitter SPLITTER = Splitter.on(";").trimResults().omitEmptyStrings();
+
     public final String requestLine;
     public final HttpMethod httpMethod;
     public final String baseUrl;
@@ -112,15 +110,22 @@ public class Request {
             .map( Header::getValue );
     }
 
-    public List<HttpCookie> cookies() {
-        List<HttpCookie> cookies = new ArrayList<>();
+    public Map<String, String> cookies() {
         for( Header header : headers ) {
             if( header.getName().equals( "Cookie" ) ) {
-                cookies.add( HttpCookie.parse( header.getValue() ).get( 0 ) );
+                final Map<String, String> cookies = new HashMap<>();
+
+                SPLITTER.split( header.getValue() ).forEach( s -> {
+                    String[] split = s.split( "=" );
+
+                    cookies.put( split[0], split[1] );
+                } );
+
+                return cookies;
             }
         }
 
-        return cookies;
+        return Collections.emptyMap();
     }
 
     @Override

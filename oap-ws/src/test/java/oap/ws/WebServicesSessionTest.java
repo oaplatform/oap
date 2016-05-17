@@ -78,8 +78,7 @@ public class WebServicesSessionTest {
     @Test
     public void testShouldVerifySessionPropagation() throws IOException {
         final HttpGet httpGet = new HttpGet( HttpAsserts.HTTP_PREFIX + "/test/" );
-        httpGet.addHeader(  "Cookie", "SID=123456;path=/" );
-        httpGet.addHeader( "Cookie", "Authorization=987654321;path=/" );
+        httpGet.addHeader( "Cookie", "Authorization=987654321; SID=123456" );
 
         final User user = new User();
         user.email = "test@example.com";

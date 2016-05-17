@@ -145,23 +145,21 @@ public class WsService implements Handler {
                         if( !sessionAware ) {
                             handleInternal( request, response, method, name, false );
                         } else {
-                            final Optional<HttpCookie> user =
-                                request.cookies().stream()
-                                    .filter( httpCookie -> httpCookie.getName().equals( "SID" ) )
-                                    .findFirst();
-                            if( user.isPresent() ) {
-                                this.cookieId = user.get().getValue();
+                            final Optional<String> internalSession = Optional.ofNullable( request.cookies().get( "SID" ) );
+                            if( internalSession.isPresent() &&
+                                    sessionManager.getSessionById( internalSession.get() ) != null  ) {
 
-                                logger.debug( "SID [{}] found in cookie", cookieId );
+                                cookieId = internalSession.get();
+                                logger.debug("Valid SID [{}] found in cookie", cookieId);
 
-                                handleInternal( request, response, method, name, false );
+                                handleInternal(request, response, method, name, false);
                             } else {
-                                this.cookieId = UUID.randomUUID().toString();
+                                logger.debug("Creating new session with SID [{}]", cookieId);
 
-                                logger.debug( "Creating new session with SID [{}]", cookieId);
-                                sessionManager.put( cookieId, new Session() );
+                                cookieId = UUID.randomUUID().toString();
+                                sessionManager.put(cookieId, new Session());
 
-                                handleInternal( request, response, method, name, true );
+                                handleInternal(request, response, method, name, true);
                             }
                         }
                     } );
