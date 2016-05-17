@@ -81,6 +81,11 @@ public final class DictionaryRoot implements Dictionary {
    }
 
    @Override
+   public long[] externalIds() {
+      return values.stream().mapToLong( DictionaryLeaf::getExternalId ).toArray();
+   }
+
+   @Override
    public Map<String, Object> getProperties() {
       return Collections.emptyMap();
    }

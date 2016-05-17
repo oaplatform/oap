@@ -40,6 +40,8 @@ public interface Dictionary {
 
    List<String> ids();
 
+   long[] externalIds();
+
    Map<String, Object> getProperties();
 
    Optional<DictionaryLeaf> getValue( String name );
