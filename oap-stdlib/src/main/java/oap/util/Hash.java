@@ -27,7 +27,10 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class Hash {
+public final class Hash {
+
+   private Hash() {
+   }
 
    public static String sha256( String salt, String input ) {
       return hash( salt, input, "SHA-256" );

@@ -29,7 +29,7 @@ import oap.http.*;
 import oap.http.testng.HttpAsserts;
 import oap.metrics.Metrics;
 import oap.testng.Env;
-import oap.ws.security.domain.User;
+import oap.ws.security.api.User;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
