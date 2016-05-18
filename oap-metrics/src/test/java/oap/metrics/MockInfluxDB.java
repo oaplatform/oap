@@ -52,6 +52,11 @@ public class MockInfluxDB implements InfluxDB {
     }
 
     @Override
+    public boolean isBatchEnabled() {
+        return true;
+    }
+
+    @Override
     public Pong ping() {
         return new Pong();
     }
@@ -69,6 +74,16 @@ public class MockInfluxDB implements InfluxDB {
     @Override
     public void write( BatchPoints batchPoints ) {
         writes.addAll( batchPoints.getPoints() );
+
+    }
+
+    @Override
+    public void write( String database, String retentionPolicy, ConsistencyLevel consistency, String records ) {
+
+    }
+
+    @Override
+    public void write( String database, String retentionPolicy, ConsistencyLevel consistency, List<String> records ) {
 
     }
 
@@ -95,18 +110,5 @@ public class MockInfluxDB implements InfluxDB {
     @Override
     public List<String> describeDatabases() {
         return emptyList();
-    }
-
-    @Override
-    public void setConnectTimeout( long connectTimeout, TimeUnit timeUnit ) {
-    }
-
-    @Override
-    public void setReadTimeout( long readTimeout, TimeUnit timeUnit ) {
-    }
-
-    @Override
-    public void setWriteTimeout( long writeTimeout, TimeUnit timeUnit ) {
-
     }
 }
