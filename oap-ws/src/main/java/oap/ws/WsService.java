@@ -35,7 +35,7 @@ import oap.reflect.Reflection;
 import oap.util.Optionals;
 import oap.util.Stream;
 import oap.util.Strings;
-import oap.ws.security.api.User;
+import oap.ws.security.User;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
 import org.joda.time.DateTime;
@@ -153,9 +153,9 @@ public class WsService implements Handler {
 
                                 handleInternal(request, response, method, name, false);
                             } else {
-                                logger.debug("Creating new session with SID [{}]", cookieId);
-
                                 cookieId = UUID.randomUUID().toString();
+
+                                logger.debug("Creating new session with SID [{}]", cookieId);
                                 sessionManager.put(cookieId, new Session());
 
                                 handleInternal(request, response, method, name, true);
