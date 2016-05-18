@@ -45,7 +45,7 @@ import java.lang.reflect.Modifier;
 import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -129,13 +129,13 @@ class InfluxDBReporter extends ScheduledReporter {
    }
 
    private void reportCounters( SortedMap<String, Counter> counters, SortedMap<String, Point.Builder> builders ) {
-      report( counters, builders, Counter::getCount );
+      report( counters, builders, ( b, e ) -> b.addField( e.getKey(), e.getValue().getCount() ) );
    }
 
    private <T extends Metric> void report(
       SortedMap<String, T> counters,
       SortedMap<String, Point.Builder> builders,
-      Function<T, Object> func ) {
+      BiConsumer<Point.Builder, Map.Entry<String, T>> func ) {
 
       final Map<String, SortedMap<String, T>> ap = aggregate( counters );
 
@@ -147,7 +147,7 @@ class InfluxDBReporter extends ScheduledReporter {
          } );
 
          for( Map.Entry<String, T> entry : metrics.entrySet() ) {
-            builder.field( entry.getKey(), func.apply( entry.getValue() ) );
+            func.accept( builder, entry );
          }
       } );
    }
@@ -181,19 +181,27 @@ class InfluxDBReporter extends ScheduledReporter {
    }
 
    private void reportMeters( SortedMap<String, Meter> meters, SortedMap<String, Point.Builder> builders ) {
-      report( meters, builders, ( m ) -> convertRate( m.getOneMinuteRate() ) );
+      report( meters, builders, ( b, e ) -> b.addField( e.getKey(), convertRate( e.getValue().getOneMinuteRate() ) ) );
    }
 
    private void reportTimers( SortedMap<String, Timer> timers, SortedMap<String, Point.Builder> builders ) {
-      report( timers, builders, ( t ) -> convertDuration( t.getSnapshot().getMean() ) );
+      report( timers, builders, ( b, e ) -> b.addField( e.getKey(), convertDuration( e.getValue().getSnapshot().getMean() ) ) );
    }
 
    private void reportGauges( SortedMap<String, Gauge> gauges, SortedMap<String, Point.Builder> builders ) {
-      report( gauges, builders, Gauge::getValue );
+      report( gauges, builders, ( b, e ) -> field( b, e.getKey(), e.getValue().getValue() ) );
+   }
+
+   private void field( Point.Builder point, String name, Object value ) {
+      if( value instanceof Long ) {
+         point.addField( name, ( Long ) value );
+      } else if( value instanceof Integer) {
+         point.addField( name, ( Integer ) value );
+      } else point.field( name, value );
    }
 
    private void reportHistograms( SortedMap<String, Histogram> histograms, SortedMap<String, Point.Builder> builders ) {
-      report( histograms, builders, ( h ) -> h.getSnapshot().getMean() );
+      report( histograms, builders, ( b, e ) -> b.addField( e.getKey(), e.getValue().getSnapshot().getMean() ) );
    }
 
    public static class Builder {
