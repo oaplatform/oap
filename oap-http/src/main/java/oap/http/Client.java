@@ -38,14 +38,17 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.*;
 import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
@@ -62,6 +65,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -78,23 +82,26 @@ import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class Client extends AsyncCallbacks<Client> {
+   private static final long FOREVER = Long.MAX_VALUE;
+
+   private final BasicCookieStore basicCookieStore;
+   private final Path certificateLocation;
+   private final String certificatePassword;
+
+   private CloseableHttpAsyncClient client;
+
    public static Client DEFAULT = new Client()
       .onError( e -> log.error( e.getMessage(), e ) )
       .onTimeout( () -> log.error( "timeout" ) );
-   private static final long FOREVER = Long.MAX_VALUE;
-   private final Path certificateLocation;
-   private final String certificatePassword;
-   private CloseableHttpAsyncClient client;
 
    public Client() {
-      this.certificateLocation = null;
-      this.certificatePassword = null;
-      this.client = initialize();
+      this( null, null );
    }
 
    public Client( Path certificateLocation, String certificatePassword ) {
       this.certificateLocation = certificateLocation;
       this.certificatePassword = certificatePassword;
+      this.basicCookieStore = new BasicCookieStore();
       this.client = initialize();
    }
 
@@ -190,13 +197,23 @@ public class Client extends AsyncCallbacks<Client> {
       return execute( request, Maps.empty(), FOREVER )
          .orElseThrow( () -> new RuntimeException( "no response" ) );
    }
-   public Response delete( String uri) {
+
+   public Response delete( String uri ) {
       return delete( uri, FOREVER );
    }
-   public Response delete( String uri, long timeout) {
+
+   public Response delete( String uri, long timeout ) {
       HttpDelete request = new HttpDelete( uri );
       return execute( request, Maps.empty(), timeout )
          .orElseThrow( () -> new RuntimeException( "no response" ) );
+   }
+
+   public List<Cookie> getCookies() {
+      return basicCookieStore.getCookies();
+   }
+
+   public void clearCookies() {
+      basicCookieStore.clear();
    }
 
    private Optional<Response> execute( HttpUriRequest request, Map<String, Object> headers, long timeout ) {
@@ -342,7 +359,7 @@ public class Client extends AsyncCallbacks<Client> {
    }
 
    private CloseableHttpAsyncClient initialize() {
-      CloseableHttpAsyncClient client = ( certificateLocation != null ?
+      final CloseableHttpAsyncClient client = ( certificateLocation != null ?
          HttpAsyncClients.custom().setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
          : HttpAsyncClients.custom() )
          .setMaxConnPerRoute( 1000 )
@@ -351,7 +368,9 @@ public class Client extends AsyncCallbacks<Client> {
          .setDefaultRequestConfig( RequestConfig
             .custom()
             .setRedirectsEnabled( false )
+            .setCookieSpec( CookieSpecs.STANDARD )
             .build() )
+         .setDefaultCookieStore( basicCookieStore )
          .build();
       client.start();
       return client;
