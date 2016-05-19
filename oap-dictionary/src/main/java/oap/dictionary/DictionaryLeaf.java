@@ -40,11 +40,11 @@ import java.util.Optional;
 @ToString
 public class DictionaryLeaf implements Dictionary {
    private final boolean enabled;
-   private final long externalId;
+   private final int externalId;
    private final Map<String, Object> properties;
    private final String id;
 
-   public DictionaryLeaf( String id, boolean enabled, long externalId, Map<String, Object> properties ) {
+   public DictionaryLeaf( String id, boolean enabled, int externalId, Map<String, Object> properties ) {
       this.id = id;
       this.enabled = enabled;
       this.externalId = externalId;
@@ -52,12 +52,12 @@ public class DictionaryLeaf implements Dictionary {
    }
 
    @Override
-   public long getOrDefault( String id, long defaultValue ) {
+   public int getOrDefault( String id, int defaultValue ) {
       return defaultValue;
    }
 
    @Override
-   public String getOrDefault( long externlId, String defaultValue ) {
+   public String getOrDefault( int externlId, String defaultValue ) {
       return defaultValue;
    }
 
@@ -72,8 +72,8 @@ public class DictionaryLeaf implements Dictionary {
    }
 
    @Override
-   public long[] externalIds() {
-      return new long[0];
+   public int[] externalIds() {
+      return new int[0];
    }
 
    @JsonIgnore
@@ -105,7 +105,12 @@ public class DictionaryLeaf implements Dictionary {
       return enabled;
    }
 
-   public long getExternalId() {
+   public int getExternalId() {
       return externalId;
+   }
+
+   @Override
+   public boolean containsProperty( String name ) {
+      return properties != null && properties.containsKey( name );
    }
 }

@@ -1,0 +1,24 @@
+{
+  "name": "test-dictionary-externalIdAsCharacter",
+  "externalIdAs":"character",
+  "values": [
+    {
+      "id": "id1",
+      "title": "title1",
+      "enabled": true,
+      "eid": "A",
+      "p1": 1,
+      "p2": "1",
+      "p3": true,
+      "p4": [true, false],
+      "p5": ["test1", "test2"]
+    },
+    {
+      "id": "id2",
+      "title": "title2",
+      "enabled": true,
+      "eid": "z",
+      "p3": false
+    }
+  ]
+}

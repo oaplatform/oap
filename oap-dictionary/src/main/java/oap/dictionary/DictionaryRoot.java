@@ -39,15 +39,20 @@ import static java.util.stream.Collectors.toList;
 @ToString
 public final class DictionaryRoot implements Dictionary {
    public final String name;
+   public final ExternalIdType externalIdAs;
    private final List<DictionaryLeaf> values;
-
    @JsonIgnore
-   private final HashMap<Long, String> indexByExternalId = new HashMap<>();
+   private final HashMap<Integer, String> indexByExternalId = new HashMap<>();
    @JsonIgnore
    private final HashMap<String, DictionaryLeaf> indexById = new HashMap<>();
 
    public DictionaryRoot( String name, List<DictionaryLeaf> values ) {
+      this( name, ExternalIdType.integer, values );
+   }
+
+   public DictionaryRoot( String name, ExternalIdType externalIdAs, List<DictionaryLeaf> values ) {
       this.name = name;
+      this.externalIdAs = externalIdAs;
       this.values = values;
 
       for( DictionaryLeaf dv : values ) {
@@ -57,14 +62,14 @@ public final class DictionaryRoot implements Dictionary {
    }
 
    @Override
-   public final String getOrDefault( long externlId, String defaultValue ) {
+   public final String getOrDefault( int externlId, String defaultValue ) {
       final String id = indexByExternalId.get( externlId );
       if( id == null ) return defaultValue;
       return id;
    }
 
    @Override
-   public final long getOrDefault( String id, long defaultValue ) {
+   public final int getOrDefault( String id, int defaultValue ) {
       final DictionaryLeaf rtb = indexById.get( id );
       if( rtb == null ) return defaultValue;
       return rtb.getExternalId();
@@ -81,8 +86,8 @@ public final class DictionaryRoot implements Dictionary {
    }
 
    @Override
-   public long[] externalIds() {
-      return values.stream().mapToLong( DictionaryLeaf::getExternalId ).toArray();
+   public int[] externalIds() {
+      return values.stream().mapToInt( DictionaryLeaf::getExternalId ).toArray();
    }
 
    @Override
@@ -116,7 +121,12 @@ public final class DictionaryRoot implements Dictionary {
    }
 
    @Override
-   public long getExternalId() {
+   public int getExternalId() {
       return -1;
+   }
+
+   @Override
+   public boolean containsProperty( String name ) {
+      return false;
    }
 }

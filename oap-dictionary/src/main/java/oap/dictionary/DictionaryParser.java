@@ -51,13 +51,13 @@ public class DictionaryParser {
    public static final String VALUES = "values";
 
    private static final Set<String> defaultFields = new HashSet<>();
-   private static final BiFunction<Boolean, Object, Optional<Long>> longFunc =
+   private static final BiFunction<Boolean, Object, Optional<Integer>> intFunc =
       ( convert, str ) -> {
          if( !convert ) return Optional.empty();
-         else if( str instanceof Integer ) return Optional.of( ( ( Integer ) str ).longValue() );
-         else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).longValue() );
+         else if( str instanceof Long ) return Optional.of( ( ( Long ) str ).intValue() );
+         else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).intValue() );
          else if( str instanceof String && ( ( String ) str ).length() == 1 )
-            return Optional.of( ( long ) ( ( String ) str ).charAt( 0 ) );
+            return Optional.of( ( int ) ( ( String ) str ).charAt( 0 ) );
          else return Optional.empty();
       };
 
@@ -73,7 +73,7 @@ public class DictionaryParser {
          final Map<Object, Object> valueMap = ( Map<Object, Object> ) value;
          final String id = getString( valueMap, ID );
          final boolean enabled = getBooleanOpt( valueMap, ENABLED ).orElse( true );
-         final long externalId = getLong( valueMap, EXTERNAL_ID, true );
+         final int externalId = getInt( valueMap, EXTERNAL_ID, true );
          List<DictionaryLeaf> values = emptyList();
 
          final HashMap<String, Object> properties = new HashMap<>();
@@ -121,9 +121,13 @@ public class DictionaryParser {
    private static DictionaryRoot parse( Map map ) {
       final String name = getString( map, NAME );
 
+      final ExternalIdType externalIdAs = getStringOpt( map, "externalIdAs" )
+         .map( ExternalIdType::valueOf )
+         .orElse( ExternalIdType.integer );
+
       final List values = getList( map, VALUES );
 
-      return new DictionaryRoot( name, parseValues( values, "" ) );
+      return new DictionaryRoot( name, externalIdAs, parseValues( values, "" ) );
    }
 
    private static ArrayList<DictionaryLeaf> parseValues( List values, String path ) {
@@ -141,8 +145,12 @@ public class DictionaryParser {
       return getValue( String.class, map, field, str -> Optional.empty() );
    }
 
-   private static long getLong( Map map, String field, boolean convert ) {
-      return getValue( Long.class, map, field, str -> longFunc.apply( convert, str ) );
+   private static Optional<String> getStringOpt( Map map, String field ) {
+      return getValueOpt( String.class, map, field, str -> Optional.empty() );
+   }
+
+   private static int getInt( Map map, String field, boolean convert ) {
+      return getValue( Integer.class, map, field, str -> intFunc.apply( convert, str ) );
    }
 
    private static Optional<Boolean> getBooleanOpt( Map map, String field ) {

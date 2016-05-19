@@ -22,39 +22,25 @@
  * SOFTWARE.
  */
 
-package oap.dictionary;
+package oap.dictionary.maven;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import oap.testng.AbstractTest;
+import oap.testng.Env;
+import org.testng.annotations.Test;
 
 /**
- * Created by Igor Petrenko on 29.04.2016.
+ * Created by Admin on 19.05.2016.
  */
-public interface Dictionary {
-   int getOrDefault( String id, int defaultValue );
+public class DictionaryMojoTest extends AbstractTest {
+   @Test
+   public void testExecute() throws Exception {
+      final DictionaryMojo dictionaryMojo = new DictionaryMojo();
+      dictionaryMojo.sourceDirectory = "src/test/resources/dictionary";
+      dictionaryMojo.dictionaryPackage = "test";
+      dictionaryMojo.outputDirectory = Env.tmp( "dictionary" );
 
-   String getOrDefault( int externlId, String defaultValue );
+      dictionaryMojo.execute();
 
-   boolean containsValueWithId( String id );
+   }
 
-   List<String> ids();
-
-   int[] externalIds();
-
-   Map<String, Object> getProperties();
-
-   Optional<DictionaryLeaf> getValue( String name );
-
-   List<DictionaryLeaf> getValues();
-
-   String getId();
-
-   Optional<Object> getProperty( String name );
-
-   boolean isEnabled();
-
-   int getExternalId();
-
-   boolean containsProperty( String name );
 }

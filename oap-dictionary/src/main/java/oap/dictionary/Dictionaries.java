@@ -33,6 +33,7 @@ import oap.util.Stream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static oap.util.Pair.__;
@@ -42,7 +43,7 @@ import static oap.util.Pair.__;
  */
 @Slf4j
 public class Dictionaries {
-   public static final Map<String, URL> dictionaries = new HashMap<>();
+   private static final Map<String, URL> dictionaries = new HashMap<>();
    private static final ConcurrentHashMap<String, DictionaryRoot> cache = new ConcurrentHashMap<>();
 
    private synchronized static void load() {
@@ -52,6 +53,12 @@ public class Dictionaries {
             .toMap() );
          log.info( "dictionaries: {}", dictionaries );
       }
+   }
+
+   public static Set<String> getDictionaryNames() {
+      load();
+
+      return dictionaries.keySet();
    }
 
    public static DictionaryRoot getDictionary( String name ) throws DictionaryNotFoundError {

@@ -24,37 +24,15 @@
 
 package oap.dictionary;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 /**
- * Created by Igor Petrenko on 29.04.2016.
+ * Created by Admin on 19.05.2016.
  */
-public interface Dictionary {
-   int getOrDefault( String id, int defaultValue );
+public enum ExternalIdType {
+   character( char.class ), integer( int.class );
 
-   String getOrDefault( int externlId, String defaultValue );
+   public final Class javaType;
 
-   boolean containsValueWithId( String id );
-
-   List<String> ids();
-
-   int[] externalIds();
-
-   Map<String, Object> getProperties();
-
-   Optional<DictionaryLeaf> getValue( String name );
-
-   List<DictionaryLeaf> getValues();
-
-   String getId();
-
-   Optional<Object> getProperty( String name );
-
-   boolean isEnabled();
-
-   int getExternalId();
-
-   boolean containsProperty( String name );
+   ExternalIdType( Class javaType ) {
+      this.javaType = javaType;
+   }
 }

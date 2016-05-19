@@ -34,7 +34,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.15.18</version>
+        <version>1.15.25</version>
     </parent>
 
     <dependencies>
@@ -43,6 +43,7 @@
             <artifactId>oap-json</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
