@@ -35,7 +35,9 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
@@ -60,7 +62,11 @@ public class DictionaryMojo extends AbstractMojo {
    @Override
    public void execute() throws MojoExecutionException, MojoFailureException {
 
-      Files.fastWildcard( Paths.get( sourceDirectory ), "*.json" ).forEach( path -> {
+      final ArrayList<Path> paths = Files.fastWildcard( Paths.get( sourceDirectory ), "*.json" );
+
+      getLog().debug( "found " + paths );
+
+      paths.forEach( path -> {
          getLog().info( "dictionary " + path + "..." );
 
          final DictionaryRoot dictionary = DictionaryParser.parse( path );

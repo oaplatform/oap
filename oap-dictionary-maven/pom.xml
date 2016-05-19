@@ -31,17 +31,19 @@
     <name>maven-oap-dictionary</name>
     <artifactId>maven-oap-dictionary</artifactId>
 
+    <packaging>maven-plugin</packaging>
+
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.15.18</version>
+        <version>1.15.19</version>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-dictionary</artifactId>
-            <version>1.15.18</version>
+            <version>1.15.19</version>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -52,6 +54,7 @@
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
             <version>3.4</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>
