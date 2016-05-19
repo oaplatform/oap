@@ -188,6 +188,7 @@ public class DictionaryMojo extends AbstractMojo {
 
    private String print( Object value ) {
       if( String.class.isAssignableFrom( value.getClass() ) ) return "\"" + value + "\"";
+      if( Long.class.isAssignableFrom( value.getClass() ) ) return value + "L";
       if( List.class.isAssignableFrom( value.getClass() ) ) {
          return "asList(" + ((List)value).stream().map(v -> print(v)).collect( joining(", ") )+ ")";
       }
