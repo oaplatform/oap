@@ -96,7 +96,7 @@ public class DictionaryMojo extends AbstractMojo {
             .append( "  private final boolean enabled;\n\n" )
             .append( "  public final boolean enabled() {return enabled;}\n" )
             .append( "  public final " + externalIdType + " externalId() {return externalId;}\n\n" )
-            .append( "  " + enumClass + "( int externalId, boolean enabled ) {\n" )
+            .append( "  " + enumClass + "( " + externalIdType + " externalId, boolean enabled ) {\n" )
             .append( "    this.externalId = externalId;\n" )
             .append( "    this.enabled = enabled;\n" )
             .append( "  }\n" )
