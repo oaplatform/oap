@@ -9,7 +9,9 @@
       "eid": "A",
       "p1": 1,
       "p2": "1",
-      "p3": true
+      "p3": true,
+      "p4": [true, false],
+      "p5": ["test1", "test2"]
     },
     {
       "id": "id2",

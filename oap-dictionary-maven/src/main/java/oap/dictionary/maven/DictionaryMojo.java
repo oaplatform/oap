@@ -41,6 +41,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -79,6 +80,8 @@ public class DictionaryMojo extends AbstractMojo {
          final String enumClass = toEnumName( dictionary.name );
          out
             .append( "package " + dictionaryPackage + ";\n\n" )
+            .append( "import java.util.Optional;\n" )
+            .append( "import java.util.Arrays.asList;\n\n" )
             .append( "public enum " + enumClass + " {\n" );
 
          final Set<String> properties = dictionary
@@ -184,14 +187,18 @@ public class DictionaryMojo extends AbstractMojo {
 
    private String print( Object value ) {
       if( String.class.isAssignableFrom( value.getClass() ) ) return "\"" + value + "\"";
+      if( List.class.isAssignableFrom( value.getClass() ) ) {
+         return "asList(" + ((List)value).stream().map(v -> print(v)).collect( joining(", ") )+ ")";
+      }
       else return value.toString();
    }
 
    private String propertyType( String property, Map<String, Boolean> optional, Map<String, Class<?>> types ) {
       final Boolean opt = optional.get( property );
-      final Class<?> clazz = types.get( property );
+      Class<?> clazz = types.get( property );
+      if(clazz.equals( ArrayList.class )) clazz = List.class;
 
-      if( opt ) return "java.util.Optional<" + clazz.getSimpleName() + ">";
+      if( opt ) return "Optional<" + clazz.getSimpleName() + ">";
       else {
          final Class<?> aClass = ClassUtils.wrapperToPrimitive( clazz );
          if( aClass == null ) return clazz.getSimpleName();
