@@ -39,10 +39,10 @@ import org.apache.maven.plugins.annotations.Parameter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 import static org.apache.commons.lang3.StringUtils.split;
 
 /**
@@ -78,6 +78,8 @@ public class DictionaryMojo extends AbstractMojo {
             .append( "package " + dictionaryPackage + ";\n\n" )
             .append( "public enum " + enumClass + " {\n" );
 
+//         final Set<String> properties = dictionary.getValues().stream().flatMap( v -> v.getProperties().keySet().stream() ).collect( toSet() );
+
          out.append(
             dictionary
                .getValues()
@@ -88,8 +90,10 @@ public class DictionaryMojo extends AbstractMojo {
 
          out
             .append( ";\n\n" )
-            .append( "  public final int externalId;\n" )
-            .append( "  public final boolean enabled;\n\n" )
+            .append( "  private final int externalId;\n" )
+            .append( "  private final boolean enabled;\n\n" )
+            .append( "  public final boolean enabled() {return enabled};\n" )
+            .append( "  public final boolean externalId() {return externalId};\n\n" )
             .append( "  " + enumClass + "( int externalId, boolean enabled ) {\n" )
             .append( "    this.externalId = externalId;\n" )
             .append( "    this.enabled = enabled;\n" )
