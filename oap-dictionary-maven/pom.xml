@@ -28,8 +28,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <name>maven-oap-dictionary</name>
-    <artifactId>maven-oap-dictionary</artifactId>
+    <name>maven-oap-dictionary-plugin</name>
+    <artifactId>maven-oap-dictionary-plugin</artifactId>
 
     <packaging>maven-plugin</packaging>
 
