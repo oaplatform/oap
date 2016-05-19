@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
 /**
  * Created by Admin on 19.05.2016.
  */
-public class DictionaryMojoTest /*extends AbstractTest */{
+public class DictionaryMojoTest extends AbstractTest {
    @Test
    public void testExecute() throws Exception {
       final DictionaryMojo dictionaryMojo = new DictionaryMojo();
