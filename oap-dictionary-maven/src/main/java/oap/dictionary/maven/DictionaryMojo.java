@@ -81,7 +81,8 @@ public class DictionaryMojo extends AbstractMojo {
          out
             .append( "package " + dictionaryPackage + ";\n\n" )
             .append( "import java.util.Optional;\n" )
-            .append( "import java.util.Arrays.asList;\n\n" )
+            .append( "import java.util.List;\n\n" )
+            .append( "import static java.util.Arrays.asList;\n\n" )
             .append( "public enum " + enumClass + " {\n" );
 
          final Set<String> properties = dictionary
