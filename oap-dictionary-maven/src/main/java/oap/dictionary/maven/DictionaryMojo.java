@@ -96,7 +96,15 @@ public class DictionaryMojo extends AbstractMojo {
             .append( "  }\n" )
             .append( "}\n" );
 
-         Files.writeString( Paths.get( outputDirectory, dictionaryPackage.replace( ".", "/" ), enumClass + ".java" ), IoStreams.Encoding.PLAIN, out.toString() );
+
+         final Path outPath = Paths.get( outputDirectory, dictionaryPackage.replace( ".", "/" ), enumClass + ".java" );
+
+         if( !java.nio.file.Files.exists( outPath ) || !Files.readString( outPath ).equals( out.toString() ) ) {
+            Files.writeString( outPath, IoStreams.Encoding.PLAIN, out.toString() );
+         } else {
+            getLog().debug( outPath + " is not modified." );
+         }
+
       } );
    }
 
