@@ -28,8 +28,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <name>maven-oap-dictionary-plugin</name>
-    <artifactId>maven-oap-dictionary-plugin</artifactId>
+    <name>oap-dictionary-maven-plugin</name>
+    <artifactId>oap-dictionary-maven-plugin</artifactId>
 
     <packaging>maven-plugin</packaging>
 
@@ -38,6 +38,28 @@
         <artifactId>oap</artifactId>
         <version>1.15.19</version>
     </parent>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-plugin-plugin</artifactId>
+                <version>3.4</version>
+                <configuration>
+                    <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>mojo-descriptor</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>descriptor</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
     <dependencies>
         <dependency>

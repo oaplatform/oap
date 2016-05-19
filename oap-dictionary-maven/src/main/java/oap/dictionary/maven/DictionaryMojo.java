@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
@@ -47,7 +48,7 @@ import static org.apache.commons.lang3.StringUtils.split;
 /**
  * Created by Admin on 19.05.2016.
  */
-@Mojo( name = "generate" )
+@Mojo( name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES )
 public class DictionaryMojo extends AbstractMojo {
 
    @Parameter( defaultValue = "${project.build.directory}/generated-sources/dictionary" )
