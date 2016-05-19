@@ -82,8 +82,10 @@ public class Remote implements Handler {
                .invoke( service, invocation.values() ) );
          } catch( NoSuchMethodException | IllegalAccessException e ) {
             result = Result.failure( e );
+            log.trace( "Method [{}] doesn't exist or access isn't allowed", invocation.method );
          } catch( InvocationTargetException e ) {
             result = Result.failure( e.getCause() );
+            log.trace( "Exception occurred on call to method [{}]", invocation.method );
          }
          response.respond( HttpResponse.bytes( fst.conf.asByteArray( result ), APPLICATION_OCTET_STREAM ) );
       }
