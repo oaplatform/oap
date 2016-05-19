@@ -55,4 +55,6 @@ public interface Dictionary {
    boolean isEnabled();
 
    int getExternalId();
+
+   boolean containsProperty( String name );
 }

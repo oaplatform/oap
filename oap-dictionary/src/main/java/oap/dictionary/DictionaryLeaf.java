@@ -108,4 +108,9 @@ public class DictionaryLeaf implements Dictionary {
    public int getExternalId() {
       return externalId;
    }
+
+   @Override
+   public boolean containsProperty( String name ) {
+      return properties != null && properties.containsKey( name );
+   }
 }

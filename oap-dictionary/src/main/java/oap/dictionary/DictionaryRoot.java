@@ -124,4 +124,9 @@ public final class DictionaryRoot implements Dictionary {
    public int getExternalId() {
       return -1;
    }
+
+   @Override
+   public boolean containsProperty( String name ) {
+      return false;
+   }
 }

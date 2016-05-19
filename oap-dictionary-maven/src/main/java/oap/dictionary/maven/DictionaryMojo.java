@@ -29,6 +29,7 @@ import oap.dictionary.DictionaryRoot;
 import oap.dictionary.ExternalIdType;
 import oap.io.Files;
 import oap.io.IoStreams;
+import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -40,10 +41,11 @@ import org.apache.maven.plugins.annotations.Parameter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 import static org.apache.commons.lang3.StringUtils.split;
 
 /**
@@ -79,13 +81,39 @@ public class DictionaryMojo extends AbstractMojo {
             .append( "package " + dictionaryPackage + ";\n\n" )
             .append( "public enum " + enumClass + " {\n" );
 
-//         final Set<String> properties = dictionary.getValues().stream().flatMap( v -> v.getProperties().keySet().stream() ).collect( toSet() );
+         final Set<String> properties = dictionary
+            .getValues()
+            .stream()
+            .flatMap( v -> v.getProperties().keySet().stream() )
+            .collect( toSet() );
+
+         final Map<String, Boolean> optional = properties
+            .stream()
+            .collect( toMap(
+               k -> k,
+               k -> dictionary.getValues().stream().filter( v -> !v.containsProperty( k ) ).findAny().isPresent()
+            ) );
+
+         final Map<String, Class<?>> types = properties
+            .stream()
+            .collect( toMap(
+               k -> k,
+               k -> dictionary
+                  .getValues()
+                  .stream()
+                  .filter( v -> v.containsProperty( k ) )
+                  .findAny()
+                  .get().getProperty( k ).get().getClass()
+            ) );
 
          out.append(
             dictionary
                .getValues()
                .stream()
-               .map( d -> "  " + d.getId() + "(" + convert( d.getExternalId(), dictionary.externalIdAs ) + ", " + d.isEnabled() + ")" )
+               .map( d ->
+                  "  " + d.getId() + "(" + convert( d.getExternalId(), dictionary.externalIdAs ) + ", "
+                     + d.isEnabled() + properties( d.getProperties(), properties, optional, types ) + ")"
+               )
                .collect( joining( ",\n" ) )
          );
 
@@ -93,12 +121,39 @@ public class DictionaryMojo extends AbstractMojo {
          out
             .append( ";\n\n" )
             .append( "  private final " + externalIdType + " externalId;\n" )
-            .append( "  private final boolean enabled;\n\n" )
+            .append( "  private final boolean enabled;\n\n" );
+
+         for( String property : properties ) {
+            out
+               .append( "  private final " + propertyType( property, optional, types ) + " " + property + ";\n" );
+         }
+
+         out.append( "\n" );
+
+         out
             .append( "  public final boolean enabled() {return enabled;}\n" )
-            .append( "  public final " + externalIdType + " externalId() {return externalId;}\n\n" )
-            .append( "  " + enumClass + "( " + externalIdType + " externalId, boolean enabled ) {\n" )
+            .append( "  public final " + externalIdType + " externalId() {return externalId;}\n\n" );
+
+         for( String property : properties ) {
+            out
+               .append( "  public final " + propertyType( property, optional, types ) + " " + property + "(){return " + property + ";}\n" );
+         }
+
+         out
+            .append( "\n  " + enumClass + "( " + externalIdType + " externalId, boolean enabled" );
+
+         final String cParameters = properties.stream().map( p -> propertyType( p, optional, types ) + " " + p ).collect( joining( ", " ) );
+
+         out.append( cParameters.length() > 0 ? ", " : "" )
+            .append( cParameters + " ) {\n" )
             .append( "    this.externalId = externalId;\n" )
-            .append( "    this.enabled = enabled;\n" )
+            .append( "    this.enabled = enabled;\n" );
+
+         for( String property : properties ) {
+            out.append( "    this." + property + " = " + property + ";\n" );
+         }
+
+         out
             .append( "  }\n" )
             .append( "}\n" );
 
@@ -112,6 +167,36 @@ public class DictionaryMojo extends AbstractMojo {
          }
 
       } );
+   }
+
+   private String properties( Map<String, Object> properties, Set<String> names, Map<String, Boolean> optional, Map<String, Class<?>> types ) {
+      final String res = names.stream().map( n -> {
+         final Object value = properties.get( n );
+         final Boolean opt = optional.get( n );
+         if( opt ) {
+            return value == null ? "Optional.empty()" : "Optional.of(" + print( value ) + ")";
+         }
+
+         return print( value );
+      } ).collect( joining( ", " ) );
+      return res.length() > 0 ? ", " + res : res;
+   }
+
+   private String print( Object value ) {
+      if( String.class.isAssignableFrom( value.getClass() ) ) return "\"" + value + "\"";
+      else return value.toString();
+   }
+
+   private String propertyType( String property, Map<String, Boolean> optional, Map<String, Class<?>> types ) {
+      final Boolean opt = optional.get( property );
+      final Class<?> clazz = types.get( property );
+
+      if( opt ) return "java.util.Optional<" + clazz.getSimpleName() + ">";
+      else {
+         final Class<?> aClass = ClassUtils.wrapperToPrimitive( clazz );
+         if( aClass == null ) return clazz.getSimpleName();
+         return aClass.getSimpleName();
+      }
    }
 
    private String toEnumName( String name ) {
