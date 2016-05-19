@@ -26,6 +26,7 @@ package oap.dictionary.maven;
 
 import oap.dictionary.DictionaryParser;
 import oap.dictionary.DictionaryRoot;
+import oap.dictionary.ExternalIdType;
 import oap.io.Files;
 import oap.io.IoStreams;
 import org.apache.commons.lang3.StringUtils;
@@ -39,10 +40,10 @@ import org.apache.maven.plugins.annotations.Parameter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Set;
 
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.split;
 
 /**
@@ -84,16 +85,17 @@ public class DictionaryMojo extends AbstractMojo {
             dictionary
                .getValues()
                .stream()
-               .map( d -> "  " + d.getId() + "(" + d.getExternalId() + ", " + d.isEnabled() + ")" )
+               .map( d -> "  " + d.getId() + "(" + convert( d.getExternalId(), dictionary.externalIdAs ) + ", " + d.isEnabled() + ")" )
                .collect( joining( ",\n" ) )
          );
 
+         final String externalIdType = dictionary.externalIdAs.javaType.getSimpleName();
          out
             .append( ";\n\n" )
-            .append( "  private final int externalId;\n" )
+            .append( "  private final " + externalIdType + " externalId;\n" )
             .append( "  private final boolean enabled;\n\n" )
             .append( "  public final boolean enabled() {return enabled;}\n" )
-            .append( "  public final int externalId() {return externalId;}\n\n" )
+            .append( "  public final " + externalIdType + " externalId() {return externalId;}\n\n" )
             .append( "  " + enumClass + "( int externalId, boolean enabled ) {\n" )
             .append( "    this.externalId = externalId;\n" )
             .append( "    this.enabled = enabled;\n" )
@@ -114,5 +116,16 @@ public class DictionaryMojo extends AbstractMojo {
 
    private String toEnumName( String name ) {
       return String.join( "", asList( split( name, '-' ) ).stream().map( StringUtils::capitalize ).collect( toList() ) );
+   }
+
+   private Object convert( int value, ExternalIdType externalIdType ) {
+      switch( externalIdType ) {
+         case character:
+            return "'" + ( char ) value + "'";
+         case integer:
+            return value;
+         default:
+            throw new IllegalArgumentException( "Unknown ExternalIdType " + externalIdType );
+      }
    }
 }

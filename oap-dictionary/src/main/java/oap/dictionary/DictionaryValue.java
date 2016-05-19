@@ -43,18 +43,18 @@ import static java.util.stream.Collectors.toList;
 public class DictionaryValue extends DictionaryLeaf implements Dictionary {
    public final List<DictionaryLeaf> values;
 
-   public DictionaryValue( String id, boolean enabled, long externalId ) {
+   public DictionaryValue( String id, boolean enabled, int externalId ) {
       this( id, enabled, externalId, emptyList(), emptyMap() );
    }
 
-   public DictionaryValue( String id, boolean enabled, long externalId, List<DictionaryLeaf> values ) {
+   public DictionaryValue( String id, boolean enabled, int externalId, List<DictionaryLeaf> values ) {
       this( id, enabled, externalId, values, emptyMap() );
    }
 
    public DictionaryValue(
       String id,
       boolean enabled,
-      long externalId,
+      int externalId,
       Map<String, Object> properties
    ) {
       this( id, enabled, externalId, emptyList(), properties );
@@ -63,7 +63,7 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
    public DictionaryValue(
       String id,
       boolean enabled,
-      long externalId,
+      int externalId,
       List<DictionaryLeaf> values,
       Map<String, Object> properties
    ) {
@@ -72,12 +72,12 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
    }
 
    @Override
-   public long getOrDefault( String id, long defaultValue ) {
-      return getValue( id ).map( v -> v.getExternalId() ).orElse( defaultValue );
+   public int getOrDefault( String id, int defaultValue ) {
+      return getValue( id ).map( DictionaryLeaf::getExternalId ).orElse( defaultValue );
    }
 
    @Override
-   public String getOrDefault( long externlId, String defaultValue ) {
+   public String getOrDefault( int externlId, String defaultValue ) {
       return values.stream().filter( v -> v.getExternalId() == externlId ).findAny().map( DictionaryLeaf::getId ).orElse( defaultValue );
    }
 
@@ -92,8 +92,8 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
    }
 
    @Override
-   public long[] externalIds() {
-      return values.stream().mapToLong( DictionaryLeaf::getExternalId ).toArray();
+   public int[] externalIds() {
+      return values.stream().mapToInt( DictionaryLeaf::getExternalId ).toArray();
    }
 
    @Override
