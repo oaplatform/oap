@@ -9,6 +9,7 @@ PIDFile=/var/tmp/${oap.service.name}.pid
 Type=forking
 User=${oap.service.user}
 Restart=always
+TimeoutStopSec=1m
 
 [Install]
 WantedBy=multi-user.target
