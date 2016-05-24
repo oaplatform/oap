@@ -125,6 +125,6 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
       assertOk( schema, "{'p':{'a':[{'parent': 'p2'}]}}", url -> schema2, false );
       assertOk( schema, "{'p':{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p1', 'child':'c12'}]}}", url -> schema2, false );
 
-      assertFailure( schema, "{'p':{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}}", "/p/a/1/child: instance does not match any member of the enumeration [c21,c22,c23]", url -> schema2 );
+      assertFailure( schema, "{'p':{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}}", "/p/a/1/child: instance does not match any member of the enumeration [c21, c22, c23]", url -> schema2 );
    }
 }

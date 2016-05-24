@@ -81,7 +81,7 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
       wrapper.common = node( context ).asCommon();
       wrapper.name = node( context ).asString( "name" ).optional();
       wrapper.parent = node( context ).asMap( "parent" ).optional()
-         .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ).map( jp -> SchemaPath.of( context.rootPath, jp )) );
+         .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ) );
 
       return wrapper;
    }
