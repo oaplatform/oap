@@ -33,6 +33,7 @@ import org.testng.annotations.Test;
 import java.io.File;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 /**
@@ -61,10 +62,10 @@ public class FilesPerformance extends AbstractPerformance {
       final long[] size = { 0 };
       final Path tt = Env.tmpPath( "tt" );
 
-      benchmark( "java.io.File.lastModified()", SAMPLES, 5, ( x ) -> {
+      benchmark( "java.nio.file.Files.getLastModifiedTime()", SAMPLES, 5, ( x ) -> {
          try( DirectoryStream<Path> stream = java.nio.file.Files.newDirectoryStream( tt ) ) {
             for( Path p : stream ) {
-               size[0] += java.nio.file.Files.getLastModifiedTime( p ).toMillis();
+               size[0] += java.nio.file.Files.getLastModifiedTime( p ).to( TimeUnit.NANOSECONDS );
             }
          }
       } );
