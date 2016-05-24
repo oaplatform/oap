@@ -35,9 +35,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by Admin on 16.05.2016.
- */
 public class ObjectSchemaASTWrapperTest extends AbstractTest {
    @Test
    public void testGetChildren() throws Exception {

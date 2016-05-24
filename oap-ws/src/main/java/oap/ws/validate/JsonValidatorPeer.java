@@ -21,30 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.ws.validate;
 
-package oap.ws;
+import oap.json.Binder;
+import oap.json.JsonException;
+import oap.json.schema.JsonValidatorFactory;
+import oap.json.schema.ResourceSchemaStorage;
+import oap.ws.WsClientException;
 
-import oap.testng.AbstractTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
+import java.util.Map;
 
-import java.util.Optional;
+public class JsonValidatorPeer implements ValidatorPeer {
+   private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
+   private final JsonValidatorFactory factory;
 
-import static org.testng.Assert.assertEquals;
+   public JsonValidatorPeer( ValidateJson validate, Object instance ) {
+      factory = JsonValidatorFactory.schema( validate.schema(), storage );
+   }
 
-public class ServiceUtilTest extends AbstractTest {
-    @Test
-    public void compile() {
-        Assert.assertEquals( ServiceUtil.compile( "/y/{year:(\\d\\d\\d\\d)}/{month}/{date}" ).toString(), "^/y/(\\d\\d\\d\\d)/([^/]+)/([^/]+)$" );
-        assertEquals( ServiceUtil.compile( "/y/{year:(\\d{4})}/{month}/{date}" ).toString(), "^/y/(\\d{4})/([^/]+)/([^/]+)$" );
-    }
-
-    @Test
-    public void pathParam() {
-        String mapping = "/y/{year:(\\d{4})}/{month}/{date}";
-        String path = "/y/2009/April/12";
-        assertEquals( Optional.of( "2009" ), ServiceUtil.pathParam( mapping, path, "year" ) );
-        assertEquals( Optional.of( "April" ), ServiceUtil.pathParam( mapping, path, "month" ) );
-        assertEquals( Optional.of( "12" ), ServiceUtil.pathParam( mapping, path, "date" ) );
-    }
+   @Override
+   public ValidationErrors validate( Object value ) {
+      try {
+         Map<?, ?> unmarshal = Binder.json.unmarshal( Map.class, ( String ) value );
+         return ValidationErrors.create( factory.validate( unmarshal, false ) );
+      } catch( JsonException e ) {
+         throw new WsClientException( e.getMessage(), e );
+      }
+   }
 }

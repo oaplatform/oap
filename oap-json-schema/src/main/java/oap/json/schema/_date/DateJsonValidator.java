@@ -23,26 +23,27 @@
  */
 package oap.json.schema._date;
 
-import oap.json.schema.*;
+import oap.json.schema.DefaultSchemaAST;
+import oap.json.schema.DefaultSchemaASTWrapper;
+import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.JsonSchemaValidator;
+import oap.json.schema.JsonValidatorProperties;
 import oap.util.Dates;
-import oap.util.Either;
 import oap.util.Lists;
+import oap.util.Result;
+import org.joda.time.DateTime;
 
 import java.util.List;
 
-public class DateJsonValidator implements JsonSchemaValidator<DefaultSchemaAST> {
+public class DateJsonValidator extends JsonSchemaValidator<DefaultSchemaAST> {
 
    @Override
-   public Either<List<String>, Object> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
-      if( !( value instanceof String ) ) return Either.left(
-         Lists.of(
-            properties.error( "instance is of type " + getType( value ) +
-               ", which is none of the allowed primitive types ([" + schema.common.schemaType + "])" ) ) );
+   public List<String> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
+      if( !( value instanceof String ) ) return typeFailed( properties, schema, value );
 
-      return Dates.parseDate( ( String ) value )
-         .mapSuccess( dt -> ( Object ) dt )
-         .<List<String>>mapFailure( e -> Lists.of( e.getMessage() ) )
-         .toEither();
+      Result<DateTime, List<String>> result = Dates.parseDate( ( String ) value )
+         .mapFailure( e -> Lists.of( e.getMessage() ) );
+      return result.isSuccess() ? Lists.empty() : result.failureValue;
    }
 
    @Override

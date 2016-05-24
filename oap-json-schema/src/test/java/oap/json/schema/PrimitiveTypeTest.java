@@ -30,14 +30,14 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
     public void testBoolean() {
         String schema = "{\"type\": \"boolean\"}";
 
-        vOk( schema, "true" );
-        vOk( schema, "false" );
-        vOk( schema, "null" );
-        vFail( schema, "\"1\"",
+        assertOk( schema, "true" );
+        assertOk( schema, "false" );
+        assertOk( schema, "null" );
+        assertFailure( schema, "\"1\"",
             "instance is of type string, which is none of the allowed primitive types ([boolean])" );
-        vFail( schema, "{}",
+        assertFailure( schema, "{}",
             "instance is of type object, which is none of the allowed primitive types ([boolean])" );
-        vFail( schema, "\"true\"",
+        assertFailure( schema, "\"true\"",
             "instance is of type string, which is none of the allowed primitive types ([boolean])" );
     }
 
@@ -45,11 +45,11 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
     public void testString() {
         String schema = "{\"type\": \"string\"}";
 
-        vOk( schema, "\"test\"" );
-        vOk( schema, "null" );
-        vFail( schema, "1",
+        assertOk( schema, "\"test\"" );
+        assertOk( schema, "null" );
+        assertFailure( schema, "1",
             "instance is of type number, which is none of the allowed primitive types ([string])" );
-        vFail( schema, "{}",
+        assertFailure( schema, "{}",
             "instance is of type object, which is none of the allowed primitive types ([string])" );
     }
 
@@ -57,37 +57,37 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
     public void testString_minLength() {
         String schema = "{\"type\": \"string\", \"minLength\": 2}";
 
-        vOk( schema, "\"te\"" );
-        vFail( schema, "\"t\"", "string is shorter than minLength 2" );
+        assertOk( schema, "\"te\"" );
+        assertFailure( schema, "\"t\"", "string is shorter than minLength 2" );
     }
 
     @Test
     public void testString_maxLength() {
         String schema = "{\"type\": \"string\", \"maxLength\": 2}";
 
-        vOk( schema, "\"te\"" );
-        vFail( schema, "\"tes\"", "string is longer than maxLength 2" );
+        assertOk( schema, "\"te\"" );
+        assertFailure( schema, "\"tes\"", "string is longer than maxLength 2" );
     }
 
     @Test
     public void testString_pattern() {
         String schema = "{\"type\": \"string\", \"pattern\": \"a+\"}";
 
-        vOk( schema, "\"aa\"" );
-        vFail( schema, "\"b\"", "string does not match specified regex a+" );
-        vFail( schema, "\"aab\"", "string does not match specified regex a+" );
-        vFail( schema, "\"bbaaabb\"", "string does not match specified regex a+" );
+        assertOk( schema, "\"aa\"" );
+        assertFailure( schema, "\"b\"", "string does not match specified regex a+" );
+        assertFailure( schema, "\"aab\"", "string does not match specified regex a+" );
+        assertFailure( schema, "\"bbaaabb\"", "string does not match specified regex a+" );
     }
 
     @Test
     public void test_date() {
         String schema = "{\"type\": \"date\"}";
 
-        vOk( schema, "\"2016-01-01T00:00:00\"" );
-        vOk( schema, "null" );
-        vFail( schema, "\"2016-01-01TT00:00:00\"",
+        assertOk( schema, "\"2016-01-01T00:00:00\"" );
+        assertOk( schema, "null" );
+        assertFailure( schema, "\"2016-01-01TT00:00:00\"",
             "Invalid format: \"2016-01-01TT00:00:00\" is malformed at \"T00:00:00\"" );
-        vFail( schema, "{}",
+        assertFailure( schema, "{}",
             "instance is of type object, which is none of the allowed primitive types ([date])" );
     }
 }

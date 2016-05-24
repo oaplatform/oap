@@ -28,31 +28,32 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+/**
+ * to coupled with validation/either logic. No reason why list cosidered either::left
+ * @param <T>
+ */
+@Deprecated
 public class OptionalList<T> {
-    private final List<T> list;
-
-    private OptionalList( List<T> list ) {
-        this.list = list;
-    }
+    private final List<T> list = new ArrayList<>(  );
 
     public OptionalList<T> add( Optional<T> value ) {
         value.ifPresent( list::add );
         return this;
     }
 
-    public Optional<List<T>> build() {
-        return list.isEmpty() ? Optional.<List<T>>empty() : Optional.of( list );
+    public Optional<List<T>> toOptional() {
+        return list.isEmpty() ? Optional.empty() : Optional.of( list );
     }
 
     public <B> Either<List<T>, B> toEigher( Supplier<B> value ) {
-        return build().map( Either::<List<T>, B>left ).orElse( Either.right( value.get() ) );
+        return toOptional().map( Either::<List<T>, B>left ).orElse( Either.right( value.get() ) );
     }
 
     public <B> Either<List<T>, B> toEigher( B value ) {
-        return build().map( Either::<List<T>, B>left ).orElse( Either.right( value ) );
+        return toOptional().map( Either::<List<T>, B>left ).orElse( Either.right( value ) );
     }
 
-    public static <TR> OptionalList<TR> builder() {
-        return new OptionalList<>( new ArrayList<>() );
+    public static <V> OptionalList<V> create() {
+        return new OptionalList<>(  );
     }
 }

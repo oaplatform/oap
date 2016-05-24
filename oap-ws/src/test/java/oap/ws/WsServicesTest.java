@@ -21,16 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package net.madberry.maven;
 
-public class FileSet extends org.apache.maven.model.FileSet {
-    private boolean filtering;
+package oap.ws;
 
-    public boolean isFiltering() {
-        return filtering;
+import oap.testng.AbstractTest;
+import org.testng.Assert;
+import org.testng.annotations.Test;
+
+import java.util.Optional;
+
+import static org.testng.Assert.assertEquals;
+
+public class WsServicesTest extends AbstractTest {
+    @Test
+    public void compile() {
+        Assert.assertEquals( WsServices.compile( "/y/{year:(\\d\\d\\d\\d)}/{month}/{date}" ).toString(), "^/y/(\\d\\d\\d\\d)/([^/]+)/([^/]+)$" );
+        assertEquals( WsServices.compile( "/y/{year:(\\d{4})}/{month}/{date}" ).toString(), "^/y/(\\d{4})/([^/]+)/([^/]+)$" );
     }
 
-    public void setFiltering( boolean filtering ) {
-        this.filtering = filtering;
+    @Test
+    public void pathParam() {
+        String mapping = "/y/{year:(\\d{4})}/{month}/{date}";
+        String path = "/y/2009/April/12";
+        assertEquals( Optional.of( "2009" ), WsServices.pathParam( mapping, path, "year" ) );
+        assertEquals( Optional.of( "April" ), WsServices.pathParam( mapping, path, "month" ) );
+        assertEquals( Optional.of( "12" ), WsServices.pathParam( mapping, path, "date" ) );
     }
 }

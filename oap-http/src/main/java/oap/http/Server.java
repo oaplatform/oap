@@ -56,7 +56,7 @@ import static oap.io.Sockets.socketClosed;
 @Slf4j
 public class Server implements HttpServer {
 
-   private static final DefaultBHttpServerConnectionFactory CONNECTION_FACTORY =
+   private static final DefaultBHttpServerConnectionFactory connectionFactory =
       DefaultBHttpServerConnectionFactory.INSTANCE;
 
    private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
@@ -100,30 +100,30 @@ public class Server implements HttpServer {
    public void accepted( final Socket socket ) {
       try {
          final DefaultBHttpServerConnection connection =
-            CONNECTION_FACTORY.createConnection( socket );
+            connectionFactory.createConnection( socket );
          final String connectionId = connection.toString();
 
          executor.submit( () -> {
             try {
                connections.put( connectionId, connection );
 
-               log.trace( "connection accepted: {}", connection );
+               log.debug( "connection accepted: {}", connection );
 
                final HttpContext httpContext = createHttpContext( socket );
 
                Thread.currentThread().setName( connection.toString() );
 
-               log.trace( "start handling {}", connection );
+               log.debug( "start handling {}", connection );
                while( !Thread.interrupted() && connection.isOpen() )
                   httpService.handleRequest( connection, httpContext );
             } catch( SocketException e ) {
                if( socketClosed( e ) )
-                  log.trace( "Socket closed: {}", connection );
+                  log.debug( "Socket closed: {}", connection );
                else if( connectionReset( e ) )
                   log.warn( "Connection reset: {}", connection );
                else log.error( e.getMessage(), e );
             } catch( ConnectionClosedException e ) {
-               log.trace( "connection closed: {}", connection );
+               log.debug( "connection closed: {}", connection );
             } catch( Throwable e ) {
                log.error( e.getMessage(), e );
             } finally {

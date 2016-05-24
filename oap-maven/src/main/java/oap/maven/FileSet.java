@@ -21,15 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package oap.maven;
 
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.ANNOTATION_TYPE )
-public @interface Validator {
-    Class<? extends ValidatorPeer> value();
+public class FileSet extends org.apache.maven.model.FileSet {
+    private boolean filtering;
+
+    public boolean isFiltering() {
+        return filtering;
+    }
+
+    public void setFiltering( boolean filtering ) {
+        this.filtering = filtering;
+    }
 }

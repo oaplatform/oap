@@ -26,54 +26,30 @@ package oap.json.schema._array;
 import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
-import oap.util.Either;
-import oap.util.Lists;
-import oap.util.OptionalList;
-import oap.util.Stream;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-public class ArrayJsonValidator implements JsonSchemaValidator<ArraySchemaAST> {
-   @SuppressWarnings( "unchecked" )
+public class ArrayJsonValidator extends JsonSchemaValidator<ArraySchemaAST> {
    @Override
-   public Either<List<String>, Object> validate( JsonValidatorProperties properties, ArraySchemaAST schema,
-                                                 Object value ) {
-      if( !( value instanceof Collection<?> ) ) return Either.left(
-         Lists.of(
-            properties.error( "instance is of type " + getType( value ) +
-               ", which is none of the allowed primitive types ([" + schema.common.schemaType +
-               "])" ) ) );
+   public List<String> validate( JsonValidatorProperties properties, ArraySchemaAST schema,
+                                 Object value ) {
+      if( !( value instanceof List<?> ) ) return typeFailed( properties, schema, value );
 
-      Collection<?> arrayValue = ( Collection<?> ) value;
+      List<?> arrayValue = ( List<?> ) value;
+      List<String> errors = new ArrayList<>();
 
-      Optional<String> minItemsResult = schema.minItems
-         .filter( minItems -> arrayValue.size() < minItems )
-         .map( minItems -> properties.error( "array has less than minItems elements " + minItems ) );
+      schema.minItems.filter( minItems -> arrayValue.size() < minItems )
+         .ifPresent( minItems -> errors.add( properties.error( "array has less than minItems elements " + minItems ) ) );
 
-      Optional<String> maxItemsResult = schema.maxItems
-         .filter( maxItems -> arrayValue.size() > maxItems )
-         .map( maxItems -> properties.error( "array has more than maxItems elements " + maxItems ) );
+      schema.maxItems.filter( maxItems -> arrayValue.size() > maxItems )
+         .ifPresent( maxItems -> errors.add( properties.error( "array has more than maxItems elements " + maxItems ) ) );
 
-      Either<List<String>, Object> result = OptionalList
-         .<String>builder()
-         .add( minItemsResult )
-         .add( maxItemsResult )
-         .toEigher( value );
+      for( int i = 0; i < arrayValue.size(); i++ )
+         errors.addAll( properties.validator.apply( properties.withPath( String.valueOf( i ) ),
+            schema.items, arrayValue.get( i ) ) );
 
-      return result.right().flatMap( r -> Either.fold2(
-         Stream
-            .of( arrayValue.stream() )
-            .zipWithIndex()
-            .<Either<List<String>, Object>>map(
-               pair -> properties.validator.apply( properties.withPath(
-                  String.valueOf( pair._2 ) ), schema.items,
-                  pair._1 ) )
-         )
-            .right()
-            .map( l -> ( Object ) l )
-      );
+      return errors;
    }
 
    @Override

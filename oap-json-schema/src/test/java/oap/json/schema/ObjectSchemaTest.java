@@ -23,22 +23,16 @@
  */
 package oap.json.schema;
 
-import oap.util.Maps;
-import org.testng.Assert;
 import org.testng.annotations.Test;
-
-import java.util.HashMap;
-
-import static oap.util.Pair.__;
 
 public class ObjectSchemaTest extends AbstractSchemaTest {
    @Test
    public void testObject() {
       String schema = "{type: object, properties: {}}";
 
-      vOk( schema, "{}" );
-      vOk( schema, "null" );
-      vFail( schema, "[]",
+      assertOk( schema, "{}" );
+      assertOk( schema, "null" );
+      assertFailure( schema, "[]",
          "instance is of type array, which is none of the allowed primitive types ([object])" );
    }
 
@@ -46,9 +40,9 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
    public void testObjectWithField() {
       String schema = "{type: object, properties: {a: {type: string}}}";
 
-      vOk( schema, "{}" );
-      vOk( schema, "{'a': 'test'}" );
-      vFail( schema, "{'a': 10}",
+      assertOk( schema, "{}" );
+      assertOk( schema, "{'a': 'test'}" );
+      assertFailure( schema, "{'a': 10}",
          "/a: instance is of type number, which is none of the allowed primitive types ([string])" );
    }
 
@@ -68,30 +62,30 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
          "}" +
          "}";
 
-      vOk( schema, "{}" );
-      vOk( schema, "{'a': {'a': 'test'}}" );
-      vFail( schema, "{'a': {'a': true}}",
+      assertOk( schema, "{}" );
+      assertOk( schema, "{'a': {'a': 'test'}}" );
+      assertFailure( schema, "{'a': {'a': true}}",
          "/a/a: instance is of type boolean, which is none of the allowed primitive types ([string])" );
    }
 
    @Test
-   public void testAdditionalProperties_true() {
+   public void testAdditionalPropertiesTrue() {
       String schema = "{type: object, properties: {a: {type: string}}}";
 
-      vOk( schema, "{}" );
-      Assert.assertEquals( vOk( schema, "{'b': 'test'}" ), Maps.addAll( new HashMap<>(), __( "b", "test" ) ) );
+      assertOk( schema, "{}" );
+      assertOk( schema, "{'b': 'test'}" );
    }
 
    @Test
-   public void testAdditionalProperties_false() {
+   public void testAdditionalPropertiesFalse() {
       String schema = "{additionalProperties: false, type: object, properties: {a: {type: string}}}";
 
-      vOk( schema, "{}" );
-      vFail( schema, "{'b': 'test', 'c': 10}", "additional properties are not permitted [b,c]" );
+      assertOk( schema, "{}" );
+      assertFailure( schema, "{'b': 'test', 'c': 10}", "additional properties are not permitted [b, c]" );
    }
 
    @Test
-   public void testAdditionalProperties_false_inheritance() {
+   public void testAdditionalPropertiesFalseInheritance() {
       String schema = "{" +
          "additionalProperties: false, " +
          "type: object, " +
@@ -107,7 +101,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
          "}" +
          "}";
 
-      vOk( schema, "{}" );
-      vFail( schema, "{'a': {'b': 'test', 'c': 10}}", "/a: additional properties are not permitted [c]" );
+      assertOk( schema, "{}" );
+      assertFailure( schema, "{'a': {'b': 'test', 'c': 10}}", "/a: additional properties are not permitted [c]" );
    }
 }

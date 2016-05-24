@@ -24,10 +24,6 @@
 package oap.json.schema._number;
 
 public class DoubleJsonValidator extends NumberJsonValidator<Double> {
-    @Override
-    protected Double cast( Object value ) {
-        return (Double) value;
-    }
 
     @Override
     protected boolean valid( Object value ) {

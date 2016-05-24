@@ -29,8 +29,4 @@ public class LongJsonValidator extends NumberJsonValidator<Long> {
         return value instanceof Long;
     }
 
-    @Override
-    protected Long cast( Object value ) {
-        return (Long) value;
-    }
 }

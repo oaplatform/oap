@@ -21,26 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.ws.validate;
 
-package oap.dictionary.maven;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import oap.testng.AbstractTest;
-import oap.testng.Env;
-import org.testng.annotations.Test;
-
-/**
- * Created by Admin on 19.05.2016.
- */
-public class DictionaryMojoTest extends AbstractTest {
-   @Test
-   public void testExecute() throws Exception {
-      final DictionaryMojo dictionaryMojo = new DictionaryMojo();
-      dictionaryMojo.sourceDirectory = "src/test/resources/dictionary";
-      dictionaryMojo.dictionaryPackage = "test";
-      dictionaryMojo.outputDirectory = Env.tmp( "dictionary" );
-
-      dictionaryMojo.execute();
-
-   }
-
+@Retention( RetentionPolicy.RUNTIME )
+@Target( ElementType.ANNOTATION_TYPE )
+public @interface Peer {
+    Class<? extends ValidatorPeer> value();
 }

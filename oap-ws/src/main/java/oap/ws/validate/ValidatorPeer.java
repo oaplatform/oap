@@ -23,8 +23,6 @@
  */
 package oap.ws.validate;
 
-import java.util.List;
-
 public interface ValidatorPeer {
-    List<String> validate( Object value );
+    ValidationErrors validate( Object value );
 }

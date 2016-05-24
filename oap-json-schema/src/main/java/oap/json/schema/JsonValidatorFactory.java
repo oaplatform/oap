@@ -28,12 +28,15 @@ import com.google.common.base.Throwables;
 import lombok.val;
 import oap.io.Resources;
 import oap.json.Binder;
-import oap.util.Either;
+import oap.util.Lists;
+import oap.util.Result;
 
 import java.net.URL;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -77,38 +80,22 @@ public class JsonValidatorFactory {
    }
 
    @SuppressWarnings( "unchecked" )
-   private static Either<List<String>, Object> validate( JsonValidatorProperties properties, SchemaAST schema,
-                                                         Object json ) {
+   private static List<String> validate( JsonValidatorProperties properties, SchemaAST schema, Object value ) {
       JsonSchemaValidator jsonSchemaValidator = validators.get( schema.common.schemaType );
       if( jsonSchemaValidator == null ) {
-         if( logger.isTraceEnabled() ) logger.trace( "registered validators: " + validators.keySet() );
-         throw new ValidationSyntaxException(
-            "[schema:type]: unknown simple type [" + schema.common.schemaType + "]" );
+         logger.trace( "registered validators: " + validators.keySet() );
+         throw new ValidationSyntaxException( "[schema:type]: unknown simple type [" + schema.common.schemaType + "]" );
       }
 
-      if( json == null && !properties.ignore_required_default && schema.common.required.orElse( false ) )
-         return Either.left( Collections.singletonList(
-            properties.error( "required property is missing" )
-         ) );
-      else if( json == null ) return Either.right(
-         schema.common.defaultValue.filter( dv -> !properties.ignore_required_default ).orElse( null )
-      );
+      if( value == null && !properties.ignoreRequiredDefault && schema.common.required.orElse( false ) )
+         return Lists.of( properties.error( "required property is missing" ) );
+      else if( value == null ) return Lists.empty();
       else {
-         Either result = jsonSchemaValidator.validate( properties, schema, json );
-         return result
-            .right()
-            .flatMap( v -> schema.common.enumValue
-               .filter( e -> !e.apply( properties.rootJson ).contains( v ) )
-               .map( e ->
-                  Either.left( Collections.singletonList(
-                     properties.error( "instance does not match any member of the enumeration [" +
-                        String.join( ",", e.apply( properties.rootJson ).stream()
-                           .map( Object::toString )
-                           .collect( Collectors.toList() )
-                        ) + "]" )
-                  ) ) )
-               .orElse( result )
-            );
+         List<String> errors = jsonSchemaValidator.validate( properties, schema, value );
+         schema.common.enumValue
+            .filter( e -> !e.apply( properties.rootJson ).contains( value ) )
+            .ifPresent( e -> errors.add( properties.error( "instance does not match any member of the enumeration " + e.apply( properties.rootJson ) ) ) );
+         return errors;
       }
    }
 
@@ -145,7 +132,7 @@ public class JsonValidatorFactory {
    }
 
    @SuppressWarnings( "unchecked" )
-   public Either<List<String>, Object> validate( Object json, boolean ignore_required_default ) {
+   public List<String> validate( Object json, boolean ignore_required_default ) {
       JsonValidatorProperties properties = new JsonValidatorProperties(
          schema,
          json,

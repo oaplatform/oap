@@ -21,32 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
 
-import oap.reflect.Reflect;
-import oap.reflect.Reflection;
-import oap.ws.WsException;
+package oap.dictionary.maven;
 
-import java.util.List;
-import java.util.Objects;
+import oap.testng.AbstractTest;
+import oap.testng.Env;
+import org.testng.annotations.Test;
 
-public class ValidatePeer implements ValidatorPeer {
+import java.nio.file.Path;
 
-    private final Reflection.Method method;
-    private final Object instance;
+import static oap.testng.Asserts.assertFile;
+import static oap.testng.Asserts.contentOfTestResource;
 
-    public ValidatePeer( Validate validate, Object instance ) {
-        this.instance = instance;
-        this.method = Reflect.reflect( instance.getClass() )
-            .method( m -> Objects.equals( m.name(), validate.value() ) )
-            .orElseThrow( () -> new WsException( "no such method " + validate.value() ) );
-    }
+public class DictionaryMojoTest extends AbstractTest {
+   @Test
+   public void testExecute() throws Exception {
+      DictionaryMojo dictionaryMojo = new DictionaryMojo();
+      dictionaryMojo.sourceDirectory = "src/test/resources/dictionary";
+      dictionaryMojo.dictionaryPackage = "test";
+      Path out = Env.tmpPath( "dictionary" );
+      dictionaryMojo.outputDirectory = out.toString();
 
-    @Override
-    public List<String> validate( Object value ) {
-        if( value != null && value.getClass().isArray() )
-            return method.invoke( instance, (Object[]) value );
-        else
-            return method.invoke( instance, value );
-    }
+      dictionaryMojo.execute();
+      assertFile( out.resolve( "test/TestDictionaryExternalIdAsCharacter.java" ) )
+         .hasContent( contentOfTestResource( getClass(), "TestDictionaryExternalIdAsCharacter.java" ) );
+      assertFile( out.resolve( "test/TestDictionary.java" ) )
+         .hasContent( contentOfTestResource( getClass(), "TestDictionary.java" ) );
+   }
 }
