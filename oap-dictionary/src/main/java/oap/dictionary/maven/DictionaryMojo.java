@@ -69,7 +69,7 @@ public class DictionaryMojo extends AbstractMojo {
 
       final ArrayList<Path> paths = Files.fastWildcard( Paths.get( sourceDirectory ), "*.json" );
 
-      getLog().debug( "found " + paths );
+      getLog().debug( "found dictionaries " + paths );
 
       paths.forEach( path -> {
          getLog().info( "dictionary " + path + "..." );

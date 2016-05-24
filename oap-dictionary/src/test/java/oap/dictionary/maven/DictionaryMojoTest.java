@@ -28,19 +28,24 @@ import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.Test;
 
-/**
- * Created by Admin on 19.05.2016.
- */
+import java.nio.file.Path;
+
+import static oap.testng.Asserts.assertFile;
+import static oap.testng.Asserts.contentOfTestResource;
+
 public class DictionaryMojoTest extends AbstractTest {
    @Test
    public void testExecute() throws Exception {
-      final DictionaryMojo dictionaryMojo = new DictionaryMojo();
+      DictionaryMojo dictionaryMojo = new DictionaryMojo();
       dictionaryMojo.sourceDirectory = "src/test/resources/dictionary";
       dictionaryMojo.dictionaryPackage = "test";
-      dictionaryMojo.outputDirectory = Env.tmp( "dictionary" );
+      Path out = Env.tmpPath( "dictionary" );
+      dictionaryMojo.outputDirectory = out.toString();
 
       dictionaryMojo.execute();
-
+      assertFile( out.resolve( "test/TestDictionaryExternalIdAsCharacter.java" ) )
+         .hasContent( contentOfTestResource( getClass(), "TestDictionaryExternalIdAsCharacter.java" ) );
+      assertFile( out.resolve( "test/TestDictionary.java" ) )
+         .hasContent( contentOfTestResource( getClass(), "TestDictionary.java" ) );
    }
-
 }
