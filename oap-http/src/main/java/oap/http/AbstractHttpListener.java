@@ -2,10 +2,10 @@ package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedRunnable;
+import oap.concurrent.Threads;
 import oap.io.Closeables;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -30,8 +30,8 @@ public abstract class AbstractHttpListener extends SynchronizedRunnable implemen
     public void run() {
         try {
             while( !Thread.interrupted() && ( serverSocket = createSocket() ) == null ) {
-                once( () -> log.warn( "Server socket cannot be opened; waiting for it until " + sleep + "ms..." ) );
-                Thread.sleep( sleep );
+                once( () -> log.warn( "Server socket cannot be opened; waiting for it ..." ) );
+                Threads.sleepSafely( sleep );
             }
             log.debug( "ready to rock [{}]", serverSocket );
 
@@ -44,14 +44,12 @@ public abstract class AbstractHttpListener extends SynchronizedRunnable implemen
                 } catch( SocketException e ) {
                     if( socketClosed( e ) ) log.debug( e.getMessage() );
                     else log.error( e.getMessage(), e );
-                } catch( IOException e ) {
+                } catch( Exception e ) {
                     log.error( e.getMessage(), e );
                 }
         } catch( RuntimeException t ) {
             log.error( t.getMessage(), t );
             throw t;
-        } catch( InterruptedException e ) {
-            log.warn( "Sleep until next socket creation was interrupted", e );
         } finally {
             close();
         }
