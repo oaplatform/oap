@@ -24,26 +24,15 @@
 
 package oap.json.schema;
 
-import lombok.EqualsAndHashCode;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Arrays;
-
 /**
- * Created by Igor Petrenko on 29.04.2016.
+ * Created by Admin on 24.05.2016.
  */
-@EqualsAndHashCode
-public class SchemaId {
-   private final String rootPath;
-   private final String[] id;
+public final class SchemaPath {
+   public static String of( String path1, String path2 ) {
+      if( path1.isEmpty() && path2.isEmpty() ) return "";
+      if( path1.isEmpty() ) return path2;
+      if( path2.isEmpty() ) return path1;
 
-   public SchemaId( String rootPath, String path ) {
-      this.rootPath = rootPath;
-      id = StringUtils.split( SchemaPath.of(rootPath, path), '.' );
-   }
-
-   @Override
-   public String toString() {
-      return String.join( ".", id );
+      return path1 + "." + path2;
    }
 }

@@ -29,10 +29,7 @@ import oap.dictionary.Dictionaries;
 import oap.dictionary.Dictionary;
 import oap.dictionary.DictionaryLeaf;
 import oap.dictionary.DictionaryNotFoundError;
-import oap.json.schema.JsonPath;
-import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.JsonSchemaValidator;
-import oap.json.schema.JsonValidatorProperties;
+import oap.json.schema.*;
 import oap.util.Either;
 import oap.util.Lists;
 
@@ -89,7 +86,7 @@ public class DictionaryJsonValidator implements JsonSchemaValidator<DictionarySc
       wrapper.common = node( context ).asCommon();
       wrapper.name = node( context ).asString( "name" ).optional();
       wrapper.parent = node( context ).asMap( "parent" ).optional()
-         .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ) );
+         .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ).map( jp -> SchemaPath.of( context.rootPath, jp )) );
 
       return wrapper;
    }

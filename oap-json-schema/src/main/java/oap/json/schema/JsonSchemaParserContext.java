@@ -25,14 +25,16 @@ package oap.json.schema;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class JsonSchemaParserContext {
-   public static final SchemaId ROOT_ID = new SchemaId( "" );
+   public static final SchemaId ROOT_ID = new SchemaId( "", "" );
    public final Map<?, ?> node;
    public final String schemaType;
    public final Function<JsonSchemaParserContext, SchemaASTWrapper> mapParser;
-   public final Function<String, SchemaASTWrapper> urlParser;
+   public final BiFunction<String, String, SchemaASTWrapper> urlParser;
+   public final String rootPath;
    public final String path;
    public final HashMap<SchemaId, SchemaASTWrapper> ast;
 
@@ -40,11 +42,14 @@ public class JsonSchemaParserContext {
       Map<?, ?> node,
       String schemaType,
       Function<JsonSchemaParserContext, SchemaASTWrapper> mapParser,
-      Function<String, SchemaASTWrapper> urlParser, String path, HashMap<SchemaId, SchemaASTWrapper> ast ) {
+      BiFunction<String, String, SchemaASTWrapper> urlParser,
+      String rootPath, String path,
+      HashMap<SchemaId, SchemaASTWrapper> ast ) {
       this.node = node;
       this.schemaType = schemaType;
       this.mapParser = mapParser;
       this.urlParser = urlParser;
+      this.rootPath = rootPath;
       this.path = path;
       this.ast = ast;
    }
@@ -58,7 +63,9 @@ public class JsonSchemaParserContext {
 
       if( schemaType instanceof String ) {
          return new JsonSchemaParserContext( map, ( String ) schemaType, mapParser, urlParser,
-            path.length() > 0 ? path + "." + field : field, ast );
+            rootPath,
+            SchemaPath.of( path, field ),
+            ast );
       } else {
          throw new UnknownTypeValidationSyntaxException(
             "Unknown type" + ( schemaType == null ? "nothing" : schemaType.getClass() )
@@ -73,7 +80,7 @@ public class JsonSchemaParserContext {
    }
 
    public SchemaId getId() {
-      return new SchemaId( path );
+      return new SchemaId( rootPath, path );
    }
 
    public SchemaASTWrapper getRoot() {

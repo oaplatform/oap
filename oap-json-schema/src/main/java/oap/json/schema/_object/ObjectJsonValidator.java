@@ -121,8 +121,8 @@ public class ObjectJsonValidator implements JsonSchemaValidator<ObjectSchemaAST>
       wrapper.additionalProperties = node( context ).asBoolean( "additionalProperties" ).optional();
       wrapper.extendsValue = node( context ).asString( "extends" ).optional();
 
-      wrapper.parentSchema = wrapper.extendsValue
-         .map( url -> ( ( ObjectSchemaASTWrapper ) context.urlParser.apply( url ) ) );
+      wrapper.extendsSchema = wrapper.extendsValue
+         .map( url -> ( ( ObjectSchemaASTWrapper ) context.urlParser.apply( context.path, url ) ) );
 
       wrapper.declaredProperties = node( context ).asMapAST( "properties", context ).required();
 

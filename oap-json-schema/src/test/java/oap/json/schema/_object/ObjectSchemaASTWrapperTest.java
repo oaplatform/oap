@@ -41,18 +41,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ObjectSchemaASTWrapperTest extends AbstractTest {
    @Test
    public void testGetChildren() throws Exception {
-      final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "id" ) ) {{
-         parentSchema = Optional.of(
-            new ObjectSchemaASTWrapper( new SchemaId( "id" ) ) {{
-               parentSchema = Optional.empty();
+      final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "", "id" ) ) {{
+         extendsSchema = Optional.of(
+            new ObjectSchemaASTWrapper( new SchemaId( "", "id" ) ) {{
+               extendsSchema = Optional.empty();
                declaredProperties = new LinkedHashMap<String, SchemaASTWrapper>() {{
-                  put( "b", new DefaultSchemaASTWrapper( new SchemaId( "id.b" ) ) );
+                  put( "b", new DefaultSchemaASTWrapper( new SchemaId( "", "id.b" ) ) );
                }};
             }}
          );
          declaredProperties = new LinkedHashMap<String, SchemaASTWrapper>() {{
-            put( "a", new DefaultSchemaASTWrapper( new SchemaId( "id.a" ) ) );
-            put( "b", new DefaultSchemaASTWrapper( new SchemaId( "id.b" ) ) );
+            put( "a", new DefaultSchemaASTWrapper( new SchemaId( "", "id.a" ) ) );
+            put( "b", new DefaultSchemaASTWrapper( new SchemaId( "", "id.b" ) ) );
          }};
       }};
 
@@ -62,10 +62,10 @@ public class ObjectSchemaASTWrapperTest extends AbstractTest {
 
    @Test
    public void testGetChildrenWithoutParent() throws Exception {
-      final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "id" ) ) {{
-         parentSchema = Optional.empty();
+      final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "", "id" ) ) {{
+         extendsSchema = Optional.empty();
          declaredProperties = new LinkedHashMap<String, SchemaASTWrapper>() {{
-            put( "a", new DefaultSchemaASTWrapper( new SchemaId( "id.a" ) ) );
+            put( "a", new DefaultSchemaASTWrapper( new SchemaId( "", "id.a" ) ) );
          }};
       }};
 
