@@ -25,7 +25,7 @@ package oap.ws.validate;
 
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
-import oap.util.Stream;
+import oap.util.Lists;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
@@ -33,33 +33,42 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Validators {
-    private ConcurrentHashMap<Reflection.Parameter, Validators> forParams = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<Reflection.Method, Validators> forMethods = new ConcurrentHashMap<>();
+   private ConcurrentHashMap<Reflection.Parameter, Validator> forParams = new ConcurrentHashMap<>();
+   private ConcurrentHashMap<Reflection.Method, Validator> forMethods = new ConcurrentHashMap<>();
 
-    public Validators forParameter( Reflection.Parameter parameter, Object instance ) {
-        return forParams.computeIfAbsent( parameter, p -> {
-            Validators validators = new Validators();
-            for( Annotation a : parameter.annotations() )
-                Reflect.reflect( a.annotationType() ).findAnnotation( Validator.class )
-                    .ifPresent( v -> validators.peers.add( Reflect.newInstance( v.value(), a, instance ) ) );
-            return validators;
-        } );
-    }
+   public Validator forParameter( Reflection.Parameter parameter, Object instance ) {
+      return forParams.computeIfAbsent( parameter, p -> {
+         Validator validator = new Validator();
+         for( Annotation a : parameter.annotations() )
+            Reflect.reflect( a.annotationType() ).findAnnotation( Peer.class )
+               .ifPresent( va -> validator.peers.add( Reflect.newInstance( va.value(), a, instance ) ) );
+         return validator;
+      } );
+   }
 
-    private List<ValidatorPeer> peers = new ArrayList<>();
+   public Validator forMethod( Reflection.Method method, Object instance ) {
+      return forMethods.computeIfAbsent( method, p -> {
+         Validator validator = new Validator();
+         for( Annotation a : method.annotations() )
+            Reflect.reflect( a.annotationType() ).findAnnotation( Peer.class )
+               .ifPresent( va -> validator.peers.add( Reflect.newInstance( va.value(), a, instance ) ) );
+         return validator;
+      } );
 
-    public List<String> validate( Object value ) {
-        return Stream.of( peers ).flatMap( p -> p.validate( value ).stream() ).toList();
-    }
+   }
 
-    public Validators forMethod( Reflection.Method method, Object instance ) {
-        return forMethods.computeIfAbsent( method, p -> {
-            Validators validators = new Validators();
-            for( Annotation a : method.annotations() )
-                Reflect.reflect( a.annotationType() ).findAnnotation( Validator.class )
-                    .ifPresent( v -> validators.peers.add( Reflect.newInstance( v.value(), a, instance ) ) );
-            return validators;
-        } );
+   public static class Validator {
+      private final List<ValidatorPeer> peers = new ArrayList<>();
 
-    }
+      public ValidationErrors validate( Object value ) {
+         ValidationErrors total = ValidationErrors.create( Lists.empty() );
+         for( ValidatorPeer peer : peers ) {
+            ValidationErrors result = peer.validate( value );
+            if( result.isFailed() && !result.hasDefaultCode() ) return result;
+            total.merge( result );
+         }
+         return total;
+      }
+   }
+
 }

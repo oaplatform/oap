@@ -29,35 +29,35 @@ public class NumberSchemaTest extends AbstractSchemaTest {
     @Test
     public void testInt() {
         String schema = "{\"type\": \"integer\"}";
-        vOk( schema, "10" );
-        vOk( schema, "-10" );
-        vOk( schema, "null" );
+        assertOk( schema, "10" );
+        assertOk( schema, "-10" );
+        assertOk( schema, "null" );
 
-        vFail( schema, "10.0", "instance is of type number, which is none of the allowed primitive types ([integer])" );
-        vFail( schema, "\"10\"",
+        assertFailure( schema, "10.0", "instance is of type number, which is none of the allowed primitive types ([integer])" );
+        assertFailure( schema, "\"10\"",
                 "instance is of type string, which is none of the allowed primitive types ([integer])" );
     }
 
     @Test
     public void testLong() {
         String schema = "{\"type\": \"long\"}";
-        vOk( schema, "10" );
-        vOk( schema, "-10" );
-        vOk( schema, "null" );
+        assertOk( schema, "10" );
+        assertOk( schema, "-10" );
+        assertOk( schema, "null" );
 
-        vFail( schema, "10.0", "instance is of type number, which is none of the allowed primitive types ([long])" );
-        vFail( schema, "\"10\"",
+        assertFailure( schema, "10.0", "instance is of type number, which is none of the allowed primitive types ([long])" );
+        assertFailure( schema, "\"10\"",
                 "instance is of type string, which is none of the allowed primitive types ([long])" );
     }
 
     @Test
     public void testDouble() {
         String schema = "{\"type\": \"double\"}";
-        vOk( schema, "-10.0" );
-        vOk( schema, "324.23" );
-        vOk( schema, "null" );
+        assertOk( schema, "-10.0" );
+        assertOk( schema, "324.23" );
+        assertOk( schema, "null" );
 
-        vFail( schema, "\"10\"",
+        assertFailure( schema, "\"10\"",
                 "instance is of type string, which is none of the allowed primitive types ([double])" );
     }
 
@@ -65,38 +65,38 @@ public class NumberSchemaTest extends AbstractSchemaTest {
     public void test_minimum() {
         String schema = "{\"type\": \"integer\", \"minimum\": 2}";
 
-        vOk( schema, "2" );
-        vOk( schema, "20" );
+        assertOk( schema, "2" );
+        assertOk( schema, "20" );
 
-        vFail( schema, "1", "number is lower than the required minimum 2.0" );
-        vFail( schema, "-3", "number is lower than the required minimum 2.0" );
+        assertFailure( schema, "1", "number is lower than the required minimum 2.0" );
+        assertFailure( schema, "-3", "number is lower than the required minimum 2.0" );
     }
 
     @Test
     public void test_exclusiveMinimum() {
         String schema = "{\"type\": \"integer\", \"minimum\": 2, \"exclusiveMinimum\": true}";
 
-        vOk( schema, "3" );
+        assertOk( schema, "3" );
 
-        vFail( schema, "2", "number is not strictly greater than the required minimum 2.0" );
+        assertFailure( schema, "2", "number is not strictly greater than the required minimum 2.0" );
     }
 
     @Test
     public void test_maximum() {
         String schema = "{\"type\": \"integer\", \"maximum\": 3}";
 
-        vOk( schema, "2" );
-        vOk( schema, "-100" );
+        assertOk( schema, "2" );
+        assertOk( schema, "-100" );
 
-        vFail( schema, "4", "number is greater than the required maximum 3.0" );
+        assertFailure( schema, "4", "number is greater than the required maximum 3.0" );
     }
 
     @Test
     public void test_exclusiveMaximum() {
         String schema = "{\"type\": \"integer\", \"maximum\": 3, \"exclusiveMaximum\": true}";
 
-        vOk( schema, "2" );
+        assertOk( schema, "2" );
 
-        vFail( schema, "3", "number is not strictly lower than the required maximum 3.0" );
+        assertFailure( schema, "3", "number is not strictly lower than the required maximum 3.0" );
     }
 }

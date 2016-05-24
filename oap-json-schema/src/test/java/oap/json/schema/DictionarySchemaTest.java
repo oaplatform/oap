@@ -31,18 +31,18 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
    public void testDictionary() {
       String schema = "{type: dictionary, name: dict}";
 
-      vOk( schema, "null" );
-      vOk( schema, "'test1'" );
-      vOk( schema, "'test2'" );
+      assertOk( schema, "null" );
+      assertOk( schema, "'test1'" );
+      assertOk( schema, "'test2'" );
 
-      vFail( schema, "'test4'", "instance does not match any member of the enumeration [test1,test2,test3]" );
+      assertFailure( schema, "'test4'", "instance does not match any member of the enumeration [test1, test2, test3]" );
    }
 
    @Test
    public void testUnknownDictionary() {
       String schema = "{type: dictionary, name: unknown}";
 
-      vFail( schema, "'test4'", "dictionary not found" );
+      assertFailure( schema, "'test4'", "dictionary not found" );
    }
 
    @Test
@@ -52,13 +52,13 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
          "child: {type: dictionary, parent: {json-path: parent}}" +
          "}}";
 
-      vOk( schema, "{'parent': 'p1'}" );
-      vOk( schema, "{'parent': 'p2'}" );
-      vOk( schema, "{'parent': 'p1', 'child':'c11'}" );
-      vOk( schema, "{'parent': 'p1', 'child':'c12'}" );
-      vOk( schema, "{'parent': 'p2', 'child':'c21'}" );
+      assertOk( schema, "{'parent': 'p1'}" );
+      assertOk( schema, "{'parent': 'p2'}" );
+      assertOk( schema, "{'parent': 'p1', 'child':'c11'}" );
+      assertOk( schema, "{'parent': 'p1', 'child':'c12'}" );
+      assertOk( schema, "{'parent': 'p2', 'child':'c21'}" );
 
-      vFail( schema, "{'parent': 'p1', 'child':'oops'}", "/child: instance does not match any member of the enumeration [c11,c12]" );
+      assertFailure( schema, "{'parent': 'p1', 'child':'oops'}", "/child: instance does not match any member of the enumeration [c11, c12]" );
    }
 
    @Test
@@ -68,9 +68,9 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
          "child: {type:array, items:{type: dictionary, parent: {json-path: parent.items}}}" +
          "}}";
 
-      vOk( schema, "{'parent': ['p1','p2']}" );
-      vOk( schema, "{'parent': ['p1'], 'child':['c11']}" );
-      vOk( schema, "{'parent': ['p1', 'p2'], 'child':['c11','c21']}" );
+      assertOk( schema, "{'parent': ['p1','p2']}" );
+      assertOk( schema, "{'parent': ['p1'], 'child':['c11']}" );
+      assertOk( schema, "{'parent': ['p1', 'p2'], 'child':['c11','c21']}" );
    }
 
    @Test
@@ -88,10 +88,10 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
          "}" +
          "}}";
 
-      vOk( schema, "{'a':[{'parent': 'p1'}]}" );
-      vOk( schema, "{'a':[{'parent': 'p2'}]}" );
-      vOk( schema, "{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p1', 'child':'c12'}]}" );
+      assertOk( schema, "{'a':[{'parent': 'p1'}]}" );
+      assertOk( schema, "{'a':[{'parent': 'p2'}]}" );
+      assertOk( schema, "{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p1', 'child':'c12'}]}" );
 
-      vFail( schema, "{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}", "/a/1/child: instance does not match any member of the enumeration [c21,c22,c23]" );
+      assertFailure( schema, "{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}", "/a/1/child: instance does not match any member of the enumeration [c21, c22, c23]" );
    }
 }

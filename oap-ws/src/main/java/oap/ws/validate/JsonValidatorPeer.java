@@ -23,30 +23,29 @@
  */
 package oap.ws.validate;
 
-import oap.reflect.Reflect;
-import oap.reflect.Reflection;
-import oap.ws.WsException;
+import oap.json.Binder;
+import oap.json.JsonException;
+import oap.json.schema.JsonValidatorFactory;
+import oap.json.schema.ResourceSchemaStorage;
+import oap.ws.WsClientException;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
-public class ValidatePeer implements ValidatorPeer {
+public class JsonValidatorPeer implements ValidatorPeer {
+   private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
+   private final JsonValidatorFactory factory;
 
-    private final Reflection.Method method;
-    private final Object instance;
+   public JsonValidatorPeer( ValidateJson validate, Object instance ) {
+      factory = JsonValidatorFactory.schema( validate.schema(), storage );
+   }
 
-    public ValidatePeer( Validate validate, Object instance ) {
-        this.instance = instance;
-        this.method = Reflect.reflect( instance.getClass() )
-            .method( m -> Objects.equals( m.name(), validate.value() ) )
-            .orElseThrow( () -> new WsException( "no such method " + validate.value() ) );
-    }
-
-    @Override
-    public List<String> validate( Object value ) {
-        if( value != null && value.getClass().isArray() )
-            return method.invoke( instance, (Object[]) value );
-        else
-            return method.invoke( instance, value );
-    }
+   @Override
+   public ValidationErrors validate( Object value ) {
+      try {
+         Map<?, ?> unmarshal = Binder.json.unmarshal( Map.class, ( String ) value );
+         return ValidationErrors.create( factory.validate( unmarshal, false ) );
+      } catch( JsonException e ) {
+         throw new WsClientException( e.getMessage(), e );
+      }
+   }
 }

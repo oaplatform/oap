@@ -30,7 +30,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-final class ServiceUtil {
+final class WsServices {
     private static Pattern rxParamPattern = Pattern.compile( "\\{([^:]+):([^\\)]+\\))\\}" );
     private static Pattern namedParamPattern = Pattern.compile( "/\\{([^\\}]+)\\}" );
 

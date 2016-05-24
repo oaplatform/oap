@@ -108,8 +108,16 @@ final public class Result<S, F> implements Serializable {
       }
    }
 
-   public static <S> Result<S, Throwable> blockingTrying( Try.ThrowingSupplier<S> supplier )
-      throws InterruptedException {
+   /**
+    * @see #tryingInterruptible(Try.ThrowingSupplier)
+    * reason: "blocking" is not actual semantics but usecase
+    */
+   @Deprecated
+   public static <S> Result<S, Throwable> blockingTrying( Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
+      return tryingInterruptible( supplier );
+   }
+
+   public static <S> Result<S, Throwable> tryingInterruptible( Try.ThrowingSupplier<S> supplier ) throws InterruptedException {
 
       try {
          return success( supplier.get() );

@@ -21,7 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package net.madberry.maven;
+
+package oap.maven;
 
 import oap.io.Files;
 import org.apache.maven.plugin.AbstractMojo;

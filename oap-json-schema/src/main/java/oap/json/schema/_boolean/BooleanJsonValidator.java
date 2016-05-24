@@ -23,21 +23,20 @@
  */
 package oap.json.schema._boolean;
 
-import oap.json.schema.*;
-import oap.util.Either;
+import oap.json.schema.DefaultSchemaAST;
+import oap.json.schema.DefaultSchemaASTWrapper;
+import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.JsonSchemaValidator;
+import oap.json.schema.JsonValidatorProperties;
 import oap.util.Lists;
 
 import java.util.List;
 
-public class BooleanJsonValidator implements JsonSchemaValidator<DefaultSchemaAST> {
+public class BooleanJsonValidator extends JsonSchemaValidator<DefaultSchemaAST> {
    @Override
-   public Either<List<String>, Object> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
-      if( !( value instanceof Boolean ) ) return Either.left(
-         Lists.of(
-            properties.error( "instance is of type " + getType( value ) +
-               ", which is none of the allowed primitive types ([" + schema.common.schemaType +
-               "])" ) ) );
-      return Either.right( value );
+   public List<String> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
+      if( !( value instanceof Boolean ) ) return typeFailed( properties, schema, value );
+      return Lists.empty();
    }
 
    @Override

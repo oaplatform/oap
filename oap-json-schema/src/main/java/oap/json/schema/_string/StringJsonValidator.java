@@ -26,43 +26,32 @@ package oap.json.schema._string;
 import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
-import oap.util.Either;
-import oap.util.Lists;
-import oap.util.OptionalList;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-public class StringJsonValidator implements JsonSchemaValidator<StringSchemaAST> {
+public class StringJsonValidator extends JsonSchemaValidator<StringSchemaAST> {
    @Override
-   public Either<List<String>, Object> validate( JsonValidatorProperties properties, StringSchemaAST schema,
-                                                 Object value ) {
-      if( !( value instanceof String ) ) return Either.left(
-         Lists.of(
-            properties.error( "instance is of type " + getType( value ) +
-               ", which is none of the allowed primitive types ([" + schema.common.schemaType +
-               "])" ) ) );
+   public List<String> validate( JsonValidatorProperties properties, StringSchemaAST schema, Object value ) {
+      if( !( value instanceof String ) ) return typeFailed( properties, schema, value );
 
       String strValue = ( String ) value;
 
-      Optional<String> minLengthResult = schema.minLength
+      List<String> errors = new ArrayList<>();
+
+      schema.minLength
          .filter( minLength -> strValue.length() < minLength )
-         .map( minLength -> "string is shorter than minLength " + minLength );
+         .ifPresent( minLength -> errors.add( "string is shorter than minLength " + minLength ) );
 
-      Optional<String> maxLengthResult = schema.maxLength
+      schema.maxLength
          .filter( maxLength -> strValue.length() > maxLength )
-         .map( maxLength -> "string is longer than maxLength " + maxLength );
+         .ifPresent( maxLength -> errors.add( "string is longer than maxLength " + maxLength ) );
 
-      Optional<String> patternResult = schema.pattern
+      schema.pattern
          .filter( pattern -> !pattern.matcher( strValue ).matches() )
-         .map( pattern -> "string does not match specified regex " + pattern );
+         .ifPresent( pattern -> errors.add( "string does not match specified regex " + pattern ) );
 
-      return OptionalList
-         .<String>builder()
-         .add( minLengthResult )
-         .add( maxLengthResult )
-         .add( patternResult )
-         .toEigher( value );
+      return errors;
    }
 
    @Override

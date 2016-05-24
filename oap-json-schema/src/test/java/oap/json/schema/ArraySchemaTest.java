@@ -30,11 +30,11 @@ public class ArraySchemaTest extends AbstractSchemaTest {
     public void testArrayOfPrimitives() {
         String schema = "{\"type\": \"array\", \"items\": {\"type\": \"boolean\"}}";
 
-        vOk( schema, "[true, false]" );
-        vOk( schema, "[null, null]" );
-        vOk( schema, "[]" );
-        vOk( schema, "null" );
-        vFail( schema, "[true, \"20\"]",
+        assertOk( schema, "[true, false]" );
+        assertOk( schema, "[null, null]" );
+        assertOk( schema, "[]" );
+        assertOk( schema, "null" );
+        assertFailure( schema, "[true, \"20\"]",
             "/1: instance is of type string, which is none of the allowed primitive types ([boolean])" );
     }
 
@@ -51,10 +51,10 @@ public class ArraySchemaTest extends AbstractSchemaTest {
             "}" +
             "}";
 
-        vOk( schema, "{'a':[true, false, false]}" );
-        vOk( schema, "{'a':[true, false]}" );
-        vFail( schema, "{'a':[true]}", "/a: array has less than minItems elements 2" );
-        vFail( schema, "{'a':[]}", "/a: array has less than minItems elements 2" );
+        assertOk( schema, "{'a':[true, false, false]}" );
+        assertOk( schema, "{'a':[true, false]}" );
+        assertFailure( schema, "{'a':[true]}", "/a: array has less than minItems elements 2" );
+        assertFailure( schema, "{'a':[]}", "/a: array has less than minItems elements 2" );
     }
 
     @Test
@@ -70,9 +70,9 @@ public class ArraySchemaTest extends AbstractSchemaTest {
             "}" +
             "}";
 
-        vOk( schema, "{'a':[]}" );
-        vOk( schema, "{'a':[true, false]}" );
-        vFail( schema, "{'a':[true, true, true]}", "/a: array has more than maxItems elements 2" );
+        assertOk( schema, "{'a':[]}" );
+        assertOk( schema, "{'a':[true, false]}" );
+        assertFailure( schema, "{'a':[true, true, true]}", "/a: array has more than maxItems elements 2" );
     }
 
     @Test
@@ -95,6 +95,6 @@ public class ArraySchemaTest extends AbstractSchemaTest {
             "}" +
             "}";
 
-        vFail( schema, "[{'test':[{'a':1}]}]", "/0/test/0/a: instance is of type number, which is none of the allowed primitive types ([string])" );
+        assertFailure( schema, "[{'test':[{'a':1}]}]", "/0/test/0/a: instance is of type number, which is none of the allowed primitive types ([string])" );
     }
 }

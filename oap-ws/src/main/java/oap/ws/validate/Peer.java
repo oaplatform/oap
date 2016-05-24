@@ -21,16 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package net.madberry.maven;
+package oap.ws.validate;
 
-public class FileSet extends org.apache.maven.model.FileSet {
-    private boolean filtering;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-    public boolean isFiltering() {
-        return filtering;
-    }
-
-    public void setFiltering( boolean filtering ) {
-        this.filtering = filtering;
-    }
+@Retention( RetentionPolicy.RUNTIME )
+@Target( ElementType.ANNOTATION_TYPE )
+public @interface Peer {
+    Class<? extends ValidatorPeer> value();
 }

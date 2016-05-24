@@ -28,9 +28,17 @@ import oap.util.Lists;
 import java.net.HttpURLConnection;
 import java.util.List;
 
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+
 public class WsClientException extends WsException {
     public final List<String> errors;
-    public int code = HttpURLConnection.HTTP_BAD_REQUEST;
+    public int code = HTTP_BAD_REQUEST;
+
+    public WsClientException( String message, int code, List<String> errors ) {
+        super( message );
+        this.code = code;
+        this.errors = errors;
+    }
 
     public WsClientException( String message, List<String> errors ) {
         super( message );

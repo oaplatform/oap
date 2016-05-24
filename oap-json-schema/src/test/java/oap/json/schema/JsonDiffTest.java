@@ -33,6 +33,7 @@ import java.util.Optional;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 import static oap.json.schema.JsonDiff.diff;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class JsonDiffTest extends AbstractSchemaTest {
     @Test
@@ -45,7 +46,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "}" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{}", "{\"test\":\"new value\"}" ) ).containsOnly( __newF( "test", "\"new value\"" ) );
+        assertThat( __diff( schema, "{}", "{\"test\":\"new value\"}" ) ).containsOnly( __newF( "test", "\"new value\"" ) );
     }
 
     @Test
@@ -58,7 +59,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "}" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{\"test\":\"old value\"}", "{}" ) ).containsOnly( __delF( "test", "\"old value\"" ) );
+        assertThat( __diff( schema, "{\"test\":\"old value\"}", "{}" ) ).containsOnly( __delF( "test", "\"old value\"" ) );
     }
 
     @Test
@@ -71,7 +72,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "}" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{\"test\":\"old value\"}", "{\"test\":\"new value\"}" ) )
+        assertThat( __diff( schema, "{\"test\":\"old value\"}", "{\"test\":\"new value\"}" ) )
             .containsOnly( __updF( "test", "\"old value\"", "\"new value\"" ) );
     }
 
@@ -90,7 +91,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "  }" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{\"test\":{\"testin\":\"old value\"}}", "{\"test\":{\"testin\":\"new value\"}}" ) )
+        assertThat( __diff( schema, "{\"test\":{\"testin\":\"old value\"}}", "{\"test\":{\"testin\":\"new value\"}}" ) )
             .containsOnly( __updF( "test.testin", "\"old value\"", "\"new value\"" ) );
     }
 
@@ -109,7 +110,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "  }" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{}", "{\"test\":{\"testin\":\"new value\"}}" ) )
+        assertThat( __diff( schema, "{}", "{\"test\":{\"testin\":\"new value\"}}" ) )
             .containsOnly( __newO( "test", "{\"testin\":\"new value\"}" ) );
     }
 
@@ -128,7 +129,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "  }" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{\"test\":{\"testin\":\"new value\"}}", "{}" ) )
+        assertThat( __diff( schema, "{\"test\":{\"testin\":\"new value\"}}", "{}" ) )
             .containsOnly( __delO( "test", "{\"testin\":\"new value\"}" ) );
     }
 
@@ -145,7 +146,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "  }" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{}", "{\"test\":[\"new value\"]}" ) ).containsOnly( __newA( "test", "[\"new value\"]" ) );
+        assertThat( __diff( schema, "{}", "{\"test\":[\"new value\"]}" ) ).containsOnly( __newA( "test", "[\"new value\"]" ) );
     }
 
     @Test
@@ -161,7 +162,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "  }" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{\"test\":[\"old value\"]}", "{\"test\":[\"old value\",\"new value\"]}" ) )
+        assertThat( __diff( schema, "{\"test\":[\"old value\"]}", "{\"test\":[\"old value\",\"new value\"]}" ) )
             .containsOnly( __newA( "test", "[\"new value\"]" ) );
     }
 
@@ -178,7 +179,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "  }" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{}", "{}" ) ).isEmpty();
+        assertThat( __diff( schema, "{}", "{}" ) ).isEmpty();
     }
 
     @Test
@@ -194,7 +195,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "  }" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{\"test\":[\"old value\", \"old value 2\"]}", "{\"test\":[\"old value 2\"]}" ) )
+        assertThat( __diff( schema, "{\"test\":[\"old value\", \"old value 2\"]}", "{\"test\":[\"old value 2\"]}" ) )
             .containsOnly( __delA( "test", "[\"old value\"]" ) );
     }
 
@@ -211,7 +212,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "  }" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{\"test\":[\"old value\", \"old value 2\"]}", "{\"test\":[\"old value 2\", \"new value\"]}" ) )
+        assertThat( __diff( schema, "{\"test\":[\"old value\", \"old value 2\"]}", "{\"test\":[\"old value 2\", \"new value\"]}" ) )
             .containsOnly( __updA( "test", "[\"old value\"]", "[\"new value\"]" ) );
     }
 
@@ -237,7 +238,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "  }" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{\"test\":[{\"test\":\"id\",\"testin\":\"old value\"}]}",
+        assertThat( __diff( schema, "{\"test\":[{\"test\":\"id\",\"testin\":\"old value\"}]}",
             "{\"test\":[{\"test\":\"id\",\"testin\":\"new value\"}]}" ) )
             .containsOnly( __updF( "test[id].testin", "\"old value\"", "\"new value\"" ) );
     }
@@ -264,7 +265,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "  }" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{\"test\":[]}",
+        assertThat( __diff( schema, "{\"test\":[]}",
             "{\"test\":[{\"test\":\"id\",\"testin\":\"new value\"}]}" ) )
             .containsOnly( __newO( "test[id]", "{\"test\":\"id\",\"testin\":\"new value\"}" ) );
     }
@@ -291,7 +292,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
             "  }" +
             "}}";
 
-        Assertions.assertThat( __diff( schema, "{\"test\":[{\"test\":\"id\",\"testin\":\"new value\"}]}",
+        assertThat( __diff( schema, "{\"test\":[{\"test\":\"id\",\"testin\":\"new value\"}]}",
             "{\"test\":[]}" ) )
             .containsOnly( __delO( "test[id]", "{\"test\":\"id\",\"testin\":\"new value\"}" ) );
     }

@@ -35,26 +35,26 @@ public class ResultTest {
 
    @Test(expectedExceptions = InterruptedException.class)
    public void testBlockingTryingInterrupted() throws Exception {
-      Result.blockingTrying( () -> {
+      Result.tryingInterruptible( () -> {
          throw new InterruptedException( "Somebody interrupted me" );
       } );
    }
 
    @Test()
    public void testBlockingTryingSuccess() throws Exception {
-      Result<String, Throwable> result = Result.blockingTrying( () -> "im ok" );
+      Result<String, Throwable> result = Result.tryingInterruptible( () -> "im ok" );
       assertTrue( result.isSuccess() );
-      assertEquals( result.getSuccessValue(), "im ok" );
+      assertEquals( result.successValue, "im ok" );
    }
 
    @Test()
    public void testBlockingTryingNormalException() throws Exception {
-      Result<String, Throwable> result = Result.blockingTrying( () -> {
+      Result<String, Throwable> result = Result.tryingInterruptible( () -> {
          throw new IllegalArgumentException( "some reason" );
       });
 
       assertFalse( result.isSuccess() );
-      assertEquals( result.getFailureValue().getClass(), IllegalArgumentException.class );
+      assertEquals( result.failureValue.getClass(), IllegalArgumentException.class );
    }
 
 

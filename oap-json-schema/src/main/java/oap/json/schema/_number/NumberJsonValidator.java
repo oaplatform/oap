@@ -26,54 +26,32 @@ package oap.json.schema._number;
 import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
-import oap.util.Either;
-import oap.util.Lists;
-import oap.util.OptionalList;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
-public abstract class NumberJsonValidator<T extends Number> implements JsonSchemaValidator<NumberSchemaAST> {
+public abstract class NumberJsonValidator<T extends Number> extends JsonSchemaValidator<NumberSchemaAST> {
    protected abstract boolean valid( Object value );
 
-   protected abstract T cast( Object value );
-
    @Override
-   public Either<List<String>, Object> validate( JsonValidatorProperties properties, NumberSchemaAST schema,
-                                                 Object value ) {
-      if( !valid( value ) )
-         return Either.left(
-            Lists.of(
-               properties.error( "instance is of type " + getType( value ) +
-                  ", which is none of the allowed primitive types ([" + schema.common.schemaType +
-                  "])" ) ) );
+   public List<String> validate( JsonValidatorProperties properties, NumberSchemaAST schema, Object value ) {
+      if( !valid( value ) ) return typeFailed( properties, schema, value );
 
-      T castValue = cast( value );
-      Double doubleValue = castValue.doubleValue();
+      Double doubleValue = ( ( Number ) value ).doubleValue();
+      List<String> errors = new ArrayList<>();
+      schema.minimum.filter( minimum -> doubleValue < minimum && !schema.exclusiveMinimum.orElse( false ) )
+         .ifPresent( minimum -> errors.add( "number is lower than the required minimum " + minimum ) );
 
-      Optional<String> minimumResult = schema.minimum
-         .filter( minimum -> doubleValue < minimum && !schema.exclusiveMinimum.orElse( false ) )
-         .map( minimum -> "number is lower than the required minimum " + minimum );
+      schema.maximum.filter( maximum -> doubleValue > maximum && !schema.exclusiveMaximum.orElse( false ) )
+         .ifPresent( maximum -> errors.add( "number is greater than the required maximum " + maximum ) );
 
-      Optional<String> maximumResult = schema.maximum
-         .filter( maximum -> doubleValue > maximum && !schema.exclusiveMaximum.orElse( false ) )
-         .map( maximum -> "number is greater than the required maximum " + maximum );
+      schema.minimum.filter( minimum -> doubleValue <= minimum && schema.exclusiveMinimum.orElse( false ) )
+         .ifPresent( minimum -> errors.add( "number is not strictly greater than the required minimum " + minimum ) );
 
-      Optional<String> exclusiveMinimumResult = schema.minimum
-         .filter( minimum -> doubleValue <= minimum && schema.exclusiveMinimum.orElse( false ) )
-         .map( minimum -> "number is not strictly greater than the required minimum " + minimum );
+      schema.maximum.filter( maximum -> doubleValue >= maximum && schema.exclusiveMaximum.orElse( false ) )
+         .ifPresent( maximum -> errors.add( "number is not strictly lower than the required maximum " + maximum ) );
 
-      Optional<String> exclusiveMaximumResult = schema.maximum
-         .filter( maximum -> doubleValue >= maximum && schema.exclusiveMaximum.orElse( false ) )
-         .map( maximum -> "number is not strictly lower than the required maximum " + maximum );
-
-      return OptionalList
-         .<String>builder()
-         .add( minimumResult )
-         .add( maximumResult )
-         .add( exclusiveMinimumResult )
-         .add( exclusiveMaximumResult )
-         .toEigher( castValue );
+      return errors;
    }
 
    @Override

@@ -30,7 +30,7 @@ import java.lang.annotation.Target;
 
 @Retention( RetentionPolicy.RUNTIME )
 @Target( { ElementType.PARAMETER, ElementType.METHOD } )
-@Validator( ValidatePeer.class )
+@Peer( MethodValidatorPeer.class )
 public @interface Validate {
     String value();
 }

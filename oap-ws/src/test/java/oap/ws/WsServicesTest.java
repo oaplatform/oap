@@ -32,19 +32,19 @@ import java.util.Optional;
 
 import static org.testng.Assert.assertEquals;
 
-public class ServiceUtilTest extends AbstractTest {
+public class WsServicesTest extends AbstractTest {
     @Test
     public void compile() {
-        Assert.assertEquals( ServiceUtil.compile( "/y/{year:(\\d\\d\\d\\d)}/{month}/{date}" ).toString(), "^/y/(\\d\\d\\d\\d)/([^/]+)/([^/]+)$" );
-        assertEquals( ServiceUtil.compile( "/y/{year:(\\d{4})}/{month}/{date}" ).toString(), "^/y/(\\d{4})/([^/]+)/([^/]+)$" );
+        Assert.assertEquals( WsServices.compile( "/y/{year:(\\d\\d\\d\\d)}/{month}/{date}" ).toString(), "^/y/(\\d\\d\\d\\d)/([^/]+)/([^/]+)$" );
+        assertEquals( WsServices.compile( "/y/{year:(\\d{4})}/{month}/{date}" ).toString(), "^/y/(\\d{4})/([^/]+)/([^/]+)$" );
     }
 
     @Test
     public void pathParam() {
         String mapping = "/y/{year:(\\d{4})}/{month}/{date}";
         String path = "/y/2009/April/12";
-        assertEquals( Optional.of( "2009" ), ServiceUtil.pathParam( mapping, path, "year" ) );
-        assertEquals( Optional.of( "April" ), ServiceUtil.pathParam( mapping, path, "month" ) );
-        assertEquals( Optional.of( "12" ), ServiceUtil.pathParam( mapping, path, "date" ) );
+        assertEquals( Optional.of( "2009" ), WsServices.pathParam( mapping, path, "year" ) );
+        assertEquals( Optional.of( "April" ), WsServices.pathParam( mapping, path, "month" ) );
+        assertEquals( Optional.of( "12" ), WsServices.pathParam( mapping, path, "date" ) );
     }
 }

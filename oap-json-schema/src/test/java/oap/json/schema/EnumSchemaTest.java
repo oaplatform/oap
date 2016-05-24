@@ -31,11 +31,11 @@ public class EnumSchemaTest extends AbstractSchemaTest {
     public void testStaticEnum() {
         String schema = "{type: string, enum: [test, test1]}";
 
-        vOk( schema, "null" );
-        vOk( schema, "'test'" );
-        vOk( schema, "'test1'" );
+        assertOk( schema, "null" );
+        assertOk( schema, "'test'" );
+        assertOk( schema, "'test1'" );
 
-        vFail( schema, "'test2'", "instance does not match any member of the enumeration [test,test1]" );
+        assertFailure( schema, "'test2'", "instance does not match any member of the enumeration [test, test1]" );
     }
 
     @Test
@@ -53,10 +53,10 @@ public class EnumSchemaTest extends AbstractSchemaTest {
             "}" +
             "}";
 
-        vOk( schema, "{'b':null}" );
-        vOk( schema, "{'a':'test', 'b':'test'}" );
+        assertOk( schema, "{'b':null}" );
+        assertOk( schema, "{'a':'test', 'b':'test'}" );
 
-        vFail( schema, "{'a':'test', 'b':'test2'}", "/b: instance does not match any member of the enumeration [test]" );
+        assertFailure( schema, "{'a':'test', 'b':'test2'}", "/b: instance does not match any member of the enumeration [test]" );
     }
 
     @Test
@@ -80,10 +80,10 @@ public class EnumSchemaTest extends AbstractSchemaTest {
             "}" +
             "}";
 
-        vOk( schema, "{'b':null}" );
-        vOk( schema, "{'a':[{'c':'test'}], 'b':'test'}" );
+        assertOk( schema, "{'b':null}" );
+        assertOk( schema, "{'a':[{'c':'test'}], 'b':'test'}" );
 
-        vFail( schema, "{'a':[{'c':'test'}], 'b':'test2'}", "/b: instance does not match any member of the enumeration [test]" );
+        assertFailure( schema, "{'a':[{'c':'test'}], 'b':'test2'}", "/b: instance does not match any member of the enumeration [test]" );
     }
 
     @Test
@@ -104,9 +104,9 @@ public class EnumSchemaTest extends AbstractSchemaTest {
             "}" +
             "}";
 
-        vOk( schema, "{'b':null}" );
-        vOk( schema, "{'a':['test'], 'b':'test'}" );
+        assertOk( schema, "{'b':null}" );
+        assertOk( schema, "{'a':['test'], 'b':'test'}" );
 
-        vFail( schema, "{'a':['test'], 'b':'test2'}", "/b: instance does not match any member of the enumeration [test]" );
+        assertFailure( schema, "{'a':['test'], 'b':'test2'}", "/b: instance does not match any member of the enumeration [test]" );
     }
 }

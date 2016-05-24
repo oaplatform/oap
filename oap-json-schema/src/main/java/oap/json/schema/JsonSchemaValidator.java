@@ -23,40 +23,48 @@
  */
 package oap.json.schema;
 
-import oap.util.Either;
+import oap.util.Lists;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-public interface JsonSchemaValidator<A extends SchemaAST<A>> {
-   Either<List<String>, Object> validate( JsonValidatorProperties properties, A schema, Object value );
+public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
+   public abstract List<String> validate( JsonValidatorProperties properties, A schema, Object value );
 
-   default String getType( Object object ) {
+   public static String getType( Object object ) {
       if( object instanceof Boolean ) return "boolean";
       else if( object instanceof String ) return "string";
       else if( object instanceof Integer || object instanceof Long || object instanceof Float ||
          object instanceof Double ) return "number";
       else if( object instanceof Map<?, ?> ) return "object";
-      else if( object instanceof Collection<?> ) return "array";
+      else if( object instanceof List<?> ) return "array";
       else
          throw new Error( "Unknown type " + ( object != null ? object.getClass() : "<NULL???>" ) + ", fix me!!!" );
    }
 
-   SchemaASTWrapper<A, ? extends SchemaASTWrapper> parse( JsonSchemaParserContext context );
+   public static List<String> typeFailed( JsonValidatorProperties properties, SchemaAST<?> schema, Object value ) {
+      return Lists.of( properties.error( "instance is of type " + getType( value ) +
+         ", which is none of the allowed primitive types ([" + schema.common.schemaType + "])" ) );
+   }
 
-   default DefaultSchemaASTWrapper defaultParse( JsonSchemaParserContext context ) {
+   public abstract SchemaASTWrapper<A, ? extends SchemaASTWrapper> parse( JsonSchemaParserContext context );
+
+   public static DefaultSchemaASTWrapper defaultParse( JsonSchemaParserContext context ) {
       final DefaultSchemaASTWrapper wrapper = new DefaultSchemaASTWrapper( context.getId() );
       wrapper.common = node( context ).asCommon();
 
       return wrapper;
    }
 
-   default NodeParser node( JsonSchemaParserContext context ) {
+   public static NodeParser node( JsonSchemaParserContext context ) {
       return new NodeParser( context );
    }
 
-   class PropertyParser<A> {
+   public static class PropertyParser<A> {
       private final Optional<A> value;
 
       public PropertyParser( Optional<A> value ) {
@@ -72,7 +80,7 @@ public interface JsonSchemaValidator<A extends SchemaAST<A>> {
       }
    }
 
-   class NodeParser {
+   public static class NodeParser {
       private final JsonSchemaParserContext properties;
 
       public NodeParser( JsonSchemaParserContext properties ) {

@@ -26,90 +26,36 @@ package oap.json.schema._object;
 import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
-import oap.util.*;
+import oap.util.Stream;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
-import static oap.util.Pair.__;
-
-public class ObjectJsonValidator implements JsonSchemaValidator<ObjectSchemaAST> {
-   @SuppressWarnings( "unchecked" )
+public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
    @Override
-   public Either<List<String>, Object> validate( JsonValidatorProperties properties, ObjectSchemaAST schema,
-                                                 Object value ) {
-      if( !( value instanceof Map<?, ?> ) ) return Either.left(
-         Lists.of(
-            properties.error( "instance is of type " + getType( value ) +
-               ", which is none of the allowed primitive types ([" + schema.common.schemaType +
-               "])" ) ) );
+   public List<String> validate( JsonValidatorProperties properties, ObjectSchemaAST schema, Object value ) {
+      if( !( value instanceof Map<?, ?> ) ) return typeFailed( properties, schema, value );
 
-      Map<Object, Object> mapValue = ( Map<Object, Object> ) value;
+      @SuppressWarnings( "unchecked" )
+      Map<String, Object> mapValue = ( Map<String, Object> ) value;
 
-      Either<List<String>, List<Pair<String, Object>>> result = Either.fold2( schema.properties
-         .entrySet()
-         .stream()
-         .flatMap(
-            ( e ) -> {
-               Object v = mapValue.get( e.getKey() );
+      List<String> errors = new ArrayList<>();
 
-               Either<List<String>, Pair<String, Object>> res = properties.validator
-                  .apply(
-                     properties
-                        .withPath( e.getKey() )
-                        .withAdditionalProperties( schema.additionalProperties ),
-                     e.getValue(),
-                     v
-                  )
-                  .right()
-                  .map( r -> __( e.getKey(), r ) );
+      schema.properties.forEach( ( k, ast ) -> {
+         Object v = mapValue.get( k );
+         errors.addAll( properties.validator
+            .apply( properties.withPath( k ).withAdditionalProperties( schema.additionalProperties ), ast, v ) );
+      } );
 
-               return v == null && res.isRight() && res.right().get()._2 == null ?
-                  java.util.stream.Stream.empty() : java.util.stream.Stream.of( res );
-            }
-         ) );
+      List<String> additionalProperties = Stream.of( mapValue.keySet() )
+         .filter( v -> !schema.properties.containsKey( v ) )
+         .toList();
 
-
-      List<String> additionalProperties = mapValue.keySet()
-         .stream()
-         .filter( v -> !schema.properties.containsKey( v.toString() ) )
-         .map( v -> ( String ) v )
-         .collect( Collectors.toList() );
-
-      if( !schema.additionalProperties.orElse( properties.additionalProperties.orElse( true ) ) ) {
-         if( !additionalProperties.isEmpty() ) {
-            Optional<String> additionalPropertiesResult = Optional.of(
-               properties.error( "additional properties are not permitted [" +
-                  String.join( ",", additionalProperties.stream().map(
-                     Object::toString ).collect( Collectors.toList() ) ) + "]" ) );
-
-            if( additionalPropertiesResult.isPresent() ) {
-               result = result.<Either<List<String>, List<Pair<String, Object>>>>fold(
-                  l -> {
-                     l.add( additionalPropertiesResult.get() );
-                     return Either.left( l );
-                  },
-                  ( r ) -> Either.left( Collections.singletonList( additionalPropertiesResult.get() ) )
-               );
-            }
-         }
-      } else {
-         result = result.<Either<List<String>, List<Pair<String, Object>>>>fold(
-            Either::left,
-            r -> {
-               r.addAll( additionalProperties.stream().map( ap -> __( ap, mapValue.get( ap ) ) ).collect(
-                  Collectors.toList() ) );
-               return Either.right( r );
-            }
-         );
-      }
-
-      return result
-         .right()
-         .map( rr -> ( Object ) Stream.of( rr.stream() ).collect( Maps.Collectors.<String, Object>toMap() ) );
+      if( !schema.additionalProperties.orElse( properties.additionalProperties.orElse( true ) )
+         && !additionalProperties.isEmpty() )
+         errors.add( properties.error( "additional properties are not permitted " + additionalProperties ) );
+      return errors;
 
    }
 
