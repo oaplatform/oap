@@ -42,6 +42,7 @@
         <module>oap-metrics</module>
         <module>oap-json</module>
         <module>oap-dictionary</module>
+        <module>oap-dictionary-maven</module>
         <module>oap-json-schema</module>
         <module>oap-cli</module>
         <module>oap-http</module>
