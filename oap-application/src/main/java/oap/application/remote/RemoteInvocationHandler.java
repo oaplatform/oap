@@ -82,14 +82,11 @@ public class RemoteInvocationHandler implements InvocationHandler {
          fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) ),
          timeout )
          .<Result<Object, Throwable>>map( response -> {
-            if( response.code == HTTP_OK )
-               if( method.getReturnType().equals( void.class ) ) return Result.success( null );
-               else {
-                  return response.content
-                     .map( b -> ( Result<Object, Throwable> ) fst.conf.asObject( b ) )
-                     .orElse( Result.failure( new RemoteInvocationException( "no content " + uri ) ) );
-               }
-            else return Result.failure( new RemoteInvocationException( response.code + " " + response.reasonPhrase
+            if( response.code == HTTP_OK ) {
+               return response.content
+                  .map( b -> ( Result<Object, Throwable> ) fst.conf.asObject( b ) )
+                  .orElse( Result.failure( new RemoteInvocationException( "no content " + uri ) ) );
+            } else return Result.failure( new RemoteInvocationException( response.code + " " + response.reasonPhrase
                + "\n" + response.contentString ) );
          } )
          .orElseThrow( () -> new RemoteInvocationException( "invocation failed " + uri ) )

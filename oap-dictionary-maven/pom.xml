@@ -36,7 +36,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.15.26</version>
+        <version>1.15.28</version>
     </parent>
 
     <build>
@@ -65,7 +65,7 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-dictionary</artifactId>
-            <version>1.15.26</version>
+            <version>1.15.28</version>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
