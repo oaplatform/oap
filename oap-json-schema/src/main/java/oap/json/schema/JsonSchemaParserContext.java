@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class JsonSchemaParserContext {
    public static final SchemaId ROOT_ID = new SchemaId( "", "" );
@@ -36,7 +37,8 @@ public class JsonSchemaParserContext {
    public final BiFunction<String, String, SchemaASTWrapper> urlParser;
    public final String rootPath;
    public final String path;
-   public final HashMap<SchemaId, SchemaASTWrapper> ast;
+   public final HashMap<SchemaId, SchemaASTWrapper> astW;
+   public final HashMap<SchemaId, SchemaAST> ast;
 
    public JsonSchemaParserContext(
       Map<?, ?> node,
@@ -44,13 +46,16 @@ public class JsonSchemaParserContext {
       Function<JsonSchemaParserContext, SchemaASTWrapper> mapParser,
       BiFunction<String, String, SchemaASTWrapper> urlParser,
       String rootPath, String path,
-      HashMap<SchemaId, SchemaASTWrapper> ast ) {
+      HashMap<SchemaId, SchemaASTWrapper> astW,
+      HashMap<SchemaId, SchemaAST> ast
+   ) {
       this.node = node;
       this.schemaType = schemaType;
       this.mapParser = mapParser;
       this.urlParser = urlParser;
       this.rootPath = rootPath;
       this.path = path;
+      this.astW = astW;
       this.ast = ast;
    }
 
@@ -65,7 +70,7 @@ public class JsonSchemaParserContext {
          return new JsonSchemaParserContext( map, ( String ) schemaType, mapParser, urlParser,
             rootPath,
             SchemaPath.resolve( path, field ),
-            ast );
+            astW, ast );
       } else {
          throw new UnknownTypeValidationSyntaxException(
             "Unknown type" + ( schemaType == null ? "nothing" : schemaType.getClass() )
@@ -75,7 +80,7 @@ public class JsonSchemaParserContext {
 
    public <T extends SchemaASTWrapper> T createWrapper( Function<SchemaId, T> creator ) {
       final T w = creator.apply( getId() );
-      ast.put( w.id, w );
+      astW.put( w.id, w );
       return w;
    }
 
@@ -84,9 +89,14 @@ public class JsonSchemaParserContext {
    }
 
    public SchemaASTWrapper getRoot() {
-      final SchemaASTWrapper root = ast.get( ROOT_ID );
+      final SchemaASTWrapper root = astW.get( ROOT_ID );
       if( root == null )
          throw new IllegalStateException( "root not found" );
       return root;
+   }
+
+   @SuppressWarnings( "unchecked" )
+   public <T extends SchemaAST> T computeIfAbsent( SchemaId id, Supplier<T> s ) {
+      return ( T ) ast.computeIfAbsent( id, ( c ) -> s.get() );
    }
 }

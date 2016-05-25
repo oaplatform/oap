@@ -35,12 +35,12 @@ import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
 import oap.json.schema.SchemaPath;
 import oap.util.Lists;
+import oap.util.Result;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static oap.json.schema.SchemaPath.rightTrimItems;
 
@@ -49,38 +49,51 @@ import static oap.json.schema.SchemaPath.rightTrimItems;
  */
 @Slf4j
 public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchemaAST> {
+   private Result<List<Dictionary>, List<String>> validate( JsonValidatorProperties properties, Optional<DictionarySchemaAST> schemaOpt, List<Dictionary> dictionaries ) {
+      if(!schemaOpt.isPresent()) return Result.success( dictionaries );
+
+      final DictionarySchemaAST schema = schemaOpt.get();
+
+      final Result<List<Dictionary>, List<String>> cd = validate( properties, schema.parent, dictionaries );
+
+      if( !cd.isSuccess() ) return cd;
+
+      List<Object> parentValues = new JsonPath( rightTrimItems( schema.path ), properties.path )
+         .traverse( properties.rootJson );
+
+      if( parentValues.isEmpty() )
+         return Result.failure( Lists.of( properties.error( "required property is missing" ) ) );
+
+      final ArrayList<Dictionary> cDict = new ArrayList<>();
+
+      for( Object parentValue : parentValues ) {
+         List<DictionaryLeaf> children = cd.successValue
+            .stream()
+            .map( d -> d.getValue( parentValue.toString() ) )
+            .filter( Optional::isPresent )
+            .map( Optional::get ).collect( toList() );
+         if( children.isEmpty() )
+            return Result.failure( Lists.of(
+               properties.error( "instance does not match any member resolve the enumeration " + printIds( cd.successValue ) )
+            ) );
+
+         cDict.addAll( children );
+      }
+
+      return Result.success( cDict );
+   }
+
    @Override
    public List<String> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
       try {
          List<Dictionary> dictionaries = Lists.of( Dictionaries.getCachedDictionary( schema.name ) );
 
-         if( schema.parent.isPresent() ) {
-            List<Object> parentValues = new JsonPath( rightTrimItems( schema.parent.get().path ), properties.path )
-               .traverse( properties.rootJson );
+         final Result<List<Dictionary>, List<String>> result = validate( properties, schema.parent, dictionaries );
 
-            if( parentValues.isEmpty() )
-               return Lists.of( properties.error( "required property is missing" ) );
+         if( !result.isSuccess() ) return result.failureValue;
 
-            final ArrayList<Dictionary> cDict = new ArrayList<>();
-
-            for( Object parentValue : parentValues ) {
-               List<DictionaryLeaf> children = dictionaries
-                  .stream()
-                  .map( d -> d.getValue( parentValue.toString() ) )
-                  .filter( Optional::isPresent )
-                  .map( Optional::get ).collect( toList() );
-               if( children.isEmpty() )
-                  return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + printIds( dictionaries ) ) );
-
-               cDict.addAll( children );
-            }
-
-
-            dictionaries = cDict;
-         }
-
-         if( !dictionaries.stream().filter( d -> d.containsValueWithId( String.valueOf( value ) ) ).findAny().isPresent() )
-            return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + printIds( dictionaries ) ) );
+         if( !result.successValue.stream().filter( d -> d.containsValueWithId( String.valueOf( value ) ) ).findAny().isPresent() )
+            return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + printIds( result.successValue ) ) );
 
          return Lists.empty();
       } catch( DictionaryNotFoundError e ) {

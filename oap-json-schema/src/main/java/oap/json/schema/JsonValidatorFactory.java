@@ -29,7 +29,6 @@ import lombok.val;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.util.Lists;
-import oap.util.Result;
 
 import java.net.URL;
 import java.util.HashMap;
@@ -66,7 +65,7 @@ public class JsonValidatorFactory {
          null, "",
          JsonValidatorFactory::parse,
          ( rp, url ) -> parse( storage.get( url ), storage, rp ),
-         "", "", new HashMap<>() );
+         "", "", new HashMap<>(), new HashMap<>() );
 
       this.schema = parse( schema, context ).unwrap( context );
    }
@@ -112,7 +111,7 @@ public class JsonValidatorFactory {
          null, "",
          JsonValidatorFactory::parse,
          ( rp, url ) -> parse( storage.get( url ), storage, rp ),
-         rootPath, "", new HashMap<>() );
+         rootPath, "", new HashMap<>(), new HashMap<>() );
       return parse( schema, context );
    }
 

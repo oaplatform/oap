@@ -33,8 +33,6 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
-   public abstract List<String> validate( JsonValidatorProperties properties, A schema, Object value );
-
    public static String getType( Object object ) {
       if( object instanceof Boolean ) return "boolean";
       else if( object instanceof String ) return "string";
@@ -51,8 +49,6 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
          ", which is none resolve the allowed primitive types ([" + schema.common.schemaType + "])" ) );
    }
 
-   public abstract SchemaASTWrapper<A, ? extends SchemaASTWrapper> parse( JsonSchemaParserContext context );
-
    public static DefaultSchemaASTWrapper defaultParse( JsonSchemaParserContext context ) {
       final DefaultSchemaASTWrapper wrapper = new DefaultSchemaASTWrapper( context.getId() );
       wrapper.common = node( context ).asCommon();
@@ -63,6 +59,10 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
    public static NodeParser node( JsonSchemaParserContext context ) {
       return new NodeParser( context );
    }
+
+   public abstract List<String> validate( JsonValidatorProperties properties, A schema, Object value );
+
+   public abstract SchemaASTWrapper<A, ? extends SchemaASTWrapper> parse( JsonSchemaParserContext context );
 
    public static class PropertyParser<A> {
       private final Optional<A> value;
@@ -118,7 +118,9 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
          return new PropertyParser<>(
             Optional.ofNullable( context.node.get( property ) ).map( n -> {
                final JsonSchemaParserContext newContext = context.withNode( property, n );
-               return newContext.ast.computeIfAbsent( newContext.getId(), ( id ) -> context.mapParser.apply( newContext ) );
+               final SchemaASTWrapper aw = context.mapParser.apply( newContext );
+               newContext.astW.computeIfAbsent( aw.id, ( key ) -> aw );
+               return aw;
             } ) );
       }
 
@@ -158,7 +160,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
             m -> m.forEach( ( okey, value ) -> {
                final String key = ( String ) okey;
                final JsonSchemaParserContext newContext = context.withNode( key, value );
-               final SchemaASTWrapper astw = newContext.ast.computeIfAbsent( newContext.getId(), ( id ) -> context.mapParser.apply( newContext ) );
+               final SchemaASTWrapper astw = newContext.astW.computeIfAbsent( newContext.getId(), ( id ) -> context.mapParser.apply( newContext ) );
                p.put( key, astw );
             } )
          );

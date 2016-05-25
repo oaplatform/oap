@@ -24,9 +24,17 @@
 
 package oap.json.schema._object;
 
-import oap.json.schema.*;
+import oap.json.schema.ContainerSchemaASTWrapper;
+import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.SchemaAST;
+import oap.json.schema.SchemaASTWrapper;
+import oap.json.schema.SchemaId;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class ObjectSchemaASTWrapper
    extends SchemaASTWrapper<ObjectSchemaAST, ObjectSchemaASTWrapper>
@@ -44,7 +52,7 @@ public class ObjectSchemaASTWrapper
    @Override
    public ObjectSchemaAST unwrap( JsonSchemaParserContext context ) {
       final LinkedHashMap<String, SchemaAST> p = new LinkedHashMap<>();
-      declaredProperties.forEach( ( key, value ) -> p.put( key, value.unwrap( context ) ) );
+      declaredProperties.forEach( ( key, value ) -> p.put( key, context.computeIfAbsent( value.id, () -> value.unwrap( context ) ) ) );
 
       final ObjectSchemaAST objectSchemaAST = new ObjectSchemaAST( common, additionalProperties, extendsValue, p, id.toString() );
       return extendsSchema.map( es -> objectSchemaAST.merge( es.unwrap( context ) ) ).orElse( objectSchemaAST );

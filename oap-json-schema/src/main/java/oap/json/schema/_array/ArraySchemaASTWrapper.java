@@ -26,6 +26,7 @@ package oap.json.schema._array;
 
 import oap.json.schema.ContainerSchemaASTWrapper;
 import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.SchemaAST;
 import oap.json.schema.SchemaASTWrapper;
 import oap.json.schema.SchemaId;
 
@@ -51,7 +52,7 @@ public class ArraySchemaASTWrapper
 
    @Override
    public ArraySchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new ArraySchemaAST( common, minItems, maxItems, idField, items.unwrap( context ), id.toString() );
+      return new ArraySchemaAST( common, minItems, maxItems, idField, context.computeIfAbsent( items.id, () -> items.unwrap( context ) ), id.toString() );
    }
 
    @Override

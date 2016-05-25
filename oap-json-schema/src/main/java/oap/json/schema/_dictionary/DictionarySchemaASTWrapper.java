@@ -46,7 +46,10 @@ public class DictionarySchemaASTWrapper extends SchemaASTWrapper<DictionarySchem
    @Override
    public DictionarySchemaAST unwrap( JsonSchemaParserContext context ) {
       return new DictionarySchemaAST(
-         common, getName( context ), parent.map( p -> getParent( context, p ).unwrap( context ) ), id.toString()
+         common, getName( context ), parent.map( p -> {
+         final DictionarySchemaASTWrapper parent = getParent( context, p );
+         return context.computeIfAbsent( parent.id, () -> parent.unwrap( context ) );
+      } ), id.toString()
       );
    }
 
