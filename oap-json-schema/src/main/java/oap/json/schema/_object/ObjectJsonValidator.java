@@ -26,6 +26,7 @@ package oap.json.schema._object;
 import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
+import oap.json.schema.SchemaPath;
 import oap.util.Stream;
 
 import java.util.ArrayList;
@@ -68,7 +69,7 @@ public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
       wrapper.extendsValue = node( context ).asString( "extends" ).optional();
 
       wrapper.extendsSchema = wrapper.extendsValue
-         .map( url -> ( ( ObjectSchemaASTWrapper ) context.urlParser.apply( context.path, url ) ) );
+         .map( url -> ( ( ObjectSchemaASTWrapper ) context.urlParser.apply( SchemaPath.resolve( context.rootPath, context.path ), url ) ) );
 
       wrapper.declaredProperties = node( context ).asMapAST( "properties", context ).required();
 

@@ -127,4 +127,59 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
 
       assertFailure( schema, "{'p':{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}}", "/p/a/1/child: instance does not match any member resolve the enumeration [c21, c22, c23]", url -> schema2 );
    }
+
+   @Test
+   public void testExtendsHierarchicalArray2() {
+      String schema = "{" +
+         "type: object," +
+         "properties: {" +
+         "  p: {" +
+         "    type: object," +
+         "    extends: \"schema2\"," +
+         "    properties: {}" +
+         "  }" +
+         "}" +
+         "}";
+
+      String schema2 = "{" +
+         "type: object," +
+         "properties: {" +
+         "  p2: {" +
+         "    type: object," +
+         "    extends: \"schema3\"," +
+         "    properties: {}" +
+         "  }" +
+         "}" +
+         "}";
+
+      String schema3 = "{type: object, properties: {" +
+         "a:{" +
+         "  type: array," +
+         "  items: {" +
+         "    type: object," +
+         "    properties: {" +
+         "      parent: {type: dictionary, name: dict-h}, " +
+         "      child: {type: dictionary, parent: {json-path: a.items.parent}}" +
+         "    }" +
+         "  }" +
+         "}" +
+         "}}";
+
+      final SchemaStorage schemaF = ( url ) -> {
+         switch( url ) {
+            case "schema2":
+               return schema2;
+            case "schema3":
+               return schema3;
+            default:
+               throw new IllegalArgumentException( url );
+         }
+      };
+
+      assertOk( schema, "{'p':{'p2':{'a':[{'parent': 'p1'}]}}}", schemaF, false );
+      assertOk( schema, "{'p':{'p2':{'a':[{'parent': 'p2'}]}}}", schemaF, false );
+      assertOk( schema, "{'p':{'p2':{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p1', 'child':'c12'}]}}}", schemaF, false );
+
+      assertFailure( schema, "{'p':{'p2':{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}}}", "/p/p2/a/1/child: instance does not match any member resolve the enumeration [c21, c22, c23]", schemaF );
+   }
 }
