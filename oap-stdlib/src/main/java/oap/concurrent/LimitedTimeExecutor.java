@@ -31,8 +31,8 @@ import java.util.function.Supplier;
 
 public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor> {
    private final ExecutorService executor;
-   private final long timeout;
-   private final TimeUnit unit;
+   public final long timeout;
+   public final TimeUnit unit;
 
    public LimitedTimeExecutor() {
       this( Long.MAX_VALUE, TimeUnit.MILLISECONDS );
