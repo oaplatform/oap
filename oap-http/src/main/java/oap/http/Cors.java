@@ -29,13 +29,15 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 public class Cors {
-    public static final Cors DEFAULT = new Cors();
-    public String allowOrigin = "*";
-    public String allowHeaders = "Content-type";
-    public boolean autoOptions = true;
+   public static final Cors DEFAULT = new Cors();
+   public String allowOrigin = "*";
+   public String allowHeaders = "Content-type";
+   public boolean allowCredentials = true;
+   public boolean autoOptions = true;
 
-    void setHeaders( org.apache.http.HttpResponse response ) {
-        response.setHeader( "Access-Control-Allow-Origin", allowOrigin );
-        response.setHeader( "Access-Control-Allow-Headers", allowHeaders );
-    }
+   void setHeaders( org.apache.http.HttpResponse response ) {
+      response.setHeader( "Access-Control-Allow-Origin", allowOrigin );
+      response.setHeader( "Access-Control-Allow-Headers", allowHeaders );
+      response.setHeader( "Access-Control-Allow-Credentials", String.valueOf( allowCredentials ) );
+   }
 }
