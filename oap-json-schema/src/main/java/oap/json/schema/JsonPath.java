@@ -27,7 +27,11 @@ package oap.json.schema;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Collections.singletonList;
 
@@ -72,23 +76,22 @@ public class JsonPath {
          } else if( last instanceof List<?> ) {
             final List<?> list = ( List<?> ) last;
 
-            final ArrayList<Object> result = new ArrayList<>();
-
             if( fromField.isPresent() ) {
                final String arrayIndexStr = fromPath.get()[fi];
                if( !NumberUtils.isDigits( arrayIndexStr ) ) return Optional.empty();
                int arrayIndex = Integer.parseInt( arrayIndexStr );
 
-               final Optional<Object> value = traverse( list.get( arrayIndex ), i + 1, fi );
-               value.ifPresent( result::add );
+               final Optional<Object> value = traverse( list.get( arrayIndex ), i + 1, fi + 1 );
+               if(value.isPresent()) last = value.get();
             } else {
+               final ArrayList<Object> result = new ArrayList<>();
+
                for( Object item : list ) {
                   final Optional<Object> value = traverse( item, i, fi );
                   value.ifPresent( result::add );
                }
+               last = result;
             }
-
-            last = result;
 
             i = path.length;
          } else return Optional.empty();
