@@ -24,7 +24,11 @@
 
 package oap.json.schema._dictionary;
 
-import oap.json.schema.*;
+import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.SchemaASTWrapper;
+import oap.json.schema.SchemaId;
+import oap.json.schema.SchemaWrapperPath;
+import oap.json.schema.ValidationSyntaxException;
 
 import java.util.Optional;
 

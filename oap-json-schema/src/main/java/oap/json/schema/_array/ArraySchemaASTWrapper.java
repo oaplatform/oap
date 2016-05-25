@@ -40,7 +40,7 @@ public class ArraySchemaASTWrapper
    extends SchemaASTWrapper<ArraySchemaAST, ArraySchemaASTWrapper>
    implements ContainerSchemaASTWrapper {
 
-   SchemaASTWrapper items;
+   public SchemaASTWrapper items;
    Optional<Integer> minItems;
    Optional<Integer> maxItems;
    Optional<String> idField;

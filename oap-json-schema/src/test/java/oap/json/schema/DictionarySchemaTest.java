@@ -96,6 +96,29 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
    }
 
    @Test
+   public void testHierarchicalArray2() {
+      String schema = "{type: object, properties: {" +
+         "a:{" +
+         "  type: object," +
+         "  properties: {" +
+         "    parent: {" +
+         "      type: array," +
+         "      items: {type: dictionary, name: dict-h}" +
+         "    }," +
+         "    child: {" +
+         "      type: array," +
+         "      items: {type: dictionary, parent: {json-path: a.parent.items}}" +
+         "    }" +
+         "  }" +
+         "}" +
+         "}}";
+
+      assertOk( schema, "{'a':{'parent': ['p1']}}" );
+      assertOk( schema, "{'a':{'parent': ['p2']}}" );
+      assertOk( schema, "{'a':{'parent': ['p1','p2'], 'child':['c21', 'c12']}}" );
+   }
+
+   @Test
    public void testExtendsHierarchicalArray() {
       String schema = "{" +
          "type: object," +

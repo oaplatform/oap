@@ -29,15 +29,20 @@ import oap.dictionary.Dictionaries;
 import oap.dictionary.Dictionary;
 import oap.dictionary.DictionaryLeaf;
 import oap.dictionary.DictionaryNotFoundError;
-import oap.json.schema.*;
 import oap.json.schema.JsonPath;
 import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
+import oap.json.schema.SchemaPath;
 import oap.util.Lists;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static oap.json.schema.SchemaPath.rightTrimItems;
 
 /**
  * Created by Igor Petrenko on 12.04.2016.
@@ -47,30 +52,49 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
    @Override
    public List<String> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
       try {
-         Dictionary dictionary = Dictionaries.getCachedDictionary( schema.name );
+         List<Dictionary> dictionaries = Lists.of( Dictionaries.getCachedDictionary( schema.name ) );
 
          if( schema.parent.isPresent() ) {
-            Optional<Object> parentValue = Lists.headOpt(
-               new JsonPath( schema.parent.get().path, properties.path )
-                  .traverse( properties.rootJson )
-            );
-            if( !parentValue.isPresent() )
+            List<Object> parentValues = new JsonPath( rightTrimItems( schema.parent.get().path ), properties.path )
+               .traverse( properties.rootJson );
+
+            if( parentValues.isEmpty() )
                return Lists.of( properties.error( "required property is missing" ) );
 
-            Optional<DictionaryLeaf> child = dictionary.getValue( parentValue.get().toString() );
-            if( !child.isPresent() )
-               return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + dictionary.ids() ) );
+            final ArrayList<Dictionary> cDict = new ArrayList<>();
 
-            dictionary = child.get();
+            for( Object parentValue : parentValues ) {
+               List<DictionaryLeaf> children = dictionaries
+                  .stream()
+                  .map( d -> d.getValue( parentValue.toString() ) )
+                  .filter( Optional::isPresent )
+                  .map( Optional::get ).collect( toList() );
+               if( children.isEmpty() )
+                  return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + printIds( dictionaries ) ) );
+
+               cDict.addAll( children );
+            }
+
+
+            dictionaries = cDict;
          }
 
-         if( !dictionary.containsValueWithId( String.valueOf( value ) ) )
-            return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + dictionary.ids() ) );
+         if( !dictionaries.stream().filter( d -> d.containsValueWithId( String.valueOf( value ) ) ).findAny().isPresent() )
+            return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + printIds( dictionaries ) ) );
 
          return Lists.empty();
       } catch( DictionaryNotFoundError e ) {
          return Lists.of( properties.error( "dictionary not found" ) );
       }
+   }
+
+   private String printIds( List<Dictionary> dictionaries ) {
+      return dictionaries
+         .stream()
+         .flatMap( d -> d.ids().stream() )
+         .distinct()
+         .collect( toList() )
+         .toString();
    }
 
    @Override
@@ -80,7 +104,7 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
       wrapper.common = node( context ).asCommon();
       wrapper.name = node( context ).asString( "name" ).optional();
       wrapper.parent = node( context ).asMap( "parent" ).optional()
-         .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ).map( jp -> SchemaPath.resolve( context.rootPath, jp )) );
+         .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ).map( jp -> SchemaPath.resolve( context.rootPath, jp ) ) );
 
       return wrapper;
    }

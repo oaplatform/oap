@@ -43,4 +43,8 @@ public final class SchemaPath {
 
       return res;
    }
+
+   public static String rightTrimItems( String path ) {
+      return path.endsWith( ".items" ) ? path.substring( 0, path.length() - ".items".length() ) : path;
+   }
 }
