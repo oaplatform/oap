@@ -30,7 +30,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class JsonSchemaParserContext {
-   public static final SchemaId ROOT_ID = new SchemaId( "", "" );
+   public static final SchemaId ROOT_ID = new SchemaId( "", "", "" );
    public final Map<?, ?> node;
    public final String schemaType;
    public final Function<JsonSchemaParserContext, SchemaASTWrapper> mapParser;
@@ -39,8 +39,10 @@ public class JsonSchemaParserContext {
    public final String path;
    public final HashMap<SchemaId, SchemaASTWrapper> astW;
    public final HashMap<SchemaId, SchemaAST> ast;
+   private final String schemaName;
 
    public JsonSchemaParserContext(
+      String schemaName,
       Map<?, ?> node,
       String schemaType,
       Function<JsonSchemaParserContext, SchemaASTWrapper> mapParser,
@@ -49,6 +51,7 @@ public class JsonSchemaParserContext {
       HashMap<SchemaId, SchemaASTWrapper> astW,
       HashMap<SchemaId, SchemaAST> ast
    ) {
+      this.schemaName = schemaName;
       this.node = node;
       this.schemaType = schemaType;
       this.mapParser = mapParser;
@@ -67,7 +70,7 @@ public class JsonSchemaParserContext {
       Object schemaType = map.get( "type" );
 
       if( schemaType instanceof String ) {
-         return new JsonSchemaParserContext( map, ( String ) schemaType, mapParser, urlParser,
+         return new JsonSchemaParserContext( schemaName, map, ( String ) schemaType, mapParser, urlParser,
             rootPath,
             SchemaPath.resolve( path, field ),
             astW, ast );
@@ -85,7 +88,7 @@ public class JsonSchemaParserContext {
    }
 
    public SchemaId getId() {
-      return new SchemaId( rootPath, path );
+      return new SchemaId( schemaName, rootPath, path );
    }
 
    public SchemaASTWrapper getRoot() {

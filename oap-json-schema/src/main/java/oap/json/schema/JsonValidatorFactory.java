@@ -62,9 +62,9 @@ public class JsonValidatorFactory {
 
    private JsonValidatorFactory( String schema, SchemaStorage storage ) {
       final JsonSchemaParserContext context = new JsonSchemaParserContext(
-         null, "",
+         "", null, "",
          JsonValidatorFactory::parse,
-         ( rp, url ) -> parse( storage.get( url ), storage, rp ),
+         ( rp, url ) -> parse( url, storage.get( url ), storage, rp ),
          "", "", new HashMap<>(), new HashMap<>() );
 
       this.schema = parse( schema, context ).unwrap( context );
@@ -103,14 +103,15 @@ public class JsonValidatorFactory {
    }
 
    static SchemaASTWrapper parse( String schema, SchemaStorage storage ) {
-      return parse( schema, storage, "" );
+      return parse( "", schema, storage, "" );
    }
 
-   static SchemaASTWrapper parse( String schema, SchemaStorage storage, String rootPath ) {
+   static SchemaASTWrapper parse( String schemaName, String schema, SchemaStorage storage, String rootPath ) {
       final JsonSchemaParserContext context = new JsonSchemaParserContext(
+         schemaName,
          null, "",
          JsonValidatorFactory::parse,
-         ( rp, url ) -> parse( storage.get( url ), storage, rp ),
+         ( rp, url ) -> parse( url, storage.get( url ), storage, rp ),
          rootPath, "", new HashMap<>(), new HashMap<>() );
       return parse( schema, context );
    }
