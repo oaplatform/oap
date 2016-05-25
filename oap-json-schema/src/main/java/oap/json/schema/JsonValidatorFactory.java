@@ -94,7 +94,7 @@ public class JsonValidatorFactory {
          List<String> errors = jsonSchemaValidator.validate( properties, schema, value );
          schema.common.enumValue
             .filter( e -> !e.apply( properties.rootJson ).contains( value ) )
-            .ifPresent( e -> errors.add( properties.error( "instance does not match any member of the enumeration " + e.apply( properties.rootJson ) ) ) );
+            .ifPresent( e -> errors.add( properties.error( "instance does not match any member resolve the enumeration " + e.apply( properties.rootJson ) ) ) );
          return errors;
       }
    }

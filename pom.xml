@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>1.16.1</version>
+    <version>1.16.2</version>
 
     <name>oap</name>
 
@@ -42,7 +42,7 @@
         <module>oap-metrics</module>
         <module>oap-json</module>
         <module>oap-dictionary</module>
-        <module>oap-dictionary-maven</module>
+        <module>maven</module>
         <module>oap-json-schema</module>
         <module>oap-cli</module>
         <module>oap-http</module>
@@ -52,7 +52,6 @@
         <module>oap-storage</module>
         <module>oap-etl</module>
         <module>oap-logstream</module>
-        <module>oap-maven</module>
         <module>oap-ws-cat</module>
         <module>oap-alert</module>
         <module>oap-alert-slack</module>

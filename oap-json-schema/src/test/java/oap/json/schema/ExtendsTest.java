@@ -49,7 +49,7 @@ public class ExtendsTest extends AbstractSchemaTest {
 
       assertOk( schema, "{'a': 'test'}", ( url ) -> schema2, false );
       assertFailure( schema, "{'a': 1}",
-         "/a: instance is of type number, which is none of the allowed primitive types ([string])",
+         "/a: instance is resolve type number, which is none resolve the allowed primitive types ([string])",
          ( url ) -> schema2
       );
    }

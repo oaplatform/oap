@@ -35,7 +35,7 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
       assertOk( schema, "'test1'" );
       assertOk( schema, "'test2'" );
 
-      assertFailure( schema, "'test4'", "instance does not match any member of the enumeration [test1, test2, test3]" );
+      assertFailure( schema, "'test4'", "instance does not match any member resolve the enumeration [test1, test2, test3]" );
    }
 
    @Test
@@ -58,7 +58,7 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
       assertOk( schema, "{'parent': 'p1', 'child':'c12'}" );
       assertOk( schema, "{'parent': 'p2', 'child':'c21'}" );
 
-      assertFailure( schema, "{'parent': 'p1', 'child':'oops'}", "/child: instance does not match any member of the enumeration [c11, c12]" );
+      assertFailure( schema, "{'parent': 'p1', 'child':'oops'}", "/child: instance does not match any member resolve the enumeration [c11, c12]" );
    }
 
    @Test
@@ -92,7 +92,7 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
       assertOk( schema, "{'a':[{'parent': 'p2'}]}" );
       assertOk( schema, "{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p1', 'child':'c12'}]}" );
 
-      assertFailure( schema, "{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}", "/a/1/child: instance does not match any member of the enumeration [c21, c22, c23]" );
+      assertFailure( schema, "{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}", "/a/1/child: instance does not match any member resolve the enumeration [c21, c22, c23]" );
    }
 
    @Test
@@ -115,7 +115,7 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
          "    type: object," +
          "    properties: {" +
          "      parent: {type: dictionary, name: dict-h}, " +
-         "      child: {type: dictionary, parent: {json-path: p.a.items.parent}}" +
+         "      child: {type: dictionary, parent: {json-path: a.items.parent}}" +
          "    }" +
          "  }" +
          "}" +
@@ -125,6 +125,6 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
       assertOk( schema, "{'p':{'a':[{'parent': 'p2'}]}}", url -> schema2, false );
       assertOk( schema, "{'p':{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p1', 'child':'c12'}]}}", url -> schema2, false );
 
-      assertFailure( schema, "{'p':{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}}", "/p/a/1/child: instance does not match any member of the enumeration [c21, c22, c23]", url -> schema2 );
+      assertFailure( schema, "{'p':{'a':[{'parent': 'p1', 'child':'c11'},{'parent': 'p2', 'child':'c12'}]}}", "/p/a/1/child: instance does not match any member resolve the enumeration [c21, c22, c23]", url -> schema2 );
    }
 }

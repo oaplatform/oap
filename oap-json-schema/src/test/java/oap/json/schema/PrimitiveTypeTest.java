@@ -34,11 +34,11 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
         assertOk( schema, "false" );
         assertOk( schema, "null" );
         assertFailure( schema, "\"1\"",
-            "instance is of type string, which is none of the allowed primitive types ([boolean])" );
+            "instance is resolve type string, which is none resolve the allowed primitive types ([boolean])" );
         assertFailure( schema, "{}",
-            "instance is of type object, which is none of the allowed primitive types ([boolean])" );
+            "instance is resolve type object, which is none resolve the allowed primitive types ([boolean])" );
         assertFailure( schema, "\"true\"",
-            "instance is of type string, which is none of the allowed primitive types ([boolean])" );
+            "instance is resolve type string, which is none resolve the allowed primitive types ([boolean])" );
     }
 
     @Test
@@ -48,9 +48,9 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
         assertOk( schema, "\"test\"" );
         assertOk( schema, "null" );
         assertFailure( schema, "1",
-            "instance is of type number, which is none of the allowed primitive types ([string])" );
+            "instance is resolve type number, which is none resolve the allowed primitive types ([string])" );
         assertFailure( schema, "{}",
-            "instance is of type object, which is none of the allowed primitive types ([string])" );
+            "instance is resolve type object, which is none resolve the allowed primitive types ([string])" );
     }
 
     @Test
@@ -88,6 +88,6 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
         assertFailure( schema, "\"2016-01-01TT00:00:00\"",
             "Invalid format: \"2016-01-01TT00:00:00\" is malformed at \"T00:00:00\"" );
         assertFailure( schema, "{}",
-            "instance is of type object, which is none of the allowed primitive types ([date])" );
+            "instance is resolve type object, which is none resolve the allowed primitive types ([date])" );
     }
 }

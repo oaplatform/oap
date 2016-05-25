@@ -25,9 +25,6 @@
 package oap.json.schema;
 
 import lombok.EqualsAndHashCode;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Arrays;
 
 /**
  * Created by Igor Petrenko on 29.04.2016.
@@ -35,15 +32,15 @@ import java.util.Arrays;
 @EqualsAndHashCode
 public class SchemaId {
    private final String rootPath;
-   private final String[] id;
+   private final String id;
 
    public SchemaId( String rootPath, String path ) {
       this.rootPath = rootPath;
-      id = StringUtils.split( SchemaPath.of(rootPath, path), '.' );
+      id = SchemaPath.resolve( rootPath, path );
    }
 
    @Override
    public String toString() {
-      return String.join( ".", id );
+      return id;
    }
 }

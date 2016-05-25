@@ -28,11 +28,19 @@ package oap.json.schema;
  * Created by Admin on 24.05.2016.
  */
 public final class SchemaPath {
-   public static String of( String path1, String path2 ) {
-      if( path1.isEmpty() && path2.isEmpty() ) return "";
-      if( path1.isEmpty() ) return path2;
-      if( path2.isEmpty() ) return path1;
+   public static String resolve( String path1, String... paths ) {
+      if( paths.length == 0 ) return path1;
 
-      return path1 + "." + path2;
+      String res = path1;
+
+      for( String p : paths ) {
+         if( res.isEmpty() && p.isEmpty() ) continue;
+         if( p.isEmpty() ) continue;
+
+         if( res.isEmpty() ) res = p;
+         else res += "." + p;
+      }
+
+      return res;
    }
 }

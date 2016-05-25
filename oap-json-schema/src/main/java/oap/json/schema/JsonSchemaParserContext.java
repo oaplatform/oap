@@ -64,7 +64,7 @@ public class JsonSchemaParserContext {
       if( schemaType instanceof String ) {
          return new JsonSchemaParserContext( map, ( String ) schemaType, mapParser, urlParser,
             rootPath,
-            SchemaPath.of( path, field ),
+            SchemaPath.resolve( path, field ),
             ast );
       } else {
          throw new UnknownTypeValidationSyntaxException(

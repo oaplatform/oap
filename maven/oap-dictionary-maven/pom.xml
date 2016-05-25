@@ -26,41 +26,24 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
-    <name>oap-alert-slack</name>
-    <artifactId>oap-alert-slack</artifactId>
+    <name>oap-dictionary-maven-plugin</name>
+    <artifactId>oap-dictionary-maven-plugin</artifactId>
+
+    <packaging>maven-plugin</packaging>
 
     <parent>
         <groupId>oap</groupId>
-        <artifactId>oap</artifactId>
+        <artifactId>oap-maven-plugin</artifactId>
         <version>1.16.2</version>
     </parent>
-
 
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-alert</artifactId>
+            <artifactId>oap-dictionary</artifactId>
             <version>${project.parent.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.github.flowctrl</groupId>
-            <artifactId>slack-api</artifactId>
-            <version>v1.1.0.RELEASE</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>

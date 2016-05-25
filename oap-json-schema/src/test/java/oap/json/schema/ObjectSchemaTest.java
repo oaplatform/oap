@@ -33,7 +33,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
       assertOk( schema, "{}" );
       assertOk( schema, "null" );
       assertFailure( schema, "[]",
-         "instance is of type array, which is none of the allowed primitive types ([object])" );
+         "instance is resolve type array, which is none resolve the allowed primitive types ([object])" );
    }
 
    @Test
@@ -43,7 +43,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
       assertOk( schema, "{}" );
       assertOk( schema, "{'a': 'test'}" );
       assertFailure( schema, "{'a': 10}",
-         "/a: instance is of type number, which is none of the allowed primitive types ([string])" );
+         "/a: instance is resolve type number, which is none resolve the allowed primitive types ([string])" );
    }
 
    @Test
@@ -65,7 +65,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
       assertOk( schema, "{}" );
       assertOk( schema, "{'a': {'a': 'test'}}" );
       assertFailure( schema, "{'a': {'a': true}}",
-         "/a/a: instance is of type boolean, which is none of the allowed primitive types ([string])" );
+         "/a/a: instance is resolve type boolean, which is none resolve the allowed primitive types ([string])" );
    }
 
    @Test

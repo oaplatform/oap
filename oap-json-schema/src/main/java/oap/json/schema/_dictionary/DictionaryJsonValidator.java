@@ -30,7 +30,6 @@ import oap.dictionary.Dictionary;
 import oap.dictionary.DictionaryLeaf;
 import oap.dictionary.DictionaryNotFoundError;
 import oap.json.schema.*;
-import oap.util.Either;
 import oap.json.schema.JsonPath;
 import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
@@ -60,13 +59,13 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
 
             Optional<DictionaryLeaf> child = dictionary.getValue( parentValue.get().toString() );
             if( !child.isPresent() )
-               return Lists.of( properties.error( "instance does not match any member of the enumeration " + dictionary.ids() ) );
+               return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + dictionary.ids() ) );
 
             dictionary = child.get();
          }
 
          if( !dictionary.containsValueWithId( String.valueOf( value ) ) )
-            return Lists.of( properties.error( "instance does not match any member of the enumeration " + dictionary.ids() ) );
+            return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + dictionary.ids() ) );
 
          return Lists.empty();
       } catch( DictionaryNotFoundError e ) {
@@ -81,7 +80,7 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
       wrapper.common = node( context ).asCommon();
       wrapper.name = node( context ).asString( "name" ).optional();
       wrapper.parent = node( context ).asMap( "parent" ).optional()
-         .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ) );
+         .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ).map( jp -> SchemaPath.resolve( context.rootPath, jp )) );
 
       return wrapper;
    }
