@@ -26,6 +26,7 @@ package oap.ws;
 import com.google.common.annotations.VisibleForTesting;
 import oap.application.Application;
 import oap.http.Cors;
+import oap.http.GenericCors;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
 import oap.http.Protocol;
@@ -50,19 +51,23 @@ public class WebServices {
     private final List<WsConfig> wsConfigs;
     private final HttpServer server;
     private final SessionManager sessionManager;
+    private final Cors globalCors;
 
-    public WebServices( HttpServer server, SessionManager sessionManager ) {
-        this( server, sessionManager, WsConfig.CONFIGURATION.fromClassPath() );
+    public WebServices( HttpServer server, SessionManager sessionManager, Cors globalCors) {
+        this( server, sessionManager, globalCors, WsConfig.CONFIGURATION.fromClassPath() );
     }
 
-    public WebServices( HttpServer server, SessionManager sessionManager, WsConfig... wsConfigs ) {
-        this( server, sessionManager, Lists.of( wsConfigs ) );
+    public WebServices( HttpServer server, SessionManager sessionManager, Cors globalCors, WsConfig... wsConfigs ) {
+        this( server, sessionManager, globalCors, Lists.of( wsConfigs ) );
     }
 
-    public WebServices( HttpServer server, SessionManager sessionManager, List<WsConfig> wsConfigs ) {
+
+
+    public WebServices( HttpServer server, SessionManager sessionManager, Cors globalCors, List<WsConfig> wsConfigs ) {
         this.wsConfigs = wsConfigs;
         this.server = server;
         this.sessionManager = sessionManager;
+        this.globalCors = globalCors;
     }
 
     public void start() {
@@ -75,17 +80,19 @@ public class WebServices {
                 .collect( Collectors.toList() );
 
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
-                final WsConfig.Service value = entry.getValue();
-                final Object service = Application.service( value.service );
+                final WsConfig.Service serviceConfig = entry.getValue();
+                final Object service = Application.service( serviceConfig.service );
 
-                if( service == null ) throw new IllegalStateException( "Unknown service " + value.service );
+                if( service == null ) throw new IllegalStateException( "Unknown service " + serviceConfig.service );
 
-                bind( entry.getKey(), value.cors, service, value.sessionAware,
-                    sessionManager, interceptors, value.protocol );
+                Cors cors = serviceConfig.cors != null ? serviceConfig.cors : globalCors;
+                bind( entry.getKey(), cors, service, serviceConfig.sessionAware,
+                    sessionManager, interceptors, serviceConfig.protocol );
             }
             for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
-                final WsConfig.Service value = entry.getValue();
-                server.bind( entry.getKey(), value.cors, Application.service( value.service ), value.protocol );
+                final WsConfig.Service handlerConfig = entry.getValue();
+                Cors cors = handlerConfig.cors != null ? handlerConfig.cors : globalCors;
+                server.bind( entry.getKey(), cors, Application.service( handlerConfig.service ), handlerConfig.protocol );
             }
         }
     }
@@ -99,7 +106,7 @@ public class WebServices {
 
     @VisibleForTesting
     public void bind( String context, Cors cors, Object impl, boolean sessionAware, SessionManager sessionManager,
-               List<Interceptor> interceptors,Protocol protocol ) {
+                      List<Interceptor> interceptors, Protocol protocol ) {
         server.bind( context, cors, new WsService( impl, sessionAware, sessionManager,interceptors ), protocol );
     }
 

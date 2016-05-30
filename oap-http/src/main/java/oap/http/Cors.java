@@ -21,23 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.http;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
-@EqualsAndHashCode
-@ToString
-public class Cors {
-   public static final Cors DEFAULT = new Cors();
-   public String allowOrigin = "*";
-   public String allowHeaders = "Content-type";
-   public boolean allowCredentials = true;
-   public boolean autoOptions = true;
-
-   void setHeaders( org.apache.http.HttpResponse response ) {
-      response.setHeader( "Access-Control-Allow-Origin", allowOrigin );
-      response.setHeader( "Access-Control-Allow-Headers", allowHeaders );
-      response.setHeader( "Access-Control-Allow-Credentials", String.valueOf( allowCredentials ) );
-   }
+/**
+ * Created by Admin on 30.05.2016.
+ */
+public interface Cors {
+   void setHeaders( org.apache.http.HttpResponse response );
+   boolean isAutoOptions();
 }

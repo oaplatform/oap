@@ -23,12 +23,36 @@
  */
 package oap.http;
 
-import java.net.Socket;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import org.apache.http.HttpResponse;
 
-public interface HttpServer {
-    void bind( String context, Cors cors, Handler handler, Protocol protocol );
+@EqualsAndHashCode
+@ToString
+public class GenericCors implements Cors {
+   public static final GenericCors DEFAULT = new GenericCors();
+   public String allowOrigin = "*";
+   public String allowHeaders = "Content-type, Authorization";
+   public boolean allowCredentials = true;
+   public boolean autoOptions = true;
 
-    void unbind( String context );
+   public boolean isAutoOptions() {
+      return autoOptions;
+   }
 
-    void accepted( Socket socket);
+   public GenericCors() {
+   }
+
+   public GenericCors( String allowOrigin, String allowHeaders, boolean allowCredentials ) {
+      this.allowOrigin = allowOrigin;
+      this.allowHeaders = allowHeaders;
+      this.allowCredentials = allowCredentials;
+   }
+
+   @Override
+   public void setHeaders( HttpResponse response ) {
+      response.setHeader( "Access-Control-Allow-Origin", allowOrigin );
+      response.setHeader( "Access-Control-Allow-Headers", allowHeaders );
+      response.setHeader( "Access-Control-Allow-Credentials", String.valueOf( allowCredentials ) );
+   }
 }

@@ -29,7 +29,7 @@ import oap.application.Application;
 import oap.application.remote.FST;
 import oap.application.remote.RemoteInvocation;
 import oap.application.remote.RemoteInvocationException;
-import oap.http.Cors;
+import oap.http.GenericCors;
 import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
@@ -52,7 +52,7 @@ public class Remote implements Handler {
       }
    };
 
-   private final Cors cors = Cors.DEFAULT;
+   private final GenericCors cors = GenericCors.DEFAULT;
 
    private final HttpServer server;
    private final String context;

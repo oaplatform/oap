@@ -31,7 +31,7 @@ public class SecureHttpListenerTest {
 
    @BeforeClass
    public void setUp() {
-      server.bind( "test", Cors.DEFAULT, ( request, response ) -> {
+      server.bind( "test", GenericCors.DEFAULT, ( request, response ) -> {
 
          System.out.println( "Base URL " + request.baseUrl );
          System.out.println( "Headers:" );

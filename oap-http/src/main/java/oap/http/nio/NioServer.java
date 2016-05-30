@@ -24,6 +24,7 @@
 package oap.http.nio;
 
 import oap.http.Cors;
+import oap.http.GenericCors;
 import oap.http.Handler;
 import oap.http.Protocol;
 import oap.http.Server;

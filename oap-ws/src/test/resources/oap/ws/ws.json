@@ -2,9 +2,6 @@
   "services": {
     "x/v/math": {
       "service": "math",
-      "cors": {
-        "allowOrigin": "*"
-      },
       "protocol": "HTTP"
     }
   },

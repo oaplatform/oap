@@ -27,6 +27,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.application.config.Configuration;
 import oap.http.Cors;
+import oap.http.GenericCors;
 import oap.http.Protocol;
 
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ public class WsConfig {
     @ToString
     public static class Service {
         public String service;
-        public Cors cors = Cors.DEFAULT;
+        public Cors cors = null;
         public Protocol protocol;
         public boolean sessionAware;
     }

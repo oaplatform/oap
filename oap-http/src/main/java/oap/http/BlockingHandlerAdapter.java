@@ -67,7 +67,7 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
         if( Protocol.isLocal( remoteAddress, this.protocol ) ||
             Protocol.doesNotMatch( httpContextProtocol, this.protocol ) ) {
             response.respond( HTTP_FORBIDDEN );
-        } else if( cors.autoOptions && request.httpMethod == Request.HttpMethod.OPTIONS ) {
+        } else if( cors.isAutoOptions() && request.httpMethod == Request.HttpMethod.OPTIONS ) {
             response.respond( NO_CONTENT );
         } else {
             handler.handle( request, response );

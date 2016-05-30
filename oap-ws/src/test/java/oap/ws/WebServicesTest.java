@@ -43,7 +43,7 @@ import static org.testng.Assert.assertEquals;
 public class WebServicesTest {
     private final Server server = new Server( 100 );
     private final WebServices ws = new WebServices( server, new SessionManager( 10, null, "/" ),
-        WsConfig.CONFIGURATION.fromResource( getClass(), "ws.json" ),
+       GenericCors.DEFAULT, WsConfig.CONFIGURATION.fromResource( getClass(), "ws.json" ),
         WsConfig.CONFIGURATION.fromResource( getClass(), "ws.conf" )
     );
 

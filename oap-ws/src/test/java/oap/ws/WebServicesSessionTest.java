@@ -50,7 +50,7 @@ public class WebServicesSessionTest {
     private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
 
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, SESSION_MANAGER );
+    private final WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCors.DEFAULT );
 
     private SynchronizedThread listener;
 
@@ -58,7 +58,7 @@ public class WebServicesSessionTest {
     public void startServer() {
         Metrics.resetAll();
         server.start();
-        ws.bind( "test", Cors.DEFAULT, new TestWS(), true, SESSION_MANAGER, Collections.emptyList(), Protocol.HTTP );
+        ws.bind( "test", GenericCors.DEFAULT, new TestWS(), true, SESSION_MANAGER, Collections.emptyList(), Protocol.HTTP );
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );
         listener = new SynchronizedThread( http );
