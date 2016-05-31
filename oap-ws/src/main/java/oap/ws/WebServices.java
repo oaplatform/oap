@@ -25,8 +25,7 @@ package oap.ws;
 
 import com.google.common.annotations.VisibleForTesting;
 import oap.application.Application;
-import oap.http.Cors;
-import oap.http.GenericCors;
+import oap.http.cors.CorsPolicy;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
 import oap.http.Protocol;
@@ -51,23 +50,23 @@ public class WebServices {
     private final List<WsConfig> wsConfigs;
     private final HttpServer server;
     private final SessionManager sessionManager;
-    private final Cors globalCors;
+    private final CorsPolicy globalCorsPolicy;
 
-    public WebServices( HttpServer server, SessionManager sessionManager, Cors globalCors) {
-        this( server, sessionManager, globalCors, WsConfig.CONFIGURATION.fromClassPath() );
+    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy ) {
+        this( server, sessionManager, globalCorsPolicy, WsConfig.CONFIGURATION.fromClassPath() );
     }
 
-    public WebServices( HttpServer server, SessionManager sessionManager, Cors globalCors, WsConfig... wsConfigs ) {
-        this( server, sessionManager, globalCors, Lists.of( wsConfigs ) );
+    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, WsConfig... wsConfigs ) {
+        this( server, sessionManager, globalCorsPolicy, Lists.of( wsConfigs ) );
     }
 
 
 
-    public WebServices( HttpServer server, SessionManager sessionManager, Cors globalCors, List<WsConfig> wsConfigs ) {
+    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, List<WsConfig> wsConfigs ) {
         this.wsConfigs = wsConfigs;
         this.server = server;
         this.sessionManager = sessionManager;
-        this.globalCors = globalCors;
+        this.globalCorsPolicy = globalCorsPolicy;
     }
 
     public void start() {
@@ -85,14 +84,14 @@ public class WebServices {
 
                 if( service == null ) throw new IllegalStateException( "Unknown service " + serviceConfig.service );
 
-                Cors cors = serviceConfig.cors != null ? serviceConfig.cors : globalCors;
-                bind( entry.getKey(), cors, service, serviceConfig.sessionAware,
+                CorsPolicy corsPolicy = serviceConfig.corsPolicy != null ? serviceConfig.corsPolicy : globalCorsPolicy;
+                bind( entry.getKey(), corsPolicy, service, serviceConfig.sessionAware,
                     sessionManager, interceptors, serviceConfig.protocol );
             }
             for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
                 final WsConfig.Service handlerConfig = entry.getValue();
-                Cors cors = handlerConfig.cors != null ? handlerConfig.cors : globalCors;
-                server.bind( entry.getKey(), cors, Application.service( handlerConfig.service ), handlerConfig.protocol );
+                CorsPolicy corsPolicy = handlerConfig.corsPolicy != null ? handlerConfig.corsPolicy : globalCorsPolicy;
+                server.bind( entry.getKey(), corsPolicy, Application.service( handlerConfig.service ), handlerConfig.protocol );
             }
         }
     }
@@ -105,9 +104,9 @@ public class WebServices {
     }
 
     @VisibleForTesting
-    public void bind( String context, Cors cors, Object impl, boolean sessionAware, SessionManager sessionManager,
+    public void bind( String context, CorsPolicy corsPolicy, Object impl, boolean sessionAware, SessionManager sessionManager,
                       List<Interceptor> interceptors, Protocol protocol ) {
-        server.bind( context, cors, new WsService( impl, sessionAware, sessionManager,interceptors ), protocol );
+        server.bind( context, corsPolicy, new WsService( impl, sessionAware, sessionManager,interceptors ), protocol );
     }
 
 }

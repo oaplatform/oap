@@ -1,6 +1,7 @@
 package oap.http;
 
 import oap.concurrent.SynchronizedThread;
+import oap.http.cors.GenericCorsPolicy;
 import oap.io.IoStreams;
 import oap.testng.Env;
 import org.apache.http.Header;
@@ -31,7 +32,7 @@ public class SecureHttpListenerTest {
 
    @BeforeClass
    public void setUp() {
-      server.bind( "test", GenericCors.DEFAULT, ( request, response ) -> {
+      server.bind( "test", GenericCorsPolicy.DEFAULT, ( request, response ) -> {
 
          System.out.println( "Base URL " + request.baseUrl );
          System.out.println( "Headers:" );

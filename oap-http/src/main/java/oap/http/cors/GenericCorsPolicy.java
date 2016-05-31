@@ -21,38 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.http;
+
+package oap.http.cors;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import org.apache.http.HttpResponse;
+import oap.http.Request;
 
 @EqualsAndHashCode
 @ToString
-public class GenericCors implements Cors {
-   public static final GenericCors DEFAULT = new GenericCors();
+public class GenericCorsPolicy implements CorsPolicy {
+   public static final GenericCorsPolicy DEFAULT = new GenericCorsPolicy();
    public String allowOrigin = "*";
    public String allowHeaders = "Content-type, Authorization";
    public boolean allowCredentials = true;
    public boolean autoOptions = true;
 
-   public boolean isAutoOptions() {
-      return autoOptions;
+   public GenericCorsPolicy() {
    }
 
-   public GenericCors() {
-   }
-
-   public GenericCors( String allowOrigin, String allowHeaders, boolean allowCredentials ) {
+   public GenericCorsPolicy( String allowOrigin, String allowHeaders, boolean allowCredentials ) {
       this.allowOrigin = allowOrigin;
       this.allowHeaders = allowHeaders;
       this.allowCredentials = allowCredentials;
    }
 
    @Override
-   public void setHeaders( HttpResponse response ) {
-      response.setHeader( "Access-Control-Allow-Origin", allowOrigin );
-      response.setHeader( "Access-Control-Allow-Headers", allowHeaders );
-      response.setHeader( "Access-Control-Allow-Credentials", String.valueOf( allowCredentials ) );
+   public RequestCors getCors( Request request ) {
+      return new RequestCors( allowOrigin, allowHeaders, allowCredentials, autoOptions );
    }
 }

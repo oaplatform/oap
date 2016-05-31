@@ -22,12 +22,34 @@
  * SOFTWARE.
  */
 
-package oap.http;
+package oap.http.cors;
 
-/**
- * Created by Admin on 30.05.2016.
- */
-public interface Cors {
-   void setHeaders( org.apache.http.HttpResponse response );
-   boolean isAutoOptions();
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import oap.http.Request;
+
+import java.util.regex.Pattern;
+
+import static oap.http.cors.RequestCors.NO_ORIGIN;
+
+@EqualsAndHashCode
+@ToString
+public class PatternCorsPolicy implements CorsPolicy {
+   public final Pattern domainPattern;
+   public String allowHeaders = "Content-type, Authorization";
+   public boolean allowCredentials = true;
+   public boolean autoOptions = true;
+
+   public PatternCorsPolicy( String domainRegexp, String allowHeaders, boolean allowCredentials ) {
+      domainPattern = Pattern.compile( domainRegexp );
+      this.allowHeaders = allowHeaders;
+      this.allowCredentials = allowCredentials;
+   }
+
+   @Override
+   public RequestCors getCors( Request request ) {
+      String origin = request.header( "Origin" ).orElse( NO_ORIGIN );
+      String allowedOrigin = domainPattern.matcher( origin ).matches() ? origin : NO_ORIGIN;
+      return new RequestCors( allowedOrigin, allowHeaders, allowCredentials, autoOptions );
+   }
 }

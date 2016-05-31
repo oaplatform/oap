@@ -27,6 +27,7 @@ package oap.ws;
 import oap.application.Application;
 import oap.concurrent.SynchronizedThread;
 import oap.http.*;
+import oap.http.cors.GenericCorsPolicy;
 import oap.reflect.Reflection;
 import oap.testng.Env;
 import org.testng.annotations.AfterClass;
@@ -42,7 +43,7 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 public class WebServiceInterceptorsTest {
     private final Server server = new Server( 100 );
     private final WebServices ws = new WebServices( server, new SessionManager( 10, null, "/" ),
-       GenericCors.DEFAULT, WsConfig.CONFIGURATION.fromResource( getClass(), "ws-interceptors.conf" )
+       GenericCorsPolicy.DEFAULT, WsConfig.CONFIGURATION.fromResource( getClass(), "ws-interceptors.conf" )
     );
 
     private SynchronizedThread listener;
