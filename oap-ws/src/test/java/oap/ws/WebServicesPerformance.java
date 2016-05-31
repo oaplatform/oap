@@ -24,7 +24,7 @@
 package oap.ws;
 
 import oap.concurrent.SynchronizedThread;
-import oap.http.GenericCors;
+import oap.http.cors.GenericCorsPolicy;
 import oap.http.PlainHttpListener;
 import oap.http.Protocol;
 import oap.http.Server;
@@ -50,8 +50,8 @@ public class WebServicesPerformance extends AbstractPerformance {
         SynchronizedThread listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
         listener.start();
         try {
-            WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCors.DEFAULT );
-            ws.bind( "x/v/math", GenericCors.DEFAULT, new MathWS(), false, SESSION_MANAGER,
+            WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+            ws.bind( "x/v/math", GenericCorsPolicy.DEFAULT, new MathWS(), false, SESSION_MANAGER,
                 Collections.emptyList(), Protocol.HTTP );
 
             HttpAsserts.reset();
@@ -70,8 +70,8 @@ public class WebServicesPerformance extends AbstractPerformance {
     public void nio_threads() throws Exception {
         NioServer server = new NioServer( Env.port() );
         try {
-            WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCors.DEFAULT );
-            ws.bind( "x/v/math", GenericCors.DEFAULT, new MathWS(), false, SESSION_MANAGER,
+            WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+            ws.bind( "x/v/math", GenericCorsPolicy.DEFAULT, new MathWS(), false, SESSION_MANAGER,
                 Collections.emptyList(), Protocol.HTTP );
             server.start();
             Thread.sleep( 3000 ); // ??? TODO: fix me

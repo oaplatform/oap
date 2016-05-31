@@ -23,8 +23,7 @@
  */
 package oap.http.nio;
 
-import oap.http.Cors;
-import oap.http.GenericCors;
+import oap.http.cors.CorsPolicy;
 import oap.http.Handler;
 import oap.http.Protocol;
 import oap.http.Server;
@@ -65,9 +64,9 @@ public class NioServer implements oap.http.HttpServer {
     }
 
     @Override
-    public void bind( String context, Cors cors, Handler handler, Protocol protocol ) {
+    public void bind( String context, CorsPolicy corsPolicy, Handler handler, Protocol protocol ) {
         String location = "/" + context + "/*";
-        this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler, cors, protocol ) );
+        this.mapper.register( location, new NioHandlerAdapter( "/" + context, handler, corsPolicy, protocol ) );
         logger.info( handler + " bound to " + location );
 
     }

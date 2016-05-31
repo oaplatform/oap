@@ -24,6 +24,8 @@
 package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.http.cors.CorsPolicy;
+import oap.http.cors.RequestCors;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -42,13 +44,13 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     private final Protocol protocol;
     private final String location;
     private final Handler handler;
-    private final Cors cors;
+    private final CorsPolicy corsPolicy;
 
     public BlockingHandlerAdapter( final String location, final Handler handler,
-                                   final Cors cors, final Protocol protocol ) {
+                                   final CorsPolicy corsPolicy, final Protocol protocol ) {
         this.location = location;
         this.handler = handler;
-        this.cors = cors;
+        this.corsPolicy = corsPolicy;
         this.protocol = protocol;
     }
 
@@ -58,16 +60,18 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
         log.trace( "Handling [{}]", httpRequest );
 
         final HttpInetConnection connection = ( HttpInetConnection ) httpContext.getAttribute( HTTP_CONNECTION );
-        final Response response = new Response( httpResponse, cors );
         final InetAddress remoteAddress = connection.getRemoteAddress();
 
         final String httpContextProtocol = httpContext.getAttribute( "protocol" ).toString();
         final Request request = new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) );
 
+        RequestCors cors = corsPolicy.getCors( request );
+        final Response response = new Response( httpResponse, cors );
+
         if( Protocol.isLocal( remoteAddress, this.protocol ) ||
             Protocol.doesNotMatch( httpContextProtocol, this.protocol ) ) {
             response.respond( HTTP_FORBIDDEN );
-        } else if( cors.isAutoOptions() && request.httpMethod == Request.HttpMethod.OPTIONS ) {
+        } else if( cors.autoOptions && request.httpMethod == Request.HttpMethod.OPTIONS ) {
             response.respond( NO_CONTENT );
         } else {
             handler.handle( request, response );

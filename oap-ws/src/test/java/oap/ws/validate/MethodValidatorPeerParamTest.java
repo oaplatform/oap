@@ -24,7 +24,7 @@
 package oap.ws.validate;
 
 import oap.concurrent.SynchronizedThread;
-import oap.http.GenericCors;
+import oap.http.cors.GenericCorsPolicy;
 import oap.http.PlainHttpListener;
 import oap.http.Protocol;
 import oap.http.Server;
@@ -55,7 +55,7 @@ public class MethodValidatorPeerParamTest {
    private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
 
    private final Server server = new Server( 100 );
-   private final WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCors.DEFAULT );
+   private final WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
 
    private SynchronizedThread listener;
 
@@ -63,7 +63,7 @@ public class MethodValidatorPeerParamTest {
    public void startServer() {
       Metrics.resetAll();
       server.start();
-      ws.bind( "test", GenericCors.DEFAULT, new TestWS(), false, SESSION_MANAGER,
+      ws.bind( "test", GenericCorsPolicy.DEFAULT, new TestWS(), false, SESSION_MANAGER,
          Collections.emptyList(), Protocol.HTTP );
 
       PlainHttpListener http = new PlainHttpListener( server, Env.port() );
