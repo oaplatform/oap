@@ -150,6 +150,7 @@ public class Server implements HttpServer {
       log.info( "server gone down" );
    }
 
+   //TODO Fix resolution of local through headers instead of socket inet address
    private static HttpContext createHttpContext( final Socket socket ) {
       final HttpContext httpContext = HttpCoreContext.create();
 
