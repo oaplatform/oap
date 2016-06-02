@@ -25,7 +25,7 @@ package oap.tsv;
 
 import lombok.ToString;
 import lombok.val;
-import oap.util.Stream;
+import oap.util.Strings;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -34,7 +34,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static java.util.stream.Collectors.joining;
 import static oap.tsv.Model.ColumnType.BOOLEAN;
 import static oap.tsv.Model.ColumnType.DOUBLE;
 import static oap.tsv.Model.ColumnType.INT;
@@ -88,9 +87,7 @@ public class Model {
          try {
             result.add( column.apply( line ) );
          } catch( IndexOutOfBoundsException e ) {
-            String lineToPrint = "[" + Stream.of( line ).collect( joining( "|" ) ) + "]";
-            throw new TsvException(
-               "line does not contain a column with index " + column + ": " + lineToPrint, e );
+            throw new TsvException( "line does not contain a column with index " + column + ": " + Strings.join( "|", line, "[", "]" ), e );
          } catch( Exception e ) {
             throw new TsvException( "at column " + column + " " + e, e );
          }
