@@ -22,8 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.etl;
+package oap.etl.accumulator;
 
+import oap.etl.StringExport;
+import oap.etl.Table;
 import oap.io.IoStreams;
 import oap.testng.AbstractPerformance;
 import oap.testng.Env;
@@ -88,22 +90,6 @@ public class AccumulatorPerformance extends AbstractPerformance {
    }
 
    @Test( dataProvider = "count" )
-   public void testSorted( int count ) {
-      benchmark( "accumulator.sorted", SAMPLES, EXPERIMENTS, ( i ) -> {
-         for( int x = 0; x < count; x++ ) {
-            StringExport export = new StringExport();
-
-            Table.fromPaths( Arrays.asList( path1, path2 ),
-               Model.withoutHeader().s( 0, 1, 2 ).i( 3, 4, 5 ) )
-               .sort( new int[]{ 0, 1, 2 } )
-               .sortedStreamGroupBy( new int[]{ 0, 1, 2 }, Accumulator.count(), Accumulator.intSum( 3 ), Accumulator.intSum( 4 ) )
-               .export( export )
-               .compute();
-         }
-      } );
-   }
-
-   @Test( dataProvider = "count" )
    public void testAggregatedByHM( int count ) {
       benchmark( "accumulator.without_sort", SAMPLES, EXPERIMENTS, ( i ) -> {
 
@@ -114,7 +100,8 @@ public class AccumulatorPerformance extends AbstractPerformance {
 
          List<Table> tables = Table.fromPaths( Arrays.asList( path1, path2 ),
             Model.withoutHeader().s( 0, 1, 2 ).i( 3, 4, 5 ) )
-            .groupBy( groups );
+            .groupBy( groups )
+            .getTables();
 
          for( int x = 0; x < count; x++ ) {
             StringExport export = new StringExport();

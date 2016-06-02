@@ -24,157 +24,215 @@
 package oap.tsv;
 
 import lombok.ToString;
+import lombok.val;
 import oap.util.Stream;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.joining;
+import static oap.tsv.Model.ColumnType.BOOLEAN;
+import static oap.tsv.Model.ColumnType.DOUBLE;
+import static oap.tsv.Model.ColumnType.INT;
+import static oap.tsv.Model.ColumnType.LONG;
+import static oap.tsv.Model.ColumnType.STRING;
 
 public class Model {
-    public final boolean withHeader;
-    private Predicate<List<String>> filter;
-    private List<Function<List<String>, Object>> columns = new ArrayList<>();
+   public final boolean withHeader;
+   private Predicate<List<String>> filter;
+   private List<ColumnFunction> columns = new ArrayList<>();
 
-    public Model( boolean withHeader ) {
-        this.withHeader = withHeader;
-    }
+   public Model( boolean withHeader ) {
+      this.withHeader = withHeader;
+   }
 
-    public Model column( Function<String, Object> mapper, int index, int... more ) {
-        this.columns.add( new Column( index, mapper ) );
-        return column( mapper, more );
-    }
+   public static Model withoutHeader() {
+      return new Model( false );
+   }
 
-    public Model column( Object value ) {
-        this.columns.add( new Value( value ) );
-        return this;
-    }
+   public static Model withHeader() {
+      return new Model( true );
+   }
 
-    public Model column( Function<String, Object> mapper, int[] indices ) {
-        for( int i : indices ) this.columns.add( new Column( i, mapper ) );
-        return this;
-    }
+   public static Complex complex( Function<Path, Model> modelBuilder ) {
+      return new Complex( modelBuilder );
+   }
 
-    public List<Object> convert( List<String> line ) {
-        return Stream.of( columns )
-            .map( f -> {
-                try {
-                    return f.apply( line );
-                } catch( IndexOutOfBoundsException e ) {
-                    String lineToPrint = "[" + Stream.of( line ).collect( Collectors.joining( "|" ) ) + "]";
-                    throw new TsvException(
-                        "line does not contain a column with index " + f + ": " + lineToPrint, e );
-                } catch( Exception e ) {
-                    throw new TsvException( "at column " + f + " " + e, e );
-                }
-            } )
-            .toList();
-    }
+   public ColumnFunction getColumn( int index ) {
+      return columns.get( index );
+   }
 
-    public Model s( int[] indices ) {
-        return column( s -> s, indices );
-    }
+   public Model column( ColumnType type, int index, int... more ) {
+      this.columns.add( new Column( index, type ) );
+      return column( type, more );
+   }
 
-    public Model s( int index, int... more ) {
-        return column( s -> s, index, more );
-    }
+   public Model columnValue( ColumnType type, Object value ) {
+      this.columns.add( new Value( value, type ) );
+      return this;
+   }
 
-    public Model i( int index, int... more ) {
-        return column( Integer::parseInt, index, more );
-    }
+   public Model column( ColumnType type, int[] indices ) {
+      for( int i : indices ) this.columns.add( new Column( i, type ) );
+      return this;
+   }
 
-    public Model l( int index, int... more ) {
-        return column( Long::parseLong, index, more );
-    }
+   public List<Object> convert( List<String> line ) {
+      final ArrayList<Object> result = new ArrayList<>( line.size() );
 
-    public Model d( int index, int... more ) {
-        return column( Double::parseDouble, index, more );
-    }
+      for( val column : columns ) {
+         try {
+            result.add( column.apply( line ) );
+         } catch( IndexOutOfBoundsException e ) {
+            String lineToPrint = "[" + Stream.of( line ).collect( joining( "|" ) ) + "]";
+            throw new TsvException(
+               "line does not contain a column with index " + column + ": " + lineToPrint, e );
+         } catch( Exception e ) {
+            throw new TsvException( "at column " + column + " " + e, e );
+         }
+      }
 
-    public Model b( int index, int... more ) {
-        return column( Boolean::parseBoolean, index, more );
-    }
+      return result;
+   }
 
-    public Model v( Object value ) {
-        return column( value );
-    }
+   public Model s( int[] indices ) {
+      return column( STRING, indices );
+   }
 
-    public Model filtered( Predicate<List<String>> filter ) {
-        this.filter = this.filter == null ? filter : this.filter.and( filter );
-        return this;
-    }
+   public Model s( int index, int... more ) {
+      return column( STRING, index, more );
+   }
 
-    public Model filterColumnCount( int count ) {
-        return filtered( l -> l.size() == count );
-    }
+   public Model i( int index, int... more ) {
+      return column( INT, index, more );
+   }
 
-    public int size() {
-        return columns.size();
-    }
+   public Model l( int index, int... more ) {
+      return column( LONG, index, more );
+   }
 
-    public Model join( Model model ) {
-        this.columns.addAll( model.columns );
-        return this;
-    }
+   public Model d( int index, int... more ) {
+      return column( DOUBLE, index, more );
+   }
 
-    public Predicate<? super List<String>> filter() {
-        return this.filter == null ? l -> true : this.filter;
-    }
+   public Model b( int index, int... more ) {
+      return column( BOOLEAN, index, more );
+   }
 
-    public static Model withoutHeader() {
-        return new Model( false );
-    }
-    public static Model withHeader() {
-        return new Model( true );
-    }
+   public Model v( ColumnType type, Object value ) {
+      return columnValue( type, value );
+   }
 
-    public static Complex complex( Function<Path, Model> modelBuilder ) {
-        return new Complex( modelBuilder );
-    }
+   public Model filtered( Predicate<List<String>> filter ) {
+      this.filter = this.filter == null ? filter : this.filter.and( filter );
+      return this;
+   }
 
-    public static class Complex {
-        private Function<Path, Model> modelBuilder;
+   public Model filterColumnCount( int count ) {
+      return filtered( l -> l.size() == count );
+   }
 
-        private Complex( Function<Path, Model> modelBuilder ) {
-            this.modelBuilder = modelBuilder;
-        }
+   public int size() {
+      return columns.size();
+   }
 
-        public Model modelFor( Path path ) {
-            return modelBuilder.apply( path );
-        }
+   public Model join( Model model ) {
+      this.columns.addAll( model.columns );
+      return this;
+   }
 
-    }
+   public Predicate<? super List<String>> filter() {
+      return this.filter == null ? l -> true : this.filter;
+   }
 
-    @ToString( exclude = "mapper" )
-    private static class Column implements Function<List<String>, Object> {
-        Function<String, Object> mapper;
-        int index;
+   public ColumnType getType( int index ) {
+      return getTypeOpt( index ).get();
+   }
 
-        public Column( int index, Function<String, Object> mapper ) {
-            this.index = index;
-            this.mapper = mapper;
-        }
+   public Optional<ColumnType> getTypeOpt( int index ) {
+      for( ColumnFunction f : columns ) {
+         if( !( f instanceof Column ) ) return Optional.empty();
 
-        @Override
-        public Object apply( List<String> line ) {
-            return mapper.apply( line.get( index ) );
-        }
+         if( ( ( Column ) f ).index == index ) return Optional.of( f.type );
+      }
+      return Optional.empty();
+   }
 
-    }
+   public void column( ColumnFunction function ) {
+      columns.add( function );
+   }
 
-    @ToString
-    private static class Value implements Function<List<String>, Object> {
-        Object value;
+   public enum ColumnType {
+      INT, LONG, DOUBLE, BOOLEAN, STRING
+   }
 
-        public Value( Object value ) {
-            this.value = value;
-        }
+   public static class Complex {
+      private Function<Path, Model> modelBuilder;
 
-        @Override
-        public Object apply( List<String> line ) {
-            return value;
-        }
-    }
+      private Complex( Function<Path, Model> modelBuilder ) {
+         this.modelBuilder = modelBuilder;
+      }
+
+      public Model modelFor( Path path ) {
+         return modelBuilder.apply( path );
+      }
+
+   }
+
+   private static abstract class ColumnFunction implements Function<List<String>, Object> {
+      public final ColumnType type;
+
+      public ColumnFunction( ColumnType type ) {
+         this.type = type;
+      }
+   }
+
+   @ToString
+   private static class Column extends ColumnFunction {
+      int index;
+
+      public Column( int index, ColumnType type ) {
+         super( type );
+
+         this.index = index;
+      }
+
+      @Override
+      public Object apply( List<String> line ) {
+         final String value = line.get( index );
+         switch( type ) {
+            case BOOLEAN:
+               return Boolean.parseBoolean( value );
+            case STRING:
+               return value;
+            case INT:
+               return Integer.parseInt( value );
+            case LONG:
+               return Long.parseLong( value );
+            case DOUBLE:
+               return Double.parseDouble( value );
+            default:
+               throw new IllegalStateException( "Unknown column type " + type );
+         }
+      }
+   }
+
+   @ToString
+   private static class Value extends ColumnFunction {
+      Object value;
+
+      public Value( Object value, ColumnType type ) {
+         super( type );
+         this.value = value;
+      }
+
+      @Override
+      public Object apply( List<String> strings ) {
+         return value;
+      }
+   }
 }
