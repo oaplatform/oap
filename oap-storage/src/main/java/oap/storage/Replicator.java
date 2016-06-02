@@ -39,13 +39,13 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Slf4j
 public class Replicator<T> implements Closeable {
-   private final FileStorage<T> slave;
+   private final MemoryStorage<T> slave;
    private final ReplicationMaster<T> master;
    private final Scheduled scheduled;
    public long safeModificationTime = 1000;
    private final AtomicLong lastSync = new AtomicLong( 0 );
 
-   public Replicator( FileStorage<T> slave, ReplicationMaster<T> master, long interval ) {
+   public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval ) {
       this.slave = slave;
       this.master = master;
       this.scheduled = Scheduler.scheduleWithFixedDelay( interval, MILLISECONDS, this::replicate );

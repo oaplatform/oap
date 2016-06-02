@@ -40,14 +40,12 @@ public class ReplicatorTest extends AbstractTest {
    @Test
    public void masterSlave() {
       TypeIdFactory.register( Bean.class, Bean.class.getName() );
-
+      MemoryStorage<Bean> slave = new MemoryStorage<>( b -> b.id );
       try( FileStorage<Bean> master = new FileStorage<>( tmpPath( "master" ), b -> b.id, 50 );
-           FileStorage<Bean> slave = new FileStorage<>( tmpPath( "slave" ), b -> b.id, 50 );
            Replicator<Bean> replicator = new Replicator<>( slave, master, 50 ) ) {
          replicator.safeModificationTime = 100;
 
          master.start();
-         slave.start();
 
          AtomicInteger updates = new AtomicInteger();
          AtomicInteger deletes = new AtomicInteger();
