@@ -32,33 +32,25 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public interface Storage<T> {
-    Stream<T> select();
+   Stream<T> select();
 
-    void store( T object );
+   void store( T object );
 
-    void store( Collection<T> objects );
+   void store( Collection<T> objects );
 
-    T update( String id, Consumer<T> update );
+   Optional<T> update( String id, Consumer<T> update );
 
-    T update( String id, Consumer<T> update, Supplier<T> init );
+   Optional<T> update( String id, Consumer<T> update, Supplier<T> init );
 
-    void update( Collection<String> ids, Consumer<T> update );
+   void update( Collection<String> ids, Consumer<T> update );
 
-    void update( Collection<String> ids, Consumer<T> update, Supplier<T> init );
+   void update( Collection<String> ids, Consumer<T> update, Supplier<T> init );
 
-    Optional<T> get( String id );
+   Optional<T> get( String id );
 
-    void delete( String id );
+   void delete( String id );
 
-    void expunge( String id );
+   void deleteAll();
 
-    void removeAll();
-
-    void clear();
-
-    long size();
-
-    List<Metadata<T>> updatedSince( long time );
-
-    long version();
+   long size();
 }

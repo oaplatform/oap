@@ -34,7 +34,7 @@ import oap.storage.migration.JsonMetadata;
  */
 @ToString
 @EqualsAndHashCode
-class Bean {
+public class Bean {
     public String id;
     public String s = "aaa";
 
@@ -58,8 +58,8 @@ class Bean {
         }
 
         @Override
-        public JsonMetadata run( JsonMetadata oldV ) {
-            return oldV
+        public JsonMetadata run( JsonMetadata old ) {
+            return old
                 .object()
                 .mapString( "id", s -> s + "1" )
                 .topParent();

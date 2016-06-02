@@ -34,7 +34,7 @@ import oap.storage.migration.JsonMetadata;
  */
 @ToString
 @EqualsAndHashCode
-class Bean2 {
+public class Bean2 {
     public String id2;
     public BeanIn in;
 
@@ -65,8 +65,8 @@ class Bean2 {
         }
 
         @Override
-        public JsonMetadata run( JsonMetadata oldV ) {
-            return oldV
+        public JsonMetadata run( JsonMetadata old ) {
+            return old
                 .mapString( "object:type", ( str ) -> "oap.storage.Bean2" )
                 .object()
                 .rename( "id", "id2" )
