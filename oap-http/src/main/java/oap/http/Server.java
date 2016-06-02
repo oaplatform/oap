@@ -27,6 +27,7 @@ package oap.http;
 import com.google.common.base.Throwables;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.ThreadPoolExecutor;
+import oap.http.cors.CorsPolicy;
 import oap.io.Closeables;
 import oap.metrics.Metrics;
 import oap.net.Inet;
@@ -80,10 +81,10 @@ public class Server implements HttpServer {
    }
 
    @Override
-   public void bind( final String context, final Cors cors, final Handler handler,
+   public void bind( final String context, final CorsPolicy corsPolicy, final Handler handler,
                      final Protocol protocol ) {
       final String location = "/" + context + "/*";
-      mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, cors, protocol ) );
+      mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, corsPolicy, protocol ) );
 
       log.debug( handler + " bound to " + location );
    }

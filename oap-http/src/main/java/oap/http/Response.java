@@ -23,6 +23,8 @@
  */
 package oap.http;
 
+import oap.http.cors.CorsPolicy;
+import oap.http.cors.RequestCors;
 import oap.util.Pair;
 import org.slf4j.Logger;
 
@@ -32,9 +34,9 @@ public class Response {
     private static Logger logger = getLogger( Response.class );
 
     private org.apache.http.HttpResponse resp;
-    private Cors cors;
+    private RequestCors cors;
 
-    public Response( org.apache.http.HttpResponse resp, Cors cors ) {
+    public Response( org.apache.http.HttpResponse resp, RequestCors cors ) {
         this.resp = resp;
         this.cors = cors;
     }
