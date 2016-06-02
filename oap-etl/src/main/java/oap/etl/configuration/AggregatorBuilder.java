@@ -29,6 +29,7 @@ import lombok.val;
 import oap.etl.Export;
 import oap.etl.Join;
 import oap.etl.Table;
+import oap.etl.Table.GroupBy;
 import oap.etl.accumulator.Filter;
 import oap.tsv.Model;
 import oap.util.Arrays;
@@ -81,7 +82,6 @@ public class AggregatorBuilder {
    }
 
    private Table.GroupByStream build( Aggregator configuration ) {
-
       final TableModel tableModel = getTable( configuration.table );
       Table table = tableModel.table;
 
@@ -128,12 +128,11 @@ public class AggregatorBuilder {
          tables.put( joinName, new TableModel( model, mapping ) );
 
          final Map<String, List<Object>> map = groupByStream.getMaps( objs -> objs[0].toString() )[0];
-
          table = table.join( tableModel.mapping.get( joinEntry.getValue().aggregates.get( 0 ).groupBy.get( 0 ) ), ( Join ) map::get );
       }
 
 
-      final ArrayList<Table.GroupBy> result = new ArrayList<>();
+      final ArrayList<GroupBy> result = new ArrayList<>();
 
       for( Aggregator.Aggregate aggregate : configuration.aggregates ) {
          final int[] groupByPosition = aggregate.groupBy.stream().mapToInt( tableModel.mapping::get ).toArray();
@@ -168,12 +167,12 @@ public class AggregatorBuilder {
             accumulators.add( accumulator );
          }
 
-         final Table.GroupBy groupBy = new Table.GroupBy( groupByPosition, accumulators.toArray( new oap.etl.accumulator.Accumulator[accumulators.size()] ) );
+         final GroupBy groupBy = new GroupBy( groupByPosition, accumulators.toArray( new oap.etl.accumulator.Accumulator[accumulators.size()] ) );
          result.add( groupBy );
       }
 
       final Table.GroupByStream groupByStream = table
-         .groupBy( result.toArray( new Table.GroupBy[result.size()] ) );
+         .groupBy( result.toArray( new GroupBy[result.size()] ) );
 
 
       return groupByStream;
