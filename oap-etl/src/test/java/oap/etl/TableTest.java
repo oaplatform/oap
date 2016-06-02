@@ -24,6 +24,7 @@
 
 package oap.etl;
 
+import oap.etl.accumulator.Accumulator;
 import oap.tsv.Model;
 import oap.util.Lists;
 import org.testng.annotations.Test;
@@ -55,22 +56,6 @@ public class TableTest {
    }
 
    @Test
-   public void testDistincted() {
-      CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
-         getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( 0 ) ).get();
-      StringExport export = new StringExport();
-      Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
-         Model.withoutHeader().s( 1, 2 ).i( 3 ) )
-         .get()
-         .sort( new int[]{ 0, 1 } )
-         .join( 1, join )
-         .sortedStreamGroupBy( new int[]{ 0, 1 }, Accumulator.count(), Accumulator.intSum( 2 ), Accumulator.intSum( 3 ) )
-         .export( export )
-         .compute();
-      assertString( export.toString() ).isEqualTo( contentOfTestResource( getClass(), "distincted.tsv" ) );
-   }
-
-   @Test
    public void testDistincted2() {
       CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
          getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( 0 ) ).get();
@@ -83,6 +68,7 @@ public class TableTest {
          .groupBy( new Table.GroupBy( new int[]{ 0, 1 }, Accumulator.count(),
             Accumulator.<Integer>filter( Accumulator.intSum( 3 ), 2, i -> i == 2 ),
             Accumulator.intSum( 3 ) ) )
+         .getTables()
          .forEach( t -> {
             t.sort( new int[]{ 0, 1 } )
                .export( export )

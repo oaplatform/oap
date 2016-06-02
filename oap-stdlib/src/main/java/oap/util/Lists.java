@@ -25,7 +25,15 @@ package oap.util;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
@@ -130,6 +138,10 @@ public class Lists {
 
    public static <T> ArrayList<T> empty() {
       return new ArrayList<>();
+   }
+
+   public static <T> T last( List<T> list ) {
+      return list.get( list.size() - 1 );
    }
 
    public static class Collectors {

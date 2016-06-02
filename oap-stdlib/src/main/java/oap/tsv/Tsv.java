@@ -29,6 +29,8 @@ import oap.util.Lists;
 import oap.util.Stream;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.BufferedReader;
+import java.io.StringReader;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
@@ -72,6 +74,10 @@ public class Tsv {
    public static Stream<List<Object>> fromUrl( URL url, Model model, IoStreams.Encoding encoding,
                                                Consumer<Integer> progressCallback ) {
       return fromStream( url, IoStreams.lines( url, encoding, progressCallback ), model );
+   }
+
+   public static Stream<List<Object>> fromString( String tsv, Model model ) {
+      return fromStream( Stream.of( new BufferedReader( new StringReader( tsv ) ).lines() ), model );
    }
 
    public static Stream<List<Object>> fromStream( Stream<String> stream, Model model ) {
@@ -132,5 +138,4 @@ public class Tsv {
          .collect( Collectors.joining( "\t" ) ) + "\n";
 
    }
-
 }
