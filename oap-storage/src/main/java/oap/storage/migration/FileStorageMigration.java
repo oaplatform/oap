@@ -30,5 +30,5 @@ package oap.storage.migration;
 public interface FileStorageMigration {
     long fromVersion();
 
-    JsonMetadata run( JsonMetadata oldV );
+    JsonMetadata run( JsonMetadata old );
 }
