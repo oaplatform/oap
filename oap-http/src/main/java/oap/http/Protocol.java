@@ -17,6 +17,6 @@ public enum Protocol {
     }
 
     public static boolean isLocal( final InetAddress remoteAddress, final Protocol protocol ) {
-        return LOCAL.equals( protocol ) && !Inet.isLocalAddress( remoteAddress );
+        return LOCAL.equals( protocol ) && Inet.isLocalAddress( remoteAddress );
     }
 }
