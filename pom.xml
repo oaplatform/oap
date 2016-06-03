@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>1.17.1</version>
+    <version>1.17.2</version>
 
     <name>oap</name>
 
@@ -89,6 +89,16 @@
         <lombok.version>1.16.6</lombok.version>
         <reflections.version>0.9.10</reflections.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-all</artifactId>
+                <version>1.10.19</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>

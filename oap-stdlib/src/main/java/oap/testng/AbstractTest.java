@@ -25,6 +25,7 @@ package oap.testng;
 
 import oap.io.Files;
 import org.joda.time.DateTimeUtils;
+import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
@@ -47,6 +48,7 @@ public abstract class AbstractTest {
 
     @BeforeMethod
     public void beforeMethod() {
+        MockitoAnnotations.initMocks(this);
         DateTimeUtils.setCurrentMillisSystem();
     }
 

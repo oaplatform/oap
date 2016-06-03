@@ -24,13 +24,12 @@
 
 package oap.alert.slack;
 
-import flowctrl.integration.slack.SlackClientFactory;
 import flowctrl.integration.slack.type.Attachment;
 import flowctrl.integration.slack.type.Color;
 import flowctrl.integration.slack.type.Payload;
-import flowctrl.integration.slack.webhook.SlackWebhookClient;
 import lombok.extern.slf4j.Slf4j;
 import oap.alert.Alert;
+import oap.alert.MessageStream;
 import oap.alert.Messenger;
 
 /**
@@ -38,33 +37,26 @@ import oap.alert.Messenger;
  */
 @Slf4j
 public class SlackMessenger implements Messenger {
-   private final String webhookUrl;
    private final String channel;
    private final String username;
-   private SlackWebhookClient webhookClient;
+   private final MessageStream<Payload> messageStream;
 
-   public SlackMessenger( String channel, String username, String webhookUrl ) {
+   public SlackMessenger( String channel, String username, MessageStream<Payload> messageStream ) {
       this.channel = channel;
       this.username = username;
-      this.webhookUrl = webhookUrl;
-   }
-
-   public void start() {
-      webhookClient = SlackClientFactory.createWebhookClient( webhookUrl );
-   }
-
-   public void stop() {
-      try {
-         webhookClient.shutdown();
-      } catch( Throwable e ) {
-         log.warn( e.getMessage(), e );
-      }
+      this.messageStream = messageStream;
    }
 
    @Override
    public void send( String host, String name, Alert alert, boolean changed ) {
-      if( !changed ) return;
+      if( !changed )
+         return;
 
+      final Payload payload = generateMessage( host, name, alert );
+      messageStream.send( payload );
+   }
+
+   private Payload generateMessage( String host, String name, Alert alert ) {
       final Payload payload = new Payload();
       payload.setText( "" );
       payload.setChannel( "#" + channel );
@@ -91,11 +83,6 @@ public class SlackMessenger implements Messenger {
       }
 
       payload.addAttachment( attachment );
-
-      try {
-         webhookClient.post( payload );
-      } catch( Exception e ) {
-         log.error( e.getMessage() );
-      }
+      return payload;
    }
 }
