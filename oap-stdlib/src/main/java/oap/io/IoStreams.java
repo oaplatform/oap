@@ -24,9 +24,6 @@
 package oap.io;
 
 import com.google.common.io.ByteStreams;
-import net.jpountz.lz4.LZ4BlockInputStream;
-import net.jpountz.lz4.LZ4BlockOutputStream;
-import net.jpountz.lz4.LZ4Factory;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
@@ -142,8 +139,7 @@ public class IoStreams {
                zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
                return zip;
             case LZ4:
-               LZ4Factory factory = LZ4Factory.nativeInstance();
-               return new LZ4BlockOutputStream( fos, bufferSize, factory.highCompressor() );
+               return new KafkaLZ4BlockOutputStream( fos );
             case PLAIN:
                return fos;
             default:
@@ -175,8 +171,7 @@ public class IoStreams {
             case PLAIN:
                return stream;
             case LZ4:
-               LZ4Factory factory = LZ4Factory.nativeInstance();
-               return new LZ4BlockInputStream( stream, factory.fastDecompressor() );
+               return new KafkaLZ4BlockInputStream( stream );
             default:
                throw new IllegalArgumentException( "Unknown encoding " + encoding );
          }
