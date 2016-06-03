@@ -42,13 +42,11 @@ public class BlockingMessageStream<Message> implements MessageStream<Message> {
    }
 
    @Override
-   public Boolean send( Message p ) {
+   public void send( Message p ) {
       try {
          guaranteedDeliveryTransport.send( p, transport );
       } catch( Exception e ) {
          log.error( "Unexpected exception", e );
-         return false;
       }
-      return true;
    }
 }

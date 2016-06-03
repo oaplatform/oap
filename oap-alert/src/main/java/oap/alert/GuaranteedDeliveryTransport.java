@@ -67,7 +67,7 @@ public class GuaranteedDeliveryTransport {
 
    public <Message> void send( Message m, MessageTransport<Message> transport ) throws InterruptedException {
       try {
-         retryer.call( () -> transport.send( m ) );
+         retryer.call( () -> { transport.send( m ); return true; } );
       } catch( ExecutionException e ) {
          if( e.getCause() instanceof InterruptedException ) {
             throw ( InterruptedException ) e.getCause();

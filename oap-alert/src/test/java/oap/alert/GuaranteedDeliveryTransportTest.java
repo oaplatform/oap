@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -43,7 +44,7 @@ public class GuaranteedDeliveryTransportTest {
    public void testRetryOnFailure() throws InterruptedException {
       GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport(10);
       MessageTransport<String> backend = mock(MessageTransport.class);
-      when( backend.send( anyString() ) ).thenThrow( IOException.class ).thenReturn( true );
+      doThrow( IOException.class ).doNothing().when( backend).send( anyString() );
       tr.send( "Aha!", backend );
 
       verify( backend, times( 2 ) ).send( "Aha!" );
@@ -54,7 +55,7 @@ public class GuaranteedDeliveryTransportTest {
       final int maxAttempts = 3;
       GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport(10, maxAttempts );
       MessageTransport<String> backend = mock(MessageTransport.class);
-      when( backend.send( anyString() ) ).thenThrow( IOException.class );
+      doThrow( IOException.class ).when( backend).send( anyString() );
 
       tr.send( "Aha!", backend );
       verify( backend, times( maxAttempts ) ).send( "Aha!" );
@@ -64,7 +65,7 @@ public class GuaranteedDeliveryTransportTest {
    public void testStopWhenInterrupted() throws InterruptedException {
       GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport(10);
       MessageTransport<String> backend = mock(MessageTransport.class);
-      when( backend.send( anyString() ) ).thenThrow( InterruptedException.class );
+      doThrow( InterruptedException.class ).doNothing().when( backend).send( anyString() );
 
       tr.send( "Aha!", backend );
    }

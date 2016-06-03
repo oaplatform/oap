@@ -28,5 +28,5 @@ package oap.alert;
  * Created by Admin on 02.06.2016.
  */
 public interface MessageTransport<Message> {
-   Boolean send( Message m );
+   void send( Message m );
 }

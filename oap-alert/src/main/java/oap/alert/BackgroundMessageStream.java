@@ -46,9 +46,8 @@ public class BackgroundMessageStream<Message> implements MessageStream<Message>,
    }
 
    @Override
-   public Boolean send( Message p ) {
+   public void send( Message p ) {
       messages.add( p );
-      return true;
    }
 
    @Override

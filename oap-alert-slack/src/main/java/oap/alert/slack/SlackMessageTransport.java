@@ -70,11 +70,10 @@ public class SlackMessageTransport implements MessageTransport<Payload> {
    }
 
    @Override
-   public Boolean send( Payload p ) {
+   public void send( Payload p ) {
       ensureStarted();
       try {
          webhookClient.post( p );
-         return true;
       }
       catch( Exception e ) {
          throw new SlackCommunicationException( e );
