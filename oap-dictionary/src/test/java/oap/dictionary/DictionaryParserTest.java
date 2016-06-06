@@ -52,5 +52,7 @@ public class DictionaryParserTest extends AbstractTest {
       assertThat( dictionary.getValues().get( 0 ).getValues() ).contains(
          new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
       );
+
+      assertThat( dictionary.getProperty( "version" ) ).contains( 1L );
    }
 }

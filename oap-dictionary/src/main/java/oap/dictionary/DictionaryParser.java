@@ -82,7 +82,7 @@ public class DictionaryParser {
          final HashMap<String, Object> properties = new HashMap<>();
          for( Map.Entry e : valueMap.entrySet() ) {
             final String propertyName = e.getKey().toString();
-            if( !defaultFields.contains( propertyName ) ) {
+            if( !defaultFields.contains( propertyName ) && (!valueAsRoot || !NAME.equals( propertyName ))) {
                final Object propertyValue = e.getValue();
 
                if( VALUES.equals( propertyName ) )
@@ -132,11 +132,11 @@ public class DictionaryParser {
    }
 
    private static DictionaryRoot parse( Map map ) {
-      final String name = getString( map, NAME );
+//      final String name = getString( map, NAME );
 
-      final ExternalIdType externalIdAs = getStringOpt( map, "externalIdAs" )
-         .map( ExternalIdType::valueOf )
-         .orElse( ExternalIdType.integer );
+//      final ExternalIdType externalIdAs = getStringOpt( map, "externalIdAs" )
+//         .map( ExternalIdType::valueOf )
+//         .orElse( ExternalIdType.integer );
 
       return ( DictionaryRoot ) parseAsDictionaryValue( map, "", true );
    }
@@ -205,6 +205,8 @@ public class DictionaryParser {
 
          jsonGenerator.writeStringField( NAME, dictionary.name );
 
+         writeProperties( jsonGenerator, dictionary );
+
          writeValues( jsonGenerator, dictionary.getValues() );
 
          jsonGenerator.writeEndObject();
@@ -228,11 +230,15 @@ public class DictionaryParser {
             writeValues( jsonGenerator, value.getValues() );
          }
 
-         value.getProperties().forEach( Try.consume( jsonGenerator::writeObjectField ) );
+         writeProperties( jsonGenerator, value );
 
          jsonGenerator.writeEndObject();
       }
 
       jsonGenerator.writeEndArray();
+   }
+
+   private static void writeProperties( JsonGenerator jsonGenerator, Dictionary value ) {
+      value.getProperties().forEach( Try.consume( jsonGenerator::writeObjectField ) );
    }
 }

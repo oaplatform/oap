@@ -1,5 +1,6 @@
 {
   "name": "test-dictionary",
+  "version": 1,
   "values": [
     {
       "id": "id1",
