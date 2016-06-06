@@ -46,7 +46,7 @@ public final class DictionaryRoot implements Dictionary {
    @JsonIgnore
    private final HashMap<String, DictionaryLeaf> indexById = new HashMap<>();
 
-   public DictionaryRoot( String name, List<DictionaryLeaf> values ) {
+   public DictionaryRoot( String name, List<? extends DictionaryLeaf> values ) {
       this( name, ExternalIdType.integer, values );
    }
 
@@ -111,7 +111,7 @@ public final class DictionaryRoot implements Dictionary {
    }
 
    @Override
-   public Optional<DictionaryLeaf> getValue( String name ) {
+   public Optional<? extends DictionaryLeaf> getValue( String name ) {
       return Optional.ofNullable( indexById.get( name ) );
    }
 
