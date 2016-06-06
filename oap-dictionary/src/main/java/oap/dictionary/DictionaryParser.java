@@ -33,7 +33,13 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -182,7 +188,14 @@ public class DictionaryParser {
    }
 
    public static void serialize( DictionaryRoot dictionary, Path path ) {
-      try( final JsonGenerator jsonGenerator = Binder.json.getJsonGenerator( path ) ) {
+      serialize( dictionary, path, false );
+   }
+
+   public static void serialize( DictionaryRoot dictionary, Path path, boolean format ) {
+      try( JsonGenerator jsonGenerator = format ?
+         Binder.json.getJsonGenerator( path ).useDefaultPrettyPrinter() :
+         Binder.json.getJsonGenerator( path ) ) {
+
          jsonGenerator.writeStartObject();
 
          jsonGenerator.writeStringField( NAME, dictionary.name );
