@@ -41,13 +41,13 @@ import static java.util.stream.Collectors.toList;
 @EqualsAndHashCode( callSuper = true )
 @ToString( callSuper = true )
 public class DictionaryValue extends DictionaryLeaf implements Dictionary {
-   public final List<DictionaryLeaf> values;
+   public final List<? extends DictionaryLeaf> values;
 
    public DictionaryValue( String id, boolean enabled, int externalId ) {
       this( id, enabled, externalId, emptyList(), emptyMap() );
    }
 
-   public DictionaryValue( String id, boolean enabled, int externalId, List<DictionaryLeaf> values ) {
+   public DictionaryValue( String id, boolean enabled, int externalId, List<? extends DictionaryLeaf> values ) {
       this( id, enabled, externalId, values, emptyMap() );
    }
 
@@ -64,7 +64,7 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
       String id,
       boolean enabled,
       int externalId,
-      List<DictionaryLeaf> values,
+      List<? extends DictionaryLeaf> values,
       Map<String, Object> properties
    ) {
       super( id, enabled, externalId, properties );
@@ -78,7 +78,12 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
 
    @Override
    public String getOrDefault( int externlId, String defaultValue ) {
-      return values.stream().filter( v -> v.getExternalId() == externlId ).findAny().map( DictionaryLeaf::getId ).orElse( defaultValue );
+      return values
+         .stream()
+         .filter( v -> v.getExternalId() == externlId )
+         .findAny()
+         .map( DictionaryLeaf::getId )
+         .orElse( defaultValue );
    }
 
    @Override
@@ -97,12 +102,12 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
    }
 
    @Override
-   public List<DictionaryLeaf> getValues() {
+   public List<? extends DictionaryLeaf> getValues() {
       return values;
    }
 
    @Override
-   public Optional<DictionaryLeaf> getValue( String name ) {
+   public Optional<? extends DictionaryLeaf> getValue( String name ) {
       return values.stream().filter( l -> l.getId().equals( name ) ).findAny();
    }
 }

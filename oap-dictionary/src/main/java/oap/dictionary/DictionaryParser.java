@@ -195,7 +195,7 @@ public class DictionaryParser {
       }
    }
 
-   private static void writeValues( JsonGenerator jsonGenerator, List<DictionaryLeaf> values ) throws IOException {
+   private static void writeValues( JsonGenerator jsonGenerator, List<? extends DictionaryLeaf> values ) throws IOException {
       if( values.isEmpty() ) return;
 
       jsonGenerator.writeFieldName( VALUES );
