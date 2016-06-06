@@ -25,6 +25,7 @@ package oap.http.nio;
 
 import oap.http.*;
 import oap.http.cors.CorsPolicy;
+import oap.net.Inet;
 import org.apache.http.HttpException;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
@@ -80,9 +81,8 @@ public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
         final HttpResponse response = httpAsyncExchange.getResponse();
 
         final String httpContextProtocol = httpContext.getAttribute( "protocol" ).toString();
-        if( Protocol.isLocal( remoteAddress, this.protocol ) ||
-            Protocol.doesNotMatch( httpContextProtocol, protocol ) ) {
 
+        if( Protocol.LOCAL.equals( this.protocol ) && !Inet.isLocalAddress( remoteAddress ) ) {
             response.setStatusCode( HTTP_FORBIDDEN );
         } else {
             Request request = new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) );

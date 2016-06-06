@@ -26,6 +26,7 @@ package oap.http;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.cors.CorsPolicy;
 import oap.http.cors.RequestCors;
+import oap.net.Inet;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -68,8 +69,7 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
         RequestCors cors = corsPolicy.getCors( request );
         final Response response = new Response( httpResponse, cors );
 
-        if( Protocol.isLocal( remoteAddress, this.protocol ) ||
-            Protocol.doesNotMatch( httpContextProtocol, this.protocol ) ) {
+        if( Protocol.LOCAL.equals( this.protocol ) && !Inet.isLocalAddress( remoteAddress ) ) {
             response.respond( HTTP_FORBIDDEN );
         } else if( cors.autoOptions && request.httpMethod == Request.HttpMethod.OPTIONS ) {
             response.respond( NO_CONTENT );
