@@ -57,5 +57,4 @@ public class Metadata<T> implements Comparable<Metadata<T>> {
         this.object = t;
         this.modified = DateTimeUtils.currentTimeMillis();
     }
-
 }

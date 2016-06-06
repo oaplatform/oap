@@ -24,6 +24,7 @@
 package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.val;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Files;
@@ -125,13 +126,15 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable, Repli
       final JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {
       }, path ) );
 
+      val version = getVersion( path.getFileName().toString() );
+
       log.debug( "migration {}", path );
 
       final String id = oldV.id();
 
       final Optional<FileStorageMigration> any = migrations
          .stream()
-         .filter( m -> m.fromVersion() == oldV.version() )
+         .filter( m -> m.fromVersion() == version )
          .findAny();
 
       return any.map( m -> {
@@ -139,12 +142,11 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable, Repli
 
          final JsonMetadata newV = m.run( oldV );
 
-         newV.incVersion();
          Binder.json.marshal( fn, newV.underlying );
          Files.delete( path );
 
          return fn;
-      } ).orElseThrow( () -> new FileStorageMigrationException( "migration from version " + oldV.version() + " not found" ) );
+      } ).orElseThrow( () -> new FileStorageMigrationException( "migration from version " + version + " not found" ) );
    }
 
    @Override
