@@ -27,7 +27,6 @@ package oap.json.schema._dictionary;
 import lombok.extern.slf4j.Slf4j;
 import oap.dictionary.Dictionaries;
 import oap.dictionary.Dictionary;
-import oap.dictionary.DictionaryLeaf;
 import oap.dictionary.DictionaryNotFoundError;
 import oap.json.schema.JsonPath;
 import oap.json.schema.JsonSchemaParserContext;
@@ -50,7 +49,7 @@ import static oap.json.schema.SchemaPath.rightTrimItems;
 @Slf4j
 public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchemaAST> {
    private Result<List<Dictionary>, List<String>> validate( JsonValidatorProperties properties, Optional<DictionarySchemaAST> schemaOpt, List<Dictionary> dictionaries ) {
-      if(!schemaOpt.isPresent()) return Result.success( dictionaries );
+      if( !schemaOpt.isPresent() ) return Result.success( dictionaries );
 
       final DictionarySchemaAST schema = schemaOpt.get();
 
@@ -67,7 +66,7 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
       final ArrayList<Dictionary> cDict = new ArrayList<>();
 
       for( Object parentValue : parentValues ) {
-         List<DictionaryLeaf> children = cd.successValue
+         List<Dictionary> children = cd.successValue
             .stream()
             .map( d -> d.getValue( parentValue.toString() ) )
             .filter( Optional::isPresent )
