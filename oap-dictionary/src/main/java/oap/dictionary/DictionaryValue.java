@@ -41,13 +41,13 @@ import static java.util.stream.Collectors.toList;
 @EqualsAndHashCode( callSuper = true )
 @ToString( callSuper = true )
 public class DictionaryValue extends DictionaryLeaf implements Dictionary {
-   public final List<? extends DictionaryLeaf> values;
+   public final List<? extends Dictionary> values;
 
    public DictionaryValue( String id, boolean enabled, int externalId ) {
       this( id, enabled, externalId, emptyList(), emptyMap() );
    }
 
-   public DictionaryValue( String id, boolean enabled, int externalId, List<? extends DictionaryLeaf> values ) {
+   public DictionaryValue( String id, boolean enabled, int externalId, List<? extends Dictionary> values ) {
       this( id, enabled, externalId, values, emptyMap() );
    }
 
@@ -64,7 +64,7 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
       String id,
       boolean enabled,
       int externalId,
-      List<? extends DictionaryLeaf> values,
+      List<? extends Dictionary> values,
       Map<String, Object> properties
    ) {
       super( id, enabled, externalId, properties );
@@ -73,7 +73,7 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
 
    @Override
    public int getOrDefault( String id, int defaultValue ) {
-      return getValue( id ).map( DictionaryLeaf::getExternalId ).orElse( defaultValue );
+      return getValue( id ).map( Dictionary::getExternalId ).orElse( defaultValue );
    }
 
    @Override
@@ -82,7 +82,7 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
          .stream()
          .filter( v -> v.getExternalId() == externlId )
          .findAny()
-         .map( DictionaryLeaf::getId )
+         .map( Dictionary::getId )
          .orElse( defaultValue );
    }
 
@@ -93,21 +93,21 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
 
    @Override
    public List<String> ids() {
-      return values.stream().map( DictionaryLeaf::getId ).collect( toList() );
+      return values.stream().map( Dictionary::getId ).collect( toList() );
    }
 
    @Override
    public int[] externalIds() {
-      return values.stream().mapToInt( DictionaryLeaf::getExternalId ).toArray();
+      return values.stream().mapToInt( Dictionary::getExternalId ).toArray();
    }
 
    @Override
-   public List<? extends DictionaryLeaf> getValues() {
+   public List<? extends Dictionary> getValues() {
       return values;
    }
 
    @Override
-   public Optional<? extends DictionaryLeaf> getValue( String name ) {
+   public Optional<? extends Dictionary> getValue( String name ) {
       return values.stream().filter( l -> l.getId().equals( name ) ).findAny();
    }
 }

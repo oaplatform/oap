@@ -82,12 +82,12 @@ public class DictionaryLeaf implements Dictionary {
    }
 
    @Override
-   public Optional<? extends DictionaryLeaf> getValue( String name ) {
+   public Optional<? extends Dictionary> getValue( String name ) {
       return Optional.empty();
    }
 
    @Override
-   public List<? extends DictionaryLeaf> getValues() {
+   public List<? extends Dictionary> getValues() {
       return Collections.emptyList();
    }
 

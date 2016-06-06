@@ -74,13 +74,10 @@ public class DictionaryParser {
    }
 
    @SuppressWarnings( "unchecked" )
-   private static DictionaryLeaf parseAsDictionaryValue( Object value, String path ) {
+   private static Dictionary parseAsDictionaryValue( Object value, String path, boolean valueAsRoot ) {
       if( value instanceof Map ) {
          final Map<Object, Object> valueMap = ( Map<Object, Object> ) value;
-         final String id = getString( valueMap, ID );
-         final boolean enabled = getBooleanOpt( valueMap, ENABLED ).orElse( true );
-         final int externalId = getInt( valueMap, EXTERNAL_ID, true );
-         List<DictionaryLeaf> values = emptyList();
+         List<Dictionary> values = emptyList();
 
          final HashMap<String, Object> properties = new HashMap<>();
          for( Map.Entry e : valueMap.entrySet() ) {
@@ -97,6 +94,16 @@ public class DictionaryParser {
 
 
          final Map<String, Object> p = properties.isEmpty() ? emptyMap() : properties;
+
+         if( valueAsRoot ) {
+            final String name = getString( valueMap, NAME );
+            return new DictionaryRoot( name, values, p );
+         }
+
+         final String id = getString( valueMap, ID );
+         final boolean enabled = getBooleanOpt( valueMap, ENABLED ).orElse( true );
+         final int externalId = getInt( valueMap, EXTERNAL_ID, true );
+
          return values.isEmpty() ?
             new DictionaryLeaf( id, enabled, externalId, p ) :
             new DictionaryValue( id, enabled, externalId, values, p );
@@ -131,17 +138,15 @@ public class DictionaryParser {
          .map( ExternalIdType::valueOf )
          .orElse( ExternalIdType.integer );
 
-      final List values = getList( map, VALUES );
-
-      return new DictionaryRoot( name, externalIdAs, parseValues( values, "" ) );
+      return ( DictionaryRoot ) parseAsDictionaryValue( map, "", true );
    }
 
-   private static ArrayList<DictionaryLeaf> parseValues( List values, String path ) {
-      final ArrayList<DictionaryLeaf> dv = new ArrayList<>();
+   private static ArrayList<Dictionary> parseValues( List values, String path ) {
+      final ArrayList<Dictionary> dv = new ArrayList<>();
 
       for( int i = 0; i < values.size(); i++ ) {
          final Object value = values.get( i );
-         dv.add( parseAsDictionaryValue( value, path + "[" + i + "]" ) );
+         dv.add( parseAsDictionaryValue( value, path + "[" + i + "]", false ) );
       }
 
       return dv;
@@ -208,7 +213,7 @@ public class DictionaryParser {
       }
    }
 
-   private static void writeValues( JsonGenerator jsonGenerator, List<? extends DictionaryLeaf> values ) throws IOException {
+   private static void writeValues( JsonGenerator jsonGenerator, List<? extends Dictionary> values ) throws IOException {
       if( values.isEmpty() ) return;
 
       jsonGenerator.writeFieldName( VALUES );

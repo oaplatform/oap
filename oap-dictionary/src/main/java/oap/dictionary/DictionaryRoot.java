@@ -28,8 +28,12 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -40,22 +44,28 @@ import static java.util.stream.Collectors.toList;
 public final class DictionaryRoot implements Dictionary {
    public final String name;
    public final ExternalIdType externalIdAs;
-   private final List<? extends DictionaryLeaf> values;
+   private final List<? extends Dictionary> values;
    @JsonIgnore
    private final HashMap<Integer, String> indexByExternalId = new HashMap<>();
    @JsonIgnore
-   private final HashMap<String, DictionaryLeaf> indexById = new HashMap<>();
+   private final HashMap<String, Dictionary> indexById = new HashMap<>();
+   private final Map<String, Object> properties;
 
-   public DictionaryRoot( String name, List<? extends DictionaryLeaf> values ) {
-      this( name, ExternalIdType.integer, values );
+   public DictionaryRoot( String name, List<? extends Dictionary> values ) {
+      this( name, ExternalIdType.integer, values, emptyMap() );
    }
 
-   public DictionaryRoot( String name, ExternalIdType externalIdAs, List<? extends DictionaryLeaf> values ) {
+   public DictionaryRoot( String name, List<? extends Dictionary> values, Map<String, Object> properties ) {
+      this( name, ExternalIdType.integer, values, properties );
+   }
+
+   public DictionaryRoot( String name, ExternalIdType externalIdAs, List<? extends Dictionary> values, Map<String, Object> properties ) {
       this.name = name;
       this.externalIdAs = externalIdAs;
       this.values = values;
+      this.properties = properties;
 
-      for( DictionaryLeaf dv : values ) {
+      for( Dictionary dv : values ) {
          indexById.put( dv.getId(), dv );
          indexByExternalId.put( dv.getExternalId(), dv.getId() );
       }
@@ -70,7 +80,7 @@ public final class DictionaryRoot implements Dictionary {
 
    @Override
    public final int getOrDefault( String id, int defaultValue ) {
-      final DictionaryLeaf rtb = indexById.get( id );
+      final Dictionary rtb = indexById.get( id );
       if( rtb == null ) return defaultValue;
       return rtb.getExternalId();
    }
@@ -82,21 +92,21 @@ public final class DictionaryRoot implements Dictionary {
 
    @Override
    public List<String> ids() {
-      return values.stream().map( DictionaryLeaf::getId ).collect( toList() );
+      return values.stream().map( Dictionary::getId ).collect( toList() );
    }
 
    @Override
    public int[] externalIds() {
-      return values.stream().mapToInt( DictionaryLeaf::getExternalId ).toArray();
+      return values.stream().mapToInt( Dictionary::getExternalId ).toArray();
    }
 
    @Override
    public Map<String, Object> getProperties() {
-      return Collections.emptyMap();
+      return properties;
    }
 
    @Override
-   public List<? extends DictionaryLeaf> getValues() {
+   public List<? extends Dictionary> getValues() {
       return values;
    }
 
@@ -107,11 +117,11 @@ public final class DictionaryRoot implements Dictionary {
 
    @Override
    public Optional<Object> getProperty( String name ) {
-      return Optional.empty();
+      return Optional.ofNullable( properties.get( name ) );
    }
 
    @Override
-   public Optional<? extends DictionaryLeaf> getValue( String name ) {
+   public Optional<? extends Dictionary> getValue( String name ) {
       return Optional.ofNullable( indexById.get( name ) );
    }
 
@@ -127,6 +137,6 @@ public final class DictionaryRoot implements Dictionary {
 
    @Override
    public boolean containsProperty( String name ) {
-      return false;
+      return properties.containsKey( name );
    }
 }
