@@ -27,7 +27,6 @@ package oap.etl.configuration;
 import lombok.val;
 import oap.etl.StringExport;
 import oap.etl.Table;
-import oap.json.Binder;
 import oap.testng.AbstractTest;
 import oap.tsv.Model;
 import oap.util.Maps;
@@ -46,20 +45,24 @@ public class ConfigurationTest extends AbstractTest {
    @Test
    public void testGroupAndCount() {
       // {
-      //   "table":"from",
-      //   "aggregates":[{
-      //     "select":[{
-      //       "name":"count",
-      //       "type":"COUNT"
-      //     }],
-      //     "export":"export",
-      //     "groupBy":["column1","column2"]
-      //   }]
+      //   "table":"table",
+      //   "aggregates":{
+      //     "_by_column1_column2": {
+      //       "fields":["column1","column2"],
+      //       "accumulators":[{
+      //         "name":"count",
+      //         "type":"COUNT"
+      //       }],
+      //       "export":"export"
+      //     }
+      //   }
       // }
       val aggregatorConfiguration = AggregatorConfigurationBuilder
          .custom()
-         .from( "from" )
-         .select( "count", COUNT ).groupBy( "column1", "column2" ).export( "export" )
+         .table( "table" )
+         .aggregator( "_by_column1_column2" ).fields( "column1", "column2" )
+         .accumulator( "count" ).operation( COUNT )
+         .export( "export" )
          .build();
 
       val export = new StringExport();
@@ -67,9 +70,9 @@ public class ConfigurationTest extends AbstractTest {
 
       AggregatorBuilder
          .custom()
-         .withModel( "from", model, Maps.of( __( "column1", 0 ), __( "column2", 1 ), __( "value", 2 ) ) )
+         .withModel( "table", model, Maps.of( __( "column1", 0 ), __( "column2", 1 ), __( "value", 2 ) ) )
          .withConfiguration( aggregatorConfiguration )
-         .withTable( "from", Table.fromString( "a\tb\t10\n" +
+         .withTable( "table", Table.fromString( "a\tb\t10\n" +
             "a\tb\t20\n" +
             "a1\tb1\t10\n", model ) )
          .withExport( "export", export )
@@ -82,15 +85,13 @@ public class ConfigurationTest extends AbstractTest {
    public void testGroupAndSum() {
       val aggregatorConfiguration = AggregatorConfigurationBuilder
          .custom()
-         .from( "from" )
-
-         .select( "count", COUNT )
-         .select( "sumi", SUM, "valuei" )
-         .select( "suml", SUM, "valuel" )
-         .select( "sumd", SUM, "valued" )
-         .groupBy( "column1" )
+         .table( "table" )
+         .aggregator( "_by_column1" ).fields( "column1" )
+         .accumulator( "count" ).operation( COUNT )
+         .accumulator( "sumi" ).operation( SUM ).field( "valuei" )
+         .accumulator( "suml" ).operation( SUM ).field( "valuel" )
+         .accumulator( "sumd" ).operation( SUM ).field( "valued" )
          .export( "export" )
-
          .build();
 
       final Model model = new Model( false ).s( 0 ).i( 1 ).l( 2 ).d( 3 );
@@ -99,8 +100,8 @@ public class ConfigurationTest extends AbstractTest {
 
       AggregatorBuilder
          .custom()
-         .withModel( "from", model, Maps.of( __( "column1", 0 ), __( "valuei", 1 ), __( "valuel", 2 ), __( "valued", 3 ) ) )
-         .withTable( "from", Table.fromString( "a\t10\t11\t1.1\n" +
+         .withModel( "table", model, Maps.of( __( "column1", 0 ), __( "valuei", 1 ), __( "valuel", 2 ), __( "valued", 3 ) ) )
+         .withTable( "table", Table.fromString( "a\t10\t11\t1.1\n" +
             "a\t20\t21\t2.2\n" +
             "a1\t10\t10\t1.1\n", model ) )
          .withConfiguration( aggregatorConfiguration )
@@ -114,8 +115,9 @@ public class ConfigurationTest extends AbstractTest {
    public void testGroupAndAvg() {
       val aggregatorConfiguration = AggregatorConfigurationBuilder
          .custom()
-         .from( "from" )
-         .select( "avg", AVG, "value" ).groupBy( "column1" )
+         .table( "table" )
+         .aggregator( "by_column1" ).fields( "column1" )
+         .accumulator( "avg" ).operation( AVG ).field( "value" )
          .export( "export" )
          .build();
 
@@ -124,8 +126,8 @@ public class ConfigurationTest extends AbstractTest {
 
       AggregatorBuilder
          .custom()
-         .withModel( "from", model, Maps.of( __( "column1", 0 ), __( "value", 1 ) ) )
-         .withTable( "from", Table.fromString( "a\t10\n" +
+         .withModel( "table", model, Maps.of( __( "column1", 0 ), __( "value", 1 ) ) )
+         .withTable( "table", Table.fromString( "a\t10\n" +
             "a\t20\n" +
             "a1\t10\n", model ) )
          .withConfiguration( aggregatorConfiguration )
@@ -139,8 +141,9 @@ public class ConfigurationTest extends AbstractTest {
    public void testGroupAndCountFilter() {
       val aggregatorConfiguration = AggregatorConfigurationBuilder
          .custom()
-         .from( "from" )
-         .select( "count", COUNT ).withFilter( "filter", "==", "test" ).groupBy( "column1" )
+         .table( "table" )
+         .aggregator( "by_column1" ).fields( "column1" )
+         .accumulator( "count" ).operation( COUNT ).filter( "filter", "==", "test" )
          .export( "export" )
          .build();
 
@@ -149,8 +152,8 @@ public class ConfigurationTest extends AbstractTest {
 
       AggregatorBuilder
          .custom()
-         .withModel( "from", model, Maps.of( __( "column1", 0 ), __( "value", 1 ), __( "filter", 2 ) ) )
-         .withTable( "from", Table.fromString( "a\t10\ttest\n" +
+         .withModel( "table", model, Maps.of( __( "column1", 0 ), __( "value", 1 ), __( "filter", 2 ) ) )
+         .withTable( "table", Table.fromString( "a\t10\ttest\n" +
             "a\t20\tunknown\n" +
             "a1\t10\ttest\n", model ) )
          .withConfiguration( aggregatorConfiguration )

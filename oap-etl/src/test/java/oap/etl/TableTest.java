@@ -74,7 +74,7 @@ public class TableTest {
                .export( export )
                .compute();
          } );
-      assertString( export.toString() ).isEqualTo( contentOfTestResource( getClass(), "groupBy.tsv" ) );
+      assertString( export.toString() ).isEqualTo( contentOfTestResource( getClass(), "fields.tsv" ) );
    }
 
    @Test

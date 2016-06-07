@@ -24,30 +24,34 @@
 
 package oap.etl.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.util.Maps;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
+import static oap.util.Pair.__;
+
 @ToString
 @EqualsAndHashCode
-public class Aggregator implements IAggregator {
-   public final Map<String, List<String>> aggregates;
-   public final String export;
+public class Join implements IAggregator {
+   public final String field;
+   private final ArrayList<Accumulator> accumulators;
    private final String table;
-   private final Map<String, Join> joins;
-   private final List<Accumulator> accumulators;
 
+   public Join(
+      String table,
+      String field,
+      ArrayList<Accumulator> accumulators ) {
 
-   public Aggregator(
-      String table, Map<String, List<String>> aggregates,
-      List<Accumulator> accumulators, Map<String, Join> joins, String export ) {
       this.table = table;
+      this.field = field;
       this.accumulators = accumulators;
-      this.aggregates = aggregates;
-      this.joins = joins;
-      this.export = export;
    }
 
    @Override
@@ -57,7 +61,7 @@ public class Aggregator implements IAggregator {
 
    @Override
    public Map<String, ? extends IAggregator> getJoins() {
-      return joins;
+      return emptyMap();
    }
 
    @Override
@@ -67,11 +71,12 @@ public class Aggregator implements IAggregator {
 
    @Override
    public Map<String, List<String>> getAggregates() {
-      return aggregates;
+      return Maps.of( __( "default", singletonList( field ) ) );
    }
 
    @Override
+   @JsonIgnore
    public String getExport() {
-      return export;
+      throw new IllegalAccessError();
    }
 }

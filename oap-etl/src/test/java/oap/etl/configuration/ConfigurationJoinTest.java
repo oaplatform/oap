@@ -27,6 +27,7 @@ package oap.etl.configuration;
 import lombok.val;
 import oap.etl.StringExport;
 import oap.etl.Table;
+import oap.json.Binder;
 import oap.testng.AbstractTest;
 import oap.tsv.Model;
 import oap.util.Maps;
@@ -36,6 +37,7 @@ import static oap.etl.accumulator.AccumulatorType.COUNT;
 import static oap.etl.accumulator.AccumulatorType.SUM;
 import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by Admin on 31.05.2016.
@@ -43,21 +45,23 @@ import static oap.util.Pair.__;
 public class ConfigurationJoinTest extends AbstractTest {
    @Test
    public void testCountingJoin() {
-      final Aggregator join = AggregatorConfigurationBuilder
+      val aggregatorConfiguration2 = AggregatorConfigurationBuilder
          .custom()
-         .from( "table2" )
-         .select( "count", COUNT )
-         .groupBy( "column" )
+         .table( "table1" )
+         .aggregator( "by_gcol" ).fields( "gcol" )
+         .accumulator( "sum" ).operation( SUM ).field( "value1" )
+         .accumulator( "sumj" ).operation( SUM ).field( "join-name.count" )
+         .export( "export" )
+         .join( "join-name" ).table( "table2" ).field( "column" ).accumulator( "count" ).operation( COUNT )
          .build();
 
-      val aggregatorConfiguration = AggregatorConfigurationBuilder
-         .custom()
-         .from( "table1" )
-         .join( "join", join )
-         .select( "sum", SUM, "value1" )
-         .select( "sumj", SUM, "join.count" )
-         .groupBy( "gcol" ).export( "export" )
-         .build();
+      System.out.println(Binder.json.marshal( aggregatorConfiguration2 ));
+
+      val aggregatorConfiguration =
+         Binder.json.unmarshalResource( getClass(), Aggregator.class, "configuration.json" )
+            .orElseThrow( () -> new IllegalArgumentException( "configuration.json not found" ) );
+
+      assertThat( aggregatorConfiguration2 ).isEqualTo( aggregatorConfiguration );
 
       final Model model1 = new Model( false ).s( 0, 1 ).i( 2 );
       final Model model2 = new Model( false ).s( 0 ).i( 1 );

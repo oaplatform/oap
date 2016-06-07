@@ -34,6 +34,7 @@ import oap.etl.accumulator.Filter;
 import oap.tsv.Model;
 import oap.util.Arrays;
 import oap.util.Lists;
+import oap.util.Maps;
 import oap.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 
@@ -76,16 +77,16 @@ public class AggregatorBuilder {
          tables
             .get( i )
             .sort( groupByStream.fields[i] )
-            .export( exports.get( configuration.aggregates.get( i ).export ) )
+            .export( exports.get( configuration.getExport() ) )
             .compute();
       }
    }
 
-   private Table.GroupByStream build( Aggregator configuration ) {
-      final TableModel tableModel = getTable( configuration.table );
+   private Table.GroupByStream build( IAggregator configuration ) {
+      final TableModel tableModel = getTable( configuration.getTable() );
       Table table = tableModel.table;
 
-      for( val joinEntry : configuration.joins.entrySet() ) {
+      for( val joinEntry : configuration.getJoins().entrySet() ) {
          val joinName = joinEntry.getKey();
          val aggregator = joinEntry.getValue();
 
@@ -98,21 +99,20 @@ public class AggregatorBuilder {
 
          final ArrayList<Integer> indexes = Lists.of( groupByStream.fields[0] );
          val offset = tableModel.model.size();
-         for( val aggregate : aggregator.aggregates ) {
-            for( int i = 0; i < aggregate.select.size(); i++ ) {
-               final Accumulator ac = aggregate.select.get( i );
+         final List<Accumulator> accumulators = aggregator.getAccumulators();
+         for( int i = 0; i < accumulators.size(); i++ ) {
+            final Accumulator ac = accumulators.get( i );
 
-               final Optional<Pair<Integer, Model.ColumnType>> fieldInfo = ac.field.map( f -> {
-                  final String[] split = StringUtils.split( f, '.' );
+            final Optional<Pair<Integer, Model.ColumnType>> fieldInfo = ac.field.map( f -> {
+               final String[] split = StringUtils.split( f, '.' );
 
-                  final Integer index = split.length == 1 ? tableModel.mapping.get( f ) : getTable( split[0] ).mapping.get( split[1] );
-                  if( index == null ) throw new IllegalArgumentException( "Unknown column " + f );
-                  return __( index, tableModel.model.getType( index ) );
-               } );
+               final Integer index = split.length == 1 ? tableModel.mapping.get( f ) : getTable( split[0] ).mapping.get( split[1] );
+               if( index == null ) throw new IllegalArgumentException( "Unknown column " + f );
+               return __( index, tableModel.model.getType( index ) );
+            } );
 
-               model.column( AccumulatorFactory.create( ac.type, fieldInfo ).getModelType(), i + offset );
-               mapping.put( ac.name, i + offset );
-            }
+            model.column( AccumulatorFactory.create( ac.type, fieldInfo ).getModelType(), i + offset );
+            mapping.put( ac.name, i + offset );
          }
 
          for( int index : indexes ) {
@@ -128,18 +128,18 @@ public class AggregatorBuilder {
          tables.put( joinName, new TableModel( model, mapping ) );
 
          final Map<String, List<Object>> map = groupByStream.getMaps( objs -> objs[0].toString() )[0];
-         table = table.join( tableModel.mapping.get( joinEntry.getValue().aggregates.get( 0 ).groupBy.get( 0 ) ), ( Join ) map::get );
+         table = table.join( tableModel.mapping.get( Maps.head( joinEntry.getValue().getAggregates() ).getValue().get( 0 ) ), ( Join ) map::get );
       }
 
 
       final ArrayList<GroupBy> result = new ArrayList<>();
 
-      for( Aggregator.Aggregate aggregate : configuration.aggregates ) {
-         final int[] groupByPosition = aggregate.groupBy.stream().mapToInt( tableModel.mapping::get ).toArray();
+      for( val entry : configuration.getAggregates().entrySet() ) {
+         final int[] groupByPosition = entry.getValue().stream().mapToInt( tableModel.mapping::get ).toArray();
 
          final ArrayList<oap.etl.accumulator.Accumulator> accumulators = new ArrayList<>();
 
-         for( Accumulator ac : aggregate.select ) {
+         for( Accumulator ac : configuration.getAccumulators() ) {
             final Optional<Pair<Integer, Model.ColumnType>> fieldInfo = ac.field.map( f -> {
                final String[] split = StringUtils.split( f, '.' );
 
@@ -151,15 +151,15 @@ public class AggregatorBuilder {
                   .orElseThrow( () -> new IllegalArgumentException( "column = " + f + ", accumulator = " + ac.name ) ) );
             } );
 
-            log.trace( "[{}/{}] looking for accumulator type = {}, field = {}, fi = {}",
-               configuration.table, ac.name, ac.type, ac.field, fieldInfo );
+            log.trace( "[{}/{}] looking for accumulator type = {}, fields = {}, fi = {}",
+               configuration.getTable(), ac.name, ac.type, ac.field, fieldInfo );
 
             oap.etl.accumulator.Accumulator accumulator = AccumulatorFactory.create( ac.type, fieldInfo );
 
             final Accumulator.Filter filter = ac.filter.orElse( null );
             if( filter != null ) {
                final Integer fieldIndex = tableModel.mapping.get( filter.field );
-               if( fieldIndex == null ) throw new IllegalArgumentException( "Filter: unknown field " + filter.field );
+               if( fieldIndex == null ) throw new IllegalArgumentException( "Filter: unknown fields " + filter.field );
 
                accumulator = new Filter( accumulator, fieldIndex, filter.getFunction() );
             }

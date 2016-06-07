@@ -24,6 +24,7 @@
 package oap.json;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
@@ -31,7 +32,11 @@ import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.AnnotationIntrospector;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
@@ -39,6 +44,7 @@ import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
 import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
 import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
@@ -89,6 +95,7 @@ public class Binder {
       mapper.registerModule( new JodaModule()
          .addDeserializer( DateTime.class, forType( DateTime.class ) )
          .addSerializer( DateTime.class, new DateTimeSerializer( jodaDateFormat ) ) );
+      mapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
       mapper.enable( DeserializationFeature.USE_LONG_FOR_INTS );
       mapper.enable( JsonParser.Feature.ALLOW_SINGLE_QUOTES );
       mapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );

@@ -85,7 +85,7 @@
         <compress.version>1.10</compress.version>
         <joda.version>2.9.3</joda.version>
         <metrics.version>3.1.2</metrics.version>
-        <jackson.version>2.7.1</jackson.version>
+        <jackson.version>2.7.4</jackson.version>
         <lombok.version>1.16.6</lombok.version>
         <reflections.version>0.9.10</reflections.version>
     </properties>

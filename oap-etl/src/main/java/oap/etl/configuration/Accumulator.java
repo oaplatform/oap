@@ -37,8 +37,8 @@ import java.util.function.Predicate;
 public class Accumulator {
    public String name;
    public AccumulatorType type;
-   public Optional<String> field;
-   public Optional<Filter> filter;
+   public Optional<String> field = Optional.empty();
+   public Optional<Filter> filter = Optional.empty();
 
    public Accumulator() {
    }

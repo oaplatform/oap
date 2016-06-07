@@ -46,7 +46,7 @@ public class AccumulatorFactory {
          case COUNT:
             return new CountAccumulator();
          case SUM: {
-            val f = field.orElseThrow( () -> new IllegalArgumentException( "SUM: Unknown field" ) );
+            val f = field.orElseThrow( () -> new IllegalArgumentException( "SUM: Unknown fields" ) );
             switch( f._2 ) {
                case INT:
                   return new IntegerSumAccumulator( f._1 );
@@ -59,7 +59,7 @@ public class AccumulatorFactory {
             }
          }
          case AVG: {
-            val f = field.orElseThrow( () -> new IllegalArgumentException( "AVG: Unknown field" ) );
+            val f = field.orElseThrow( () -> new IllegalArgumentException( "AVG: Unknown fields" ) );
             return new AvgAccumulator( f._1 );
          }
          default:
