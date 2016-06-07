@@ -23,9 +23,17 @@
  */
 package oap.util;
 
-import com.google.common.collect.*;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.SetMultimap;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
@@ -105,6 +113,10 @@ public class Maps {
          .filter( e -> value.equals( e.getValue() ) )
          .map( Map.Entry::getKey )
          .findFirst();
+   }
+
+   public static <K, V> Map.Entry<K, V> head( Map<K, V> map ) {
+      return map.entrySet().iterator().next();
    }
 
    public static class Collectors {

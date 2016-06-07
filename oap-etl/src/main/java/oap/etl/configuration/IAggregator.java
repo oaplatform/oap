@@ -24,54 +24,25 @@
 
 package oap.etl.configuration;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
 import java.util.Map;
 
-@ToString
-@EqualsAndHashCode
-public class Aggregator implements IAggregator {
-   public final Map<String, List<String>> aggregates;
-   public final String export;
-   private final String table;
-   private final Map<String, Join> joins;
-   private final List<Accumulator> accumulators;
+public interface IAggregator {
+   @JsonIgnore
+   String getTable();
 
+   @JsonIgnore
+   Map<String, ? extends IAggregator> getJoins();
 
-   public Aggregator(
-      String table, Map<String, List<String>> aggregates,
-      List<Accumulator> accumulators, Map<String, Join> joins, String export ) {
-      this.table = table;
-      this.accumulators = accumulators;
-      this.aggregates = aggregates;
-      this.joins = joins;
-      this.export = export;
-   }
+   @JsonIgnore
+   List<Accumulator> getAccumulators();
 
-   @Override
-   public String getTable() {
-      return table;
-   }
+   @JsonIgnore
+   Map<String, List<String>> getAggregates();
 
-   @Override
-   public Map<String, ? extends IAggregator> getJoins() {
-      return joins;
-   }
-
-   @Override
-   public List<Accumulator> getAccumulators() {
-      return accumulators;
-   }
-
-   @Override
-   public Map<String, List<String>> getAggregates() {
-      return aggregates;
-   }
-
-   @Override
-   public String getExport() {
-      return export;
-   }
+   @JsonIgnore
+   String getExport();
 }
