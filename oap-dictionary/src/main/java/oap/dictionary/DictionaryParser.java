@@ -82,7 +82,7 @@ public class DictionaryParser {
          final HashMap<String, Object> properties = new HashMap<>();
          for( Map.Entry e : valueMap.entrySet() ) {
             final String propertyName = e.getKey().toString();
-            if( !defaultFields.contains( propertyName ) && (!valueAsRoot || !NAME.equals( propertyName ))) {
+            if( !defaultFields.contains( propertyName ) && ( !valueAsRoot || !NAME.equals( propertyName ) ) ) {
                final Object propertyValue = e.getValue();
 
                if( VALUES.equals( propertyName ) )
@@ -97,7 +97,12 @@ public class DictionaryParser {
 
          if( valueAsRoot ) {
             final String name = getString( valueMap, NAME );
-            return new DictionaryRoot( name, values, p );
+
+            final ExternalIdType externalIdAs = getStringOpt( valueMap, "externalIdAs" )
+               .map( ExternalIdType::valueOf )
+               .orElse( ExternalIdType.integer );
+
+            return new DictionaryRoot( name, externalIdAs, values, p );
          }
 
          final String id = getString( valueMap, ID );
@@ -132,12 +137,6 @@ public class DictionaryParser {
    }
 
    private static DictionaryRoot parse( Map map ) {
-//      final String name = getString( map, NAME );
-
-//      final ExternalIdType externalIdAs = getStringOpt( map, "externalIdAs" )
-//         .map( ExternalIdType::valueOf )
-//         .orElse( ExternalIdType.integer );
-
       return ( DictionaryRoot ) parseAsDictionaryValue( map, "", true );
    }
 
