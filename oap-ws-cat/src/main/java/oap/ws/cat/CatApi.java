@@ -36,12 +36,11 @@ public class CatApi {
    private static final ContentType CONTENT_TYPE =
       ContentType.create( "text/tab-separated-values", StandardCharsets.UTF_8 );
 
-   public static HttpResponse table( List<String>... rows ) {
+   public static HttpResponse table( List<Object>... rows ) {
       return table( asList( rows ) );
    }
 
-
-   public static HttpResponse table( List<List<String>> rows ) {
+   public static HttpResponse table( List<List<Object>> rows ) {
       if( rows.isEmpty() ) return HttpResponse.ok( "", true, CONTENT_TYPE );
 
       final int cols = rows.iterator().next().size();
@@ -49,24 +48,24 @@ public class CatApi {
 
       Arrays.fill( size, 0 );
 
-      for( List<String> row : rows ) {
+      for( List<Object> row : rows ) {
          assert row.size() == cols;
 
          for( int i = 0; i < cols; i++ ) {
-            final String item = row.get( i );
+            final String item = row.get( i ).toString();
             if( size[i] < item.length() ) size[i] = item.length();
          }
       }
 
       final StringBuilder body = new StringBuilder();
 
-      for( List<String> row : rows ) {
+      for( List<Object> row : rows ) {
          final StringBuilder rowBody = new StringBuilder();
 
          for( int i = 0; i < row.size(); i++ ) {
             if( rowBody.length() != 0 ) rowBody.append( ' ' );
 
-            rowBody.append( StringUtils.rightPad( row.get( i ), size[i], ' ' ) );
+            rowBody.append( StringUtils.rightPad( row.get( i ).toString(), size[i], ' ' ) );
          }
 
          body.append( rowBody.toString() ).append( '\n' );
