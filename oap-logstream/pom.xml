@@ -45,7 +45,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.16.35</version>
+        <version>1.17.12</version>
     </parent>
 
     <dependencies>
