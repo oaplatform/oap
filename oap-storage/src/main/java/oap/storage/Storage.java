@@ -53,4 +53,25 @@ public interface Storage<T> {
    void deleteAll();
 
    long size();
+
+   void addDataListener( DataListener<T> dataListener );
+
+   void removeDataListener( DataListener<T> dataListener );
+
+   interface DataListener<T> {
+      default void updated( T object ) {
+      }
+
+
+      default void updated( Collection<T> objects ) {
+      }
+
+
+      default void deleted( T object ) {
+      }
+
+      default void deleted( Collection<T> objects ) {
+      }
+
+   }
 }

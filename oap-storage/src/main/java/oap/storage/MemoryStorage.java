@@ -168,28 +168,13 @@ public class MemoryStorage<T> implements Storage<T> {
             dataListener.deleted( objects );
    }
 
+   @Override
    public void addDataListener( DataListener<T> dataListener ) {
       this.dataListeners.add( dataListener );
    }
 
+   @Override
    public void removeDataListener( DataListener<T> dataListener ) {
       this.dataListeners.remove( dataListener );
-   }
-
-   public interface DataListener<T> {
-      default void updated( T object ) {
-      }
-
-
-      default void updated( Collection<T> objects ) {
-      }
-
-
-      default void deleted( T object ) {
-      }
-
-      default void deleted( Collection<T> objects ) {
-      }
-
    }
 }
