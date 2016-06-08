@@ -35,7 +35,7 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 
-import static oap.io.IoStreams.Encoding.GZIP;
+import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
 
@@ -43,7 +43,7 @@ public class ArchiverTest extends AbstractTest {
 
    @DataProvider
    public Object[][] encoding() {
-      return new Object[][]{ { GZIP }, { PLAIN } };
+      return new Object[][]{ { LZ4 }, { PLAIN } };
    }
 
    @Test( dataProvider = "encoding" )

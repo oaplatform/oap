@@ -22,58 +22,55 @@ package oap.ws.cat;/*
  * SOFTWARE.
  */
 
-import com.google.common.collect.Iterables;
 import oap.http.HttpResponse;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static java.util.stream.Collectors.toList;
+import static java.util.Arrays.asList;
 
 public class CatApi {
-    private static final ContentType CONTENT_TYPE =
-        ContentType.create( "text/tab-separated-values", StandardCharsets.UTF_8 );
+   private static final ContentType CONTENT_TYPE =
+      ContentType.create( "text/tab-separated-values", StandardCharsets.UTF_8 );
 
-    public static HttpResponse table( String... rows ) {
-        return HttpResponse.ok( String.join( "\n", rows ) + "\n", true,
-            CONTENT_TYPE );
-    }
+   public static HttpResponse table( List<Object>... rows ) {
+      return table( asList( rows ) );
+   }
 
-    @SuppressWarnings( "unchecked" )
-    public static HttpResponse table( Collection<String>... rows ) {
-        return HttpResponse.ok( String.join( "\n", Iterables.concat( rows ) ) + "\n", true,
-            CONTENT_TYPE );
-    }
+   public static HttpResponse table( List<List<Object>> rows ) {
+      if( rows.isEmpty() ) return HttpResponse.ok( "", true, CONTENT_TYPE );
 
-    public static String row( Collection<Object> tabs ) {
-        return String.join( "\t", tabs.stream().map( Object::toString ).collect( toList() ) );
-    }
+      final int cols = rows.iterator().next().size();
+      final int[] size = new int[cols];
 
-    public static String row( Object... tabs ) {
-        return row( Arrays.stream( tabs ).collect( toList() ) );
-    }
+      Arrays.fill( size, 0 );
 
-    public static List<String> rows( Object... tabs ) {
-        return Collections.singletonList( row( tabs ) );
-    }
+      for( List<Object> row : rows ) {
+         assert row.size() == cols;
 
-    public static String influxToZabbix( String metricWithTags ) {
-        final Matcher matcher = Pattern.compile( ",[^=]+=" ).matcher( metricWithTags );
-        final StringBuffer sb = new StringBuffer();
-        boolean first = true;
-        while( matcher.find() ) {
-            matcher.appendReplacement( sb, first ? "[" : "," );
-            first = false;
-        }
+         for( int i = 0; i < cols; i++ ) {
+            final String item = row.get( i ).toString();
+            if( size[i] < item.length() ) size[i] = item.length();
+         }
+      }
 
-        matcher.appendTail( sb );
-        if( !first ) sb.append( "]" );
-        return sb.toString();
-    }
+      final StringBuilder body = new StringBuilder();
+
+      for( List<Object> row : rows ) {
+         final StringBuilder rowBody = new StringBuilder();
+
+         for( int i = 0; i < row.size(); i++ ) {
+            if( rowBody.length() != 0 ) rowBody.append( ' ' );
+
+            rowBody.append( StringUtils.rightPad( row.get( i ).toString(), size[i], ' ' ) );
+         }
+
+         body.append( rowBody.toString() ).append( '\n' );
+      }
+
+      return HttpResponse.ok( body.toString(), true, CONTENT_TYPE );
+   }
 }
