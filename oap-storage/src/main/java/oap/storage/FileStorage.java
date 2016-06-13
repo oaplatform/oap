@@ -57,7 +57,7 @@ import static oap.util.Pair.__;
 import static org.slf4j.LoggerFactory.getLogger;
 
 
-public class FileStorage<T> extends MemoryStorage<T> implements Closeable, ReplicationMaster<T> {
+public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
    private static final int VERSION = 0;
    private static final Pattern PATTERN_VERSION = Pattern.compile( ".+\\.v(\\d+)\\.json" );
 
@@ -189,17 +189,7 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable, Repli
    }
 
    @Override
-   public List<Metadata<T>> updatedSince( long time ) {
-      return Stream.of( data.values() ).filter( m -> m.modified > time ).toList();
-   }
-
-   @Override
-   public List<String> ids() {
-      return new ArrayList<>( data.keySet() );
-   }
-
-   @Override
    public String toString() {
-      return FileStorage.class.getName() + "[" + path + "]";
+      return getClass().getName() + "[" + path + "]";
    }
 }

@@ -37,7 +37,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class MemoryStorage<T> implements Storage<T> {
+public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
    protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
    protected Function<T, String> identify;
    private List<DataListener<T>> dataListeners = new ArrayList<>();
@@ -177,4 +177,15 @@ public class MemoryStorage<T> implements Storage<T> {
    public void removeDataListener( DataListener<T> dataListener ) {
       this.dataListeners.remove( dataListener );
    }
+
+   @Override
+   public List<Metadata<T>> updatedSince( long time ) {
+      return Stream.of( data.values() ).filter( m -> m.modified > time ).toList();
+   }
+
+   @Override
+   public List<String> ids() {
+      return new ArrayList<>( data.keySet() );
+   }
+
 }
