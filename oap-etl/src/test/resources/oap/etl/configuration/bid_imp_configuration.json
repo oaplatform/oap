@@ -1,0 +1,52 @@
+{
+  "table": "bid",
+  "aggregates": {
+    "by_exchange": [
+      "exchange"
+    ]
+  },
+  "joins": {
+    "impression": {
+      "table": "impression",
+      "field": "BID_ID",
+      "accumulators": [
+        {
+          "name": "count",
+          "type": "COUNT"
+        },
+        {
+          "name": "price",
+          "type": "SUM",
+          "field": "PRICE"
+        }
+      ]
+    }
+  },
+  "accumulators": [
+    {
+      "name": "bids_count",
+      "type": "COUNT"
+    },
+    {
+      "name": "imps_count",
+      "type": "SUM",
+      "field": "impression.count"
+    },
+    {
+      "name": "sum_of_wins",
+      "type": "SUM",
+      "field": "impression.price"
+    },
+    {
+      "name": "sum_of_bids_won",
+      "type": "SUM",
+      "field": "BID_PRICE",
+      "filter": {
+        "field":"impression.count",
+        "operation":"!=",
+        "value":"0"
+      }
+    }
+  ],
+  "export": "export"
+}

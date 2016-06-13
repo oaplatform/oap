@@ -88,4 +88,38 @@ public class ConfigurationJoinTest extends AbstractTest {
       assertString( export.toString() ).isEqualTo( "s\t30\t4\n" +
          "s2\t10\t2\n" );
    }
+
+   @Test
+   public void testBidImpJoin() {
+      val aggregatorConfiguration =
+         Binder.json.unmarshalResource( getClass(), Aggregator.class, "bid_imp_configuration.json" )
+            .orElseThrow( () -> new IllegalArgumentException( "bid_imp_configuration.json not found" ) );
+
+      final Model model1 = new Model( false ).s( 0 ).i( 1 );
+      final Model model2 = new Model( false ).s( 0 ).i( 1 );
+
+      val export = new StringExport();
+
+      AggregatorBuilder
+         .custom()
+         .withModel( "bid", model1, Maps.of( __( "BID_ID", 0 ), __( "EXCHANGE", 1 ), __( "BID_PRICE", 2 ) ) )
+         .withModel( "impression", model2, Maps.of( __( "BID_ID", 0 ), __( "PRICE", 1 ) ) )
+
+         .withTable( "bid", Table.fromString(
+            "ID0989\tSMAATO\t896\n" +
+            "ID0990\tSMAATO\t890\n" +
+            "ID0991\tOPERA\t253\n", model1 ) )
+         .withTable( "impression", Table.fromString(
+            "ID0989\t800\n" +
+            "ID0991\t200\n", model2 ) )
+
+         .withConfiguration( aggregatorConfiguration )
+
+         .withExport( "export", export )
+         .build();
+
+      assertString( export.toString() ).isEqualTo(
+         "SMAATO\t2\t1\t800\t896\n" +
+         "OPERA\t1\t1\t200\t253\n" );
+   }
 }
