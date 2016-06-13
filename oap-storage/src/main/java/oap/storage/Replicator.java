@@ -51,7 +51,7 @@ public class Replicator<T> implements Closeable {
       this.scheduled = Scheduler.scheduleWithFixedDelay( interval, MILLISECONDS, this::replicate );
    }
 
-   private void replicate() {
+   public synchronized void replicate() {
       long current = DateTimeUtils.currentTimeMillis() - safeModificationTime;
       long last = lastSync.get();
       List<Metadata<T>> updates = master.updatedSince( last );
