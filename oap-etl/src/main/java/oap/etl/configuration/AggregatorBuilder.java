@@ -25,7 +25,6 @@
 package oap.etl.configuration;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.etl.Export;
 import oap.etl.Join;
 import oap.etl.Table;
@@ -69,7 +68,7 @@ public class AggregatorBuilder {
    }
 
    public void build() {
-      val groupByStream = build( configuration );
+      Table.GroupByStream groupByStream = build( configuration );
 
       final List<Table> tables = groupByStream.getTables();
 
@@ -86,19 +85,19 @@ public class AggregatorBuilder {
       final TableModel tableModel = getTable( configuration.getTable() );
       Table table = tableModel.table;
 
-      for( val joinEntry : configuration.getJoins().entrySet() ) {
-         val joinName = joinEntry.getKey();
-         val aggregator = joinEntry.getValue();
+      for( Map.Entry<String, ? extends IAggregator> joinEntry : configuration.getJoins().entrySet() ) {
+         String joinName = joinEntry.getKey();
+         IAggregator aggregator = joinEntry.getValue();
 
-         val groupByStream = build( aggregator );
+         Table.GroupByStream groupByStream = build( aggregator );
 
          final Model fromModel = tableModel.model;
 
          final Model model = new Model( false );
-         val mapping = new HashMap<String, Integer>();
+         Map<String, Integer> mapping = new HashMap<>();
 
          final ArrayList<Integer> indexes = Lists.of( groupByStream.fields[0] );
-         val offset = tableModel.model.size();
+         int offset = tableModel.model.size();
          final List<Accumulator> accumulators = aggregator.getAccumulators();
          for( int i = 0; i < accumulators.size(); i++ ) {
             final Accumulator ac = accumulators.get( i );
@@ -134,7 +133,7 @@ public class AggregatorBuilder {
 
       final ArrayList<GroupBy> result = new ArrayList<>();
 
-      for( val entry : configuration.getAggregates().entrySet() ) {
+      for( Map.Entry<String, List<String>> entry : configuration.getAggregates().entrySet() ) {
          final int[] groupByPosition = entry.getValue().stream().mapToInt( tableModel.mapping::get ).toArray();
 
          final ArrayList<oap.etl.accumulator.Accumulator> accumulators = new ArrayList<>();

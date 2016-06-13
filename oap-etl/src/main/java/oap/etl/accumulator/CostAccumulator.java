@@ -32,7 +32,7 @@ import java.util.List;
 
 @ToString
 @EqualsAndHashCode( exclude = { "money", "events" } )
-public class CostAccumulator implements Accumulator<CostAccumulator> {
+public class CostAccumulator implements Accumulator {
    private int moneyField;
    private int eventField;
    private long money;

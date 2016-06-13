@@ -29,7 +29,7 @@ import oap.tsv.Model;
 import java.util.List;
 import java.util.function.Predicate;
 
-public interface Accumulator<T extends Accumulator<T>> {
+public interface Accumulator {
 
    static Accumulator count() {
       return new CountAccumulator();
@@ -61,7 +61,7 @@ public interface Accumulator<T extends Accumulator<T>> {
 
    Object result();
 
-   T clone();
+   Accumulator clone();
 
    Model.ColumnType getModelType();
 }

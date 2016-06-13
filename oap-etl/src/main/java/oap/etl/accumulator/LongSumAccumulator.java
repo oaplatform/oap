@@ -32,7 +32,7 @@ import java.util.List;
 
 @ToString
 @EqualsAndHashCode( exclude = { "sum" } )
-public class LongSumAccumulator implements Accumulator<LongSumAccumulator> {
+public class LongSumAccumulator implements Accumulator {
    private int field;
    private long sum;
 

@@ -32,7 +32,7 @@ import java.util.List;
 
 @ToString
 @EqualsAndHashCode( exclude = { "count" } )
-public class CountAccumulator implements Accumulator<CountAccumulator> {
+public class CountAccumulator implements Accumulator {
    private long count;
 
    @Override

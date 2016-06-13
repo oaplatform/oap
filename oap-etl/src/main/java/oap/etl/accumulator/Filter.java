@@ -33,7 +33,7 @@ import java.util.function.Predicate;
 
 @ToString
 @EqualsAndHashCode()
-public class Filter<T> implements Accumulator<Filter<T>> {
+public class Filter<T> implements Accumulator {
    final Accumulator accumulator;
    private final Predicate<T> filter;
    private int field;
