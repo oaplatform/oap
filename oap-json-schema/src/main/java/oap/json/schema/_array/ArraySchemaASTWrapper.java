@@ -26,7 +26,6 @@ package oap.json.schema._array;
 
 import oap.json.schema.ContainerSchemaASTWrapper;
 import oap.json.schema.JsonSchemaParserContext;
-import oap.json.schema.SchemaAST;
 import oap.json.schema.SchemaASTWrapper;
 import oap.json.schema.SchemaId;
 
@@ -37,9 +36,7 @@ import java.util.Optional;
 
 import static java.util.Collections.singletonList;
 
-public class ArraySchemaASTWrapper
-   extends SchemaASTWrapper<ArraySchemaAST, ArraySchemaASTWrapper>
-   implements ContainerSchemaASTWrapper {
+public class ArraySchemaASTWrapper extends SchemaASTWrapper<ArraySchemaAST> implements ContainerSchemaASTWrapper {
 
    public SchemaASTWrapper items;
    Optional<Integer> minItems;

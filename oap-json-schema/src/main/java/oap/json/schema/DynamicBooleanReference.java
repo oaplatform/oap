@@ -24,19 +24,29 @@
 
 package oap.json.schema;
 
-import lombok.ToString;
+import oap.util.Lists;
 
-/**
- * Created by Igor Petrenko on 13.04.2016.
- */
-@ToString( callSuper = true )
-public class DefaultSchemaASTWrapper extends SchemaASTWrapper<DefaultSchemaAST> {
-   public DefaultSchemaASTWrapper( SchemaId id ) {
-      super( id );
+import java.util.Objects;
+
+public class DynamicBooleanReference implements BooleanReference {
+   private final String jsonPath;
+   private final Condition condition;
+   private final Object value;
+
+   public DynamicBooleanReference( String jsonPath, Condition condition, Object value ) {
+      this.jsonPath = jsonPath;
+      this.condition = condition;
+      this.value = value;
    }
 
    @Override
-   public DefaultSchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new DefaultSchemaAST( common, id.toString() );
+   public boolean apply( Object json ) {
+      return Lists.headOpt( new JsonPath( jsonPath ).traverse( json ) )
+         .map( v -> ( condition == Condition.EQ ) == Objects.equals( v, value ) )
+         .orElse( false );
+   }
+
+   public enum Condition {
+      EQ, NE
    }
 }

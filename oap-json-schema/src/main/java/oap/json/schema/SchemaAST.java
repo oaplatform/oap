@@ -43,14 +43,19 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
    @ToString
    public static class CommonSchemaAST {
       public final String schemaType;
-      public final Optional<Boolean> required;
+      public final Optional<BooleanReference> required;
+      public final Optional<BooleanReference> enabled;
       public final Optional<Object> defaultValue;
       public final Optional<Function<Object, List<Object>>> enumValue;
 
-      public CommonSchemaAST( String schemaType, Optional<Boolean> required, Optional<Object> defaultValue,
+      public CommonSchemaAST( String schemaType,
+                              Optional<BooleanReference> required,
+                              Optional<BooleanReference> enabled,
+                              Optional<Object> defaultValue,
                               Optional<Function<Object, List<Object>>> enumValue ) {
          this.schemaType = schemaType;
          this.required = required;
+         this.enabled = enabled;
          this.defaultValue = defaultValue;
          this.enumValue = enumValue;
       }
@@ -59,6 +64,7 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
          return new CommonSchemaAST(
             schemaType,
             required.isPresent() ? required : common.required,
+            enabled.isPresent() ? enabled : common.enabled,
             defaultValue.isPresent() ? defaultValue : common.defaultValue,
             enumValue.isPresent() ? enumValue : common.enumValue
          );

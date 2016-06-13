@@ -32,6 +32,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
+import static oap.json.schema.DynamicBooleanReference.Condition.EQ;
+import static oap.json.schema.DynamicBooleanReference.Condition.NE;
+
 public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
    public static String getType( Object object ) {
       if( object instanceof Boolean ) return "boolean";
@@ -62,7 +65,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
 
    public abstract List<String> validate( JsonValidatorProperties properties, A schema, Object value );
 
-   public abstract SchemaASTWrapper<A, ? extends SchemaASTWrapper> parse( JsonSchemaParserContext context );
+   public abstract SchemaASTWrapper<A> parse( JsonSchemaParserContext context );
 
    public static class PropertyParser<A> {
       private final Optional<A> value;
@@ -142,16 +145,17 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
 
       @SuppressWarnings( "unchecked" )
       public SchemaAST.CommonSchemaAST asCommon() {
-         Optional<Boolean> required = Optional.ofNullable( ( Boolean ) properties.node.get( "required" ) );
-         Optional<Object> defaultValue = Optional.ofNullable( properties.node.get( "default" ) );
-         Object anEnum = properties.node.get( "enum" );
+         final Optional<BooleanReference> required = asBooleanReference( "required" );
+         final Optional<BooleanReference> enabled = asBooleanReference( "enabled" );
+         final Optional<Object> defaultValue = Optional.ofNullable( properties.node.get( "default" ) );
+         final Object anEnum = properties.node.get( "enum" );
 
-         return new SchemaAST.CommonSchemaAST( properties.schemaType, required, defaultValue, toEnum( anEnum ) );
+         return new SchemaAST.CommonSchemaAST( properties.schemaType, required, enabled, defaultValue, toEnum( anEnum ) );
       }
 
       @SuppressWarnings( "unchecked" )
-      public PropertyParser<LinkedHashMap<String, SchemaASTWrapper>> asMapAST( String property, JsonSchemaParserContext context ) {
-         LinkedHashMap<String, SchemaASTWrapper> p = new LinkedHashMap<>();
+      public PropertyParser<LinkedHashMap<String, SchemaASTWrapper<?>>> asMapAST( String property, JsonSchemaParserContext context ) {
+         LinkedHashMap<String, SchemaASTWrapper<?>> p = new LinkedHashMap<>();
 
          Optional<Map<Object, Object>> map =
             Optional.ofNullable( ( Map<Object, Object> ) context.node.get( property ) );
@@ -166,6 +170,24 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
          );
 
          return new PropertyParser<>( map.map( v -> p ) );
+      }
+
+      public Optional<BooleanReference> asBooleanReference( String field ) {
+         final Object enabled = properties.node.get( field );
+         if( enabled == null ) return Optional.empty();
+
+         if( enabled instanceof Boolean ) {
+            return Optional.of( ( Boolean ) enabled ? BooleanReference.TRUE : BooleanReference.FALSE );
+         } else {
+            final Map map = ( Map ) enabled;
+            final String jsonPath = ( String ) map.get( "json-path" );
+            final Object eq = map.get( "eq" );
+            final Object ne = map.get( "ne" );
+
+            final DynamicBooleanReference.Condition condition = map.containsKey( "eq" ) ? EQ : NE;
+
+            return Optional.of( new DynamicBooleanReference( jsonPath, condition, condition == EQ ? eq : ne ) );
+         }
       }
    }
 }

@@ -24,19 +24,34 @@
 
 package oap.json.schema;
 
-import lombok.ToString;
+import org.testng.annotations.Test;
 
-/**
- * Created by Igor Petrenko on 13.04.2016.
- */
-@ToString( callSuper = true )
-public class DefaultSchemaASTWrapper extends SchemaASTWrapper<DefaultSchemaAST> {
-   public DefaultSchemaASTWrapper( SchemaId id ) {
-      super( id );
+public class SchemaEnabledTest extends AbstractSchemaTest {
+   @Test
+   public void testObjectPropertiesEnabled() {
+      String schema = "{" +
+         "  additionalProperties: false, " +
+         "  type: object, " +
+         "  properties {v1.type = string,v2 {type = string,enabled = false}}" +
+         "}";
+
+      assertOk( schema, "{}" );
+      assertOk( schema, "{'v1':'10'}" );
+      assertFailure( schema, "{'v2':'20'}", "additional properties are not permitted [v2]" );
    }
 
-   @Override
-   public DefaultSchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new DefaultSchemaAST( common, id.toString() );
+   @Test
+   public void testObjectPropertiesEnabledDynamic() {
+      String schema = "{" +
+         "  additionalProperties: false, " +
+         "  type: object, " +
+         "  properties {v1.type = string,v2 {type = string,enabled = {json-path: v1,eq: test}}}" +
+         "}";
+
+      assertOk( schema, "{}" );
+      assertOk( schema, "{'v1':'10'}" );
+      assertOk( schema, "{'v1':'test','v2':'ok'}" );
+      assertFailure( schema, "{'v2':'20'}", "additional properties are not permitted [v2]" );
+      assertFailure( schema, "{'v1':'?', 'v2':'20'}", "additional properties are not permitted [v2]" );
    }
 }

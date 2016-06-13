@@ -30,7 +30,7 @@ import oap.json.schema.SchemaId;
 
 import java.util.Optional;
 
-public class NumberSchemaASTWrapper extends SchemaASTWrapper<NumberSchemaAST, NumberSchemaASTWrapper> {
+public class NumberSchemaASTWrapper extends SchemaASTWrapper<NumberSchemaAST> {
    Optional<Boolean> exclusiveMinimum;
    Optional<Boolean> exclusiveMaximum;
    Optional<Double> minimum;

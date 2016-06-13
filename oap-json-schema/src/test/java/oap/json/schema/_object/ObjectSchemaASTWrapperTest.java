@@ -42,12 +42,12 @@ public class ObjectSchemaASTWrapperTest extends AbstractTest {
          extendsSchema = Optional.of(
             new ObjectSchemaASTWrapper( new SchemaId( "", "", "id" ) ) {{
                extendsSchema = Optional.empty();
-               declaredProperties = new LinkedHashMap<String, SchemaASTWrapper>() {{
+               declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
                   put( "b", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.b" ) ) );
                }};
             }}
          );
-         declaredProperties = new LinkedHashMap<String, SchemaASTWrapper>() {{
+         declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
             put( "a", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.a" ) ) );
             put( "b", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.b" ) ) );
          }};
@@ -61,7 +61,7 @@ public class ObjectSchemaASTWrapperTest extends AbstractTest {
    public void testGetChildrenWithoutParent() throws Exception {
       final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "", "", "id" ) ) {{
          extendsSchema = Optional.empty();
-         declaredProperties = new LinkedHashMap<String, SchemaASTWrapper>() {{
+         declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
             put( "a", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.a" ) ) );
          }};
       }};

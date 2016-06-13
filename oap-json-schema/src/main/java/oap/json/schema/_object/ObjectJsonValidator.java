@@ -26,10 +26,12 @@ package oap.json.schema._object;
 import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
+import oap.json.schema.SchemaAST;
 import oap.json.schema.SchemaPath;
 import oap.util.Stream;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -39,18 +41,25 @@ public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
       if( !( value instanceof Map<?, ?> ) ) return typeFailed( properties, schema, value );
 
       @SuppressWarnings( "unchecked" )
-      Map<String, Object> mapValue = ( Map<String, Object> ) value;
+      final Map<String, Object> mapValue = ( Map<String, Object> ) value;
 
-      List<String> errors = new ArrayList<>();
+      final List<String> errors = new ArrayList<>();
+
+      final HashMap<String, SchemaAST> objectProperties = new HashMap<>();
 
       schema.properties.forEach( ( k, ast ) -> {
+         if( ast.common.enabled.map( e -> e.apply( properties.rootJson ) ).orElse( true ) )
+            objectProperties.put( k, ast );
+      } );
+
+      objectProperties.forEach( ( k, ast ) -> {
          Object v = mapValue.get( k );
          errors.addAll( properties.validator
             .apply( properties.withPath( k ).withAdditionalProperties( schema.additionalProperties ), ast, v ) );
       } );
 
       List<String> additionalProperties = Stream.of( mapValue.keySet() )
-         .filter( v -> !schema.properties.containsKey( v ) )
+         .filter( v -> !objectProperties.containsKey( v ) )
          .toList();
 
       if( !schema.additionalProperties.orElse( properties.additionalProperties.orElse( true ) )

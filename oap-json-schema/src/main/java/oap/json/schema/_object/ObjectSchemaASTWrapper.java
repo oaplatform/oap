@@ -36,12 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class ObjectSchemaASTWrapper
-   extends SchemaASTWrapper<ObjectSchemaAST, ObjectSchemaASTWrapper>
-   implements ContainerSchemaASTWrapper {
+public class ObjectSchemaASTWrapper extends SchemaASTWrapper<ObjectSchemaAST> implements ContainerSchemaASTWrapper {
 
    Optional<ObjectSchemaASTWrapper> extendsSchema;
-   LinkedHashMap<String, SchemaASTWrapper> declaredProperties;
+   LinkedHashMap<String, SchemaASTWrapper<?>> declaredProperties;
    Optional<Boolean> additionalProperties;
    Optional<String> extendsValue;
 

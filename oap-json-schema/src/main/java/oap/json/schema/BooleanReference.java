@@ -24,19 +24,9 @@
 
 package oap.json.schema;
 
-import lombok.ToString;
+public interface BooleanReference {
+   BooleanReference TRUE = json -> true;
+   BooleanReference FALSE = json -> false;
 
-/**
- * Created by Igor Petrenko on 13.04.2016.
- */
-@ToString( callSuper = true )
-public class DefaultSchemaASTWrapper extends SchemaASTWrapper<DefaultSchemaAST> {
-   public DefaultSchemaASTWrapper( SchemaId id ) {
-      super( id );
-   }
-
-   @Override
-   public DefaultSchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new DefaultSchemaAST( common, id.toString() );
-   }
+   boolean apply( Object json );
 }

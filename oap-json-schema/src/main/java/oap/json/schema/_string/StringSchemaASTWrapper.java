@@ -31,7 +31,7 @@ import oap.json.schema.SchemaId;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-public class StringSchemaASTWrapper extends SchemaASTWrapper<StringSchemaAST, StringSchemaASTWrapper> {
+public class StringSchemaASTWrapper extends SchemaASTWrapper<StringSchemaAST> {
    Optional<Integer> minLength;
    Optional<Integer> maxLength;
    Optional<Pattern> pattern;

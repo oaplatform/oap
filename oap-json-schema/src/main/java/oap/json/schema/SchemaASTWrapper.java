@@ -30,7 +30,7 @@ import lombok.ToString;
  * Created by Igor Petrenko on 29.04.2016.
  */
 @ToString
-public abstract class SchemaASTWrapper<TAST extends SchemaAST<TAST>, TW extends SchemaASTWrapper<TAST, TW>> {
+public abstract class SchemaASTWrapper<TAST extends SchemaAST<TAST>> {
    public final SchemaId id;
    public SchemaAST.CommonSchemaAST common;
 
