@@ -36,6 +36,7 @@ public class CatApi {
    private static final ContentType CONTENT_TYPE =
       ContentType.create( "text/tab-separated-values", StandardCharsets.UTF_8 );
 
+   @SafeVarargs
    public static HttpResponse table( List<Object>... rows ) {
       return table( asList( rows ) );
    }

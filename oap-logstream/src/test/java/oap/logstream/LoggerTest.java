@@ -36,6 +36,7 @@ import org.testng.annotations.Test;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_BUFFER;
+import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_FREE_SPACE_REQUIRED;
 import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
@@ -78,14 +79,20 @@ public class LoggerTest extends AbstractTest {
       Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
       String content = "12345678";
 
-      try( LoggingBackend serverBackend = new DiskLoggingBackend( tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, false ) ) {
-         SocketLoggingServer server = new SocketLoggingServer( Env.port("net"), 1024, serverBackend, tmpPath( "control" ) );
-         try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", Env.port("net"), tmpPath( "buffers" ), 50 ) ) {
+      try( DiskLoggingBackend serverBackend = new DiskLoggingBackend( tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, false ) ) {
+         SocketLoggingServer server = new SocketLoggingServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
+         try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", Env.port( "net" ), tmpPath( "buffers" ), 50 ) ) {
+            serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 1000L;
+            assertFalse( serverBackend.isLoggingAvailable() );
             Logger logger = new Logger( clientBackend );
             logger.log( "a", content );
             clientBackend.send();
             assertFalse( logger.isLoggingAvailable() );
             server.start();
+            clientBackend.send();
+            assertFalse( logger.isLoggingAvailable() );
+            serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
+            assertTrue( serverBackend.isLoggingAvailable() );
             clientBackend.send();
             assertTrue( logger.isLoggingAvailable() );
             logger.log( "b", content );

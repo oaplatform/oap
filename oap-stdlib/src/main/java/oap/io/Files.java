@@ -34,9 +34,22 @@ import org.apache.commons.io.IOUtils;
 import org.codehaus.plexus.util.DirectoryScanner;
 import org.joda.time.DateTime;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URL;
-import java.nio.file.*;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
@@ -302,5 +315,10 @@ public final class Files {
    public static String nameWithoutExtention( URL url ) {
       File path = new File( url.getPath() );
       return Strings.substringBeforeLast( path.getName(), "." );
+   }
+
+   public static long usableSpaceAtDirectory( Path path ) {
+      ensureDirectory( path );
+      return path.toFile().getUsableSpace();
    }
 }

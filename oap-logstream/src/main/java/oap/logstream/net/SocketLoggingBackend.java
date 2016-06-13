@@ -106,7 +106,7 @@ public class SocketLoggingBackend implements LoggingBackend {
             int size = connection.read();
             if( size <= 0 ) {
                loggingAvailable = false;
-               log.error( "pong size {}. The end of the stream is reached.", size );
+               log.error( "Error completing remote write: {}", SocketError.fromCode( size ) );
                return false;
             }
             Metrics.measureCounterIncrement( Metrics.name( "logging.socket" ), buffer.length() );
@@ -114,8 +114,8 @@ public class SocketLoggingBackend implements LoggingBackend {
             return true;
          } catch( Exception e ) {
             loggingAvailable = false;
-            if( log.isWarnEnabled() ) log.warn( e.getMessage() );
-            else if( log.isTraceEnabled() ) log.warn( e.getMessage(), e );
+            log.warn( e.getMessage() );
+            log.trace( e.getMessage(), e );
             Closeables.close( connection );
             return false;
          }

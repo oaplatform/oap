@@ -26,51 +26,61 @@ package oap.logstream.disk;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
+import oap.io.Files;
 import oap.logstream.LoggingBackend;
 import oap.metrics.Metrics;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class DiskLoggingBackend implements LoggingBackend {
-    public static final int DEFAULT_BUFFER = 1024 * 100;
-    public static final String METRICS_LOGGING_DISK = "logging.disk";
-    final Path logDirectory;
-    final String ext;
-    final int bufferSize;
-    private final boolean compress;
-    private ConcurrentHashMap<String, Writer> writers = new ConcurrentHashMap<>();
-    private int bucketsPerHour;
-    private boolean closed;
+   public static final int DEFAULT_BUFFER = 1024 * 100;
+   public static final String METRICS_LOGGING_DISK = "logging.disk";
+   public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
+   private final Path logDirectory;
+   private final String ext;
+   private final int bufferSize;
+   private final boolean compress;
+   private final  ConcurrentHashMap<String, Writer> writers = new ConcurrentHashMap<>();
+   private final int bucketsPerHour;
+   private boolean closed;
+   public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
 
-    public DiskLoggingBackend( Path logDirectory, String ext, int bufferSize, int bucketsPerHour, boolean compress ) {
-        this.logDirectory = logDirectory;
-        this.ext = ext;
-        this.bufferSize = bufferSize;
-        this.bucketsPerHour = bucketsPerHour;
-        this.compress = compress;
-    }
+   public DiskLoggingBackend( Path logDirectory, String ext, int bufferSize, int bucketsPerHour, boolean compress ) {
+      this.logDirectory = logDirectory;
+      this.ext = ext;
+      this.bufferSize = bufferSize;
+      this.bucketsPerHour = bucketsPerHour;
+      this.compress = compress;
+   }
 
-    @Override
-    public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
-        if( closed ) throw new UncheckedIOException( new IOException( "already closed!" ) );
+   @Override
+   public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
+      if( closed ) throw new UncheckedIOException( new IOException( "already closed!" ) );
 
-        Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_DISK ).tag( "from", hostName ) );
-        Writer writer = writers.computeIfAbsent( hostName + fileName,
-            k -> new Writer( logDirectory.resolve( hostName ), fileName, ext, bufferSize, bucketsPerHour, compress ) );
-        log.trace( "logging {} bytes to {}", length, writer );
-        writer.write( buffer, offset, length );
-    }
+      Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_DISK ).tag( "from", hostName ) );
+      Writer writer = writers.computeIfAbsent( hostName + fileName,
+         k -> new Writer( logDirectory.resolve( hostName ), fileName, ext, bufferSize, bucketsPerHour, compress ) );
+      log.trace( "logging {} bytes to {}", length, writer );
+      writer.write( buffer, offset, length );
+   }
 
-    @Override
-    public void close() {
-        if( !closed ) {
-            closed = true;
-            writers.forEach( ( selector, writer ) -> Closeables.close( writer ) );
-            writers.clear();
-        }
-    }
+   @Override
+   public void close() {
+      if( !closed ) {
+         closed = true;
+         writers.forEach( ( selector, writer ) -> Closeables.close( writer ) );
+         writers.clear();
+      }
+   }
+
+   @Override
+   public boolean isLoggingAvailable() {
+      return Files.usableSpaceAtDirectory( logDirectory ) > requiredFreeSpace;
+   }
 }
