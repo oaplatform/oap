@@ -32,7 +32,10 @@ import org.testng.annotations.Test;
 import java.net.URL;
 import java.util.List;
 
-import static oap.testng.Asserts.*;
+import static oap.testng.Asserts.assertEventually;
+import static oap.testng.Asserts.assertString;
+import static oap.testng.Asserts.pathOfTestResource;
+import static oap.testng.Asserts.urlOfTestResource;
 import static org.testng.Assert.assertTrue;
 
 
@@ -47,8 +50,9 @@ public class RemotingTest {
          kernel.start( pathOfTestResource( getClass(), "application.conf" ) );
          assertEventually( 50, 1, () -> {
 
-            assertTrue( Application.<RemoteClient>service( "remote-client" ).accessible() );
-
+            RemoteClient remote = Application.service( "remote-client" );
+            assertTrue( remote.accessible() );
+            assertString( remote.toString() ).isEqualTo( "remote:remote-service-impl@https://localhost:8980/remote/" );
          } );
       } finally {
          kernel.stop();

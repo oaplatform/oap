@@ -70,6 +70,9 @@ public class RemoteInvocationHandler implements InvocationHandler {
    @Override
    @SuppressWarnings( "unchecked" )
    public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
+      if( method.getDeclaringClass() == Object.class ) {
+         return method.invoke( this, args );
+      }
       Parameter[] parameters = method.getParameters();
       List<RemoteInvocation.Argument> arguments = new ArrayList<>();
 
@@ -93,4 +96,8 @@ public class RemoteInvocationHandler implements InvocationHandler {
          .orElseThrow( t -> t );
    }
 
+   @Override
+   public String toString() {
+      return "remote:" + service + "@" + uri;
+   }
 }
