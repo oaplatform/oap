@@ -44,9 +44,9 @@
       "type": "SUM",
       "field": "BID_PRICE",
       "filter": {
-        "field":"impression.count",
-        "operation":"!=",
-        "value":"0"
+        "field": "impression.count",
+        "operation": "!=",
+        "value": 0
       }
     }
   ],

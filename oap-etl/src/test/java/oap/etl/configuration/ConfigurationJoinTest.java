@@ -120,6 +120,6 @@ public class ConfigurationJoinTest extends AbstractTest {
 
       assertString( export.toString() ).isEqualTo(
          "OPERA\t1\t1\t200\t253\n" +
-         "SMAATO\t2\t1\t800\t1786\n" );
+         "SMAATO\t2\t1\t800\t896\n" );
    }
 }
