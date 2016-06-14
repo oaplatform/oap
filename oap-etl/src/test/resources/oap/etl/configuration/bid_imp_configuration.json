@@ -2,7 +2,7 @@
   "table": "bid",
   "aggregates": {
     "by_exchange": [
-      "exchange"
+      "EXCHANGE"
     ]
   },
   "joins": {
@@ -12,12 +12,14 @@
       "accumulators": [
         {
           "name": "count",
-          "type": "COUNT"
+          "type": "COUNT",
+          "default": 0
         },
         {
           "name": "price",
           "type": "SUM",
-          "field": "PRICE"
+          "field": "PRICE",
+          "default": 0.0
         }
       ]
     }

@@ -94,6 +94,7 @@ public class AggregatorConfigurationBuilder {
       private AccumulatorType type;
       private Optional<String> field = Optional.empty();
       private Optional<Accumulator.Filter> filter = Optional.empty();
+      private Object defaultValue;
 
       public AggregatorConfigurationAccumulatorBuilder( String name, Consumer<Accumulator> c ) {
          this.name = name;
@@ -119,8 +120,9 @@ public class AggregatorConfigurationBuilder {
 
       private void add() {
          assert type != null;
+         assert defaultValue != null;
 
-         c.accept( new Accumulator( name, type, field, filter ) );
+         c.accept( new Accumulator( name, type, field, filter, defaultValue ) );
       }
 
       public AggregatorConfigurationAccumulatorBuilder field( String field ) {
@@ -131,6 +133,12 @@ public class AggregatorConfigurationBuilder {
 
       public AggregatorConfigurationAccumulatorBuilder filter( String field, String operation, String value ) {
          this.filter = Optional.of( new Accumulator.Filter( field, operation, value ) );
+
+         return this;
+      }
+
+      public AggregatorConfigurationAccumulatorBuilder withDefault( Object value ) {
+         this.defaultValue = value;
 
          return this;
       }

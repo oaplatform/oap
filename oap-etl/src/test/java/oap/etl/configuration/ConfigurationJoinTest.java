@@ -95,7 +95,7 @@ public class ConfigurationJoinTest extends AbstractTest {
          Binder.json.unmarshalResource( getClass(), Aggregator.class, "bid_imp_configuration.json" )
             .orElseThrow( () -> new IllegalArgumentException( "bid_imp_configuration.json not found" ) );
 
-      final Model model1 = new Model( false ).s( 0 ).i( 1 );
+      final Model model1 = new Model( false ).s( 0, 1 ).i( 2 );
       final Model model2 = new Model( false ).s( 0 ).i( 1 );
 
       val export = new StringExport();
@@ -119,7 +119,7 @@ public class ConfigurationJoinTest extends AbstractTest {
          .build();
 
       assertString( export.toString() ).isEqualTo(
-         "SMAATO\t2\t1\t800\t896\n" +
-         "OPERA\t1\t1\t200\t253\n" );
+         "OPERA\t1\t1\t200\t253\n" +
+         "SMAATO\t2\t1\t800\t1786\n" );
    }
 }

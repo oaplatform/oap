@@ -84,30 +84,32 @@ public class AggregatorBuilder {
    private Table.GroupByStream build( IAggregator configuration ) {
       final TableModel tableModel = getTable( configuration.getTable() );
       Table table = tableModel.table;
+      final int offset = tableModel.model.size();
 
       for( Map.Entry<String, ? extends IAggregator> joinEntry : configuration.getJoins().entrySet() ) {
+
          String joinName = joinEntry.getKey();
          IAggregator aggregator = joinEntry.getValue();
 
+         final TableModel joinTableModel = getTable( aggregator.getTable() );
+
          Table.GroupByStream groupByStream = build( aggregator );
 
-         final Model fromModel = tableModel.model;
+         final Model fromModel = joinTableModel.model;
 
          final Model model = new Model( false );
          Map<String, Integer> mapping = new HashMap<>();
 
          final ArrayList<Integer> indexes = Lists.of( groupByStream.fields[0] );
-         int offset = tableModel.model.size();
+
          final List<Accumulator> accumulators = aggregator.getAccumulators();
          for( int i = 0; i < accumulators.size(); i++ ) {
             final Accumulator ac = accumulators.get( i );
 
             final Optional<Pair<Integer, Model.ColumnType>> fieldInfo = ac.field.map( f -> {
-               final String[] split = StringUtils.split( f, '.' );
+               final int index = fieldPathToIndex( f, joinTableModel );
 
-               final Integer index = split.length == 1 ? tableModel.mapping.get( f ) : getTable( split[0] ).mapping.get( split[1] );
-               if( index == null ) throw new IllegalArgumentException( "Unknown column " + f );
-               return __( index, tableModel.model.getType( index ) );
+               return __( index, joinTableModel.model.getType( index ) );
             } );
 
             model.column( AccumulatorFactory.create( ac.type, fieldInfo ).getModelType(), i + offset );
@@ -118,7 +120,7 @@ public class AggregatorBuilder {
             model.column( fromModel.getColumn( index ) );
          }
 
-         tableModel.mapping.forEach( ( key, value ) -> {
+         joinTableModel.mapping.forEach( ( key, value ) -> {
             if( Arrays.contains( key, groupByStream.fields[0] ) ) {
                mapping.put( key, value );
             }
@@ -127,25 +129,38 @@ public class AggregatorBuilder {
          tables.put( joinName, new TableModel( model, mapping ) );
 
          final Map<String, List<Object>> map = groupByStream.getMaps( objs -> objs[0].toString() )[0];
-         table = table.join( tableModel.mapping.get( Maps.head( joinEntry.getValue().getAggregates() ).getValue().get( 0 ) ), ( Join ) map::get );
+         table = table.join(
+            joinTableModel.mapping.get( Maps.head( joinEntry.getValue().getAggregates() ).getValue().get( 0 ) ),
+            ( Join ) key -> {
+               List<Object> line = map.get( key );
+               if( line == null ) line = aggregator.getDefaultLine();
+               return line;
+            }
+         );
       }
 
 
       final ArrayList<GroupBy> result = new ArrayList<>();
 
       for( Map.Entry<String, List<String>> entry : configuration.getAggregates().entrySet() ) {
-         final int[] groupByPosition = entry.getValue().stream().mapToInt( tableModel.mapping::get ).toArray();
+         final int[] groupByPosition = entry
+            .getValue()
+            .stream()
+            .mapToInt( f -> {
+               final Integer v = tableModel.mapping.get( f );
+               if( v == null )
+                  throw new IllegalArgumentException( "Unknown aggregate field " + f + ", model: " + tableModel.mapping.keySet() );
+               return v;
+            } )
+            .toArray();
 
          final ArrayList<oap.etl.accumulator.Accumulator> accumulators = new ArrayList<>();
 
          for( Accumulator ac : configuration.getAccumulators() ) {
             final Optional<Pair<Integer, Model.ColumnType>> fieldInfo = ac.field.map( f -> {
-               final String[] split = StringUtils.split( f, '.' );
+               final int index = fieldPathToIndex( f, tableModel );
+               final TableModel fieldTableModel = fieldPathToTableModel( f, tableModel );
 
-               final TableModel fieldTableModel = split.length == 1 ? tableModel : getTable( split[0] );
-
-               final Integer index = split.length == 1 ? fieldTableModel.mapping.get( f ) : fieldTableModel.mapping.get( split[1] );
-               if( index == null ) throw new IllegalArgumentException( "Unknown column " + f );
                return __( index, fieldTableModel.model.getTypeOpt( index )
                   .orElseThrow( () -> new IllegalArgumentException( "column = " + f + ", accumulator = " + ac.name ) ) );
             } );
@@ -157,10 +172,9 @@ public class AggregatorBuilder {
 
             final Accumulator.Filter filter = ac.filter.orElse( null );
             if( filter != null ) {
-               final Integer fieldIndex = tableModel.mapping.get( filter.field );
-               if( fieldIndex == null ) throw new IllegalArgumentException( "Filter: unknown fields " + filter.field );
+               final int index = fieldPathToIndex( filter.field, tableModel );
 
-               accumulator = new Filter( accumulator, fieldIndex, filter.getFunction() );
+               accumulator = new Filter( accumulator, index, filter.getFunction() );
             }
 
             accumulators.add( accumulator );
@@ -175,6 +189,25 @@ public class AggregatorBuilder {
 
 
       return groupByStream;
+   }
+
+   private int fieldPathToIndex( String field, TableModel tableModel ) {
+      final String[] split = StringUtils.split( field, '.' );
+
+      final TableModel fieldTableModel = split.length == 1 ? tableModel : getTable( split[0] );
+      final Integer fieldIndex = split.length == 1 ? fieldTableModel.mapping.get( field ) : fieldTableModel.mapping.get( split[1] );
+      if( fieldIndex == null )
+         throw new IllegalArgumentException( "Filter: unknown field " + field + ", model: " + fieldTableModel.mapping.keySet() );
+
+      return fieldIndex;
+   }
+
+   private TableModel fieldPathToTableModel( String field, TableModel tableModel ) {
+      final String[] split = StringUtils.split( field, '.' );
+
+      final TableModel fieldTableModel = split.length == 1 ? tableModel : getTable( split[0] );
+
+      return fieldTableModel;
    }
 
    private TableModel getTable( String key ) {

@@ -32,9 +32,11 @@ import oap.util.Maps;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
 
 @ToString
@@ -43,6 +45,7 @@ public class Join implements IAggregator {
    public final String field;
    private final ArrayList<Accumulator> accumulators;
    private final String table;
+   private final List<Object> defaultLine;
 
    public Join(
       String table,
@@ -52,6 +55,7 @@ public class Join implements IAggregator {
       this.table = table;
       this.field = field;
       this.accumulators = accumulators;
+      this.defaultLine = accumulators.stream().map(a -> a.defaultValue).collect( toList() );
    }
 
    @Override
@@ -78,5 +82,10 @@ public class Join implements IAggregator {
    @JsonIgnore
    public String getExport() {
       throw new IllegalAccessError();
+   }
+
+   @Override
+   public List<Object> getDefaultLine() {
+      return defaultLine;
    }
 }

@@ -74,4 +74,9 @@ public class Aggregator implements IAggregator {
    public String getExport() {
       return export;
    }
+
+   @Override
+   public List<Object> getDefaultLine() {
+      throw new IllegalAccessError();
+   }
 }

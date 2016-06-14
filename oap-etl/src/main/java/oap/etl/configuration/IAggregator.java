@@ -44,4 +44,6 @@ public interface IAggregator {
 
    @JsonIgnore
    String getExport();
+
+   List<Object> getDefaultLine();
 }
