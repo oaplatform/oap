@@ -62,7 +62,7 @@ public class Accumulator {
          this.value = value;
       }
 
-      public Predicate getFunction() {
+      public Predicate<Object> getFunction() {
          switch( operation ) {
             case "=":
             case "==":
