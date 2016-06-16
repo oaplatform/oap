@@ -31,9 +31,11 @@ import lombok.ToString;
 import oap.json.TypeIdFactory;
 import org.joda.time.DateTimeUtils;
 
+import java.io.Serializable;
+
 @EqualsAndHashCode( exclude = "object" )
 @ToString( exclude = "object" )
-public class Metadata<T> implements Comparable<Metadata<T>> {
+public class Metadata<T> implements Comparable<Metadata<T>>, Serializable {
     public String id;
     public long modified = DateTimeUtils.currentTimeMillis();
     @JsonTypeIdResolver( TypeIdFactory.class )
