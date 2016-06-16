@@ -28,16 +28,11 @@ import java.util.List;
 import java.util.Map;
 
 public interface IAggregator {
-
    String getTable();
 
-   Map<String, ? extends IAggregator> getJoins();
+   Map<String, Join> getJoins();
 
    List<Accumulator> getAccumulators();
 
    Map<String, List<String>> getAggregates();
-
-   String getExport();
-
-   List<Object> getDefaultLine();
 }

@@ -56,7 +56,7 @@ public class Aggregator implements IAggregator {
    }
 
    @Override
-   public Map<String, ? extends IAggregator> getJoins() {
+   public Map<String, Join> getJoins() {
       return joins;
    }
 
@@ -70,13 +70,7 @@ public class Aggregator implements IAggregator {
       return aggregates;
    }
 
-   @Override
    public String getExport() {
       return export;
-   }
-
-   @Override
-   public List<Object> getDefaultLine() {
-      throw new IllegalAccessError();
    }
 }

@@ -86,10 +86,10 @@ public class AggregatorBuilder {
       Table table = tableModel.table;
       final int offset = tableModel.model.size();
 
-      for( Map.Entry<String, ? extends IAggregator> joinEntry : configuration.getJoins().entrySet() ) {
+      for( Map.Entry<String, oap.etl.configuration.Join> joinEntry : configuration.getJoins().entrySet() ) {
 
          String joinName = joinEntry.getKey();
-         IAggregator aggregator = joinEntry.getValue();
+         oap.etl.configuration.Join aggregator = joinEntry.getValue();
 
          final TableModel joinTableModel = getTable( aggregator.getTable() );
 

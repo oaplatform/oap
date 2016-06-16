@@ -32,7 +32,6 @@ import oap.util.Maps;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -55,7 +54,7 @@ public class Join implements IAggregator {
       this.table = table;
       this.field = field;
       this.accumulators = accumulators;
-      this.defaultLine = accumulators.stream().map(a -> a.defaultValue).collect( toList() );
+      this.defaultLine = accumulators.stream().map( a -> 0L ).collect( toList() );
    }
 
    @Override
@@ -64,7 +63,7 @@ public class Join implements IAggregator {
    }
 
    @Override
-   public Map<String, ? extends IAggregator> getJoins() {
+   public Map<String, Join> getJoins() {
       return emptyMap();
    }
 
@@ -78,13 +77,7 @@ public class Join implements IAggregator {
       return Maps.of( __( "default", singletonList( field ) ) );
    }
 
-   @Override
    @JsonIgnore
-   public String getExport() {
-      throw new IllegalAccessError();
-   }
-
-   @Override
    public List<Object> getDefaultLine() {
       return defaultLine;
    }

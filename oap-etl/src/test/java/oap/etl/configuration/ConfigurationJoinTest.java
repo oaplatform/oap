@@ -55,11 +55,14 @@ public class ConfigurationJoinTest extends AbstractTest {
          .join( "join-name" ).table( "table2" ).field( "column" ).accumulator( "count" ).operation( COUNT )
          .build();
 
+      System.out.println("build: " + aggregatorConfiguration2);
       System.out.println(Binder.json.marshal( aggregatorConfiguration2 ));
 
       val aggregatorConfiguration =
          Binder.json.unmarshalResource( getClass(), Aggregator.class, "configuration.json" )
             .orElseThrow( () -> new IllegalArgumentException( "configuration.json not found" ) );
+
+      System.out.println("json: " + aggregatorConfiguration);
 
       assertThat( aggregatorConfiguration2 ).isEqualTo( aggregatorConfiguration );
 
