@@ -36,6 +36,8 @@ import static oap.json.schema.DynamicBooleanReference.Condition.EQ;
 import static oap.json.schema.DynamicBooleanReference.Condition.NE;
 
 public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
+   protected static final String ADDITIONAL_PROPERTIES = "additionalProperties";
+
    public static String getType( Object object ) {
       if( object instanceof Boolean ) return "boolean";
       else if( object instanceof String ) return "string";

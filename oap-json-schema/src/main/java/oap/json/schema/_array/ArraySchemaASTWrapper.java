@@ -39,6 +39,7 @@ import static java.util.Collections.singletonList;
 public class ArraySchemaASTWrapper extends SchemaASTWrapper<ArraySchemaAST> implements ContainerSchemaASTWrapper {
 
    public SchemaASTWrapper items;
+   Optional<Boolean> additionalProperties;
    Optional<Integer> minItems;
    Optional<Integer> maxItems;
    Optional<String> idField;
@@ -49,7 +50,8 @@ public class ArraySchemaASTWrapper extends SchemaASTWrapper<ArraySchemaAST> impl
 
    @Override
    public ArraySchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new ArraySchemaAST( common, minItems, maxItems, idField, context.computeIfAbsent( items.id, () -> items.unwrap( context ) ), id.toString() );
+      return new ArraySchemaAST( common, additionalProperties, minItems, maxItems, idField,
+         context.computeIfAbsent( items.id, () -> items.unwrap( context ) ), id.toString() );
    }
 
    @Override

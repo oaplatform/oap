@@ -24,9 +24,32 @@
 
 package oap.json.schema;
 
-public interface BooleanReference {
-   BooleanReference TRUE = json -> true;
-   BooleanReference FALSE = json -> false;
+import java.util.Optional;
 
-   boolean apply( Object json );
+public interface BooleanReference {
+   BooleanReference TRUE = new BooleanReference() {
+      @Override
+      public boolean apply( Object json, Optional<String> currentPath ) {
+         return true;
+      }
+
+      @Override
+      public String toString() {
+         return "BooleanReference::TRUE";
+      }
+   };
+   BooleanReference FALSE = new BooleanReference() {
+      @Override
+      public boolean apply( Object json, Optional<String> currentPath ) {
+         return false;
+      }
+
+
+      @Override
+      public String toString() {
+         return "BooleanReference::FALSE";
+      }
+   };
+
+   boolean apply( Object json, Optional<String> currentPath );
 }

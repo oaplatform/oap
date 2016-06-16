@@ -48,7 +48,7 @@ public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
       final HashMap<String, SchemaAST> objectProperties = new HashMap<>();
 
       schema.properties.forEach( ( k, ast ) -> {
-         if( ast.common.enabled.map( e -> e.apply( properties.rootJson ) ).orElse( true ) )
+         if( ast.common.enabled.map( e -> e.apply( properties.rootJson, properties.withPath( k ).path ) ).orElse( true ) )
             objectProperties.put( k, ast );
       } );
 
@@ -74,7 +74,7 @@ public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
       final ObjectSchemaASTWrapper wrapper = context.createWrapper( ObjectSchemaASTWrapper::new );
 
       wrapper.common = node( context ).asCommon();
-      wrapper.additionalProperties = node( context ).asBoolean( "additionalProperties" ).optional();
+      wrapper.additionalProperties = node( context ).asBoolean( ADDITIONAL_PROPERTIES ).optional();
       wrapper.extendsValue = node( context ).asString( "extends" ).optional();
 
       wrapper.extendsSchema = wrapper.extendsValue

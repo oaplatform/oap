@@ -28,11 +28,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 
 public class JsonPath {
@@ -66,8 +68,13 @@ public class JsonPath {
       int fi = fromIndex;
       for( int i = index; i < path.length; i++, fi++ ) {
          final String field = path[i];
-         final Optional<String> fromField = fromPath.isPresent() ? Optional.of( fromPath.get()[fi] ) : Optional.empty();
-
+         Optional<String> fromField = Optional.empty();
+         if( fromPath.isPresent() ) {
+            final String[] fp = fromPath.get();
+            if( fp.length <= fi )
+               throw new IllegalArgumentException( "[" + fi + "] path = " + asList( path ) + " != fromPath = " + fromPath.map( Arrays::asList ) );
+            fromField = Optional.of( fp[fi] );
+         }
          if( last == null ) return Optional.empty();
          else if( last instanceof Map<?, ?> ) {
             final Map<?, ?> map = ( Map<?, ?> ) last;
@@ -82,7 +89,7 @@ public class JsonPath {
                int arrayIndex = Integer.parseInt( arrayIndexStr );
 
                final Optional<Object> value = traverse( list.get( arrayIndex ), i + 1, fi + 1 );
-               if(value.isPresent()) last = value.get();
+               if( value.isPresent() ) last = value.get();
             } else {
                final ArrayList<Object> result = new ArrayList<>();
 

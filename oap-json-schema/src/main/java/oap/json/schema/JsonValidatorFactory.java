@@ -86,7 +86,8 @@ public class JsonValidatorFactory {
          throw new ValidationSyntaxException( "[schema:type]: unknown simple type [" + schema.common.schemaType + "]" );
       }
 
-      if( value == null && !properties.ignoreRequiredDefault && schema.common.required.orElse( BooleanReference.FALSE ).apply( properties.rootJson ) )
+      if( value == null && !properties.ignoreRequiredDefault
+         && schema.common.required.orElse( BooleanReference.FALSE ).apply( properties.rootJson, properties.path ) )
          return Lists.of( properties.error( "required property is missing" ) );
       else if( value == null ) return Lists.empty();
       else {
