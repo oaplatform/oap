@@ -24,28 +24,9 @@
 
 package oap.json.schema;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.util.Lists;
-
+import java.util.List;
 import java.util.Optional;
 
-@ToString
-@EqualsAndHashCode
-public class DynamicBooleanReference implements BooleanReference {
-   private final String jsonPath;
-   private final OperationFunction of;
-
-   public DynamicBooleanReference( String jsonPath, OperationFunction of ) {
-
-      this.jsonPath = jsonPath;
-      this.of = of;
-   }
-
-   @Override
-   public boolean apply( Object json, Optional<String> currentPath ) {
-      return Lists.headOpt( new JsonPath( jsonPath, currentPath ).traverse( json ) )
-         .map( v -> of.apply( json, currentPath, v ) )
-         .orElse( false );
-   }
+public interface EnumFunction {
+   List<Object> apply( Object rootJson, Optional<String> currentPath );
 }

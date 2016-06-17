@@ -23,7 +23,9 @@
  */
 package oap.json.schema;
 
+import lombok.val;
 import oap.util.Lists;
+import oap.util.Pair;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,11 +34,9 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
-import static oap.json.schema.DynamicBooleanReference.Condition.EQ;
-import static oap.json.schema.DynamicBooleanReference.Condition.NE;
-
 public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
    protected static final String ADDITIONAL_PROPERTIES = "additionalProperties";
+   public static final String JSON_PATH = "json-path";
 
    public static String getType( Object object ) {
       if( object instanceof Boolean ) return "boolean";
@@ -130,19 +130,36 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
       }
 
       @SuppressWarnings( "unchecked" )
-      private Optional<Function<Object, List<Object>>> toEnum( Object anEnum ) {
+      private Optional<EnumFunction> toEnum( Object anEnum ) {
          if( anEnum == null ) {
             return Optional.empty();
          } else if( anEnum instanceof List<?> ) {
-            Function<Object, List<Object>> func = ( obj ) -> ( List<Object> ) anEnum;
-            return Optional.of( func );
+            return Optional.of( new ListObjectEnumFunction( ( List<Object> ) anEnum ) );
          } else if( anEnum instanceof Map<?, ?> ) {
-            String jsonPath = ( String ) ( ( Map<?, ?> ) anEnum ).get( "json-path" );
+            final Map<?, ?> map = ( Map<?, ?> ) anEnum;
 
-            Function<Object, List<Object>> func = ( obj ) -> new JsonPath( jsonPath ).traverse( obj );
+            final String jsonPath = ( String ) map.get( JSON_PATH );
+            final Function<Object, List<Object>> sourceFunc = ( obj ) -> new JsonPath( jsonPath ).traverse( obj );
 
-            return Optional.of( func );
+            val of = getOperationFunction( map );
+
+            final Map filterMap = ( Map ) map.get( "filter" );
+            if( filterMap != null ) {
+               final Map source = ( Map ) filterMap.get( "source" );
+               final String filterJsonPath = ( String ) source.get( JSON_PATH );
+               final Function<Object, List<Object>> filterSourceFunc = ( obj ) -> new JsonPath( filterJsonPath ).traverse( obj );
+               val filterOf = getOperationFunction( filterMap );
+
+               return Optional.of( new FilteredEnumFunction( sourceFunc, of, Pair.__( filterSourceFunc, filterOf ) ) );
+            } else {
+               return Optional.of( new FilteredEnumFunction( sourceFunc, of ) );
+            }
+
          } else throw new ValidationSyntaxException( "Unknown enum type " + anEnum.getClass() );
+      }
+
+      private OperationFunction getOperationFunction( Map<?, ?> map ) {
+         return OperationFunction.parse( map );
       }
 
       @SuppressWarnings( "unchecked" )
@@ -182,13 +199,11 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
             return Optional.of( ( Boolean ) enabled ? BooleanReference.TRUE : BooleanReference.FALSE );
          } else {
             final Map map = ( Map ) enabled;
-            final String jsonPath = ( String ) map.get( "json-path" );
-            final Object eq = map.get( "eq" );
-            final Object ne = map.get( "ne" );
+            final String jsonPath = ( String ) map.get( JSON_PATH );
 
-            final DynamicBooleanReference.Condition condition = map.containsKey( "eq" ) ? EQ : NE;
+            final OperationFunction of = getOperationFunction( map );
 
-            return Optional.of( new DynamicBooleanReference( jsonPath, condition, condition == EQ ? eq : ne ) );
+            return Optional.of( new DynamicBooleanReference( jsonPath, of ) );
          }
       }
    }
