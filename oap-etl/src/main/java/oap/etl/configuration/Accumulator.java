@@ -41,18 +41,15 @@ public class Accumulator {
    public AccumulatorType type;
    public Optional<String> field = Optional.empty();
    public Optional<Filter> filter = Optional.empty();
-   public Object defaultValue;
 
    public Accumulator( String name,
                        @JsonProperty( "type" ) AccumulatorType type,
                        @JsonProperty( "field" ) Optional<String> field,
-                       @JsonProperty( "filter" ) Optional<Filter> filter,
-                       @JsonProperty( "default" ) Object defaultValue ) {
+                       @JsonProperty( "filter" ) Optional<Filter> filter ) {
       this.name = name;
       this.type = type;
       this.field = field;
       this.filter = filter;
-      this.defaultValue = defaultValue;
    }
 
    public static class Filter {
@@ -67,7 +64,7 @@ public class Accumulator {
       }
 
       @JsonIgnore
-      public Predicate getFunction() {
+      public Predicate<Object> getFunction() {
          switch( operation ) {
             case "=":
             case "eq":

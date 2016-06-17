@@ -28,17 +28,18 @@ import oap.json.schema.SchemaAST;
 import java.util.Optional;
 
 public class ArraySchemaAST extends SchemaAST<ArraySchemaAST> {
-
+   public final Optional<Boolean> additionalProperties;
    public final Optional<Integer> minItems;
    public final Optional<Integer> maxItems;
    public final SchemaAST items;
    public final Optional<String> idField;
 
-   public ArraySchemaAST( CommonSchemaAST common,
+   public ArraySchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
                           Optional<Integer> minItems, Optional<Integer> maxItems,
                           Optional<String> idField,
                           SchemaAST items, String path ) {
       super( common, path );
+      this.additionalProperties = additionalProperties;
       this.minItems = minItems;
       this.maxItems = maxItems;
       this.idField = idField;
@@ -49,6 +50,7 @@ public class ArraySchemaAST extends SchemaAST<ArraySchemaAST> {
    public ArraySchemaAST merge( ArraySchemaAST cs ) {
       return new ArraySchemaAST(
          common.merge( cs.common ),
+         additionalProperties.isPresent() ? additionalProperties : cs.additionalProperties,
          minItems.isPresent() ? minItems : cs.minItems,
          maxItems.isPresent() ? maxItems : cs.maxItems,
          idField.isPresent() ? idField : cs.idField,

@@ -46,7 +46,7 @@ public class ArrayJsonValidator extends JsonSchemaValidator<ArraySchemaAST> {
          .ifPresent( maxItems -> errors.add( properties.error( "array has more than maxItems elements " + maxItems ) ) );
 
       for( int i = 0; i < arrayValue.size(); i++ )
-         errors.addAll( properties.validator.apply( properties.withPath( String.valueOf( i ) ),
+         errors.addAll( properties.validator.apply( properties.withAdditionalProperties( schema.additionalProperties ).withPath( String.valueOf( i ) ),
             schema.items, arrayValue.get( i ) ) );
 
       return errors;
@@ -57,6 +57,7 @@ public class ArrayJsonValidator extends JsonSchemaValidator<ArraySchemaAST> {
       final ArraySchemaASTWrapper wrapper = context.createWrapper( ArraySchemaASTWrapper::new );
 
       wrapper.common = node( context ).asCommon();
+      wrapper.additionalProperties = node( context ).asBoolean( ADDITIONAL_PROPERTIES ).optional();
       wrapper.minItems = node( context ).asInt( "minItems" ).optional();
       wrapper.maxItems = node( context ).asInt( "maxItems" ).optional();
       wrapper.idField = node( context ).asString( "id" ).optional();

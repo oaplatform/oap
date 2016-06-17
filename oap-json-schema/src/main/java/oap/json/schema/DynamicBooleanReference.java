@@ -24,29 +24,28 @@
 
 package oap.json.schema;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import oap.util.Lists;
 
-import java.util.Objects;
+import java.util.Optional;
 
+@ToString
+@EqualsAndHashCode
 public class DynamicBooleanReference implements BooleanReference {
    private final String jsonPath;
-   private final Condition condition;
-   private final Object value;
+   private final OperationFunction of;
 
-   public DynamicBooleanReference( String jsonPath, Condition condition, Object value ) {
+   public DynamicBooleanReference( String jsonPath, OperationFunction of ) {
+
       this.jsonPath = jsonPath;
-      this.condition = condition;
-      this.value = value;
+      this.of = of;
    }
 
    @Override
-   public boolean apply( Object json ) {
-      return Lists.headOpt( new JsonPath( jsonPath ).traverse( json ) )
-         .map( v -> ( condition == Condition.EQ ) == Objects.equals( v, value ) )
+   public boolean apply( Object json, Optional<String> currentPath ) {
+      return Lists.headOpt( new JsonPath( jsonPath, currentPath ).traverse( json ) )
+         .map( v -> of.apply( json, currentPath, v ) )
          .orElse( false );
-   }
-
-   public enum Condition {
-      EQ, NE
    }
 }

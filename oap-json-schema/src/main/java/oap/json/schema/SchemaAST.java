@@ -46,13 +46,13 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
       public final Optional<BooleanReference> required;
       public final Optional<BooleanReference> enabled;
       public final Optional<Object> defaultValue;
-      public final Optional<Function<Object, List<Object>>> enumValue;
+      public final Optional<EnumFunction> enumValue;
 
       public CommonSchemaAST( String schemaType,
                               Optional<BooleanReference> required,
                               Optional<BooleanReference> enabled,
                               Optional<Object> defaultValue,
-                              Optional<Function<Object, List<Object>>> enumValue ) {
+                              Optional<EnumFunction> enumValue ) {
          this.schemaType = schemaType;
          this.required = required;
          this.enabled = enabled;

@@ -50,7 +50,7 @@ public class Join implements IAggregator {
       this.table = table;
       this.field = field;
       this.accumulators = accumulators;
-      this.defaultLine = accumulators.stream().map(a -> a.defaultValue).collect( toList() );
+      this.defaultLine = accumulators.stream().map( a -> 0L ).collect( toList() );
    }
 
    @Override
@@ -59,7 +59,7 @@ public class Join implements IAggregator {
    }
 
    @Override
-   public Map<String, ? extends IAggregator> getJoins() {
+   public Map<String, Join> getJoins() {
       return emptyMap();
    }
 
@@ -74,13 +74,7 @@ public class Join implements IAggregator {
       throw new IllegalAccessError();
    }
 
-   @Override
    @JsonIgnore
-   public String getExport() {
-      throw new IllegalAccessError();
-   }
-
-   @Override
    public List<Object> getDefaultLine() {
       return defaultLine;
    }

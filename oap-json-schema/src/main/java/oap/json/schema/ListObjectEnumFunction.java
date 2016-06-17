@@ -22,55 +22,20 @@
  * SOFTWARE.
  */
 
-package oap.etl.configuration;
-
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+package oap.json.schema;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
-@ToString
-@EqualsAndHashCode
-public class Aggregator implements IAggregator {
-   public final Map<String, List<String>> aggregates;
-   public final String export;
-   private final String table;
-   private final Map<String, Join> joins;
-   private final List<Accumulator> accumulators;
+public class ListObjectEnumFunction implements EnumFunction {
+   private final List<Object> values;
 
-
-   public Aggregator(
-      String table, Map<String, List<String>> aggregates,
-      List<Accumulator> accumulators, Map<String, Join> joins, String export ) {
-      this.table = table;
-      this.accumulators = accumulators;
-      this.aggregates = aggregates;
-      this.joins = joins;
-      this.export = export;
+   public ListObjectEnumFunction( List<Object> values ) {
+      this.values = values;
    }
 
    @Override
-   public String getTable() {
-      return table;
-   }
-
-   @Override
-   public Map<String, Join> getJoins() {
-      return joins;
-   }
-
-   @Override
-   public List<Accumulator> getAccumulators() {
-      return accumulators;
-   }
-
-   @Override
-   public Map<String, List<String>> getAggregates() {
-      return aggregates;
-   }
-
-   public String getExport() {
-      return export;
+   public List<Object> apply( Object rootJson, Optional<String> currentPath ) {
+      return values;
    }
 }

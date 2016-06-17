@@ -58,7 +58,7 @@ public class AggregatorConfigurationBuilder {
    }
 
    public AggregatorConfigurationAccumulatorBuilder accumulator( String name ) {
-      return new AggregatorConfigurationAccumulatorBuilder( name, accumulators::add );
+      return new AggregatorConfigurationAccumulatorBuilder( name, accumulators::add, () -> {} );
    }
 
    public Aggregator build() {
@@ -91,14 +91,15 @@ public class AggregatorConfigurationBuilder {
    public class AggregatorConfigurationAccumulatorBuilder {
       private final String name;
       private final Consumer<Accumulator> c;
+      private final Runnable done;
       private AccumulatorType type;
       private Optional<String> field = Optional.empty();
       private Optional<Accumulator.Filter> filter = Optional.empty();
-      private Object defaultValue;
 
-      public AggregatorConfigurationAccumulatorBuilder( String name, Consumer<Accumulator> c ) {
+      public AggregatorConfigurationAccumulatorBuilder( String name, Consumer<Accumulator> c, Runnable done ) {
          this.name = name;
          this.c = c;
+         this.done = done;
       }
 
       public AggregatorConfigurationAccumulatorBuilder operation( AccumulatorType type ) {
@@ -109,7 +110,7 @@ public class AggregatorConfigurationBuilder {
       public AggregatorConfigurationAccumulatorBuilder accumulator( String name ) {
          add();
 
-         return new AggregatorConfigurationAccumulatorBuilder( name, c );
+         return new AggregatorConfigurationAccumulatorBuilder( name, c, () -> {} );
       }
 
       public AggregatorConfigurationBuilder export( String export ) {
@@ -120,9 +121,8 @@ public class AggregatorConfigurationBuilder {
 
       private void add() {
          assert type != null;
-         assert defaultValue != null;
 
-         c.accept( new Accumulator( name, type, field, filter, defaultValue ) );
+         c.accept( new Accumulator( name, type, field, filter ) );
       }
 
       public AggregatorConfigurationAccumulatorBuilder field( String field ) {
@@ -137,14 +137,9 @@ public class AggregatorConfigurationBuilder {
          return this;
       }
 
-      public AggregatorConfigurationAccumulatorBuilder withDefault( Object value ) {
-         this.defaultValue = value;
-
-         return this;
-      }
-
       public Aggregator build() {
          add();
+         done.run();
 
          return AggregatorConfigurationBuilder.this.build();
       }
@@ -182,13 +177,11 @@ public class AggregatorConfigurationBuilder {
          assert table != null;
          assert field != null;
 
-         AggregatorConfigurationBuilder.this.joins.put( name, new Join(table, field, accumulators) );
+         AggregatorConfigurationBuilder.this.joins.put( name, new Join( table, field, accumulators ) );
       }
 
       public AggregatorConfigurationAccumulatorBuilder accumulator( String name ) {
-         add();
-
-         return new AggregatorConfigurationAccumulatorBuilder( name, accumulators::add );
+         return new AggregatorConfigurationAccumulatorBuilder( name, accumulators::add, this::add );
       }
    }
 }

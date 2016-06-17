@@ -86,14 +86,16 @@ public class JsonValidatorFactory {
          throw new ValidationSyntaxException( "[schema:type]: unknown simple type [" + schema.common.schemaType + "]" );
       }
 
-      if( value == null && !properties.ignoreRequiredDefault && schema.common.required.orElse( BooleanReference.FALSE ).apply( properties.rootJson ) )
+      if( value == null && !properties.ignoreRequiredDefault
+         && schema.common.required.orElse( BooleanReference.FALSE ).apply( properties.rootJson, properties.path ) )
          return Lists.of( properties.error( "required property is missing" ) );
       else if( value == null ) return Lists.empty();
       else {
          List<String> errors = jsonSchemaValidator.validate( properties, schema, value );
          schema.common.enumValue
-            .filter( e -> !e.apply( properties.rootJson ).contains( value ) )
-            .ifPresent( e -> errors.add( properties.error( "instance does not match any member resolve the enumeration " + e.apply( properties.rootJson ) ) ) );
+            .filter( e -> !e.apply( properties.rootJson, properties.path ).contains( value ) )
+            .ifPresent( e -> errors.add( properties.error( "instance does not match any member resolve the enumeration " +
+               e.apply( properties.rootJson, properties.path ) ) ) );
          return errors;
       }
    }

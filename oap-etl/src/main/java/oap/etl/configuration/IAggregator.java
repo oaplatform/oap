@@ -24,23 +24,15 @@
 
 package oap.etl.configuration;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.util.List;
 import java.util.Map;
 
 public interface IAggregator {
-
    String getTable();
 
-   Map<String, ? extends IAggregator> getJoins();
+   Map<String, Join> getJoins();
 
    List<Accumulator> getAccumulators();
 
    Map<String, List<String>> getAggregates();
-
-   String getExport();
-
-   @JsonIgnore
-   List<Object> getDefaultLine();
 }
