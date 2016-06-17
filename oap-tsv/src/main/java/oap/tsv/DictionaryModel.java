@@ -46,6 +46,10 @@ public class DictionaryModel {
       this.dictionary = dictionary;
    }
 
+   public String getVersion() {
+      return ( String ) dictionary.getProperty( "version" ).orElse( "v1" );
+   }
+
    public Model toModel( String table ) {
       final Model model = new Model( false );
 
