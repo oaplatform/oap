@@ -57,6 +57,11 @@ public class DictionaryLeaf implements Dictionary {
    }
 
    @Override
+   public Integer get( String id ) {
+      return null;
+   }
+
+   @Override
    public String getOrDefault( int externlId, String defaultValue ) {
       return defaultValue;
    }

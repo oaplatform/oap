@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>1.17.21</version>
+    <version>1.18.0</version>
 
     <name>oap</name>
 
@@ -49,6 +49,7 @@
         <module>oap-remoting-server</module>
         <module>oap-application</module>
         <module>oap-storage</module>
+        <module>oap-tsv</module>
         <module>oap-etl</module>
         <module>oap-logstream</module>
         <module>oap-ws-cat</module>

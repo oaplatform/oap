@@ -34,6 +34,8 @@ import java.util.Optional;
 public interface Dictionary {
    int getOrDefault( String id, int defaultValue );
 
+   Integer get( String id );
+
    String getOrDefault( int externlId, String defaultValue );
 
    boolean containsValueWithId( String id );

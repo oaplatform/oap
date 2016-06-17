@@ -25,9 +25,11 @@
 package oap.etl.configuration;
 
 import lombok.val;
+import oap.dictionary.DictionaryParser;
 import oap.etl.StringExport;
 import oap.etl.Table;
 import oap.testng.AbstractTest;
+import oap.tsv.DictionaryModel;
 import oap.tsv.Model;
 import oap.util.Maps;
 import org.testng.annotations.Test;
@@ -66,15 +68,43 @@ public class ConfigurationTest extends AbstractTest {
          .build();
 
       val export = new StringExport();
-      val model = new Model( false ).s( 0, 1 ).i( 2 );
 
+      val dictonary = DictionaryParser.parseFromString( "{\n" +
+         "  \"name\" : \"config.v14\",\n" +
+         "  \"version\" : 14,\n" +
+         "  \"values\" : [ {\n" +
+         "    \"id\" : \"table\",\n" +
+         "    \"eid\" : 0,\n" +
+         "    \"values\" : [ {\n" +
+         "      \"id\" : \"column1\",\n" +
+         "      \"eid\" : 0,\n" +
+         "      \"type\" : \"STRING\",\n" +
+         "      \"default\" : \"\"\n" +
+         "    }, " +
+         "    {\n" +
+         "      \"id\" : \"column2\",\n" +
+         "      \"eid\" : 1,\n" +
+         "      \"type\" : \"STRING\",\n" +
+         "      \"default\" : \"\"\n" +
+         "    }, " +
+         "    {\n" +
+         "      \"id\" : \"value\",\n" +
+         "      \"eid\" : 2,\n" +
+         "      \"type\" : \"INTEGER\",\n" +
+         "      \"default\" : 0\n" +
+         "    }]\n" +
+         "  }]\n" +
+         "} "
+      );
+
+      final DictionaryModel dictionaryModel = new DictionaryModel( dictonary );
       AggregatorBuilder
          .custom()
-         .withModel( "table", model, Maps.of( __( "column1", 0 ), __( "column2", 1 ), __( "value", 2 ) ) )
+         .withModel( dictionaryModel )
          .withConfiguration( aggregatorConfiguration )
          .withTable( "table", Table.fromString( "a\tb\t10\n" +
             "a\tb\t20\n" +
-            "a1\tb1\t10\n", model ) )
+            "a1\tb1\t10\n", dictionaryModel.toModel( "table" ) ) )
          .withExport( "export", export )
          .build();
 

@@ -21,10 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.tsv;
 
 public class TsvException extends RuntimeException {
-    public TsvException( String message, Throwable cause ) {
-        super( message, cause );
-    }
+   public TsvException( String message, Throwable cause ) {
+      super( message, cause );
+   }
 }

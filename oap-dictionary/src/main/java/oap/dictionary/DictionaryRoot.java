@@ -86,6 +86,13 @@ public final class DictionaryRoot implements Dictionary {
    }
 
    @Override
+   public final Integer get( String id ) {
+      final Dictionary rtb = indexById.get( id );
+      if( rtb == null ) return null;
+      return rtb.getExternalId();
+   }
+
+   @Override
    public boolean containsValueWithId( String id ) {
       return indexById.containsKey( id );
    }

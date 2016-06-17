@@ -31,6 +31,7 @@ import oap.etl.Join;
 import oap.etl.Table;
 import oap.etl.Table.GroupBy;
 import oap.etl.accumulator.Filter;
+import oap.tsv.DictionaryModel;
 import oap.tsv.Model;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -58,6 +59,14 @@ public class AggregatorBuilder {
 
    public AggregatorBuilder withModel( String name, Model model, Map<String, Integer> mapping ) {
       tables.put( name, new TableModel( model, mapping ) );
+
+      return this;
+   }
+
+   public AggregatorBuilder withModel( DictionaryModel dictionaryModel ) {
+      for( val table : dictionaryModel.getTables() ) {
+         tables.put( table, new TableModel( dictionaryModel.toModel( table ), dictionaryModel.toMap( table ) ) );
+      }
 
       return this;
    }

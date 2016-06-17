@@ -77,6 +77,11 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
    }
 
    @Override
+   public Integer get( String id ) {
+      return getValue( id ).map( Dictionary::getExternalId ).orElse( null );
+   }
+
+   @Override
    public String getOrDefault( int externlId, String defaultValue ) {
       return values
          .stream()

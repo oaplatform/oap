@@ -136,6 +136,12 @@ public class DictionaryParser {
       return parse( map );
    }
 
+   public static DictionaryRoot parseFromString( String dictionary ) {
+      final Map map = Binder.json.unmarshal( Map.class, dictionary );
+
+      return parse( map );
+   }
+
    private static DictionaryRoot parse( Map map ) {
       return ( DictionaryRoot ) parseAsDictionaryValue( map, "", true );
    }
