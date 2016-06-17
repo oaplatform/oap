@@ -27,30 +27,25 @@ package oap.etl.configuration;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.util.Maps;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
-import static oap.util.Pair.__;
 
 @ToString
 @EqualsAndHashCode
 public class Join implements IAggregator {
    public final String field;
-   private final ArrayList<Accumulator> accumulators;
+   private final List<Accumulator> accumulators;
    private final String table;
    private final List<Object> defaultLine;
 
    public Join(
       String table,
       String field,
-      ArrayList<Accumulator> accumulators ) {
+      List<Accumulator> accumulators ) {
 
       this.table = table;
       this.field = field;
@@ -74,8 +69,9 @@ public class Join implements IAggregator {
    }
 
    @Override
+   @JsonIgnore
    public Map<String, List<String>> getAggregates() {
-      return Maps.of( __( "default", singletonList( field ) ) );
+      throw new IllegalAccessError();
    }
 
    @Override

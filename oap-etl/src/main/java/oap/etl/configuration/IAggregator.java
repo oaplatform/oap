@@ -24,6 +24,8 @@
 
 package oap.etl.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.List;
 import java.util.Map;
 
@@ -39,5 +41,6 @@ public interface IAggregator {
 
    String getExport();
 
+   @JsonIgnore
    List<Object> getDefaultLine();
 }

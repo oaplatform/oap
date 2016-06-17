@@ -24,6 +24,7 @@
 
 package oap.etl.configuration;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -65,12 +66,15 @@ public class Accumulator {
          this.value = value;
       }
 
+      @JsonIgnore
       public Predicate getFunction() {
          switch( operation ) {
             case "=":
+            case "eq":
             case "==":
                return ( v ) -> Objects.equals( v, value );
             case "!=":
+            case "ne":
             case "<>":
                return ( v ) -> !Objects.equals( v, value );
             default:
