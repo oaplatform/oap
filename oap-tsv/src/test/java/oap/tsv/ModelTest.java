@@ -38,7 +38,6 @@ import static oap.tsv.Model.ColumnType.INT;
 import static org.testng.Assert.assertEquals;
 
 public class ModelTest {
-
    private Path path;
 
    @BeforeMethod
