@@ -48,7 +48,7 @@ public class DictionaryModel {
    }
 
    public int getVersion() {
-      return dictionary.getProperty( "version" ).map( v -> Integer.parseInt( ( String ) v ) ).orElse( 1 );
+      return dictionary.getProperty( "version" ).map( v -> ( ( Number ) v ).intValue() ).orElse( 1 );
    }
 
    public Model toModel( String table ) {
