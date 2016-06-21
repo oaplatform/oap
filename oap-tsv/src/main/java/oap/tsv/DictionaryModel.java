@@ -47,14 +47,14 @@ public class DictionaryModel {
       this.dictionary = dictionary;
    }
 
-   public String getVersion() {
-      return ( String ) dictionary.getProperty( "version" ).orElse( "v1" );
+   public int getVersion() {
+      return dictionary.getProperty( "version" ).map( v -> Integer.parseInt( ( String ) v ) ).orElse( 1 );
    }
 
    public Model toModel( String table ) {
       final Model model = new Model( false );
 
-      final List<? extends Dictionary> values = dictionary.getValueOpt( table ).get().getValues();
+      final List<? extends Dictionary> values = dictionary.getValue( table ).getValues();
       for( Dictionary field : values ) {
          final int offset = field.getExternalId();
          final String type = ( String ) field.getProperty( "type" ).get();
@@ -89,7 +89,7 @@ public class DictionaryModel {
       final HashMap<String, Object> defaults = new HashMap<>();
 
       for( Dictionary value : tableDictionary.getValues() ) {
-         defaults.put(value.getId(),  value.getProperty( "default" ).get());
+         defaults.put( value.getId(), value.getProperty( "default" ).get() );
       }
 
       return defaults;
