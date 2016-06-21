@@ -167,8 +167,12 @@ public class IoStreams {
    }
 
    public static InputStream in( Path path, Encoding encoding ) {
+      return in( path, encoding, DEFAULT_BUFFER );
+   }
+
+   public static InputStream in( Path path, Encoding encoding, int bufferSIze ) {
       try {
-         return in( new BufferedInputStream( new FileInputStream( path.toFile() ) ), encoding );
+         return in( new BufferedInputStream( new FileInputStream( path.toFile() ), bufferSIze ), encoding );
       } catch( FileNotFoundException e ) {
          throw new UncheckedIOException( e );
       }
