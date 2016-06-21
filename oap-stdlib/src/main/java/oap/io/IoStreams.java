@@ -28,15 +28,31 @@ import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.zip.*;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
+import static oap.io.KafkaLZ4BlockOutputStream.BLOCKSIZE_4MB;
 import static oap.io.ProgressInputStream.progress;
 
 public class IoStreams {
@@ -139,7 +155,7 @@ public class IoStreams {
                zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
                return zip;
             case LZ4:
-               return new KafkaLZ4BlockOutputStream( fos );
+               return new KafkaLZ4BlockOutputStream( fos, BLOCKSIZE_4MB, false, false );
             case PLAIN:
                return fos;
             default:
