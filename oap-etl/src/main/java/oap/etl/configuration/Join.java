@@ -24,7 +24,9 @@
 
 package oap.etl.configuration;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.Maps;
@@ -45,11 +47,10 @@ public class Join implements IAggregator {
    private final String table;
    private final List<Object> defaultLine;
 
-   public Join(
-      String table,
-      String field,
-      List<Accumulator> accumulators ) {
-
+   @JsonCreator
+   public Join( @JsonProperty("table") String table,
+                @JsonProperty("field") String field,
+                @JsonProperty("accumulators") List<Accumulator> accumulators ) {
       this.table = table;
       this.field = field;
       this.accumulators = accumulators;
