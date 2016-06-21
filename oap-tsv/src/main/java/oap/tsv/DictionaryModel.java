@@ -29,6 +29,7 @@ import org.apache.commons.collections4.keyvalue.AbstractMapEntry;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -46,14 +47,14 @@ public class DictionaryModel {
       this.dictionary = dictionary;
    }
 
-   public String getVersion() {
-      return ( String ) dictionary.getProperty( "version" ).orElse( "v1" );
+   public int getVersion() {
+      return dictionary.getProperty( "version" ).map( v -> ( ( Number ) v ).intValue() ).orElse( 1 );
    }
 
    public Model toModel( String table ) {
       final Model model = new Model( false );
 
-      final List<? extends Dictionary> values = dictionary.getValue( table ).get().getValues();
+      final List<? extends Dictionary> values = dictionary.getValue( table ).getValues();
       for( Dictionary field : values ) {
          final int offset = field.getExternalId();
          final String type = ( String ) field.getProperty( "type" ).get();
@@ -82,74 +83,94 @@ public class DictionaryModel {
       return model;
    }
 
+   public Map<String, Object> getDefaults( String table ) {
+      final Dictionary tableDictionary = DictionaryModel.this.dictionary.getValueOpt( table ).get();
+
+      final HashMap<String, Object> defaults = new HashMap<>();
+
+      for( Dictionary value : tableDictionary.getValues() ) {
+         defaults.put( value.getId(), value.getProperty( "default" ).get() );
+      }
+
+      return defaults;
+   }
+
    public Map<String, Integer> toMap( String table ) {
-      final Dictionary tableDictionary = DictionaryModel.this.dictionary.getValue( table ).get();
+      final Dictionary tableDictionary = DictionaryModel.this.dictionary.getValueOpt( table ).get();
 
-      return new Map<String, Integer>() {
-         @Override
-         public int size() {
-            return tableDictionary.getValues().size();
-         }
-
-         @Override
-         public boolean isEmpty() {
-            return tableDictionary.getValues().isEmpty();
-         }
-
-         @Override
-         public boolean containsKey( Object key ) {
-            return tableDictionary.containsValueWithId( key.toString() );
-         }
-
-         @Override
-         public boolean containsValue( Object value ) {
-            throw new NotImplementedException( "" );
-         }
-
-         @Override
-         public Integer get( Object key ) {
-            return tableDictionary.get( key.toString() );
-         }
-
-         @Override
-         public Integer put( String key, Integer value ) {
-            throw new NotImplementedException( "" );
-         }
-
-         @Override
-         public Integer remove( Object key ) {
-            throw new NotImplementedException( "" );
-         }
-
-         @Override
-         public void putAll( Map<? extends String, ? extends Integer> m ) {
-            throw new NotImplementedException( "" );
-         }
-
-         @Override
-         public void clear() {
-            throw new NotImplementedException( "" );
-         }
-
-         @Override
-         public Set<String> keySet() {
-            return tableDictionary.ids().stream().collect( toSet() );
-         }
-
-         @Override
-         public Collection<Integer> values() {
-            return asList( tableDictionary.externalIds() );
-         }
-
-         @Override
-         public Set<Entry<String, Integer>> entrySet() {
-            return tableDictionary.getValues().stream().map( v -> new AbstractMapEntry<String, Integer>( v.getId(), v.getExternalId() ) {
-            } ).collect( toSet() );
-         }
-      };
+      return new NameToIdMap( tableDictionary );
    }
 
    public Set<String> getTables() {
       return dictionary.ids().stream().collect( toSet() );
+   }
+
+   private static class NameToIdMap implements Map<String, Integer> {
+      private final Dictionary tableDictionary;
+
+      public NameToIdMap( Dictionary tableDictionary ) {
+         this.tableDictionary = tableDictionary;
+      }
+
+      @Override
+      public int size() {
+         return tableDictionary.getValues().size();
+      }
+
+      @Override
+      public boolean isEmpty() {
+         return tableDictionary.getValues().isEmpty();
+      }
+
+      @Override
+      public boolean containsKey( Object key ) {
+         return tableDictionary.containsValueWithId( key.toString() );
+      }
+
+      @Override
+      public boolean containsValue( Object value ) {
+         throw new NotImplementedException( "" );
+      }
+
+      @Override
+      public Integer get( Object key ) {
+         return tableDictionary.get( key.toString() );
+      }
+
+      @Override
+      public Integer put( String key, Integer value ) {
+         throw new NotImplementedException( "" );
+      }
+
+      @Override
+      public Integer remove( Object key ) {
+         throw new NotImplementedException( "" );
+      }
+
+      @Override
+      public void putAll( Map<? extends String, ? extends Integer> m ) {
+         throw new NotImplementedException( "" );
+      }
+
+      @Override
+      public void clear() {
+         throw new NotImplementedException( "" );
+      }
+
+      @Override
+      public Set<String> keySet() {
+         return tableDictionary.ids().stream().collect( toSet() );
+      }
+
+      @Override
+      public Collection<Integer> values() {
+         return asList( tableDictionary.externalIds() );
+      }
+
+      @Override
+      public Set<Entry<String, Integer>> entrySet() {
+         return tableDictionary.getValues().stream().map( v -> new AbstractMapEntry<String, Integer>( v.getId(), v.getExternalId() ) {
+         } ).collect( toSet() );
+      }
    }
 }

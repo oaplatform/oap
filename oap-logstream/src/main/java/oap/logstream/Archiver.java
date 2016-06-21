@@ -42,6 +42,7 @@ public class Archiver implements Runnable {
    private final IoStreams.Encoding encoding;
    private final String mask;
    private int bucketsPerHour;
+   private int bufferSize = 1024 * 256 * 4 * 4;
 
 
    public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask, IoStreams.Encoding encoding, int bucketsPerHour ) {
@@ -75,7 +76,7 @@ public class Archiver implements Runnable {
             if( encoding.compress ) {
                log.debug( "compressing {} ({} bytes)", path, path.toFile().length() );
                Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".tmp" );
-               Files.copy( path, PLAIN, targetTemp, encoding );
+               Files.copy( path, PLAIN, targetTemp, encoding, bufferSize );
                Files.rename( targetTemp, targetFile );
                log.debug( "compressed {} ({} bytes)", path, targetFile.toFile().length() );
                Files.delete( path );

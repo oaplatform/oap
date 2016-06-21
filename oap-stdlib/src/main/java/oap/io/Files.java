@@ -217,14 +217,19 @@ public final class Files {
    }
 
    public static void copy( Path sourcePath, IoStreams.Encoding sourceEncoding,
-                            Path destPath, IoStreams.Encoding destEncoding ) {
+                            Path destPath, IoStreams.Encoding destEncoding, int bufferSize ) {
       destPath.getParent().toFile().mkdirs();
-      try( InputStream is = IoStreams.in( sourcePath, sourceEncoding );
-           OutputStream os = IoStreams.out( destPath, destEncoding ) ) {
+      try( InputStream is = IoStreams.in( sourcePath, sourceEncoding, bufferSize );
+           OutputStream os = IoStreams.out( destPath, destEncoding, bufferSize ) ) {
          IOUtils.copy( is, os );
       } catch( IOException e ) {
          throw new UncheckedIOException( e );
       }
+   }
+
+   public static void copy( Path sourcePath, IoStreams.Encoding sourceEncoding,
+                            Path destPath, IoStreams.Encoding destEncoding ) {
+      copy( sourcePath, sourceEncoding, destPath, destEncoding, IoStreams.DEFAULT_BUFFER );
    }
 
    public static void copyContent( Path basePath, Path destPath ) {

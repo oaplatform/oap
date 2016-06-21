@@ -128,8 +128,20 @@ public final class DictionaryRoot implements Dictionary {
    }
 
    @Override
-   public Optional<? extends Dictionary> getValue( String name ) {
+   public Optional<? extends Dictionary> getValueOpt( String name ) {
       return Optional.ofNullable( indexById.get( name ) );
+   }
+
+   @Override
+   public Dictionary getValue( String name ) {
+      return indexById.get( name );
+   }
+
+   @Override
+   public Dictionary getValue( int externalId ) {
+      final String name = indexByExternalId.get( externalId );
+      if( name == null ) return null;
+      return indexById.get( name );
    }
 
    @Override

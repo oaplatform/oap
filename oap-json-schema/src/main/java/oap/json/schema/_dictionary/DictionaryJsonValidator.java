@@ -68,7 +68,7 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
       for( Object parentValue : parentValues ) {
          List<Dictionary> children = cd.successValue
             .stream()
-            .map( d -> d.getValue( parentValue.toString() ) )
+            .map( d -> d.getValueOpt( parentValue.toString() ) )
             .filter( Optional::isPresent )
             .map( Optional::get ).collect( toList() );
          if( children.isEmpty() )

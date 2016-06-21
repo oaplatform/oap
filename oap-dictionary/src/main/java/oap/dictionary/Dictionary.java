@@ -46,7 +46,11 @@ public interface Dictionary {
 
    Map<String, Object> getProperties();
 
-   Optional<? extends Dictionary> getValue( String name );
+   Optional<? extends Dictionary> getValueOpt( String name );
+
+   Dictionary getValue( String name );
+
+   Dictionary getValue( int externalId );
 
    List<? extends Dictionary> getValues();
 

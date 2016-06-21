@@ -87,8 +87,18 @@ public class DictionaryLeaf implements Dictionary {
    }
 
    @Override
-   public Optional<? extends Dictionary> getValue( String name ) {
+   public Optional<? extends Dictionary> getValueOpt( String name ) {
       return Optional.empty();
+   }
+
+   @Override
+   public Dictionary getValue( String name ) {
+      return null;
+   }
+
+   @Override
+   public Dictionary getValue( int externalId ) {
+      return null;
    }
 
    @Override
