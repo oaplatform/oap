@@ -36,9 +36,9 @@ public class CatApi {
    private static final ContentType CONTENT_TYPE =
       ContentType.create( "text/tab-separated-values", StandardCharsets.UTF_8 );
 
-   public static String asDouble( Object d, int decimal ) {
+   public static String formatDouble( Object d, int decimal ) {
       if( d instanceof Number ) return String.format( "%." + decimal + "f", ( ( Number ) d ).doubleValue() );
-      else return asDouble( Double.parseDouble( d.toString() ), decimal );
+      else return formatDouble( Double.parseDouble( d.toString() ), decimal );
    }
 
    @SafeVarargs
