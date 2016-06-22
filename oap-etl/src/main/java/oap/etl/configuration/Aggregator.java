@@ -24,6 +24,8 @@
 
 package oap.etl.configuration;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
@@ -39,10 +41,12 @@ public class Aggregator implements IAggregator {
    private final Map<String, Join> joins;
    private final List<Accumulator> accumulators;
 
-
-   public Aggregator(
-      String table, Map<String, List<String>> aggregates,
-      List<Accumulator> accumulators, Map<String, Join> joins, String export ) {
+   @JsonCreator
+   public Aggregator( @JsonProperty("table") String table,
+                      @JsonProperty("aggregates") Map<String, List<String>> aggregates,
+                      @JsonProperty("accumulators") List<Accumulator> accumulators,
+                      @JsonProperty("joins") Map<String, Join> joins,
+                      @JsonProperty("export") String export ) {
       this.table = table;
       this.accumulators = accumulators;
       this.aggregates = aggregates;

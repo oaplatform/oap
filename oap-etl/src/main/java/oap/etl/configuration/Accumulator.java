@@ -24,6 +24,7 @@
 
 package oap.etl.configuration;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
@@ -42,7 +43,8 @@ public class Accumulator {
    public Optional<String> field = Optional.empty();
    public Optional<Filter> filter = Optional.empty();
 
-   public Accumulator( String name,
+   @JsonCreator
+   public Accumulator( @JsonProperty( "name" ) String name,
                        @JsonProperty( "type" ) AccumulatorType type,
                        @JsonProperty( "field" ) Optional<String> field,
                        @JsonProperty( "filter" ) Optional<Filter> filter ) {
@@ -52,12 +54,16 @@ public class Accumulator {
       this.filter = filter;
    }
 
+   @ToString
    public static class Filter {
       public String field;
       public String operation;
       public Object value;
 
-      public Filter( String field, String operation, Object value ) {
+      @JsonCreator
+      public Filter( @JsonProperty( "field" ) String field,
+                     @JsonProperty( "operation" ) String operation,
+                     @JsonProperty( "value" ) Object value ) {
          this.field = field;
          this.operation = operation;
          this.value = value;
