@@ -55,6 +55,7 @@ public class Accumulator {
    }
 
    @ToString
+   @EqualsAndHashCode
    public static class Filter {
       public String field;
       public String operation;
