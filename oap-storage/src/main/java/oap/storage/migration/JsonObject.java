@@ -24,6 +24,7 @@
 
 package oap.storage.migration;
 
+import com.google.common.base.Throwables;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -31,6 +32,10 @@ import org.joda.time.DateTime;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +68,21 @@ public class JsonObject extends Json<Map<String, Object>> {
       engine.put( "obj", underlying );
 
       engine.eval( javascript );
+
+      return this;
+   }
+
+   public JsonObject mapScriptFromResource( String resource ) {
+      ScriptEngine engine = new ScriptEngineManager().getEngineByName( "nashorn" );
+      engine.put( "obj", underlying );
+
+      try( InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream( resource ) ) {
+         engine.eval( new InputStreamReader( inputStream ) );
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      } catch( ScriptException e ) {
+         throw Throwables.propagate( e );
+      }
 
       return this;
    }

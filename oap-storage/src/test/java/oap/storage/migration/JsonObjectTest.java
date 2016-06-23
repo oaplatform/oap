@@ -88,4 +88,12 @@ public class JsonObjectTest extends AbstractTest {
          "  if(el.field2 == 'v1') el.field1 = 'new';" +
          "}" ).underlying ).isEqualTo( map( "{obj = [{field1 = new, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
    }
+
+   @Test
+   public void testMapScriptFromResource() throws Exception {
+      final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
+
+      assertThat( obj.mapScriptFromResource( "test/jsonobj.js" ).underlying )
+         .isEqualTo( map( "{obj = [{field1 = new, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
+   }
 }
