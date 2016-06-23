@@ -36,7 +36,7 @@ public class FST {
    public FSTConfiguration conf;
 
    public FST() {
-      conf = FSTConfiguration.createFastBinaryConfiguration();
+      conf = FSTConfiguration.createDefaultConfiguration();
       conf.registerClass( RemoteInvocation.class );
       conf.registerSerializer( Optional.class, new FSTOptionalSerializer(), false );
    }
