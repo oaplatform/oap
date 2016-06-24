@@ -172,33 +172,37 @@ public class IoStreams {
 
    public static InputStream in( Path path, Encoding encoding, int bufferSIze ) {
       try {
-         return in( new BufferedInputStream( new FileInputStream( path.toFile() ), bufferSIze ), encoding );
-      } catch( FileNotFoundException e ) {
-         throw new UncheckedIOException( e );
+         return getInputStream( new BufferedInputStream( new FileInputStream( path.toFile() ), bufferSIze ), encoding );
+      } catch( IOException e ) {
+         throw new UncheckedIOException( "Couldn't read file " + path.toString(), e );
       }
    }
 
    public static InputStream in( InputStream stream, Encoding encoding ) {
       try {
-         switch( encoding ) {
-            case GZIP:
-               return new GZIPInputStream( stream );
-            case ZIP:
-               ZipInputStream zip = new ZipInputStream( stream );
-               if( zip.getNextEntry() == null )
-                  throw new IllegalArgumentException( "zip stream contains no entries" );
-               return zip;
-            case PLAIN:
-               return stream;
-            case LZ4:
-               return new KafkaLZ4BlockInputStream( stream );
-            default:
-               throw new IllegalArgumentException( "Unknown encoding " + encoding );
-         }
+         return getInputStream( stream, encoding );
       } catch( IOException e ) {
          throw new UncheckedIOException( e );
       }
 
+   }
+
+   private static InputStream getInputStream( InputStream stream, Encoding encoding ) throws IOException {
+      switch( encoding ) {
+         case GZIP:
+            return new GZIPInputStream( stream );
+         case ZIP:
+            ZipInputStream zip = new ZipInputStream( stream );
+            if( zip.getNextEntry() == null )
+               throw new IllegalArgumentException( "zip stream contains no entries" );
+            return zip;
+         case PLAIN:
+            return stream;
+         case LZ4:
+            return new KafkaLZ4BlockInputStream( stream );
+         default:
+            throw new IllegalArgumentException( "Unknown encoding " + encoding );
+      }
    }
 
    public enum Encoding {
