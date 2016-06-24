@@ -23,7 +23,14 @@
  */
 package oap.metrics;
 
-import com.codahale.metrics.*;
+import com.codahale.metrics.Counting;
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Metered;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricFilter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Sampling;
+import com.codahale.metrics.Timer;
 import oap.util.Pair;
 import oap.util.PairStream;
 
@@ -82,6 +89,10 @@ public final class Metrics {
 
    public static void measureMeter( Name metric ) {
       registry.meter( MetricRegistry.name( metric.line ) ).mark();
+   }
+
+   public static void measureMeter( Name metric, long n ) {
+      registry.meter( MetricRegistry.name( metric.line ) ).mark( n );
    }
 
    public static void measureHistogram( String metric, long count ) {
