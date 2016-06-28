@@ -217,6 +217,10 @@ public class Stream<E> implements java.util.stream.Stream<E> {
       return of( underlying.flatMap( mapper ) );
    }
 
+   public <R> Stream<R> flatMapOptional( Function<? super E, Optional<? extends R>> mapper ) {
+      return of( underlying.map( mapper ).filter( Optional::isPresent ).map( Optional::get ) );
+   }
+
    @Override
    public IntStream flatMapToInt( Function<? super E, ? extends IntStream> mapper ) {
       return underlying.flatMapToInt( mapper );

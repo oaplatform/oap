@@ -188,6 +188,12 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
       data.clear();
    }
 
+   public void clear() {
+      List<String> keys = new ArrayList<>(data.keySet());
+      List<T> deleted = Stream.of( keys ).flatMapOptional( this::deleteObject ).map( m -> m.object ).toList();
+      fireDeleted( deleted );
+   }
+
    @Override
    public String toString() {
       return getClass().getName() + "[" + path + "]";

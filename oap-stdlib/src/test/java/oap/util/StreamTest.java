@@ -57,6 +57,13 @@ public class StreamTest extends AbstractTest {
     }
 
     @Test
+    public void testFlatMapOptional() {
+        Stream<Integer> integerStream = Stream.of( 1, null, 2, null, null, 3 );
+        List<Integer> flatten = integerStream.flatMapOptional( Optional::ofNullable ).toList();
+        assertEquals( flatten, Lists.of( 1, 2, 3 ) );
+    }
+
+    @Test
     public void testDistinctByProperty() {
         LinkedHashMap<String, String> kievUA = Maps.of( __( "name", "kiev" ), __( "localized", "Kyiv" ) );
         LinkedHashMap<String, String> kievRU = Maps.of( __( "name", "kiev" ), __( "localized", "Kiev" ) );
