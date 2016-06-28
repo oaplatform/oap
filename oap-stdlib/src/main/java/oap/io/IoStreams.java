@@ -91,8 +91,12 @@ public class IoStreams {
 
    public static Stream<String> lines( Path path, Encoding encoding, Consumer<Integer> progress ) {
       InputStream stream = in( path, Encoding.PLAIN );
-      return lines( stream, encoding, progress( path.toFile().length(), progress ) )
-         .onClose( Try.run( stream::close ) );
+      try {
+         return lines( stream, encoding, progress( path.toFile().length(), progress ) )
+            .onClose( Try.run( stream::close ) );
+      } catch( final RuntimeException e ) {
+         throw new RuntimeException( "Couldn't open file " + path.toString(), e );
+      }
    }
 
    private static Stream<String> lines( InputStream stream, Encoding encoding, ProgressInputStream.Progress progress ) {
@@ -172,9 +176,11 @@ public class IoStreams {
 
    public static InputStream in( Path path, Encoding encoding, int bufferSIze ) {
       try {
-         return getInputStream( new BufferedInputStream( new FileInputStream( path.toFile() ), bufferSIze ), encoding );
+         return getInputStream( new BufferedInputStream( new FileInputStream( path.toFile() ) ), encoding );
+      } catch( FileNotFoundException e ) {
+         throw new UncheckedIOException( e );
       } catch( IOException e ) {
-         throw new UncheckedIOException( "Couldn't read file " + path.toString(), e );
+         throw new UncheckedIOException( "Couldn't open file " + path.toString(), e );
       }
    }
 
