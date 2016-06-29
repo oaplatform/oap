@@ -33,13 +33,16 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
+import static java.util.Collections.emptyList;
 import static oap.json.schema.OperationFunction.Condition.ANY;
 import static oap.json.schema.OperationFunction.Condition.EQ;
+import static oap.json.schema.OperationFunction.Condition.IN;
 import static oap.json.schema.OperationFunction.Condition.NE;
 
 public class OperationFunction {
    public static final String EQ_OP = "eq";
    public static final String NE_OP = "ne";
+   public static final String IN_OP = "in";
 
    private final Condition condition;
    private final BiFunction<Object, Optional<String>, List<Object>> func;
@@ -51,14 +54,8 @@ public class OperationFunction {
    }
 
    public static OperationFunction parse( Map<?, ?> map ) {
-      final Object eq = map.get( EQ_OP );
-      final Object ne = map.get( NE_OP );
-
-      final OperationFunction.Condition condition = map.containsKey( EQ_OP ) ?
-         EQ :
-         ( map.containsKey( NE_OP ) ? NE : ANY );
-
-      final Object value = condition == EQ ? eq : ne;
+      final OperationFunction.Condition condition = getCondition( map );
+      final Object value = getValue( condition, map );
 
       if( value instanceof Map ) {
          final Map valueMap = ( Map ) value;
@@ -70,15 +67,57 @@ public class OperationFunction {
       }
    }
 
+   private static Object getValue( Condition condition, Map<?, ?> map ) {
+      switch( condition ) {
+         case EQ:
+            return map.get( EQ_OP );
+         case NE:
+            return map.get( NE_OP );
+         case IN:
+            return map.get( IN_OP );
+         case ANY:
+            return null;
+         default:
+            throw new IllegalStateException( "Unknown condition " + condition );
+      }
+   }
+
+   private static Condition getCondition( Map<?, ?> map ) {
+      if( map.containsKey( EQ_OP ) ) return EQ;
+      else if( map.containsKey( NE_OP ) ) return NE;
+      else if( map.containsKey( IN_OP ) ) return IN;
+      return ANY;
+   }
+
    private Optional<Object> getValue( Object rootJson, Optional<String> currentPath ) {
       return Lists.headOpt( func.apply( rootJson, currentPath ) );
    }
 
-   public boolean apply( Object rootJson, Optional<String> currentPath, Object value ) {
-      return condition == ANY || ( condition == Condition.EQ ) == getValue( rootJson, currentPath ).map( v -> Objects.equals( v, value ) ).orElse( false );
+   public final boolean apply( Object rootJson, Optional<String> currentPath, Object value ) {
+      if(condition == ANY) return true;
+
+      final Optional<Object> foundOpt = getValue( rootJson, currentPath );
+
+      switch( condition ) {
+         case EQ:
+            return foundOpt.map( v -> Objects.equals( v, value ) ).orElse( false );
+         case NE:
+            return foundOpt.map( v -> !Objects.equals( v, value ) ).orElse( true );
+         case IN:
+            final Object found = foundOpt.orElse( emptyList() );
+            for( Object item : (List)found ) {
+               if( Objects.equals( item, value ) ) return true;
+            }
+
+            return false;
+
+         default:
+            throw new IllegalStateException( "Unknown condition " + condition );
+
+      }
    }
 
    public enum Condition {
-      EQ, NE, ANY
+      EQ, NE, ANY, IN
    }
 }
