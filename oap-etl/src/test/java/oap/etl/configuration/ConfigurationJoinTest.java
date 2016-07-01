@@ -98,23 +98,27 @@ public class ConfigurationJoinTest extends AbstractTest {
          Binder.json.unmarshalResource( getClass(), Aggregator.class, "bid_imp_configuration.json" )
             .orElseThrow( () -> new IllegalArgumentException( "bid_imp_configuration.json not found" ) );
 
-      final Model model1 = new Model( false ).s( 0, 1 ).i( 2 );
-      final Model model2 = new Model( false ).s( 0 ).i( 1 );
+      final Model bidModel = new Model( false ).s( 0, 1 ).i( 2 );
+      final Model impressionModel = new Model( false ).s( 0 ).i( 1 );
+      final Model clickModel = new Model( false ).s( 0 );
 
       val export = new StringExport();
 
       AggregatorBuilder
          .custom()
-         .withModel( "bid", model1, Maps.of( __( "BID_ID", 0 ), __( "EXCHANGE", 1 ), __( "BID_PRICE", 2 ) ) )
-         .withModel( "impression", model2, Maps.of( __( "BID_ID", 0 ), __( "PRICE", 1 ) ) )
+         .withModel( "bid", bidModel, Maps.of( __( "BID_ID", 0 ), __( "EXCHANGE", 1 ), __( "BID_PRICE", 2 ) ) )
+         .withModel( "impression", impressionModel, Maps.of( __( "BID_ID", 0 ), __( "PRICE", 1 ) ) )
+         .withModel( "click", clickModel, Maps.of( __( "BID_ID", 0 ) ) )
 
          .withTable( "bid", Table.fromString(
             "ID0989\tSMAATO\t896\n" +
             "ID0990\tSMAATO\t890\n" +
-            "ID0991\tOPERA\t253\n", model1 ) )
+            "ID0991\tOPERA\t253\n", bidModel ) )
          .withTable( "impression", Table.fromString(
             "ID0989\t800\n" +
-            "ID0991\t200\n", model2 ) )
+            "ID0991\t200\n", impressionModel ) )
+         .withTable( "click", Table.fromString(
+            "ID0989\n", clickModel ) )
 
          .withConfiguration( aggregatorConfiguration )
 
@@ -122,7 +126,7 @@ public class ConfigurationJoinTest extends AbstractTest {
          .build();
 
       assertString( export.toString() ).isEqualTo(
-         "OPERA\t1\t1\t200\t253\n" +
-         "SMAATO\t2\t1\t800\t896\n" );
+         "OPERA\t1\t1\t200\t253\t0\n" +
+         "SMAATO\t2\t1\t800\t896\t1\n" );
    }
 }

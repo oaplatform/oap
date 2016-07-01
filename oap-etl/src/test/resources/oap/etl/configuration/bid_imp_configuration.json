@@ -12,16 +12,24 @@
       "accumulators": [
         {
           "name": "count",
-          "type": "COUNT",
-          "default": 0
+          "type": "COUNT"
         },
         {
           "name": "price",
           "type": "SUM",
-          "field": "PRICE",
-          "default": 0.0
+          "field": "PRICE"
         }
       ]
+    },
+    "click": {
+      "field": "BID_ID",
+      "accumulators": [
+        {
+          "type": "COUNT",
+          "name": "count"
+        }
+      ],
+      "table": "click"
     }
   },
   "accumulators": [
@@ -48,6 +56,11 @@
         "operation": "!=",
         "value": 0
       }
+    },
+    {
+      "name": "clicks_count",
+      "type": "SUM",
+      "field": "click.count"
     }
   ],
   "export": "export"
