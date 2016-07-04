@@ -94,10 +94,12 @@ public class AggregatorBuilder {
    private Table.GroupByStream build( IAggregator configuration ) {
       final TableModel tableModel = getTable( configuration.getTable() );
       Table table = tableModel.table;
-      final int offset = tableModel.model.size();
+      int offset = tableModel.model.size();
 
       for( val joinEntry : configuration.getJoins().entrySet() ) {
-         table = join( table, tableModel.mapping, offset, joinEntry.getKey(), joinEntry.getValue() );
+         Pair<Table, Integer> p = join( table, tableModel.mapping, offset, joinEntry.getKey(), joinEntry.getValue() );
+         table = p._1;
+         offset = p._2;
       }
 
 
@@ -158,8 +160,8 @@ public class AggregatorBuilder {
          .toArray();
    }
 
-   private Table join( Table table, Map<String, Integer> tableMapping,
-                       int offset, String joinName, oap.etl.configuration.Join join ) {
+   private Pair<Table, Integer> join( Table table, Map<String, Integer> tableMapping,
+                                      int offset, String joinName, oap.etl.configuration.Join join ) {
       final TableModel joinTableModel = getTable( join.getTable() );
 
       Table.GroupByStream groupByStream = build( join );
@@ -195,18 +197,19 @@ public class AggregatorBuilder {
          }
       } );
 
-      tables.put( joinName, new TableModel( model, mapping ) );
+      final TableModel newTableModel = new TableModel( model, mapping );
+      tables.put( joinName, newTableModel );
 
       final Map<String, List<Object>> map = groupByStream.getMaps( objs -> objs[0].toString() )[0];
       final int keyPos = tableMapping.get( Maps.head( join.getAggregates() ).getValue().get( 0 ) );
-      return table.join(
+      return __( table.join(
          keyPos,
          ( Join ) key -> {
             List<Object> line = map.get( key );
             if( line == null ) line = join.getDefaultLine();
             return line;
          }
-      );
+      ), offset + newTableModel.model.size() - 1);
    }
 
    private int fieldPathToIndex( String field, TableModel tableModel ) {
