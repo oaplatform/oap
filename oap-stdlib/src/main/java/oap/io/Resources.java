@@ -24,7 +24,13 @@
 package oap.io;
 
 import com.google.common.io.ByteStreams;
-import oap.util.*;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import oap.concurrent.Executors;
+import oap.util.Lists;
+import oap.util.Sets;
+import oap.util.Stream;
+import oap.util.Strings;
+import oap.util.Try;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -37,7 +43,12 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
 public final class Resources {
    private static final boolean IS_WINDOWS = System.getProperty( "os.name" ).contains( "indow" );
@@ -96,16 +107,23 @@ public final class Resources {
    }
 
    public static List<URL> urls( String atPackage, String ext ) {
-      final Reflections reflections = new Reflections(
-         new ConfigurationBuilder()
+      final ExecutorService executorService = Executors.newFixedThreadPool(
+         Runtime.getRuntime().availableProcessors(),
+         new ThreadFactoryBuilder().setNameFormat( "reflections-%d" ).build()
+      );
+      try {
+         final ConfigurationBuilder configuration = new ConfigurationBuilder()
             .setUrls( ClasspathHelper.forPackage( atPackage ) )
             .setScanners( new ResourcesScanner() )
             .filterInputsBy( new FilterBuilder().includePackage( atPackage ) )
-            .useParallelExecutor()
-      );
+            .setExecutorService( executorService );
+         final Reflections reflections = new Reflections( configuration );
 
-      final Set<String> resources = reflections.getResources( in -> in.endsWith( "." + ext ) );
-      return new ArrayList<>( Sets.map( resources, r -> Thread.currentThread().getContextClassLoader().getResource( r ) ) );
+         final Set<String> resources = reflections.getResources( in -> in.endsWith( "." + ext ) );
+         return new ArrayList<>( Sets.map( resources, r -> Thread.currentThread().getContextClassLoader().getResource( r ) ) );
+      } finally {
+         executorService.shutdown();
+      }
    }
 
    public static Optional<Stream<String>> lines( Class<?> contextClass, String name ) {

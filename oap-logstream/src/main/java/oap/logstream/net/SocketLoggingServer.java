@@ -23,6 +23,7 @@
  */
 package oap.logstream.net;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.concurrent.ThreadPoolExecutor;
@@ -54,7 +55,9 @@ import java.util.concurrent.TimeUnit;
 public class SocketLoggingServer implements Runnable {
 
    private final ExecutorService executor =
-      new ThreadPoolExecutor( 0, 1024, 100, TimeUnit.SECONDS, new SynchronousQueue<>() );
+      new ThreadPoolExecutor( 0, 1024, 100, TimeUnit.SECONDS, new SynchronousQueue<>(),
+         new ThreadFactoryBuilder().setNameFormat( "socket-logging-server-%d" ).build() );
+
    private final SynchronizedThread thread = new SynchronizedThread( this );
    protected int soTimeout = 60000;
    private int port;

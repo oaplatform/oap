@@ -25,6 +25,7 @@ package oap.http;
 
 
 import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.ThreadPoolExecutor;
 import oap.http.cors.CorsPolicy;
@@ -37,13 +38,22 @@ import org.apache.http.impl.DefaultBHttpServerConnection;
 import org.apache.http.impl.DefaultBHttpServerConnectionFactory;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
-import org.apache.http.protocol.*;
+import org.apache.http.protocol.HttpContext;
+import org.apache.http.protocol.HttpCoreContext;
+import org.apache.http.protocol.HttpProcessorBuilder;
+import org.apache.http.protocol.HttpService;
+import org.apache.http.protocol.ResponseConnControl;
+import org.apache.http.protocol.ResponseContent;
+import org.apache.http.protocol.ResponseDate;
+import org.apache.http.protocol.ResponseServer;
+import org.apache.http.protocol.UriHttpRequestHandlerMapper;
 
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -72,12 +82,29 @@ public class Server implements HttpServer {
       DefaultHttpResponseFactory.INSTANCE,
       mapper );
 
-   private final ThreadPoolExecutor executor;
+   private final ExecutorService executor;
 
    public Server( final int workers ) {
-      this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, new SynchronousQueue<>() );
+      this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, new SynchronousQueue<>(),
+         new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build() );
 
       mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
+   }
+
+   //TODO Fix resolution of local through headers instead of socket inet address
+   private static HttpContext createHttpContext( final Socket socket ) {
+      final HttpContext httpContext = HttpCoreContext.create();
+
+      final String protocol;
+      if( !Inet.isLocalAddress( socket.getInetAddress() ) ) {
+         protocol = Protocol.LOCAL.name();
+      } else {
+         protocol = SSLSocket.class.isInstance( socket ) ? Protocol.HTTPS.name() : Protocol.HTTP.name();
+      }
+
+      httpContext.setAttribute( "protocol", protocol );
+
+      return httpContext;
    }
 
    @Override
@@ -148,22 +175,6 @@ public class Server implements HttpServer {
       Closeables.close( executor );
 
       log.info( "server gone down" );
-   }
-
-   //TODO Fix resolution of local through headers instead of socket inet address
-   private static HttpContext createHttpContext( final Socket socket ) {
-      final HttpContext httpContext = HttpCoreContext.create();
-
-      final String protocol;
-      if( !Inet.isLocalAddress( socket.getInetAddress() ) ) {
-         protocol = Protocol.LOCAL.name();
-      } else {
-         protocol = SSLSocket.class.isInstance( socket ) ? Protocol.HTTPS.name() : Protocol.HTTP.name();
-      }
-
-      httpContext.setAttribute( "protocol", protocol );
-
-      return httpContext;
    }
 }
 
