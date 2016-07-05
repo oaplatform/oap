@@ -26,9 +26,11 @@ package oap.tsv;
 
 import oap.testng.Env;
 import oap.util.Stream;
+import org.apache.commons.io.FilenameUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -49,7 +51,7 @@ public class ModelTest {
    public void load() {
       List<Path> paths = Stream.of( "1.tsv", "2.tsv", "3.tsv" ).map( path::resolve ).toList();
       Model.Complex complexModel = Model.complex( file -> {
-         switch( file.getFileName().toString() ) {
+         switch( FilenameUtils.getName( file ) ) {
             case "1.tsv":
                return Model.withoutHeader().s( 1 ).i( 3 );
             case "2.tsv":

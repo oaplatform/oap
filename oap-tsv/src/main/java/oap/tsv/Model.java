@@ -57,7 +57,7 @@ public class Model {
       return new Model( true );
    }
 
-   public static Complex complex( Function<Path, Model> modelBuilder ) {
+   public static Complex complex( Function<String, Model> modelBuilder ) {
       return new Complex( modelBuilder );
    }
 
@@ -168,13 +168,13 @@ public class Model {
    }
 
    public static class Complex {
-      private Function<Path, Model> modelBuilder;
+      private Function<String, Model> modelBuilder;
 
-      private Complex( Function<Path, Model> modelBuilder ) {
+      private Complex( Function<String, Model> modelBuilder ) {
          this.modelBuilder = modelBuilder;
       }
 
-      public Model modelFor( Path path ) {
+      public Model modelFor( String path ) {
          return modelBuilder.apply( path );
       }
 
