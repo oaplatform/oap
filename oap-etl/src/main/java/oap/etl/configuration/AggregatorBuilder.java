@@ -37,7 +37,6 @@ import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -209,24 +208,20 @@ public class AggregatorBuilder {
             if( line == null ) line = join.getDefaultLine();
             return line;
          }
-      ), offset + newTableModel.model.size() - 1);
+      ), offset + newTableModel.model.size() - 1 );
    }
 
-   private int fieldPathToIndex( String field, TableModel tableModel ) {
-      final String[] split = StringUtils.split( field, '.' );
-
-      final TableModel fieldTableModel = split.length == 1 ? tableModel : getTable( split[0] );
-      final Integer fieldIndex = split.length == 1 ? fieldTableModel.mapping.get( field ) : fieldTableModel.mapping.get( split[1] );
+   private int fieldPathToIndex( String reference, TableModel tableModel ) {
+      final TableModel fieldTableModel = FieldUtils.getTable( reference ).map( this::getTable ).orElse( tableModel );
+      final Integer fieldIndex = fieldTableModel.mapping.get( FieldUtils.getField( reference ) );
       if( fieldIndex == null )
-         throw new IllegalArgumentException( "Filter: unknown field " + field + ", model: " + fieldTableModel.mapping.keySet() );
+         throw new IllegalArgumentException( "Filter: unknown reference " + reference + ", model: " + fieldTableModel.mapping.keySet() );
 
       return fieldIndex;
    }
 
-   private TableModel fieldPathToTableModel( String field, TableModel tableModel ) {
-      final String[] split = StringUtils.split( field, '.' );
-
-      return split.length == 1 ? tableModel : getTable( split[0] );
+   private TableModel fieldPathToTableModel( String reference, TableModel tableModel ) {
+      return FieldUtils.getTable( reference ).map( this::getTable ).orElse( tableModel );
    }
 
    private TableModel getTable( String key ) {
