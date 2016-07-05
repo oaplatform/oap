@@ -28,6 +28,7 @@ import oap.tsv.Model;
 import oap.tsv.Tsv;
 import oap.util.Stream;
 
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,6 +66,10 @@ public class Table {
 
    public static Table fromPaths( List<Path> paths, Model.Complex complexModel ) {
       return new Table( Tsv.fromPaths( paths, complexModel ) );
+   }
+
+   public static Table fromURLs( List<URL> urls, Model.Complex complexModel ) {
+      return new Table( Tsv.fromURLs( urls, complexModel ) );
    }
 
    public static Table fromPaths( List<Path> paths, Model model ) {
