@@ -28,6 +28,8 @@ import oap.concurrent.Threads;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
+import oap.util.Lists;
+import oap.util.Strings;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.AbstractCharSequenceAssert;
@@ -38,6 +40,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.StringJoiner;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -145,15 +149,34 @@ public final class Asserts {
 
       public FileAssertion hasContent( String expected, IoStreams.Encoding encoding ) {
          exists();
-         assertString( Files.readString( this.actual.toPath(), encoding ) ).isEqualTo( expected );
+         String actual = Files.readString( this.actual.toPath(), encoding );
+         assertString( actual ).isEqualTo( expected );
          return this;
       }
 
+      public FileAssertion hasSortedLinesContent ( String expected, IoStreams.Encoding encoding ) {
+         exists();
+         String actual = Files.readString( this.actual.toPath(), encoding );
+         assertString( lineSortedContent( actual ) ).isEqualTo( expected );
+         return this;
+      }
    }
 
    public static String contentOfTestResource( Class<?> contextClass, String resource ) {
       return Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
          .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+   }
+
+   public static String sortedLinesOfTestResource( Class<?> contextClass, String resource ) {
+      String content = Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
+         .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+      return lineSortedContent( content );
+   }
+
+   private static String lineSortedContent( String content ) {
+      String[] lines = content.split( "\\n" );
+      Arrays.sort( lines );
+      return Strings.join( "\n", Lists.of( lines ) );
    }
 
    public static Path pathOfResource( Class<?> contextClass, String resource ) {

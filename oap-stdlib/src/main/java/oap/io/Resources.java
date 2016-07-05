@@ -94,6 +94,10 @@ public final class Resources {
       }
    }
 
+   public static List<String> readStrings ( Class<?> contextClass, String name ) {
+      return Lists.map( urls( name ), Try.map( Strings::readString ) );
+   }
+
    public static List<String> readStrings( String name ) {
       return Lists.map( urls( name ), Try.map( Strings::readString ) );
    }
