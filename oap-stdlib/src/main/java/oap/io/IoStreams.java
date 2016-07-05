@@ -60,12 +60,12 @@ public class IoStreams {
    public static final int DEFAULT_BUFFER = 8192;
 
    public static Stream<String> lines( URL url ) {
-      return lines( url, Encoding.PLAIN, p -> {
+      return lines( url, Encoding.from( url ), p -> {
       } );
    }
 
    public static Stream<String> lines( URL url, Consumer<Integer> progress ) {
-      return lines( url, Encoding.PLAIN, progress );
+      return lines( url, Encoding.from( url ), progress );
    }
 
    public static Stream<String> lines( URL url, Encoding encoding, Consumer<Integer> progress ) {
@@ -228,6 +228,16 @@ public class IoStreams {
       public static Encoding from( Path path ) {
          final String strPath = path.toString();
 
+         return from( strPath );
+      }
+
+      public static Encoding from( URL url ) {
+         final String strPath = url.toString();
+
+         return from( strPath );
+      }
+
+      public static Encoding from( String strPath ) {
          return Stream
             .of( values() )
             .filter( e -> e.extension.filter( strPath::endsWith ).isPresent() )
