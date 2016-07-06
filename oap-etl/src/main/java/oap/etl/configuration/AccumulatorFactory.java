@@ -26,7 +26,6 @@ package oap.etl.configuration;
 
 import lombok.val;
 import oap.etl.accumulator.Accumulator;
-import oap.etl.accumulator.AccumulatorType;
 import oap.etl.accumulator.AvgAccumulator;
 import oap.etl.accumulator.CountAccumulator;
 import oap.etl.accumulator.DoubleSumAccumulator;
@@ -41,12 +40,12 @@ import java.util.Optional;
  * Created by Admin on 31.05.2016.
  */
 public class AccumulatorFactory {
-   public static Accumulator create( AccumulatorType type, Optional<Pair<Integer, Model.ColumnType>> field ) {
-      switch( type ) {
+   public static Accumulator create( oap.etl.configuration.Accumulator accumulator, Optional<Pair<Integer, Model.ColumnType>> field ) {
+      switch( accumulator.type ) {
          case COUNT:
             return new CountAccumulator();
          case SUM: {
-            val f = field.orElseThrow( () -> new IllegalArgumentException( "SUM: Unknown fields" ) );
+            val f = field.orElseThrow( () -> new IllegalArgumentException( "SUM/" + accumulator.name + ": Unknown fields" ) );
             switch( f._2 ) {
                case INT:
                   return new IntegerSumAccumulator( f._1 );
@@ -55,15 +54,15 @@ public class AccumulatorFactory {
                case DOUBLE:
                   return new DoubleSumAccumulator( f._1 );
                default:
-                  throw new IllegalArgumentException( "SUM: Unknown type " + f._2 );
+                  throw new IllegalArgumentException( "SUM/" + accumulator.name + " : Unknown type " + f._2 );
             }
          }
          case AVG: {
-            val f = field.orElseThrow( () -> new IllegalArgumentException( "AVG: Unknown fields" ) );
+            val f = field.orElseThrow( () -> new IllegalArgumentException( "AVG/" + accumulator.name + ": Unknown fields" ) );
             return new AvgAccumulator( f._1 );
          }
          default:
-            throw new IllegalArgumentException( "Unknown accumulator type " + type );
+            throw new IllegalArgumentException( accumulator.name + " Unknown accumulator type " + accumulator.type );
       }
    }
 }

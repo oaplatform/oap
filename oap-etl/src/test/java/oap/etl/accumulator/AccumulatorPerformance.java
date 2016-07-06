@@ -100,7 +100,7 @@ public class AccumulatorPerformance extends AbstractPerformance {
             .toArray( Table.GroupBy[]::new );
 
          List<Pair<String, Table>> tables = Table.fromPaths( Arrays.asList( path1, path2 ),
-            Model.withoutHeader().s( 0, 1, 2 ).i( 3, 4, 5 ) )
+            Model.withoutHeader().s( "c0", 0 ).s( "c1", 1 ).s( "c2", 2 ).i( "c3", 3 ).i( "c4", 4 ).i( "c5", 5 ) )
             .groupBy( groups )
             .getTables();
 

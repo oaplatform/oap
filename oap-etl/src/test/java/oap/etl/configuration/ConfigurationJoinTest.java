@@ -30,13 +30,11 @@ import oap.etl.Table;
 import oap.json.Binder;
 import oap.testng.AbstractTest;
 import oap.tsv.Model;
-import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import static oap.etl.accumulator.AccumulatorType.COUNT;
 import static oap.etl.accumulator.AccumulatorType.SUM;
 import static oap.testng.Asserts.assertString;
-import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ConfigurationJoinTest extends AbstractTest {
@@ -63,15 +61,15 @@ public class ConfigurationJoinTest extends AbstractTest {
 
       assertThat( aggregatorConfiguration2 ).isEqualTo( aggregatorConfiguration );
 
-      final Model model1 = new Model( false ).s( 0, 1 ).i( 2 );
-      final Model model2 = new Model( false ).s( 0 ).i( 1 );
+      final Model model1 = new Model( false ).s( "gcol", 0 ).s( "column", 1 ).i( "value1", 2 );
+      final Model model2 = new Model( false ).s( "column", 0 ).i( "value2", 1 );
 
       val export = new StringExport();
 
       AggregatorBuilder
          .custom()
-         .withModel( "table1", model1, Maps.of( __( "gcol", 0 ), __( "column", 1 ), __( "value1", 2 ) ) )
-         .withModel( "table2", model2, Maps.of( __( "column", 0 ), __( "value2", 1 ) ) )
+         .withModel( "table1", model1 )
+         .withModel( "table2", model2 )
 
          .withTable( "table1", Table.fromString( "s\ta\t10\n" +
             "s\ta\t20\n" +
@@ -95,17 +93,17 @@ public class ConfigurationJoinTest extends AbstractTest {
          Binder.json.unmarshalResource( getClass(), Aggregator.class, "bid_imp_configuration.json" )
             .orElseThrow( () -> new IllegalArgumentException( "bid_imp_configuration.json not found" ) );
 
-      final Model bidModel = new Model( false ).s( 0, 1 ).i( 2 );
-      final Model impressionModel = new Model( false ).s( 0 ).i( 1 );
-      final Model clickModel = new Model( false ).s( 0 );
+      final Model bidModel = new Model( false ).s( "BID_ID", 0 ).s( "EXCHANGE", 1 ).i( "BID_PRICE", 2 );
+      final Model impressionModel = new Model( false ).s( "BID_ID", 0 ).i( "PRICE", 1 );
+      final Model clickModel = new Model( false ).s( "BID_ID", 0 );
 
       val export = new StringExport();
 
       AggregatorBuilder
          .custom()
-         .withModel( "bid", bidModel, Maps.of( __( "BID_ID", 0 ), __( "EXCHANGE", 1 ), __( "BID_PRICE", 2 ) ) )
-         .withModel( "impression", impressionModel, Maps.of( __( "BID_ID", 0 ), __( "PRICE", 1 ) ) )
-         .withModel( "click", clickModel, Maps.of( __( "BID_ID", 0 ) ) )
+         .withModel( "bid", bidModel )
+         .withModel( "impression", impressionModel )
+         .withModel( "click", clickModel )
 
          .withTable( "bid", Table.fromString(
             "ID0989\tSMAATO\t896\n" +

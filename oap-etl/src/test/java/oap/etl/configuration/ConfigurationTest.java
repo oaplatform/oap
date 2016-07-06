@@ -31,14 +31,12 @@ import oap.etl.Table;
 import oap.testng.AbstractTest;
 import oap.tsv.DictionaryModel;
 import oap.tsv.Model;
-import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import static oap.etl.accumulator.AccumulatorType.AVG;
 import static oap.etl.accumulator.AccumulatorType.COUNT;
 import static oap.etl.accumulator.AccumulatorType.SUM;
 import static oap.testng.Asserts.assertString;
-import static oap.util.Pair.__;
 
 public class ConfigurationTest extends AbstractTest {
    @Test
@@ -66,7 +64,7 @@ public class ConfigurationTest extends AbstractTest {
 
       val export = new StringExport();
 
-      val dictonary = DictionaryParser.parseFromString( "{\n" +
+      val dictionary = DictionaryParser.parseFromString( "{\n" +
          "  \"name\" : \"config.v14\",\n" +
          "  \"version\" : 14,\n" +
          "  \"values\" : [ {\n" +
@@ -94,7 +92,7 @@ public class ConfigurationTest extends AbstractTest {
          "} "
       );
 
-      final DictionaryModel dictionaryModel = new DictionaryModel( dictonary );
+      final DictionaryModel dictionaryModel = new DictionaryModel( dictionary );
       AggregatorBuilder
          .custom()
          .withModel( dictionaryModel )
@@ -121,13 +119,13 @@ public class ConfigurationTest extends AbstractTest {
          .export( "export" )
          .build();
 
-      final Model model = new Model( false ).s( 0 ).i( 1 ).l( 2 ).d( 3 );
+      final Model model = new Model( false ).s( "column1", 0 ).i( "valuei", 1 ).l( "valuel", 2 ).d( "valued", 3 );
 
       StringExport export = new StringExport();
 
       AggregatorBuilder
          .custom()
-         .withModel( "table", model, Maps.of( __( "column1", 0 ), __( "valuei", 1 ), __( "valuel", 2 ), __( "valued", 3 ) ) )
+         .withModel( "table", model )
          .withTable( "table", Table.fromString( "a\t10\t11\t1.1\n" +
             "a\t20\t21\t2.2\n" +
             "a1\t10\t10\t1.1\n", model ) )
@@ -148,12 +146,12 @@ public class ConfigurationTest extends AbstractTest {
          .export( "export" )
          .build();
 
-      val model = new Model( false ).s( 0 ).i( 1 );
+      val model = new Model( false ).s( "column1", 0 ).i( "value", 1 );
       val export = new StringExport();
 
       AggregatorBuilder
          .custom()
-         .withModel( "table", model, Maps.of( __( "column1", 0 ), __( "value", 1 ) ) )
+         .withModel( "table", model )
          .withTable( "table", Table.fromString( "a\t10\n" +
             "a\t20\n" +
             "a1\t10\n", model ) )
@@ -174,12 +172,12 @@ public class ConfigurationTest extends AbstractTest {
          .export( "export" )
          .build();
 
-      val model = new Model( false ).s( 0 ).i( 1 ).s( 2 );
+      val model = new Model( false ).s( "column1", 0 ).i( "value", 1 ).s( "filter", 2 );
       val export = new StringExport();
 
       AggregatorBuilder
          .custom()
-         .withModel( "table", model, Maps.of( __( "column1", 0 ), __( "value", 1 ), __( "filter", 2 ) ) )
+         .withModel( "table", model )
          .withTable( "table", Table.fromString( "a\t10\ttest\n" +
             "a\t20\tunknown\n" +
             "a1\t10\ttest\n", model ) )

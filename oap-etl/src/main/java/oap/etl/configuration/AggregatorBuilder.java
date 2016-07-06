@@ -36,7 +36,6 @@ import oap.tsv.Model;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
-import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,15 +56,15 @@ public class AggregatorBuilder {
       return new AggregatorBuilder();
    }
 
-   public AggregatorBuilder withModel( String name, Model model, Map<String, Integer> mapping ) {
-      tables.put( name, new TableModel( model, mapping ) );
+   public AggregatorBuilder withModel( String name, Model model ) {
+      tables.put( name, new TableModel( model ) );
 
       return this;
    }
 
    public AggregatorBuilder withModel( DictionaryModel dictionaryModel ) {
       for( val table : dictionaryModel.getTables() ) {
-         tables.put( table, new TableModel( dictionaryModel.toModel( table ), dictionaryModel.toMap( table ) ) );
+         tables.put( table, new TableModel( dictionaryModel.toModel( table ) ) );
       }
 
       return this;
@@ -101,7 +100,7 @@ public class AggregatorBuilder {
       int offset = tableModel.model.size();
 
       for( val joinEntry : configuration.getJoins().entrySet() ) {
-         Pair<Table, Integer> p = join( table, tableModel.mapping, offset, joinEntry.getKey(), joinEntry.getValue() );
+         Pair<Table, Integer> p = join( table, tableModel.model, offset, joinEntry.getKey(), joinEntry.getValue() );
          table = p._1;
          offset = p._2;
       }
@@ -140,7 +139,7 @@ public class AggregatorBuilder {
    }
 
    private oap.etl.accumulator.Accumulator getAccumulator( TableModel tableModel, Accumulator ac, Optional<Pair<Integer, Model.ColumnType>> fieldInfo ) {
-      val accumulator = AccumulatorFactory.create( ac.type, fieldInfo );
+      val accumulator = AccumulatorFactory.create( ac, fieldInfo );
 
       final Accumulator.Filter filter = ac.filter.orElse( null );
       if( filter != null ) {
@@ -156,15 +155,15 @@ public class AggregatorBuilder {
       return groupByFields
          .stream()
          .mapToInt( f -> {
-            final Integer v = tableModel.mapping.get( f );
+            final Integer v = tableModel.model.getOffset( f );
             if( v == null )
-               throw new IllegalArgumentException( "Unknown aggregate field " + f + ", model: " + tableModel.mapping.keySet() );
+               throw new IllegalArgumentException( "Unknown aggregate field " + f + ", model: " + tableModel.model.names() );
             return v;
          } )
          .toArray();
    }
 
-   private Pair<Table, Integer> join( Table table, Map<String, Integer> tableMapping,
+   private Pair<Table, Integer> join( Table table, Model joinModel,
                                       int offset, String joinName, oap.etl.configuration.Join join ) {
       final TableModel joinTableModel = getTable( join.getTable() );
 
@@ -187,7 +186,7 @@ public class AggregatorBuilder {
             return __( index, joinTableModel.model.getType( index ) );
          } );
 
-         model.column( AccumulatorFactory.create( ac.type, fieldInfo ).getModelType(), i + offset );
+         model.column( ac.name, AccumulatorFactory.create( ac, fieldInfo ).getModelType(), i + offset );
          mapping.put( ac.name, i + offset );
       }
 
@@ -195,17 +194,11 @@ public class AggregatorBuilder {
          model.column( fromModel.getColumn( index ) );
       }
 
-      joinTableModel.mapping.forEach( ( key, value ) -> {
-         if( ArrayUtils.contains( groupByStream.fields[0], value ) ) {
-            mapping.put( key, value );
-         }
-      } );
-
-      final TableModel newTableModel = new TableModel( model, mapping );
+      final TableModel newTableModel = new TableModel( model );
       tables.put( joinName, newTableModel );
 
       final Map<String, List<Object>> map = groupByStream.getMaps( objs -> objs[0].toString() )[0];
-      final int keyPos = tableMapping.get( Maps.head( join.getAggregates() ).getValue().get( 0 ) );
+      final int keyPos = joinModel.getOffset( Maps.head( join.getAggregates() ).getValue().get( 0 ) );
       return __( table.join(
          keyPos,
          ( Join ) key -> {
@@ -218,9 +211,9 @@ public class AggregatorBuilder {
 
    private int fieldPathToIndex( String reference, TableModel tableModel ) {
       final TableModel fieldTableModel = FieldUtils.getTable( reference ).map( this::getTable ).orElse( tableModel );
-      final Integer fieldIndex = fieldTableModel.mapping.get( FieldUtils.getField( reference ) );
+      final Integer fieldIndex = fieldTableModel.model.getOffset( FieldUtils.getField( reference ) );
       if( fieldIndex == null )
-         throw new IllegalArgumentException( "Filter: unknown reference " + reference + ", model: " + fieldTableModel.mapping.keySet() );
+         throw new IllegalArgumentException( "Filter: unknown reference " + reference + ", model: " + fieldTableModel.model.names() );
 
       return fieldIndex;
    }
@@ -247,12 +240,10 @@ public class AggregatorBuilder {
 
    private static class TableModel {
       private Model model;
-      private Map<String, Integer> mapping;
       private Table table;
 
-      public TableModel( Model model, Map<String, Integer> mapping ) {
+      public TableModel( Model model ) {
          this.model = model;
-         this.mapping = mapping;
       }
    }
 }

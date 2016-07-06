@@ -40,11 +40,11 @@ public class TableTest {
    @Test
    public void testSorted() {
       CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
-         getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( 0 ) ).get();
+         getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( "c0", 0 ) ).get();
       StringExport export = new StringExport();
       List<Long> progress = new ArrayList<>();
       Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
-         Model.withoutHeader().s( 1, 2, 3 ) )
+         Model.withoutHeader().s( "c0", 1 ).s( "c1", 2 ).s( "c2", 3 ) )
          .get()
          .progress( 2, progress::add )
          .sort( new int[]{ 0, 1 } )
@@ -58,11 +58,11 @@ public class TableTest {
    @Test
    public void testDistincted2() {
       CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
-         getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( 0 ) ).get();
+         getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( "c0", 0 ) ).get();
       StringExport export = new StringExport();
 
       Table.fromResource( getClass(), getClass().getSimpleName() + "/3.tsv",
-         Model.withoutHeader().s( 1, 2 ).i( 3 ) )
+         Model.withoutHeader().s( "c0", 1 ).s( "c1", 2 ).i( "c2", 3 ) )
          .get()
          .join( 1, join )
          .groupBy( new Table.GroupBy( "agg_name", new int[]{ 0, 1 }, Accumulator.count(),
@@ -80,10 +80,10 @@ public class TableTest {
    @Test
    public void testJoined() {
       TableJoin join = TableJoin.fromResource( getClass(), getClass().getSimpleName() + "/2.tsv",
-         Model.withoutHeader().s( 1, 2, 0 ), Lists.of( "0", "x" ) ).get();
+         Model.withoutHeader().s( "c0", 1 ).s( "c1", 2 ).s( "c2", 0 ), Lists.of( "0", "x" ) ).get();
       StringExport export = new StringExport();
       Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
-         Model.withoutHeader().s( 1, 2, 3 ) )
+         Model.withoutHeader().s( "c0", 1 ).s( "c1", 2 ).s( "c2", 3 ) )
          .get()
          .sort( new int[]{ 0, 1 } )
          .join( 1, join )

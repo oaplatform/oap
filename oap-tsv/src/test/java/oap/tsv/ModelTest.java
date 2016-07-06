@@ -30,13 +30,14 @@ import org.apache.commons.io.FilenameUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
 import static oap.testng.Asserts.assertFile;
 import static oap.tsv.Model.ColumnType.INT;
+import static oap.tsv.Model.ColumnType.STRING;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 
 public class ModelTest {
@@ -53,11 +54,11 @@ public class ModelTest {
       Model.Complex complexModel = Model.complex( file -> {
          switch( FilenameUtils.getName( file ) ) {
             case "1.tsv":
-               return Model.withoutHeader().s( 1 ).i( 3 );
+               return Model.withoutHeader().s( "c0", 1 ).i( "c1", 3 );
             case "2.tsv":
-               return Model.withoutHeader().s( 1 ).i( 4 );
+               return Model.withoutHeader().s( "c0", 1 ).i( "c1", 4 );
             case "3.tsv":
-               return Model.withHeader().s( 1 ).v( INT, 0 );
+               return Model.withHeader().s( "c0", 1 ).v( "c1", INT, 0 );
             default:
                throw new IllegalArgumentException();
 
@@ -68,7 +69,7 @@ public class ModelTest {
 
    @Test
    public void testDatatypes() {
-      Model model = Model.withoutHeader().b( 0 ).i( 1 ).d( 2 ).s( 3 ).l( 4 );
+      Model model = Model.withoutHeader().b( "c0", 0 ).i( "c1", 1 ).d( "c2", 2 ).s( "c3", 3 ).l( "c4", 4 );
       Path datatypesTsv = path.resolve( Paths.get( "datatypes.tsv" ) );
       Tsv.fromPath( datatypesTsv, model ).forEach( row -> {
          assertEquals( true, row.get( 0 ) );
@@ -77,6 +78,28 @@ public class ModelTest {
          assertEquals( "Some value", row.get( 3 ) );
          assertEquals( 9223312036854775807L, row.get( 4 ) );
       } );
+   }
+
+   @Test
+   public void testFilter() {
+      Model model = Model.withoutHeader().b( "c0", 0 ).i( "c1", 1 ).d( "c2", 2 ).s( "c3", 3 ).l( "c4", 4 );
+      final Model newModel = model.filter( "c1", "c3" );
+
+      assertThat( newModel.size() ).isEqualTo( 2 );
+      assertThat( newModel.getColumn( 0 ).name ).isEqualTo( "c1" );
+      assertThat( newModel.getColumn( 1 ).name ).isEqualTo( "c3" );
+
+   }
+
+   @Test
+   public void testSyncOffsetToIndex() {
+      Model model = Model.withoutHeader().b( "c0", 10 ).i( "c1", 2 ).v( "c2", STRING, "str");
+      final Model newModel = model.syncOffsetToIndex();
+
+      assertThat( newModel.size() ).isEqualTo( 3 );
+      assertThat( newModel.getOffset( "c0" ) ).isEqualTo( 0 );
+      assertThat( newModel.getOffset( "c1" ) ).isEqualTo( 1 );
+      assertThat( newModel.getOffset( "c2" ) ).isEqualTo( 2 );
 
    }
 }
