@@ -65,12 +65,12 @@ public class TableTest {
          Model.withoutHeader().s( 1, 2 ).i( 3 ) )
          .get()
          .join( 1, join )
-         .groupBy( new Table.GroupBy( new int[]{ 0, 1 }, Accumulator.count(),
+         .groupBy( new Table.GroupBy( "agg_name", new int[]{ 0, 1 }, Accumulator.count(),
             Accumulator.<Integer>filter( Accumulator.intSum( 3 ), 2, i -> i == 2 ),
             Accumulator.intSum( 3 ) ) )
          .getTables()
          .forEach( t -> {
-            t.sort( new int[]{ 0, 1 } )
+            t._2.sort( new int[]{ 0, 1 } )
                .export( export )
                .compute();
          } );

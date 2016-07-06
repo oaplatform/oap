@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static oap.util.Pair.__;
 
@@ -50,7 +51,7 @@ import static oap.util.Pair.__;
 public class AggregatorBuilder {
    private final HashMap<String, TableModel> tables = new HashMap<>();
    private Aggregator configuration;
-   private HashMap<String, Export> exports = new HashMap<>();
+   private HashMap<String, Function<String, Export>> exports = new HashMap<>();
 
    public static AggregatorBuilder custom() {
       return new AggregatorBuilder();
@@ -79,13 +80,17 @@ public class AggregatorBuilder {
    public void build() {
       Table.GroupByStream groupByStream = build( configuration );
 
-      final List<Table> tables = groupByStream.getTables();
+      final List<Pair<String, Table>> tables = groupByStream.getTables();
 
       for( int i = 0; i < tables.size(); i++ ) {
-         tables
-            .get( i )
+         final Pair<String, Table> tn = tables.get( i );
+
+         final Function<String, Export> exportFunction = exports.get( configuration.getExport() );
+         if( exportFunction == null )
+            throw new IllegalStateException( "Unknown export function " + configuration.getExport() );
+         tn._2
             .sort( groupByStream.fields[i] )
-            .export( exports.get( configuration.getExport() ) )
+            .export( exportFunction.apply( tn._1 ) )
             .compute();
       }
    }
@@ -104,14 +109,14 @@ public class AggregatorBuilder {
 
       final ArrayList<GroupBy> result = new ArrayList<>();
 
-      for( val groupByFields : configuration.getAggregates().values() ) {
-         val groupByPosition = nameToIndex( groupByFields, tableModel );
+      configuration.getAggregates().forEach( ( name, groupByFields ) -> {
+         final int[] groupByPosition = nameToIndex( groupByFields, tableModel );
 
-         val acs = configuration.getAccumulators();
-         val accumulators = new oap.etl.accumulator.Accumulator[acs.size()];
+         final List<Accumulator> acs = configuration.getAccumulators();
+         final oap.etl.accumulator.Accumulator[] accumulators = new oap.etl.accumulator.Accumulator[acs.size()];
 
          for( int i = 0; i < acs.size(); i++ ) {
-            val ac = acs.get( i );
+            final Accumulator ac = acs.get( i );
 
             final Optional<Pair<Integer, Model.ColumnType>> fieldInfo = ac.field.map( f -> {
                final int index = fieldPathToIndex( f, tableModel );
@@ -127,9 +132,9 @@ public class AggregatorBuilder {
             accumulators[i] = getAccumulator( tableModel, ac, fieldInfo );
          }
 
-         final GroupBy groupBy = new GroupBy( groupByPosition, accumulators );
+         final GroupBy groupBy = new GroupBy( name, groupByPosition, accumulators );
          result.add( groupBy );
-      }
+      } );
 
       return table.groupBy( result.toArray( new GroupBy[result.size()] ) );
    }
@@ -235,7 +240,7 @@ public class AggregatorBuilder {
       return this;
    }
 
-   public AggregatorBuilder withExport( String name, Export export ) {
+   public AggregatorBuilder withExport( String name, Function<String, Export> export ) {
       exports.put( name, export );
       return this;
    }
