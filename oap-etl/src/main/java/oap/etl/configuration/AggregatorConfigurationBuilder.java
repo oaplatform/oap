@@ -34,9 +34,6 @@ import java.util.function.Consumer;
 
 import static java.util.Arrays.asList;
 
-/**
- * Created by Admin on 01.06.2016.
- */
 public class AggregatorConfigurationBuilder {
    private final ArrayList<Accumulator> accumulators = new ArrayList<>();
    private final HashMap<String, Join> joins = new HashMap<>();

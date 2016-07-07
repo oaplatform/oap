@@ -27,13 +27,17 @@ import lombok.ToString;
 import lombok.val;
 import oap.util.Strings;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toSet;
 import static oap.tsv.Model.ColumnType.BOOLEAN;
 import static oap.tsv.Model.ColumnType.DOUBLE;
 import static oap.tsv.Model.ColumnType.INT;
@@ -44,6 +48,7 @@ public class Model {
    public final boolean withHeader;
    private Predicate<List<String>> filter;
    private List<ColumnFunction> columns = new ArrayList<>();
+   private Map<String, Integer> nameToIndexMap = new HashMap<>();
 
    public Model( boolean withHeader ) {
       this.withHeader = withHeader;
@@ -57,26 +62,27 @@ public class Model {
       return new Model( true );
    }
 
-   public static Complex complex( Function<Path, Model> modelBuilder ) {
+   public static Complex complex( Function<String, Model> modelBuilder ) {
       return new Complex( modelBuilder );
+   }
+
+   private void add( ColumnFunction f ) {
+      int index = this.columns.size();
+      this.columns.add( f );
+      this.nameToIndexMap.put( f.name, index );
    }
 
    public ColumnFunction getColumn( int index ) {
       return columns.get( index );
    }
 
-   public Model column( ColumnType type, int index, int... more ) {
-      this.columns.add( new Column( index, type ) );
-      return column( type, more );
-   }
-
-   public Model columnValue( ColumnType type, Object value ) {
-      this.columns.add( new Value( value, type ) );
+   public Model column( String name, ColumnType type, int index ) {
+      add( new Column( name, index, type ) );
       return this;
    }
 
-   public Model column( ColumnType type, int[] indices ) {
-      for( int i : indices ) this.columns.add( new Column( i, type ) );
+   public Model columnValue( String name, ColumnType type, Object value ) {
+      add( new Value( name, value, type ) );
       return this;
    }
 
@@ -96,32 +102,28 @@ public class Model {
       return result;
    }
 
-   public Model s( int[] indices ) {
-      return column( STRING, indices );
+   public Model s( String name, int index ) {
+      return column( name, STRING, index );
    }
 
-   public Model s( int index, int... more ) {
-      return column( STRING, index, more );
+   public Model i( String name, int index ) {
+      return column( name, INT, index );
    }
 
-   public Model i( int index, int... more ) {
-      return column( INT, index, more );
+   public Model l( String name, int index ) {
+      return column( name, LONG, index );
    }
 
-   public Model l( int index, int... more ) {
-      return column( LONG, index, more );
+   public Model d( String name, int index ) {
+      return column( name, DOUBLE, index );
    }
 
-   public Model d( int index, int... more ) {
-      return column( DOUBLE, index, more );
+   public Model b( String name, int index ) {
+      return column( name, BOOLEAN, index );
    }
 
-   public Model b( int index, int... more ) {
-      return column( BOOLEAN, index, more );
-   }
-
-   public Model v( ColumnType type, Object value ) {
-      return columnValue( type, value );
+   public Model v( String name, ColumnType type, Object value ) {
+      return columnValue( name, type, value );
    }
 
    public Model filtered( Predicate<List<String>> filter ) {
@@ -138,7 +140,7 @@ public class Model {
    }
 
    public Model join( Model model ) {
-      this.columns.addAll( model.columns );
+      model.columns.forEach( model::add );
       return this;
    }
 
@@ -159,8 +161,53 @@ public class Model {
       return Optional.empty();
    }
 
-   public void column( ColumnFunction function ) {
+   public final void column( ColumnFunction function ) {
       columns.add( function );
+   }
+
+   public final Integer getOffset( String name ) {
+      final Integer index = nameToIndexMap.get( name );
+      if( index == null ) return null;
+
+      final ColumnFunction columnFunction = columns.get( index );
+      if( columnFunction instanceof Column ) return ( ( Column ) columnFunction ).index;
+
+      return index;
+   }
+
+   public final Set<String> names() {
+      return nameToIndexMap.keySet();
+   }
+
+   public final Model filter( String... columns ) {
+      return filter( asList( columns ).stream().collect( toSet() ) );
+   }
+
+   public final Model filter( Set<String> columns ) {
+      final Model model = new Model( withHeader );
+
+      this.columns
+         .stream()
+         .filter( c -> columns.contains( c.name ) )
+         .forEach( model::add );
+
+      return model;
+   }
+
+   public final Model syncOffsetToIndex() {
+      final Model model = new Model( withHeader );
+      for( int i = 0; i < columns.size(); i++ ) {
+         final ColumnFunction columnFunction = columns.get( i );
+         if( columnFunction instanceof Column ) {
+            final Column column = ( Column ) columnFunction;
+            column.index = i;
+            model.add( new Column( column.name, i, column.type ) );
+         } else {
+            model.add( columnFunction );
+         }
+      }
+
+      return model;
    }
 
    public enum ColumnType {
@@ -168,22 +215,24 @@ public class Model {
    }
 
    public static class Complex {
-      private Function<Path, Model> modelBuilder;
+      private Function<String, Model> modelBuilder;
 
-      private Complex( Function<Path, Model> modelBuilder ) {
+      private Complex( Function<String, Model> modelBuilder ) {
          this.modelBuilder = modelBuilder;
       }
 
-      public Model modelFor( Path path ) {
+      public Model modelFor( String path ) {
          return modelBuilder.apply( path );
       }
 
    }
 
-   private static abstract class ColumnFunction implements Function<List<String>, Object> {
+   static abstract class ColumnFunction implements Function<List<String>, Object> {
+      public final String name;
       public final ColumnType type;
 
-      public ColumnFunction( ColumnType type ) {
+      public ColumnFunction( String name, ColumnType type ) {
+         this.name = name;
          this.type = type;
       }
    }
@@ -192,8 +241,8 @@ public class Model {
    private static class Column extends ColumnFunction {
       int index;
 
-      public Column( int index, ColumnType type ) {
-         super( type );
+      public Column( String name, int index, ColumnType type ) {
+         super( name, type );
 
          this.index = index;
       }
@@ -222,8 +271,8 @@ public class Model {
    private static class Value extends ColumnFunction {
       Object value;
 
-      public Value( Object value, ColumnType type ) {
-         super( type );
+      public Value( String name, Object value, ColumnType type ) {
+         super( name, type );
          this.value = value;
       }
 

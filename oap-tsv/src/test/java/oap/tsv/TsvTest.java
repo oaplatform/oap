@@ -55,7 +55,7 @@ public class TsvTest {
 
    @Test( dataProvider = "files" )
    public void loadTsv( String file, IoStreams.Encoding encoding ) {
-      Model model = Model.withoutHeader().s( 1 ).i( 3 ).filterColumnCount( 4 );
+      Model model = Model.withoutHeader().s( "c1", 1 ).i( "c3", 3 ).filterColumnCount( 4 );
       Path path = Env.deployTestData( getClass() );
 
       Stream<List<Object>> tsv = Tsv.fromPath( path.resolve( file ), model );

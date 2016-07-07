@@ -30,6 +30,7 @@ import oap.io.IoStreams;
 import oap.testng.AbstractPerformance;
 import oap.testng.Env;
 import oap.tsv.Model;
+import oap.util.Pair;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -94,19 +95,19 @@ public class AccumulatorPerformance extends AbstractPerformance {
       benchmark( "accumulator.without_sort", SAMPLES, EXPERIMENTS, ( i ) -> {
 
          Table.GroupBy[] groups = Stream
-            .generate( () -> new Table.GroupBy( new int[]{ 0, 1, 2 }, Accumulator.count(), Accumulator.intSum( 3 ), Accumulator.intSum( 4 ) ) )
+            .generate( () -> new Table.GroupBy( "agg_name", new int[]{ 0, 1, 2 }, Accumulator.count(), Accumulator.intSum( 3 ), Accumulator.intSum( 4 ) ) )
             .limit( count )
             .toArray( Table.GroupBy[]::new );
 
-         List<Table> tables = Table.fromPaths( Arrays.asList( path1, path2 ),
-            Model.withoutHeader().s( 0, 1, 2 ).i( 3, 4, 5 ) )
+         List<Pair<String, Table>> tables = Table.fromPaths( Arrays.asList( path1, path2 ),
+            Model.withoutHeader().s( "c0", 0 ).s( "c1", 1 ).s( "c2", 2 ).i( "c3", 3 ).i( "c4", 4 ).i( "c5", 5 ) )
             .groupBy( groups )
             .getTables();
 
          for( int x = 0; x < count; x++ ) {
             StringExport export = new StringExport();
 
-            tables.get( x ).sort( new int[]{ 0, 1, 2 } ).export( export ).compute();
+            tables.get( x )._2.sort( new int[]{ 0, 1, 2 } ).export( export ).compute();
          }
       } );
    }

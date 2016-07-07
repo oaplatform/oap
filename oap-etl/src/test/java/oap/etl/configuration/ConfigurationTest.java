@@ -31,18 +31,13 @@ import oap.etl.Table;
 import oap.testng.AbstractTest;
 import oap.tsv.DictionaryModel;
 import oap.tsv.Model;
-import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import static oap.etl.accumulator.AccumulatorType.AVG;
 import static oap.etl.accumulator.AccumulatorType.COUNT;
 import static oap.etl.accumulator.AccumulatorType.SUM;
 import static oap.testng.Asserts.assertString;
-import static oap.util.Pair.__;
 
-/**
- * Created by Admin on 31.05.2016.
- */
 public class ConfigurationTest extends AbstractTest {
    @Test
    public void testGroupAndCount() {
@@ -69,7 +64,7 @@ public class ConfigurationTest extends AbstractTest {
 
       val export = new StringExport();
 
-      val dictonary = DictionaryParser.parseFromString( "{\n" +
+      val dictionary = DictionaryParser.parseFromString( "{\n" +
          "  \"name\" : \"config.v14\",\n" +
          "  \"version\" : 14,\n" +
          "  \"values\" : [ {\n" +
@@ -97,7 +92,7 @@ public class ConfigurationTest extends AbstractTest {
          "} "
       );
 
-      final DictionaryModel dictionaryModel = new DictionaryModel( dictonary );
+      final DictionaryModel dictionaryModel = new DictionaryModel( dictionary );
       AggregatorBuilder
          .custom()
          .withModel( dictionaryModel )
@@ -105,7 +100,7 @@ public class ConfigurationTest extends AbstractTest {
          .withTable( "table", Table.fromString( "a\tb\t10\n" +
             "a\tb\t20\n" +
             "a1\tb1\t10\n", dictionaryModel.toModel( "table" ) ) )
-         .withExport( "export", export )
+         .withExport( "export", ( s ) -> export )
          .build();
 
       assertString( export.toString() ).isEqualTo( "a\tb\t2\na1\tb1\t1\n" );
@@ -124,18 +119,18 @@ public class ConfigurationTest extends AbstractTest {
          .export( "export" )
          .build();
 
-      final Model model = new Model( false ).s( 0 ).i( 1 ).l( 2 ).d( 3 );
+      final Model model = new Model( false ).s( "column1", 0 ).i( "valuei", 1 ).l( "valuel", 2 ).d( "valued", 3 );
 
       StringExport export = new StringExport();
 
       AggregatorBuilder
          .custom()
-         .withModel( "table", model, Maps.of( __( "column1", 0 ), __( "valuei", 1 ), __( "valuel", 2 ), __( "valued", 3 ) ) )
+         .withModel( "table", model )
          .withTable( "table", Table.fromString( "a\t10\t11\t1.1\n" +
             "a\t20\t21\t2.2\n" +
             "a1\t10\t10\t1.1\n", model ) )
          .withConfiguration( aggregatorConfiguration )
-         .withExport( "export", export )
+         .withExport( "export", ( s ) -> export )
          .build();
 
       assertString( export.toString() ).isEqualTo( "a\t2\t30\t32\t3.3000000000000003\na1\t1\t10\t10\t1.1\n" );
@@ -151,17 +146,17 @@ public class ConfigurationTest extends AbstractTest {
          .export( "export" )
          .build();
 
-      val model = new Model( false ).s( 0 ).i( 1 );
+      val model = new Model( false ).s( "column1", 0 ).i( "value", 1 );
       val export = new StringExport();
 
       AggregatorBuilder
          .custom()
-         .withModel( "table", model, Maps.of( __( "column1", 0 ), __( "value", 1 ) ) )
+         .withModel( "table", model )
          .withTable( "table", Table.fromString( "a\t10\n" +
             "a\t20\n" +
             "a1\t10\n", model ) )
          .withConfiguration( aggregatorConfiguration )
-         .withExport( "export", export )
+         .withExport( "export", ( s ) -> export )
          .build();
 
       assertString( export.toString() ).isEqualTo( "a\t15.0\na1\t10.0\n" );
@@ -177,17 +172,17 @@ public class ConfigurationTest extends AbstractTest {
          .export( "export" )
          .build();
 
-      val model = new Model( false ).s( 0 ).i( 1 ).s( 2 );
+      val model = new Model( false ).s( "column1", 0 ).i( "value", 1 ).s( "filter", 2 );
       val export = new StringExport();
 
       AggregatorBuilder
          .custom()
-         .withModel( "table", model, Maps.of( __( "column1", 0 ), __( "value", 1 ), __( "filter", 2 ) ) )
+         .withModel( "table", model )
          .withTable( "table", Table.fromString( "a\t10\ttest\n" +
             "a\t20\tunknown\n" +
             "a1\t10\ttest\n", model ) )
          .withConfiguration( aggregatorConfiguration )
-         .withExport( "export", export )
+         .withExport( "export", ( s ) -> export )
          .build();
 
       assertString( export.toString() ).isEqualTo( "a\t1\n" +

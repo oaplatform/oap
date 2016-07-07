@@ -25,16 +25,12 @@
 package oap.tsv;
 
 import oap.dictionary.Dictionary;
-import org.apache.commons.collections4.keyvalue.AbstractMapEntry;
-import org.apache.commons.lang3.NotImplementedException;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.primitives.Ints.asList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -56,24 +52,25 @@ public class DictionaryModel {
 
       final List<? extends Dictionary> values = dictionary.getValue( table ).getValues();
       for( Dictionary field : values ) {
+         final String id = field.getId();
          final int offset = field.getExternalId();
          final String type = ( String ) field.getProperty( "type" ).get();
 
          switch( type ) {
             case "STRING":
-               model.s( offset );
+               model.s( id, offset );
                break;
             case "INTEGER":
-               model.i( offset );
+               model.i( id, offset );
                break;
             case "LONG":
-               model.l( offset );
+               model.l( id, offset );
                break;
             case "DOUBLE":
-               model.d( offset );
+               model.d( id, offset );
                break;
             case "BOOLEAN":
-               model.b( offset );
+               model.b( id, offset );
                break;
             default:
                throw new IllegalArgumentException( "Unknown field type " + type );
@@ -95,82 +92,7 @@ public class DictionaryModel {
       return defaults;
    }
 
-   public Map<String, Integer> toMap( String table ) {
-      final Dictionary tableDictionary = DictionaryModel.this.dictionary.getValueOpt( table ).get();
-
-      return new NameToIdMap( tableDictionary );
-   }
-
    public Set<String> getTables() {
       return dictionary.ids().stream().collect( toSet() );
-   }
-
-   private static class NameToIdMap implements Map<String, Integer> {
-      private final Dictionary tableDictionary;
-
-      public NameToIdMap( Dictionary tableDictionary ) {
-         this.tableDictionary = tableDictionary;
-      }
-
-      @Override
-      public int size() {
-         return tableDictionary.getValues().size();
-      }
-
-      @Override
-      public boolean isEmpty() {
-         return tableDictionary.getValues().isEmpty();
-      }
-
-      @Override
-      public boolean containsKey( Object key ) {
-         return tableDictionary.containsValueWithId( key.toString() );
-      }
-
-      @Override
-      public boolean containsValue( Object value ) {
-         throw new NotImplementedException( "" );
-      }
-
-      @Override
-      public Integer get( Object key ) {
-         return tableDictionary.get( key.toString() );
-      }
-
-      @Override
-      public Integer put( String key, Integer value ) {
-         throw new NotImplementedException( "" );
-      }
-
-      @Override
-      public Integer remove( Object key ) {
-         throw new NotImplementedException( "" );
-      }
-
-      @Override
-      public void putAll( Map<? extends String, ? extends Integer> m ) {
-         throw new NotImplementedException( "" );
-      }
-
-      @Override
-      public void clear() {
-         throw new NotImplementedException( "" );
-      }
-
-      @Override
-      public Set<String> keySet() {
-         return tableDictionary.ids().stream().collect( toSet() );
-      }
-
-      @Override
-      public Collection<Integer> values() {
-         return asList( tableDictionary.externalIds() );
-      }
-
-      @Override
-      public Set<Entry<String, Integer>> entrySet() {
-         return tableDictionary.getValues().stream().map( v -> new AbstractMapEntry<String, Integer>( v.getId(), v.getExternalId() ) {
-         } ).collect( toSet() );
-      }
    }
 }

@@ -53,7 +53,16 @@ public class Tsv {
          .flatMap( path -> fromStream(
             path,
             IoStreams.lines( path ),
-            complexModel.modelFor( path )
+            complexModel.modelFor( path.toString() )
+         ) );
+   }
+
+   public static Stream<List<Object>> fromURLs( List<URL> urls, Model.Complex complexModel ) {
+      return Stream.of( urls )
+         .flatMap( url -> fromStream(
+            url,
+            IoStreams.lines( url ),
+            complexModel.modelFor( url.toString() )
          ) );
    }
 

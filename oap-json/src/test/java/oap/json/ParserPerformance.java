@@ -44,50 +44,98 @@ import org.joda.time.ReadableInstant;
 import org.testng.annotations.Test;
 
 import java.util.Map;
+import java.util.Optional;
 
 public class ParserPerformance extends AbstractPerformance {
-    public static String yearJson = Resources.readString( ParserPerformance.class, "year.json" ).get();
+   private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( Dates.FORMAT_MILLIS );
+   public static String yearJson = Resources.readString( ParserPerformance.class, "year.json" ).get();
 
-    private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( Dates.FORMAT_MILLIS );
+   @SuppressWarnings( "unchecked" )
+   private static <T extends ReadableInstant> JsonDeserializer<T> forType( Class<T> cls ) {
+      return ( JsonDeserializer<T> ) new DateTimeDeserializer( cls, jodaDateFormat );
+   }
 
-    @SuppressWarnings( "unchecked" )
-    private static <T extends ReadableInstant> JsonDeserializer<T> forType( Class<T> cls ) {
-        return (JsonDeserializer<T>) new DateTimeDeserializer( cls, jodaDateFormat );
-    }
+   @Test
+   public void performance() {
+      final ObjectMapper mapper = new ObjectMapper();
+      mapper.registerModule( new Jdk8Module() );
+      final JodaModule module = new JodaModule();
+      module.addDeserializer( DateTime.class, forType( DateTime.class ) );
+      module.addSerializer( DateTime.class, new DateTimeSerializer( jodaDateFormat ) );
+      mapper.registerModule( module );
+      mapper.enable( DeserializationFeature.USE_LONG_FOR_INTS );
+      mapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
+      mapper.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
+      mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
+      mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+      mapper.registerModule( new OapJsonModule() );
 
-    @Test
-    public void performance() {
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule( new Jdk8Module() );
-        final JodaModule module = new JodaModule();
-        module.addDeserializer( DateTime.class, forType( DateTime.class ) );
-        module.addSerializer( DateTime.class, new DateTimeSerializer( jodaDateFormat ) );
-        mapper.registerModule( module );
-        mapper.enable( DeserializationFeature.USE_LONG_FOR_INTS );
-        mapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
-        mapper.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
-        mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
-        mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-        mapper.registerModule( new OapJsonModule() );
+      benchmark( "mapParser-jackson", 5000, 5,
+         i -> mapper.writeValueAsString( mapper.readValue( yearJson, Map.class ) ) );
 
-        benchmark( "mapParser-jackson", 5000, 5,
-            i -> mapper.writeValueAsString( mapper.readValue( yearJson, Map.class ) ) );
+      final ObjectMapper mapper2 = new ObjectMapper();
+      mapper2.registerModule( new Jdk8Module() );
+      mapper2.registerModule( module );
+      mapper2.enable( DeserializationFeature.USE_LONG_FOR_INTS );
+      mapper2.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
+      mapper2.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
+      mapper2.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
+      mapper2.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+      mapper2.registerModule( new OapJsonModule() );
 
-        final ObjectMapper mapper2 = new ObjectMapper();
-        mapper2.registerModule( new Jdk8Module() );
-        mapper2.registerModule( module );
-        mapper2.enable( DeserializationFeature.USE_LONG_FOR_INTS );
-        mapper2.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
-        mapper2.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
-        mapper2.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
-        mapper2.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-        mapper2.registerModule( new OapJsonModule() );
-
-        mapper2.registerModule( new AfterburnerModule() );
+      mapper2.registerModule( new AfterburnerModule() );
 
 
-        benchmark( "mapParser-jackson2", 5000, 5, i ->
-                mapper2.writeValueAsString( mapper2.readValue( yearJson, Map.class ) ) );
+      benchmark( "mapParser-jackson2", 5000, 5, i ->
+         mapper2.writeValueAsString( mapper2.readValue( yearJson, Map.class ) ) );
 
-    }
+   }
+
+   @Test
+   public void testNullVsOptional() {
+      final String testEmpty = Binder.json.marshal( new TestNull( null, null, null ) );
+      final String testNotEmpty = Binder.json.marshal( new TestNull( "123", "567", new TestNull( "q", "w", new TestNull( null, null, null ) ) ) );
+
+      System.out.println( testEmpty );
+      System.out.println( testNotEmpty );
+
+      benchmark( "parse-null", 5000000, 5, ( i ) -> {
+         Binder.json.unmarshal( TestNull.class, testEmpty );
+         Binder.json.unmarshal( TestNull.class, testNotEmpty );
+      } );
+      benchmark( "parse-optional-empty", 5000000, 5, ( i ) -> {
+         Binder.json.unmarshal( TestOptional.class, testEmpty );
+         Binder.json.unmarshal( TestOptional.class, testNotEmpty );
+      } );
+   }
+
+   public static class TestNull {
+      public String test1;
+      public String test2;
+      public TestNull test3;
+
+      public TestNull( String test1, String test2, TestNull test3 ) {
+         this.test1 = test1;
+         this.test2 = test2;
+         this.test3 = test3;
+      }
+
+      public TestNull() {
+      }
+   }
+
+   public static class TestOptional {
+      public Optional<String> test1;
+      public Optional<String> test2;
+      public Optional<TestOptional> test3;
+
+      public TestOptional( Optional<String> test1, Optional<String> test2, Optional<TestOptional> test3 ) {
+         this.test1 = test1;
+         this.test2 = test2;
+         this.test3 = test3;
+      }
+
+      public TestOptional() {
+      }
+   }
 }

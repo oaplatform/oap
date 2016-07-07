@@ -36,14 +36,13 @@ import oap.tsv.Model;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
-import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static oap.util.Pair.__;
 
@@ -51,21 +50,21 @@ import static oap.util.Pair.__;
 public class AggregatorBuilder {
    private final HashMap<String, TableModel> tables = new HashMap<>();
    private Aggregator configuration;
-   private HashMap<String, Export> exports = new HashMap<>();
+   private HashMap<String, Function<String, Export>> exports = new HashMap<>();
 
    public static AggregatorBuilder custom() {
       return new AggregatorBuilder();
    }
 
-   public AggregatorBuilder withModel( String name, Model model, Map<String, Integer> mapping ) {
-      tables.put( name, new TableModel( model, mapping ) );
+   public AggregatorBuilder withModel( String name, Model model ) {
+      tables.put( name, new TableModel( model ) );
 
       return this;
    }
 
    public AggregatorBuilder withModel( DictionaryModel dictionaryModel ) {
       for( val table : dictionaryModel.getTables() ) {
-         tables.put( table, new TableModel( dictionaryModel.toModel( table ), dictionaryModel.toMap( table ) ) );
+         tables.put( table, new TableModel( dictionaryModel.toModel( table ) ) );
       }
 
       return this;
@@ -80,13 +79,17 @@ public class AggregatorBuilder {
    public void build() {
       Table.GroupByStream groupByStream = build( configuration );
 
-      final List<Table> tables = groupByStream.getTables();
+      final List<Pair<String, Table>> tables = groupByStream.getTables();
 
       for( int i = 0; i < tables.size(); i++ ) {
-         tables
-            .get( i )
+         final Pair<String, Table> tn = tables.get( i );
+
+         final Function<String, Export> exportFunction = exports.get( configuration.getExport() );
+         if( exportFunction == null )
+            throw new IllegalStateException( "Unknown export function " + configuration.getExport() );
+         tn._2
             .sort( groupByStream.fields[i] )
-            .export( exports.get( configuration.getExport() ) )
+            .export( exportFunction.apply( tn._1 ) )
             .compute();
       }
    }
@@ -94,23 +97,25 @@ public class AggregatorBuilder {
    private Table.GroupByStream build( IAggregator configuration ) {
       final TableModel tableModel = getTable( configuration.getTable() );
       Table table = tableModel.table;
-      final int offset = tableModel.model.size();
+      int offset = tableModel.model.size();
 
       for( val joinEntry : configuration.getJoins().entrySet() ) {
-         table = join( table, tableModel.mapping, offset, joinEntry.getKey(), joinEntry.getValue() );
+         Pair<Table, Integer> p = join( table, tableModel.model, offset, joinEntry.getKey(), joinEntry.getValue() );
+         table = p._1;
+         offset = p._2;
       }
 
 
       final ArrayList<GroupBy> result = new ArrayList<>();
 
-      for( val groupByFields : configuration.getAggregates().values() ) {
-         val groupByPosition = nameToIndex( groupByFields, tableModel );
+      configuration.getAggregates().forEach( ( name, groupByFields ) -> {
+         final int[] groupByPosition = nameToIndex( groupByFields, tableModel );
 
-         val acs = configuration.getAccumulators();
-         val accumulators = new oap.etl.accumulator.Accumulator[acs.size()];
+         final List<Accumulator> acs = configuration.getAccumulators();
+         final oap.etl.accumulator.Accumulator[] accumulators = new oap.etl.accumulator.Accumulator[acs.size()];
 
          for( int i = 0; i < acs.size(); i++ ) {
-            val ac = acs.get( i );
+            final Accumulator ac = acs.get( i );
 
             final Optional<Pair<Integer, Model.ColumnType>> fieldInfo = ac.field.map( f -> {
                final int index = fieldPathToIndex( f, tableModel );
@@ -126,15 +131,15 @@ public class AggregatorBuilder {
             accumulators[i] = getAccumulator( tableModel, ac, fieldInfo );
          }
 
-         final GroupBy groupBy = new GroupBy( groupByPosition, accumulators );
+         final GroupBy groupBy = new GroupBy( name, groupByPosition, accumulators );
          result.add( groupBy );
-      }
+      } );
 
       return table.groupBy( result.toArray( new GroupBy[result.size()] ) );
    }
 
    private oap.etl.accumulator.Accumulator getAccumulator( TableModel tableModel, Accumulator ac, Optional<Pair<Integer, Model.ColumnType>> fieldInfo ) {
-      val accumulator = AccumulatorFactory.create( ac.type, fieldInfo );
+      val accumulator = AccumulatorFactory.create( ac, fieldInfo );
 
       final Accumulator.Filter filter = ac.filter.orElse( null );
       if( filter != null ) {
@@ -150,16 +155,16 @@ public class AggregatorBuilder {
       return groupByFields
          .stream()
          .mapToInt( f -> {
-            final Integer v = tableModel.mapping.get( f );
+            final Integer v = tableModel.model.getOffset( f );
             if( v == null )
-               throw new IllegalArgumentException( "Unknown aggregate field " + f + ", model: " + tableModel.mapping.keySet() );
+               throw new IllegalArgumentException( "Unknown aggregate field " + f + ", model: " + tableModel.model.names() );
             return v;
          } )
          .toArray();
    }
 
-   private Table join( Table table, Map<String, Integer> tableMapping,
-                       int offset, String joinName, oap.etl.configuration.Join join ) {
+   private Pair<Table, Integer> join( Table table, Model joinModel,
+                                      int offset, String joinName, oap.etl.configuration.Join join ) {
       final TableModel joinTableModel = getTable( join.getTable() );
 
       Table.GroupByStream groupByStream = build( join );
@@ -181,7 +186,7 @@ public class AggregatorBuilder {
             return __( index, joinTableModel.model.getType( index ) );
          } );
 
-         model.column( AccumulatorFactory.create( ac.type, fieldInfo ).getModelType(), i + offset );
+         model.column( ac.name, AccumulatorFactory.create( ac, fieldInfo ).getModelType(), i + offset );
          mapping.put( ac.name, i + offset );
       }
 
@@ -189,41 +194,32 @@ public class AggregatorBuilder {
          model.column( fromModel.getColumn( index ) );
       }
 
-      joinTableModel.mapping.forEach( ( key, value ) -> {
-         if( ArrayUtils.contains( groupByStream.fields[0], value ) ) {
-            mapping.put( key, value );
-         }
-      } );
-
-      tables.put( joinName, new TableModel( model, mapping ) );
+      final TableModel newTableModel = new TableModel( model );
+      tables.put( joinName, newTableModel );
 
       final Map<String, List<Object>> map = groupByStream.getMaps( objs -> objs[0].toString() )[0];
-      final int keyPos = tableMapping.get( Maps.head( join.getAggregates() ).getValue().get( 0 ) );
-      return table.join(
+      final int keyPos = joinModel.getOffset( Maps.head( join.getAggregates() ).getValue().get( 0 ) );
+      return __( table.join(
          keyPos,
          ( Join ) key -> {
             List<Object> line = map.get( key );
             if( line == null ) line = join.getDefaultLine();
             return line;
          }
-      );
+      ), offset + newTableModel.model.size() - 1 );
    }
 
-   private int fieldPathToIndex( String field, TableModel tableModel ) {
-      final String[] split = StringUtils.split( field, '.' );
-
-      final TableModel fieldTableModel = split.length == 1 ? tableModel : getTable( split[0] );
-      final Integer fieldIndex = split.length == 1 ? fieldTableModel.mapping.get( field ) : fieldTableModel.mapping.get( split[1] );
+   private int fieldPathToIndex( String reference, TableModel tableModel ) {
+      final TableModel fieldTableModel = FieldUtils.getTable( reference ).map( this::getTable ).orElse( tableModel );
+      final Integer fieldIndex = fieldTableModel.model.getOffset( FieldUtils.getField( reference ) );
       if( fieldIndex == null )
-         throw new IllegalArgumentException( "Filter: unknown field " + field + ", model: " + fieldTableModel.mapping.keySet() );
+         throw new IllegalArgumentException( "Filter: unknown reference " + reference + ", model: " + fieldTableModel.model.names() );
 
       return fieldIndex;
    }
 
-   private TableModel fieldPathToTableModel( String field, TableModel tableModel ) {
-      final String[] split = StringUtils.split( field, '.' );
-
-      return split.length == 1 ? tableModel : getTable( split[0] );
+   private TableModel fieldPathToTableModel( String reference, TableModel tableModel ) {
+      return FieldUtils.getTable( reference ).map( this::getTable ).orElse( tableModel );
    }
 
    private TableModel getTable( String key ) {
@@ -237,19 +233,17 @@ public class AggregatorBuilder {
       return this;
    }
 
-   public AggregatorBuilder withExport( String name, Export export ) {
+   public AggregatorBuilder withExport( String name, Function<String, Export> export ) {
       exports.put( name, export );
       return this;
    }
 
    private static class TableModel {
       private Model model;
-      private Map<String, Integer> mapping;
       private Table table;
 
-      public TableModel( Model model, Map<String, Integer> mapping ) {
+      public TableModel( Model model ) {
          this.model = model;
-         this.mapping = mapping;
       }
    }
 }

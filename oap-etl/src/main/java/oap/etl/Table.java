@@ -26,8 +26,10 @@ package oap.etl;
 import oap.etl.accumulator.Accumulator;
 import oap.tsv.Model;
 import oap.tsv.Tsv;
+import oap.util.Pair;
 import oap.util.Stream;
 
+import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +44,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
+
+import static oap.util.Pair.__;
 
 public class Table {
    private Stream<List<Object>> lines;
@@ -65,6 +69,10 @@ public class Table {
 
    public static Table fromPaths( List<Path> paths, Model.Complex complexModel ) {
       return new Table( Tsv.fromPaths( paths, complexModel ) );
+   }
+
+   public static Table fromURLs( List<URL> urls, Model.Complex complexModel ) {
+      return new Table( Tsv.fromURLs( urls, complexModel ) );
    }
 
    public static Table fromPaths( List<Path> paths, Model model ) {
@@ -105,14 +113,14 @@ public class Table {
    }
 
    public GroupByStream groupBy( GroupBy... groups ) {
-      final HashMap<HashCodeCache, Data>[] agg = new HashMap[groups.length];
+      final AggregatorData[] agg = new AggregatorData[groups.length];
       final Object[][] keys = new Object[groups.length][];
       final HashCodeCache[] hashCodeCache = new HashCodeCache[groups.length];
 
       for( int i = 0; i < groups.length; i++ ) {
          final GroupBy gb = groups[i];
 
-         agg[i] = new HashMap<>();
+         agg[i] = new AggregatorData( gb.name );
          keys[i] = new Object[gb.fields.length];
          hashCodeCache[i] = new HashCodeCache();
       }
@@ -170,11 +178,21 @@ public class Table {
       closeHandlers.forEach( Runnable::run );
    }
 
+   private static class AggregatorData extends HashMap<HashCodeCache, Data> {
+      private final String name;
+
+      public AggregatorData( String name ) {
+         this.name = name;
+      }
+   }
+
    public static class GroupBy {
+      public final String name;
       public final int[] fields;
       public final Accumulator[] accumulators;
 
-      public GroupBy( int[] fields, Accumulator... accumulators ) {
+      public GroupBy( String name, int[] fields, Accumulator... accumulators ) {
+         this.name = name;
          this.fields = fields;
          this.accumulators = accumulators;
       }
@@ -243,19 +261,20 @@ public class Table {
 
    public static class GroupByStream {
       public final int[][] fields;
-      private final HashMap<HashCodeCache, Data>[] agg;
+      private final AggregatorData[] agg;
 
-      public GroupByStream( HashMap<HashCodeCache, Data>[] agg, int[][] fields ) {
+      public GroupByStream( AggregatorData[] agg, int[][] fields ) {
          this.agg = agg;
          this.fields = fields;
       }
 
-      public List<Table> getTables() {
-         final ArrayList<Table> result = new ArrayList<>( agg.length );
+      public List<Pair<String, Table>> getTables() {
+         final ArrayList<Pair<String, Table>> result = new ArrayList<>( agg.length );
 
          for( int i = 0; i < agg.length; i++ ) {
-            final Collection<Data> values = agg[i].values();
-            result.add( new Table( Stream.of( values.stream().map( Data::values ) ) ) );
+            final AggregatorData aggregatorData = agg[i];
+            final Collection<Data> values = aggregatorData.values();
+            result.add( __( aggregatorData.name, new Table( Stream.of( values.stream().map( Data::values ) ) ) ) );
          }
 
          return result;
