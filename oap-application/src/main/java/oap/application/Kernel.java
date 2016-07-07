@@ -170,7 +170,7 @@ public class Kernel {
 
    private void start( ApplicationConfiguration config ) {
       log.debug( "initializing application kernel..." );
-      log.debug( "Application config: ", config );
+      log.debug( "application config {}", config );
 
       Set<Module> moduleConfigs = Stream.of( modules )
          .map( module -> Module.CONFIGURATION.fromHocon( module, config.services ) )
