@@ -210,6 +210,21 @@ public class Model {
       return model;
    }
 
+   public int maxOffset() {
+      int max = 0;
+
+      for( int i = 0; i < columns.size(); i++ ) {
+         final ColumnFunction columnFunction = columns.get( i );
+         if( columnFunction instanceof Column ) {
+            max = Math.max( max, ( ( Column ) columnFunction ).index + 1 );
+         } else {
+            max = Math.max( max, i + 1 );
+         }
+      }
+
+      return max;
+   }
+
    public enum ColumnType {
       INT, LONG, DOUBLE, BOOLEAN, STRING
    }

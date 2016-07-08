@@ -25,7 +25,6 @@ package oap.tsv;
 
 import oap.io.IoStreams;
 import oap.io.Resources;
-import oap.util.Lists;
 import oap.util.Stream;
 import org.apache.commons.lang3.StringUtils;
 
@@ -37,6 +36,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static java.util.Arrays.asList;
 
 public class Tsv {
 
@@ -95,7 +96,7 @@ public class Tsv {
 
    private static Stream<List<Object>> fromStream( Object source, Stream<String> stream, Model model ) {
       int skip = model.withHeader ? 1 : 0;
-      return fromStream( stream )
+      return fromStream( stream, model.maxOffset() )
          .skip( skip )
          .filter( model.filter() )
          .mapWithIndex( ( index, line ) -> {
@@ -113,8 +114,16 @@ public class Tsv {
       return stream.map( Tsv::parse );
    }
 
+   public static Stream<List<String>> fromStream( Stream<String> stream, int max ) {
+      return stream.map( line -> Tsv.parse( line, max ) );
+   }
+
    public static List<String> parse( String tsv ) {
-      return Lists.of( StringUtils.splitByWholeSeparatorPreserveAllTokens( tsv, "\t" ) );
+      return asList( StringUtils.splitByWholeSeparatorPreserveAllTokens( tsv, "\t" ) );
+   }
+
+   public static List<String> parse( String tsv, int max ) {
+      return asList( StringUtils.splitByWholeSeparatorPreserveAllTokens( tsv, "\t", max ) );
    }
 
    public static String print( Stream<List<Object>> stream ) {
