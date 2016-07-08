@@ -81,6 +81,7 @@ public class DictionaryMojo extends AbstractMojo {
          out
             .append( "package " + dictionaryPackage + ";\n\n" )
             .append( "import oap.dictionary.Dictionary;\n\n" )
+            .append( "import java.util.Map;\n" )
             .append( "import java.util.Optional;\n" )
             .append( "import java.util.List;\n\n" )
             .append( "import static java.util.Collections.emptyList;\n" )
