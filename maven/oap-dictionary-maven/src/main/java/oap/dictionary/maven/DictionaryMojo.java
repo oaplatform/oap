@@ -234,6 +234,9 @@ public class DictionaryMojo extends AbstractMojo {
                "  public int getExternalId() {\n" +
                "    return externalId;\n" +
                "  }\n" +
+               "  public " + externalIdType + " externalId() {\n" +
+               "    return externalId;\n" +
+               "  }\n" +
                "\n" +
                "  @Override\n" +
                "  public boolean containsProperty( String name ) {\n" +
