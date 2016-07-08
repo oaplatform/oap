@@ -46,12 +46,12 @@ import java.util.Map;
 import java.util.Set;
 
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.split;
 
-/**
- * Created by Admin on 19.05.2016.
- */
 @Mojo( name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES )
 public class DictionaryMojo extends AbstractMojo {
 
@@ -80,10 +80,13 @@ public class DictionaryMojo extends AbstractMojo {
          final String enumClass = toEnumName( dictionary.name );
          out
             .append( "package " + dictionaryPackage + ";\n\n" )
+            .append( "import oap.dictionary.Dictionary;\n\n" )
             .append( "import java.util.Optional;\n" )
             .append( "import java.util.List;\n\n" )
+            .append( "import static java.util.Collections.emptyList;\n" )
+            .append( "import static java.util.Collections.emptyMap;\n" )
             .append( "import static java.util.Arrays.asList;\n\n" )
-            .append( "public enum " + enumClass + " {\n" );
+            .append( "public enum " + enumClass + " implements Dictionary {\n" );
 
          final Set<String> properties = dictionary
             .getValues()
@@ -134,10 +137,6 @@ public class DictionaryMojo extends AbstractMojo {
 
          out.append( "\n" );
 
-         out
-            .append( "  public final boolean enabled() {return enabled;}\n" )
-            .append( "  public final " + externalIdType + " externalId() {return externalId;}\n\n" );
-
          for( String property : properties ) {
             out
                .append( "  public final " + propertyType( property, optional, types ) + " " + property + "(){return " + property + ";}\n" );
@@ -159,6 +158,86 @@ public class DictionaryMojo extends AbstractMojo {
 
          out
             .append( "  }\n" )
+            .append( "\n" +
+               "  @Override\n" +
+               "  public int getOrDefault( String id, int defaultValue ) {\n" +
+               "    return defaultValue;\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public Integer get( String id ) {\n" +
+               "    return null;\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public String getOrDefault( int externlId, String defaultValue ) {\n" +
+               "    return defaultValue;\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public boolean containsValueWithId( String id ) {\n" +
+               "    return false;\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public List<String> ids() {\n" +
+               "    return emptyList();\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public int[] externalIds() {\n" +
+               "    return new int[0];\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public Map<String, Object> getProperties() {\n" +
+               "    return emptyMap();\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public Optional<? extends Dictionary> getValueOpt( String name ) {\n" +
+               "    return Optional.empty();\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public Dictionary getValue( String name ) {\n" +
+               "    return null;\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public Dictionary getValue( int externalId ) {\n" +
+               "    return null;\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public List<? extends Dictionary> getValues() {\n" +
+               "    return emptyList();\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public String getId() {\n" +
+               "    return name();\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public Optional<Object> getProperty( String name ) {\n" +
+               "    return Optional.empty();\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public boolean isEnabled() {\n" +
+               "    return enabled;\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public int getExternalId() {\n" +
+               "    return externalId;\n" +
+               "  }\n" +
+               "\n" +
+               "  @Override\n" +
+               "  public boolean containsProperty( String name ) {\n" +
+               "    return false;\n" +
+               "  }\n" )
             .append( "}\n" );
 
 
@@ -190,15 +269,14 @@ public class DictionaryMojo extends AbstractMojo {
       if( String.class.isAssignableFrom( value.getClass() ) ) return "\"" + value + "\"";
       if( Long.class.isAssignableFrom( value.getClass() ) ) return value + "L";
       if( List.class.isAssignableFrom( value.getClass() ) ) {
-         return "asList(" + ((List)value).stream().map(v -> print(v)).collect( joining(", ") )+ ")";
-      }
-      else return value.toString();
+         return "asList(" + ( ( List ) value ).stream().map( v -> print( v ) ).collect( joining( ", " ) ) + ")";
+      } else return value.toString();
    }
 
    private String propertyType( String property, Map<String, Boolean> optional, Map<String, Class<?>> types ) {
       final Boolean opt = optional.get( property );
       Class<?> clazz = types.get( property );
-      if(clazz.equals( ArrayList.class )) clazz = List.class;
+      if( clazz.equals( ArrayList.class ) ) clazz = List.class;
 
       if( opt ) return "Optional<" + clazz.getSimpleName() + ">";
       else {
