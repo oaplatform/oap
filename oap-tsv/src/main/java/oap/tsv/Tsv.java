@@ -32,6 +32,7 @@ import java.io.BufferedReader;
 import java.io.StringReader;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -123,8 +124,45 @@ public class Tsv {
    }
 
    public static List<String> parse( String tsv, int max ) {
-      return asList( StringUtils.splitByWholeSeparatorPreserveAllTokens( tsv, "\t", max ) );
+      return splitByWholeSeparatorPreserveAllTokens( tsv, max );
    }
+
+
+   private static List<String> splitByWholeSeparatorPreserveAllTokens(
+      final String str, final int max ) {
+      final int len = str.length();
+
+      final ArrayList<String> substrings = new ArrayList<String>();
+      int numberOfSubstrings = 0;
+      int beg = 0;
+      int end = 0;
+      while( end < len ) {
+         end = str.indexOf( '\t', beg );
+
+         if( end > -1 ) {
+            if( end > beg ) {
+               numberOfSubstrings += 1;
+
+               substrings.add( str.substring( beg, end ) );
+               if( numberOfSubstrings == max ) {
+                  end = len;
+               } else {
+                  beg = end + 1;
+               }
+            } else {
+               numberOfSubstrings += 1;
+               substrings.add( StringUtils.EMPTY );
+               beg = end + 1;
+            }
+         } else {
+            substrings.add( str.substring( beg ) );
+            end = len;
+         }
+      }
+
+      return substrings;
+   }
+
 
    public static String print( Stream<List<Object>> stream ) {
       return stream.map( Tsv::print ).collect( Collectors.joining() );

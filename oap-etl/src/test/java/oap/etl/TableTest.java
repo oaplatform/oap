@@ -40,7 +40,7 @@ public class TableTest {
    @Test
    public void testSorted() {
       CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
-         getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( "c0", 0 ) ).get();
+         getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( "c0", 0 ).s( "c1", 1 ) ).get();
       StringExport export = new StringExport();
       List<Long> progress = new ArrayList<>();
       Table.fromResource( getClass(), getClass().getSimpleName() + "/1.tsv",
@@ -58,7 +58,7 @@ public class TableTest {
    @Test
    public void testDistincted2() {
       CountingKeyJoin join = CountingKeyJoin.fromResource( getClass(),
-         getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( "c0", 0 ) ).get();
+         getClass().getSimpleName() + "/2.tsv", Model.withoutHeader().s( "c0", 0 ).s( "c1", 1 ) ).get();
       StringExport export = new StringExport();
 
       Table.fromResource( getClass(), getClass().getSimpleName() + "/3.tsv",
