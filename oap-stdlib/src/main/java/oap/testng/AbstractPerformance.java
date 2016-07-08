@@ -128,6 +128,7 @@ public abstract class AbstractPerformance extends AbstractTest {
             IntStream
                .range( 0, warming )
                .mapToObj( i -> pool.submit( () -> code.asConsumer().accept( 0 ) ) )
+               .collect( toList() )
                .forEach( Try.consume( Future::get ) );
          }
          System.out.println( "starting test..." );
