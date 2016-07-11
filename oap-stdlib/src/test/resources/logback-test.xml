@@ -33,6 +33,8 @@
         <level value="ERROR"/>
     </logger>
 
+    <logger name="oap.perf" level="WARN"/>
+
     <root level="TRACE">
         <appender-ref ref="STDOUT"/>
     </root>
