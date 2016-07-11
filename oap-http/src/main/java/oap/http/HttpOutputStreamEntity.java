@@ -30,17 +30,16 @@ import org.apache.http.entity.ContentType;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Iterator;
-import java.util.stream.Stream;
+import java.util.function.Consumer;
 
 /**
  * Created by Igor Petrenko on 22.01.2016.
  */
-public class HttpStreamEntity extends AbstractHttpEntity {
-   private final Stream<String> stream;
+public class HttpOutputStreamEntity extends AbstractHttpEntity {
+   private final Consumer<OutputStream> cons;
 
-   public HttpStreamEntity( Stream<String> stream, ContentType contentType ) {
-      this.stream = stream;
+   public HttpOutputStreamEntity( Consumer<OutputStream> cons, ContentType contentType ) {
+      this.cons = cons;
       if( contentType != null ) {
          setContentType( contentType.toString() );
       }
@@ -63,11 +62,7 @@ public class HttpStreamEntity extends AbstractHttpEntity {
 
    @Override
    public void writeTo( OutputStream outstream ) throws IOException {
-      final Iterator<String> iterator = stream.iterator();
-      while( iterator.hasNext() ) {
-         outstream.write( iterator.next().getBytes() );
-         outstream.write( '\n' );
-      }
+      cons.accept( outstream );
    }
 
    @Override
