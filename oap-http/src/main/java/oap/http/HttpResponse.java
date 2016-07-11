@@ -29,17 +29,23 @@ import oap.util.Pair;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
-import org.apache.http.entity.*;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.FileEntity;
+import org.apache.http.entity.InputStreamEntity;
+import org.apache.http.entity.StringEntity;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -49,151 +55,157 @@ import static oap.util.Pair.__;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class HttpResponse {
-    public static final HttpResponse NOT_FOUND = status( HttpURLConnection.HTTP_NOT_FOUND );
-    public static final HttpResponse HTTP_FORBIDDEN = status( HttpURLConnection.HTTP_FORBIDDEN );
-    public static final HttpResponse NO_CONTENT = status( HttpURLConnection.HTTP_NO_CONTENT );
-    public static final HttpResponse NOT_MODIFIED = status( HttpURLConnection.HTTP_NOT_MODIFIED );
-    private static Map<String, Function<Object, String>> producers = Maps.of(
-        __( ContentType.TEXT_PLAIN.getMimeType(), String::valueOf )
-    );
-    public String reasonPhrase;
-    public List<Pair<String, String>> headers = new ArrayList<>();
-    public int code;
-    public HttpEntity contentEntity;
+   public static final HttpResponse NOT_FOUND = status( HttpURLConnection.HTTP_NOT_FOUND );
+   public static final HttpResponse HTTP_FORBIDDEN = status( HttpURLConnection.HTTP_FORBIDDEN );
+   public static final HttpResponse NO_CONTENT = status( HttpURLConnection.HTTP_NO_CONTENT );
+   public static final HttpResponse NOT_MODIFIED = status( HttpURLConnection.HTTP_NOT_MODIFIED );
+   private static Map<String, Function<Object, String>> producers = Maps.of(
+      __( ContentType.TEXT_PLAIN.getMimeType(), String::valueOf )
+   );
+   public String reasonPhrase;
+   public List<Pair<String, String>> headers = new ArrayList<>();
+   public int code;
+   public HttpEntity contentEntity;
 
-    public HttpResponse( int code ) {
-        this.code = code;
-    }
+   public HttpResponse( int code ) {
+      this.code = code;
+   }
 
-    public static HttpResponse redirect( String location ) {
-        return new HttpResponse( HTTP_MOVED_TEMP ).withHeader( "Location", location );
-    }
+   public static HttpResponse redirect( String location ) {
+      return new HttpResponse( HTTP_MOVED_TEMP ).withHeader( "Location", location );
+   }
 
-    public static HttpResponse ok( Object content, boolean raw, ContentType contentType ) {
-        HttpResponse response = ok( content );
-        response.contentEntity = new StringEntity( content( raw, content, contentType ), contentType );
-        return response;
-    }
+   public static HttpResponse ok( Object content, boolean raw, ContentType contentType ) {
+      HttpResponse response = ok( content );
+      response.contentEntity = new StringEntity( content( raw, content, contentType ), contentType );
+      return response;
+   }
 
-    public static HttpResponse ok( Object content ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON );
-        return response;
-    }
+   public static HttpResponse ok( Object content ) {
+      HttpResponse response = new HttpResponse( HTTP_OK );
+      response.contentEntity = new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON );
+      return response;
+   }
 
-    public static HttpResponse stream( InputStream stream, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new InputStreamEntity( stream, contentType );
-        return response;
-    }
+   public static HttpResponse stream( InputStream stream, ContentType contentType ) {
+      HttpResponse response = new HttpResponse( HTTP_OK );
+      response.contentEntity = new InputStreamEntity( stream, contentType );
+      return response;
+   }
 
-    public static HttpResponse stream( Stream<String> stream, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new HttpStreamEntity( stream, contentType );
-        return response;
-    }
+   public static HttpResponse stream( Stream<String> stream, ContentType contentType ) {
+      HttpResponse response = new HttpResponse( HTTP_OK );
+      response.contentEntity = new HttpStreamEntity( stream, contentType );
+      return response;
+   }
 
-    public static HttpResponse file( Path file, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new FileEntity( file.toFile(), contentType );
-        return response;
-    }
+   public static HttpResponse outputStream( Consumer<OutputStream> cons, ContentType contentType ) {
+      HttpResponse response = new HttpResponse( HTTP_OK );
+      response.contentEntity = new HttpOutputStreamEntity( cons, contentType );
+      return response;
+   }
 
-    public static HttpResponse bytes( byte[] bytes, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new ByteArrayEntity( bytes, contentType );
-        return response;
-    }
+   public static HttpResponse file( Path file, ContentType contentType ) {
+      HttpResponse response = new HttpResponse( HTTP_OK );
+      response.contentEntity = new FileEntity( file.toFile(), contentType );
+      return response;
+   }
 
-    public static HttpResponse status( int code, String reason ) {
-        HttpResponse response = status( code );
-        response.reasonPhrase = Strings.removeControl( reason );
-        return response;
-    }
+   public static HttpResponse bytes( byte[] bytes, ContentType contentType ) {
+      HttpResponse response = new HttpResponse( HTTP_OK );
+      response.contentEntity = new ByteArrayEntity( bytes, contentType );
+      return response;
+   }
 
-    public static HttpResponse status(int code, String reason, Object content) {
-        HttpResponse response = status( code );
-        response.reasonPhrase = Strings.removeControl( reason );
-        response.contentEntity = new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON );
-        return response;
-    }
+   public static HttpResponse status( int code, String reason ) {
+      HttpResponse response = status( code );
+      response.reasonPhrase = Strings.removeControl( reason );
+      return response;
+   }
 
-    public static HttpResponse status( int code ) {
-        return new HttpResponse( code );
-    }
+   public static HttpResponse status( int code, String reason, Object content ) {
+      HttpResponse response = status( code );
+      response.reasonPhrase = Strings.removeControl( reason );
+      response.contentEntity = new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON );
+      return response;
+   }
 
-    public static void registerProducer( String mimeType, Function<Object, String> producer ) {
-        producers.put( mimeType, producer );
-    }
+   public static HttpResponse status( int code ) {
+      return new HttpResponse( code );
+   }
 
-    private static String content( boolean raw, Object content, ContentType contentType ) {
-        return raw ? ( String ) content :
-            HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
-    }
+   public static void registerProducer( String mimeType, Function<Object, String> producer ) {
+      producers.put( mimeType, producer );
+   }
 
-    public HttpResponse withHeader( String name, String value ) {
-        headers.add( __( name, value ) );
-        return this;
-    }
+   private static String content( boolean raw, Object content, ContentType contentType ) {
+      return raw ? ( String ) content :
+         HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
+   }
 
-    public HttpResponse withCookie( String cookie ) {
-        if( StringUtils.isNotBlank( cookie ) ) {
-            headers.add( __( "Set-Cookie", cookie ) );
-        }
-        return this;
-    }
+   public HttpResponse withHeader( String name, String value ) {
+      headers.add( __( name, value ) );
+      return this;
+   }
 
-    public HttpResponse withContent( String content, ContentType contentType ) {
-        this.contentEntity = new StringEntity( content( false, content, contentType ), contentType );
-        return this;
-    }
+   public HttpResponse withCookie( String cookie ) {
+      if( StringUtils.isNotBlank( cookie ) ) {
+         headers.add( __( "Set-Cookie", cookie ) );
+      }
+      return this;
+   }
 
-    public static class CookieBuilder {
-        private static final Joiner JOINER = Joiner.on( "; " ).skipNulls();
-        private static final DateTimeFormatter FORMATTER =
-            DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss zzz" );
-        private String SID;
-        private String domain;
-        private String expires;
-        private String path;
-        private List<String> customs = new ArrayList<>();
+   public HttpResponse withContent( String content, ContentType contentType ) {
+      this.contentEntity = new StringEntity( content( false, content, contentType ), contentType );
+      return this;
+   }
 
-        public CookieBuilder withSID( String SID ) {
-            this.SID = StringUtils.isNotBlank( SID ) ? "SID=" + SID : null;
-            return this;
-        }
+   @Override
+   public String toString() {
+      return "HttpResponse{" + "reasonPhrase='" + reasonPhrase + '\'' + ", headers=" + headers + ", code=" + code +
+         '}';
+   }
 
-        public CookieBuilder withDomain( String domain ) {
-            this.domain = StringUtils.isNotBlank( domain ) ? "domain=" + domain : null;
-            return this;
-        }
+   public static class CookieBuilder {
+      private static final Joiner JOINER = Joiner.on( "; " ).skipNulls();
+      private static final DateTimeFormatter FORMATTER =
+         DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss zzz" );
+      private String SID;
+      private String domain;
+      private String expires;
+      private String path;
+      private List<String> customs = new ArrayList<>();
 
-        public CookieBuilder withExpires( DateTime expires ) {
-            this.expires = expires != null ? "expires=" + FORMATTER.print( expires ) : null;
-            return this;
-        }
+      public CookieBuilder withSID( String SID ) {
+         this.SID = StringUtils.isNotBlank( SID ) ? "SID=" + SID : null;
+         return this;
+      }
 
-        public CookieBuilder withPath( String path ) {
-            this.path = StringUtils.isNotBlank( path ) ? "path=" + path : null;
-            return this;
-        }
+      public CookieBuilder withDomain( String domain ) {
+         this.domain = StringUtils.isNotBlank( domain ) ? "domain=" + domain : null;
+         return this;
+      }
 
-        public CookieBuilder withCustomValue( String name, String value ) {
-            if( StringUtils.isNoneBlank( name, value ) ) {
-                this.customs.add( name + "=" + value );
-            }
-            return this;
-        }
+      public CookieBuilder withExpires( DateTime expires ) {
+         this.expires = expires != null ? "expires=" + FORMATTER.print( expires ) : null;
+         return this;
+      }
 
-        public String build() {
-            return StringUtils.removeEnd( JOINER.join( SID, customs.isEmpty() ? null : Strings.join( "; ", customs ),
-                    domain, expires, path ), "; " );
-        }
-    }
+      public CookieBuilder withPath( String path ) {
+         this.path = StringUtils.isNotBlank( path ) ? "path=" + path : null;
+         return this;
+      }
 
-    @Override
-    public String toString() {
-        return "HttpResponse{" + "reasonPhrase='" + reasonPhrase + '\'' + ", headers=" + headers + ", code=" + code +
-           '}';
-    }
+      public CookieBuilder withCustomValue( String name, String value ) {
+         if( StringUtils.isNoneBlank( name, value ) ) {
+            this.customs.add( name + "=" + value );
+         }
+         return this;
+      }
+
+      public String build() {
+         return StringUtils.removeEnd( JOINER.join( SID, customs.isEmpty() ? null : Strings.join( "; ", customs ),
+            domain, expires, path ), "; " );
+      }
+   }
 }
