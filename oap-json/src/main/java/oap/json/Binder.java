@@ -36,6 +36,8 @@ import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -166,6 +168,14 @@ public class Binder {
          log.debug( "json: " + string );
          throw new JsonException( "json error: " + e.getMessage(), e );
       }
+   }
+
+   public ObjectReader readerFor( TypeReference<?> ref ) {
+      return mapper.readerFor( ref );
+   }
+
+   public ObjectWriter writerFor( TypeReference<?> ref ) {
+      return mapper.writerFor( ref );
    }
 
    public <T> T unmarshal( TypeReference<T> ref, Path path ) {
