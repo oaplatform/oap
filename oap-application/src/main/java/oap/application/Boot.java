@@ -51,12 +51,8 @@ public class Boot {
    }
 
    public static void start( Path config, Path confd ) {
-      Runtime.getRuntime().addShutdownHook( new Thread( "shutdown-hook" ) {
-         @Override
-         public void run() {
-            Boot.stop();
-         }
-      } );
+      System.setSecurityManager(new ExitMonitorSecurityManager());
+      Runtime.getRuntime().addShutdownHook( new ShutdownHook() );
       try {
          kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
          kernel.start( config, confd );
@@ -77,4 +73,5 @@ public class Boot {
          }
       }
    }
+
 }
