@@ -87,9 +87,19 @@ public final class Files {
       return fastWildcard( Paths.get( basePath ), wildcard );
    }
 
+   public static ArrayList<Path> fastWildcard( String basePath, String wildcard, FileWalkerCache cache ) {
+      return fastWildcard( Paths.get( basePath ), wildcard, cache );
+   }
+
    public static ArrayList<Path> fastWildcard( Path basePath, String wildcard ) {
       final ArrayList<Path> result = new ArrayList<>();
       new FileWalker( basePath, wildcard ).walkFileTree( result::add );
+      return result;
+   }
+
+   public static ArrayList<Path> fastWildcard( Path basePath, String wildcard, FileWalkerCache cache ) {
+      final ArrayList<Path> result = new ArrayList<>();
+      new FileWalker( basePath, wildcard, cache ).walkFileTree( result::add );
       return result;
    }
 
