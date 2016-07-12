@@ -17,10 +17,16 @@ public class FileWalker {
    private final Path basePath;
    private final String[] paths;
    private final boolean[] wildcard;
+   private FileWalkerCache cache;
 
    public FileWalker( Path basePath, String wildcard ) {
+      this( basePath, wildcard, new FileWalkerCache() );
+   }
+
+   public FileWalker( Path basePath, String wildcard, FileWalkerCache cache ) {
       this.basePath = basePath;
       this.paths = StringUtils.split( wildcard, "/\\" );
+      this.cache = cache;
       this.wildcard = new boolean[paths.length];
 
       for( int i = 0; i < paths.length; i++ ) {
@@ -36,9 +42,10 @@ public class FileWalker {
       if( wildcard[position] ) {
          if( !java.nio.file.Files.isDirectory( path ) ) return;
 
-         try( DirectoryStream<Path> stream = java.nio.file.Files.newDirectoryStream( path, entry -> {
-            return FilenameUtils.wildcardMatch( entry.getFileName().toString(), paths[position] );
-         } ) ) {
+         try( DirectoryStream<Path> stream = cache.newDirectoryStream(
+            path,
+            entry -> FilenameUtils.wildcardMatch( entry.getFileName().toString(), paths[position] ) )
+         ) {
             if( position < paths.length - 1 ) {
                stream.forEach( p -> walkFileTree( p, position + 1, visitor ) );
             } else {
