@@ -24,15 +24,21 @@
 
 package oap.io;
 
+import oap.util.Try;
+
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
 public class FileWalkerCache {
    private final HashMap<Path, ArrayList<Path>> map = new HashMap<>();
+   private final HashMap<Path, Boolean> isDirectory = new HashMap<>();
+   private final HashMap<Path, Boolean> exists = new HashMap<>();
+   private HashMap<Path, FileTime> lastModifiedTime = new HashMap<>();
 
    public DirectoryStream<Path> newDirectoryStream( Path dir,
                                                     DirectoryStream.Filter<? super Path> filter ) throws IOException {
@@ -55,4 +61,15 @@ public class FileWalkerCache {
       };
    }
 
+   public boolean isDirectory( Path path ) {
+      return isDirectory.computeIfAbsent( path, ( p ) -> java.nio.file.Files.isDirectory( p ) );
+   }
+
+   public boolean exists( Path path ) {
+      return exists.computeIfAbsent( path, ( p ) -> java.nio.file.Files.exists( p ) );
+   }
+
+   public FileTime getLastModifiedTime( Path path ) {
+      return lastModifiedTime.computeIfAbsent( path, Try.map( p -> java.nio.file.Files.getLastModifiedTime( p ) ) );
+   }
 }

@@ -40,7 +40,7 @@ public class FileWalker {
 
    private void walkFileTree( Path path, int position, Consumer<Path> visitor ) {
       if( wildcard[position] ) {
-         if( !java.nio.file.Files.isDirectory( path ) ) return;
+         if( !cache.isDirectory( path ) ) return;
 
          try( DirectoryStream<Path> stream = cache.newDirectoryStream(
             path,
@@ -60,7 +60,7 @@ public class FileWalker {
          if( position < wildcard.length - 1 ) {
             walkFileTree( resolve, position + 1, visitor );
          } else {
-            if( java.nio.file.Files.exists( resolve ) )
+            if( cache.exists( resolve ) )
                visitor.accept( resolve );
          }
       }
