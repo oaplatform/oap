@@ -45,6 +45,11 @@ public class TimestampTest extends AbstractTest {
       assertThat( Timestamp.directoryName( "2015-12-03-11-05" ) ).isEqualTo( "2015-12/03" );
    }
 
+//   @Test
+//   public void directoryName2() throws Exception {
+//      assertThat( Timestamp.directoryName2( "2015-12-03-11-05" ) ).isEqualTo( "2015-12/03" );
+//   }
+
    @Test
    public void path() {
       DateTime date = new DateTime( 2015, 12, 3, 11, 28, 30 );

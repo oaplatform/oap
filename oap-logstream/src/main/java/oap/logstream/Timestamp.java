@@ -26,6 +26,7 @@ package oap.logstream;
 import oap.util.Stream;
 import org.apache.commons.io.FilenameUtils;
 import org.joda.time.DateTime;
+import org.joda.time.base.AbstractInstant;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -72,8 +73,16 @@ public class Timestamp {
          .getMillis();
    }
 
+//   public static String directoryName( String timestamp ) {
+//      return DIRECTORY_FORMATTER.print( FILE_FORMATTER.parseDateTime( timestamp.substring( 0, 13 ) ) );
+//   }
+
    public static String directoryName( String timestamp ) {
-      return DIRECTORY_FORMATTER.print( FILE_FORMATTER.parseDateTime( timestamp.substring( 0, 13 ) ) );
+      final String yyyy = timestamp.substring( 0, 4 );
+      final String MM = timestamp.substring( 5, 7 );
+      final String dd = timestamp.substring( 8, 10 );
+
+      return yyyy + "-" + MM + "/" + dd;
    }
 
    public static Stream<String> timestampsBeforeNow( int back, int bucketsPerHour ) {
@@ -93,7 +102,7 @@ public class Timestamp {
    }
 
    public static Stream<String> timestampsBeforeNow( DateTime since, int bucketsPerHour ) {
-      return Stream.of( since, t -> t.isBeforeNow(), t -> t.plusMinutes( 60 / bucketsPerHour ) )
+      return Stream.of( since, AbstractInstant::isBeforeNow, t -> t.plusMinutes( 60 / bucketsPerHour ) )
          .map( t -> format( t, bucketsPerHour ) );
    }
 
