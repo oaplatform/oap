@@ -24,9 +24,11 @@
 
 package oap.io;
 
+import com.google.common.collect.Iterators;
 import oap.util.Try;
 
 import java.io.IOException;
+import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -51,7 +53,13 @@ public class FileWalkerCache {
       return new DirectoryStream<Path>() {
          @Override
          public Iterator<Path> iterator() {
-            return list.iterator();
+            return Iterators.filter( list.iterator(), ( p ) -> {
+               try {
+                  return filter.accept( p );
+               } catch( IOException e ) {
+                  throw new DirectoryIteratorException( e );
+               }
+            } );
          }
 
          @Override
