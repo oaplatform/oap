@@ -336,4 +336,46 @@ public final class Files {
       ensureDirectory( path );
       return path.toFile().getUsableSpace();
    }
+
+   public static boolean wildcardMatch( final String filename, final String wildcardMatcher ) {
+      int wmPosition = 0;
+      int fnPosition = 0;
+
+      int mp = 0;
+      int cp = 0;
+
+      final int fnLength = filename.length();
+
+      char wm;
+
+      while( fnPosition < fnLength && ( ( wm = wildcardMatcher.charAt( wmPosition ) ) != '*' ) ) {
+         if( wm != filename.charAt( fnPosition ) && wm != '?' ) {
+            return false;
+         }
+         wmPosition++;
+         fnPosition++;
+      }
+
+      final int wmLength = wildcardMatcher.length();
+
+      while( fnPosition < fnLength ) {
+         if( wildcardMatcher.charAt( wmPosition ) == '*' ) {
+            if( ++wmPosition >= wmLength ) return true;
+
+            mp = wmPosition;
+            cp = fnPosition + 1;
+         } else if( ( wm = wildcardMatcher.charAt( wmPosition ) ) == filename.charAt( fnPosition ) || wm == '?' ) {
+            wmPosition++;
+            fnPosition++;
+         } else {
+            wmPosition = mp;
+            fnPosition = cp++;
+         }
+      }
+
+      while( wmPosition < wmLength && wildcardMatcher.charAt( wmPosition ) == '*' ) {
+         wmPosition++;
+      }
+      return wmPosition >= wmLength;
+   }
 }

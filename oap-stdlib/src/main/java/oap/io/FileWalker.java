@@ -1,6 +1,5 @@
 package oap.io;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -51,7 +50,7 @@ public class FileWalker {
 
          try( DirectoryStream<Path> stream = cache.newDirectoryStream(
             path,
-            entry -> anyPosition || FilenameUtils.wildcardMatch( entry.getFileName().toString(), pathPosition ) )
+            entry -> anyPosition || Files.wildcardMatch( entry.getFileName().toString(), pathPosition ) )
          ) {
             if( position < paths.length - 1 ) {
                stream.forEach( p -> walkFileTree( p, position + 1, visitor ) );

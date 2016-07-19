@@ -31,7 +31,9 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Paths;
 
-import static java.nio.file.attribute.PosixFilePermission.*;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static oap.testng.Asserts.assertFile;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
@@ -103,5 +105,17 @@ public class FilesTest extends AbstractTest {
       Files.delete( Env.tmpPath( "/wildcard/1.txt" ) );
 
       assertThat( Files.isDirectoryEmpty( Env.tmpPath( "/wildcard" ) ) ).isTrue();
+   }
+
+   @Test
+   public void testWildcardMatch() {
+      assertThat( Files.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" ) ).isTrue();
+      assertThat( Files.wildcardMatch( "bid", "bid*" ) ).isTrue();
+      assertThat( Files.wildcardMatch( "bid_", "bid?" ) ).isTrue();
+      assertThat( Files.wildcardMatch( "bid_v", "*d_v" ) ).isTrue();
+
+      assertThat( Files.wildcardMatch( "bid_v", "bb" ) ).isFalse();
+      assertThat( Files.wildcardMatch( "b", "bb" ) ).isFalse();
+
    }
 }

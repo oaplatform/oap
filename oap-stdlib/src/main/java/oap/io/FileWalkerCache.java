@@ -45,10 +45,14 @@ public class FileWalkerCache {
    public DirectoryStream<Path> newDirectoryStream( Path dir,
                                                     DirectoryStream.Filter<? super Path> filter ) throws IOException {
       final ArrayList<Path> list = map.get( dir );
-      if( list == null ) return java.nio.file.Files.newDirectoryStream( dir, ( file ) -> {
-         map.computeIfAbsent( dir, ( d ) -> new ArrayList<>() ).add( file );
-         return filter.accept( file );
-      } );
+      if( list == null ) {
+         final ArrayList<Path> paths = map.computeIfAbsent( dir, ( d ) -> new ArrayList<>() );
+
+         return java.nio.file.Files.newDirectoryStream( dir, ( file ) -> {
+            paths.add( file );
+            return filter.accept( file );
+         } );
+      }
 
       return new DirectoryStream<Path>() {
          @Override
