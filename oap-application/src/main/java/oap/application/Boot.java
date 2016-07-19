@@ -51,7 +51,7 @@ public class Boot {
    }
 
    public static void start( Path config, Path confd ) {
-      System.setSecurityManager(new ExitMonitorSecurityManager());
+//      System.setSecurityManager(new ExitMonitorSecurityManager());
       Runtime.getRuntime().addShutdownHook( new ShutdownHook() );
       try {
          kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
