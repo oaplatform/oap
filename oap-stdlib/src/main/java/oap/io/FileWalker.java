@@ -17,6 +17,7 @@ public class FileWalker {
    private final Path basePath;
    private final String[] paths;
    private final boolean[] wildcard;
+   private final boolean[] any;
    private FileWalkerCache cache;
 
    public FileWalker( Path basePath, String wildcard ) {
@@ -28,9 +29,12 @@ public class FileWalker {
       this.paths = StringUtils.split( wildcard, "/\\" );
       this.cache = cache;
       this.wildcard = new boolean[paths.length];
+      this.any = new boolean[paths.length];
 
       for( int i = 0; i < paths.length; i++ ) {
-         this.wildcard[i] = StringUtils.indexOfAny( paths[i], '*', '?' ) >= 0;
+         final boolean w = StringUtils.indexOfAny( paths[i], '*', '?' ) >= 0;
+         this.wildcard[i] = w;
+         any[i] = w && paths[i].length() == 1 && paths[i].charAt( 0 ) == '*';
       }
    }
 
@@ -42,9 +46,12 @@ public class FileWalker {
       if( wildcard[position] ) {
          if( !cache.isDirectory( path ) ) return;
 
+         final boolean anyPosition = any[position];
+         final String pathPosition = paths[position];
+
          try( DirectoryStream<Path> stream = cache.newDirectoryStream(
             path,
-            entry -> FilenameUtils.wildcardMatch( entry.getFileName().toString(), paths[position] ) )
+            entry -> anyPosition || FilenameUtils.wildcardMatch( entry.getFileName().toString(), pathPosition ) )
          ) {
             if( position < paths.length - 1 ) {
                stream.forEach( p -> walkFileTree( p, position + 1, visitor ) );
