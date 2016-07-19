@@ -359,12 +359,12 @@ public final class Files {
       final int wmLength = wildcardMatcher.length();
 
       while( fnPosition < fnLength ) {
-         if( wildcardMatcher.charAt( wmPosition ) == '*' ) {
+         if( ( wm = wildcardMatcher.charAt( wmPosition ) ) == '*' ) {
             if( ++wmPosition >= wmLength ) return true;
 
             mp = wmPosition;
             cp = fnPosition + 1;
-         } else if( ( wm = wildcardMatcher.charAt( wmPosition ) ) == filename.charAt( fnPosition ) || wm == '?' ) {
+         } else if( wm == filename.charAt( fnPosition ) || wm == '?' ) {
             wmPosition++;
             fnPosition++;
          } else {
@@ -373,9 +373,12 @@ public final class Files {
          }
       }
 
-      while( wmPosition < wmLength && wildcardMatcher.charAt( wmPosition ) == '*' ) {
+      boolean noend;
+
+      while( (noend = wmPosition < wmLength) && wildcardMatcher.charAt( wmPosition ) == '*' ) {
          wmPosition++;
       }
-      return wmPosition >= wmLength;
+
+      return !noend;
    }
 }
