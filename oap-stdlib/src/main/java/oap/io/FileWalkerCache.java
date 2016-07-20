@@ -50,6 +50,7 @@ public class FileWalkerCache {
 
          return java.nio.file.Files.newDirectoryStream( dir, ( file ) -> {
             paths.add( file );
+            exists.put( file, true );
             return filter.accept( file );
          } );
       }
