@@ -87,7 +87,7 @@
         <joda.version>2.9.4</joda.version>
         <metrics.version>3.1.2</metrics.version>
         <jackson.version>2.7.1</jackson.version>
-        <lombok.version>1.16.8</lombok.version>
+        <lombok.version>1.16.10</lombok.version>
         <reflections.version>0.9.10</reflections.version>
     </properties>
 
