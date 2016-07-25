@@ -47,17 +47,25 @@ import static org.testng.Assert.assertTrue;
 
 public class LoggerTest extends AbstractTest {
 
+   //   compress, useClientHostPrefix
    @DataProvider
-   public Object[][] compress() {
-      return new Object[][]{ { false }, { true } };
+   public Object[][] variance() {
+      return new Object[][]{
+         { false, false },
+         { false, true },
+         { true, false },
+         { true, true }
+      };
    }
 
-   @Test( dataProvider = "compress" )
-   public void disk( boolean compress ) {
+   @Test( dataProvider = "variance" )
+   public void disk( boolean compress, boolean useClientHostPrefix ) {
       Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
+      String host = useClientHostPrefix ? HOSTNAME + "/" : "";
       String content = "12345678";
-      try( LoggingBackend backend = new DiskLoggingBackend( tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, compress ) ) {
+      try( DiskLoggingBackend backend = new DiskLoggingBackend( tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, compress ) ) {
+         backend.useClientHostPrefix = useClientHostPrefix;
          Logger logger = new Logger( backend );
          logger.log( "a", content );
          logger.log( "b", content );
@@ -65,12 +73,12 @@ public class LoggerTest extends AbstractTest {
          logger.log( "d", content );
       }
 
-      assertFile( tmpPath( "logs/" + HOSTNAME + "/2015-10/10/a-2015-10-10-01-00.log" ) )
+      assertFile( tmpPath( "logs/" + host + "2015-10/10/a-2015-10-10-01-00.log" ) )
          .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
             formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n", compress ? GZIP : PLAIN );
-      assertFile( tmpPath( "logs/" + HOSTNAME + "/2015-10/10/b-2015-10-10-01-00.log" ) )
+      assertFile( tmpPath( "logs/" + host + "/2015-10/10/b-2015-10-10-01-00.log" ) )
          .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n", compress ? GZIP : PLAIN );
-      assertFile( tmpPath( "logs/" + HOSTNAME + "/2015-10/10/d-2015-10-10-01-00.log" ) )
+      assertFile( tmpPath( "logs/" + host + "/2015-10/10/d-2015-10-10-01-00.log" ) )
          .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n", compress ? GZIP : PLAIN );
    }
 

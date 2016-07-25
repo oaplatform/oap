@@ -41,7 +41,11 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.*;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.entity.ByteArrayEntity;
@@ -52,11 +56,19 @@ import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
+import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.nio.reactor.IOReactorException;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.KeyManagementException;
@@ -359,21 +371,31 @@ public class Client extends AsyncCallbacks<Client> {
    }
 
    private CloseableHttpAsyncClient initialize() {
-      final CloseableHttpAsyncClient client = ( certificateLocation != null ?
-         HttpAsyncClients.custom().setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
-         : HttpAsyncClients.custom() )
-         .setMaxConnPerRoute( 1000 )
-         .setMaxConnTotal( 10000 )
-         .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
-         .setDefaultRequestConfig( RequestConfig
-            .custom()
-            .setRedirectsEnabled( false )
-            .setCookieSpec( CookieSpecs.STANDARD )
-            .build() )
-         .setDefaultCookieStore( basicCookieStore )
-         .build();
-      client.start();
-      return client;
+      try {
+         CloseableHttpAsyncClient client = ( certificateLocation != null ?
+            HttpAsyncClients.custom()
+               .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
+            : HttpAsyncClients.custom() )
+            .setMaxConnPerRoute( 1000 )
+            .setConnectionManager( new PoolingNHttpClientConnectionManager(
+               new DefaultConnectingIOReactor( IOReactorConfig.custom()
+                  .setConnectTimeout( 1000 )
+                  .setSoTimeout( 1000 )
+                  .build() ) ) )
+            .setMaxConnTotal( 10000 )
+            .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
+            .setDefaultRequestConfig( RequestConfig
+               .custom()
+               .setRedirectsEnabled( false )
+               .setCookieSpec( CookieSpecs.STANDARD )
+               .build() )
+            .setDefaultCookieStore( basicCookieStore )
+            .build();
+         client.start();
+         return client;
+      } catch( IOReactorException e ) {
+         throw new UncheckedIOException( e );
+      }
    }
 
    public void reset() {
