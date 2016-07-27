@@ -33,23 +33,23 @@ import java.util.concurrent.atomic.AtomicLong;
  * Cluster Unique Id
  */
 public class Cuid {
-    private static String prefix = defaultPrefix();
+    private static String suffix = defaultSuffix();
     private static AtomicLong seed = new AtomicLong( DateTimeUtils.currentTimeMillis() );
 
     public static String next() {
-        return prefix + Long.toHexString( seed.getAndIncrement() );
+        return Long.toHexString( seed.getAndIncrement() ) + suffix;
     }
 
-    public static synchronized void reset( String prefix, long seed ) {
-        Cuid.prefix = prefix;
+    public static synchronized void reset( String suffix, long seed ) {
+        Cuid.suffix = suffix;
         Cuid.seed.set( seed );
     }
 
     public static void resetToDefaults() {
-        reset( defaultPrefix(), DateTimeUtils.currentTimeMillis() );
+        reset( defaultSuffix(), DateTimeUtils.currentTimeMillis() );
     }
 
-    private static String defaultPrefix() {
+    private static String defaultSuffix() {
         try {
             return Stream.of( NetworkInterface.getNetworkInterfaces() )
                 .filter( Try.filter( i -> !i.isLoopback() && !i.isVirtual() && i.isUp() ) )
