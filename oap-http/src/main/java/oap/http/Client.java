@@ -47,6 +47,9 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.ssl.DefaultHostnameVerifier;
+import org.apache.http.conn.util.PublicSuffixMatcherLoader;
 import org.apache.http.cookie.Cookie;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
@@ -60,7 +63,11 @@ import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
 import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.nio.conn.NoopIOSessionStrategy;
+import org.apache.http.nio.conn.SchemeIOSessionStrategy;
+import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
 import org.apache.http.nio.reactor.IOReactorException;
+import org.apache.http.ssl.SSLContexts;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -90,6 +97,7 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.ProgressInputStream.progress;
 import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
+import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
@@ -381,7 +389,16 @@ public class Client extends AsyncCallbacks<Client> {
                new DefaultConnectingIOReactor( IOReactorConfig.custom()
                   .setConnectTimeout( 1000 )
                   .setSoTimeout( 1000 )
-                  .build() ) ) )
+                  .build() ) ,
+               RegistryBuilder.<SchemeIOSessionStrategy>create()
+               .register( "http", NoopIOSessionStrategy.INSTANCE )
+               .register( "https",
+                  new SSLIOSessionStrategy( certificateLocation != null ?
+                     createSSLContext( certificateLocation, certificatePassword ) : SSLContexts.createDefault(),
+                  split( System.getProperty( "https.protocols" ) ),
+                  split( System.getProperty( "https.cipherSuites" ) ),
+                  new DefaultHostnameVerifier( PublicSuffixMatcherLoader.getDefault() ) ) )
+               .build() ) )
             .setMaxConnTotal( 10000 )
             .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
             .setDefaultRequestConfig( RequestConfig
