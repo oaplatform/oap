@@ -174,6 +174,14 @@ public class IoStreams {
       return in( path, encoding, DEFAULT_BUFFER );
    }
 
+   public static InputStream in( Path path ) {
+      return in( path, DEFAULT_BUFFER );
+   }
+
+   public static InputStream in( Path path, int bufferSIze ) {
+      return in( path, Encoding.from( path ), bufferSIze );
+   }
+
    public static InputStream in( Path path, Encoding encoding, int bufferSIze ) {
       try {
          return getInputStream( new BufferedInputStream( new FileInputStream( path.toFile() ) ), encoding );
