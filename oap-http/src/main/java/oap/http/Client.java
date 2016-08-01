@@ -107,6 +107,8 @@ public class Client extends AsyncCallbacks<Client> {
    private final BasicCookieStore basicCookieStore;
    private final Path certificateLocation;
    private final String certificatePassword;
+   private final int connectTimeout;
+   private final int readTimeout;
 
    private CloseableHttpAsyncClient client;
 
@@ -115,12 +117,14 @@ public class Client extends AsyncCallbacks<Client> {
       .onTimeout( () -> log.error( "timeout" ) );
 
    public Client() {
-      this( null, null );
+      this( null, null, 0, 0 );
    }
 
-   public Client( Path certificateLocation, String certificatePassword ) {
+   public Client( Path certificateLocation, String certificatePassword, int connectTimeout, int readTimeout ) {
       this.certificateLocation = certificateLocation;
       this.certificatePassword = certificatePassword;
+      this.connectTimeout = connectTimeout;
+      this.readTimeout = readTimeout;
       this.basicCookieStore = new BasicCookieStore();
       this.client = initialize();
    }
@@ -387,8 +391,8 @@ public class Client extends AsyncCallbacks<Client> {
             .setMaxConnPerRoute( 1000 )
             .setConnectionManager( new PoolingNHttpClientConnectionManager(
                new DefaultConnectingIOReactor( IOReactorConfig.custom()
-                  .setConnectTimeout( 1000 )
-                  .setSoTimeout( 1000 )
+                  .setConnectTimeout( connectTimeout )
+                  .setSoTimeout( readTimeout )
                   .build() ) ,
                RegistryBuilder.<SchemeIOSessionStrategy>create()
                .register( "http", NoopIOSessionStrategy.INSTANCE )
