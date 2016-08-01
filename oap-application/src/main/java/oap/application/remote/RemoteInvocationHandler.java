@@ -55,7 +55,7 @@ public class RemoteInvocationHandler implements InvocationHandler {
       this.service = service;
       this.timeout = timeout.orElse( DEFAULT_TIMEOUT );
       this.fst = new FST();
-      this.client = new Client( certificateLocation, certificatePassword, (int) DEFAULT_TIMEOUT, (int) DEFAULT_TIMEOUT )
+      this.client = new Client( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
          .onTimeout( () -> log.error( "timeout invoking {}", uri ) )
          .onError( e -> log.error( "error invoking {}: {}", uri, e ) );
    }
