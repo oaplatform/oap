@@ -124,6 +124,9 @@ public class IoStreams {
       }
    }
 
+   public static OutputStream out( Path path ) {
+      return out( path, Encoding.from( path ), DEFAULT_BUFFER );
+   }
 
    public static OutputStream out( Path path, Encoding encoding ) {
       return out( path, encoding, DEFAULT_BUFFER );

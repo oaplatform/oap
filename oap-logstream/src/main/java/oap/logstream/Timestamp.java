@@ -61,6 +61,15 @@ public class Timestamp {
          .plusMinutes( Integer.parseInt( timestamp.substring( 14, 16 ) ) * 60 / bucketsPerHour );
    }
 
+   public static String parseTimestamp( String fileName ) {
+      final Matcher matcher = FILE_NAME_WITH_TIMESTAMP.matcher( fileName );
+      if( matcher.find() ) {
+         return matcher.group( 1 );
+      } else {
+         throw new RuntimeException( "cannot parse timestamp from: " + fileName );
+      }
+   }
+
    private static int currentBucket( DateTime date, int bucketsPerHour ) {
       return ( int ) Math.floor( date.getMinuteOfHour() / ( 60d / bucketsPerHour ) );
    }
