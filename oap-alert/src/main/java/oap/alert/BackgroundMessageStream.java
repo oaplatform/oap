@@ -53,8 +53,9 @@ public class BackgroundMessageStream<Message> implements MessageStream<Message>,
    @Override
    public void run() {
 
-      for( Message p : messages ) {
+      while( true ){
          try {
+            Message p = messages.take();
             guaranteedDeliveryTransport.send( p, transport );
          }
          catch( InterruptedException ie ) {

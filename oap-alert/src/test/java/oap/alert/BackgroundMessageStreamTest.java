@@ -32,6 +32,7 @@ import org.testng.annotations.Test;
 
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.testng.Assert.*;
@@ -72,7 +73,7 @@ public class BackgroundMessageStreamTest extends AbstractTest {
       thread.start();
       Threads.sleepSafely(100);
       thread.stop();
-      verify( guaranteedDeliveryTransport ).send( "Msg1", transport );
+      verify( guaranteedDeliveryTransport, times( 1 ) ).send( "Msg1", transport );
    }
 
 
