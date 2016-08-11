@@ -46,18 +46,20 @@ import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class Remote implements Handler {
-   private static final ThreadLocal<oap.application.remote.FST> FST = new ThreadLocal<FST>() {
+   private final ThreadLocal<oap.application.remote.FST> FST = new ThreadLocal<FST>() {
       public FST initialValue() {
-         return new FST();
+         return new FST(serialization);
       }
    };
 
+   private final FST.SerializationMethod serialization;
    private final GenericCorsPolicy cors = GenericCorsPolicy.DEFAULT;
 
    private final HttpServer server;
    private final String context;
 
-   public Remote( final HttpServer server, final String context ) {
+   public Remote( FST.SerializationMethod serialization, final HttpServer server, final String context ) {
+      this.serialization = serialization;
       this.server = server;
       this.context = context;
    }
@@ -68,7 +70,7 @@ public class Remote implements Handler {
 
    @Override
    public void handle( final Request request, final Response response ) {
-      FST fst = Remote.FST.get();
+      FST fst = FST.get();
 
       RemoteInvocation invocation = request.body
          .map( Try.map( bytes -> ( RemoteInvocation ) fst.conf.asObject( ByteStreams.toByteArray( bytes ) ) ) )

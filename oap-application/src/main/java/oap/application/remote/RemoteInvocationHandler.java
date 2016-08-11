@@ -50,21 +50,27 @@ public class RemoteInvocationHandler implements InvocationHandler {
    private final Client client;
    private final long timeout;
 
-   private RemoteInvocationHandler( URI uri, String service, Path certificateLocation, String certificatePassword, Optional<Long> timeout ) {
+   private RemoteInvocationHandler( URI uri,
+                                    String service,
+                                    Path certificateLocation,
+                                    String certificatePassword,
+                                    Optional<Long> timeout,
+                                    Optional<FST.SerializationMethod> serialization ) {
       this.uri = uri;
       this.service = service;
       this.timeout = timeout.orElse( DEFAULT_TIMEOUT );
-      this.fst = new FST();
+      this.fst = new FST( serialization.orElse( FST.SerializationMethod.DEFAULT ) );
       this.client = new Client( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
          .onTimeout( () -> log.error( "timeout invoking {}", uri ) )
          .onError( e -> log.error( "error invoking {}: {}", uri, e ) );
    }
 
    public static Object proxy( URI uri, String service, Class<?> clazz,
-                               Path certificateLocation, String certificatePassword, Optional<Long> timeout ) {
+                               Path certificateLocation, String certificatePassword,
+                               Optional<Long> timeout, Optional<FST.SerializationMethod> serialization ) {
       log.debug( "remote interface for {} at {} wich certs {}", service, uri, certificateLocation );
       return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{ clazz },
-         new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout ) );
+         new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout, serialization ) );
    }
 
    @Override
