@@ -35,7 +35,7 @@ import java.util.Optional;
 public class FST {
    public FSTConfiguration conf;
 
-   public FST() {
+   public FST(SerializationMethod serializationMethod) {
       conf = FSTConfiguration.createDefaultConfiguration();
       conf.registerClass( RemoteInvocation.class );
       conf.registerSerializer( Optional.class, new FSTOptionalSerializer(), false );
@@ -60,5 +60,30 @@ public class FST {
       public Object instantiate( Class objectClass, FSTObjectInput in, FSTClazzInfo serializationInfo, FSTClazzInfo.FSTFieldInfo referencee, int streamPosition ) throws Exception {
          return Optional.ofNullable( in.readObject() );
       }
+   }
+
+   public enum SerializationMethod {
+      JSON {
+         @Override
+         public FSTConfiguration conf() {
+            return FSTConfiguration.createJsonConfiguration( false, false );
+         }
+      },
+      BINARY {
+         @Override
+         public FSTConfiguration conf() {
+            return FSTConfiguration.createMinBinConfiguration();
+         }
+      },
+      DEFAULT {
+         @Override
+         public FSTConfiguration conf() {
+            return FSTConfiguration.createDefaultConfiguration();
+         }
+      };
+
+      public abstract FSTConfiguration conf();
+
+
    }
 }
