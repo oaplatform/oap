@@ -75,7 +75,8 @@ public class Kernel {
                reflect.underlying,
                service.certificateLocation,
                service.certificatePassword,
-               service.timeout //TODO refactor to have Remoting class with related properties
+               service.timeout, //TODO refactor to have Remoting class with related properties
+               service.serialization
             );
             Application.register( serviceName, instance );
             Application.register( entry.getKey(), instance );

@@ -26,6 +26,7 @@ package oap.application;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.application.remote.FST;
 import oap.json.Binder;
 import oap.reflect.Coercions;
 import oap.util.Stream;
@@ -77,6 +78,7 @@ public class Module {
       public String profile;
       public String name;
       public Optional<Long> timeout = Optional.empty();
+      public Optional<FST.SerializationMethod> serialization = Optional.empty();
    }
 
    @EqualsAndHashCode

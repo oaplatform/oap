@@ -35,8 +35,8 @@ import java.util.Optional;
 public class FST {
    public FSTConfiguration conf;
 
-   public FST(SerializationMethod serializationMethod) {
-      conf = FSTConfiguration.createDefaultConfiguration();
+   public FST( SerializationMethod serializationMethod) {
+      conf = serializationMethod.conf();
       conf.registerClass( RemoteInvocation.class );
       conf.registerSerializer( Optional.class, new FSTOptionalSerializer(), false );
    }
@@ -72,7 +72,7 @@ public class FST {
       BINARY {
          @Override
          public FSTConfiguration conf() {
-            return FSTConfiguration.createMinBinConfiguration();
+            return FSTConfiguration.createUnsafeBinaryConfiguration();
          }
       },
       DEFAULT {
