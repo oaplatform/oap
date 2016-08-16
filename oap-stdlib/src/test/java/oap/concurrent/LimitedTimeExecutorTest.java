@@ -47,9 +47,9 @@ public class LimitedTimeExecutorTest extends AbstractTest {
       AtomicInteger timeout = new AtomicInteger();
       AtomicInteger error = new AtomicInteger();
       LimitedTimeExecutor executor = new LimitedTimeExecutor( 100, TimeUnit.MILLISECONDS )
-         .onSuccess( success::incrementAndGet )
-         .onError( e -> error.incrementAndGet() )
-         .onTimeout( timeout::incrementAndGet );
+         .onSuccess( l -> success.incrementAndGet() )
+         .onError( ( l, e ) -> error.incrementAndGet() )
+         .onTimeout( l -> timeout.incrementAndGet() );
       try {
          executor.execute( code );
       } catch( RuntimeException e ) {
