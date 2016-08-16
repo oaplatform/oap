@@ -87,6 +87,11 @@ final public class Result<S, F> implements Serializable {
       return failureValue;
    }
 
+   public Optional<S> toOptional() {
+      return isSuccess() ? Optional.of( successValue ) : Optional.empty();
+   }
+
+   @Deprecated
    public Either<F, S> toEither() {
       return new Either<>( failureValue, successValue, !isSuccess() );
    }
