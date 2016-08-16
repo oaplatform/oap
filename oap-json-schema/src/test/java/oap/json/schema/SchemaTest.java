@@ -23,7 +23,11 @@
  */
 package oap.json.schema;
 
+import oap.util.Maps;
 import org.testng.annotations.Test;
+
+import static oap.util.Pair.__;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class SchemaTest extends AbstractSchemaTest {
    @Test
@@ -66,5 +70,12 @@ public class SchemaTest extends AbstractSchemaTest {
       String schema = "{type: boolean, default: true}";
 
       assertOk( schema, "null", NO_STORAGE, true );
+   }
+
+   @Test
+   public void testFixDefault() {
+      String schema = "{type: object, properties: {a: {type: boolean, default: true}}}";
+
+      assertThat( assertOk( schema, "{}", NO_STORAGE, true ) ).isEqualTo( Maps.of( __( "a", true ) ) );
    }
 }

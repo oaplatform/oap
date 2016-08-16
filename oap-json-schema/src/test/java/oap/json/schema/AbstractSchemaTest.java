@@ -44,12 +44,14 @@ public abstract class AbstractSchemaTest extends AbstractTest {
       assertOk( schema, json, NO_STORAGE, false );
    }
 
-   protected static void assertOk( String schema, String json, SchemaStorage storage, boolean ignoreRequiredDefault ) {
+   protected static Object assertOk( String schema, String json, SchemaStorage storage, boolean ignoreRequiredDefault ) {
+      final Object obj = Binder.json.unmarshal( Object.class, json );
       List<String> result =
          JsonValidatorFactory.schemaFromString( schema, storage )
-            .validate( Binder.json.unmarshal( Object.class, json ), ignoreRequiredDefault );
+            .validate( obj, ignoreRequiredDefault );
       if( !result.isEmpty() ) throw new AssertionError( String.join( "\n", result ) );
 
+      return obj;
    }
 
    protected static void assertFailure( String schema, String json, String error ) {

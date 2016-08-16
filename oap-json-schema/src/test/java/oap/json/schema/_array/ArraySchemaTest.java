@@ -21,8 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.json.schema;
 
+package oap.json.schema._array;
+
+import oap.json.schema.AbstractSchemaTest;
 import org.testng.annotations.Test;
 
 public class ArraySchemaTest extends AbstractSchemaTest {

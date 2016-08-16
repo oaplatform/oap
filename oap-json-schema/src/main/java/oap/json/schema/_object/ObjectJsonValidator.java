@@ -54,8 +54,11 @@ public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
 
       objectProperties.forEach( ( k, ast ) -> {
          Object v = mapValue.get( k );
-         errors.addAll( properties.validator
-            .apply( properties.withPath( k ).withAdditionalProperties( schema.additionalProperties ), ast, v ) );
+         if( v == null && ast.common.defaultValue.isPresent() )
+            mapValue.put( k, ast.common.defaultValue.get() );
+         else
+            errors.addAll( properties.validator
+               .apply( properties.withPath( k ).withAdditionalProperties( schema.additionalProperties ), ast, v ) );
       } );
 
       List<String> additionalProperties = Stream.of( mapValue.keySet() )

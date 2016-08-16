@@ -22,8 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.json.schema;
+package oap.json.schema._dictionary;
 
+import oap.json.schema.AbstractSchemaTest;
+import oap.json.schema.SchemaStorage;
 import org.testng.annotations.Test;
 
 public class DictionarySchemaTest extends AbstractSchemaTest {
