@@ -51,6 +51,7 @@ import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.conn.util.PublicSuffixMatcherLoader;
 import org.apache.http.cookie.Cookie;
+import org.apache.http.cookie.CookieSpec;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -127,7 +128,7 @@ public class Client {
    private ClientBuilder builder;
    private CloseableHttpAsyncClient client;
 
-   public Client( BasicCookieStore basicCookieStore, ClientBuilder builder ) {
+   private Client( BasicCookieStore basicCookieStore, ClientBuilder builder ) {
       this.client = builder.client();
 
       this.basicCookieStore = basicCookieStore;
@@ -393,6 +394,8 @@ public class Client {
       private int readTimeout;
       private int maxConnTotal = 10000;
       private int maxConnPerRoute = 1000;
+      private boolean redirectsEnabled = false;
+      private String cookieSpec = CookieSpecs.STANDARD;
 
       public ClientBuilder( Path certificateLocation, String certificatePassword, int connectTimeout, int readTimeout ) {
          basicCookieStore = new BasicCookieStore();
@@ -405,21 +408,21 @@ public class Client {
 
       private HttpAsyncClientBuilder initialize() {
          try {
-            return ( this.certificateLocation != null ?
+            return ( certificateLocation != null ?
                HttpAsyncClients.custom()
-                  .setSSLContext( createSSLContext( this.certificateLocation, this.certificatePassword ) )
+                  .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
                : HttpAsyncClients.custom() )
                .setMaxConnPerRoute( maxConnPerRoute )
                .setConnectionManager( new PoolingNHttpClientConnectionManager(
                   new DefaultConnectingIOReactor( IOReactorConfig.custom()
-                     .setConnectTimeout( this.connectTimeout )
-                     .setSoTimeout( this.readTimeout )
+                     .setConnectTimeout( connectTimeout )
+                     .setSoTimeout( readTimeout )
                      .build() ),
                   RegistryBuilder.<SchemeIOSessionStrategy>create()
                      .register( "http", NoopIOSessionStrategy.INSTANCE )
                      .register( "https",
-                        new SSLIOSessionStrategy( this.certificateLocation != null ?
-                           createSSLContext( this.certificateLocation, this.certificatePassword ) : SSLContexts.createDefault(),
+                        new SSLIOSessionStrategy( certificateLocation != null ?
+                           createSSLContext( certificateLocation, certificatePassword ) : SSLContexts.createDefault(),
                            split( System.getProperty( "https.protocols" ) ),
                            split( System.getProperty( "https.cipherSuites" ) ),
                            new DefaultHostnameVerifier( PublicSuffixMatcherLoader.getDefault() ) ) )
@@ -428,8 +431,8 @@ public class Client {
                .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
                .setDefaultRequestConfig( RequestConfig
                   .custom()
-                  .setRedirectsEnabled( false )
-                  .setCookieSpec( CookieSpecs.STANDARD )
+                  .setRedirectsEnabled( redirectsEnabled )
+                  .setCookieSpec( cookieSpec )
                   .build() )
                .setDefaultCookieStore( basicCookieStore );
          } catch( IOReactorException e ) {
@@ -449,7 +452,19 @@ public class Client {
          return this;
       }
 
-      public CloseableHttpAsyncClient client() {
+      public ClientBuilder setRedirectsEnabled( boolean redirectsEnabled ) {
+         this.redirectsEnabled = redirectsEnabled;
+
+         return this;
+      }
+
+      public ClientBuilder setCookieSpec( String cookieSpec ) {
+         this.cookieSpec = cookieSpec;
+
+         return this;
+      }
+
+      private CloseableHttpAsyncClient client() {
          final CloseableHttpAsyncClient build = initialize().build();
          build.start();
          return build;
