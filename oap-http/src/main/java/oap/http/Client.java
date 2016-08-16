@@ -119,7 +119,10 @@ public class Client {
       }
    };
    public static Client DEFAULT = custom()
-      .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
+      .onError( ( c, e ) -> {
+         log.error( e.getMessage(), e );
+         c.reset();
+      } )
       .onTimeout( ( c ) -> log.error( "timeout" ) )
       .build();
 
@@ -386,32 +389,45 @@ public class Client {
 
    public static class ClientBuilder extends AsyncCallbacks<ClientBuilder, Client> {
 
-      private final HttpAsyncClientBuilder asyncClientBuilder;
       private final BasicCookieStore basicCookieStore;
+      private Path certificateLocation;
+      private String certificatePassword;
+      private int connectTimeout;
+      private int readTimeout;
+      private int maxConnTotal = 10000;
+      private int maxConnPerRoute = 1000;
 
       public ClientBuilder( Path certificateLocation, String certificatePassword, int connectTimeout, int readTimeout ) {
+         basicCookieStore = new BasicCookieStore();
+
+         this.certificateLocation = certificateLocation;
+         this.certificatePassword = certificatePassword;
+         this.connectTimeout = connectTimeout;
+         this.readTimeout = readTimeout;
+      }
+
+      private HttpAsyncClientBuilder initialize() {
          try {
-            basicCookieStore = new BasicCookieStore();
-            asyncClientBuilder = ( certificateLocation != null ?
+            return ( this.certificateLocation != null ?
                HttpAsyncClients.custom()
-                  .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
+                  .setSSLContext( createSSLContext( this.certificateLocation, this.certificatePassword ) )
                : HttpAsyncClients.custom() )
-               .setMaxConnPerRoute( 1000 )
+               .setMaxConnPerRoute( maxConnPerRoute )
                .setConnectionManager( new PoolingNHttpClientConnectionManager(
                   new DefaultConnectingIOReactor( IOReactorConfig.custom()
-                     .setConnectTimeout( connectTimeout )
-                     .setSoTimeout( readTimeout )
+                     .setConnectTimeout( this.connectTimeout )
+                     .setSoTimeout( this.readTimeout )
                      .build() ),
                   RegistryBuilder.<SchemeIOSessionStrategy>create()
                      .register( "http", NoopIOSessionStrategy.INSTANCE )
                      .register( "https",
-                        new SSLIOSessionStrategy( certificateLocation != null ?
-                           createSSLContext( certificateLocation, certificatePassword ) : SSLContexts.createDefault(),
+                        new SSLIOSessionStrategy( this.certificateLocation != null ?
+                           createSSLContext( this.certificateLocation, this.certificatePassword ) : SSLContexts.createDefault(),
                            split( System.getProperty( "https.protocols" ) ),
                            split( System.getProperty( "https.cipherSuites" ) ),
                            new DefaultHostnameVerifier( PublicSuffixMatcherLoader.getDefault() ) ) )
                      .build() ) )
-               .setMaxConnTotal( 10000 )
+               .setMaxConnTotal( maxConnTotal )
                .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
                .setDefaultRequestConfig( RequestConfig
                   .custom()
@@ -425,19 +441,19 @@ public class Client {
       }
 
       public ClientBuilder setMaxConnTotal( int maxConnTotal ) {
-         asyncClientBuilder.setMaxConnTotal( maxConnTotal );
+         this.maxConnTotal = maxConnTotal;
 
          return this;
       }
 
       public ClientBuilder setMaxConnPerRoute( int maxConnPerRoute ) {
-         asyncClientBuilder.setMaxConnPerRoute( maxConnPerRoute );
+         this.maxConnPerRoute = maxConnPerRoute;
 
          return this;
       }
 
       public CloseableHttpAsyncClient client() {
-         final CloseableHttpAsyncClient build = asyncClientBuilder.build();
+         final CloseableHttpAsyncClient build = initialize().build();
          build.start();
          return build;
       }
