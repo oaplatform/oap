@@ -37,14 +37,14 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
       assertOk( schema, "'test1'" );
       assertOk( schema, "'test2'" );
 
-      assertFailure( schema, "'test4'", "/: instance does not match any member resolve the enumeration [test1, test2, test3]" );
+      assertFailure( schema, "'test4'", "instance does not match any member resolve the enumeration [test1, test2, test3]" );
    }
 
    @Test
    public void testUnknownDictionary() {
       String schema = "{type: dictionary, name: unknown}";
 
-      assertFailure( schema, "'test4'", "/: dictionary not found" );
+      assertFailure( schema, "'test4'", "dictionary not found" );
    }
 
    @Test
