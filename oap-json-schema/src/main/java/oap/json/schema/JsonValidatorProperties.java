@@ -67,6 +67,10 @@ public class JsonValidatorProperties {
 
 
    public String error( String message ) {
-      return path.map( p -> "/" + p + ": " ).orElse( "" ) + message;
+      return error( path.orElse( "" ), message );
+   }
+
+   public String error( String path, String message ) {
+      return "/" + path + ": " + message;
    }
 }

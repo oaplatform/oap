@@ -47,4 +47,19 @@ public class JsonPathTest extends AbstractTest {
       assertThat( traverse ).containsExactly( "reg" );
    }
 
+   @Test
+   public void testTraverseNotFound() throws Exception {
+      final List<Object> traverse = new JsonPath( "a.items.field", Optional.of( "a/0/unknown" ) )
+         .traverse( Maps.of( __( "a", Lists.of( Maps.of( __( "unknown", 10 ) ) ) ) ) );
+
+      assertThat( traverse ).isEmpty();
+   }
+
+   @Test
+   public void getFixedPath() {
+      final String path = new JsonPath( "flights.items.rules.items.region.items", Optional.of( "flights/0/rules/5/country/0" ) )
+         .getFixedPath();
+
+      assertThat( path ).isEqualTo( "flights.0.rules.5.region.0" );
+   }
 }

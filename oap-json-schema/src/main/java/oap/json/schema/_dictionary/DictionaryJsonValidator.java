@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.dictionary.Dictionaries;
 import oap.dictionary.Dictionary;
 import oap.dictionary.DictionaryNotFoundError;
+import oap.json.schema.BooleanReference;
 import oap.json.schema.JsonPath;
 import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
@@ -57,11 +58,19 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
 
       if( !cd.isSuccess() ) return cd;
 
-      List<Object> parentValues = new JsonPath( rightTrimItems( schema.path ), properties.path )
-         .traverse( properties.rootJson );
+      final JsonPath jsonPath = new JsonPath( rightTrimItems( schema.path ), properties.path );
+      List<Object> parentValues = jsonPath.traverse( properties.rootJson );
 
-      if( parentValues.isEmpty() )
-         return Result.failure( Lists.of( properties.error( "required property is missing" ) ) );
+      if( parentValues.isEmpty() ) {
+         final String fixedPath = jsonPath.getFixedPath();
+         if( !schema.common.required.orElse( BooleanReference.FALSE ).apply( properties.rootJson, Optional.of( fixedPath ) ) )
+//            return Result.failure( Lists.of( properties.error( fixedPath, "required property is missing" ) ) );
+//         else
+            parentValues = cd.successValue
+               .stream()
+               .flatMap( d -> d.getValues().stream().map( Dictionary::getId ) )
+               .collect( toList() );
+      }
 
       final ArrayList<Dictionary> cDict = new ArrayList<>();
 
@@ -91,7 +100,8 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
 
          if( !result.isSuccess() ) return result.failureValue;
 
-         if( !result.successValue.stream().filter( d -> d.containsValueWithId( String.valueOf( value ) ) ).findAny().isPresent() )
+         if( !result.successValue.isEmpty() &&
+            !result.successValue.stream().filter( d -> d.containsValueWithId( String.valueOf( value ) ) ).findAny().isPresent() )
             return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + printIds( result.successValue ) ) );
 
          return Lists.empty();

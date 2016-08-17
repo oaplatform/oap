@@ -37,14 +37,14 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
       assertOk( schema, "'test1'" );
       assertOk( schema, "'test2'" );
 
-      assertFailure( schema, "'test4'", "instance does not match any member resolve the enumeration [test1, test2, test3]" );
+      assertFailure( schema, "'test4'", "/: instance does not match any member resolve the enumeration [test1, test2, test3]" );
    }
 
    @Test
    public void testUnknownDictionary() {
       String schema = "{type: dictionary, name: unknown}";
 
-      assertFailure( schema, "'test4'", "dictionary not found" );
+      assertFailure( schema, "'test4'", "/: dictionary not found" );
    }
 
    @Test
@@ -137,6 +137,44 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
          "}}";
 
       assertOk( schema, "{'a':[{'parent': 'p1', 'child':'c11', 'child2':'c111'}]}" );
+   }
+
+   @Test
+   public void testHierarchicalArrayRequiredFalse() {
+      String schema = "{type: object, properties: {" +
+         "a:{" +
+         "  type: array," +
+         "  items: {" +
+         "    type: object," +
+         "    properties: {" +
+         "      parent: {type: dictionary, name: dict-h}, " +
+         "      child: {type: dictionary, parent: {json-path: a.items.parent}}," +
+         "      child2: {type: dictionary, parent: {json-path: a.items.child}}" +
+         "    }" +
+         "  }" +
+         "}" +
+         "}}";
+
+      assertOk( schema, "{'a':[{'child2':'c111'}]}" );
+   }
+
+   @Test
+   public void testHierarchicalArrayRequiredTrue() {
+      String schema = "{type: object, properties: {" +
+         "a:{" +
+         "  type: array," +
+         "  items: {" +
+         "    type: object," +
+         "    properties: {" +
+         "      parent: {type: dictionary, name: dict-h}, " +
+         "      child: {type: dictionary, parent: {json-path: a.items.parent}, required: true}," +
+         "      child2: {type: dictionary, parent: {json-path: a.items.child}}" +
+         "    }" +
+         "  }" +
+         "}" +
+         "}}";
+
+      assertFailure( schema, "{'a':[{'child2':'c111'}]}", "/a/0/child: required property is missing" );
    }
 
    @Test
