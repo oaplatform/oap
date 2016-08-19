@@ -47,7 +47,7 @@ public class ArrayPerformance extends AbstractPerformance {
       final long[] sum = new long[]{ 0 };
 
       benchmark( "class_vs_array->array", samples, experiments, ( i ) -> {
-         final int x = random.nextInt(4);
+         final int x = random.nextInt( 4 );
          switch( x ) {
             case 0:
                sum[0] += array[x];
@@ -65,7 +65,7 @@ public class ArrayPerformance extends AbstractPerformance {
       } );
 
       benchmark( "class_vs_array->class", samples, experiments, ( i ) -> {
-         final int x = random.nextInt(4);
+         final int x = random.nextInt( 4 );
          switch( x ) {
             case 0:
                sum[0] += test4.a1;
@@ -82,7 +82,7 @@ public class ArrayPerformance extends AbstractPerformance {
          }
       } );
 
-      System.out.println(sum[0]);
+      System.out.println( sum[0] );
    }
 
    @Test
@@ -91,20 +91,15 @@ public class ArrayPerformance extends AbstractPerformance {
       final int experiments = 5;
 
       Object[] data = new Object[10];
-      boolean[] array = new boolean[10];
-      for( int i = 0; i < 9; i++ ) {
-         data[i] = ( long ) i;
-         array[i] = true;
-      }
-      array[9] = false;
+      for( int i = 0; i < 9; i++ ) data[i] = ( long ) i;
 
       long[] sum = new long[]{ 0 };
 
       data[9] = new long[]{ 10, 20 };
       benchmark( "as-array", samples, experiments, ( i ) -> {
-         final int x = random.nextInt(10);
+         final int x = random.nextInt( 10 );
 
-         if( array[x] ) sum[0] += ( long ) data[x];
+         if( data[x] instanceof Long ) sum[0] += ( long ) data[x];
          else {
             final long[] t = ( long[] ) data[x];
             sum[0] -= t[0];
@@ -114,9 +109,9 @@ public class ArrayPerformance extends AbstractPerformance {
 
       data[9] = new Test2( 10, 20 );
       benchmark( "as-object", samples, experiments, ( i ) -> {
-         final int x = random.nextInt(10);
+         final int x = random.nextInt( 10 );
 
-         if( array[x] ) sum[0] += ( long ) data[x];
+         if( data[x] instanceof Long ) sum[0] += ( long ) data[x];
          else {
             final Test2 t = ( Test2 ) data[x];
             sum[0] -= t.min;
@@ -129,9 +124,9 @@ public class ArrayPerformance extends AbstractPerformance {
       data2[9] = new long[]{ 10, 20 };
 
       benchmark( "as-long[]", samples, experiments, ( i ) -> {
-         final int x = random.nextInt(10);
+         final int x = random.nextInt( 10 );
 
-         if( array[x] ) sum[0] += data2[x][0];
+         if( data2[x].length == 1 ) sum[0] += data2[x][0];
          else {
             final long[] t = data2[x];
             sum[0] -= t[0];
@@ -139,7 +134,7 @@ public class ArrayPerformance extends AbstractPerformance {
          }
       } );
 
-      System.out.println(sum[0]);
+      System.out.println( sum[0] );
    }
 
    public static class Test2 {
