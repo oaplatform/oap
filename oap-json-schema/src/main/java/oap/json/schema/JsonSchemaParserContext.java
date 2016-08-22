@@ -102,4 +102,8 @@ public class JsonSchemaParserContext {
    public <T extends SchemaAST> T computeIfAbsent( SchemaId id, Supplier<T> s ) {
       return ( T ) ast.computeIfAbsent( id, ( c ) -> s.get() );
    }
+
+   public String error( String message ) {
+      return ( path.isEmpty() ? "" : "/" + path + ": " ) + message;
+   }
 }

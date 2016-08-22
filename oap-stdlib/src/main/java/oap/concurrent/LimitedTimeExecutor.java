@@ -26,13 +26,16 @@ package oap.concurrent;
 import com.google.common.base.Throwables;
 
 import java.util.Optional;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
-public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor> {
-   private final ExecutorService executor;
+public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor, LimitedTimeExecutor> {
    public final long timeout;
    public final TimeUnit unit;
+   private final ExecutorService executor;
 
    public LimitedTimeExecutor() {
       this( Long.MAX_VALUE, TimeUnit.MILLISECONDS );
@@ -55,13 +58,13 @@ public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor> {
    public <T> Optional<T> execute( long timeout, TimeUnit unit, Supplier<T> code ) {
       try {
          T value = executor.submit( code::get ).get( timeout, unit );
-         onSuccess.run();
+         onSuccess.accept( this );
          return Optional.ofNullable( value );
       } catch( InterruptedException | TimeoutException e ) {
-         onTimeout.run();
+         onTimeout.accept( this );
          return Optional.empty();
       } catch( ExecutionException e ) {
-         onError.accept( e );
+         onError.accept( this, e );
          throw Throwables.propagate( e.getCause() );
       }
    }
@@ -73,11 +76,11 @@ public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor> {
    public void execute( long timeout, TimeUnit unit, Runnable code ) {
       try {
          executor.submit( code ).get( timeout, unit );
-         onSuccess.run();
+         onSuccess.accept( this );
       } catch( InterruptedException | TimeoutException e ) {
-         onTimeout.run();
+         onTimeout.accept( this );
       } catch( ExecutionException e ) {
-         onError.accept( e );
+         onError.accept( this, e );
          throw Throwables.propagate( e.getCause() );
       }
    }

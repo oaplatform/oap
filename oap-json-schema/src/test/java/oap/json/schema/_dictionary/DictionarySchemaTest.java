@@ -22,8 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.json.schema;
+package oap.json.schema._dictionary;
 
+import oap.json.schema.AbstractSchemaTest;
+import oap.json.schema.SchemaStorage;
 import org.testng.annotations.Test;
 
 public class DictionarySchemaTest extends AbstractSchemaTest {
@@ -135,6 +137,44 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
          "}}";
 
       assertOk( schema, "{'a':[{'parent': 'p1', 'child':'c11', 'child2':'c111'}]}" );
+   }
+
+   @Test
+   public void testHierarchicalArrayRequiredFalse() {
+      String schema = "{type: object, properties: {" +
+         "a:{" +
+         "  type: array," +
+         "  items: {" +
+         "    type: object," +
+         "    properties: {" +
+         "      parent: {type: dictionary, name: dict-h}, " +
+         "      child: {type: dictionary, parent: {json-path: a.items.parent}}," +
+         "      child2: {type: dictionary, parent: {json-path: a.items.child}}" +
+         "    }" +
+         "  }" +
+         "}" +
+         "}}";
+
+      assertOk( schema, "{'a':[{'child2':'c111'}]}" );
+   }
+
+   @Test
+   public void testHierarchicalArrayRequiredTrue() {
+      String schema = "{type: object, properties: {" +
+         "a:{" +
+         "  type: array," +
+         "  items: {" +
+         "    type: object," +
+         "    properties: {" +
+         "      parent: {type: dictionary, name: dict-h}, " +
+         "      child: {type: dictionary, parent: {json-path: a.items.parent}, required: true}," +
+         "      child2: {type: dictionary, parent: {json-path: a.items.child}}" +
+         "    }" +
+         "  }" +
+         "}" +
+         "}}";
+
+      assertFailure( schema, "{'a':[{'child2':'c111'}]}", "/a/0/child: required property is missing" );
    }
 
    @Test

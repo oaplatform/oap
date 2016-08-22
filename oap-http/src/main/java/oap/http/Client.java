@@ -58,6 +58,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
 import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
 import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
@@ -101,32 +102,69 @@ import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
-public class Client extends AsyncCallbacks<Client> {
+public class Client {
    private static final long FOREVER = Long.MAX_VALUE;
+   private static final FutureCallback<org.apache.http.HttpResponse> FUTURE_CALLBACK = new FutureCallback<org.apache.http.HttpResponse>() {
+      @Override
+      public void completed( org.apache.http.HttpResponse result ) {
+      }
+
+      @Override
+      public void failed( Exception e ) {
+      }
+
+      @Override
+      public void cancelled() {
+
+      }
+   };
+   public static Client DEFAULT = custom()
+      .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
+      .onTimeout( ( c ) -> log.error( "timeout" ) )
+      .build();
 
    private final BasicCookieStore basicCookieStore;
-   private final Path certificateLocation;
-   private final String certificatePassword;
-   private final int connectTimeout;
-   private final int readTimeout;
-
+   private ClientBuilder builder;
    private CloseableHttpAsyncClient client;
 
-   public static Client DEFAULT = new Client()
-      .onError( e -> log.error( e.getMessage(), e ) )
-      .onTimeout( () -> log.error( "timeout" ) );
+   private Client( BasicCookieStore basicCookieStore, ClientBuilder builder ) {
+      this.client = builder.client();
 
-   public Client() {
-      this( null, null, 0, 0 );
+      this.basicCookieStore = basicCookieStore;
+      this.builder = builder;
    }
 
-   public Client( Path certificateLocation, String certificatePassword, int connectTimeout, int readTimeout ) {
-      this.certificateLocation = certificateLocation;
-      this.certificatePassword = certificatePassword;
-      this.connectTimeout = connectTimeout;
-      this.readTimeout = readTimeout;
-      this.basicCookieStore = new BasicCookieStore();
-      this.client = initialize();
+
+   public static ClientBuilder custom( Path certificateLocation, String certificatePassword, int connectTimeout, int readTimeout ) {
+      return new ClientBuilder( certificateLocation, certificatePassword, connectTimeout, readTimeout );
+   }
+
+   public static ClientBuilder custom() {
+      return new ClientBuilder( null, null, 0, 0 );
+   }
+
+   private static Map<String, String> headers( org.apache.http.HttpResponse response ) {
+      return Arrays.stream( response.getAllHeaders() )
+         .map( h -> __( h.getName(), h.getValue() ) )
+         .collect( toMap() );
+   }
+
+   private static SSLContext createSSLContext( Path certificateLocation, String certificatePassword ) {
+      try {
+         KeyStore keyStore = KeyStore.getInstance( "JKS" );
+         keyStore.load( IoStreams.in( certificateLocation, PLAIN ),
+            certificatePassword.toCharArray() );
+
+         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+         trustManagerFactory.init( keyStore );
+
+         SSLContext sslContext = SSLContext.getInstance( "TLS" );
+         sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
+
+         return sslContext;
+      } catch( KeyStoreException | IOException | CertificateException | NoSuchAlgorithmException | KeyManagementException e ) {
+         throw Throwables.propagate( e );
+      }
    }
 
    public Response get( String uri ) {
@@ -154,7 +192,6 @@ public class Client extends AsyncCallbacks<Client> {
    public Optional<Response> get( String uri, Map<String, Object> params, Map<String, Object> headers, long timeout ) {
       return execute( new HttpGet( Uri.uri( uri, params ) ), headers, timeout );
    }
-
 
    public Response post( String uri, Map<String, Object> params ) {
       return post( uri, params, Maps.empty() );
@@ -267,24 +304,18 @@ public class Client extends AsyncCallbacks<Client> {
             response.getStatusLine().getReasonPhrase(),
             responsHeaders
          );
-         onSuccess.run();
+         builder.onSuccess.accept( this );
          return Optional.of( result );
       } catch( ExecutionException e ) {
-         onError.accept( e );
+         builder.onError.accept( this, e );
          throw Throwables.propagate( e );
       } catch( IOException e ) {
-         onError.accept( e );
+         builder.onError.accept( this, e );
          throw new UncheckedIOException( e );
       } catch( InterruptedException | TimeoutException e ) {
-         onTimeout.run();
+         builder.onTimeout.accept( this );
          return Optional.empty();
       }
-   }
-
-   private static Map<String, String> headers( org.apache.http.HttpResponse response ) {
-      return Arrays.stream( response.getAllHeaders() )
-         .map( h -> __( h.getName(), h.getValue() ) )
-         .collect( toMap() );
    }
 
    public void download( String url, Path file, Consumer<Integer> progress ) {
@@ -293,15 +324,15 @@ public class Client extends AsyncCallbacks<Client> {
          try( InputStream in = new BufferedInputStream( entity.getContent() ) ) {
             IoStreams.write( file, PLAIN, in, progress( entity.getContentLength(), progress ) );
          }
-         onSuccess.run();
+         builder.onSuccess.accept( this );
       } catch( ExecutionException e ) {
-         onError.accept( e );
+         builder.onError.accept( this, e );
          throw Throwables.propagate( e );
       } catch( IOException e ) {
-         onError.accept( e );
+         builder.onError.accept( this, e );
          throw new UncheckedIOException( e );
       } catch( InterruptedException e ) {
-         onTimeout.run();
+         builder.onTimeout.accept( this );
       }
    }
 
@@ -319,6 +350,10 @@ public class Client extends AsyncCallbacks<Client> {
          throw new IOException( response.getStatusLine().toString() );
    }
 
+   public void reset() {
+      Closeables.close( client );
+      client = builder.client();
+   }
 
    @ToString
    public static class Response {
@@ -349,79 +384,93 @@ public class Client extends AsyncCallbacks<Client> {
       }
    }
 
-   private static final FutureCallback<org.apache.http.HttpResponse> FUTURE_CALLBACK = new FutureCallback<org.apache.http.HttpResponse>() {
-      @Override
-      public void completed( org.apache.http.HttpResponse result ) {
+   public static class ClientBuilder extends AsyncCallbacks<ClientBuilder, Client> {
+
+      private final BasicCookieStore basicCookieStore;
+      private Path certificateLocation;
+      private String certificatePassword;
+      private int connectTimeout;
+      private int readTimeout;
+      private int maxConnTotal = 10000;
+      private int maxConnPerRoute = 1000;
+      private boolean redirectsEnabled = false;
+      private String cookieSpec = CookieSpecs.STANDARD;
+
+      public ClientBuilder( Path certificateLocation, String certificatePassword, int connectTimeout, int readTimeout ) {
+         basicCookieStore = new BasicCookieStore();
+
+         this.certificateLocation = certificateLocation;
+         this.certificatePassword = certificatePassword;
+         this.connectTimeout = connectTimeout;
+         this.readTimeout = readTimeout;
       }
 
-      @Override
-      public void failed( Exception e ) {
+      private HttpAsyncClientBuilder initialize() {
+         try {
+            return ( certificateLocation != null ?
+               HttpAsyncClients.custom()
+                  .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
+               : HttpAsyncClients.custom() )
+               .setMaxConnPerRoute( maxConnPerRoute )
+               .setConnectionManager( new PoolingNHttpClientConnectionManager(
+                  new DefaultConnectingIOReactor( IOReactorConfig.custom()
+                     .setConnectTimeout( connectTimeout )
+                     .setSoTimeout( readTimeout )
+                     .build() ),
+                  RegistryBuilder.<SchemeIOSessionStrategy>create()
+                     .register( "http", NoopIOSessionStrategy.INSTANCE )
+                     .register( "https",
+                        new SSLIOSessionStrategy( certificateLocation != null ?
+                           createSSLContext( certificateLocation, certificatePassword ) : SSLContexts.createDefault(),
+                           split( System.getProperty( "https.protocols" ) ),
+                           split( System.getProperty( "https.cipherSuites" ) ),
+                           new DefaultHostnameVerifier( PublicSuffixMatcherLoader.getDefault() ) ) )
+                     .build() ) )
+               .setMaxConnTotal( maxConnTotal )
+               .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
+               .setDefaultRequestConfig( RequestConfig
+                  .custom()
+                  .setRedirectsEnabled( redirectsEnabled )
+                  .setCookieSpec( cookieSpec )
+                  .build() )
+               .setDefaultCookieStore( basicCookieStore );
+         } catch( IOReactorException e ) {
+            throw new UncheckedIOException( e );
+         }
       }
 
-      @Override
-      public void cancelled() {
+      public ClientBuilder setMaxConnTotal( int maxConnTotal ) {
+         this.maxConnTotal = maxConnTotal;
 
+         return this;
       }
-   };
 
-   private static SSLContext createSSLContext( Path certificateLocation, String certificatePassword ) {
-      try {
-         KeyStore keyStore = KeyStore.getInstance( "JKS" );
-         keyStore.load( IoStreams.in( certificateLocation, PLAIN ),
-            certificatePassword.toCharArray() );
+      public ClientBuilder setMaxConnPerRoute( int maxConnPerRoute ) {
+         this.maxConnPerRoute = maxConnPerRoute;
 
-         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-         trustManagerFactory.init( keyStore );
+         return this;
+      }
 
-         SSLContext sslContext = SSLContext.getInstance( "TLS" );
-         sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
+      public ClientBuilder setRedirectsEnabled( boolean redirectsEnabled ) {
+         this.redirectsEnabled = redirectsEnabled;
 
-         return sslContext;
-      } catch( KeyStoreException | IOException | CertificateException | NoSuchAlgorithmException | KeyManagementException e ) {
-         throw Throwables.propagate( e );
+         return this;
+      }
+
+      public ClientBuilder setCookieSpec( String cookieSpec ) {
+         this.cookieSpec = cookieSpec;
+
+         return this;
+      }
+
+      private CloseableHttpAsyncClient client() {
+         final CloseableHttpAsyncClient build = initialize().build();
+         build.start();
+         return build;
+      }
+
+      public Client build() {
+         return new Client( basicCookieStore, this );
       }
    }
-
-   private CloseableHttpAsyncClient initialize() {
-      try {
-         CloseableHttpAsyncClient client = ( certificateLocation != null ?
-            HttpAsyncClients.custom()
-               .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
-            : HttpAsyncClients.custom() )
-            .setMaxConnPerRoute( 1000 )
-            .setConnectionManager( new PoolingNHttpClientConnectionManager(
-               new DefaultConnectingIOReactor( IOReactorConfig.custom()
-                  .setConnectTimeout( connectTimeout )
-                  .setSoTimeout( readTimeout )
-                  .build() ) ,
-               RegistryBuilder.<SchemeIOSessionStrategy>create()
-               .register( "http", NoopIOSessionStrategy.INSTANCE )
-               .register( "https",
-                  new SSLIOSessionStrategy( certificateLocation != null ?
-                     createSSLContext( certificateLocation, certificatePassword ) : SSLContexts.createDefault(),
-                  split( System.getProperty( "https.protocols" ) ),
-                  split( System.getProperty( "https.cipherSuites" ) ),
-                  new DefaultHostnameVerifier( PublicSuffixMatcherLoader.getDefault() ) ) )
-               .build() ) )
-            .setMaxConnTotal( 10000 )
-            .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
-            .setDefaultRequestConfig( RequestConfig
-               .custom()
-               .setRedirectsEnabled( false )
-               .setCookieSpec( CookieSpecs.STANDARD )
-               .build() )
-            .setDefaultCookieStore( basicCookieStore )
-            .build();
-         client.start();
-         return client;
-      } catch( IOReactorException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
-
-   public void reset() {
-      Closeables.close( client );
-      client = initialize();
-   }
-
 }

@@ -23,28 +23,11 @@
  */
 package oap.util;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class Functions {
-
-   @SuppressWarnings( "unchecked" )
-   public static class empty {
-
-      private static final Consumer<?> CONSUMER = v -> {
-      };
-
-      public static <T> Consumer<T> consume() {
-         return ( Consumer<T> ) CONSUMER;
-      }
-
-      public static Runnable run = () -> {
-      };
-
-      static <I, R> Function<I, R> id() {
-         return i -> ( R ) i;
-      }
-   }
 
    @FunctionalInterface
    public interface TriFunction<T, U, S, R> {
@@ -58,5 +41,30 @@ public class Functions {
        * @return the function result
        */
       R apply( T t, U u, S s );
+   }
+
+   @SuppressWarnings( "unchecked" )
+   public static class empty {
+
+      private static final Consumer<?> CONSUMER = v -> {
+      };
+
+      private static final BiConsumer<?, ?> BI_CONSUMER = ( v, u ) -> {
+      };
+
+      public static Runnable run = () -> {
+      };
+
+      public static <T> Consumer<T> consume() {
+         return ( Consumer<T> ) CONSUMER;
+      }
+
+      public static <T, U> BiConsumer<T, U> biConsume() {
+         return ( BiConsumer<T, U> ) BI_CONSUMER;
+      }
+
+      static <I, R> Function<I, R> id() {
+         return i -> ( R ) i;
+      }
    }
 }

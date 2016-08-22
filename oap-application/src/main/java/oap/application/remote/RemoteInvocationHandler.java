@@ -60,9 +60,15 @@ public class RemoteInvocationHandler implements InvocationHandler {
       this.service = service;
       this.timeout = timeout.orElse( DEFAULT_TIMEOUT );
       this.fst = new FST( serialization.orElse( FST.SerializationMethod.DEFAULT ) );
-      this.client = new Client( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
-         .onTimeout( () -> log.error( "timeout invoking {}", uri ) )
-         .onError( e -> log.error( "error invoking {}: {}", uri, e ) );
+      this.client = Client.custom( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
+         .onTimeout( client -> {
+            log.error( "timeout invoking {}", uri );
+            client.reset();
+         } )
+         .onError( ( c, e ) -> log.error( "error invoking {}: {}", uri, e ) )
+         .setMaxConnPerRoute( 1 )
+         .setMaxConnTotal( 1 )
+         .build();
    }
 
    public static Object proxy( URI uri, String service, Class<?> clazz,

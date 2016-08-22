@@ -35,8 +35,8 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
-   protected static final String ADDITIONAL_PROPERTIES = "additionalProperties";
    public static final String JSON_PATH = "json-path";
+   protected static final String ADDITIONAL_PROPERTIES = "additionalProperties";
 
    public static String getType( Object object ) {
       if( object instanceof Boolean ) return "boolean";
@@ -71,8 +71,12 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
 
    public static class PropertyParser<A> {
       private final Optional<A> value;
+      private JsonSchemaParserContext properties;
+      private String property;
 
-      public PropertyParser( Optional<A> value ) {
+      public PropertyParser( String property, JsonSchemaParserContext properties, Optional<A> value ) {
+         this.property = property;
+         this.properties = properties;
          this.value = value;
       }
 
@@ -81,7 +85,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
       }
 
       public A required() {
-         return value.get();
+         return value.orElseThrow( () -> new ValidationSyntaxException( properties.error( property + " is required" ) ) );
       }
    }
 
@@ -93,34 +97,34 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
       }
 
       public PropertyParser<Integer> asInt( String property ) {
-         return new PropertyParser<>(
+         return new PropertyParser<>( property, properties,
             Optional.ofNullable( ( Long ) properties.node.get( property ) ).map( Long::intValue ) );
       }
 
       public PropertyParser<Double> asDouble( String property ) {
-         return new PropertyParser<>(
+         return new PropertyParser<>( property, properties,
             Optional.ofNullable( ( Number ) properties.node.get( property ) ).map( Number::doubleValue ) );
       }
 
       public PropertyParser<Boolean> asBoolean( String property ) {
-         return new PropertyParser<>(
+         return new PropertyParser<>( property, properties,
             Optional.ofNullable( ( Boolean ) properties.node.get( property ) ) );
       }
 
       public PropertyParser<String> asString( String property ) {
-         return new PropertyParser<>( Optional.ofNullable( ( String ) properties.node.get( property ) ) );
+         return new PropertyParser<>( property, properties, Optional.ofNullable( ( String ) properties.node.get( property ) ) );
       }
 
       public PropertyParser<Map<?, ?>> asMap( String property ) {
-         return new PropertyParser<>( Optional.ofNullable( ( Map<?, ?> ) properties.node.get( property ) ) );
+         return new PropertyParser<>( property, properties, Optional.ofNullable( ( Map<?, ?> ) properties.node.get( property ) ) );
       }
 
       public PropertyParser<Pattern> asPattern( String property ) {
-         return new PropertyParser<>( Optional.ofNullable( ( String ) properties.node.get( property ) ).map( Pattern::compile ) );
+         return new PropertyParser<>( property, properties, Optional.ofNullable( ( String ) properties.node.get( property ) ).map( Pattern::compile ) );
       }
 
       public PropertyParser<SchemaASTWrapper> asAST( String property, JsonSchemaParserContext context ) {
-         return new PropertyParser<>(
+         return new PropertyParser<>( property, properties,
             Optional.ofNullable( context.node.get( property ) ).map( n -> {
                final JsonSchemaParserContext newContext = context.withNode( property, n );
                final SchemaASTWrapper aw = context.mapParser.apply( newContext );
@@ -188,7 +192,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
             } )
          );
 
-         return new PropertyParser<>( map.map( v -> p ) );
+         return new PropertyParser<>( property, properties, map.map( v -> p ) );
       }
 
       public Optional<BooleanReference> asBooleanReference( String field ) {

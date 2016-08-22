@@ -41,9 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class HttpAsserts {
 
-   private static Client client = new Client();
-
    public static final String HTTP_PREFIX = "http://localhost:" + Env.port();
+   private static Client client = Client.custom().build();
 
    public static void reset() {
       client.reset();

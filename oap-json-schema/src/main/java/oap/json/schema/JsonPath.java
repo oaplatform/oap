@@ -89,7 +89,7 @@ public class JsonPath {
                int arrayIndex = Integer.parseInt( arrayIndexStr );
 
                final Optional<Object> value = traverse( list.get( arrayIndex ), i + 1, fi + 1 );
-               if( value.isPresent() ) last = value.get();
+               last = value.orElse( null );
             } else {
                final ArrayList<Object> result = new ArrayList<>();
 
@@ -105,5 +105,32 @@ public class JsonPath {
       }
 
       return Optional.ofNullable( last );
+   }
+
+   public String getFixedPath() {
+      if( !fromPath.isPresent() ) throw new IllegalArgumentException( "fromPath is required" );
+
+      return getFixedPath( 0, 0 );
+   }
+
+   private String getFixedPath( int index, int fromIndex ) {
+      final ArrayList<String> res = new ArrayList<>();
+      int fi = fromIndex;
+      for( int i = index; i < path.length; i++, fi++ ) {
+         final String field = path[i];
+
+         final String[] fp = fromPath.get();
+         if( fp.length <= fi )
+            throw new IllegalArgumentException( "[" + fi + "] path = " + asList( path ) + " != fromPath = " + fromPath.map( Arrays::asList ) );
+         String fromField = fp[fi];
+
+         if( "items".equals( field ) && NumberUtils.isDigits( fromField ) ) {
+            res.add( fromField );
+         } else {
+            res.add( field );
+         }
+      }
+
+      return String.join( ".", res );
    }
 }

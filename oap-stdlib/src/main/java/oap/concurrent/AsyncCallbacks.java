@@ -25,25 +25,26 @@ package oap.concurrent;
 
 import oap.util.Functions;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 @SuppressWarnings( "unchecked" )
-public class AsyncCallbacks<T extends AsyncCallbacks<T>> {
-   protected Runnable onTimeout = Functions.empty.run;
-   protected Runnable onSuccess = Functions.empty.run;
-   protected Consumer<Exception> onError = Functions.empty.consume();
+public class AsyncCallbacks<T extends AsyncCallbacks<T, P>, P> {
+   public Consumer<P> onTimeout = Functions.empty.consume();
+   public Consumer<P> onSuccess = Functions.empty.consume();
+   public BiConsumer<P, Exception> onError = Functions.empty.biConsume();
 
-   public T onTimeout( Runnable onTimeout ) {
+   public T onTimeout( Consumer<P> onTimeout ) {
       this.onTimeout = onTimeout;
       return ( T ) this;
    }
 
-   public T onSuccess( Runnable onSuccess ) {
+   public T onSuccess( Consumer<P> onSuccess ) {
       this.onSuccess = onSuccess;
       return ( T ) this;
    }
 
-   public T onError( Consumer<Exception> onError ) {
+   public T onError( BiConsumer<P, Exception> onError ) {
       this.onError = onError;
       return ( T ) this;
    }
