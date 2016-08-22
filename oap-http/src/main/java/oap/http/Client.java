@@ -118,7 +118,7 @@ public class Client {
 
       }
    };
-   public static Client DEFAULT = custom()
+   public static final Client DEFAULT = custom()
       .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
       .onTimeout( ( c ) -> log.error( "timeout" ) )
       .build();
