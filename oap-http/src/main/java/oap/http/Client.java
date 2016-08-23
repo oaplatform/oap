@@ -407,25 +407,30 @@ public class Client {
 
       private HttpAsyncClientBuilder initialize() {
          try {
+            final PoolingNHttpClientConnectionManager connManager = new PoolingNHttpClientConnectionManager(
+               new DefaultConnectingIOReactor( IOReactorConfig.custom()
+                  .setConnectTimeout( connectTimeout )
+                  .setSoTimeout( readTimeout )
+                  .build() ),
+               RegistryBuilder.<SchemeIOSessionStrategy>create()
+                  .register( "http", NoopIOSessionStrategy.INSTANCE )
+                  .register( "https",
+                     new SSLIOSessionStrategy( certificateLocation != null ?
+                        createSSLContext( certificateLocation, certificatePassword ) : SSLContexts.createDefault(),
+                        split( System.getProperty( "https.protocols" ) ),
+                        split( System.getProperty( "https.cipherSuites" ) ),
+                        new DefaultHostnameVerifier( PublicSuffixMatcherLoader.getDefault() ) ) )
+                  .build() );
+
+            connManager.setMaxTotal( maxConnTotal );
+            connManager.setDefaultMaxPerRoute( maxConnPerRoute );
+
             return ( certificateLocation != null ?
                HttpAsyncClients.custom()
                   .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
                : HttpAsyncClients.custom() )
                .setMaxConnPerRoute( maxConnPerRoute )
-               .setConnectionManager( new PoolingNHttpClientConnectionManager(
-                  new DefaultConnectingIOReactor( IOReactorConfig.custom()
-                     .setConnectTimeout( connectTimeout )
-                     .setSoTimeout( readTimeout )
-                     .build() ),
-                  RegistryBuilder.<SchemeIOSessionStrategy>create()
-                     .register( "http", NoopIOSessionStrategy.INSTANCE )
-                     .register( "https",
-                        new SSLIOSessionStrategy( certificateLocation != null ?
-                           createSSLContext( certificateLocation, certificatePassword ) : SSLContexts.createDefault(),
-                           split( System.getProperty( "https.protocols" ) ),
-                           split( System.getProperty( "https.cipherSuites" ) ),
-                           new DefaultHostnameVerifier( PublicSuffixMatcherLoader.getDefault() ) ) )
-                     .build() ) )
+               .setConnectionManager( connManager )
                .setMaxConnTotal( maxConnTotal )
                .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
                .setDefaultRequestConfig( RequestConfig
