@@ -35,6 +35,22 @@ import java.util.stream.IntStream;
 @Test(enabled = false)
 public class HashMapPerformance extends AbstractPerformance {
    @Test
+   public void testComputeIfAbsentVsGet() {
+      final HashMap<String, String> map = new HashMap<>();
+
+      final int samples = 5000000;
+      final int experiments = 5;
+
+      benchmark( "computeIfAbsent", samples, experiments, ( i ) -> {
+         map.computeIfAbsent( "key" + i, ( k ) -> "key" );
+      } );
+
+      benchmark( "get", samples, experiments, ( i ) -> {
+         map.get( "key" + i );
+      } );
+   }
+
+   @Test
    public void testMultiStringKey() {
       final int SAMPLES = 10000000;
       final int EXPERIMENTS = 5;

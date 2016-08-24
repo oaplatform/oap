@@ -51,7 +51,6 @@ import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.conn.util.PublicSuffixMatcherLoader;
 import org.apache.http.cookie.Cookie;
-import org.apache.http.cookie.CookieSpec;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
@@ -119,7 +118,7 @@ public class Client {
 
       }
    };
-   public static Client DEFAULT = custom()
+   public static final Client DEFAULT = custom()
       .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
       .onTimeout( ( c ) -> log.error( "timeout" ) )
       .build();
@@ -408,25 +407,30 @@ public class Client {
 
       private HttpAsyncClientBuilder initialize() {
          try {
+            final PoolingNHttpClientConnectionManager connManager = new PoolingNHttpClientConnectionManager(
+               new DefaultConnectingIOReactor( IOReactorConfig.custom()
+                  .setConnectTimeout( connectTimeout )
+                  .setSoTimeout( readTimeout )
+                  .build() ),
+               RegistryBuilder.<SchemeIOSessionStrategy>create()
+                  .register( "http", NoopIOSessionStrategy.INSTANCE )
+                  .register( "https",
+                     new SSLIOSessionStrategy( certificateLocation != null ?
+                        createSSLContext( certificateLocation, certificatePassword ) : SSLContexts.createDefault(),
+                        split( System.getProperty( "https.protocols" ) ),
+                        split( System.getProperty( "https.cipherSuites" ) ),
+                        new DefaultHostnameVerifier( PublicSuffixMatcherLoader.getDefault() ) ) )
+                  .build() );
+
+            connManager.setMaxTotal( maxConnTotal );
+            connManager.setDefaultMaxPerRoute( maxConnPerRoute );
+
             return ( certificateLocation != null ?
                HttpAsyncClients.custom()
                   .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
                : HttpAsyncClients.custom() )
                .setMaxConnPerRoute( maxConnPerRoute )
-               .setConnectionManager( new PoolingNHttpClientConnectionManager(
-                  new DefaultConnectingIOReactor( IOReactorConfig.custom()
-                     .setConnectTimeout( connectTimeout )
-                     .setSoTimeout( readTimeout )
-                     .build() ),
-                  RegistryBuilder.<SchemeIOSessionStrategy>create()
-                     .register( "http", NoopIOSessionStrategy.INSTANCE )
-                     .register( "https",
-                        new SSLIOSessionStrategy( certificateLocation != null ?
-                           createSSLContext( certificateLocation, certificatePassword ) : SSLContexts.createDefault(),
-                           split( System.getProperty( "https.protocols" ) ),
-                           split( System.getProperty( "https.cipherSuites" ) ),
-                           new DefaultHostnameVerifier( PublicSuffixMatcherLoader.getDefault() ) ) )
-                     .build() ) )
+               .setConnectionManager( connManager )
                .setMaxConnTotal( maxConnTotal )
                .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
                .setDefaultRequestConfig( RequestConfig
