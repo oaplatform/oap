@@ -24,6 +24,7 @@
 package oap.testng;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import oap.util.Functions;
 import oap.util.Try;
 import org.testng.Assert;
 
@@ -36,21 +37,26 @@ import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
+import static oap.util.Functions.empty.consume;
 
 public abstract class AbstractPerformance extends AbstractTest {
 
    public static final int WARMING = 1000;
+   /**
+    * @see Functions.empty#consume()
+    * */
+   @Deprecated
    protected final static Consumer<Integer> none = ( i ) -> {
    };
    private final static Function<Long, String> actions_s = ( rate ) -> rate + " action/s";
 
    public static void benchmark( String name, int samples, Try.ThrowingConsumer<Integer> code ) {
-      benchmark( name, samples, 5, code, none, none, actions_s );
+      benchmark( name, samples, 5, code, consume(), consume(), actions_s );
    }
 
    public static BenchmarkResult benchmark( String name, int samples, int experiments,
                                             Try.ThrowingConsumer<Integer> code ) {
-      return benchmark( name, samples, experiments, code, none, none, actions_s );
+      return benchmark( name, samples, experiments, code, consume(), consume(), actions_s );
    }
 
    public static BenchmarkResult benchmark( String name, int samples, int experiments,
@@ -112,7 +118,7 @@ public abstract class AbstractPerformance extends AbstractTest {
 
    public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
                                             Try.ThrowingConsumer<Integer> code, int warming ) {
-      return benchmark( name, samples, experiments, threads, code, none, none, warming );
+      return benchmark( name, samples, experiments, threads, code, consume(), consume(), warming );
    }
 
    public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
