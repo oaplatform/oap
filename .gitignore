@@ -6,6 +6,7 @@ target
 modules.xml
 compiler.xml
 encodings.xml
+scala_settings.xml
 misc.xml
 vcs.xml
 libraries
