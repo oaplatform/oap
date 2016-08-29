@@ -29,9 +29,11 @@ import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Created by Igor Petrenko on 15.04.2016.
@@ -40,7 +42,8 @@ public class DictionaryTest extends AbstractTest {
    @Test
    public void testParse() {
       assertThat( Dictionaries.getDictionary( "test-dictionary" ).name ).isEqualTo( "test-dictionary" );
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).getValues() ).contains( new DictionaryValue( "id1", true, '1',
+      List<? extends Dictionary> dictValues = Dictionaries.getDictionary( "test-dictionary" ).getValues();
+      assertThat( dictValues ).contains( new DictionaryValue( "id1", true, '1',
             Arrays.asList(
                new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) ),
                new DictionaryLeaf( "id12", true, 12, Maps.of( __( "title", "title12" ) ) )
@@ -48,5 +51,7 @@ public class DictionaryTest extends AbstractTest {
             Maps.of( __( "title", "title1" ) ) )
          , new DictionaryLeaf( "id2", true, 50, Maps.of( __( "title", "title2" ) ) )
       );
+      assertTrue(dictValues.get( 2 ).getTags().contains( "tag1" ));
+      assertTrue(dictValues.get( 2 ).getTags().contains( "tag2" ));
    }
 }

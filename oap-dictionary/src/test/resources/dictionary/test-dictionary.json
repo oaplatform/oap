@@ -27,6 +27,12 @@
       "title": "title2",
       "enabled": true,
       "eid": "2"
+    },
+    {
+      "id": "id3",
+      "enabled": true,
+      "eid": "2",
+      "tags" : ["tag1", "tag2"]
     }
   ]
 }
