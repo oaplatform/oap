@@ -25,8 +25,7 @@ package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.val;
-import oap.concurrent.scheduler.Scheduled;
-import oap.concurrent.scheduler.Scheduler;
+import oap.concurrent.Timed;
 import oap.io.Files;
 import oap.json.Binder;
 import oap.storage.migration.FileStorageMigration;
@@ -35,7 +34,6 @@ import oap.storage.migration.JsonMetadata;
 import oap.util.Lists;
 import oap.util.Stream;
 import oap.util.Try;
-import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
@@ -44,14 +42,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.reverseOrder;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -60,19 +56,16 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
    private static final int VERSION = 0;
    private static final Pattern PATTERN_VERSION = Pattern.compile( ".+\\.v(\\d+)\\.json" );
-
-   private final AtomicLong lastFSync = new AtomicLong( 0 );
-   private final long fsync;
+   private final Timed fsync;
    private final int version;
    private final List<FileStorageMigration> migrations;
-   private Scheduled fsyncScheduled;
    private Path path;
    private final Logger log;
 
    public FileStorage( Path path, Function<T, String> identify, long fsync, int version, List<String> migrations ) {
       super( identify );
       this.path = path;
-      this.fsync = fsync;
+      this.fsync = Timed.create( fsync, this::fsync );
       this.version = version;
       this.migrations = Lists.map( migrations,
          Try.map( clazz -> ( FileStorageMigration ) Class.forName( clazz ).newInstance() ) );
@@ -93,7 +86,7 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
 
    public void start() {
       load();
-      this.fsyncScheduled = Scheduler.scheduleWithFixedDelay( fsync, MILLISECONDS, this::fsync );
+      this.fsync.start();
    }
 
    @SuppressWarnings( "unchecked" )
@@ -156,10 +149,8 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
       return metadata;
    }
 
-   private synchronized void fsync() {
-      long current = DateTimeUtils.currentTimeMillis();
-      long last = lastFSync.get();
-      log.trace( "fsync current: {}, last: {}, storage size: {}", current, last, data.size() );
+   private synchronized void fsync( long last ) {
+      log.trace( "fsync: last: {}, storage size: {}", last, data.size() );
 
       data.values()
          .stream()
@@ -171,8 +162,6 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
             log.trace( "fsync storing {} done", fn.getFileName() );
 
          } );
-
-      lastFSync.set( current );
    }
 
    private Path fileName( String id, long version ) {
@@ -183,13 +172,13 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
 
    @Override
    public synchronized void close() {
-      Scheduled.cancel( fsyncScheduled );
-      fsync();
+      this.fsync.close();
+      fsync( this.fsync.lastExecuted() );
       data.clear();
    }
 
    public void clear() {
-      List<String> keys = new ArrayList<>(data.keySet());
+      List<String> keys = new ArrayList<>( data.keySet() );
       List<T> deleted = Stream.of( keys ).flatMapOptional( this::deleteObject ).map( m -> m.object ).toList();
       fireDeleted( deleted );
    }
