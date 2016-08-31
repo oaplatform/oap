@@ -49,6 +49,7 @@ public class Dictionaries {
    private synchronized static void load() {
       if( dictionaries.isEmpty() ) {
          dictionaries.putAll( Stream.of( Resources.urls( "dictionary", "json" ) )
+            .concat( Stream.of( Resources.urls( "dictionary", "conf" ) ) )
             .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
             .toMap() );
          log.info( "dictionaries: {}", dictionaries );

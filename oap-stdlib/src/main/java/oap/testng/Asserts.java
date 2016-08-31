@@ -137,6 +137,12 @@ public final class Asserts {
          super( actual.toFile(), FileAssertion.class );
       }
 
+      public FileAssertion hasSameContentAs( Path expected ){
+         String actual = Files.readString( this.actual.toPath() );
+         assertString( actual ).isEqualTo( Files.readString( expected ) );
+         return this;
+      }
+
       public FileAssertion hasSize( long size ) {
          assertThat( actual.length() ).isEqualTo( size );
          return this;
