@@ -24,6 +24,7 @@
 
 package oap.dictionary;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,4 +64,9 @@ public interface Dictionary {
    int getExternalId();
 
    boolean containsProperty( String name );
+
+   @SuppressWarnings( "unchecked" )
+   default List<String> getTags( ) {
+      return ( List<String> ) getProperty( "tags" ).orElse( Collections.emptyList() );
+   }
 }
