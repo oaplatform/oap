@@ -121,23 +121,23 @@ public class DictionaryParser {
    }
 
    public static DictionaryRoot parse( Path resource ) {
-      final Map map = Binder.json.unmarshal( Map.class, resource );
+      final Map map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, resource );
       return parse( map );
    }
 
    public static DictionaryRoot parse( URL resource ) {
-      final Map map = Binder.json.unmarshal( Map.class, resource );
+      final Map map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, resource );
       return parse( map );
    }
 
    public static DictionaryRoot parse( String resource ) {
-      final Map map = Binder.json.unmarshalResource( DictionaryParser.class, Map.class, resource ).get();
+      final Map map = Binder.hoconWithoutSystemProperties.unmarshalResource( DictionaryParser.class, Map.class, resource ).get();
 
       return parse( map );
    }
 
    public static DictionaryRoot parseFromString( String dictionary ) {
-      final Map map = Binder.json.unmarshal( Map.class, dictionary );
+      final Map map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, dictionary );
 
       return parse( map );
    }

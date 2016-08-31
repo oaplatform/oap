@@ -39,10 +39,12 @@ public abstract class Timed implements Closeable {
    private final long period;
    private Scheduled scheduled;
    private TimeUnit timeUnit;
+   private long safePeriod;
 
-   public Timed( long period, TimeUnit timeUnit ) {
+   public Timed( long period, long safePeriod, TimeUnit timeUnit ) {
       this.period = period;
       this.timeUnit = timeUnit;
+      this.safePeriod = safePeriod;
    }
 
    public void start() {
@@ -55,7 +57,7 @@ public abstract class Timed implements Closeable {
    }
 
    private void doit() {
-      long current = DateTimeUtils.currentTimeMillis();
+      long current = DateTimeUtils.currentTimeMillis() - safePeriod;
       run( lastTimeExecuted.get() );
       lastTimeExecuted.set( current );
    }
@@ -71,12 +73,20 @@ public abstract class Timed implements Closeable {
       return lastTimeExecuted.get();
    }
 
-   public static Timed create( long period, Consumer<Long> consume ) {
-      return create( period, MILLISECONDS, consume );
+   public static Timed create( long period, long safePeriod, Consumer<Long> consume ) {
+      return create( period, safePeriod, MILLISECONDS, consume );
    }
 
-   public static Timed create( long period, final TimeUnit timeUnit, Consumer<Long> consume ) {
-      return new Timed( period, timeUnit ) {
+   public static Timed create( long period, Consumer<Long> consume ) {
+      return create( period, 0, MILLISECONDS, consume );
+   }
+
+   public static Timed create( long period, TimeUnit timeUnit, Consumer<Long> consume ) {
+      return create( period, 0, timeUnit, consume );
+   }
+
+   public static Timed create( long period, long safePeriod, TimeUnit timeUnit, Consumer<Long> consume ) {
+      return new Timed( period, safePeriod, timeUnit ) {
          @Override
          void run( long lastTimeExecuted ) {
             consume.accept( lastTimeExecuted );

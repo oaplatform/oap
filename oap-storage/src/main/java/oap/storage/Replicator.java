@@ -25,37 +25,33 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.scheduler.Scheduled;
-import oap.concurrent.scheduler.Scheduler;
+import oap.concurrent.Timed;
 import oap.util.Optionals;
 import oap.util.Stream;
-import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @Slf4j
 public class Replicator<T> implements Closeable {
    private final MemoryStorage<T> slave;
    private final ReplicationMaster<T> master;
-   private final Scheduled scheduled;
-   public long safeModificationTime = 1000;
-   private final AtomicLong lastSync = new AtomicLong( 0 );
+   private final Timed sync;
 
-   public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval ) {
+   public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval, long safeModificationTime ) {
       this.slave = slave;
       this.master = master;
-      this.scheduled = Scheduler.scheduleWithFixedDelay( interval, MILLISECONDS, this::replicate );
+      this.sync = Timed.create( interval, safeModificationTime, this::replicate );
+      this.sync.start();
    }
 
-   public synchronized void replicate() {
-      long current = DateTimeUtils.currentTimeMillis() - safeModificationTime;
-      long last = lastSync.get();
+   public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval ) {
+      this( slave, master, interval, 1000 );
+   }
+
+   public synchronized void replicate( long last ) {
       List<Metadata<T>> updates = master.updatedSince( last );
-      log.trace( "replicate {} to {} current: {}, last: {}, to sync {}", master, slave, current, last, updates.size() );
+      log.trace( "replicate {} to {} last: {}, to sync {}", master, slave, last, updates.size() );
       for( Metadata<T> metadata : updates ) {
          log.trace( "replicate {}", metadata );
          slave.data.put( metadata.id, metadata );
@@ -69,11 +65,10 @@ public class Replicator<T> implements Closeable {
          .toList();
       log.trace( "deleted: {}", deletedObjects );
       slave.fireDeleted( deletedObjects );
-      lastSync.set( current );
    }
 
    @Override
    public void close() {
-      Scheduled.cancel( scheduled );
+      sync.close();
    }
 }
