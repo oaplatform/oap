@@ -34,9 +34,11 @@ import org.apache.commons.io.IOUtils;
 import org.codehaus.plexus.util.DirectoryScanner;
 import org.joda.time.DateTime;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -189,11 +191,7 @@ public final class Files {
    }
 
    public static Stream<String> lines( Path path ) {
-      try {
-         return Stream.of( java.nio.file.Files.lines( path ) );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
+      return Stream.of( new BufferedReader( new InputStreamReader( IoStreams.in( path ) ) ).lines() );
    }
 
    public static void copyDirectory( Path from, Path to ) {

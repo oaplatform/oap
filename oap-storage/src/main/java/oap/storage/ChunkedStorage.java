@@ -1,23 +1,20 @@
 package oap.storage;
 
-import com.google.common.base.Throwables;
 import com.google.common.hash.Hashing;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
-import oap.io.IoStreams;
 import oap.json.Binder;
 import oap.util.Stream;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -28,7 +25,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  */
 @Slf4j
 public class ChunkedStorage<T> implements Closeable {
-   private final Map<Integer, Chunk> data = new HashMap<>();
+   private final Map<Integer, Chunk> data = new ConcurrentHashMap<>();
    private final int chunks;
    private final long fsync;
 
