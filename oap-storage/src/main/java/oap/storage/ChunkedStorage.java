@@ -98,12 +98,7 @@ public class ChunkedStorage<T> implements Closeable {
 
       data.entrySet().forEach( chunk -> {
          log.trace( "storing chunk {} with size {} profiles", chunk.getKey(), chunk.getValue().records.size() );
-            try ( OutputStream out = IoStreams.out( chunkPath.apply( chunk.getKey() ) ) ){
-               out.write( Binder.json.marshal( chunk.getValue() ).getBytes() );
-            } catch( IOException e ) {
-               log.error( e.getMessage(), e );
-               Throwables.propagate(e);
-            }
+         Binder.json.marshal( chunkPath.apply( chunk.getKey() ), chunk.getValue() );
          log.trace( "storing chunk {} done", chunk.getKey() );
       } );
 

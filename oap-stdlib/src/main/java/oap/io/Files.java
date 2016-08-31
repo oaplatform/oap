@@ -140,11 +140,11 @@ public final class Files {
    }
 
    public static String readString( String path ) {
-      return readString( Paths.get( path ), IoStreams.Encoding.PLAIN );
+      return readString( Paths.get( path ), IoStreams.Encoding.from( path ) );
    }
 
    public static String readString( Path path ) {
-      return readString( path, IoStreams.Encoding.PLAIN );
+      return readString( path, IoStreams.Encoding.from( path ) );
    }
 
    public static String readString( Path path, IoStreams.Encoding encoding ) {
@@ -168,7 +168,7 @@ public final class Files {
    }
 
    public static void writeString( Path path, String value ) {
-      writeString( path, IoStreams.Encoding.PLAIN, value );
+      writeString( path, IoStreams.Encoding.from( path ), value );
    }
 
    public static void writeString( Path path, IoStreams.Encoding encoding, String value ) {
