@@ -1,6 +1,7 @@
 package oap.storage;
 
 import oap.io.Files;
+import oap.json.Binder;
 import oap.testng.Env;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.BeforeMethod;
@@ -8,6 +9,7 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static oap.testng.Asserts.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,17 +28,19 @@ public class ChunkedStorageTest {
 
    @Test
    public void testPutGetStream() throws Exception {
-      ChunkedStorage<String> db = new ChunkedStorage<>( s -> s, Env.tmpRoot.resolve( "audience-chunks" ), 5, 1000 );
-      db.start();
-      List<String> audienceProfiles = new ArrayList<>();
-      for( int i = 0; i < 10000; i++ ) {
-         String au = RandomStringUtils.random( 20, true, true );
-         audienceProfiles.add( au );
-         db.put( au );
-      }
+      ChunkedStorage<String> storage = new ChunkedStorage<>( s -> s, Env.tmpRoot.resolve( "audience-chunks" ) );
 
-      audienceProfiles.forEach( a -> assertThat( db.get( a ) ).isNotNull() );
-      assertThat( db.stream().toList() ).containsAll( audienceProfiles );
+      List<String> all = new ArrayList<>();
+      for( int i = 0; i < 5; i++ ) {
+         List<String> items = new ArrayList<>();
+         for( int y = 0; y < 100; y++ ) {
+            String au = RandomStringUtils.random( 2 * ( i + 2 ), true, true );
+            items.add( au );
+            items.add( au );
+            all.add( au + au );
+         }
+         storage.mergeAll( items, i, ( a, b ) -> a + b );
+      }
 
       assertEventually( 100, 20, () -> {
          assertFile( Env.tmpRoot.resolve( "audience-chunks" ).resolve( "chunk0.gz" ) ).exists();
@@ -44,6 +48,8 @@ public class ChunkedStorageTest {
          assertFile( Env.tmpRoot.resolve( "audience-chunks" ).resolve( "chunk2.gz" ) ).exists();
          assertFile( Env.tmpRoot.resolve( "audience-chunks" ).resolve( "chunk3.gz" ) ).exists();
          assertFile( Env.tmpRoot.resolve( "audience-chunks" ).resolve( "chunk4.gz" ) ).exists();
+
+         assertThat( storage.stream().toList() ).containsAll( ( Iterable<String> ) all );
       } );
    }
 
