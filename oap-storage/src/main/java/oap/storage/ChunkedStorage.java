@@ -17,6 +17,8 @@ import java.util.function.Function;
  */
 @Slf4j
 public class ChunkedStorage<T> {
+   private static final String pattern = "chunk*.gz";
+
    private final Function<T, String> identify;
    private Path dataLocation;
 
@@ -25,21 +27,22 @@ public class ChunkedStorage<T> {
       this.identify = identify;
    }
 
+   @SuppressWarnings( "unchecked" )
    public void mergeAll( Collection<T> objects, Integer chunkId, BiFunction<T, T, T> remappingFunction ) {
-      Path chunkPath = dataLocation.resolve( "chunk" + chunkId + ".gz" );
-      Chunk chunk = chunkPath.toFile().exists() ? Binder.json.unmarshal( Chunk.class, chunkPath ) : new Chunk();
+      Path chunkPath = dataLocation.resolve( pattern.replace( "*", String.valueOf( chunkId ) ) );
+      Chunk<T> chunk = chunkPath.toFile().exists() ? Binder.json.unmarshal( Chunk.class, chunkPath ) : new Chunk();
       objects.forEach( o -> chunk.records.merge( identify.apply( o ), o, remappingFunction ) );
       Binder.json.marshal( chunkPath, chunk );
    }
 
    public Stream<T> stream() {
-      return Stream.of( Files.fastWildcard( dataLocation, "chunk*.gz" ) )
-         .map( f -> Binder.json.unmarshal( Map.class, f ) )
-         .flatMap( c -> Stream.of( ( (Map<String, Map<String, T>>) c).get( "records" ).values() )  );
+      return Stream.of( Files.fastWildcard( dataLocation, pattern ) )
+         .map( f -> Binder.json.unmarshal( Chunk.class, f ) )
+         .flatMap( c -> Stream.of( c.records.values() ) );
    }
 
-   private class Chunk {
-      Map<String, T> records = new HashMap<>();
+   private static class Chunk<T> {
+      private Map<String, T> records = new HashMap<>();
    }
 
 }
