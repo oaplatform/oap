@@ -1,6 +1,5 @@
 package oap.storage;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.json.Binder;

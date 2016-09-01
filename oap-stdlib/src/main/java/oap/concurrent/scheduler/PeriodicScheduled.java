@@ -21,76 +21,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.concurrent;
 
-import oap.concurrent.scheduler.Scheduled;
-import oap.concurrent.scheduler.Scheduler;
+package oap.concurrent.scheduler;
+
 import org.joda.time.DateTimeUtils;
 
-import java.io.Closeable;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
-public abstract class Timed implements Closeable {
+public class PeriodicScheduled extends Scheduled implements Runnable {
    private final AtomicLong lastTimeExecuted = new AtomicLong( 0 );
-   private final long period;
    private Scheduled scheduled;
-   private TimeUnit timeUnit;
    private long safePeriod;
+   private Consumer<Long> job;
 
-   public Timed( long period, long safePeriod, TimeUnit timeUnit ) {
-      this.period = period;
-      this.timeUnit = timeUnit;
+   public PeriodicScheduled( long safePeriod, Consumer<Long> job ) {
       this.safePeriod = safePeriod;
+      this.job = job;
    }
 
-   public void start() {
-      this.scheduled = Scheduler.scheduleWithFixedDelay( period, timeUnit, this::doit );
-
-   }
-
-   public void stop() {
-      Scheduled.cancel( scheduled );
-   }
-
-   private void doit() {
+   public void run() {
       long current = DateTimeUtils.currentTimeMillis() - safePeriod;
-      run( lastTimeExecuted.get() );
+      this.job.accept( lastTimeExecuted.get() );
       lastTimeExecuted.set( current );
    }
 
-   abstract void run( long lastTimeExecuted );
-
    @Override
-   public void close() {
-      stop();
+   public void cancel() {
+      Scheduled.cancel( scheduled );
    }
 
    public long lastExecuted() {
       return lastTimeExecuted.get();
    }
 
-   public static Timed create( long period, long safePeriod, Consumer<Long> consume ) {
-      return create( period, safePeriod, MILLISECONDS, consume );
-   }
-
-   public static Timed create( long period, Consumer<Long> consume ) {
-      return create( period, 0, MILLISECONDS, consume );
-   }
-
-   public static Timed create( long period, TimeUnit timeUnit, Consumer<Long> consume ) {
-      return create( period, 0, timeUnit, consume );
-   }
-
-   public static Timed create( long period, long safePeriod, TimeUnit timeUnit, Consumer<Long> consume ) {
-      return new Timed( period, safePeriod, timeUnit ) {
-         @Override
-         void run( long lastTimeExecuted ) {
-            consume.accept( lastTimeExecuted );
-         }
-      };
-   }
 }

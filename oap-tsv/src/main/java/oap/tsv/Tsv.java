@@ -132,7 +132,7 @@ public class Tsv {
       final String str, final int max ) {
       final int len = str.length();
 
-      final ArrayList<String> substrings = new ArrayList<String>();
+      final ArrayList<String> substrings = new ArrayList<>();
       int numberOfSubstrings = 0;
       int beg = 0;
       int end = 0;

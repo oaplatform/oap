@@ -23,17 +23,23 @@
  */
 package oap.concurrent.scheduler;
 
-import java.io.Closeable;
+import org.quartz.JobDetail;
 
-public abstract class Scheduled implements Closeable {
-   public static void cancel( Scheduled scheduled ) {
-      if( scheduled != null ) scheduled.cancel();
-   }
+public class QuartzScheduled extends Scheduled {
+    private final JobDetail job;
 
-   public abstract void cancel();
+    QuartzScheduled( JobDetail job ) {
+        this.job = job;
+    }
 
-   @Override
-   public void close() {
-      cancel();
-   }
+    @Override
+    public void cancel() {
+        try {
+            Scheduler.scheduler.deleteJob( job.getKey() );
+            Scheduler.jobFactory.unregister( job.getKey() );
+        } catch( org.quartz.SchedulerException e ) {
+            throw new SchedulerException( e );
+        }
+    }
+
 }
