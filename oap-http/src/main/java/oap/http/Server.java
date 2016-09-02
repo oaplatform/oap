@@ -95,12 +95,9 @@ public class Server implements HttpServer {
    private static HttpContext createHttpContext( final Socket socket ) {
       final HttpContext httpContext = HttpCoreContext.create();
 
-      final String protocol;
-      if( !Inet.isLocalAddress( socket.getInetAddress() ) ) {
-         protocol = Protocol.LOCAL.name();
-      } else {
-         protocol = SSLSocket.class.isInstance( socket ) ? Protocol.HTTPS.name() : Protocol.HTTP.name();
-      }
+      final Protocol protocol;
+      if( !Inet.isLocalAddress( socket.getInetAddress() ) ) protocol = Protocol.LOCAL;
+      else protocol = SSLSocket.class.isInstance( socket ) ? Protocol.HTTPS : Protocol.HTTP;
 
       httpContext.setAttribute( "protocol", protocol );
 

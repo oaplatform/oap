@@ -23,7 +23,11 @@
  */
 package oap.http.nio;
 
-import oap.http.*;
+import oap.http.Context;
+import oap.http.Handler;
+import oap.http.Protocol;
+import oap.http.Request;
+import oap.http.Response;
 import oap.http.cors.CorsPolicy;
 import oap.net.Inet;
 import org.apache.http.HttpException;
@@ -46,49 +50,49 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
 
-    private static final Logger LOGGER = getLogger( NioHandlerAdapter.class );
+   private static final Logger LOGGER = getLogger( NioHandlerAdapter.class );
 
-    private final Protocol protocol;
-    private final String location;
-    private final Handler handler;
-    private final CorsPolicy corsPolicy;
+   private final Protocol protocol;
+   private final String location;
+   private final Handler handler;
+   private final CorsPolicy corsPolicy;
 
-    public NioHandlerAdapter( final String location, final Handler handler, final CorsPolicy corsPolicy,
-                              final Protocol protocol ) {
-        this.location = location;
-        this.handler = handler;
-        this.corsPolicy = corsPolicy;
-        this.protocol = protocol;
-    }
+   public NioHandlerAdapter( final String location, final Handler handler, final CorsPolicy corsPolicy,
+                             final Protocol protocol ) {
+      this.location = location;
+      this.handler = handler;
+      this.corsPolicy = corsPolicy;
+      this.protocol = protocol;
+   }
 
-    @Override
-    public HttpAsyncRequestConsumer<HttpRequest> processRequest( final HttpRequest httpRequest,
-                                                                 final HttpContext httpContext )
-        throws HttpException, IOException {
+   @Override
+   public HttpAsyncRequestConsumer<HttpRequest> processRequest( final HttpRequest httpRequest,
+                                                                final HttpContext httpContext )
+      throws HttpException, IOException {
 
-        return new BasicAsyncRequestConsumer();
-    }
+      return new BasicAsyncRequestConsumer();
+   }
 
-    @Override
-    public void handle( final HttpRequest httpRequest, final HttpAsyncExchange httpAsyncExchange,
-                        final HttpContext httpContext ) throws HttpException, IOException {
+   @Override
+   public void handle( final HttpRequest httpRequest, final HttpAsyncExchange httpAsyncExchange,
+                       final HttpContext httpContext ) throws HttpException, IOException {
 
-        LOGGER.trace( "handling [{}]", httpRequest );
+      LOGGER.trace( "handling [{}]", httpRequest );
 
-        final HttpInetConnection connection = ( HttpInetConnection ) httpContext
-            .getAttribute( HttpCoreContext.HTTP_CONNECTION );
-        final InetAddress remoteAddress = connection.getRemoteAddress();
-        final HttpResponse response = httpAsyncExchange.getResponse();
+      final HttpInetConnection connection = ( HttpInetConnection ) httpContext
+         .getAttribute( HttpCoreContext.HTTP_CONNECTION );
+      final InetAddress remoteAddress = connection.getRemoteAddress();
+      final HttpResponse response = httpAsyncExchange.getResponse();
 
-        final String httpContextProtocol = httpContext.getAttribute( "protocol" ).toString();
+      final String httpContextProtocol = String.valueOf( httpContext.getAttribute( "protocol" ) );
 
-        if( Protocol.LOCAL.equals( this.protocol ) && !Inet.isLocalAddress( remoteAddress ) ) {
-            response.setStatusCode( HTTP_FORBIDDEN );
-        } else {
-            Request request = new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) );
-            handler.handle( request, new Response( response, corsPolicy.getCors( request ) ) );
-        }
+      if( Protocol.LOCAL.equals( this.protocol ) && !Inet.isLocalAddress( remoteAddress ) ) {
+         response.setStatusCode( HTTP_FORBIDDEN );
+      } else {
+         Request request = new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) );
+         handler.handle( request, new Response( response, corsPolicy.getCors( request ) ) );
+      }
 
-        httpAsyncExchange.submitResponse();
-    }
+      httpAsyncExchange.submitResponse();
+   }
 }
