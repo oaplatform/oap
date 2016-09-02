@@ -25,7 +25,8 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.Timed;
+import oap.concurrent.scheduler.Scheduled;
+import oap.concurrent.scheduler.Scheduler;
 import oap.util.Optionals;
 import oap.util.Stream;
 
@@ -36,13 +37,12 @@ import java.util.List;
 public class Replicator<T> implements Closeable {
    private final MemoryStorage<T> slave;
    private final ReplicationMaster<T> master;
-   private final Timed sync;
+   private final Scheduled scheduled;
 
    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval, long safeModificationTime ) {
       this.slave = slave;
       this.master = master;
-      this.sync = Timed.create( interval, safeModificationTime, this::replicate );
-      this.sync.start();
+      this.scheduled = Scheduler.scheduleWithFixedDelay( interval, safeModificationTime, this::replicate );
    }
 
    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval ) {
@@ -51,7 +51,7 @@ public class Replicator<T> implements Closeable {
 
    public synchronized void replicate( long last ) {
       List<Metadata<T>> updates = master.updatedSince( last );
-      log.trace( "replicate {} to {} last: {}, to sync {}", master, slave, last, updates.size() );
+      log.trace( "replicate {} to {} last: {}, to scheduled {}", master, slave, last, updates.size() );
       for( Metadata<T> metadata : updates ) {
          log.trace( "replicate {}", metadata );
          slave.data.put( metadata.id, metadata );
@@ -69,6 +69,6 @@ public class Replicator<T> implements Closeable {
 
    @Override
    public void close() {
-      sync.close();
+      Scheduled.cancel( scheduled );
    }
 }

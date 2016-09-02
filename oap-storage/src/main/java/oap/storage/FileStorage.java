@@ -25,7 +25,9 @@ package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.val;
-import oap.concurrent.Timed;
+import oap.concurrent.scheduler.PeriodicScheduled;
+import oap.concurrent.scheduler.Scheduled;
+import oap.concurrent.scheduler.Scheduler;
 import oap.io.Files;
 import oap.json.Binder;
 import oap.storage.migration.FileStorageMigration;
@@ -56,16 +58,17 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
    private static final int VERSION = 0;
    private static final Pattern PATTERN_VERSION = Pattern.compile( ".+\\.v(\\d+)\\.json" );
-   private final Timed fsync;
+   private final long fsync;
    private final int version;
    private final List<FileStorageMigration> migrations;
    private Path path;
    private final Logger log;
+   private PeriodicScheduled scheduled;
 
    public FileStorage( Path path, Function<T, String> identify, long fsync, int version, List<String> migrations ) {
       super( identify );
       this.path = path;
-      this.fsync = Timed.create( fsync, this::fsync );
+      this.fsync = fsync;
       this.version = version;
       this.migrations = Lists.map( migrations,
          Try.map( clazz -> ( FileStorageMigration ) Class.forName( clazz ).newInstance() ) );
@@ -86,7 +89,7 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
 
    public void start() {
       load();
-      this.fsync.start();
+      this.scheduled = Scheduler.scheduleWithFixedDelay( fsync, this::fsync );
    }
 
    @SuppressWarnings( "unchecked" )
@@ -172,8 +175,8 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
 
    @Override
    public synchronized void close() {
-      this.fsync.close();
-      fsync( this.fsync.lastExecuted() );
+      Scheduled.cancel( scheduled );
+      fsync( scheduled.lastExecuted() );
       data.clear();
    }
 

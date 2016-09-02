@@ -32,7 +32,9 @@ import org.quartz.impl.StdSchedulerFactory;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.quartz.JobBuilder.newJob;
 import static org.quartz.TriggerBuilder.newTrigger;
 
@@ -93,7 +95,7 @@ public class Scheduler {
          jobFactory.register( job, runnable );
 
          scheduler.scheduleJob( job, trigger );
-         return new Scheduled( job );
+         return new QuartzScheduled( job );
       } catch( org.quartz.SchedulerException e ) {
          throw new SchedulerException( e );
       }
@@ -108,5 +110,23 @@ public class Scheduler {
 
    private static String identity( Runnable runnable ) {
       return runnable.getClass().getName() + "/" + ids.incrementAndGet();
+   }
+
+   public static PeriodicScheduled scheduleWithFixedDelay( long delay, long safePeriod, Consumer<Long> consume ) {
+      return scheduleWithFixedDelay( delay, safePeriod, MILLISECONDS, consume );
+   }
+
+   public static PeriodicScheduled scheduleWithFixedDelay( long delay, Consumer<Long> consume ) {
+      return scheduleWithFixedDelay( delay, 0, MILLISECONDS, consume );
+   }
+
+   public static PeriodicScheduled scheduleWithFixedDelay( long delay, TimeUnit timeUnit, Consumer<Long> consume ) {
+      return scheduleWithFixedDelay( delay, 0, timeUnit, consume );
+   }
+
+   public static PeriodicScheduled scheduleWithFixedDelay( long delay, long safePeriod, TimeUnit timeUnit, Consumer<Long> consume ) {
+      PeriodicScheduled scheduled = new PeriodicScheduled( safePeriod, consume );
+      scheduleWithFixedDelay( delay, timeUnit, scheduled );
+      return scheduled;
    }
 }
