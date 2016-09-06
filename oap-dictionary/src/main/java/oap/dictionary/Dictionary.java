@@ -57,7 +57,7 @@ public interface Dictionary {
 
    String getId();
 
-   Optional<Object> getProperty( String name );
+   <T> Optional<T> getProperty( String name );
 
    boolean isEnabled();
 
