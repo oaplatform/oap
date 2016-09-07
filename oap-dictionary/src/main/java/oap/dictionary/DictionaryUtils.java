@@ -24,57 +24,15 @@
 
 package oap.dictionary;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
-
 /**
- * Created by Igor Petrenko on 29.04.2016.
+ * Created by igor.petrenko on 07.09.2016.
  */
-public interface Dictionary {
-   int getOrDefault( String id, int defaultValue );
-
-   Integer get( String id );
-
-   String getOrDefault( int externlId, String defaultValue );
-
-   boolean containsValueWithId( String id );
-
-   List<String> ids();
-
-   int[] externalIds();
-
-   Map<String, Object> getProperties();
-
-   Optional<? extends Dictionary> getValueOpt( String name );
-
-   Dictionary getValue( String name );
-
-   Dictionary getValue( int externalId );
-
-   List<? extends Dictionary> getValues();
-
-   default List<Dictionary> getValues( Predicate<Dictionary> p ) {
-      return getValues().stream().filter( p ).collect( toList() );
-   }
-
-   String getId();
-
-   <T> Optional<T> getProperty( String name );
-
-   boolean isEnabled();
-
-   int getExternalId();
-
-   boolean containsProperty( String name );
-
-   @SuppressWarnings( "unchecked" )
-   default List<String> getTags() {
-      return ( List<String> ) getProperty( "tags" ).orElse( Collections.emptyList() );
+public class DictionaryUtils {
+   public List<Dictionary> filter( Dictionary dictionary, Predicate<Dictionary> p ) {
+      return dictionary.getValues().stream().filter( p ).collect( Collectors.toList() );
    }
 }
