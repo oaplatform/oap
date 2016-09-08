@@ -30,30 +30,44 @@ import oap.util.Try;
 import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import static java.util.Collections.emptyList;
+import static oap.util.Lists.empty;
 
-
+/**
+ * CAUTION: fsResolve should be using STABLE values ONLY. File relocation on the filesystem IS NOT SUPPORTED!
+ * @param <T>
+ */
 public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
    private static final int VERSION = 0;
    private PersistenceBackend<T> persistence;
-   private Path path;
 
 
    public FileStorage( Path path, Function<T, String> identify, long fsync, int version, List<String> migrations ) {
+      this( path, ( p, object ) -> p, identify, fsync, version, migrations );
+   }
+
+   public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Function<T, String> identify, long fsync, int version, List<String> migrations ) {
       super( identify );
-      this.persistence = new FsPersisteceBackend<>( path, fsync, version, Lists.map( migrations,
+      this.persistence = new FsPersisteceBackend<>( path, fsResolve, fsync, version, Lists.map( migrations,
          Try.map( clazz -> ( FileStorageMigration ) Class.forName( clazz ).newInstance() )
       ), this );
    }
 
+   public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Function<T, String> identify, long fsync ) {
+      this(path, fsResolve, identify, fsync, VERSION, empty());
+   }
    public FileStorage( Path path, Function<T, String> identify, long fsync ) {
-      this( path, identify, fsync, VERSION, emptyList() );
+      this( path, identify, fsync, VERSION, empty() );
    }
 
    public FileStorage( Path path, Function<T, String> identify ) {
-      this( path, identify, VERSION, emptyList() );
+      this( path, identify, VERSION, empty() );
+   }
+
+   public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Function<T, String> identify, int version, List<String> migrations ) {
+      this( path, fsResolve, identify, 60000, version, migrations );
    }
 
    public FileStorage( Path path, Function<T, String> identify, int version, List<String> migrations ) {

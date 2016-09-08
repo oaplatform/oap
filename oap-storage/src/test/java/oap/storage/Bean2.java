@@ -36,6 +36,7 @@ import oap.storage.migration.JsonMetadata;
 @EqualsAndHashCode
 public class Bean2 {
     public String id2;
+    public String s = "aaa";
     public BeanIn in;
 
     public Bean2( String id, String s ) {

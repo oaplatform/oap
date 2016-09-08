@@ -24,7 +24,7 @@
 package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import lombok.val;
+import lombok.ToString;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
@@ -42,6 +42,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,16 +52,17 @@ import static oap.util.Pair.__;
 import static org.slf4j.LoggerFactory.getLogger;
 
 class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storage.DataListener<T> {
-   private static final Pattern PATTERN_VERSION = Pattern.compile( ".+\\.v(\\d+)\\.json" );
    private final Path path;
+   private final BiFunction<Path, T, Path> fsResolve;
    private final int version;
    private final List<FileStorageMigration> migrations;
    private MemoryStorage<T> storage;
    private final Logger log;
    private PeriodicScheduled scheduled;
 
-   public FsPersisteceBackend( Path path, long fsync, int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
+   public FsPersisteceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync, int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
       this.path = path;
+      this.fsResolve = fsResolve;
       this.version = version;
       this.migrations = migrations;
       this.storage = storage;
@@ -72,14 +74,16 @@ class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storag
 
    private void load() {
       Files.ensureDirectory( path );
-      storage.data = Files.wildcard( path, "*.json" )
+      List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
+      log.debug( "found {} files", paths.size() );
+      storage.data = paths
          .stream()
          .map( Try.map(
             f -> {
-               long version = versionOf( f.getFileName().toString() );
+               Persisted persisted = Persisted.valueOf( f );
 
                Path file = f;
-               for( long v = version; v < this.version; v++ ) file = migration( file );
+               for( long v = persisted.version; v < this.version; v++ ) file = migration( file );
 
                return ( Metadata<T> ) Binder.json.unmarshal( new TypeReference<Metadata<T>>() {
                }, file );
@@ -91,35 +95,53 @@ class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storag
    }
 
    private Path migration( Path path ) {
-      final JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {
+      JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {
       }, path ) );
 
-      val version = versionOf( path.getFileName().toString() );
+      Persisted fn = Persisted.valueOf( path );
 
-      log.debug( "migration {}", path );
+      log.debug( "migration {}", fn );
 
-      final String id = oldV.id();
-
-      final Optional<FileStorageMigration> any = migrations
+      Optional<FileStorageMigration> migration = migrations
          .stream()
-         .filter( m -> m.fromVersion() == version )
+         .filter( m -> m.fromVersion() == fn.version )
          .findAny();
 
-      return any.map( m -> {
-         final Path fn = filenameFor( id, m.fromVersion() + 1 );
-
-         final JsonMetadata newV = m.run( oldV );
-
-         Binder.json.marshal( fn, newV.underlying );
-         Files.delete( path );
-
-         return fn;
-      } ).orElseThrow( () -> new FileStorageMigrationException( "migration from version " + version + " not found" ) );
+      return migration
+         .map( m -> {
+            Path name = fn.toVersion( m.fromVersion() + 1 );
+            JsonMetadata newV = m.run( oldV );
+            Binder.json.marshal( name, newV.underlying );
+            Files.delete( path );
+            return name;
+         } )
+         .orElseThrow( () -> new FileStorageMigrationException( "migration from version " + fn + " not found" ) );
    }
 
-   private long versionOf( String fileName ) {
-      final Matcher matcher = PATTERN_VERSION.matcher( fileName );
-      return matcher.matches() ? Long.parseLong( matcher.group( 1 ) ) : 0;
+   @ToString
+   private static class Persisted {
+      private static final Pattern PATTERN_VERSION = Pattern.compile( "(.+)\\.v(\\d+)\\.json" );
+      private final Path path;
+      private final String id;
+      private final long version;
+
+      Persisted( Path path, String id, long version ) {
+         this.path = path;
+         this.id = id;
+         this.version = version;
+      }
+
+      static Persisted valueOf( Path path ) {
+         String name = path.getFileName().toString();
+         final Matcher matcher = PATTERN_VERSION.matcher( name );
+         return matcher.matches() ? new Persisted( path.getParent(), matcher.group( 1 ), Long.parseLong( matcher.group( 2 ) ) ) :
+            new Persisted( path.getParent(), name.substring( 0, name.length() - ".json".length() ), 0L );
+      }
+
+
+      public Path toVersion( long version ) {
+         return path.resolve( id + ".v" + version + ".json" );
+      }
    }
 
    private synchronized void fsync( long last ) {
@@ -129,7 +151,7 @@ class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storag
          .stream()
          .filter( m -> m.modified >= last )
          .forEach( m -> {
-            final Path fn = filenameFor( m.id, version );
+            final Path fn = filenameFor( m.object, version );
             log.trace( "fsync storing {} with modification time {}", fn.getFileName(), m.modified );
             Binder.json.marshal( fn, m );
             log.trace( "fsync storing {} done", fn.getFileName() );
@@ -137,12 +159,14 @@ class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storag
          } );
    }
 
-   private Path filenameFor( String id, long version ) {
+   //todo refactor to Persisted
+   private Path filenameFor( T object, long version ) {
       final String ver = this.version > 0 ? ".v" + version : "";
-      return path.resolve( id + ver + ".json" );
+      return fsResolve.apply( this.path, object )
+         .resolve( this.storage.identify.apply( object ) + ver + ".json" );
    }
 
-   public void delete( String id ) {
+   public void delete( T id ) {
       Path path = filenameFor( id, version );
       Files.delete( path );
    }
@@ -160,7 +184,7 @@ class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storag
 
    @Override
    public void deleted( T object ) {
-      delete( this.storage.identify.apply( object ) );
+      delete( object );
    }
 
    @Override

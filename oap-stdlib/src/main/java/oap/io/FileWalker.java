@@ -55,7 +55,7 @@ public class FileWalker {
             if( position < paths.length - 1 ) {
                stream.forEach( p -> walkFileTree( p, position + 1, visitor ) );
             } else {
-               stream.forEach( visitor::accept );
+               stream.forEach( visitor );
             }
          } catch( NoSuchFileException ignore ) {
          } catch( IOException e ) {

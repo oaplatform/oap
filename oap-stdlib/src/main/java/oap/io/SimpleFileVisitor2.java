@@ -24,7 +24,6 @@
 
 package oap.io;
 
-import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -32,12 +31,13 @@ import java.nio.file.attribute.BasicFileAttributes;
 /**
  * Created by Igor Petrenko on 10.12.2015.
  */
+@Deprecated
 public class SimpleFileVisitor2<T> extends SimpleFileVisitor<T> {
     public long visited;
 
     @Override
     public FileVisitResult visitFile( T file, BasicFileAttributes attrs )
-        throws IOException {
+         {
 
         visited++;
 

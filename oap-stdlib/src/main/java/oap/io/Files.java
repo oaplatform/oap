@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -114,11 +115,11 @@ public final class Files {
          PathMatcher pm = FileSystems.getDefault()
             .getPathMatcher( ( "glob:" + basePath + File.separator + wildcard ).replace( "\\", "\\\\" ) );
          ArrayList<Path> result = new ArrayList<>();
-         SimpleFileVisitor2<Path> visitor = new SimpleFileVisitor2<Path>() {
+         SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
             @Override
-            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException {
+            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) {
                if( pm.matches( file ) ) result.add( file );
-               return super.visitFile( file, attrs );
+               return FileVisitResult.CONTINUE;
             }
          };
          if( java.nio.file.Files.exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
@@ -128,6 +129,24 @@ public final class Files {
       } catch( IOException e ) {
          throw new UncheckedIOException( e );
       }
+   }
+
+   public static List<Path> deepCollect( Path basePath, Predicate<Path> predicate ) {
+      ArrayList<Path> result = new ArrayList<>();
+      SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
+         @Override
+         public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) {
+            if( predicate.test( file ) ) result.add( file );
+            return FileVisitResult.CONTINUE;
+         }
+      };
+      if( java.nio.file.Files.exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
+         try {
+            java.nio.file.Files.walkFileTree( basePath, visitor );
+         } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+         }
+      return result;
    }
 
    @SuppressWarnings( "unchecked" )
@@ -373,7 +392,7 @@ public final class Files {
 
       boolean noend;
 
-      while( (noend = wmPosition < wmLength) && wildcardMatcher.charAt( wmPosition ) == '*' ) {
+      while( ( noend = wmPosition < wmLength ) && wildcardMatcher.charAt( wmPosition ) == '*' ) {
          wmPosition++;
       }
 

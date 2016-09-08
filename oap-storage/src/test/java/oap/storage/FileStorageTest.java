@@ -24,16 +24,17 @@
 
 package oap.storage;
 
-import oap.concurrent.Threads;
 import oap.json.TypeIdFactory;
 import oap.testng.AbstractTest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.util.function.BiFunction;
 
 import static java.util.Collections.emptyList;
 import static oap.testng.Asserts.assertEventually;
+import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.deployTestData;
 import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,13 +62,31 @@ public class FileStorageTest extends AbstractTest {
       try( FileStorage<Bean> storage1 = new FileStorage<>( tmpPath( "data" ), b -> b.id, 50 ) ) {
          storage1.store( new Bean( "1" ) );
          storage1.store( new Bean( "2" ) );
-         Threads.sleepSafely( 100 );
       }
 
       try( FileStorage<Bean> storage2 = new FileStorage<>( tmpPath( "data" ), b -> b.id ) ) {
          assertThat( storage2.select() )
             .containsExactly( new Bean( "1" ), new Bean( "2" ) );
       }
+   }
+
+   @Test
+   public void persistFsLayout() {
+      Path data = tmpPath( "data" );
+      BiFunction<Path, Bean, Path> fsResolve = ( p, o ) -> p.resolve( o.s );
+      try( FileStorage<Bean> storage1 = new FileStorage<>( data, fsResolve, b -> b.id, 50 ) ) {
+         storage1.store( new Bean( "1" ) );
+         storage1.store( new Bean( "2" ) );
+      }
+
+      assertFile( data.resolve( "aaa/1.json" ) ).exists();
+      assertFile( data.resolve( "aaa/2.json" ) ).exists();
+
+      try( FileStorage<Bean> storage2 = new FileStorage<>( data, fsResolve, b -> b.id, 50 ) ) {
+         assertThat( storage2.select() )
+            .containsExactly( new Bean( "1" ), new Bean( "2" ) );
+      }
+
    }
 
    @Test

@@ -33,6 +33,7 @@ import oap.util.Lists;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
 import static java.util.Collections.emptyList;
@@ -49,31 +50,31 @@ public class FileStorageMigrationTest extends AbstractTest {
    }
 
    @Test
-   public void testMigration() {
-      final Path data = Env.tmpPath( "data" );
-      try( FileStorage<Bean> storage1 = new FileStorage<>( data, b -> b.id, Long.MAX_VALUE ) ) {
+   public void testMigration() throws IOException {
+      Path data = Env.tmpPath( "data" );
+      try( FileStorage<Bean> storage1 = new FileStorage<>( data, ( p, b ) -> p.resolve( b.s ), b -> b.id, Long.MAX_VALUE ) ) {
          storage1.store( new Bean( "1" ) );
          storage1.store( new Bean( "2" ) );
       }
 
-      assertThat( data.resolve( "1.json" ) ).exists();
-      assertThat( data.resolve( "2.json" ) ).exists();
+      assertThat( data.resolve( "aaa/1.json" ) ).exists();
+      assertThat( data.resolve( "aaa/2.json" ) ).exists();
 
-      try( FileStorage<Bean2> storage2 = new FileStorage<>( data, b -> b.id2, Long.MAX_VALUE, 2, Lists.of(
+      try( FileStorage<Bean2> storage2 = new FileStorage<>( data, ( p, b ) -> p.resolve( b.s ), b -> b.id2, Long.MAX_VALUE, 2, Lists.of(
          BeanMigration.class.getName(),
          Bean2Migration.class.getName()
       ) ) ) {
          assertThat( storage2.select() ).containsExactly( new Bean2( "11" ), new Bean2( "21" ) );
       }
 
-      assertThat( data.resolve( "1.json" ) ).doesNotExist();
-      assertThat( data.resolve( "2.json" ) ).doesNotExist();
+      assertThat( data.resolve( "aaa/1.json" ) ).doesNotExist();
+      assertThat( data.resolve( "aaa/2.json" ) ).doesNotExist();
 
-      assertThat( data.resolve( "1.v1.json" ) ).doesNotExist();
-      assertThat( data.resolve( "2.v1.json" ) ).doesNotExist();
+      assertThat( data.resolve( "aaa/1.v1.json" ) ).doesNotExist();
+      assertThat( data.resolve( "aaa/2.v1.json" ) ).doesNotExist();
 
-      assertThat( data.resolve( "1.v2.json" ) ).exists();
-      assertThat( data.resolve( "2.v2.json" ) ).exists();
+      assertThat( data.resolve( "aaa/1.v2.json" ) ).exists();
+      assertThat( data.resolve( "aaa/2.v2.json" ) ).exists();
    }
 
    @Test
