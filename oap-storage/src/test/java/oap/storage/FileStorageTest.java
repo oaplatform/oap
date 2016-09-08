@@ -107,7 +107,7 @@ public class FileStorageTest extends AbstractTest {
       Path data = tmpPath( "data" );
       try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50 ) ) {
          storage.store( new Bean( "111" ) );
-         assertEventually( 10, 100, () -> assertThat( data.resolve( "111.json" ) ).exists() );
+         assertEventually( 100, 10, () -> assertThat( data.resolve( "111.json" ) ).exists() );
          storage.delete( "111" );
          assertThat( storage.select() ).isEmpty();
          assertThat( data.resolve( "111.json" ) ).doesNotExist();
@@ -119,7 +119,7 @@ public class FileStorageTest extends AbstractTest {
       Path data = tmpPath( "data" );
       try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50, 1, emptyList() ) ) {
          storage.store( new Bean( "111" ) );
-         assertEventually( 10, 100, () -> assertThat( data.resolve( "111.v1.json" ) ).exists() );
+         assertEventually( 100, 10, () -> assertThat( data.resolve( "111.v1.json" ) ).exists() );
          storage.delete( "111" );
          assertThat( storage.select() ).isEmpty();
          assertThat( data.resolve( "111.v1.json" ) ).doesNotExist();
