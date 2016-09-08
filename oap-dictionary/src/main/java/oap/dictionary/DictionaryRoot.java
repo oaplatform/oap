@@ -123,8 +123,9 @@ public final class DictionaryRoot implements Dictionary {
    }
 
    @Override
-   public Optional<Object> getProperty( String name ) {
-      return Optional.ofNullable( properties.get( name ) );
+   @SuppressWarnings( "unchecked" )
+   public <T> Optional<T> getProperty( String name ) {
+      return Optional.ofNullable( ( T ) properties.get( name ) );
    }
 
    @Override

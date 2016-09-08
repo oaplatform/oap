@@ -112,8 +112,9 @@ public class DictionaryLeaf implements Dictionary {
    }
 
    @Override
-   public Optional<Object> getProperty( String name ) {
-      return Optional.ofNullable( getProperties().get( name ) );
+   @SuppressWarnings( "unchecked" )
+   public <T> Optional<T> getProperty( String name ) {
+      return Optional.ofNullable( (T)getProperties().get( name ) );
    }
 
    public boolean isEnabled() {
