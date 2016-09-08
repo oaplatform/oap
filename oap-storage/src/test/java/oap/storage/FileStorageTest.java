@@ -51,7 +51,6 @@ public class FileStorageTest extends AbstractTest {
    @Test
    public void load() {
       try( FileStorage<Bean> storage = new FileStorage<>( deployTestData( getClass() ), b -> b.id ) ) {
-         storage.start();
          assertThat( storage.select() )
             .containsExactly( new Bean( "t1" ), new Bean( "t2" ) );
       }
@@ -60,14 +59,12 @@ public class FileStorageTest extends AbstractTest {
    @Test
    public void persist() {
       try( FileStorage<Bean> storage1 = new FileStorage<>( tmpPath( "data" ), b -> b.id, 50 ) ) {
-         storage1.start();
          storage1.store( new Bean( "1" ) );
          storage1.store( new Bean( "2" ) );
          Threads.sleepSafely( 100 );
       }
 
       try( FileStorage<Bean> storage2 = new FileStorage<>( tmpPath( "data" ), b -> b.id ) ) {
-         storage2.start();
          assertThat( storage2.select() )
             .containsExactly( new Bean( "1" ), new Bean( "2" ) );
       }
@@ -76,13 +73,11 @@ public class FileStorageTest extends AbstractTest {
    @Test
    public void storeAndUpdate() {
       try( FileStorage<Bean> storage = new FileStorage<>( tmpPath( "data" ), b -> b.id, 50 ) ) {
-         storage.start();
          storage.store( new Bean( "111" ) );
          storage.update( "111", u -> u.s = "bbb" );
       }
 
       try( FileStorage<Bean> storage2 = new FileStorage<>( tmpPath( "data" ), b -> b.id ) ) {
-         storage2.start();
          assertThat( storage2.select() )
             .containsExactly( new Bean( "111", "bbb" ) );
       }
@@ -92,7 +87,6 @@ public class FileStorageTest extends AbstractTest {
    public void delete() {
       Path data = tmpPath( "data" );
       try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50 ) ) {
-         storage.start();
          storage.store( new Bean( "111" ) );
          assertEventually( 10, 100, () -> assertThat( data.resolve( "111.json" ) ).exists() );
          storage.delete( "111" );
@@ -105,7 +99,6 @@ public class FileStorageTest extends AbstractTest {
    public void deleteVersion() {
       Path data = tmpPath( "data" );
       try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50, 1, emptyList() ) ) {
-         storage.start();
          storage.store( new Bean( "111" ) );
          assertEventually( 10, 100, () -> assertThat( data.resolve( "111.v1.json" ) ).exists() );
          storage.delete( "111" );

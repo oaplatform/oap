@@ -43,7 +43,6 @@ public class ReplicatorTest extends AbstractTest {
       MemoryStorage<Bean> slave = new MemoryStorage<>( b -> b.id );
       try( FileStorage<Bean> master = new FileStorage<>( tmpPath( "master" ), b -> b.id, 50 );
            Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 100 ) ) {
-         master.start();
 
          AtomicInteger updates = new AtomicInteger();
          AtomicInteger deletes = new AtomicInteger();

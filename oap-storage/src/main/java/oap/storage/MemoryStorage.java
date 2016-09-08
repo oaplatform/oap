@@ -188,4 +188,9 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
       return new ArrayList<>( data.keySet() );
    }
 
+   public void clear() {
+      List<String> keys = new ArrayList<>( data.keySet() );
+      List<T> deleted = Stream.of( keys ).flatMapOptional( this::deleteObject ).map( m -> m.object ).toList();
+      fireDeleted( deleted );
+   }
 }

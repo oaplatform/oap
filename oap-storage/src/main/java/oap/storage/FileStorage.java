@@ -23,56 +23,29 @@
  */
 package oap.storage;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import lombok.val;
-import oap.concurrent.scheduler.PeriodicScheduled;
-import oap.concurrent.scheduler.Scheduled;
-import oap.concurrent.scheduler.Scheduler;
-import oap.io.Files;
-import oap.json.Binder;
 import oap.storage.migration.FileStorageMigration;
-import oap.storage.migration.FileStorageMigrationException;
-import oap.storage.migration.JsonMetadata;
 import oap.util.Lists;
-import oap.util.Stream;
 import oap.util.Try;
-import org.slf4j.Logger;
 
 import java.io.Closeable;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static java.util.Collections.emptyList;
-import static java.util.Comparator.reverseOrder;
-import static oap.util.Maps.Collectors.toConcurrentMap;
-import static oap.util.Pair.__;
-import static org.slf4j.LoggerFactory.getLogger;
 
 
 public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
    private static final int VERSION = 0;
-   private static final Pattern PATTERN_VERSION = Pattern.compile( ".+\\.v(\\d+)\\.json" );
-   private final long fsync;
-   private final int version;
-   private final List<FileStorageMigration> migrations;
+   private PersistenceBackend<T> persistence;
    private Path path;
-   private final Logger log;
-   private PeriodicScheduled scheduled;
+
 
    public FileStorage( Path path, Function<T, String> identify, long fsync, int version, List<String> migrations ) {
       super( identify );
-      this.path = path;
-      this.fsync = fsync;
-      this.version = version;
-      this.migrations = Lists.map( migrations,
-         Try.map( clazz -> ( FileStorageMigration ) Class.forName( clazz ).newInstance() ) );
-      this.log = getLogger( toString() );
+      this.persistence = new FsPersisteceBackend<>( path, fsync, version, Lists.map( migrations,
+         Try.map( clazz -> ( FileStorageMigration ) Class.forName( clazz ).newInstance() )
+      ), this );
    }
 
    public FileStorage( Path path, Function<T, String> identify, long fsync ) {
@@ -87,107 +60,14 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
       this( path, identify, 60000, version, migrations );
    }
 
-   public void start() {
-      load();
-      this.scheduled = Scheduler.scheduleWithFixedDelay( fsync, this::fsync );
-   }
-
-   @SuppressWarnings( "unchecked" )
-   protected void load() {
-      path.toFile().mkdirs();
-      data = Files.wildcard( path, "*.json" )
-         .stream()
-         .map( Try.map(
-            f -> {
-               long version = getVersion( f.getFileName().toString() );
-
-               Path file = f;
-               for( long v = version; v < this.version; v++ ) file = migration( file );
-
-               return ( Metadata<T> ) Binder.json.unmarshal( new TypeReference<Metadata<T>>() {
-               }, file );
-            } ) )
-         .sorted( reverseOrder() )
-         .map( x -> __( x.id, x ) )
-         .collect( toConcurrentMap() );
-      log.info( data.size() + " object(s) loaded." );
-   }
-
-   private long getVersion( String fileName ) {
-      final Matcher matcher = PATTERN_VERSION.matcher( fileName );
-      return matcher.matches() ? Long.parseLong( matcher.group( 1 ) ) : 0;
-   }
-
-   private Path migration( Path path ) {
-      final JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {
-      }, path ) );
-
-      val version = getVersion( path.getFileName().toString() );
-
-      log.debug( "migration {}", path );
-
-      final String id = oldV.id();
-
-      final Optional<FileStorageMigration> any = migrations
-         .stream()
-         .filter( m -> m.fromVersion() == version )
-         .findAny();
-
-      return any.map( m -> {
-         final Path fn = fileName( id, m.fromVersion() + 1 );
-
-         final JsonMetadata newV = m.run( oldV );
-
-         Binder.json.marshal( fn, newV.underlying );
-         Files.delete( path );
-
-         return fn;
-      } ).orElseThrow( () -> new FileStorageMigrationException( "migration from version " + version + " not found" ) );
-   }
-
-   @Override
-   protected Optional<Metadata<T>> deleteObject( String id ) {
-      Optional<Metadata<T>> metadata = super.deleteObject( id );
-      metadata.ifPresent( m -> Files.delete( fileName( id, version ) ) );
-      return metadata;
-   }
-
-   private synchronized void fsync( long last ) {
-      log.trace( "fsync: last: {}, storage size: {}", last, data.size() );
-
-      data.values()
-         .stream()
-         .filter( m -> m.modified >= last )
-         .forEach( m -> {
-            final Path fn = fileName( m.id, version );
-            log.trace( "fsync storing {} with modification time {}", fn.getFileName(), m.modified );
-            Binder.json.marshal( fn, m );
-            log.trace( "fsync storing {} done", fn.getFileName() );
-
-         } );
-   }
-
-   private Path fileName( String id, long version ) {
-      final String ver = this.version > 0 ? ".v" + version : "";
-      return path.resolve( id + ver + ".json" );
-   }
-
-
    @Override
    public synchronized void close() {
-      Scheduled.cancel( scheduled );
-      fsync( scheduled.lastExecuted() );
+      persistence.close();
       data.clear();
-   }
-
-   public void clear() {
-      List<String> keys = new ArrayList<>( data.keySet() );
-      List<T> deleted = Stream.of( keys ).flatMapOptional( this::deleteObject ).map( m -> m.object ).toList();
-      fireDeleted( deleted );
    }
 
    @Override
    public String toString() {
-      return getClass().getName() + "[" + path + "]";
+      return getClass().getSimpleName() + ":" + persistence;
    }
 }
