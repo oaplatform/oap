@@ -35,6 +35,10 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
    }
 
 
+   public static ValidationErrorsAssertion assertValidationErrors( ValidationErrors actual ) {
+      return new ValidationErrorsAssertion( actual );
+   }
+
    public ValidationErrorsAssertion hasCode( int code ) {
       assertThat( this.actual.code ).isEqualTo( code );
       return this;
