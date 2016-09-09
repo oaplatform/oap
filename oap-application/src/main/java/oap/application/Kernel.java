@@ -27,13 +27,19 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.reflect.Reflect;
+import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
 import oap.util.Sets;
 import oap.util.Stream;
 
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.commons.collections4.CollectionUtils.subtract;
@@ -67,8 +73,13 @@ public class Kernel {
 
             Object instance;
             if( service.remoteUrl == null ) {
-               initializeServiceLinks( serviceName, service );
-               instance = reflect.newInstance( service.parameters );
+               try {
+                  initializeServiceLinks( serviceName, service );
+                  instance = reflect.newInstance( service.parameters );
+               } catch( ReflectException e ) {
+                  log.info( "service name = {}, remoteName = {}, profile = {}", service.name, service.remoteName, service.profile );
+                  throw e;
+               }
             } else instance = RemoteInvocationHandler.proxy(
                service.remoteUrl,
                service.remoteName,

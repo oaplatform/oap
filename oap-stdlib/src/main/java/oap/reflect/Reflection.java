@@ -93,7 +93,7 @@ public class Reflection extends Annotated<Class<?>> {
    }
 
    @SuppressWarnings( "unchecked" )
-   public <T> T newInstance( Map<String, Object> args ) {
+   public <T> T newInstance( Map<String, Object> args ) throws ReflectException {
       Constructor<?>[] constructors = typeToken.getRawType().getConstructors();
 //              @todo initialization of constructorless classes
       java.util.Arrays.sort( constructors, Comparator
