@@ -30,6 +30,7 @@ import oap.testng.Env;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static oap.testng.Asserts.assertFile;
@@ -39,10 +40,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ClientTest extends AbstractTest {
    @Test
    public void download() {
-      Path path = Env.tmpPath( "flag.png" );
+      final Path path = Env.tmpPath( "new.file" );
       AtomicInteger progress = new AtomicInteger();
-      Client.DEFAULT.download( "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/OUN-r_Flag_1941.svg/250px-OUN-r_Flag_1941.svg.png", path, progress::set );
+      final Optional<Path> download = Client.DEFAULT.download( "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/OUN-r_Flag_1941.svg/250px-OUN-r_Flag_1941.svg.png",
+         Optional.of( path ), progress::set );
+
+      assertThat( download ).contains( path );
+      assertThat( download ).isPresent();
       assertFile( path ).exists().hasSize( 560 );
+      assertThat( progress.get() ).isEqualTo( 100 );
+   }
+
+   @Test
+   public void downloadTempFile() {
+      AtomicInteger progress = new AtomicInteger();
+      final Optional<Path> download = Client.DEFAULT.download( "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/OUN-r_Flag_1941.svg/250px-OUN-r_Flag_1941.svg.png", Optional.empty(), progress::set );
+      assertThat( download ).isPresent();
+      assertFile( download.get() ).exists().hasSize( 560 );
       assertThat( progress.get() ).isEqualTo( 100 );
    }
 }

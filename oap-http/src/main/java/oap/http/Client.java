@@ -34,6 +34,7 @@ import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
+import oap.util.Try;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -73,6 +74,7 @@ import org.apache.http.ssl.SSLContexts;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -93,6 +95,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
+import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
+import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.ProgressInputStream.progress;
@@ -103,6 +108,10 @@ import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class Client {
+   public static final Client DEFAULT = custom()
+      .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
+      .onTimeout( ( c ) -> log.error( "timeout" ) )
+      .build();
    private static final long FOREVER = Long.MAX_VALUE;
    private static final FutureCallback<org.apache.http.HttpResponse> FUTURE_CALLBACK = new FutureCallback<org.apache.http.HttpResponse>() {
       @Override
@@ -118,11 +127,6 @@ public class Client {
 
       }
    };
-   public static final Client DEFAULT = custom()
-      .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
-      .onTimeout( ( c ) -> log.error( "timeout" ) )
-      .build();
-
    private final BasicCookieStore basicCookieStore;
    private ClientBuilder builder;
    private CloseableHttpAsyncClient client;
@@ -318,13 +322,25 @@ public class Client {
       }
    }
 
-   public void download( String url, Path file, Consumer<Integer> progress ) {
+   public Optional<Path> download( String url, Optional<Path> file, Consumer<Integer> progress ) {
       try {
-         HttpEntity entity = resolve( url ).getEntity();
+         final Optional<HttpResponse> responseOpt = resolve( url );
+         if( !responseOpt.isPresent() ) return Optional.empty();
+
+         HttpEntity entity = responseOpt.get().getEntity();
+
+         final Path path = file.orElseGet( Try.supply( () -> {
+            final File tempFile = File.createTempFile( "file", "down" );
+            tempFile.deleteOnExit();
+            return tempFile.toPath();
+         } ) );
+
          try( InputStream in = new BufferedInputStream( entity.getContent() ) ) {
-            IoStreams.write( file, PLAIN, in, progress( entity.getContentLength(), progress ) );
+            IoStreams.write( path, PLAIN, in, progress( entity.getContentLength(), progress ) );
          }
          builder.onSuccess.accept( this );
+
+         return Optional.of( path );
       } catch( ExecutionException e ) {
          builder.onError.accept( this, e );
          throw Throwables.propagate( e );
@@ -333,19 +349,23 @@ public class Client {
          throw new UncheckedIOException( e );
       } catch( InterruptedException e ) {
          builder.onTimeout.accept( this );
+         return Optional.empty();
       }
    }
 
-   private HttpResponse resolve( String url ) throws InterruptedException, ExecutionException, IOException {
+   private Optional<HttpResponse> resolve( String url ) throws InterruptedException, ExecutionException, IOException {
       HttpGet request = new HttpGet( url );
       Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
       HttpResponse response = future.get();
-      if( response.getStatusLine().getStatusCode() == 200 && response.getEntity() != null ) return response;
-      else if( response.getStatusLine().getStatusCode() == 302 ) {
+      if( response.getStatusLine().getStatusCode() == HTTP_OK && response.getEntity() != null )
+         return Optional.of( response );
+      else if( response.getStatusLine().getStatusCode() == HTTP_MOVED_TEMP ) {
          Header location = response.getFirstHeader( "Location" );
          if( location == null ) throw new IOException( "redirect w/o location!" );
          log.debug( "following {}", location.getValue() );
          return resolve( location.getValue() );
+      } else if( response.getStatusLine().getStatusCode() == HTTP_NOT_MODIFIED ) {
+         return Optional.empty();
       } else
          throw new IOException( response.getStatusLine().toString() );
    }
