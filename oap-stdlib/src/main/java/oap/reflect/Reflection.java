@@ -27,13 +27,22 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeToken;
 import oap.util.Arrays;
-import oap.util.*;
+import oap.util.Lists;
+import oap.util.PairStream;
+import oap.util.Stream;
+import oap.util.Try;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.joining;
@@ -181,6 +190,15 @@ public class Reflection extends Annotated<Class<?>> {
 
    public Optional<Method> method( Predicate<Method> matcher ) {
       return this.methods.stream().filter( matcher ).findFirst();
+   }
+
+   public Optional<Method> method( java.lang.reflect.Method jmethod ) {
+      return method( method ->
+         Objects.equals( method.underlying.getName(), jmethod.getName() )
+            && Objects.equals( method.underlying.getReturnType(), jmethod.getReturnType() )
+            && method.underlying.getParameterCount() == jmethod.getParameterCount()
+            && java.util.Arrays.equals( method.underlying.getParameterTypes(), jmethod.getParameterTypes() )
+      );
    }
 
    public Type getType() {

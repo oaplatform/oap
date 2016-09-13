@@ -28,7 +28,6 @@ import lombok.ToString;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
-import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.lang.annotation.ElementType;
@@ -42,7 +41,10 @@ import java.util.Optional;
 
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.*;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class ReflectTest extends AbstractTest {
    @Test
@@ -128,9 +130,27 @@ public class ReflectTest extends AbstractTest {
 
    @Test
    public void constructor() {
-      Assertions.assertThatExceptionOfType( ReflectException.class )
+      assertThatExceptionOfType( ReflectException.class )
          .isThrownBy( () -> Reflect.reflect( MatchingConstructor.class ).newInstance( Maps.empty() ) )
          .withMessage( "cannot find matching constructor: [] in class oap.reflect.MatchingConstructor candidates: [oap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list), oap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)]" );
+   }
+
+   @Test
+   public void method() throws NoSuchMethodException {
+      assertThat( Reflect.reflect( C.class )
+         .method( I.class.getDeclaredMethod( "m", new Class[]{ String.class } ) ) )
+         .isNotNull();
+   }
+}
+
+interface I {
+   void m( String a );
+}
+
+
+class C implements I {
+   public void m( String a ) {
+
    }
 }
 

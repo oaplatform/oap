@@ -23,8 +23,20 @@
  */
 package oap.ws.validate.testng;
 
+import oap.reflect.Reflect;
+import oap.reflect.Reflection;
+import oap.util.Stream;
 import oap.ws.validate.ValidationErrors;
+import oap.ws.validate.Validators;
 import org.assertj.core.api.AbstractAssert;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,12 +66,95 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
    }
 
    public ValidationErrorsAssertion isFailed() {
-      assertThat( this.actual.isFailed() ).isTrue();
+      assertThat( this.actual.isFailed() )
+         .withFailMessage( "should contain errors" )
+         .isTrue();
       return this;
    }
 
    public ValidationErrorsAssertion isNotFailed() {
-      assertThat( this.actual.isFailed() ).isFalse();
+      assertThat( this.actual.isFailed() )
+         .withFailMessage( "shouldn't contain errors but contain: " + this.actual )
+         .isFalse();
       return this;
+   }
+
+   public static class ValidatedInvocation<I> implements InvocationHandler {
+      private final I proxy;
+      private List<Function<ValidationErrorsAssertion, ValidationErrorsAssertion>> assertions = new ArrayList<>();
+      private I instance;
+
+      @SuppressWarnings( "unchecked" )
+      public ValidatedInvocation( Class<I> anInterface ) {
+         proxy = ( I ) Proxy.newProxyInstance( anInterface.getClassLoader(), new Class[]{ anInterface }, this );
+      }
+
+      public ValidatedInvocation<I> hasCode( int code ) {
+         assertions.add( a -> a.hasCode( code ) );
+         return this;
+      }
+
+      public ValidatedInvocation<I> containsErrors( String... errors ) {
+         assertions.add( a -> a.containsErrors( errors ) );
+         return this;
+      }
+
+      public ValidatedInvocation<I> isError( int code, String error ) {
+         return hasCode( code ).containsErrors( error );
+      }
+
+      public ValidatedInvocation<I> isFailed() {
+         assertions.add( ValidationErrorsAssertion::isFailed );
+         return this;
+      }
+
+      public ValidatedInvocation<I> isNotFailed() {
+         assertions.add( ValidationErrorsAssertion::isNotFailed );
+         return this;
+      }
+
+      @Override
+      public Object invoke( Object proxy, Method jmethod, Object[] args ) throws Throwable {
+         Optional<Reflection.Method> methodOpt = Reflect.reflect( instance.getClass() )
+            .method( jmethod );
+         if( !methodOpt.isPresent() ) throw new NoSuchMethodError( jmethod.toString() );
+         return methodOpt
+            .map( method -> {
+               Validators validators = new Validators();
+               ValidationErrors paramErrors = ValidationErrors.empty();
+
+               List<Reflection.Parameter> paramerers = method.paramerers;
+               for( int i = 0; i < paramerers.size(); i++ ) {
+                  Reflection.Parameter parameter = paramerers.get( i );
+                  paramErrors.merge( validators
+                     .forParameter( parameter, instance )
+                     .validate( args[i] ) );
+               }
+               if( paramErrors.isFailed() ) runAsserts( paramErrors );
+               else {
+                  ValidationErrors methodErrors = validators
+                     .forMethod( method, instance )
+                     .validate( args );
+                  if( methodErrors.isFailed() ) runAsserts( methodErrors );
+               }
+               return method.invoke( instance, args );
+            } )
+            .orElse( null );
+      }
+
+      private void runAsserts( ValidationErrors errors ) {
+         ValidationErrorsAssertion assertion = ValidationErrorsAssertion.assertValidationErrors( errors );
+         Stream.of( assertions )
+            .foldLeft( assertion, ( a, f ) -> f.apply( a ) );
+      }
+
+      public I forInstance( I instance ) {
+         this.instance = instance;
+         return proxy;
+      }
+   }
+
+   public static <I> ValidatedInvocation<I> validating( Class<I> anInterface ) {
+      return new ValidatedInvocation<>( anInterface );
    }
 }

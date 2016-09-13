@@ -3,6 +3,8 @@
  */
 package oap.ws.validate;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import oap.util.Lists;
 import oap.ws.WsClientException;
 
@@ -11,8 +13,10 @@ import java.util.List;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 
+@ToString
+@EqualsAndHashCode
 public class ValidationErrors {
-   public final int code;
+   public int code;
    public final List<String> errors = new ArrayList<>();
    public static final int DEFAULT_CODE = HTTP_BAD_REQUEST;
 
@@ -42,6 +46,7 @@ public class ValidationErrors {
    }
 
    public void merge( ValidationErrors result ) {
+      if( hasDefaultCode() ) this.code = result.code;
       this.errors.addAll( result.errors );
    }
 
