@@ -99,7 +99,7 @@ public class Scheduler {
          jobFactory.register( job, runnable );
 
          scheduler.scheduleJob( job, trigger );
-         log.trace( "scheduling job {}", job );
+         log.trace( "scheduling job {} with trigger {}", job, trigger );
          return new QuartzScheduled( job );
       } catch( org.quartz.SchedulerException e ) {
          throw new SchedulerException( e );
