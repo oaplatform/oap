@@ -144,7 +144,7 @@ class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storag
       }
    }
 
-   private synchronized void fsync( long last ) {
+   private void fsync( long last ) {
       log.trace( "fsync: last: {}, storage size: {}", last, storage.data.size() );
 
       storage.data.values()
