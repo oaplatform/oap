@@ -51,7 +51,7 @@ import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
 import static org.slf4j.LoggerFactory.getLogger;
 
-class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storage.DataListener<T> {
+class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Storage.DataListener<T> {
    private final Path path;
    private final BiFunction<Path, T, Path> fsResolve;
    private final int version;
@@ -60,7 +60,7 @@ class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storag
    private final Logger log;
    private PeriodicScheduled scheduled;
 
-   public FsPersisteceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync, int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
+   public FsPersistenceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync, int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
       this.path = path;
       this.fsResolve = fsResolve;
       this.version = version;
