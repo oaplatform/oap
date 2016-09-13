@@ -25,6 +25,7 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Threads;
 import oap.json.TypeIdFactory;
 import oap.testng.AbstractTest;
 import org.testng.annotations.BeforeMethod;
@@ -109,6 +110,7 @@ public class FileStorageTest extends AbstractTest {
       Path data = tmpPath( "data" );
       try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50 ) ) {
          storage.store( new Bean( "111" ) );
+         Threads.sleepSafely(1000);
          assertEventually( 200, 10, () -> {
             log.debug( "going to assert existence of {}", data.resolve( "111.json" ) );
             assertThat( data.resolve( "111.json" ) ).exists();
