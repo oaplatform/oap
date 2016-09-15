@@ -58,6 +58,7 @@ public class DictionaryModel {
 
          switch( type ) {
             case "STRING":
+            case "ENUM":
                model.s( id, offset );
                break;
             case "INTEGER":
