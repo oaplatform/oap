@@ -122,6 +122,15 @@ public class CsvGeneratorTest extends AbstractTest {
    }
 
    @Test
+   public void testNestedOptionalSeparators() {
+      final CsvGenerator<Test1> test = new CsvGenerator<>( Test1.class, asList(
+         line( "opt", "optTest2.testStr", "d" ),
+         line( "testInt", "optTest2.testInt", 1 )
+      ), ' ', DEFAULT );
+      assertThat( test.process( new Test1( Optional.empty(), Optional.of( new Test2( "str", 10 ) ) ) ) ).isEqualTo( "str 10" );
+   }
+
+   @Test
    public void testNestedOptionalEmpty() {
       final CsvGenerator<Test1> test = new CsvGenerator<>( Test1.class, asList( line( "opt", "optTest2.test1.testStr", "def" ) ), ' ', DEFAULT );
       assertThat( test.process( new Test1( Optional.empty(), Optional.empty() ) ) ).isEqualTo( "def" );

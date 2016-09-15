@@ -237,18 +237,19 @@ public class CsvGenerator<T> {
       for( int i = 0; i < opts.get(); i++ ) {
          fields.down();
          tabDec( tab );
-         tab( c, tab ).append( "} else " );
+         tab( c, tab ).append( "} else {\n" );
+         fields.up();
+         tabInc( tab );
 
          if( orIndex + 1 < orPath.length ) {
-            c.append( "{\n" );
-            fields.up();
             addPathOr( clazz, delimiter, c, num, fields, last, new AtomicInteger( tab.get() + 2 ), orPath, orIndex + 1, line );
-            fields.down();
-            tab( c, tab ).append( "}\n" );
          } else {
             printDefaultValue( c, line.defaultValue );
             if( !map.ignoreDefaultValue() ) printDelimiter( delimiter, c, last, tab );
          }
+         tabDec( tab );
+         fields.down();
+         tab( c, tab ).append( "}\n" );
       }
    }
 
