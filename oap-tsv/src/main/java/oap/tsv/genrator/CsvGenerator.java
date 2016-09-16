@@ -227,7 +227,7 @@ public class CsvGenerator<T> {
 
             final Type cc = in > 0 ? getDeclaredFieldOrFunctionType( parentClass, cField ) : parentClass;
 
-            add( c, num, newPath, cc, true, tab, orPath, orIndex, clazz, delimiter, fields, last, line );
+            add( c, num, newPath, cc, true, tab, orPath, orIndex, clazz, delimiter, fields, last || ( i < cFields.length - 1 ), line );
          }
       }
 

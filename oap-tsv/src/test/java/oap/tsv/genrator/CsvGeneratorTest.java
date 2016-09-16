@@ -93,8 +93,11 @@ public class CsvGeneratorTest extends AbstractTest {
 
    @Test
    public void testProcessConc() throws Exception {
-      assertThat( new CsvGenerator<>( Test1.class, asList( line( "t", "{testInt,\"x\",testInt2}", 2 ) ), ' ', DEFAULT )
-         .process( new Test1( 235, 12 ) ) ).isEqualTo( "235x12" );
+      assertThat( new CsvGenerator<>( Test1.class, asList(
+         line( "t", "{testInt,\"x\",testInt2}", 2 ),
+         line( "t", "{testInt,\"x\",testInt2}", 2 )
+      ), ' ', DEFAULT )
+         .process( new Test1( 235, 12 ) ) ).isEqualTo( "235x12 235x12" );
    }
 
    @Test
