@@ -56,7 +56,7 @@ public class CsvGeneratorTest extends AbstractTest {
    @Test
    public void testProcessArray() throws Exception {
       assertThat( new CsvGenerator<>( Test1.class, asList( line( "array", "array", emptyList() ) ), ' ', DEFAULT )
-         .process( new Test1( asList( "1", "2" ) ) ) ).isEqualTo( "1,2" );
+         .process( new Test1( asList( "1", "2" ) ) ) ).isEqualTo( "[1,2]" );
    }
 
    @Test

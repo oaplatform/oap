@@ -42,9 +42,9 @@ public interface CsvGeneratorStrategy {
       } else if( isInstance( Enum.class, cc ) )
          c.append( "sb.append( " ).append( field ).append( " );" );
       else if( isInstance( Collection.class, cc ) ) {
-         c.append( "{sb.append( " );
+         c.append( "{sb.append( '[' ).append( " );
          escape( c, () -> c.append( " Strings.join( " ).append( field ).append( " )" ) );
-         c.append( ");}" );
+         c.append( ").append( ']' );}" );
       } else if( !cc.equals( String.class ) ) {
          c.append( "sb.append( " );
          escape( c, () -> c.append( " String.valueOf( " ).append( field ).append( " )" ) );
