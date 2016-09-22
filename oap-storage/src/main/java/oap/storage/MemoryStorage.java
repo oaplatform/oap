@@ -30,6 +30,7 @@ import oap.util.Stream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -38,7 +39,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
-   protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
+   protected Map<String, Metadata<T>> data = new ConcurrentHashMap<>();
    protected Function<T, String> identify;
    private List<DataListener<T>> dataListeners = new ArrayList<>();
 
