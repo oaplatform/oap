@@ -25,13 +25,13 @@ package oap.storage;
 
 import oap.util.Stream;
 
+import java.io.Closeable;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public interface Storage<T> {
+public interface Storage<T> extends Closeable {
    Stream<T> select();
 
    void store( T object );

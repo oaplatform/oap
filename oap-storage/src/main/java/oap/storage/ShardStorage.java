@@ -26,6 +26,8 @@ package oap.storage;
 
 import oap.util.Stream;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -36,7 +38,7 @@ import java.util.function.Supplier;
 /**
  * Created by igor.petrenko on 22.09.2016.
  */
-public class ShardStorage<T, ShardID> {
+public class ShardStorage<T, ShardID> implements Closeable {
    private ShardManager<T, ShardID> sm;
    private Function<ShardID, Storage<T>> cons;
 
@@ -95,5 +97,10 @@ public class ShardStorage<T, ShardID> {
 
    public Set<ShardID> shards() {
       return sm.shards();
+   }
+
+   @Override
+   public void close() {
+      sm.close();
    }
 }

@@ -27,7 +27,6 @@ import oap.storage.migration.FileStorageMigration;
 import oap.util.Lists;
 import oap.util.Try;
 
-import java.io.Closeable;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -37,9 +36,10 @@ import static oap.util.Lists.empty;
 
 /**
  * CAUTION: fsResolve should be using STABLE values ONLY. File relocation on the filesystem IS NOT SUPPORTED!
+ *
  * @param <T>
  */
-public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
+public class FileStorage<T> extends MemoryStorage<T> {
    private static final int VERSION = 0;
    private PersistenceBackend<T> persistence;
 
@@ -56,8 +56,9 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
    }
 
    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Function<T, String> identify, long fsync ) {
-      this(path, fsResolve, identify, fsync, VERSION, empty());
+      this( path, fsResolve, identify, fsync, VERSION, empty() );
    }
+
    public FileStorage( Path path, Function<T, String> identify, long fsync ) {
       this( path, identify, fsync, VERSION, empty() );
    }

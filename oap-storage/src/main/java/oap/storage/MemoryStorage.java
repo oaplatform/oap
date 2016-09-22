@@ -193,4 +193,8 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
       List<T> deleted = Stream.of( keys ).flatMapOptional( this::deleteObject ).map( m -> m.object ).toList();
       fireDeleted( deleted );
    }
+
+   @Override
+   public void close() {
+   }
 }

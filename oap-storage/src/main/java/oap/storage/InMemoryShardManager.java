@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
- * Created by Admin on 22.09.2016.
+ * Created by igor.petrenko on 22.09.2016.
  */
 public class InMemoryShardManager<T, ShardID> implements ShardManager<T, ShardID> {
    private final ConcurrentHashMap<ShardID, Storage<T>> storages = new ConcurrentHashMap<>();
@@ -53,5 +53,10 @@ public class InMemoryShardManager<T, ShardID> implements ShardManager<T, ShardID
    @Override
    public boolean contains( ShardID shard ) {
       return storages.containsKey( shard );
+   }
+
+   @Override
+   public void close() {
+
    }
 }
