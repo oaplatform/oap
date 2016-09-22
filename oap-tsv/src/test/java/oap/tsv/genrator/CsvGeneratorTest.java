@@ -56,7 +56,7 @@ public class CsvGeneratorTest extends AbstractTest {
    @Test
    public void testProcessArray() throws Exception {
       assertThat( new CsvGenerator<>( Test1.class, asList( line( "array", "array", emptyList() ) ), ' ', DEFAULT )
-         .process( new Test1( asList( "1", "2" ) ) ) ).isEqualTo( "1,2" );
+         .process( new Test1( asList( "1", "2" ) ) ) ).isEqualTo( "[1,2]" );
    }
 
    @Test
@@ -93,8 +93,11 @@ public class CsvGeneratorTest extends AbstractTest {
 
    @Test
    public void testProcessConc() throws Exception {
-      assertThat( new CsvGenerator<>( Test1.class, asList( line( "t", "{testInt,\"x\",testInt2}", 2 ) ), ' ', DEFAULT )
-         .process( new Test1( 235, 12 ) ) ).isEqualTo( "235x12" );
+      assertThat( new CsvGenerator<>( Test1.class, asList(
+         line( "t", "{testInt,\"x\",testInt2}", 2 ),
+         line( "t", "{testInt,\"x\",testInt2}", 2 )
+      ), ' ', DEFAULT )
+         .process( new Test1( 235, 12 ) ) ).isEqualTo( "235x12 235x12" );
    }
 
    @Test
@@ -119,6 +122,15 @@ public class CsvGeneratorTest extends AbstractTest {
    public void testNestedOptional() {
       final CsvGenerator<Test1> test = new CsvGenerator<>( Test1.class, asList( line( "opt", "optTest2.testStr", "d" ) ), ' ', DEFAULT );
       assertThat( test.process( new Test1( Optional.empty(), Optional.of( new Test2( "str" ) ) ) ) ).isEqualTo( "str" );
+   }
+
+   @Test
+   public void testNestedOptionalSeparators() {
+      final CsvGenerator<Test1> test = new CsvGenerator<>( Test1.class, asList(
+         line( "opt", "optTest2.testStr", "d" ),
+         line( "testInt", "optTest2.testInt", 1 )
+      ), ' ', DEFAULT );
+      assertThat( test.process( new Test1( Optional.empty(), Optional.of( new Test2( "str", 10 ) ) ) ) ).isEqualTo( "str 10" );
    }
 
    @Test

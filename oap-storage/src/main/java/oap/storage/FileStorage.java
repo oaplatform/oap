@@ -50,7 +50,7 @@ public class FileStorage<T> extends MemoryStorage<T> implements Closeable {
 
    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Function<T, String> identify, long fsync, int version, List<String> migrations ) {
       super( identify );
-      this.persistence = new FsPersisteceBackend<>( path, fsResolve, fsync, version, Lists.map( migrations,
+      this.persistence = new FsPersistenceBackend<>( path, fsResolve, fsync, version, Lists.map( migrations,
          Try.map( clazz -> ( FileStorageMigration ) Class.forName( clazz ).newInstance() )
       ), this );
    }

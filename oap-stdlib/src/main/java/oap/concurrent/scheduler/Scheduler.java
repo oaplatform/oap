@@ -26,7 +26,11 @@ package oap.concurrent.scheduler;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Try;
-import org.quartz.*;
+import org.quartz.CronScheduleBuilder;
+import org.quartz.JobDetail;
+import org.quartz.ScheduleBuilder;
+import org.quartz.SimpleScheduleBuilder;
+import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
 
 import java.util.Properties;
@@ -95,6 +99,7 @@ public class Scheduler {
          jobFactory.register( job, runnable );
 
          scheduler.scheduleJob( job, trigger );
+         log.trace( "scheduling job {} with trigger {}", job, trigger );
          return new QuartzScheduled( job );
       } catch( org.quartz.SchedulerException e ) {
          throw new SchedulerException( e );

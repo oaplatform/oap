@@ -39,12 +39,13 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Log
 public class Env {
    public static final String LOCALHOST;
-   static final Path tmp = Paths.get( "/tmp/test" );
+   static final Path tmp = Paths.get( "/tmp/test" + teamcityBuildPrefix() );
    public static final Path tmpRoot = tmp.resolve( "temp-" + System.currentTimeMillis() );
    private static Map<String, Integer> ports = new ConcurrentHashMap<>();
 
@@ -54,6 +55,10 @@ public class Env {
       } catch( UnknownHostException e ) {
          throw Throwables.propagate( e );
       }
+   }
+
+   private static String teamcityBuildPrefix() {
+      return Optional.ofNullable( System.getenv( "TEAMCITY_BUILDCONF_NAME" ) ).map( v -> "_" + v ).orElse( "" );
    }
 
    public static String tmp( String name ) {

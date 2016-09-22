@@ -51,16 +51,16 @@ import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
 import static org.slf4j.LoggerFactory.getLogger;
 
-class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storage.DataListener<T> {
+class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Storage.DataListener<T> {
    private final Path path;
    private final BiFunction<Path, T, Path> fsResolve;
    private final int version;
    private final List<FileStorageMigration> migrations;
-   private MemoryStorage<T> storage;
    private final Logger log;
+   private MemoryStorage<T> storage;
    private PeriodicScheduled scheduled;
 
-   public FsPersisteceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync, int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
+   public FsPersistenceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync, int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
       this.path = path;
       this.fsResolve = fsResolve;
       this.version = version;
@@ -118,6 +118,54 @@ class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storag
          .orElseThrow( () -> new FileStorageMigrationException( "migration from version " + fn + " not found" ) );
    }
 
+   private synchronized void fsync( long last ) {
+      log.trace( "fsync: last: {}, storage size: {}", last, storage.data.size() );
+
+      storage.data.values()
+         .stream()
+         .filter( m -> m.modified >= last )
+         .forEach( m -> {
+            final Path fn = filenameFor( m.object, version );
+            log.trace( "fsync storing {} with modification time {}", fn.getFileName(), m.modified );
+            Binder.json.marshal( fn, m );
+            log.trace( "fsync storing {} done", fn.getFileName() );
+
+         } );
+   }
+
+   //todo refactor to Persisted
+   private Path filenameFor( T object, long version ) {
+      final String ver = this.version > 0 ? ".v" + version : "";
+      return fsResolve.apply( this.path, object )
+         .resolve( this.storage.identify.apply( object ) + ver + ".json" );
+   }
+
+   public synchronized void delete( T id ) {
+      Path path = filenameFor( id, version );
+      Files.delete( path );
+   }
+
+   @Override
+   public String toString() {
+      return getClass().getSimpleName() + ":" + path;
+   }
+
+   @Override
+   public synchronized void close() {
+      Scheduled.cancel( scheduled );
+      fsync( scheduled.lastExecuted() );
+   }
+
+   @Override
+   public void deleted( T object ) {
+      delete( object );
+   }
+
+   @Override
+   public void deleted( Collection<T> objects ) {
+      objects.forEach( this::deleted );
+   }
+
    @ToString
    private static class Persisted {
       private static final Pattern PATTERN_VERSION = Pattern.compile( "(.+)\\.v(\\d+)\\.json" );
@@ -142,53 +190,5 @@ class FsPersisteceBackend<T> implements PersistenceBackend<T>, Closeable, Storag
       public Path toVersion( long version ) {
          return path.resolve( id + ".v" + version + ".json" );
       }
-   }
-
-   private synchronized void fsync( long last ) {
-      log.trace( "fsync: last: {}, storage size: {}", last, storage.data.size() );
-
-      storage.data.values()
-         .stream()
-         .filter( m -> m.modified >= last )
-         .forEach( m -> {
-            final Path fn = filenameFor( m.object, version );
-            log.trace( "fsync storing {} with modification time {}", fn.getFileName(), m.modified );
-            Binder.json.marshal( fn, m );
-            log.trace( "fsync storing {} done", fn.getFileName() );
-
-         } );
-   }
-
-   //todo refactor to Persisted
-   private Path filenameFor( T object, long version ) {
-      final String ver = this.version > 0 ? ".v" + version : "";
-      return fsResolve.apply( this.path, object )
-         .resolve( this.storage.identify.apply( object ) + ver + ".json" );
-   }
-
-   public void delete( T id ) {
-      Path path = filenameFor( id, version );
-      Files.delete( path );
-   }
-
-   @Override
-   public String toString() {
-      return getClass().getSimpleName() + ":" + path;
-   }
-
-   @Override
-   public void close() {
-      Scheduled.cancel( scheduled );
-      fsync( scheduled.lastExecuted() );
-   }
-
-   @Override
-   public void deleted( T object ) {
-      delete( object );
-   }
-
-   @Override
-   public void deleted( Collection<T> objects ) {
-      objects.forEach( this::deleted );
    }
 }
