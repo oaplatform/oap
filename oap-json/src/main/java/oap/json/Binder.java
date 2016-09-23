@@ -56,13 +56,17 @@ import oap.util.Strings;
 import org.joda.time.DateTime;
 import org.joda.time.ReadableInstant;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
+
+import static java.nio.file.StandardOpenOption.CREATE;
 
 @Slf4j
 public class Binder {
@@ -147,9 +151,24 @@ public class Binder {
       }
    }
 
+   public void marshal( OutputStream os, Object value ) {
+      try {
+         mapper.writeValue( os, value );
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
+   }
+
 
    public void marshal( Path path, Object object ) {
-      Files.writeString( path, marshal( object ) );
+      Files.ensureFile( path );
+      try( final OutputStream os = java.nio.file.Files.newOutputStream( path, CREATE );
+           final BufferedOutputStream bos = new BufferedOutputStream( os ) ) {
+
+         marshal( bos, object );
+      } catch( IOException e ) {
+         throw new UncheckedIOException( e );
+      }
    }
 
    public <T> T unmarshal( Class<T> clazz, Path path ) {

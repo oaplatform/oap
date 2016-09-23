@@ -29,6 +29,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.testng.AbstractTest;
+import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
@@ -42,8 +43,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
-import static org.testng.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class BinderTest extends AbstractTest {
 
@@ -56,7 +58,7 @@ public class BinderTest extends AbstractTest {
       T result = Binder.json.unmarshal( clazz, json );
       System.out.println( "Object:" );
       System.out.println( result );
-      assertEquals( result, source );
+      assertThat( result ).isEqualTo( source );
    }
 
    private static <T> void assertBindWithTyping( Class<T> clazz, T source ) {
@@ -67,7 +69,7 @@ public class BinderTest extends AbstractTest {
       T result = Binder.jsonWithTyping.unmarshal( clazz, json );
       System.out.println( "Object:" );
       System.out.println( result );
-      assertEquals( result, source );
+      assertThat( result ).isEqualTo( source );
    }
 
    private static <T> void assertBind( TypeReference<T> ref, T source ) {
@@ -78,7 +80,7 @@ public class BinderTest extends AbstractTest {
       T result = Binder.json.unmarshal( ref, json );
       System.out.println( "Object:" );
       System.out.println( result );
-      assertEquals( result, source );
+      assertThat( result ).isEqualTo( source );
    }
 
    @Test
@@ -95,8 +97,8 @@ public class BinderTest extends AbstractTest {
    @Test
    public void bindString() {
       assertBind( String.class, "test" );
-      assertEquals( "test", Binder.json.unmarshal( String.class, "\"test\"" ) );
-      assertEquals( 1.1d, Binder.json.unmarshal( double.class, "\"1.1\"" ) );
+      assertThat( Binder.json.<String>unmarshal( String.class, "\"test\"" ) ).isEqualTo( "test" );
+      assertThat( Binder.json.<Double>unmarshal( double.class, "\"1.1\"" ) ).isEqualTo( 1.1d );
    }
 
    @Test
@@ -175,14 +177,14 @@ public class BinderTest extends AbstractTest {
    @Test
    public void bindNamed() {
       assertBind( NamedBean.class, new NamedBean( 10 ) );
-      assertEquals( Binder.json.marshal( new NamedBean( 10 ) ), "{\"y\":10}" );
+      assertString( Binder.json.marshal( new NamedBean( 10 ) ) ).isEqualTo( "{\"y\":10}" );
    }
 
    @Test
    public void bindMap() {
       assertBind( MapBean.class, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
-      assertEquals( Binder.json.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ),
-         "{\"map\":{\"a\":1,\"b\":2}}" );
+      assertString( Binder.json.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ) )
+         .isEqualTo( "{\"map\":{\"a\":1,\"b\":2}}" );
    }
 
    @Test
@@ -192,8 +194,8 @@ public class BinderTest extends AbstractTest {
 
    @Test
    public void customLong() {
-      assertEquals( Binder.hocon.unmarshal( LongBean.class, "{l = 2s}" ), new LongBean( 2000 ) );
-      assertEquals( Binder.json.unmarshal( LongBean.class, "{\"l\" : \"2kb\"}" ), new LongBean( 2048 ) );
+      assertThat( Binder.hocon.<LongBean>unmarshal( LongBean.class, "{l = 2s}" ) ).isEqualTo( new LongBean( 2000 ) );
+      assertThat( Binder.json.<LongBean>unmarshal( LongBean.class, "{\"l\" : \"2kb\"}" ) ).isEqualTo( new LongBean( 2048 ) );
    }
 
    @Test
@@ -207,7 +209,15 @@ public class BinderTest extends AbstractTest {
             __( "list", Lists.of( 1, 2, 3, 4 ) )
          ) )
       ) );
-      assertEquals( bean, new Bean( "aaa", 1, new Bean2( "bbb", 2, Lists.of( 1, 2, 3, 4 ) ) ) );
+      assertThat( bean ).isEqualTo( new Bean( "aaa", 1, new Bean2( "bbb", 2, Lists.of( 1, 2, 3, 4 ) ) ) );
+   }
+
+   @Test
+   public void testMarshalToPath() {
+      final Path path = Env.tmpPath( "test.json" );
+      Binder.json.marshal( path, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
+
+      assertThat( path ).hasContent( "{\"map\":{\"a\":1,\"b\":2}}" );
    }
 }
 
