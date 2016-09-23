@@ -51,7 +51,6 @@ public class SingleFileStorageTest extends AbstractTest {
    public void testFsync() {
       final Path path = Env.tmpPath( "file.json" );
       try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, s -> s.id, 100 ) ) {
-
          sfs.store( new TestSFS( "123" ) );
 
          assertEventually( 10, 100, () -> assertThat( path ).exists() );
@@ -61,9 +60,9 @@ public class SingleFileStorageTest extends AbstractTest {
    @Test
    public void testPersist() {
       final Path path = Env.tmpPath( "file.json" );
-      final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, s -> s.id, 100 );
-      sfs.store( new TestSFS( "123" ) );
-      sfs.close();
+      try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, s -> s.id, 100 ) ) {
+         sfs.store( new TestSFS( "123" ) );
+      }
 
       try( final SingleFileStorage<TestSFS> sfs2 = new SingleFileStorage<>( path, s -> s.id, 100 ) ) {
          assertThat( sfs2.get( "123" ) ).isPresent();
