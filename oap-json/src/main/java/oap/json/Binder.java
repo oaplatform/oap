@@ -50,13 +50,13 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
+import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.util.Dates;
 import oap.util.Strings;
 import org.joda.time.DateTime;
 import org.joda.time.ReadableInstant;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -65,8 +65,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
-
-import static java.nio.file.StandardOpenOption.CREATE;
 
 @Slf4j
 public class Binder {
@@ -162,10 +160,9 @@ public class Binder {
 
    public void marshal( Path path, Object object ) {
       Files.ensureFile( path );
-      try( final OutputStream os = java.nio.file.Files.newOutputStream( path, CREATE );
-           final BufferedOutputStream bos = new BufferedOutputStream( os ) ) {
 
-         marshal( bos, object );
+      try( final OutputStream os = IoStreams.out( path ) ) {
+         marshal( os, object );
       } catch( IOException e ) {
          throw new UncheckedIOException( e );
       }
