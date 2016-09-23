@@ -75,8 +75,10 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
       log.trace( "fsync: last: {}, storage size: {}", last, data.size() );
 
       if( modified.getAndSet( false ) ) {
-         log.debug( "fsync storing {}...", path );
-         Binder.json.marshal( path, data.values() );
+         final Path tmpPath = path.resolveSibling( path.getFileName() + ".tmp" );
+         log.debug( "fsync storing {}...", tmpPath );
+         Binder.json.marshal( tmpPath, data.values() );
+         Files.rename( tmpPath, path );
          log.debug( "fsync storing {}... done", path );
       }
    }
