@@ -56,7 +56,7 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
 
       load();
       addDataListener( new SFSDataListener<>() );
-      this.scheduled = Scheduler.scheduleWithFixedDelay( fsync, this::fsync );
+      this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
    }
 
    private void load() {

@@ -93,6 +93,10 @@ public class Try {
          return this;
       }
 
+      public Runnable getRunnable() {
+         return runnable;
+      }
+
       @Override
       public void run() {
          try {

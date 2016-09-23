@@ -42,7 +42,7 @@ public class Replicator<T> implements Closeable {
    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval, long safeModificationTime ) {
       this.slave = slave;
       this.master = master;
-      this.scheduled = Scheduler.scheduleWithFixedDelay( interval, safeModificationTime, this::replicate );
+      this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, safeModificationTime, this::replicate );
    }
 
    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval ) {

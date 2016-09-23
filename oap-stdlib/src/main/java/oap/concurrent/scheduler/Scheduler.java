@@ -28,12 +28,15 @@ import lombok.extern.slf4j.Slf4j;
 import oap.util.Try;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobDetail;
+import org.quartz.JobKey;
 import org.quartz.ScheduleBuilder;
 import org.quartz.SimpleScheduleBuilder;
 import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
+import org.quartz.impl.matchers.GroupMatcher;
 
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -114,24 +117,41 @@ public class Scheduler {
    }
 
    private static String identity( Runnable runnable ) {
-      return runnable.getClass().getName() + "/" + ids.incrementAndGet();
+      if( runnable instanceof Try.CatchingRunnable ) {
+         return identity( ( ( Try.CatchingRunnable ) runnable ).getRunnable() );
+      } else if( runnable instanceof PeriodicScheduled ) {
+         return identity( ( ( PeriodicScheduled ) runnable ).getOwner() );
+      }
+      return identity( runnable.getClass() );
    }
 
-   public static PeriodicScheduled scheduleWithFixedDelay( long delay, long safePeriod, Consumer<Long> consume ) {
-      return scheduleWithFixedDelay( delay, safePeriod, MILLISECONDS, consume );
+   private static String identity( Class<?> clazz ) {
+      return clazz.getName() + "/" + ids.incrementAndGet();
    }
 
-   public static PeriodicScheduled scheduleWithFixedDelay( long delay, Consumer<Long> consume ) {
-      return scheduleWithFixedDelay( delay, 0, MILLISECONDS, consume );
+   public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, long safePeriod, Consumer<Long> consume ) {
+      return scheduleWithFixedDelay( owner, delay, safePeriod, MILLISECONDS, consume );
    }
 
-   public static PeriodicScheduled scheduleWithFixedDelay( long delay, TimeUnit timeUnit, Consumer<Long> consume ) {
-      return scheduleWithFixedDelay( delay, 0, timeUnit, consume );
+   public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, Consumer<Long> consume ) {
+      return scheduleWithFixedDelay( owner, delay, 0, MILLISECONDS, consume );
    }
 
-   public static PeriodicScheduled scheduleWithFixedDelay( long delay, long safePeriod, TimeUnit timeUnit, Consumer<Long> consume ) {
-      PeriodicScheduled scheduled = new PeriodicScheduled( safePeriod, consume );
-      scheduleWithFixedDelay( delay, timeUnit, scheduled );
+   public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, TimeUnit timeUnit, Consumer<Long> consume ) {
+      return scheduleWithFixedDelay( owner, delay, 0, timeUnit, consume );
+   }
+
+   public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, long safePeriod, TimeUnit timeUnit, Consumer<Long> consume ) {
+      PeriodicScheduled scheduled = new PeriodicScheduled( owner, safePeriod, consume );
+      scheduled.scheduled = scheduleWithFixedDelay( delay, timeUnit, scheduled );
       return scheduled;
+   }
+
+   public static Set<JobKey> getAllJobKeys() {
+      try {
+         return scheduler.getJobKeys( GroupMatcher.anyGroup() );
+      } catch( org.quartz.SchedulerException e ) {
+         throw com.google.common.base.Throwables.propagate( e );
+      }
    }
 }

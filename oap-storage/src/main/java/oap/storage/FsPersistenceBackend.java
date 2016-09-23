@@ -68,7 +68,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
       this.storage = storage;
       this.log = getLogger( toString() );
       this.load();
-      this.scheduled = Scheduler.scheduleWithFixedDelay( fsync, this::fsync );
+      this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
       this.storage.addDataListener( this );
    }
 

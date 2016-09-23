@@ -31,13 +31,19 @@ import java.util.function.Consumer;
 
 public class PeriodicScheduled extends Scheduled implements Runnable {
    private final AtomicLong lastTimeExecuted = new AtomicLong( 0 );
-   private Scheduled scheduled;
+   Scheduled scheduled;
+   private Class owner;
    private long safePeriod;
    private Consumer<Long> job;
 
-   public PeriodicScheduled( long safePeriod, Consumer<Long> job ) {
+   public PeriodicScheduled( Class owner, long safePeriod, Consumer<Long> job ) {
+      this.owner = owner;
       this.safePeriod = safePeriod;
       this.job = job;
+   }
+
+   public Class getOwner() {
+      return owner;
    }
 
    public void run() {

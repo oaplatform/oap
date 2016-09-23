@@ -53,7 +53,7 @@ public class SingleFileStorageTest extends AbstractTest {
       try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, s -> s.id, 100 ) ) {
          sfs.store( new TestSFS( "123" ) );
 
-         assertEventually( 10, 100, () -> assertThat( path ).exists() );
+         assertEventually( 10, 200, () -> assertThat( path ).exists() );
       }
    }
 
