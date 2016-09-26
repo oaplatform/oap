@@ -268,9 +268,16 @@ public class Client {
    }
 
    public Response delete( String uri, long timeout ) {
+      return delete( uri, Maps.empty(), timeout );
+   }
+
+   public Response delete( String uri, Map<String, Object> headers ) {
+      return delete( uri, headers, FOREVER );
+   }
+
+   public Response delete( String uri, Map<String, Object> headers, long timeout ) {
       HttpDelete request = new HttpDelete( uri );
-      return execute( request, Maps.empty(), timeout )
-         .orElseThrow( () -> new RuntimeException( "no response" ) );
+      return execute( request,headers, timeout ).orElseThrow( () -> new RuntimeException( "no response" ) );
    }
 
    public List<Cookie> getCookies() {
