@@ -23,11 +23,17 @@
  */
 package oap.testng;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import oap.util.Functions;
 import oap.util.Try;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -44,7 +50,7 @@ public abstract class AbstractPerformance extends AbstractTest {
    public static final int WARMING = 1000;
    /**
     * @see Functions.empty#consume()
-    * */
+    */
    @Deprecated
    protected final static Consumer<Integer> none = ( i ) -> {
    };
@@ -196,6 +202,24 @@ public abstract class AbstractPerformance extends AbstractTest {
       T result = code.get();
       System.out.println( name + " took " + ( ( System.nanoTime() - start ) / 1000 ) + " usec" );
       return result;
+   }
+
+   @BeforeMethod
+   @Override
+   public void beforeMethod() {
+      Logger root = ( Logger ) LoggerFactory.getLogger( Logger.ROOT_LOGGER_NAME );
+      root.setLevel( Level.INFO );
+
+      super.beforeMethod();
+   }
+
+   @AfterMethod
+   @Override
+   public void afterMethod() throws IOException {
+      Logger root = ( Logger ) LoggerFactory.getLogger( Logger.ROOT_LOGGER_NAME );
+      root.setLevel( Level.TRACE );
+
+      super.afterMethod();
    }
 
    public static class BenchmarkResult {
