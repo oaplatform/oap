@@ -23,12 +23,39 @@
  */
 package oap.util;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.*;
-import java.util.stream.*;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.function.ToDoubleFunction;
+import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import java.util.stream.StreamSupport;
 
 import static oap.util.Pair.__;
 
@@ -82,6 +109,28 @@ public class Stream<E> implements java.util.stream.Stream<E> {
 
    public static <T> Stream<T> generate( Supplier<T> s ) {
       return of( java.util.stream.Stream.generate( s ) );
+   }
+
+   static <T> Spliterator<T> takeWhile(
+      Spliterator<T> splitr, Predicate<? super T> predicate ) {
+      return new Spliterators.AbstractSpliterator<T>( splitr.estimateSize(), 0 ) {
+         boolean stillGoing = true;
+
+         @Override
+         public boolean tryAdvance( Consumer<? super T> consumer ) {
+            if( stillGoing ) {
+               boolean hadNext = splitr.tryAdvance( elem -> {
+                  if( predicate.test( elem ) ) {
+                     consumer.accept( elem );
+                  } else {
+                     stillGoing = false;
+                  }
+               } );
+               return hadNext && stillGoing;
+            }
+            return false;
+         }
+      };
    }
 
    public <B, C> Stream<C> zip( java.util.stream.Stream<? extends B> b,
@@ -425,6 +474,10 @@ public class Stream<E> implements java.util.stream.Stream<E> {
    public Stream<E> onClose( Runnable closeHandler ) {
 //        todo - multiple handlers do not go - check wat's wrong with it
       return of( underlying.onClose( closeHandler ) );
+   }
+
+   public Stream<E> takeWhile( Predicate<? super E> predicate ) {
+      return of( StreamSupport.stream( takeWhile( spliterator(), predicate ), false ) );
    }
 
    @Override
