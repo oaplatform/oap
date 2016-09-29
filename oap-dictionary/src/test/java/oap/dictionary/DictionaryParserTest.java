@@ -24,12 +24,15 @@
 
 package oap.dictionary;
 
+import oap.io.Resources;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
+import java.net.URL;
 import java.nio.file.Path;
+import java.util.Optional;
 
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,5 +57,17 @@ public class DictionaryParserTest extends AbstractTest {
       );
 
       assertThat( dictionary.getProperty( "version" ) ).contains( 1L );
+   }
+
+   @Test(
+      expectedExceptions = {DictionaryError.class},
+      expectedExceptionsMessageRegExp = "duplicate eid: path: /id1; eid: 11; one: id11; two: id12, path: /id1/id12; eid: 50; one: id2; two: id3"
+   )
+   public void testInvalidEid() {
+      final Optional<URL> url = Resources.url( getClass(), getClass().getSimpleName() + "/" + "invalid-eid-dictionary.conf" );
+
+      assertThat( url ).isPresent();
+
+      DictionaryParser.parse( url.get() );
    }
 }
