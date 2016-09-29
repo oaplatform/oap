@@ -42,6 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -143,7 +144,39 @@ public class DictionaryParser {
    }
 
    private static DictionaryRoot parse( Map map ) {
-      return ( DictionaryRoot ) parseAsDictionaryValue( map, "", true );
+      final DictionaryRoot dictionaryRoot = ( DictionaryRoot ) parseAsDictionaryValue( map, "", true );
+      final ArrayList<InvalidEntry> invalid = new ArrayList<>();
+      validate( "", invalid, dictionaryRoot );
+
+      if( !invalid.isEmpty() ) {
+         invalid.sort( ( l, r ) -> l.path.compareTo( r.path ) );
+         final String msg = invalid
+            .stream()
+            .map( e -> "path: " + e.path + "; eid: " + e.one.getExternalId() + "; one: " + e.one.getId() + "; two: " + e.two.getId() )
+            .collect( Collectors.joining( ", " ) );
+
+         throw new DictionaryError( "duplicate eid: " + msg );
+
+      }
+
+      return dictionaryRoot;
+   }
+
+   private static void validate( String path, ArrayList<InvalidEntry> invalid, Dictionary dictionary ) {
+      validate( path, invalid, dictionary.getValues() );
+   }
+
+   private static void validate( String path, ArrayList<InvalidEntry> invalid, List<? extends Dictionary> values ) {
+      final HashMap<Integer, Dictionary> eid = new HashMap<>();
+
+      for( Dictionary dictionary : values ) {
+         final Dictionary found = eid.get( dictionary.getExternalId() );
+         if( found != null ) {
+            invalid.add( new InvalidEntry( found, dictionary, path ) );
+         }
+
+         validate( path + "/" + dictionary.getId(), invalid, dictionary );
+      }
    }
 
    private static ArrayList<Dictionary> parseValues( List values, String path ) {
@@ -245,5 +278,17 @@ public class DictionaryParser {
 
    private static void writeProperties( JsonGenerator jsonGenerator, Dictionary value ) {
       value.getProperties().forEach( Try.consume( jsonGenerator::writeObjectField ) );
+   }
+
+   private static class InvalidEntry {
+      public final Dictionary one;
+      public final Dictionary two;
+      public final String path;
+
+      public InvalidEntry( Dictionary one, Dictionary two, String path ) {
+         this.one = one;
+         this.two = two;
+         this.path = path;
+      }
    }
 }
