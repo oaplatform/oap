@@ -173,6 +173,8 @@ public class DictionaryParser {
          final Dictionary found = eid.get( dictionary.getExternalId() );
          if( found != null ) {
             invalid.add( new InvalidEntry( found, dictionary, path ) );
+         } else {
+            eid.put( dictionary.getExternalId(), dictionary );
          }
 
          validate( path + "/" + dictionary.getId(), invalid, dictionary );
