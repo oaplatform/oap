@@ -30,6 +30,7 @@ import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Files;
+import oap.io.IoStreams;
 import oap.json.Binder;
 
 import java.nio.file.Path;
@@ -77,7 +78,7 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
       if( modified.getAndSet( false ) ) {
          final Path tmpPath = path.resolveSibling( path.getFileName() + ".tmp" );
          log.debug( "fsync storing {}...", tmpPath );
-         Binder.json.marshal( tmpPath, data.values() );
+         Binder.json.marshal( IoStreams.out( tmpPath, IoStreams.Encoding.from( path ) ), data.values() );
          Files.rename( tmpPath, path );
          log.debug( "fsync storing {}... done", path );
       }
