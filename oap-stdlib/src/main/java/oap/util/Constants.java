@@ -6,5 +6,7 @@ package oap.util;
 public class Constants {
 
    public static final long ONE_HOUR = 60 * 60 * 1000;
+   public static final long ONE_MONTH = 2629746000L;
+
 
 }

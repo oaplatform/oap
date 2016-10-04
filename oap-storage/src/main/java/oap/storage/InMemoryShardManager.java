@@ -24,6 +24,9 @@
 
 package oap.storage;
 
+import oap.util.Try;
+
+import java.io.Closeable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,6 +60,6 @@ public class InMemoryShardManager<T, ShardID> implements ShardManager<T, ShardID
 
    @Override
    public void close() {
-
+      storages.values().forEach( Try.consume( Closeable::close ) );
    }
 }
