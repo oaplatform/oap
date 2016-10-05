@@ -34,6 +34,7 @@ import org.testng.annotations.BeforeMethod;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.util.Iterator;
 
 import static org.apache.commons.io.FileUtils.iterateFiles;
@@ -44,12 +45,12 @@ public abstract class AbstractTest {
 
    @AfterSuite
    public void afterSuite() {
-      if( CLEANUP_TEMP ) Files.delete( Env.tmp );
+      if( CLEANUP_TEMP ) deleteDirectory( Env.tmp );
    }
 
    @AfterClass
    public void afterClass() {
-      if( CLEANUP_TEMP ) Files.delete( Env.tmpRoot );
+      if( CLEANUP_TEMP ) deleteDirectory( Env.tmpRoot );
    }
 
    @BeforeMethod
@@ -65,20 +66,24 @@ public abstract class AbstractTest {
 
    protected void afterMethod( boolean cleanup ) throws IOException {
       if( CLEANUP_TEMP && cleanup ) {
-         try {
-            Files.delete( Env.tmpRoot );
-         } catch( UncheckedIOException e ) {
-            final Iterator<File> fileIterator = iterateFiles( Env.tmp.toFile(), trueFileFilter(), trueFileFilter() );
-            while( fileIterator.hasNext() ) {
-               final File next = fileIterator.next();
-               if( next.isDirectory() ) continue;
-
-               System.err.println( "FILE " + next );
-            }
-
-            throw e;
-         }
+         deleteDirectory( Env.tmpRoot );
       }
       DateTimeUtils.setCurrentMillisSystem();
+   }
+
+   private void deleteDirectory( Path path ) {
+      try {
+         Files.delete( path );
+      } catch( UncheckedIOException e ) {
+         final Iterator<File> fileIterator = iterateFiles( Env.tmp.toFile(), trueFileFilter(), trueFileFilter() );
+         while( fileIterator.hasNext() ) {
+            final File next = fileIterator.next();
+            if( next.isDirectory() ) continue;
+
+            System.err.println( "FILE " + next );
+         }
+
+         throw e;
+      }
    }
 }
