@@ -25,25 +25,31 @@
 package oap.concurrent.scheduler;
 
 import org.quartz.DisallowConcurrentExecution;
+import org.quartz.InterruptableJob;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.quartz.UnableToInterruptJobException;
 
 @DisallowConcurrentExecution
-public class RunnableJob implements Job {
-    final Runnable runnable;
+public class RunnableJob implements Job, InterruptableJob {
+   final Runnable runnable;
 
-    public RunnableJob( Runnable runnable ) {
-        this.runnable = runnable;
-    }
+   public RunnableJob( Runnable runnable ) {
+      this.runnable = runnable;
+   }
 
-    @Override
-    public void execute( JobExecutionContext context ) throws JobExecutionException {
-        try {
-            runnable.run();
-        } catch( Exception e ) {
-            throw new JobExecutionException( e );
-        }
-    }
+   @Override
+   public void execute( JobExecutionContext context ) throws JobExecutionException {
+      try {
+         runnable.run();
+      } catch( Exception e ) {
+         throw new JobExecutionException( e );
+      }
+   }
 
+   @Override
+   public void interrupt() throws UnableToInterruptJobException {
+      Thread.currentThread().interrupt();
+   }
 }
