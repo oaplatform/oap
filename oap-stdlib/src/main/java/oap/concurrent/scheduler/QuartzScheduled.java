@@ -42,7 +42,9 @@ public class QuartzScheduled extends Scheduled {
          Scheduler.scheduler.deleteJob( job.getKey() );
          Scheduler.jobFactory.unregister( job.getKey() );
 
-         while( Scheduler.scheduler.getCurrentlyExecutingJobs()
+         int i =10;
+
+         while( --i > 0 && Scheduler.scheduler.getCurrentlyExecutingJobs()
             .stream()
             .filter( j -> j.getJobDetail().getKey().equals( job.getKey() ) )
             .findAny()
