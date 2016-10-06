@@ -42,26 +42,31 @@ public class QuartzScheduled extends Scheduled {
          Scheduler.scheduler.deleteJob( job.getKey() );
          Scheduler.jobFactory.unregister( job.getKey() );
 
-         int i =10;
+         int i = 10;
 
-         while( --i > 0 && Scheduler.scheduler.getCurrentlyExecutingJobs()
+         while( --i >= 0 && Scheduler.scheduler.getCurrentlyExecutingJobs()
             .stream()
             .filter( j -> j.getJobDetail().getKey().equals( job.getKey() ) )
             .findAny()
             .isPresent() ) {
+
             try {
                Scheduler.scheduler.getCurrentlyExecutingJobs()
                   .stream()
                   .filter( j -> j.getJobDetail().getKey().equals( job.getKey() ) )
                   .forEach( Try.consume( j -> {
-                     log.debug( "running job {}...", j.getJobDetail().getKey() );
+                     log.debug( "running job [{}]...", j.getJobDetail().getKey() );
                      Scheduler.scheduler.interrupt( j.getJobDetail().getKey() );
                   } ) );
             } catch( Exception e ) {
                e.printStackTrace();
             }
 
-            Threads.sleepSafely( 1000 );
+            try {
+               Thread.sleep( 1000 );
+            } catch( InterruptedException e ) {
+               Threads.sleepSafely( 1000 );
+            }
          }
       } catch( org.quartz.SchedulerException e ) {
          throw new SchedulerException( e );
