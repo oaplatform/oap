@@ -60,8 +60,8 @@ public class DictionaryModel {
             case "STRING":
             case "STRING_ARRAY":
             case "ENUM":
-            case "DATETIME":
             case "DATE":
+            case "DATETIME":
                model.s( id, offset );
                break;
             case "INTEGER":
