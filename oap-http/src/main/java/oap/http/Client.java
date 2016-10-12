@@ -74,6 +74,7 @@ import org.apache.http.ssl.SSLContexts;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.BufferedInputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -107,7 +108,7 @@ import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
-public class Client {
+public class Client implements Closeable {
    public static final Client DEFAULT = custom()
       .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
       .onTimeout( ( c ) -> log.error( "timeout" ) )
@@ -277,7 +278,7 @@ public class Client {
 
    public Response delete( String uri, Map<String, Object> headers, long timeout ) {
       HttpDelete request = new HttpDelete( uri );
-      return execute( request,headers, timeout ).orElseThrow( () -> new RuntimeException( "no response" ) );
+      return execute( request, headers, timeout ).orElseThrow( () -> new RuntimeException( "no response" ) );
    }
 
    public List<Cookie> getCookies() {
@@ -380,6 +381,11 @@ public class Client {
    public void reset() {
       Closeables.close( client );
       client = builder.client();
+   }
+
+   @Override
+   public void close() {
+      Closeables.close( client );
    }
 
    @ToString
