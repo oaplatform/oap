@@ -243,11 +243,11 @@ public final class Files {
       }
    }
 
-   public static void copy( Path sourcePath, IoStreams.Encoding sourceEncoding,
-                            Path destPath, IoStreams.Encoding destEncoding, int bufferSize ) {
+   private static void copyOrAppend( Path sourcePath, IoStreams.Encoding sourceEncoding, Path destPath,
+                                     IoStreams.Encoding destEncoding, int bufferSize, boolean append ) {
       destPath.getParent().toFile().mkdirs();
       try( InputStream is = IoStreams.in( sourcePath, sourceEncoding, bufferSize );
-           OutputStream os = IoStreams.out( destPath, destEncoding, bufferSize ) ) {
+           OutputStream os = IoStreams.out( destPath, destEncoding, bufferSize, append ) ) {
          IOUtils.copy( is, os );
       } catch( IOException e ) {
          throw new UncheckedIOException( e );
@@ -255,8 +255,18 @@ public final class Files {
    }
 
    public static void copy( Path sourcePath, IoStreams.Encoding sourceEncoding,
+                            Path destPath, IoStreams.Encoding destEncoding, int bufferSize ) {
+      copyOrAppend( sourcePath, sourceEncoding, destPath, destEncoding, bufferSize, false );
+   }
+
+   public static void copy( Path sourcePath, IoStreams.Encoding sourceEncoding,
                             Path destPath, IoStreams.Encoding destEncoding ) {
       copy( sourcePath, sourceEncoding, destPath, destEncoding, IoStreams.DEFAULT_BUFFER );
+   }
+
+   public static void append(Path sourcePath, IoStreams.Encoding sourceEncoding,
+                             Path destPath, IoStreams.Encoding destEncoding, int bufferSize) {
+      copyOrAppend( sourcePath, sourceEncoding, destPath, destEncoding, bufferSize, true );
    }
 
    public static void copyContent( Path basePath, Path destPath ) {

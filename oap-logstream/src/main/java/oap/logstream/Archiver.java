@@ -105,7 +105,7 @@ public class Archiver implements Runnable {
                      replace( Timestamp.parseTimestamp( path.getFileName().toString()), hourReplacement ) +
                      encoding.extension.map( e -> "." + e ).orElse( "" ));
 
-                  Files.copy( path, PLAIN, targetHourly, encoding, bufferSize );
+                  Files.append( path, PLAIN, targetHourly, encoding, bufferSize );
                });
 
                Files.rename( targetTemp, targetFile );
