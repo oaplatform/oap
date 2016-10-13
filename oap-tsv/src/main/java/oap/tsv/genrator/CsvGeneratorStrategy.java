@@ -37,7 +37,9 @@ public interface CsvGeneratorStrategy {
    CsvGeneratorStrategy DEFAULT = new CsvGeneratorStrategy() {};
 
    default void map( StringBuilder c, Type cc, String name, String field, char delimiter ) {
-      if( isPrimitive( cc ) ) {
+      if( isInstance( Boolean.class, cc ) || isInstance( boolean.class, cc ) ) {
+         bool( c, field );
+      } else if( isPrimitive( cc ) ) {
          c.append( "sb.append( " ).append( field ).append( " );" );
       } else if( isInstance( Enum.class, cc ) )
          c.append( "sb.append( " ).append( field ).append( " );" );
@@ -64,5 +66,10 @@ public interface CsvGeneratorStrategy {
       c.append( "CharMatcher.JAVA_ISO_CONTROL.removeFrom( " );
       run.run();
       c.append( " )" );
+   }
+
+   default StringBuilder bool( StringBuilder c, String field ) {
+      c.append( "sb.append( " ).append( field ).append( " );" );
+      return c;
    }
 }
