@@ -29,6 +29,7 @@ import oap.io.IoStreams;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Sets;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.DataProvider;
@@ -53,20 +54,24 @@ public class ArchiverTest extends AbstractTest {
       DateTimeUtils.setCurrentMillisFixed( now.getMillis() );
       Path logs = Env.tmpPath( "logs" );
       Path archives = Env.tmpPath( "archives" );
+      Path archivesHourly = Env.tmpPath( "hourly-archives" );
       String[] files = {
-         "a/a_2015-10-10-11-10.log",
-         "a/a_2015-10-10-11-11.log",
-         "a/a_2015-10-10-12-00.log",
-         "a/b_2015-10-10-11-11.log",
-         "b/c/a_2015-10-10-11-10.log",
-         "b/c/a_2015-10-10-11-11.log",
-         "b/c/a_2015-10-10-12-00.log",
-         "b/c/b_2015-10-10-11-11.log"
+         "a/a_a-2015-10-10-11-09.log",
+         "a/a_a-2015-10-10-11-10.log",
+         "a/a_a-2015-10-10-11-11.log",
+         "a/a_a-2015-10-10-12-01.log",
+         "a/a_a-2015-10-10-12-02.log",
+         "a/b_b-2015-10-10-11-11.log",
+         "a/b_b-2015-10-10-12-11.log",
+         "a/b_b-2015-10-10-13-10.log",
+         "b/c/a_a-2015-10-10-11-10.log",
+         "b/c/a_a-2015-10-10-11-11.log",
+         "b/c/b_b-2015-10-10-11-11.log"
       };
 
       for( String file : files ) Files.writeString( logs.resolve( file ), "data" );
 
-      Archiver archiver = new Archiver( logs, archives, 10000, "**/*.log", encoding, 12, Sets.empty(), null );
+      Archiver archiver = new Archiver( logs, archives, 10000, "**/*.log", encoding, 12, Sets.of( "a" ), archivesHourly );
       archiver.run();
 
       for( String file : files )
@@ -81,6 +86,15 @@ public class ArchiverTest extends AbstractTest {
          else {
             assertFile( logs.resolve( file ) ).doesNotExist();
             assertFile( path ).hasContent( "data", encoding );
+         }
+
+         if (encoding.extension.isPresent()) {
+            String replacement = StringUtils.replacePattern( Timestamp.parseTimestamp( file ), "-\\d{2}$", "-00" );
+
+            Path hourlyPath = archivesHourly.resolve( file.replace( Timestamp.parseTimestamp( file ), replacement ) +
+               encoding.extension.map( e -> "." + e ).orElse( "" ) );
+
+            assertFile( hourlyPath ).hasContent( "datadatadata", encoding );
          }
       }
    }
