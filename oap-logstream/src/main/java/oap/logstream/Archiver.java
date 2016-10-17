@@ -27,15 +27,10 @@ import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.metrics.Metrics;
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static oap.io.IoStreams.Encoding.PLAIN;
 
@@ -47,26 +42,17 @@ public class Archiver implements Runnable {
    private final IoStreams.Encoding encoding;
    private final String mask;
    private final int bucketsPerHour;
-   private Set<String> hourBasedFiles = new HashSet<>();
-   private Path hourBasedDestination;
    private int bufferSize = 1024 * 256 * 4 * 4;
 
 
    public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask,
-                    IoStreams.Encoding encoding, int bucketsPerHour, Set<String> hourBasedFiles,
-                    Path hourBasedDestination) {
+                    IoStreams.Encoding encoding, int bucketsPerHour ) {
       this.sourceDirectory = sourceDirectory;
       this.destinationDirectory = destinationDirectory;
       this.safeInterval = safeInterval;
       this.mask = mask;
       this.encoding = encoding;
       this.bucketsPerHour = bucketsPerHour;
-      this.hourBasedFiles = hourBasedFiles;
-
-      if (!hourBasedFiles.isEmpty()) {
-         this.hourBasedDestination = Objects.requireNonNull(hourBasedDestination, "hour based destination has to be " +
-            "specified, if there are files configured");
-      }
    }
 
    @Override
@@ -92,22 +78,6 @@ public class Archiver implements Runnable {
                log.debug( "compressing {} ({} bytes)", path, path.toFile().length() );
                Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".tmp" );
                Files.copy( path, PLAIN, targetTemp, encoding, bufferSize );
-
-               final Set<String> hourBased = hourBasedFiles.stream()
-                  .filter( hourBasedFile -> path.getFileName().toString().contains( hourBasedFile ) )
-                  .collect( Collectors.toSet() );
-
-               hourBased.forEach( file ->  {
-                  String hourReplacement = StringUtils.replacePattern( Timestamp.parseTimestamp(
-                     path.getFileName().toString() ), "-\\d{2}$", "-00" );
-
-                  Path targetHourly = hourBasedDestination.resolve( sourceDirectory.relativize( path ).toString().
-                     replace( Timestamp.parseTimestamp( path.getFileName().toString()), hourReplacement ) +
-                     encoding.extension.map( e -> "." + e ).orElse( "" ));
-
-                  Files.append( path, PLAIN, targetHourly, encoding, bufferSize );
-               });
-
                Files.rename( targetTemp, targetFile );
                log.debug( "compressed {} ({} bytes)", path, targetFile.toFile().length() );
                Files.delete( path );
