@@ -26,6 +26,7 @@ package oap.tsv.genrator;
 
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.Optional;
 
 import static oap.reflect.Types.isInstance;
 import static oap.reflect.Types.isPrimitive;
@@ -36,7 +37,7 @@ import static oap.reflect.Types.isPrimitive;
 public interface CsvGeneratorStrategy {
    CsvGeneratorStrategy DEFAULT = new CsvGeneratorStrategy() {};
 
-   default void map( StringBuilder c, Type cc, String name, String field, char delimiter ) {
+   default void map( StringBuilder c, Type cc, String name, String field, char delimiter, Optional<Join> join ) {
       if( isInstance( Boolean.class, cc ) || isInstance( boolean.class, cc ) ) {
          bool( c, field );
       } else if( isPrimitive( cc ) ) {

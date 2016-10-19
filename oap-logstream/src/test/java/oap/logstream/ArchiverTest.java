@@ -28,7 +28,6 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import oap.util.Sets;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.DataProvider;
@@ -66,7 +65,7 @@ public class ArchiverTest extends AbstractTest {
 
       for( String file : files ) Files.writeString( logs.resolve( file ), "data" );
 
-      Archiver archiver = new Archiver( logs, archives, 10000, "**/*.log", encoding, 12, Sets.empty(), null );
+      Archiver archiver = new Archiver( logs, archives, 10000, "**/*.log", encoding, 12 );
       archiver.run();
 
       for( String file : files )
