@@ -229,7 +229,7 @@ public class CsvGenerator<T> {
 
             final Type cc = in > 0 ? getDeclaredFieldOrFunctionType( parentClass, cField ) : parentClass;
 
-            final Optional<Join> join = isJoin ? Optional.of( new Join( i, cField.length() ) ) : Optional.empty();
+            final Optional<Join> join = isJoin ? Optional.of( new Join( i, cFields.length ) ) : Optional.empty();
 
             add( c, num, newPath, cc, parentClass, true, tab, orPath, orIndex,
                clazz, delimiter, fields, last || ( i < cFields.length - 1 ), line, join );
