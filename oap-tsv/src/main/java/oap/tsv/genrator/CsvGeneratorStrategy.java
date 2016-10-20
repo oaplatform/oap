@@ -89,4 +89,8 @@ public interface CsvGeneratorStrategy {
       c.append( "sb.append( " ).append( field ).append( " );" );
       return c;
    }
+
+   default boolean printDelimiter() {
+      return true;
+   }
 }

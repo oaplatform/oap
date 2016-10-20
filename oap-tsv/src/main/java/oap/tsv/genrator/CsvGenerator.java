@@ -144,7 +144,7 @@ public class CsvGenerator<T> {
    }
 
    private void printDelimiter( char delimiter, StringBuilder c, boolean last, AtomicInteger tab ) {
-      if( !last ) tab( c, tab ).append( "sb.append('" ).append( delimiter ).append( "');\n" );
+      if( map.printDelimiter() && !last ) tab( c, tab ).append( "sb.append('" ).append( delimiter ).append( "');\n" );
    }
 
    private void addPathOr( Class<T> clazz, char delimiter, StringBuilder c, AtomicInteger num,
