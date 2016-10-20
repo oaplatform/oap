@@ -39,6 +39,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -196,7 +197,8 @@ public class CsvGenerator<T> {
       String pField = in > 0 ? newPath.substring( 0, in ) : newPath;
       String cField = newPath.substring( in + 1 );
 
-      final String[] cFields = cField.startsWith( "{" ) ?
+      final boolean isJoin = cField.startsWith( "{" );
+      final String[] cFields = isJoin ?
          StringUtils.split( cField.substring( 1, cField.length() - 1 ), ',' ) : new String[]{ cField };
 
       Type parentClass = lc.getValue();
@@ -227,7 +229,10 @@ public class CsvGenerator<T> {
 
             final Type cc = in > 0 ? getDeclaredFieldOrFunctionType( parentClass, cField ) : parentClass;
 
-            add( c, num, newPath, cc, true, tab, orPath, orIndex, clazz, delimiter, fields, last || ( i < cFields.length - 1 ), line );
+            final Optional<Join> join = isJoin ? Optional.of( new Join( i, cFields.length ) ) : Optional.empty();
+
+            add( c, num, newPath, cc, parentClass, true, tab, orPath, orIndex,
+               clazz, delimiter, fields, last || ( i < cFields.length - 1 ), line, join );
          }
       }
 
@@ -277,9 +282,12 @@ public class CsvGenerator<T> {
       final Class type1 = ( Class ) type;
       try {
          final int i = field.indexOf( '(' );
-         if( i < 0 )
+         if( i < 0 ) {
+            if( type1.isAssignableFrom( Map.class ) ) {
+               return Object.class;
+            }
             return type1.getDeclaredField( field ).getGenericType();
-         else
+         } else
             return type1.getDeclaredMethod( field.substring( 0, i ) ).getGenericReturnType();
       } catch( NoSuchMethodException | NoSuchFieldException e ) {
          if( !type1.getSuperclass().equals( Object.class ) )
@@ -288,22 +296,31 @@ public class CsvGenerator<T> {
       }
    }
 
-   private void add( StringBuilder c, AtomicInteger num, String newPath, Type cc, boolean nullable, AtomicInteger tab,
+   private void add( StringBuilder c, AtomicInteger num, String newPath, Type cc, Type parentType,
+                     boolean nullable, AtomicInteger tab,
                      String[] orPath, int orIndex, Class<T> clazz, char delimiter,
-                     FieldStack fields, boolean last, Line line ) {
+                     FieldStack fields, boolean last, Line line, Optional<Join> join ) {
       String pfield = newPath;
       final boolean primitive = isPrimitive( cc );
       if( !primitive ) {
          pfield = "field" + num.incrementAndGet();
-         tab( c, tab ).append( "final " ).append( toJavaType( cc ) ).append( " " ).append( pfield ).append( " = " ).append( newPath ).append( ";\n" );
+         if( parentType.getTypeName().startsWith( "java.util.Map<" ) ) {
+
+            tab( c, tab )
+               .append( "final " )
+               .append( toJavaType( cc ) ).append( " " ).append( pfield ).append( " = " )
+               .append( newPath.replace( ".", ".get(\"" ) ).append( "\");\n" );
+         } else {
+            tab( c, tab ).append( "final " ).append( toJavaType( cc ) ).append( " " ).append( pfield ).append( " = " ).append( newPath ).append( ";\n" );
+         }
       }
       if( !primitive ) {
          if( isOptional( cc ) ) {
             final Type cc1 = getOptionalArgumentType( cc );
             tab( c, tab ).append( "if( " ).append( pfield ).append( ".isPresent() ) {\n" );
             fields.up();
-            add( c, num, pfield + ".get()", cc1, false, new AtomicInteger( tab.get() + 2 ),
-               orPath, orIndex, clazz, delimiter, fields, last, line );
+            add( c, num, pfield + ".get()", cc1, parentType, false, new AtomicInteger( tab.get() + 2 ),
+               orPath, orIndex, clazz, delimiter, fields, last, line, join );
             fields.down();
             tab( c, tab ).append( "} else {\n" );
 
@@ -321,7 +338,7 @@ public class CsvGenerator<T> {
 
             if( nullable ) c.append( "if( " ).append( pfield ).append( " != null ) { " );
 
-            map.map( c, cc, line.name, pfield, delimiter );
+            map.map( c, cc, line.name, pfield, delimiter, join );
             printDelimiter( delimiter, c, last, tab );
 
             if( nullable ) {
@@ -333,7 +350,7 @@ public class CsvGenerator<T> {
          }
       } else {
          tab( c, tab );
-         map.map( c, cc, line.name, pfield, delimiter );
+         map.map( c, cc, line.name, pfield, delimiter, join );
          printDelimiter( delimiter, c, last, tab );
       }
    }

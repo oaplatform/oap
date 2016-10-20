@@ -23,23 +23,54 @@
  */
 package oap.concurrent.scheduler;
 
+import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Threads;
+import oap.util.Try;
 import org.quartz.JobDetail;
 
+@Slf4j
 public class QuartzScheduled extends Scheduled {
-    private final JobDetail job;
+   private final JobDetail job;
 
-    QuartzScheduled( JobDetail job ) {
-        this.job = job;
-    }
+   QuartzScheduled( JobDetail job ) {
+      this.job = job;
+   }
 
-    @Override
-    public void cancel() {
-        try {
-            Scheduler.scheduler.deleteJob( job.getKey() );
-            Scheduler.jobFactory.unregister( job.getKey() );
-        } catch( org.quartz.SchedulerException e ) {
-            throw new SchedulerException( e );
-        }
-    }
+   @Override
+   public void cancel() {
+      try {
+         Scheduler.scheduler.deleteJob( job.getKey() );
+         Scheduler.jobFactory.unregister( job.getKey() );
+
+         int i = 10;
+
+         while( --i >= 0 && Scheduler.scheduler.getCurrentlyExecutingJobs()
+            .stream()
+            .filter( j -> j.getJobDetail().getKey().equals( job.getKey() ) )
+            .findAny()
+            .isPresent() ) {
+
+            try {
+               Scheduler.scheduler.getCurrentlyExecutingJobs()
+                  .stream()
+                  .filter( j -> j.getJobDetail().getKey().equals( job.getKey() ) )
+                  .forEach( Try.consume( j -> {
+                     log.debug( "running job [{}]...", j.getJobDetail().getKey() );
+                     Scheduler.scheduler.interrupt( j.getJobDetail().getKey() );
+                  } ) );
+            } catch( Exception e ) {
+               e.printStackTrace();
+            }
+
+            try {
+               Thread.sleep( 1000 );
+            } catch( InterruptedException e ) {
+               Threads.sleepSafely( 1000 );
+            }
+         }
+      } catch( org.quartz.SchedulerException e ) {
+         throw new SchedulerException( e );
+      }
+   }
 
 }

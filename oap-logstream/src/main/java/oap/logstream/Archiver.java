@@ -41,11 +41,12 @@ public class Archiver implements Runnable {
    private final long safeInterval;
    private final IoStreams.Encoding encoding;
    private final String mask;
-   private int bucketsPerHour;
+   private final int bucketsPerHour;
    private int bufferSize = 1024 * 256 * 4 * 4;
 
 
-   public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask, IoStreams.Encoding encoding, int bucketsPerHour ) {
+   public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask,
+                    IoStreams.Encoding encoding, int bucketsPerHour ) {
       this.sourceDirectory = sourceDirectory;
       this.destinationDirectory = destinationDirectory;
       this.safeInterval = safeInterval;

@@ -24,15 +24,20 @@
 
 package oap.tsv.genrator;
 
+import com.google.common.collect.ImmutableMap;
 import oap.testng.AbstractTest;
+import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static oap.tsv.genrator.CsvGenerator.Line.line;
 import static oap.tsv.genrator.CsvGeneratorStrategy.DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -145,6 +150,16 @@ public class CsvGeneratorTest extends AbstractTest {
       assertThat( test.process( new Test1( new Test2( "n2", 2, new Test1( "str", 235 ) ) ) ) ).isEqualTo( "n2 235" );
    }
 
+   @Test
+   public void testNestedMap() {
+      Test4 sample = new Test4( new Test3( ImmutableMap.of( "mapKey", "mapValue" ) ) );
+      final CsvGenerator<Test4> test = new CsvGenerator<>( Test4.class,
+         singletonList( line( "f1", "test3.map.mapKey", "unknown" ) ), ' ', DEFAULT );
+
+      assertThat( test.process( sample ) ).isEqualTo( "mapValue" );
+   }
+
+
    public static class Test1 {
       public String testStr;
       public Optional<String> optStr = Optional.empty();
@@ -232,6 +247,21 @@ public class CsvGeneratorTest extends AbstractTest {
          this.testStr = testStr;
          this.testInt = testInt;
          this.test1 = test1;
+      }
+   }
+
+   public static class Test4 {
+      public final Test3 test3;
+
+      public Test4( Test3 test3 ) {
+         this.test3 = test3;
+      }
+   }
+   public static class Test3 {
+      public final Map<?, Object> map;
+
+      public Test3( Map<?, Object> map ) {
+         this.map = map;
       }
    }
 }

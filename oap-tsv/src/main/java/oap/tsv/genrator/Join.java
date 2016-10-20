@@ -22,34 +22,25 @@
  * SOFTWARE.
  */
 
-package oap.concurrent.scheduler;
+package oap.tsv.genrator;
 
-import org.quartz.DisallowConcurrentExecution;
-import org.quartz.InterruptableJob;
-import org.quartz.Job;
-import org.quartz.JobExecutionContext;
-import org.quartz.JobExecutionException;
-import org.quartz.UnableToInterruptJobException;
+/**
+ * Created by igor.petrenko on 19.10.2016.
+ */
+public class Join {
+   public final int index;
+   public final int size;
 
-@DisallowConcurrentExecution
-public class RunnableJob implements Job, InterruptableJob {
-   final Runnable runnable;
-
-   public RunnableJob( Runnable runnable ) {
-      this.runnable = runnable;
+   public Join( int index, int size ) {
+      this.index = index;
+      this.size = size;
    }
 
-   @Override
-   public void execute( JobExecutionContext context ) throws JobExecutionException {
-      try {
-         runnable.run();
-      } catch( Exception e ) {
-         throw new JobExecutionException( e );
-      }
+   public final boolean isFirst() {
+      return index == 0;
    }
 
-   @Override
-   public void interrupt() throws UnableToInterruptJobException {
-      Thread.currentThread().interrupt();
+   public final boolean isLast() {
+      return index == size - 1;
    }
 }

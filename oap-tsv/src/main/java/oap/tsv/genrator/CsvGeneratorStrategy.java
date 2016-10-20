@@ -26,6 +26,7 @@ package oap.tsv.genrator;
 
 import java.lang.reflect.Type;
 import java.util.Collection;
+import java.util.Optional;
 
 import static oap.reflect.Types.isInstance;
 import static oap.reflect.Types.isPrimitive;
@@ -36,24 +37,42 @@ import static oap.reflect.Types.isPrimitive;
 public interface CsvGeneratorStrategy {
    CsvGeneratorStrategy DEFAULT = new CsvGeneratorStrategy() {};
 
-   default void map( StringBuilder c, Type cc, String name, String field, char delimiter ) {
-      if( isPrimitive( cc ) ) {
-         c.append( "sb.append( " ).append( field ).append( " );" );
+   default void map( StringBuilder c, Type cc, String name, String field, char delimiter, Optional<Join> join ) {
+      if( isInstance( Boolean.class, cc ) || isInstance( boolean.class, cc ) ) {
+         mapBoolean( c, cc, name, field );
+      } else if( isPrimitive( cc ) ) {
+         mapPrimitive( c, cc, name, field );
       } else if( isInstance( Enum.class, cc ) )
-         c.append( "sb.append( " ).append( field ).append( " );" );
+         mapEnum( c, cc, name, field );
       else if( isInstance( Collection.class, cc ) ) {
-         c.append( "{sb.append( '[' ).append( " );
-         escape( c, () -> c.append( " Strings.join( " ).append( field ).append( " )" ) );
-         c.append( ").append( ']' );}" );
+         mapCollection( c, cc, name, field );
       } else if( !cc.equals( String.class ) ) {
          c.append( "sb.append( " );
          escape( c, () -> c.append( " String.valueOf( " ).append( field ).append( " )" ) );
          c.append( " );" );
       } else {
-         c.append( "sb.append( " );
-         escape( c, () -> c.append( field ) );
-         c.append( " );" );
+         mapString( c, cc, name, field );
       }
+   }
+
+   default void mapPrimitive( StringBuilder c, Type cc, String name, String field ) {
+      c.append( "sb.append( " ).append( field ).append( " );" );
+   }
+
+   default void mapString( StringBuilder c, Type cc, String name, String field ) {
+      c.append( "sb.append( " );
+      escape( c, () -> c.append( field ) );
+      c.append( " );" );
+   }
+
+   default void mapCollection( StringBuilder c, Type cc, String name, String field ) {
+      c.append( "{sb.append( '[' ).append( " );
+      escape( c, () -> c.append( " Strings.join( " ).append( field ).append( " )" ) );
+      c.append( ").append( ']' );}" );
+   }
+
+   default void mapEnum( StringBuilder c, Type cc, String name, String field ) {
+      c.append( "sb.append( " ).append( field ).append( " );" );
    }
 
    default boolean ignoreDefaultValue() {
@@ -64,5 +83,10 @@ public interface CsvGeneratorStrategy {
       c.append( "CharMatcher.JAVA_ISO_CONTROL.removeFrom( " );
       run.run();
       c.append( " )" );
+   }
+
+   default StringBuilder mapBoolean( StringBuilder c, Type cc, String name, String field ) {
+      c.append( "sb.append( " ).append( field ).append( " );" );
+      return c;
    }
 }
