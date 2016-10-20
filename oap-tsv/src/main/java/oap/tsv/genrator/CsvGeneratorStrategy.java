@@ -39,24 +39,40 @@ public interface CsvGeneratorStrategy {
 
    default void map( StringBuilder c, Type cc, String name, String field, char delimiter, Optional<Join> join ) {
       if( isInstance( Boolean.class, cc ) || isInstance( boolean.class, cc ) ) {
-         bool( c, field );
+         mapBoolean( c, cc, name, field );
       } else if( isPrimitive( cc ) ) {
-         c.append( "sb.append( " ).append( field ).append( " );" );
+         mapPrimitive( c, cc, name, field );
       } else if( isInstance( Enum.class, cc ) )
-         c.append( "sb.append( " ).append( field ).append( " );" );
+         mapEnum( c, cc, name, field );
       else if( isInstance( Collection.class, cc ) ) {
-         c.append( "{sb.append( '[' ).append( " );
-         escape( c, () -> c.append( " Strings.join( " ).append( field ).append( " )" ) );
-         c.append( ").append( ']' );}" );
+         mapCollection( c, cc, name, field );
       } else if( !cc.equals( String.class ) ) {
          c.append( "sb.append( " );
          escape( c, () -> c.append( " String.valueOf( " ).append( field ).append( " )" ) );
          c.append( " );" );
       } else {
-         c.append( "sb.append( " );
-         escape( c, () -> c.append( field ) );
-         c.append( " );" );
+         mapString( c, cc, name, field );
       }
+   }
+
+   default void mapPrimitive( StringBuilder c, Type cc, String name, String field ) {
+      c.append( "sb.append( " ).append( field ).append( " );" );
+   }
+
+   default void mapString( StringBuilder c, Type cc, String name, String field ) {
+      c.append( "sb.append( " );
+      escape( c, () -> c.append( field ) );
+      c.append( " );" );
+   }
+
+   default void mapCollection( StringBuilder c, Type cc, String name, String field ) {
+      c.append( "{sb.append( '[' ).append( " );
+      escape( c, () -> c.append( " Strings.join( " ).append( field ).append( " )" ) );
+      c.append( ").append( ']' );}" );
+   }
+
+   default void mapEnum( StringBuilder c, Type cc, String name, String field ) {
+      c.append( "sb.append( " ).append( field ).append( " );" );
    }
 
    default boolean ignoreDefaultValue() {
@@ -69,7 +85,7 @@ public interface CsvGeneratorStrategy {
       c.append( " )" );
    }
 
-   default StringBuilder bool( StringBuilder c, String field ) {
+   default StringBuilder mapBoolean( StringBuilder c, Type cc, String name, String field ) {
       c.append( "sb.append( " ).append( field ).append( " );" );
       return c;
    }
