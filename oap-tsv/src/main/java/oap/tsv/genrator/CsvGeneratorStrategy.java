@@ -94,9 +94,9 @@ public interface CsvGeneratorStrategy<TLine extends CsvGenerator.Line> {
       return true;
    }
 
-   default void beforeLine( TLine line ) {
+   default void beforeLine( StringBuilder c, TLine line, char delimiter ) {
    }
 
-   default void afterLine( TLine line ) {
+   default void afterLine( StringBuilder c, TLine line, char delimiter ) {
    }
 }
