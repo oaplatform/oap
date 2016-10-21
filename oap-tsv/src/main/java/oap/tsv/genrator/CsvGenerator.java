@@ -80,6 +80,7 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
             "\n" +
             "import oap.util.Strings;\n" +
             "\n" +
+            "import java.util.*;\n" +
             "import java.util.function.Function;\n" +
             "import com.google.common.base.CharMatcher;\n" +
             "\n" +
