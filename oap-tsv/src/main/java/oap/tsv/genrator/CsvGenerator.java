@@ -66,7 +66,7 @@ public class CsvGenerator<T> {
    private final Function<T, String> func;
    private CsvGeneratorStrategy map;
 
-   public CsvGenerator( Class<T> clazz, List<Line> pathAndDefault, char delimiter, CsvGeneratorStrategy map ) {
+   public CsvGenerator( Class<T> clazz, List<? extends Line> pathAndDefault, char delimiter, CsvGeneratorStrategy map ) {
       this.map = map;
       final StringBuilder c = new StringBuilder();
 
