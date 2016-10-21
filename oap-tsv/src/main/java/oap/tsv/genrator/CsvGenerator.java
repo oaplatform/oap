@@ -140,7 +140,9 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
       final String[] orPath = StringUtils.split( line.path, '|' );
       final int orIndex = 0;
 
+      map.beforeLine( line );
       addPathOr( clazz, delimiter, c, num, fields, last, tab, orPath, orIndex, line );
+      map.afterLine( line );
    }
 
    private void printDelimiter( char delimiter, StringBuilder c, boolean last, AtomicInteger tab ) {

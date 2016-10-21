@@ -93,4 +93,10 @@ public interface CsvGeneratorStrategy<TLine extends CsvGenerator.Line> {
    default boolean printDelimiter() {
       return true;
    }
+
+   default void beforeLine( TLine line ) {
+   }
+
+   default void afterLine( TLine line ) {
+   }
 }
