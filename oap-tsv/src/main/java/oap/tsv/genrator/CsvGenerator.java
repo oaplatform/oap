@@ -56,17 +56,17 @@ import static oap.util.Pair.__;
  * Created by igor.petrenko on 01.09.2016.
  */
 @Slf4j
-public class CsvGenerator<T> {
+public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
    public static final String UNIQUE_ID = "{unique_id}";
    private static final String math = "/*+-%";
    private static final AtomicInteger counter = new AtomicInteger();
    private static final HashMap<String, Function<?, String>> cache = new HashMap<>();
-   private static final CsvGenerator<Object> EMPTY = new CsvGenerator<>(
+   private static final CsvGenerator<Object, Line> EMPTY = new CsvGenerator<>(
       Object.class, emptyList(), ' ', CsvGeneratorStrategy.DEFAULT );
    private final Function<T, String> func;
-   private CsvGeneratorStrategy map;
+   private CsvGeneratorStrategy<TLine> map;
 
-   public CsvGenerator( Class<T> clazz, List<Line> pathAndDefault, char delimiter, CsvGeneratorStrategy map ) {
+   public CsvGenerator( Class<T> clazz, List<TLine> pathAndDefault, char delimiter, CsvGeneratorStrategy<TLine> map ) {
       this.map = map;
       final StringBuilder c = new StringBuilder();
 
@@ -80,6 +80,7 @@ public class CsvGenerator<T> {
             "\n" +
             "import oap.util.Strings;\n" +
             "\n" +
+            "import java.util.*;\n" +
             "import java.util.function.Function;\n" +
             "import com.google.common.base.CharMatcher;\n" +
             "\n" +
@@ -125,11 +126,11 @@ public class CsvGenerator<T> {
    }
 
    @SuppressWarnings( "unchecked" )
-   public static <T> CsvGenerator<T> empty() {
-      return ( CsvGenerator<T> ) EMPTY;
+   public static <T> CsvGenerator<T, Line> empty() {
+      return ( CsvGenerator<T, Line> ) EMPTY;
    }
 
-   private void addPath( Class<T> clazz, Line line, char delimiter, StringBuilder c,
+   private void addPath( Class<T> clazz, TLine line, char delimiter, StringBuilder c,
                          AtomicInteger num, FieldStack fields,
                          boolean last ) throws NoSuchMethodException, NoSuchFieldException {
       final AtomicInteger tab = new AtomicInteger( 5 );
@@ -140,7 +141,9 @@ public class CsvGenerator<T> {
       final String[] orPath = StringUtils.split( line.path, '|' );
       final int orIndex = 0;
 
+      map.beforeLine( c, line, delimiter );
       addPathOr( clazz, delimiter, c, num, fields, last, tab, orPath, orIndex, line );
+      map.afterLine( c, line, delimiter );
    }
 
    private void printDelimiter( char delimiter, StringBuilder c, boolean last, AtomicInteger tab ) {
@@ -149,7 +152,7 @@ public class CsvGenerator<T> {
 
    private void addPathOr( Class<T> clazz, char delimiter, StringBuilder c, AtomicInteger num,
                            FieldStack fields, boolean last, AtomicInteger tab,
-                           String[] orPath, int orIndex, Line line ) {
+                           String[] orPath, int orIndex, TLine line ) {
       int sp = 0;
       String newPath = "s.";
       final MutableObject<Type> lc = new MutableObject<>( clazz );
@@ -299,7 +302,7 @@ public class CsvGenerator<T> {
    private void add( StringBuilder c, AtomicInteger num, String newPath, Type cc, Type parentType,
                      boolean nullable, AtomicInteger tab,
                      String[] orPath, int orIndex, Class<T> clazz, char delimiter,
-                     FieldStack fields, boolean last, Line line, Optional<Join> join ) {
+                     FieldStack fields, boolean last, TLine line, Optional<Join> join ) {
       String pfield = newPath;
       final boolean primitive = isPrimitive( cc );
       if( !primitive ) {
@@ -338,7 +341,7 @@ public class CsvGenerator<T> {
 
             if( nullable ) c.append( "if( " ).append( pfield ).append( " != null ) { " );
 
-            map.map( c, cc, line.name, pfield, delimiter, join );
+            map.map( c, cc, line, pfield, delimiter, join );
             printDelimiter( delimiter, c, last, tab );
 
             if( nullable ) {
@@ -350,7 +353,7 @@ public class CsvGenerator<T> {
          }
       } else {
          tab( c, tab );
-         map.map( c, cc, line.name, pfield, delimiter, join );
+         map.map( c, cc, line, pfield, delimiter, join );
          printDelimiter( delimiter, c, last, tab );
       }
    }

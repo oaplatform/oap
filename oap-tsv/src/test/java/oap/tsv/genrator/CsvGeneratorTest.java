@@ -26,14 +26,18 @@ package oap.tsv.genrator;
 
 import com.google.common.collect.ImmutableMap;
 import oap.testng.AbstractTest;
+import oap.tsv.genrator.CsvGenerator.Line;
 import oap.util.Maps;
+import org.mockito.internal.util.collections.Sets;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -62,6 +66,14 @@ public class CsvGeneratorTest extends AbstractTest {
    public void testProcessArray() throws Exception {
       assertThat( new CsvGenerator<>( Test1.class, asList( line( "array", "array", emptyList() ) ), ' ', DEFAULT )
          .process( new Test1( asList( "1", "2" ) ) ) ).isEqualTo( "[1,2]" );
+   }
+
+   @Test
+   public void testProcessSet() throws Exception {
+      Test1 source = new Test1( asList( "1", "2" ) );
+      source.set = Sets.newSet("4", "5");
+      assertThat( new CsvGenerator<>( Test1.class, asList( line( "array", "set", emptyList() ) ), ' ', DEFAULT )
+         .process( source ) ).isEqualTo( "[4,5]" );
    }
 
    @Test
@@ -113,25 +125,25 @@ public class CsvGeneratorTest extends AbstractTest {
 
    @Test
    public void testDelimiter() {
-      final CsvGenerator<Test1> test = new CsvGenerator<>( Test1.class, asList( line( "testStr", "testStr", "d" ), line( "testInt", "testInt", 2 ) ), ' ', DEFAULT );
+      final CsvGenerator<Test1, Line> test = new CsvGenerator<>( Test1.class, asList( line( "testStr", "testStr", "d" ), line( "testInt", "testInt", 2 ) ), ' ', DEFAULT );
       assertThat( test.process( new Test1( "str", 235 ) ) ).isEqualTo( "str 235" );
    }
 
    @Test
    public void testNested() {
-      final CsvGenerator<Test1> test = new CsvGenerator<>( Test1.class, asList( line( "test2", "test2.testStr", "d" ), line( "test3", "test2.testInt", 2 ) ), ' ', DEFAULT );
+      final CsvGenerator<Test1, Line> test = new CsvGenerator<>( Test1.class, asList( line( "test2", "test2.testStr", "d" ), line( "test3", "test2.testInt", 2 ) ), ' ', DEFAULT );
       assertThat( test.process( new Test1( new Test2( "str", 235 ) ) ) ).isEqualTo( "str 235" );
    }
 
    @Test
    public void testNestedOptional() {
-      final CsvGenerator<Test1> test = new CsvGenerator<>( Test1.class, asList( line( "opt", "optTest2.testStr", "d" ) ), ' ', DEFAULT );
+      final CsvGenerator<Test1, Line> test = new CsvGenerator<>( Test1.class, asList( line( "opt", "optTest2.testStr", "d" ) ), ' ', DEFAULT );
       assertThat( test.process( new Test1( Optional.empty(), Optional.of( new Test2( "str" ) ) ) ) ).isEqualTo( "str" );
    }
 
    @Test
    public void testNestedOptionalSeparators() {
-      final CsvGenerator<Test1> test = new CsvGenerator<>( Test1.class, asList(
+      final CsvGenerator<Test1, Line> test = new CsvGenerator<>( Test1.class, asList(
          line( "opt", "optTest2.testStr", "d" ),
          line( "testInt", "optTest2.testInt", 1 )
       ), ' ', DEFAULT );
@@ -140,20 +152,20 @@ public class CsvGeneratorTest extends AbstractTest {
 
    @Test
    public void testNestedOptionalEmpty() {
-      final CsvGenerator<Test1> test = new CsvGenerator<>( Test1.class, asList( line( "opt", "optTest2.test1.testStr", "def" ) ), ' ', DEFAULT );
+      final CsvGenerator<Test1, Line> test = new CsvGenerator<>( Test1.class, asList( line( "opt", "optTest2.test1.testStr", "def" ) ), ' ', DEFAULT );
       assertThat( test.process( new Test1( Optional.empty(), Optional.empty() ) ) ).isEqualTo( "def" );
    }
 
    @Test
    public void testNested2() {
-      final CsvGenerator<Test1> test = new CsvGenerator<>( Test1.class, asList( line( "f1", "test2.testStr", "d" ), line( "f2", "test2.test1.testInt", 2 ) ), ' ', DEFAULT );
+      final CsvGenerator<Test1, Line> test = new CsvGenerator<>( Test1.class, asList( line( "f1", "test2.testStr", "d" ), line( "f2", "test2.test1.testInt", 2 ) ), ' ', DEFAULT );
       assertThat( test.process( new Test1( new Test2( "n2", 2, new Test1( "str", 235 ) ) ) ) ).isEqualTo( "n2 235" );
    }
 
    @Test
    public void testNestedMap() {
       Test4 sample = new Test4( new Test3( ImmutableMap.of( "mapKey", "mapValue" ) ) );
-      final CsvGenerator<Test4> test = new CsvGenerator<>( Test4.class,
+      final CsvGenerator<Test4, Line> test = new CsvGenerator<>( Test4.class,
          singletonList( line( "f1", "test3.map.mapKey", "unknown" ) ), ' ', DEFAULT );
 
       assertThat( test.process( sample ) ).isEqualTo( "mapValue" );
@@ -168,6 +180,7 @@ public class CsvGeneratorTest extends AbstractTest {
       public Test2 test2;
       public Optional<Test2> optTest2 = Optional.empty();
       public List<String> array = new ArrayList<>();
+      public Set<String> set = new HashSet<>();
 
       public Test1() {
       }
