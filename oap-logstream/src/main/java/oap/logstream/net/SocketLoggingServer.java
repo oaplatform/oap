@@ -163,6 +163,9 @@ public class SocketLoggingServer implements Runnable {
             }
          } catch( EOFException e ) {
             log.debug( "[{}] {} closed", hostName, socket );
+         } catch( SocketTimeoutException e ) {
+            log.info( "[" + hostName + "] no activity on socket for {}ms, timeout, closing...", soTimeout );
+            log.trace( "[" + hostName + "] " + e.getMessage(), e );
          } catch( IOException e ) {
             log.error( "[" + hostName + "] " + e.getMessage(), e );
          } finally {
