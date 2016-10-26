@@ -28,13 +28,16 @@ import com.google.common.collect.ImmutableMap;
 import oap.testng.AbstractTest;
 import oap.tsv.genrator.CsvGenerator.Line;
 import oap.util.Maps;
+import org.mockito.internal.util.collections.Sets;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -63,6 +66,14 @@ public class CsvGeneratorTest extends AbstractTest {
    public void testProcessArray() throws Exception {
       assertThat( new CsvGenerator<>( Test1.class, asList( line( "array", "array", emptyList() ) ), ' ', DEFAULT )
          .process( new Test1( asList( "1", "2" ) ) ) ).isEqualTo( "[1,2]" );
+   }
+
+   @Test
+   public void testProcessSet() throws Exception {
+      Test1 source = new Test1( asList( "1", "2" ) );
+      source.set = Sets.newSet("4", "5");
+      assertThat( new CsvGenerator<>( Test1.class, asList( line( "array", "set", emptyList() ) ), ' ', DEFAULT )
+         .process( source ) ).isEqualTo( "[4,5]" );
    }
 
    @Test
@@ -169,6 +180,7 @@ public class CsvGeneratorTest extends AbstractTest {
       public Test2 test2;
       public Optional<Test2> optTest2 = Optional.empty();
       public List<String> array = new ArrayList<>();
+      public Set<String> set = new HashSet<>();
 
       public Test1() {
       }

@@ -204,11 +204,6 @@ public final class Files {
       }
    }
 
-   @Deprecated
-   public static Path path( String path, String... more ) {
-      return Paths.get( path, more );
-   }
-
    public static Stream<String> lines( Path path ) {
       return Stream.of( new BufferedReader( new InputStreamReader( IoStreams.in( path ) ) ).lines() );
    }
