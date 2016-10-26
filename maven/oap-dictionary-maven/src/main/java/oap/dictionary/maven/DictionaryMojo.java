@@ -29,6 +29,7 @@ import oap.dictionary.DictionaryRoot;
 import oap.dictionary.ExternalIdType;
 import oap.io.Files;
 import oap.io.IoStreams;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.AbstractMojo;
@@ -41,6 +42,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,6 +52,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.io.FilenameUtils.separatorsToUnix;
 import static org.apache.commons.lang3.StringUtils.split;
 
 @Mojo( name = "generate", defaultPhase = LifecyclePhase.GENERATE_SOURCES )
@@ -64,10 +67,25 @@ public class DictionaryMojo extends AbstractMojo {
    @Parameter( defaultValue = "dictionary" )
    public String dictionaryPackage;
 
+   @Parameter
+   public String[] exclude = new String[0];
+
    @Override
    public void execute() throws MojoExecutionException, MojoFailureException {
 
-      final ArrayList<Path> paths = Files.fastWildcard( Paths.get( sourceDirectory ), "*.json" );
+      final List<Path> paths =
+         Files.fastWildcard( Paths.get( sourceDirectory ), "*.json" )
+            .stream()
+            .filter( p -> {
+               final boolean b = !Arrays
+                  .stream( exclude )
+                  .filter( e -> FilenameUtils.wildcardMatchOnSystem( separatorsToUnix( p.toString() ), e ) )
+                  .findAny()
+                  .isPresent();
+               if( !b ) getLog().debug( "exclude " + p );
+               return b;
+            } )
+            .collect( toList() );
 
       getLog().debug( "found " + paths );
 

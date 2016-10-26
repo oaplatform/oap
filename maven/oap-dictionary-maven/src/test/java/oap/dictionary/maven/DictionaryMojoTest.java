@@ -26,10 +26,11 @@ package oap.dictionary.maven;
 
 import oap.testng.AbstractTest;
 import oap.testng.Env;
+import org.apache.commons.io.FilenameUtils;
 import org.testng.annotations.Test;
 
 /**
- * Created by Admin on 19.05.2016.
+ * Created by igor.petrenko on 19.05.2016.
  */
 public class DictionaryMojoTest extends AbstractTest {
    @Test
@@ -38,6 +39,7 @@ public class DictionaryMojoTest extends AbstractTest {
       dictionaryMojo.sourceDirectory = "src/test/resources/dictionary";
       dictionaryMojo.dictionaryPackage = "test";
       dictionaryMojo.outputDirectory = Env.tmp( "dictionary" );
+      dictionaryMojo.exclude = new String[]{ "**/test-dictionary.json" };
 
       dictionaryMojo.execute();
 
