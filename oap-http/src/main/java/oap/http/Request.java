@@ -58,6 +58,7 @@ public class Request {
    protected final Header[] headers;
    private final ListMultimap<String, String> params;
    public final Optional<String> ua;
+   public final Optional<String> referrer;
    public final String ip;
    private final Map<String, String> cookies;
 
@@ -72,6 +73,7 @@ public class Request {
       this.body = content( req );
       this.params = params( req );
       this.ua = header( "User-Agent" );
+      this.referrer = header( "Referrer" );
       this.ip = context.remoteAddress.getHostAddress();
       this.cookies = header( "Cookie" )
          .map( cookie -> Stream.of( SPLITTER.split( cookie ).iterator() )
