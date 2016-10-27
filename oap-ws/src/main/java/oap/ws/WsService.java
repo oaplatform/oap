@@ -156,7 +156,7 @@ public class WsService implements Handler {
                   if( !sessionAware ) {
                      handleInternal( request, response, method, name, false );
                   } else {
-                     final Optional<String> internalSession = Optional.ofNullable( request.cookies().get( "SID" ) );
+                     final Optional<String> internalSession = request.cookie( "SID" );
                      if( internalSession.isPresent() &&
                         sessionManager.getSessionById( internalSession.get() ) != null ) {
 
