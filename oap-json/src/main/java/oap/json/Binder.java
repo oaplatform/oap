@@ -221,6 +221,7 @@ public class Binder {
       }
    }
 
+   @SuppressWarnings( "unchecked" )
    public <T> T unmarshal( Class<?> clazz, Map<String, Object> map ) {
       try {
          return ( T ) mapper.convertValue( map, clazz );

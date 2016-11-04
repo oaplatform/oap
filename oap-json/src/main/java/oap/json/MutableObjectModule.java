@@ -26,8 +26,15 @@ package oap.json;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.BeanDescription;
+import com.fasterxml.jackson.databind.DeserializationConfig;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializationConfig;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.ser.Serializers;
@@ -73,6 +80,7 @@ public class MutableObjectModule {
         }
 
         @Override
+        @SuppressWarnings( "unchecked" )
         public MutableObject deserialize( JsonParser p,
                                           DeserializationContext ctxt ) throws IOException {
 
@@ -88,6 +96,7 @@ public class MutableObjectModule {
         }
 
         @Override
+        @SuppressWarnings( "unchecked" )
         public MutableObject deserialize( JsonParser p, DeserializationContext ctxt, MutableObject intoValue ) throws IOException {
             intoValue.setValue( ctxt.readValue( p, refType ) );
 

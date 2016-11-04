@@ -30,19 +30,21 @@ public class ChunkedStorage<T> {
    @SuppressWarnings( "unchecked" )
    public void mergeAll( Collection<T> objects, Integer chunkId, BiFunction<T, T, T> remappingFunction ) {
       Path chunkPath = dataLocation.resolve( pattern.replace( "*", String.valueOf( chunkId ) ) );
-      Chunk<T> chunk = chunkPath.toFile().exists() ? Binder.json.unmarshal( Chunk.class, chunkPath ) : new Chunk();
-      objects.forEach( o -> chunk.records.merge( identify.apply( o ), o, remappingFunction ) );
+      Chunk chunk = chunkPath.toFile().exists() ? Binder.json.unmarshal( Chunk.class, chunkPath ) : new Chunk();
+      objects.forEach( o -> chunk.records.merge( identify.apply( o ), o,
+         ( a, b ) -> remappingFunction.apply( ( T ) a, ( T ) b ) ) );
       Binder.json.marshal( chunkPath, chunk );
    }
 
+   @SuppressWarnings( "unchecked" )
    public Stream<T> stream() {
       return Stream.of( Files.fastWildcard( dataLocation, pattern ) )
          .map( f -> Binder.json.unmarshal( Chunk.class, f ) )
-         .flatMap( c -> Stream.of( c.records.values() ) );
+         .flatMap( c -> Stream.of( ( Collection<T> ) c.records.values() ) );
    }
 
-   private static class Chunk<T> {
-      private Map<String, T> records = new HashMap<>();
+   private static class Chunk {
+      private Map<String, Object> records = new HashMap<>();
    }
 
 }
