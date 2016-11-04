@@ -192,6 +192,10 @@ public class Reflection extends Annotated<Class<?>> {
       return this.methods.stream().filter( matcher ).findFirst();
    }
 
+   public Optional<Method> method( String name ) {
+      return method( m -> Objects.equals( m.name(), name ) );
+   }
+
    public Optional<Method> method( java.lang.reflect.Method jmethod ) {
       return method( method ->
          Objects.equals( method.underlying.getName(), jmethod.getName() )
@@ -293,6 +297,10 @@ public class Reflection extends Annotated<Class<?>> {
          super( method );
          this.underlying.setAccessible( true );
          this.paramerers = Lists.map( method.getParameters(), Parameter::new );
+      }
+
+      public boolean hasParameter( String name ) {
+         return Lists.find( this.paramerers, p -> Objects.equals( p.name(), name ) ).isPresent();
       }
 
       public String name() {

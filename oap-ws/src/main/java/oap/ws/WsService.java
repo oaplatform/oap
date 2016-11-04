@@ -74,7 +74,6 @@ public class WsService implements Handler {
       .with( r -> true, ( r, value ) -> value instanceof User ? ( User ) value :
          Binder.hocon.unmarshal( r.underlying, value instanceof String ? ( String ) value :
             new String( ( byte[] ) value, UTF_8 ) ) );
-   private final Validators validators = new Validators();
    private Map<String, Pattern> compiledPaths = new HashMap<>();
    private String cookieId;
 
@@ -199,7 +198,7 @@ public class WsService implements Handler {
             for( int i = 0; i < paramerers.size(); i++ ) {
                Reflection.Parameter parameter = paramerers.get( i );
                Object value = parameter.findAnnotation( WsParam.class )
-                  .<Object>map( wsParam -> {
+                  .map( wsParam -> {
                      switch( wsParam.from() ) {
                         case REQUEST:
                            return request;
@@ -239,13 +238,13 @@ public class WsService implements Handler {
                         request.parameter( parameter.name() ) )
                   );
 
-               paramValidation.merge( validators.forParameter( parameter, impl ).validate( value ) );
+               paramValidation.merge( Validators.forParameter( parameter, impl ).validate( value ) );
                paramValues[i] = value;
             }
 
             paramValidation.throwIfInvalid();
 
-            validators.forMethod( method, impl )
+            Validators.forMethod( method, impl )
                .validate( paramValues )
                .throwIfInvalid();
 

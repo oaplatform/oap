@@ -24,6 +24,8 @@
 
 package oap.util;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -67,5 +69,9 @@ public class BiStream<K, V> extends Stream<Pair<K, V>> {
    public Pair<BiStream<K, V>, BiStream<K, V>> partition( BiPredicate<K, V> criteria ) {
       Pair<Stream<Pair<K, V>>, Stream<Pair<K, V>>> partition = super.partition( p -> criteria.test( p._1, p._2 ) );
       return new Pair<>( of2( partition._1 ), of2( partition._2 ) );
+   }
+
+   public Map<K, V> toMap() {
+      return collect( Maps.Collectors.toMap() );
    }
 }

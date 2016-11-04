@@ -45,9 +45,10 @@ public class ValidationErrors {
       return create( code, Lists.of( error ) );
    }
 
-   public void merge( ValidationErrors result ) {
+   public ValidationErrors merge( ValidationErrors result ) {
       if( hasDefaultCode() ) this.code = result.code;
       this.errors.addAll( result.errors );
+      return this;
    }
 
    public boolean isFailed() {

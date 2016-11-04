@@ -33,10 +33,10 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Validators {
-   private ConcurrentHashMap<Reflection.Parameter, Validator> forParams = new ConcurrentHashMap<>();
-   private ConcurrentHashMap<Reflection.Method, Validator> forMethods = new ConcurrentHashMap<>();
+   private static ConcurrentHashMap<Reflection.Parameter, Validator> forParams = new ConcurrentHashMap<>();
+   private static ConcurrentHashMap<Reflection.Method, Validator> forMethods = new ConcurrentHashMap<>();
 
-   public Validator forParameter( Reflection.Parameter parameter, Object instance ) {
+   public static Validator forParameter( Reflection.Parameter parameter, Object instance ) {
       return forParams.computeIfAbsent( parameter, p -> {
          Validator validator = new Validator();
          for( Annotation a : parameter.annotations() )
@@ -46,12 +46,13 @@ public class Validators {
       } );
    }
 
-   public Validator forMethod( Reflection.Method method, Object instance ) {
+   public static Validator forMethod( Reflection.Method method, Object instance ) {
       return forMethods.computeIfAbsent( method, p -> {
          Validator validator = new Validator();
+         System.out.println( "method = " + method.annotations() );
          for( Annotation a : method.annotations() )
             Reflect.reflect( a.annotationType() ).findAnnotation( Peer.class )
-               .ifPresent( va -> validator.peers.add( Reflect.newInstance( va.value(), a, instance ) ) );
+               .ifPresent( va -> validator.peers.add( Reflect.newInstance( va.value(), a, method, instance ) ) );
          return validator;
       } );
 

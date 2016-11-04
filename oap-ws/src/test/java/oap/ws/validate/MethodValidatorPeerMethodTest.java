@@ -24,11 +24,11 @@
 package oap.ws.validate;
 
 import oap.concurrent.SynchronizedThread;
-import oap.http.cors.GenericCorsPolicy;
 import oap.http.HttpResponse;
 import oap.http.PlainHttpListener;
 import oap.http.Protocol;
 import oap.http.Server;
+import oap.http.cors.GenericCorsPolicy;
 import oap.http.testng.HttpAsserts;
 import oap.metrics.Metrics;
 import oap.testng.AbstractTest;
@@ -45,8 +45,10 @@ import org.testng.annotations.Test;
 import java.util.Collections;
 
 import static oap.http.ContentTypes.TEXT_PLAIN;
+import static oap.http.Request.HttpMethod.GET;
 import static oap.http.Request.HttpMethod.POST;
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
+import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.http.testng.HttpAsserts.assertPost;
 import static oap.ws.WsParam.From.BODY;
 
@@ -103,6 +105,12 @@ public class MethodValidatorPeerMethodTest extends AbstractTest {
          .responded( 403, "denied", TEXT_PLAIN, "denied" );
    }
 
+   @Test
+   public void validationMethods() {
+      assertGet( HTTP_PREFIX + "/test/run/validation/methods?a=a&b=5&c=c" )
+         .responded( 400, "validation failed", TEXT_PLAIN, "a\na5\n5a" );
+   }
+
    public static class TestWS {
 
       @WsMethod( path = "/run/validation/default", method = POST )
@@ -126,6 +134,28 @@ public class MethodValidatorPeerMethodTest extends AbstractTest {
       @Validate( "validateFailCode" )
       public Object validationFailCode( @WsParam( from = BODY ) String request ) {
          return null;
+      }
+
+      @WsMethod( path = "/run/validation/methods", method = GET )
+      @Validate( { "validateA", "validateAB", "validateBA" } )
+      public String validationMethods( String a, int b, String c ) {
+         return a + b + c;
+      }
+
+
+      @SuppressWarnings( "unused" )
+      public ValidationErrors validateA( String a ) {
+         return ValidationErrors.create( a );
+      }
+
+      @SuppressWarnings( "unused" )
+      public ValidationErrors validateAB( String a, int b ) {
+         return ValidationErrors.create( a + b );
+      }
+
+      @SuppressWarnings( "unused" )
+      public ValidationErrors validateBA( int b, String a ) {
+         return ValidationErrors.create( b + a );
       }
 
       @SuppressWarnings( "unused" )
