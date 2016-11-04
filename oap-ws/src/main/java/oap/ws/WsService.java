@@ -198,7 +198,7 @@ public class WsService implements Handler {
             for( int i = 0; i < paramerers.size(); i++ ) {
                Reflection.Parameter parameter = paramerers.get( i );
                Object value = parameter.findAnnotation( WsParam.class )
-                  .map( wsParam -> {
+                  .<Object>map( wsParam -> {
                      switch( wsParam.from() ) {
                         case REQUEST:
                            return request;
