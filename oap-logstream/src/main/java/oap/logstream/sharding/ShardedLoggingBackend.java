@@ -83,4 +83,10 @@ public class ShardedLoggingBackend implements LoggingBackend {
    public boolean isLoggingAvailable() {
       return Stream.of( loggers ).allMatch( LoggingBackend::isLoggingAvailable );
    }
+
+   @Override
+   public boolean isLoggingAvailable( String hostName, String fileName ) {
+      int shardNumber = shardMapper.getShardNumber( hostName, fileName );
+      return loggers[shardNumber].isLoggingAvailable();
+   }
 }

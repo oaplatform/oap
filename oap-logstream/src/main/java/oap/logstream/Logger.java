@@ -28,17 +28,22 @@ import oap.util.Dates;
 import org.joda.time.DateTimeUtils;
 
 public class Logger {
-    private LoggingBackend backend;
+   private LoggingBackend backend;
 
-    public Logger( LoggingBackend backend ) {
-        this.backend = backend;
-    }
+   public Logger( LoggingBackend backend ) {
+      this.backend = backend;
+   }
 
-    public void log( String selector, String line ) {
-        backend.log( Inet.HOSTNAME, selector, Dates.formatDateWihMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
-    }
+   public void log( String selector, String line ) {
+      backend.log( Inet.HOSTNAME, selector, Dates.formatDateWihMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
+   }
 
-    public boolean isLoggingAvailable() {
-        return backend.isLoggingAvailable();
-    }
+   public boolean isLoggingAvailable() {
+      return backend.isLoggingAvailable();
+   }
+
+   public boolean isLoggingAvailable( String selector ) {
+      return backend.isLoggingAvailable( Inet.HOSTNAME, selector );
+   }
+
 }
