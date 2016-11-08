@@ -137,18 +137,18 @@ public class MethodValidatorPeerParamTest {
 
       @WsMethod( path = "/run/validation/ok", method = POST )
       public String validationOk(
-         @WsParam( from = QUERY ) @Validate( "validateOkInt" ) int q,
-         @WsParam( from = QUERY ) @Validate( "validateOkOptString" ) Optional<String> q2,
-         @WsParam( from = QUERY ) @Validate( "validateOkListString" ) List<String> ql,
-         @WsParam( from = BODY ) @Validate( "validateOkString" ) String body
+         @WsParam( from = QUERY ) @WsValidate( "validateOkInt" ) int q,
+         @WsParam( from = QUERY ) @WsValidate( "validateOkOptString" ) Optional<String> q2,
+         @WsParam( from = QUERY ) @WsValidate( "validateOkListString" ) List<String> ql,
+         @WsParam( from = BODY ) @WsValidate( "validateOkString" ) String body
       ) {
          return q + q2.orElse( "" ) + String.join( "/", ql ) + body;
       }
 
       @WsMethod( path = "/run/validation/fail", method = POST )
       public String validationFail(
-         @WsParam( from = QUERY ) @Validate( "validateFailInt" ) int q,
-         @WsParam( from = BODY ) @Validate( "validateFailString" ) String body
+         @WsParam( from = QUERY ) @WsValidate( "validateFailInt" ) int q,
+         @WsParam( from = BODY ) @WsValidate( "validateFailString" ) String body
       ) {
          return q + body;
       }

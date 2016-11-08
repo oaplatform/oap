@@ -35,7 +35,7 @@ public class JsonValidatorPeer implements ValidatorPeer {
    private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
    private final JsonValidatorFactory factory;
 
-   public JsonValidatorPeer( ValidateJson validate, Object instance ) {
+   public JsonValidatorPeer( WsValidateJson validate, Object instance ) {
       factory = JsonValidatorFactory.schema( validate.schema(), storage );
    }
 

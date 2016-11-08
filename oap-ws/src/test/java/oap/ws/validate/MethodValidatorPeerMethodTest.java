@@ -122,25 +122,25 @@ public class MethodValidatorPeerMethodTest extends AbstractTest {
       }
 
       @WsMethod( path = "/run/validation/ok", method = POST, produces = "text/plain" )
-      @Validate( "validateOk" )
+      @WsValidate( "validateOk" )
       public String validationOk( @WsParam( from = BODY ) String request ) {
          return request;
       }
 
       @WsMethod( path = "/run/validation/fail", method = POST )
-      @Validate( "validateFail" )
+      @WsValidate( "validateFail" )
       public Object validationFail( @WsParam( from = BODY ) String request ) {
          return null;
       }
 
       @WsMethod( path = "/run/validation/fail-code", method = POST )
-      @Validate( "validateFailCode" )
+      @WsValidate( "validateFailCode" )
       public Object validationFailCode( @WsParam( from = BODY ) String request ) {
          return null;
       }
 
       @WsMethod( path = "/run/validation/methods", method = GET )
-      @Validate( { "validateA", "validateAB", "validateBA" } )
+      @WsValidate( { "validateA", "validateAB", "validateBA" } )
       public String validationMethods( String a, int b, String c ) {
          return a + b + c;
       }

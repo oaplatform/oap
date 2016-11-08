@@ -34,13 +34,13 @@ import java.util.Map;
 public class MethodValidatorPeer implements ValidatorPeer {
    private final List<Validator> validators;
 
-   public MethodValidatorPeer( Validate validate, Object instance ) {
+   public MethodValidatorPeer( WsValidate validate, Object instance ) {
       this.validators = Stream.of( validate.value() )
          .<Validator>map( m -> new ParameterValidator( m, instance ) )
          .toList();
    }
 
-   public MethodValidatorPeer( Validate validate, Reflection.Method targetMethod, Object instance ) {
+   public MethodValidatorPeer( WsValidate validate, Reflection.Method targetMethod, Object instance ) {
       this.validators = Stream.of( validate.value() )
          .<Validator>map( m -> new MethodValidator( m, targetMethod, instance ) )
          .toList();

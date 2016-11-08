@@ -24,7 +24,7 @@
 
 package oap.ws.validate.testng;
 
-import oap.ws.validate.Validate;
+import oap.ws.validate.WsValidate;
 import oap.ws.validate.ValidationErrors;
 import org.testng.annotations.Test;
 
@@ -64,8 +64,8 @@ interface I {
 
 
 class C implements I {
-   @Validate( "validateM" )
-   public String m( @Validate( "validateP" ) String a ) {
+   @WsValidate( "validateM" )
+   public String m( @WsValidate( "validateP" ) String a ) {
       return a;
    }
 

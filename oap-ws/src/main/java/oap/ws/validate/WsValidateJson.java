@@ -29,8 +29,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Retention( RetentionPolicy.RUNTIME )
-@Target( { ElementType.PARAMETER, ElementType.METHOD } )
-@Peer( MethodValidatorPeer.class )
-public @interface Validate {
-   String[] value();
+@Target( ElementType.PARAMETER )
+@Peer( JsonValidatorPeer.class )
+public @interface WsValidateJson {
+    String schema();
 }
