@@ -51,6 +51,9 @@ import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.http.testng.HttpAsserts.assertPost;
 import static oap.ws.WsParam.From.BODY;
+import static oap.ws.validate.ValidationErrors.empty;
+import static oap.ws.validate.ValidationErrors.error;
+import static oap.ws.validate.ValidationErrors.errors;
 
 public class MethodValidatorPeerMethodTest extends AbstractTest {
    private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
@@ -145,32 +148,32 @@ public class MethodValidatorPeerMethodTest extends AbstractTest {
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateA( String a ) {
-         return ValidationErrors.create( a );
+         return error( a );
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateAB( String a, int b ) {
-         return ValidationErrors.create( a + b );
+         return error( a + b );
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateBA( int b, String a ) {
-         return ValidationErrors.create( b + a );
+         return error( b + a );
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateOk( String request ) {
-         return ValidationErrors.empty();
+         return empty();
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateFail( String request ) {
-         return ValidationErrors.create( Lists.of( "error1", "error2" ) );
+         return errors( Lists.of( "error1", "error2" ) );
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateFailCode( String request ) {
-         return ValidationErrors.create( 403, "denied" );
+         return error( 403, "denied" );
       }
    }
 }

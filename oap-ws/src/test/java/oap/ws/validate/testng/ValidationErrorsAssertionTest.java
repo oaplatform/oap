@@ -28,22 +28,28 @@ import oap.ws.validate.Validate;
 import oap.ws.validate.ValidationErrors;
 import org.testng.annotations.Test;
 
+import static oap.ws.validate.ValidationErrors.empty;
+import static oap.ws.validate.ValidationErrors.error;
 import static oap.ws.validate.testng.ValidationErrorsAssertion.validating;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ValidationErrorsAssertionTest {
    @Test
    public void validatedCall() {
-      validating( I.class )
-         .isError( 404, "not found" )
-         .forInstance( new C() )
-         .m( "a" );
-      validating( I.class )
-         .isFailed()
-         .hasCode( 404 )
-         .containsErrors( "not found" )
-         .forInstance( new C() )
-         .m( "b" );
+      assertThat(
+         validating( I.class )
+            .isError( 404, "not found" )
+            .forInstance( new C() )
+            .m( "a" ) )
+         .isNull();
+      assertThat(
+         validating( I.class )
+            .isFailed()
+            .hasCode( 404 )
+            .containsErrors( "not found" )
+            .forInstance( new C() )
+            .m( "b" ) )
+         .isNull();
       assertThat( validating( I.class )
          .isNotFailed()
          .forInstance( new C() )
@@ -64,12 +70,12 @@ class C implements I {
    }
 
    public ValidationErrors validateM( String a ) {
-      return a.equals( "a" ) ? ValidationErrors.create( 404, "not found" )
-         : ValidationErrors.empty();
+      return a.equals( "a" ) ? error( 404, "not found" )
+         : empty();
    }
 
    public ValidationErrors validateP( String a ) {
-      return a.equals( "b" ) ? ValidationErrors.create( 404, "not found" )
-         : ValidationErrors.empty();
+      return a.equals( "b" ) ? error( 404, "not found" )
+         : empty();
    }
 }

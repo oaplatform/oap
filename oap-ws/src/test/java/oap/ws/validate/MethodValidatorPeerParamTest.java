@@ -49,6 +49,8 @@ import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 import static oap.http.testng.HttpAsserts.assertPost;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;
+import static oap.ws.validate.ValidationErrors.empty;
+import static oap.ws.validate.ValidationErrors.error;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class MethodValidatorPeerParamTest {
@@ -153,32 +155,32 @@ public class MethodValidatorPeerParamTest {
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateOkInt( int value ) {
-         return ValidationErrors.empty();
+         return empty();
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateOkOptString( Optional<String> value ) {
-         return ValidationErrors.empty();
+         return empty();
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateOkListString( List<String> value ) {
-         return ValidationErrors.empty();
+         return empty();
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateOkString( String value ) {
-         return ValidationErrors.empty();
+         return empty();
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateFailInt( int value ) {
-         return ValidationErrors.create( "error:" + value );
+         return error( "error:" + value );
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateFailString( String value ) {
-         return ValidationErrors.create( "error:" + value );
+         return error( "error:" + value );
       }
    }
 }
