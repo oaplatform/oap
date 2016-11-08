@@ -134,7 +134,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                   ValidationErrors methodErrors = Validators
                      .forMethod( method, instance )
                      .validate( args );
-                  if( methodErrors.isFailed() ) runAsserts( methodErrors );
+                   runAsserts( methodErrors );
                }
                return method.invoke( instance, args );
             } )
