@@ -49,7 +49,6 @@ public class Validators {
    public static Validator forMethod( Reflection.Method method, Object instance ) {
       return forMethods.computeIfAbsent( method, p -> {
          Validator validator = new Validator();
-         System.out.println( "method = " + method.annotations() );
          for( Annotation a : method.annotations() )
             Reflect.reflect( a.annotationType() ).findAnnotation( Peer.class )
                .ifPresent( va -> validator.peers.add( Reflect.newInstance( va.value(), a, method, instance ) ) );
