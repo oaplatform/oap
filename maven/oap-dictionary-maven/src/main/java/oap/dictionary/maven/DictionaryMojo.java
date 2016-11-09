@@ -29,6 +29,7 @@ import oap.dictionary.DictionaryRoot;
 import oap.dictionary.ExternalIdType;
 import oap.io.Files;
 import oap.io.IoStreams;
+import oap.util.Stream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -47,7 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -287,11 +287,12 @@ public class DictionaryMojo extends AbstractMojo {
       return res.length() > 0 ? ", " + res : res;
    }
 
+   @SuppressWarnings( "unchecked" )
    private String print( Object value ) {
       if( String.class.isAssignableFrom( value.getClass() ) ) return "\"" + value + "\"";
       if( Long.class.isAssignableFrom( value.getClass() ) ) return value + "L";
       if( List.class.isAssignableFrom( value.getClass() ) ) {
-         return "asList(" + ( ( List ) value ).stream().map( v -> print( v ) ).collect( joining( ", " ) ) + ")";
+         return "asList(" + ( ( List ) value ).stream().map( this::print ).collect( joining( ", " ) ) + ")";
       } else return value.toString();
    }
 
@@ -309,7 +310,9 @@ public class DictionaryMojo extends AbstractMojo {
    }
 
    private String toEnumName( String name ) {
-      return String.join( "", asList( split( name, '-' ) ).stream().map( StringUtils::capitalize ).collect( toList() ) );
+      return Stream.of( split( name, '-' ) )
+         .map( StringUtils::capitalize )
+         .collect( joining() );
    }
 
    private Object convert( int value, ExternalIdType externalIdType ) {

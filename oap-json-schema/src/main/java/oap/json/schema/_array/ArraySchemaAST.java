@@ -47,6 +47,7 @@ public class ArraySchemaAST extends SchemaAST<ArraySchemaAST> {
    }
 
    @Override
+   @SuppressWarnings( "unchecked" )
    public ArraySchemaAST merge( ArraySchemaAST cs ) {
       return new ArraySchemaAST(
          common.merge( cs.common ),

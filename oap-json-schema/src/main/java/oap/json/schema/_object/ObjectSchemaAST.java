@@ -53,6 +53,7 @@ public class ObjectSchemaAST extends SchemaAST<ObjectSchemaAST> {
       );
    }
 
+   @SuppressWarnings( "unchecked" )
    private LinkedHashMap<String, SchemaAST> merge( LinkedHashMap<String, SchemaAST> parentProperties, LinkedHashMap<String, SchemaAST> current ) {
       final LinkedHashMap<String, SchemaAST> result = new LinkedHashMap<>();
 

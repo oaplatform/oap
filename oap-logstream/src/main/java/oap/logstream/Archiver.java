@@ -39,19 +39,21 @@ public class Archiver implements Runnable {
    private final Path sourceDirectory;
    private final Path destinationDirectory;
    private final long safeInterval;
-   private final IoStreams.Encoding encoding;
+   private final IoStreams.Encoding sourceEncoding;
+   private final IoStreams.Encoding destinationEncoding;
    private final String mask;
    private final int bucketsPerHour;
    private int bufferSize = 1024 * 256 * 4 * 4;
 
 
    public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask,
-                    IoStreams.Encoding encoding, int bucketsPerHour ) {
+                    IoStreams.Encoding sourceEncoding, IoStreams.Encoding destinationEncoding, int bucketsPerHour ) {
       this.sourceDirectory = sourceDirectory;
       this.destinationDirectory = destinationDirectory;
       this.safeInterval = safeInterval;
       this.mask = mask;
-      this.encoding = encoding;
+      this.sourceEncoding = sourceEncoding;
+      this.destinationEncoding = destinationEncoding;
       this.bucketsPerHour = bucketsPerHour;
    }
 
@@ -70,24 +72,28 @@ public class Archiver implements Runnable {
             continue;
          }
 
-         Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path )
-            + encoding.extension.map( e -> "." + e ).orElse( "" ) );
-
-         Metrics.measureTimer( Metrics.name( "archive" ), () -> {
-            if( encoding.compress ) {
-               log.debug( "compressing {} ({} bytes)", path, path.toFile().length() );
-               Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".tmp" );
-               Files.copy( path, PLAIN, targetTemp, encoding, bufferSize );
-               Files.rename( targetTemp, targetFile );
-               log.debug( "compressed {} ({} bytes)", path, targetFile.toFile().length() );
-               Files.delete( path );
-            } else {
-               log.debug( "moving {} ({} bytes)", path, path.toFile().length() );
-               Files.ensureFile( targetFile );
-               Files.rename( path, targetFile );
-            }
-         } );
+         archive( path );
       }
       log.debug( "packing is done" );
+   }
+
+   private void archive( Path path ) {
+      Path targetFile = destinationDirectory.resolve( sourceDirectory.relativize( path )
+         + destinationEncoding.extension.map( e -> "." + e ).orElse( "" ) );
+
+      Metrics.measureTimer( Metrics.name( "archive" ), () -> {
+         if( destinationEncoding.compress && sourceEncoding != destinationEncoding ) {
+            log.debug( "compressing {} ({} bytes)", path, path.toFile().length() );
+            Path targetTemp = destinationDirectory.resolve( sourceDirectory.relativize( path ) + ".tmp" );
+            Files.copy( path, sourceEncoding, targetTemp, destinationEncoding, bufferSize );
+            Files.rename( targetTemp, targetFile );
+            log.debug( "compressed {} ({} bytes)", path, targetFile.toFile().length() );
+            Files.delete( path );
+         } else {
+            log.debug( "moving {} ({} bytes)", path, path.toFile().length() );
+            Files.ensureFile( targetFile );
+            Files.rename( path, targetFile );
+         }
+      } );
    }
 }

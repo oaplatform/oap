@@ -49,6 +49,8 @@ import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 import static oap.http.testng.HttpAsserts.assertPost;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;
+import static oap.ws.validate.ValidationErrors.empty;
+import static oap.ws.validate.ValidationErrors.error;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class MethodValidatorPeerParamTest {
@@ -135,50 +137,50 @@ public class MethodValidatorPeerParamTest {
 
       @WsMethod( path = "/run/validation/ok", method = POST )
       public String validationOk(
-         @WsParam( from = QUERY ) @Validate( "validateOkInt" ) int q,
-         @WsParam( from = QUERY ) @Validate( "validateOkOptString" ) Optional<String> q2,
-         @WsParam( from = QUERY ) @Validate( "validateOkListString" ) List<String> ql,
-         @WsParam( from = BODY ) @Validate( "validateOkString" ) String body
+         @WsParam( from = QUERY ) @WsValidate( "validateOkInt" ) int q,
+         @WsParam( from = QUERY ) @WsValidate( "validateOkOptString" ) Optional<String> q2,
+         @WsParam( from = QUERY ) @WsValidate( "validateOkListString" ) List<String> ql,
+         @WsParam( from = BODY ) @WsValidate( "validateOkString" ) String body
       ) {
          return q + q2.orElse( "" ) + String.join( "/", ql ) + body;
       }
 
       @WsMethod( path = "/run/validation/fail", method = POST )
       public String validationFail(
-         @WsParam( from = QUERY ) @Validate( "validateFailInt" ) int q,
-         @WsParam( from = BODY ) @Validate( "validateFailString" ) String body
+         @WsParam( from = QUERY ) @WsValidate( "validateFailInt" ) int q,
+         @WsParam( from = BODY ) @WsValidate( "validateFailString" ) String body
       ) {
          return q + body;
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateOkInt( int value ) {
-         return ValidationErrors.empty();
+         return empty();
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateOkOptString( Optional<String> value ) {
-         return ValidationErrors.empty();
+         return empty();
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateOkListString( List<String> value ) {
-         return ValidationErrors.empty();
+         return empty();
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateOkString( String value ) {
-         return ValidationErrors.empty();
+         return empty();
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateFailInt( int value ) {
-         return ValidationErrors.create( "error:" + value );
+         return error( "error:" + value );
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateFailString( String value ) {
-         return ValidationErrors.create( "error:" + value );
+         return error( "error:" + value );
       }
    }
 }

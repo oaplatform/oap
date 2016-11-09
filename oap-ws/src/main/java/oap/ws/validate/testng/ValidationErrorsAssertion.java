@@ -120,22 +120,24 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
          if( !methodOpt.isPresent() ) throw new NoSuchMethodError( jmethod.toString() );
          return methodOpt
             .map( method -> {
-               Validators validators = new Validators();
                ValidationErrors paramErrors = ValidationErrors.empty();
 
                List<Reflection.Parameter> paramerers = method.paramerers;
                for( int i = 0; i < paramerers.size(); i++ ) {
                   Reflection.Parameter parameter = paramerers.get( i );
-                  paramErrors.merge( validators
+                  paramErrors.merge( Validators
                      .forParameter( parameter, instance )
                      .validate( args[i] ) );
                }
-               if( paramErrors.isFailed() ) runAsserts( paramErrors );
-               else {
-                  ValidationErrors methodErrors = validators
+               if( paramErrors.isFailed() ) {
+                  runAsserts( paramErrors );
+                  return null;
+               } else {
+                  ValidationErrors methodErrors = Validators
                      .forMethod( method, instance )
                      .validate( args );
-                  if( methodErrors.isFailed() ) runAsserts( methodErrors );
+                  runAsserts( methodErrors );
+                  if( methodErrors.isFailed() ) return null;
                }
                return method.invoke( instance, args );
             } )

@@ -21,16 +21,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package oap.logstream.sharding;
 
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.PARAMETER )
-@Peer( JsonValidatorPeer.class )
-public @interface ValidateJson {
-    String schema();
+import com.fasterxml.jackson.annotation.JsonCreator;
+import oap.logstream.LoggingBackend;
+
+/**
+ * Created by anton on 11/2/16.
+ */
+public class LoggerShardRange {
+
+   @JsonCreator
+   public LoggerShardRange( LoggingBackend backend, int lower, int upper ) {
+      this.backend = backend;
+      this.lower = lower;
+      this.upper = upper;
+   }
+
+   public final LoggingBackend backend;
+   public final int lower;
+   public final int upper;
 }

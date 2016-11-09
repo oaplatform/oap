@@ -1,0 +1,92 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) Open Application Platform Authors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package oap.logstream.sharding;
+
+import com.google.common.base.Preconditions;
+import oap.logstream.LoggingBackend;
+import oap.util.Stream;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * Created by anton on 11/2/16.
+ */
+public class ShardedLoggingBackend implements LoggingBackend {
+   public final LoggingBackend[] loggers;
+   public final ShardMapper shardMapper;
+
+   public ShardedLoggingBackend( List<LoggerShardRange> shards, ShardMapper shardMapper ) {
+
+      Preconditions.checkNotNull( shards );
+      Preconditions.checkArgument( !shards.isEmpty() );
+      Preconditions.checkNotNull( shardMapper );
+
+      this.shardMapper = shardMapper;
+
+      shards.stream().mapToInt( l -> l.lower ).min().orElseThrow( () -> new IllegalArgumentException( "No logging ranges are configured" ) );
+      int maxShard = shards.stream().mapToInt( l -> l.upper ).max().orElseThrow( () -> new IllegalArgumentException( "No logging ranges are configured" ) );
+
+      loggers = new LoggingBackend[maxShard + 1];
+
+      for( LoggerShardRange ls : shards ) {
+         for( int i = ls.lower; i <= ls.upper; i++ ) {
+            loggers[i] = ls.backend;
+         }
+      }
+
+      List<Integer> notConfiguredShards = Stream.of( loggers )
+         .zipWithIndex()
+         .filter( pair -> pair._1 == null )
+         .map( pair -> pair._2 )
+         .collect( Collectors.toList() );
+
+      if(!notConfiguredShards.isEmpty()) {
+         throw new IllegalArgumentException( "No logger configured for shards:" + notConfiguredShards );
+      }
+   }
+
+   @Override
+   public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
+      int shardNumber = shardMapper.getShardNumber( hostName, fileName, buffer );
+      loggers[shardNumber].log( hostName, fileName, buffer, offset, length );
+   }
+
+   @Override
+   public void close() {
+      //NOOP because it's wrapper only
+   }
+
+   @Override
+   public boolean isLoggingAvailable() {
+      return Stream.of( loggers ).allMatch( LoggingBackend::isLoggingAvailable );
+   }
+
+   @Override
+   public boolean isLoggingAvailable( String hostName, String fileName ) {
+      int shardNumber = shardMapper.getShardNumber( hostName, fileName );
+      return loggers[shardNumber].isLoggingAvailable();
+   }
+}

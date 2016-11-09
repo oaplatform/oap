@@ -1,0 +1,77 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) Open Application Platform Authors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package oap.logstream.sharding;
+
+import oap.logstream.LoggingBackend;
+import org.testng.annotations.Test;
+
+import java.util.Arrays;
+import java.util.List;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+/**
+ * Created by anton on 11/3/16.
+ */
+public class ShardedLoggingBackendTest {
+
+   ShardMapper mapper = mock( ShardMapper.class );
+
+   @Test
+   public void testRouting() {
+      LoggingBackend log1 = mock( LoggingBackend.class );
+      LoggingBackend log2 = mock( LoggingBackend.class );
+
+      LoggerShardRange shard0To100 = new LoggerShardRange( log1, 0, 100 );
+      LoggerShardRange shard100To200 = new LoggerShardRange( log2, 100, 200 );
+
+      List<LoggerShardRange> shards = Arrays.asList( shard0To100, shard100To200 );
+      ShardedLoggingBackend slb = new ShardedLoggingBackend( shards, mapper );
+      when( mapper.getShardNumber( anyString(), eq( "34/df/file1" ), any(byte[].class) ) ).thenReturn( 34 );
+      when( mapper.getShardNumber( anyString(), eq( "142/345/file1" ), any(byte[].class)  ) ).thenReturn( 142 );
+
+      slb.log( "localhost", "34/df/file1", "line1" );
+      slb.log( "localhost", "142/345/file1", "line2" );
+
+      verify( log1 ).log( "localhost", "34/df/file1", "line1\n".getBytes(), 0, "line1\n".getBytes().length );
+      verify( log2 ).log( "localhost", "142/345/file1", "line2\n".getBytes(), 0, "line2\n".getBytes().length );
+   }
+
+   @Test(expectedExceptions = IllegalArgumentException.class)
+   public void testUnconfiguredShards() {
+      LoggingBackend log1 = mock( LoggingBackend.class );
+
+      LoggerShardRange shard0To100 = new LoggerShardRange( log1, 0, 100 );
+      LoggerShardRange shard100To200 = new LoggerShardRange( log1, 110, 200 );
+
+      List<LoggerShardRange> shards = Arrays.asList( shard0To100, shard100To200 );
+      new ShardedLoggingBackend( shards, mapper );
+   }
+}

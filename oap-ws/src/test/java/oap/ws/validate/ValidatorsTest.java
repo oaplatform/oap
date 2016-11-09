@@ -21,29 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.logstream;
 
-import oap.net.Inet;
-import oap.util.Dates;
-import org.joda.time.DateTimeUtils;
+package oap.ws.validate;
 
-public class Logger {
-   private LoggingBackend backend;
+import oap.reflect.Reflect;
+import org.testng.annotations.Test;
 
-   public Logger( LoggingBackend backend ) {
-      this.backend = backend;
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class ValidatorsTest {
+   @Test
+   public void caching() {
+      Validators.Validator v1 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(), new Validatee() );
+      Validators.Validator v2 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(), new Validatee() );
+      assertThat( v1 ).isNotSameAs( v2 );
    }
 
-   public void log( String selector, String line ) {
-      backend.log( Inet.HOSTNAME, selector, Dates.formatDateWihMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
-   }
+   public static class Validatee {
+      @WsValidate( "validate" )
+      public void m( String a ) {
 
-   public boolean isLoggingAvailable() {
-      return backend.isLoggingAvailable();
-   }
+      }
 
-   public boolean isLoggingAvailable( String selector ) {
-      return backend.isLoggingAvailable( Inet.HOSTNAME, selector );
+      public ValidationErrors validate( String a ) {
+         return ValidationErrors.empty();
+      }
    }
-
 }

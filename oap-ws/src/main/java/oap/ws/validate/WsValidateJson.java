@@ -21,29 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.logstream;
+package oap.ws.validate;
 
-import oap.net.Inet;
-import oap.util.Dates;
-import org.joda.time.DateTimeUtils;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public class Logger {
-   private LoggingBackend backend;
-
-   public Logger( LoggingBackend backend ) {
-      this.backend = backend;
-   }
-
-   public void log( String selector, String line ) {
-      backend.log( Inet.HOSTNAME, selector, Dates.formatDateWihMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
-   }
-
-   public boolean isLoggingAvailable() {
-      return backend.isLoggingAvailable();
-   }
-
-   public boolean isLoggingAvailable( String selector ) {
-      return backend.isLoggingAvailable( Inet.HOSTNAME, selector );
-   }
-
+@Retention( RetentionPolicy.RUNTIME )
+@Target( ElementType.PARAMETER )
+@Peer( JsonValidatorPeer.class )
+public @interface WsValidateJson {
+    String schema();
 }

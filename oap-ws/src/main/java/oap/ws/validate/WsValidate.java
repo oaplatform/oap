@@ -31,6 +31,6 @@ import java.lang.annotation.Target;
 @Retention( RetentionPolicy.RUNTIME )
 @Target( { ElementType.PARAMETER, ElementType.METHOD } )
 @Peer( MethodValidatorPeer.class )
-public @interface Validate {
-    String value();
+public @interface WsValidate {
+   String[] value();
 }

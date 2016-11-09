@@ -41,4 +41,8 @@ public interface LoggingBackend extends Closeable {
     default boolean isLoggingAvailable() {
         return true;
     }
+
+    default boolean isLoggingAvailable( String hostName, String fileName ) {
+        return isLoggingAvailable();
+    }
 }

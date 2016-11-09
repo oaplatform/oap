@@ -274,7 +274,7 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
 
       return sb;
    }
-
+   @SuppressWarnings( "unchecked" )
    private Type getDeclaredFieldOrFunctionType( Type type, String field ) {
       if( type instanceof ParameterizedType )
          return getDeclaredFieldOrFunctionType( ( ( ParameterizedType ) type ).getRawType(), field );

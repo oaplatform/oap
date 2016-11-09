@@ -24,11 +24,11 @@
 package oap.ws.validate;
 
 import oap.concurrent.SynchronizedThread;
-import oap.http.cors.GenericCorsPolicy;
 import oap.http.HttpResponse;
 import oap.http.PlainHttpListener;
 import oap.http.Protocol;
 import oap.http.Server;
+import oap.http.cors.GenericCorsPolicy;
 import oap.http.testng.HttpAsserts;
 import oap.metrics.Metrics;
 import oap.testng.AbstractTest;
@@ -45,10 +45,15 @@ import org.testng.annotations.Test;
 import java.util.Collections;
 
 import static oap.http.ContentTypes.TEXT_PLAIN;
+import static oap.http.Request.HttpMethod.GET;
 import static oap.http.Request.HttpMethod.POST;
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
+import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.http.testng.HttpAsserts.assertPost;
 import static oap.ws.WsParam.From.BODY;
+import static oap.ws.validate.ValidationErrors.empty;
+import static oap.ws.validate.ValidationErrors.error;
+import static oap.ws.validate.ValidationErrors.errors;
 
 public class MethodValidatorPeerMethodTest extends AbstractTest {
    private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
@@ -103,6 +108,12 @@ public class MethodValidatorPeerMethodTest extends AbstractTest {
          .responded( 403, "denied", TEXT_PLAIN, "denied" );
    }
 
+   @Test
+   public void validationMethods() {
+      assertGet( HTTP_PREFIX + "/test/run/validation/methods?a=a&b=5&c=c" )
+         .responded( 400, "validation failed", TEXT_PLAIN, "a\na5\n5a" );
+   }
+
    public static class TestWS {
 
       @WsMethod( path = "/run/validation/default", method = POST )
@@ -111,36 +122,58 @@ public class MethodValidatorPeerMethodTest extends AbstractTest {
       }
 
       @WsMethod( path = "/run/validation/ok", method = POST, produces = "text/plain" )
-      @Validate( "validateOk" )
+      @WsValidate( "validateOk" )
       public String validationOk( @WsParam( from = BODY ) String request ) {
          return request;
       }
 
       @WsMethod( path = "/run/validation/fail", method = POST )
-      @Validate( "validateFail" )
+      @WsValidate( "validateFail" )
       public Object validationFail( @WsParam( from = BODY ) String request ) {
          return null;
       }
 
       @WsMethod( path = "/run/validation/fail-code", method = POST )
-      @Validate( "validateFailCode" )
+      @WsValidate( "validateFailCode" )
       public Object validationFailCode( @WsParam( from = BODY ) String request ) {
          return null;
       }
 
+      @WsMethod( path = "/run/validation/methods", method = GET )
+      @WsValidate( { "validateA", "validateAB", "validateBA" } )
+      public String validationMethods( String a, int b, String c ) {
+         return a + b + c;
+      }
+
+
+      @SuppressWarnings( "unused" )
+      public ValidationErrors validateA( String a ) {
+         return error( a );
+      }
+
+      @SuppressWarnings( "unused" )
+      public ValidationErrors validateAB( String a, int b ) {
+         return error( a + b );
+      }
+
+      @SuppressWarnings( "unused" )
+      public ValidationErrors validateBA( int b, String a ) {
+         return error( b + a );
+      }
+
       @SuppressWarnings( "unused" )
       public ValidationErrors validateOk( String request ) {
-         return ValidationErrors.empty();
+         return empty();
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateFail( String request ) {
-         return ValidationErrors.create( Lists.of( "error1", "error2" ) );
+         return errors( Lists.of( "error1", "error2" ) );
       }
 
       @SuppressWarnings( "unused" )
       public ValidationErrors validateFailCode( String request ) {
-         return ValidationErrors.create( 403, "denied" );
+         return error( 403, "denied" );
       }
    }
 }

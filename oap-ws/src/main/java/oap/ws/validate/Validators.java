@@ -25,19 +25,21 @@ package oap.ws.validate;
 
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
-import oap.util.Lists;
+import oap.util.Pair;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class Validators {
-   private ConcurrentHashMap<Reflection.Parameter, Validator> forParams = new ConcurrentHashMap<>();
-   private ConcurrentHashMap<Reflection.Method, Validator> forMethods = new ConcurrentHashMap<>();
+import static oap.util.Pair.__;
 
-   public Validator forParameter( Reflection.Parameter parameter, Object instance ) {
-      return forParams.computeIfAbsent( parameter, p -> {
+public class Validators {
+   private static ConcurrentHashMap<Pair<Reflection.Parameter, Object>, Validator> forParams = new ConcurrentHashMap<>();
+   private static ConcurrentHashMap<Pair<Reflection.Method, Object>, Validator> forMethods = new ConcurrentHashMap<>();
+
+   public static Validator forParameter( Reflection.Parameter parameter, Object instance ) {
+      return forParams.computeIfAbsent( __( parameter, instance ), p -> {
          Validator validator = new Validator();
          for( Annotation a : parameter.annotations() )
             Reflect.reflect( a.annotationType() ).findAnnotation( Peer.class )
@@ -46,12 +48,12 @@ public class Validators {
       } );
    }
 
-   public Validator forMethod( Reflection.Method method, Object instance ) {
-      return forMethods.computeIfAbsent( method, p -> {
+   public static Validator forMethod( Reflection.Method method, Object instance ) {
+      return forMethods.computeIfAbsent( __( method, instance ), p -> {
          Validator validator = new Validator();
          for( Annotation a : method.annotations() )
             Reflect.reflect( a.annotationType() ).findAnnotation( Peer.class )
-               .ifPresent( va -> validator.peers.add( Reflect.newInstance( va.value(), a, instance ) ) );
+               .ifPresent( va -> validator.peers.add( Reflect.newInstance( va.value(), a, method, instance ) ) );
          return validator;
       } );
 
@@ -61,7 +63,7 @@ public class Validators {
       private final List<ValidatorPeer> peers = new ArrayList<>();
 
       public ValidationErrors validate( Object value ) {
-         ValidationErrors total = ValidationErrors.create( Lists.empty() );
+         ValidationErrors total = ValidationErrors.empty();
          for( ValidatorPeer peer : peers ) {
             ValidationErrors result = peer.validate( value );
             if( result.isFailed() && !result.hasDefaultCode() ) return result;

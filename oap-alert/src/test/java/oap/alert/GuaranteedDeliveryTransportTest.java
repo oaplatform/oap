@@ -33,18 +33,18 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Created by Admin on 03.06.2016.
  */
+@SuppressWarnings( "unchecked" )
 public class GuaranteedDeliveryTransportTest {
 
    @Test
    public void testRetryOnFailure() throws InterruptedException {
-      GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport(10);
-      MessageTransport<String> backend = mock(MessageTransport.class);
-      doThrow( IOException.class ).doNothing().when( backend).send( anyString() );
+      GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport( 10 );
+      MessageTransport<String> backend = mock( MessageTransport.class );
+      doThrow( IOException.class ).doNothing().when( backend ).send( anyString() );
       tr.send( "Aha!", backend );
 
       verify( backend, times( 2 ) ).send( "Aha!" );
@@ -53,19 +53,19 @@ public class GuaranteedDeliveryTransportTest {
    @Test
    public void testStopsAfterMaxAttempts() throws InterruptedException {
       final int maxAttempts = 3;
-      GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport(10, maxAttempts );
-      MessageTransport<String> backend = mock(MessageTransport.class);
-      doThrow( IOException.class ).when( backend).send( anyString() );
+      GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport( 10, maxAttempts );
+      MessageTransport<String> backend = mock( MessageTransport.class );
+      doThrow( IOException.class ).when( backend ).send( anyString() );
 
       tr.send( "Aha!", backend );
       verify( backend, times( maxAttempts ) ).send( "Aha!" );
    }
 
-   @Test(expectedExceptions = InterruptedException.class)
+   @Test( expectedExceptions = InterruptedException.class )
    public void testStopWhenInterrupted() throws InterruptedException {
-      GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport(10);
-      MessageTransport<String> backend = mock(MessageTransport.class);
-      doThrow( InterruptedException.class ).doNothing().when( backend).send( anyString() );
+      GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport( 10 );
+      MessageTransport<String> backend = mock( MessageTransport.class );
+      doThrow( InterruptedException.class ).doNothing().when( backend ).send( anyString() );
 
       tr.send( "Aha!", backend );
    }

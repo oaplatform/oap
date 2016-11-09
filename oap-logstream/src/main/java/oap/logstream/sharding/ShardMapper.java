@@ -21,29 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.logstream;
 
-import oap.net.Inet;
-import oap.util.Dates;
-import org.joda.time.DateTimeUtils;
+package oap.logstream.sharding;
 
-public class Logger {
-   private LoggingBackend backend;
+/**
+ * Created by anton on 11/3/16.
+ */
+public interface ShardMapper {
 
-   public Logger( LoggingBackend backend ) {
-      this.backend = backend;
+   int getShardNumber( String hostName, String fileName );
+
+   default int getShardNumber( String hostName, String fileName, String line ) {
+      return getShardNumber( hostName, fileName );
    }
 
-   public void log( String selector, String line ) {
-      backend.log( Inet.HOSTNAME, selector, Dates.formatDateWihMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
+   default int getShardNumber( String hostName, String fileName, byte[] buffer ) {
+      return getShardNumber( hostName, fileName );
    }
 
-   public boolean isLoggingAvailable() {
-      return backend.isLoggingAvailable();
-   }
-
-   public boolean isLoggingAvailable( String selector ) {
-      return backend.isLoggingAvailable( Inet.HOSTNAME, selector );
-   }
 
 }

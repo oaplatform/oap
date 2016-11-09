@@ -21,29 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.logstream;
 
-import oap.net.Inet;
-import oap.util.Dates;
-import org.joda.time.DateTimeUtils;
+package oap.logstream.sharding;
 
-public class Logger {
-   private LoggingBackend backend;
+import org.testng.annotations.Test;
 
-   public Logger( LoggingBackend backend ) {
-      this.backend = backend;
+import static org.testng.Assert.*;
+
+/**
+ * Created by anton on 11/3/16.
+ */
+public class FilenameShardMapperTest {
+
+   @Test
+   public void testShardParsing() {
+      FilenameShardMapper mapper = new FilenameShardMapper( "(^\\d+)" );
+      assertEquals( 100, mapper.getShardNumber( "myhost", "100/traffic/some/log/3/2016" ) );
+      assertEquals( 24, mapper.getShardNumber( "myhost", "24/100/traffic/some/log/3/2016" ) );
    }
 
-   public void log( String selector, String line ) {
-      backend.log( Inet.HOSTNAME, selector, Dates.formatDateWihMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
+   @Test(expectedExceptions = IllegalArgumentException.class)
+   public void testNoShardInPath() {
+      FilenameShardMapper mapper = new FilenameShardMapper( "(^\\d+)" );
+      assertEquals( 100, mapper.getShardNumber( "myhost", "blah/traffic/some/log/3/2016" ) );
    }
-
-   public boolean isLoggingAvailable() {
-      return backend.isLoggingAvailable();
-   }
-
-   public boolean isLoggingAvailable( String selector ) {
-      return backend.isLoggingAvailable( Inet.HOSTNAME, selector );
-   }
-
 }
