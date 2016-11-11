@@ -338,7 +338,9 @@ public class Client implements Closeable {
          HttpEntity entity = responseOpt.get().getEntity();
 
          final Path path = file.orElseGet( Try.supply( () -> {
-            final File tempFile = File.createTempFile( "file", "down" );
+            final IoStreams.Encoding encoding = IoStreams.Encoding.from( url );
+
+            final File tempFile = File.createTempFile( "file", "down" + encoding.extension.map( e -> "." + e ).orElse( "" ) );
             tempFile.deleteOnExit();
             return tempFile.toPath();
          } ) );

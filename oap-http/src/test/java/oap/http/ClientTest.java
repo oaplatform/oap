@@ -27,36 +27,91 @@ package oap.http;
 import lombok.extern.slf4j.Slf4j;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
+import org.mockserver.integration.ClientAndServer;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.testng.Asserts.assertFile;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockserver.integration.ClientAndServer.startClientAndServer;
+import static org.mockserver.matchers.Times.once;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.model.HttpResponse.response;
 
 @Slf4j
 public class ClientTest extends AbstractTest {
+   public static final int PORT = 1080;
+   private ClientAndServer mockServer;
+
+   @BeforeMethod
+   @Override
+   public void beforeMethod() {
+      super.beforeMethod();
+
+      mockServer = startClientAndServer( PORT );
+   }
+
+   @AfterMethod
+   @Override
+   public void afterMethod() throws IOException {
+      mockServer.stop( true );
+
+      super.afterMethod();
+   }
+
    @Test
    public void download() {
+      mockServer
+         .when(
+            request()
+               .withMethod( "GET" )
+               .withPath( "/file" ),
+            once()
+         )
+         .respond(
+            response()
+               .withStatusCode( HTTP_OK )
+               .withBody( "test1" )
+         );
+
       final Path path = Env.tmpPath( "new.file" );
       AtomicInteger progress = new AtomicInteger();
-      final Optional<Path> download = Client.DEFAULT.download( "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/OUN-r_Flag_1941.svg/250px-OUN-r_Flag_1941.svg.png",
+      final Optional<Path> download = Client.DEFAULT.download( "http://localhost:" + PORT + "/file",
          Optional.of( path ), progress::set );
 
       assertThat( download ).contains( path );
       assertThat( download ).isPresent();
-      assertFile( path ).exists().hasSize( 560 );
+      assertFile( path ).exists().hasSize( 5 );
       assertThat( progress.get() ).isEqualTo( 100 );
    }
 
    @Test
    public void downloadTempFile() {
+      mockServer
+         .when(
+            request()
+               .withMethod( "GET" )
+               .withPath( "/file.gz" ),
+            once()
+         )
+         .respond(
+            response()
+               .withStatusCode( HTTP_OK )
+               .withBody( "test1" )
+         );
+
       AtomicInteger progress = new AtomicInteger();
-      final Optional<Path> download = Client.DEFAULT.download( "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/OUN-r_Flag_1941.svg/250px-OUN-r_Flag_1941.svg.png", Optional.empty(), progress::set );
+      final Optional<Path> download = Client.DEFAULT.download( "http://localhost:" + PORT + "/file.gz", Optional.empty(), progress::set );
       assertThat( download ).isPresent();
-      assertFile( download.get() ).exists().hasSize( 560 );
+      assertFile( download.get() ).exists().hasSize( 5 );
+      assertFile( download.get() ).hasExtension( "gz" );
       assertThat( progress.get() ).isEqualTo( 100 );
    }
 }
