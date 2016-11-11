@@ -352,9 +352,12 @@ public class Client implements Closeable {
             IoStreams.write( path, PLAIN, in, progress( entity.getContentLength(), progress ) );
          }
 
-         final Date date = DateUtils.parseDate( responseOpt.get().getLastHeader( "Last-Modified" ).getValue() );
+         final Header lastModified = responseOpt.get().getLastHeader( "Last-Modified" );
+         if( lastModified != null ) {
+            final Date date = DateUtils.parseDate( lastModified.getValue() );
 
-         Files.setLastModifiedTime( path, date.getTime() );
+            Files.setLastModifiedTime( path, date.getTime() );
+         }
 
          builder.onSuccess.accept( this );
 
