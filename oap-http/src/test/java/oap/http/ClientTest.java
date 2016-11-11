@@ -84,7 +84,7 @@ public class ClientTest extends AbstractTest {
       final Path path = Env.tmpPath( "new.file" );
       AtomicInteger progress = new AtomicInteger();
       final Optional<Path> download = Client.DEFAULT.download( "http://localhost:" + PORT + "/file",
-         Optional.of( path ), progress::set );
+         Optional.empty(), Optional.of( path ), progress::set );
 
       assertThat( download ).contains( path );
       assertThat( download ).isPresent();
@@ -108,7 +108,8 @@ public class ClientTest extends AbstractTest {
          );
 
       AtomicInteger progress = new AtomicInteger();
-      final Optional<Path> download = Client.DEFAULT.download( "http://localhost:" + PORT + "/file.gz", Optional.empty(), progress::set );
+      final Optional<Path> download = Client.DEFAULT.download( "http://localhost:" + PORT + "/file.gz",
+         Optional.empty(), Optional.empty(), progress::set );
       assertThat( download ).isPresent();
       assertFile( download.get() ).exists().hasSize( 5 );
       assertFile( download.get() ).hasExtension( "gz" );

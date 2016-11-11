@@ -27,7 +27,10 @@ package oap.http.file;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +40,7 @@ import java.util.Optional;
  */
 @Slf4j
 public class FileDownloader implements Runnable {
+   private long lastAccessTime = 0;
    private List<FileDownloaderListener> listeners = new ArrayList<>();
    private String url;
 
@@ -62,11 +66,18 @@ public class FileDownloader implements Runnable {
 
    @Override
    public synchronized void run() {
-      final Optional<Path> downloaded = Client.DEFAULT.download( url, Optional.empty(), ( i ) -> {} );
+      final Optional<Path> downloaded = Client.DEFAULT.download( url, Optional.of( lastAccessTime ), Optional.empty(), ( i ) -> {} );
 
-      if( downloaded.isPresent() )
-         fireDownloaded( downloaded.get() );
-      else
+      if( downloaded.isPresent() ) {
+         final Path path = downloaded.get();
+         try {
+            final FileTime lastModifiedTime = Files.getLastModifiedTime( path );
+            lastAccessTime = lastModifiedTime.toMillis();
+         } catch( IOException e ) {
+            log.warn( e.getMessage() );
+         }
+         fireDownloaded( path );
+      } else
          fireNotModified();
    }
 

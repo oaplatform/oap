@@ -29,6 +29,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.AsyncCallbacks;
 import oap.io.Closeables;
+import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
 import oap.util.Maps;
@@ -47,6 +48,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.utils.DateUtils;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
@@ -88,6 +90,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -330,9 +333,9 @@ public class Client implements Closeable {
       }
    }
 
-   public Optional<Path> download( String url, Optional<Path> file, Consumer<Integer> progress ) {
+   public Optional<Path> download( String url, Optional<Long> modification, Optional<Path> file, Consumer<Integer> progress ) {
       try {
-         final Optional<HttpResponse> responseOpt = resolve( url );
+         final Optional<HttpResponse> responseOpt = resolve( url, modification );
          if( !responseOpt.isPresent() ) return Optional.empty();
 
          HttpEntity entity = responseOpt.get().getEntity();
@@ -348,6 +351,11 @@ public class Client implements Closeable {
          try( InputStream in = new BufferedInputStream( entity.getContent() ) ) {
             IoStreams.write( path, PLAIN, in, progress( entity.getContentLength(), progress ) );
          }
+
+         final Date date = DateUtils.parseDate( responseOpt.get().getLastHeader( "Last-Modified" ).getValue() );
+
+         Files.setLastModifiedTime( path, date.getTime() );
+
          builder.onSuccess.accept( this );
 
          return Optional.of( path );
@@ -364,7 +372,12 @@ public class Client implements Closeable {
    }
 
    private Optional<HttpResponse> resolve( String url ) throws InterruptedException, ExecutionException, IOException {
+      return resolve( url );
+   }
+
+   private Optional<HttpResponse> resolve( String url, Optional<Long> ifModifiedSince ) throws InterruptedException, ExecutionException, IOException {
       HttpGet request = new HttpGet( url );
+      ifModifiedSince.ifPresent( ims -> request.addHeader( "If-Modified-Since", DateUtils.formatDate( new Date( ims ) ) ) );
       Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
       HttpResponse response = future.get();
       if( response.getStatusLine().getStatusCode() == HTTP_OK && response.getEntity() != null )
