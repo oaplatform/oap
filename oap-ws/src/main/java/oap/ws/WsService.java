@@ -271,7 +271,7 @@ public class WsService implements Handler {
             else if( result instanceof Optional<?> ) {
                response.respond(
                   ( ( Optional<?> ) result )
-                     .map( r -> HttpResponse.ok( result, isRaw, produces ).withCookie( cookie ) )
+                     .map( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) )
                      .orElseGet( () -> NOT_FOUND )
                );
             } else response.respond( HttpResponse.ok( result, isRaw, produces ).withCookie( cookie ) );
