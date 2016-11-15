@@ -49,7 +49,7 @@ public class FileDownloader implements Runnable {
    }
 
    protected void fireDownloaded( Path path ) {
-      for( FileDownloaderListener fdl : this.listeners ) fdl.downloaded( path );
+      this.listeners.forEach( l -> l.downloaded( path ) );
    }
 
    protected void fireNotModified() {
