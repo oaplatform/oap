@@ -46,15 +46,15 @@ public class Lists {
    private static Random random = new Random();
 
    @SafeVarargs
-   public static <T> List<T> addAll( List<T> list, T... array ) {
+   public static <E> List<E> addAll( List<E> list, E... array ) {
       list.addAll( of( array ) );
       return list;
    }
 
    @SafeVarargs
-   public static <T> List<T> concat( List<T>... lists ) {
-      List<T> concatenated = empty();
-      for( List<T> list : lists ) {
+   public static <E> List<E> concat( List<E>... lists ) {
+      List<E> concatenated = empty();
+      for( List<E> list : lists ) {
          concatenated.addAll( list );
       }
       return concatenated;
@@ -163,4 +163,5 @@ public class Lists {
             oap.util.Collectors.CH_ID );
       }
    }
+
 }
