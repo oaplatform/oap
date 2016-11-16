@@ -25,33 +25,36 @@
 package oap.ws;
 
 import oap.concurrent.SynchronizedThread;
-import oap.http.*;
+import oap.http.PlainHttpListener;
+import oap.http.Protocol;
+import oap.http.Server;
+import oap.http.Session;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.testng.HttpAsserts;
+import oap.json.Binder;
 import oap.metrics.Metrics;
 import oap.testng.Env;
-import oap.ws.security.User;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClientBuilder;
+import oap.util.Maps;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static oap.http.Request.HttpMethod.GET;
+import static oap.http.testng.HttpAsserts.assertGet;
+import static oap.util.Pair.__;
 import static oap.ws.WsParam.From.SESSION;
-import static org.apache.http.entity.ContentType.TEXT_PLAIN;
-import static org.testng.Assert.assertEquals;
 
-public class WebServicesSessionTest {
+public class WsServiceSessionTest {
 
-    private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
+    private final SessionManager sessionManager = new SessionManager( 10, null, "/" );
 
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+    private final WebServices ws = new WebServices( server, sessionManager, GenericCorsPolicy.DEFAULT );
 
     private SynchronizedThread listener;
 
@@ -59,7 +62,7 @@ public class WebServicesSessionTest {
     public void startServer() {
         Metrics.resetAll();
         server.start();
-        ws.bind( "test", GenericCorsPolicy.DEFAULT, new TestWS(), true, SESSION_MANAGER, Collections.emptyList(), Protocol.HTTP );
+        ws.bind( "test", GenericCorsPolicy.DEFAULT, new TestWS(), true, sessionManager, Collections.emptyList(), Protocol.HTTP );
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );
         listener = new SynchronizedThread( http );
@@ -78,27 +81,24 @@ public class WebServicesSessionTest {
 
     @Test
     public void testShouldVerifySessionPropagation() throws IOException {
-        final HttpGet httpGet = new HttpGet( HttpAsserts.HTTP_PREFIX + "/test/" );
-        httpGet.addHeader( "Cookie", "Authorization=987654321; SID=123456" );
-
-        final User user = new User();
-        user.email = "test@example.com";
 
         final Session session = new Session();
-        session.set( "user", user );
+        LinkedHashMap<Integer, Integer> map = Maps.of( __( 1, 2 ) );
+        session.set( "map", map );
 
-        SESSION_MANAGER.put( "123456", session );
+        sessionManager.put( "123456", session );
 
-        final CloseableHttpResponse response = HttpClientBuilder.create().build().execute( httpGet );
-
-        assertEquals( response.getStatusLine().getStatusCode(), 200 );
+        assertGet( HttpAsserts.HTTP_PREFIX + "/test/", Maps.empty(), Maps.of( __( "Cookie", "Authorization=987654321; SID=123456" ) ) )
+                .hasCode( 200 )
+                .hasBody( Binder.json.marshal( map ) );
     }
+
 
     private class TestWS {
 
         @WsMethod( path = "/", method = GET )
-        public Object test( @WsParam( from = SESSION ) User user ) {
-            return HttpResponse.ok( user.email, true, TEXT_PLAIN );
+        public Map<Integer, Integer> test( @WsParam( from = SESSION ) Map<Integer, Integer> map ) {
+            return map;
         }
     }
 }

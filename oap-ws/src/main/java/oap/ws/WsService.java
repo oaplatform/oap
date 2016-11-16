@@ -39,7 +39,6 @@ import oap.reflect.Reflection;
 import oap.util.Optionals;
 import oap.util.Stream;
 import oap.util.Strings;
-import oap.ws.security.User;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
@@ -71,9 +70,8 @@ public class WsService implements Handler {
    private final SessionManager sessionManager;
    private final List<Interceptor> interceptors;
    private final Coercions coercions = Coercions.basic()
-      .with( r -> true, ( r, value ) -> value instanceof User ? ( User ) value :
-         Binder.hocon.unmarshal( r.underlying, value instanceof String ? ( String ) value :
-            new String( ( byte[] ) value, UTF_8 ) ) );
+      .with( r -> true, ( r, value ) -> Binder.hocon.unmarshal( r.underlying,
+         value instanceof String ? ( String ) value : new String( ( byte[] ) value, UTF_8 ) ) );
    private Map<String, Pattern> compiledPaths = new HashMap<>();
    private String cookieId;
 
@@ -192,19 +190,20 @@ public class WsService implements Handler {
       } else {
          Metrics.measureTimer( name, () -> {
             Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
-            Object[] paramValues = new Object[method.paramerers.size()];
+            Object[] paramValues = new Object[method.parameters.size()];
             ValidationErrors paramValidation = ValidationErrors.empty();
-            List<Reflection.Parameter> paramerers = method.paramerers;
-            for( int i = 0; i < paramerers.size(); i++ ) {
-               Reflection.Parameter parameter = paramerers.get( i );
+            List<Reflection.Parameter> parameters = method.parameters;
+            for( int i = 0; i < parameters.size(); i++ ) {
+               Reflection.Parameter parameter = parameters.get( i );
                Object value = parameter.findAnnotation( WsParam.class )
                   .<Object>map( wsParam -> {
                      switch( wsParam.from() ) {
                         case REQUEST:
                            return request;
                         case SESSION:
-                           return convert( parameter.name(), parameter.type(),
-                              sessionById.get( parameter.name() ) );
+                           return parameter.type().isOptional() ?
+                              sessionById.get( parameter.name() ) :
+                              sessionById.get( parameter.name() ).orElse( null );
                         case HEADER:
                            return convert( parameter.name(), parameter.type(),
                               request.header( parameter.name() ) );

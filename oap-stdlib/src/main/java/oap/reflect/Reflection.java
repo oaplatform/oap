@@ -291,16 +291,16 @@ public class Reflection extends Annotated<Class<?>> {
    }
 
    public class Method extends Annotated<java.lang.reflect.Method> {
-      public List<Parameter> paramerers;
+      public List<Parameter> parameters;
 
       Method( java.lang.reflect.Method method ) {
          super( method );
          this.underlying.setAccessible( true );
-         this.paramerers = Lists.map( method.getParameters(), Parameter::new );
+         this.parameters = Lists.map( method.getParameters(), Parameter::new );
       }
 
       public boolean hasParameter( String name ) {
-         return Lists.find( this.paramerers, p -> Objects.equals( p.name(), name ) ).isPresent();
+         return Lists.find( this.parameters, p -> Objects.equals( p.name(), name ) ).isPresent();
       }
 
       public String name() {

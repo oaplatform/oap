@@ -122,7 +122,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
             .map( method -> {
                ValidationErrors paramErrors = ValidationErrors.empty();
 
-               List<Reflection.Parameter> paramerers = method.paramerers;
+               List<Reflection.Parameter> paramerers = method.parameters;
                for( int i = 0; i < paramerers.size(); i++ ) {
                   Reflection.Parameter parameter = paramerers.get( i );
                   paramErrors.merge( Validators

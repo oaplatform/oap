@@ -83,7 +83,7 @@ public class MethodValidatorPeer implements ValidatorPeer {
 
       protected MethodValidator( String method, Reflection.Method targetMethod, Object instance ) {
          super( method, instance );
-         validatorMethodParamIndices = Stream.of( targetMethod.paramerers )
+         validatorMethodParamIndices = Stream.of( targetMethod.parameters )
             .map( Reflection.Parameter::name )
             .zipWithIndex()
             .filter( ( p, i ) -> this.method.hasParameter( p ) )
@@ -92,9 +92,9 @@ public class MethodValidatorPeer implements ValidatorPeer {
 
       @Override
       ValidationErrors validate( Object value ) {
-         Object[] params = new Object[method.paramerers.size()];
+         Object[] params = new Object[method.parameters.size()];
          for( int i = 0; i < params.length; i++ )
-            params[i] = ( ( Object[] ) value )[validatorMethodParamIndices.get( method.paramerers.get( i ).name() )];
+            params[i] = ( ( Object[] ) value )[validatorMethodParamIndices.get( method.parameters.get( i ).name() )];
          return method.invoke( instance, params );
       }
    }

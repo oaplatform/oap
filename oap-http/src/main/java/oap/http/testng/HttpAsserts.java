@@ -32,6 +32,7 @@ import oap.util.Pair;
 import org.apache.http.entity.ContentType;
 
 import java.io.InputStream;
+import java.util.Map;
 import java.util.function.Consumer;
 
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -41,97 +42,101 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class HttpAsserts {
 
-   public static final String HTTP_PREFIX = "http://localhost:" + Env.port();
-   private static Client client = Client.custom().build();
+    public static final String HTTP_PREFIX = "http://localhost:" + Env.port();
+    private static Client client = Client.custom().build();
 
-   public static void reset() {
-      client.reset();
-   }
+    public static void reset() {
+        client.reset();
+    }
 
 
-   @SafeVarargs
-   public static HttpAssertion assertGet( String uri, Pair<String, Object>... params ) {
-      return new HttpAssertion( client.get( uri, params ) );
-   }
+    @SafeVarargs
+    public static HttpAssertion assertGet( String uri, Pair<String, Object>... params ) {
+        return new HttpAssertion( client.get( uri, params ) );
+    }
 
-   public static HttpAssertion assertPost( String uri, String content, ContentType contentType ) {
-      return new HttpAssertion( client.post( uri, content, contentType ) );
-   }
+    public static HttpAssertion assertGet( String uri, Map<String, Object> params, Map<String, Object> headers ) {
+        return new HttpAssertion( client.get( uri, params, headers ) );
+    }
 
-   public static HttpAssertion assertPost( String uri, InputStream content, ContentType contentType ) {
-      return new HttpAssertion( client.post( uri, content, contentType ) );
-   }
+    public static HttpAssertion assertPost( String uri, String content, ContentType contentType ) {
+        return new HttpAssertion( client.post( uri, content, contentType ) );
+    }
 
-   public static HttpAssertion assertPut( String uri, String content, ContentType contentType ) {
-      return new HttpAssertion( client.put( uri, content, contentType ) );
-   }
+    public static HttpAssertion assertPost( String uri, InputStream content, ContentType contentType ) {
+        return new HttpAssertion( client.post( uri, content, contentType ) );
+    }
 
-   public static HttpAssertion assertDelete( String uri ) {
-      return new HttpAssertion( client.delete( uri ) );
-   }
+    public static HttpAssertion assertPut( String uri, String content, ContentType contentType ) {
+        return new HttpAssertion( client.put( uri, content, contentType ) );
+    }
 
-   @EqualsAndHashCode
-   @ToString
-   public static class HttpAssertion {
-      private final Client.Response response;
+    public static HttpAssertion assertDelete( String uri ) {
+        return new HttpAssertion( client.delete( uri ) );
+    }
 
-      public HttpAssertion( Client.Response response ) {
-         this.response = response;
-      }
+    @EqualsAndHashCode
+    @ToString
+    public static class HttpAssertion {
+        private final Client.Response response;
 
-      public HttpAssertion isOk() {
-         hasCode( HTTP_OK );
-         return this;
-      }
+        public HttpAssertion( Client.Response response ) {
+            this.response = response;
+        }
 
-      public HttpAssertion hasCode( int code ) {
-         assertThat( response.code ).isEqualTo( code );
-         return this;
-      }
+        public HttpAssertion isOk() {
+            hasCode( HTTP_OK );
+            return this;
+        }
 
-      public JsonAsserts.JsonAssertion isJson() {
-         hasContentType( ContentType.APPLICATION_JSON );
-         return assertJson( response.contentString.orElse( null ) );
-      }
+        public HttpAssertion hasCode( int code ) {
+            assertThat( response.code ).isEqualTo( code );
+            return this;
+        }
 
-      public HttpAssertion isJson( String json ) {
-         isJson().isEqualTo( json );
-         return this;
-      }
+        public JsonAsserts.JsonAssertion isJson() {
+            hasContentType( ContentType.APPLICATION_JSON );
+            return assertJson( response.contentString.orElse( null ) );
+        }
 
-      public HttpAssertion hasReason( String reasonPhrase ) {
-         assertString( response.reasonPhrase ).isEqualTo( reasonPhrase );
-         return this;
-      }
+        public HttpAssertion isJson( String json ) {
+            isJson().isEqualTo( json );
+            return this;
+        }
 
-      public HttpAssertion hasContentType( ContentType contentType ) {
-         assertString( response.contentType
-            .map( ContentType::toString )
-            .orElse( null ) )
-            .isEqualTo( contentType.toString() );
-         return this;
-      }
+        public HttpAssertion hasReason( String reasonPhrase ) {
+            assertString( response.reasonPhrase ).isEqualTo( reasonPhrase );
+            return this;
+        }
 
-      public HttpAssertion hasBody( String body ) {
-         assertString( response.contentString.orElse( null ) ).isEqualTo( body );
-         return this;
-      }
+        public HttpAssertion hasContentType( ContentType contentType ) {
+            assertString( response.contentType
+                    .map( ContentType::toString )
+                    .orElse( null ) )
+                    .isEqualTo( contentType.toString() );
+            return this;
+        }
 
-      public HttpAssertion containsHeader( String name, String value ) {
-         assertString( response.headers.getOrDefault( name, null ) ).isEqualTo( value );
-         return this;
-      }
+        public HttpAssertion hasBody( String body ) {
+            assertString( response.contentString.orElse( null ) ).isEqualTo( body );
+            return this;
+        }
 
-      public HttpAssertion is( Consumer<Client.Response> condition ) {
-         condition.accept( response );
-         return this;
-      }
+        public HttpAssertion containsHeader( String name, String value ) {
+            assertString( response.headers.getOrDefault( name, null ) ).isEqualTo( value );
+            return this;
+        }
 
-      public HttpAssertion responded( int code, String reasonPhrase, ContentType contentType, String body ) {
-         return this.hasCode( code )
-            .hasReason( reasonPhrase )
-            .hasContentType( contentType )
-            .hasBody( body );
-      }
-   }
+        public HttpAssertion is( Consumer<Client.Response> condition ) {
+            condition.accept( response );
+            return this;
+        }
+
+        public HttpAssertion responded( int code, String reasonPhrase, ContentType contentType, String body ) {
+            return this.hasCode( code )
+                    .hasReason( reasonPhrase )
+                    .hasContentType( contentType )
+                    .hasBody( body );
+        }
+    }
 }

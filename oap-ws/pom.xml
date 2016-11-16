@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.24.2</version>
+        <version>1.25.0</version>
     </parent>
 
     <dependencies>
@@ -67,21 +67,6 @@
             <groupId>oap</groupId>
             <artifactId>oap-application</artifactId>
             <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>oap-ws-security</groupId>
-            <artifactId>oap-ws-security-api</artifactId>
-            <version>1.5.3</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>oap</groupId>
-                    <artifactId>oap-stdlib</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>joda-time</groupId>
-                    <artifactId>joda-time</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>

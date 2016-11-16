@@ -69,7 +69,7 @@ public class StartableService implements Supervised {
     private Optional<Reflection.Method> getControlMethod( String name ) {
         return Reflect.reflect( supervised.getClass() ).methods
             .stream()
-            .filter( m -> name.equals( m.name() ) && m.paramerers.isEmpty() )
+            .filter( m -> name.equals( m.name() ) && m.parameters.isEmpty() )
             .findAny();
     }
 
