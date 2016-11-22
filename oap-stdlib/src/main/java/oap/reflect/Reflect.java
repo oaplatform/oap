@@ -75,7 +75,7 @@ public class Reflect {
         for( String field : StringUtils.split( path, '.' ) ) {
             if( next == null ) break;
             final Object instance = next;
-            next = reflect( o.getClass() )
+            next = reflect( next.getClass() )
                 .field( field )
                 .map( f -> f.get( instance ) )
                 .map( v -> v instanceof Optional ? ( ( Optional ) v ).orElse( null ) : v )

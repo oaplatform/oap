@@ -169,18 +169,20 @@ class Bean {
     String str = "aaa";
     List<String> l;
 
-    Bean() {
+//    CHECKSTYLE:OFF
+    public Bean() {
         this( 10 );
     }
 
-    Bean( int i ) {
+    public Bean( int i ) {
         this.i = i;
     }
 
-    Bean( int i, int x ) {
+    public Bean( int i, int x ) {
         this.i = i;
         this.x = x;
     }
+//    CHECKSTYLE:ON
 }
 
 
@@ -193,9 +195,10 @@ class DeepBean {
     public Optional<Bean> obean = Optional.of( new Bean() );
     public Optional<Bean> emptybean = Optional.empty();
 }
-
+//CHECKSTYLE:OFF
 class MatchingConstructor {
-    MatchingConstructor( int i, List<Integer> list ) {}
+    public MatchingConstructor( int i, List<Integer> list ) {}
 
-    MatchingConstructor( List<Integer> list ) {}
+    public MatchingConstructor( List<Integer> list ) {}
 }
+//CHECKSTYLE:ON
