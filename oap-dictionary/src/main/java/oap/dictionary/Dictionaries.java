@@ -29,13 +29,16 @@ import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Maps;
 import oap.util.Stream;
+import oap.util.Try;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
 
 /**
@@ -43,34 +46,51 @@ import static oap.util.Pair.__;
  */
 @Slf4j
 public class Dictionaries {
-   private static final Map<String, URL> dictionaries = new HashMap<>();
-   private static final ConcurrentHashMap<String, DictionaryRoot> cache = new ConcurrentHashMap<>();
+    private static final Map<String, URL> dictionaries = new HashMap<>();
+    private static final ConcurrentHashMap<String, DictionaryRoot> cache = new ConcurrentHashMap<>();
+    private static String defaultPath = "/opt/madberry-dictionary";
 
-   private synchronized static void load() {
-      if( dictionaries.isEmpty() ) {
-         dictionaries.putAll( Stream.of( Resources.urls( "dictionary", "json" ) )
-            .concat( Stream.of( Resources.urls( "dictionary", "conf" ) ) )
-            .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
-            .toMap() );
-         log.info( "dictionaries: {}", dictionaries );
-      }
-   }
+    private synchronized static void load() {
+        if( dictionaries.isEmpty() ) {
+            final ArrayList<URL> dicts = new ArrayList<>();
+            dicts.addAll( Stream.of( Files.fastWildcard( defaultPath, "*.json" ).stream() )
+                    .concat( Files.fastWildcard( defaultPath, "*.conf" ).stream() )
+                    .map( Try.map( p -> p.toUri().toURL() ) )
+                    .collect( toList() ) );
 
-   public static Set<String> getDictionaryNames() {
-      load();
+            dicts.addAll( Stream.of( Resources.urls( "dictionary", "json" ) )
+                    .concat( Resources.urls( "dictionary", "conf" ).stream() )
+                    .collect( toList() ) );
 
-      return dictionaries.keySet();
-   }
+            dictionaries.putAll( Stream.of( dicts )
+                    .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
+                    .toMap() );
+            log.info( "dictionaries: {}", dictionaries );
 
-   public static DictionaryRoot getDictionary( String name ) throws DictionaryNotFoundError {
-      load();
 
-      return Maps.get( dictionaries, name )
-         .map( DictionaryParser::parse )
-         .orElseThrow( () -> new DictionaryNotFoundError( name ) );
-   }
+            dictionaries.putAll( Stream.of( Resources.urls( "dictionary", "json" ) )
+                    .concat( Stream.of( Resources.urls( "dictionary", "conf" ) ) )
+                    .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
+                    .toMap() );
+            log.info( "dictionaries: {}", dictionaries );
+        }
+    }
 
-   public static DictionaryRoot getCachedDictionary( String name ) throws DictionaryNotFoundError {
-      return cache.computeIfAbsent( name, Dictionaries::getDictionary );
-   }
+    public static Set<String> getDictionaryNames() {
+        load();
+
+        return dictionaries.keySet();
+    }
+
+    public static DictionaryRoot getDictionary( String name ) throws DictionaryNotFoundError {
+        load();
+
+        return Maps.get( dictionaries, name )
+                .map( DictionaryParser::parse )
+                .orElseThrow( () -> new DictionaryNotFoundError( name ) );
+    }
+
+    public static DictionaryRoot getCachedDictionary( String name ) throws DictionaryNotFoundError {
+        return cache.computeIfAbsent( name, Dictionaries::getDictionary );
+    }
 }
