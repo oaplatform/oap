@@ -96,7 +96,6 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             if( init == null ) return Optional.empty();
             T object = init.get();
             m = new Metadata<>( identify.apply( object ), object );
-            update.accept( m.object );
             data.put( m.id, m );
          } else {
             update.accept( m.object );
