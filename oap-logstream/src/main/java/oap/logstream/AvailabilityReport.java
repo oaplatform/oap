@@ -21,30 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.logstream;
 
-import java.io.Closeable;
+import com.google.common.collect.ImmutableMap;
+import oap.util.Maps;
 
-public interface LoggingBackend extends Closeable {
-    default void log( String hostName, String fileName, String line ) {
-        log( hostName, fileName, ( line + "\n" ).getBytes() );
+import java.util.Map;
+
+/**
+ * Created by anton on 11/22/16.
+ */
+public class AvailabilityReport {
+
+    public final State state;
+    public final Map<String, State> subsystemStates;
+
+    public AvailabilityReport( State state ) {
+        this( state, Maps.empty() );
     }
 
-    default void log( String hostName, String fileName, byte[] buffer ) {
-        log( hostName, fileName, buffer, 0, buffer.length );
+    public AvailabilityReport( State state, Map<String, State> subsystemStates ) {
+        this.state = state;
+        this.subsystemStates = ImmutableMap.copyOf( subsystemStates );
     }
 
-    void log( String hostName, String fileName, byte[] buffer, int offset, int length );
-
-    void close();
-
-    AvailabilityReport availabilityReport();
-
-    default boolean isLoggingAvailable() {
-        return availabilityReport().state == AvailabilityReport.State.OPERATIONAL;
-    }
-
-    default boolean isLoggingAvailable( String hostName, String fileName ) {
-        return isLoggingAvailable();
+    public enum State {
+        OPERATIONAL,
+        PARTIALLY_OPERATIONAL,
+        FAILED
     }
 }

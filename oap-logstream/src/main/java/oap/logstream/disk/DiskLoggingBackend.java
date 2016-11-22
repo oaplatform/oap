@@ -27,6 +27,7 @@ package oap.logstream.disk;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
 import oap.io.Files;
+import oap.logstream.AvailabilityReport;
 import oap.logstream.LoggingBackend;
 import oap.metrics.Metrics;
 
@@ -34,6 +35,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static oap.logstream.AvailabilityReport.State.*;
 
 @Slf4j
 public class DiskLoggingBackend implements LoggingBackend {
@@ -80,7 +83,15 @@ public class DiskLoggingBackend implements LoggingBackend {
    }
 
    @Override
-   public boolean isLoggingAvailable() {
-      return Files.usableSpaceAtDirectory( logDirectory ) > requiredFreeSpace;
+   public AvailabilityReport availabilityReport() {
+      boolean enoughSpace = Files.usableSpaceAtDirectory( logDirectory ) > requiredFreeSpace;
+      return new AvailabilityReport( enoughSpace ? OPERATIONAL : FAILED );
+   }
+
+   @Override
+   public String toString() {
+      return "DiskLoggingBackend{" +
+              "logDirectory=" + logDirectory +
+              '}';
    }
 }

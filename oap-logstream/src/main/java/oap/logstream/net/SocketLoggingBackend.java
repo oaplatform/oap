@@ -28,11 +28,16 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
+import oap.io.Files;
+import oap.logstream.AvailabilityReport;
 import oap.logstream.LoggingBackend;
 import oap.metrics.Metrics;
 
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+
+import static oap.logstream.AvailabilityReport.State.FAILED;
+import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 
 @Slf4j
 public class SocketLoggingBackend implements LoggingBackend {
@@ -136,7 +141,15 @@ public class SocketLoggingBackend implements LoggingBackend {
    }
 
    @Override
-   public boolean isLoggingAvailable() {
-      return loggingAvailable && !closed && buffers.readyBuffers() < maxBuffers;
+   public AvailabilityReport availabilityReport() {
+      boolean operational = loggingAvailable && !closed && buffers.readyBuffers() < maxBuffers;
+      return new AvailabilityReport( operational ? OPERATIONAL : FAILED );
+   }
+
+   @Override
+   public String toString() {
+      return "SocketLoggingBackend{" +
+              "host='" + host + '\'' +
+              '}';
    }
 }

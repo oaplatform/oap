@@ -24,54 +24,93 @@
 
 package oap.logstream.sharding;
 
+import oap.logstream.AvailabilityReport;
 import oap.logstream.LoggingBackend;
+import oap.util.Stream;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
+import static oap.logstream.AvailabilityReport.State.FAILED;
+import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
+import static oap.logstream.AvailabilityReport.State.PARTIALLY_OPERATIONAL;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Created by anton on 11/3/16.
  */
 public class ShardedLoggingBackendTest {
 
-   ShardMapper mapper = mock( ShardMapper.class );
+    ShardMapper mapper = mock( ShardMapper.class );
 
-   @Test
-   public void testRouting() {
-      LoggingBackend log1 = mock( LoggingBackend.class );
-      LoggingBackend log2 = mock( LoggingBackend.class );
+    @Test
+    public void testRouting() {
+        LoggingBackend log1 = mock( LoggingBackend.class );
+        LoggingBackend log2 = mock( LoggingBackend.class );
 
-      LoggerShardRange shard0To100 = new LoggerShardRange( log1, 0, 100 );
-      LoggerShardRange shard100To200 = new LoggerShardRange( log2, 100, 200 );
+        LoggerShardRange shard0To100 = new LoggerShardRange( log1, 0, 100 );
+        LoggerShardRange shard100To200 = new LoggerShardRange( log2, 100, 200 );
 
-      List<LoggerShardRange> shards = Arrays.asList( shard0To100, shard100To200 );
-      ShardedLoggingBackend slb = new ShardedLoggingBackend( shards, mapper );
-      when( mapper.getShardNumber( anyString(), eq( "34/df/file1" ), any(byte[].class) ) ).thenReturn( 34 );
-      when( mapper.getShardNumber( anyString(), eq( "142/345/file1" ), any(byte[].class)  ) ).thenReturn( 142 );
+        List<LoggerShardRange> shards = Arrays.asList( shard0To100, shard100To200 );
+        ShardedLoggingBackend slb = new ShardedLoggingBackend( shards, mapper );
+        when( mapper.getShardNumber( anyString(), eq( "34/df/file1" ), any( byte[].class ) ) ).thenReturn( 34 );
+        when( mapper.getShardNumber( anyString(), eq( "142/345/file1" ), any( byte[].class ) ) ).thenReturn( 142 );
 
-      slb.log( "localhost", "34/df/file1", "line1" );
-      slb.log( "localhost", "142/345/file1", "line2" );
+        slb.log( "localhost", "34/df/file1", "line1" );
+        slb.log( "localhost", "142/345/file1", "line2" );
 
-      verify( log1 ).log( "localhost", "34/df/file1", "line1\n".getBytes(), 0, "line1\n".getBytes().length );
-      verify( log2 ).log( "localhost", "142/345/file1", "line2\n".getBytes(), 0, "line2\n".getBytes().length );
-   }
+        verify( log1 ).log( "localhost", "34/df/file1", "line1\n".getBytes(), 0, "line1\n".getBytes().length );
+        verify( log2 ).log( "localhost", "142/345/file1", "line2\n".getBytes(), 0, "line2\n".getBytes().length );
+    }
 
-   @Test(expectedExceptions = IllegalArgumentException.class)
-   public void testUnconfiguredShards() {
-      LoggingBackend log1 = mock( LoggingBackend.class );
+    @Test( expectedExceptions = IllegalArgumentException.class )
+    public void testUnconfiguredShards() {
+        LoggingBackend log1 = mock( LoggingBackend.class );
 
-      LoggerShardRange shard0To100 = new LoggerShardRange( log1, 0, 100 );
-      LoggerShardRange shard100To200 = new LoggerShardRange( log1, 110, 200 );
+        LoggerShardRange shard0To100 = new LoggerShardRange( log1, 0, 100 );
+        LoggerShardRange shard100To200 = new LoggerShardRange( log1, 110, 200 );
 
-      List<LoggerShardRange> shards = Arrays.asList( shard0To100, shard100To200 );
-      new ShardedLoggingBackend( shards, mapper );
-   }
+        List<LoggerShardRange> shards = Arrays.asList( shard0To100, shard100To200 );
+        new ShardedLoggingBackend( shards, mapper );
+    }
+
+    @Test
+    public void testAvailability() {
+        LoggingBackend log1 = mock( LoggingBackend.class );
+        LoggingBackend log2 = mock( LoggingBackend.class );
+
+        LoggerShardRange shard0To100 = new LoggerShardRange( log1, 0, 100 );
+        LoggerShardRange shard100To200 = new LoggerShardRange( log2, 100, 200 );
+
+        List<LoggerShardRange> shards = Arrays.asList( shard0To100, shard100To200 );
+        ShardedLoggingBackend slb = new ShardedLoggingBackend( shards, mapper );
+
+
+        when( log1.availabilityReport() ).thenReturn( new AvailabilityReport( OPERATIONAL ) );
+        when( log2.availabilityReport() ).thenReturn( new AvailabilityReport( OPERATIONAL ) );
+        assertEquals( slb.availabilityReport().state, OPERATIONAL );
+        assertEquals( slb.availabilityReport().subsystemStates.size(), 2 );
+        assertTrue( Stream.of(slb.availabilityReport().subsystemStates.values()).allMatch( s -> s == OPERATIONAL ) );
+
+        when( log1.availabilityReport() ).thenReturn( new AvailabilityReport( FAILED ) );
+        when( log2.availabilityReport() ).thenReturn( new AvailabilityReport( FAILED ) );
+        assertEquals( slb.availabilityReport().state, FAILED );
+        assertEquals( slb.availabilityReport().subsystemStates.size(), 2 );
+        assertTrue( Stream.of(slb.availabilityReport().subsystemStates.values()).allMatch( s -> s == FAILED ) );
+
+        when( log1.availabilityReport() ).thenReturn( new AvailabilityReport( OPERATIONAL ) );
+        when( log2.availabilityReport() ).thenReturn( new AvailabilityReport( FAILED ) );
+        assertEquals( slb.availabilityReport().state, PARTIALLY_OPERATIONAL );
+        assertEquals( slb.availabilityReport().subsystemStates.size(), 2 );
+        assertTrue( slb.availabilityReport().subsystemStates.values().contains( OPERATIONAL ) );
+        assertTrue( slb.availabilityReport().subsystemStates.values().contains( FAILED ) );
+    }
 }
