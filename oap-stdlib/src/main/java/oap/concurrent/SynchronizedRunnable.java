@@ -24,13 +24,13 @@
 package oap.concurrent;
 
 public abstract class SynchronizedRunnable implements Runnable {
-   protected SynchronizedRunnableReadyListener listener;
+    protected SynchronizedRunnableReadyListener listener;
 
-   public void notifyReady() {
-      listener.notifyReady();
-   }
+    public void notifyReady() {
+        listener.notifyReady();
+    }
 
-   public void readyListener( SynchronizedRunnableReadyListener listener ) {
-      this.listener = listener;
-   }
+    public void readyListener( SynchronizedRunnableReadyListener listener ) {
+        this.listener = listener;
+    }
 }

@@ -46,112 +46,112 @@ import static org.quartz.JobBuilder.newJob;
 import static org.quartz.TriggerBuilder.newTrigger;
 
 @Slf4j
-public class Scheduler {
-   static final org.quartz.Scheduler scheduler;
-   static final FunctionJobFactory jobFactory;
-   private static final AtomicLong ids = new AtomicLong();
+public final class Scheduler {
+    static final org.quartz.Scheduler scheduler;
+    static final FunctionJobFactory jobFactory;
+    private static final AtomicLong ids = new AtomicLong();
 
-   static {
-      try {
-         final StdSchedulerFactory sf = new StdSchedulerFactory();
-         Properties props = new Properties();
-         props.setProperty( StdSchedulerFactory.PROP_SCHED_SKIP_UPDATE_CHECK, "true" );
-         props.setProperty( StdSchedulerFactory.PROP_JOB_STORE_CLASS, "org.quartz.simpl.RAMJobStore" );
-         props.setProperty( "org.quartz.threadPool.threadCount",
-            String.valueOf( Runtime.getRuntime().availableProcessors() ) );
-         sf.initialize( props );
+    static {
+        try {
+            final StdSchedulerFactory sf = new StdSchedulerFactory();
+            Properties props = new Properties();
+            props.setProperty( StdSchedulerFactory.PROP_SCHED_SKIP_UPDATE_CHECK, "true" );
+            props.setProperty( StdSchedulerFactory.PROP_JOB_STORE_CLASS, "org.quartz.simpl.RAMJobStore" );
+            props.setProperty( "org.quartz.threadPool.threadCount",
+                String.valueOf( Runtime.getRuntime().availableProcessors() ) );
+            sf.initialize( props );
 
-         scheduler = sf.getScheduler();
-         scheduler.setJobFactory( jobFactory = new FunctionJobFactory() );
+            scheduler = sf.getScheduler();
+            scheduler.setJobFactory( jobFactory = new FunctionJobFactory() );
 
-         scheduler.getListenerManager().addJobListener( new SchedulerLogging() );
+            scheduler.getListenerManager().addJobListener( new SchedulerLogging() );
 
-         scheduler.start();
-      } catch( org.quartz.SchedulerException e ) {
-         throw new SchedulerException( e );
-      }
-   }
+            scheduler.start();
+        } catch( org.quartz.SchedulerException e ) {
+            throw new SchedulerException( e );
+        }
+    }
 
-   private Scheduler() {
-   }
+    private Scheduler() {
+    }
 
-   public static Scheduled scheduleWithFixedDelay( long delay, TimeUnit unit, Runnable runnable ) {
-      return schedule( Try.catching( runnable )
-            .logOnException( log )
-            .propagate(),
-         SimpleScheduleBuilder.simpleSchedule()
-            .withIntervalInMilliseconds( unit.toMillis( delay ) )
-            .withMisfireHandlingInstructionIgnoreMisfires()
-            .repeatForever() );
-   }
+    public static Scheduled scheduleWithFixedDelay( long delay, TimeUnit unit, Runnable runnable ) {
+        return schedule( Try.catching( runnable )
+                .logOnException( log )
+                .propagate(),
+            SimpleScheduleBuilder.simpleSchedule()
+                .withIntervalInMilliseconds( unit.toMillis( delay ) )
+                .withMisfireHandlingInstructionIgnoreMisfires()
+                .repeatForever() );
+    }
 
-   private static Scheduled schedule( Runnable runnable, ScheduleBuilder<?> scheduleBuilder ) {
-      try {
-         String identity = identity( runnable );
+    private static Scheduled schedule( Runnable runnable, ScheduleBuilder<?> scheduleBuilder ) {
+        try {
+            String identity = identity( runnable );
 
-         JobDetail job = newJob( RunnableJob.class )
-            .withIdentity( identity + "/job" )
-            .storeDurably()
-            .build();
+            JobDetail job = newJob( RunnableJob.class )
+                .withIdentity( identity + "/job" )
+                .storeDurably()
+                .build();
 
-         Trigger trigger = newTrigger()
-            .withIdentity( identity + "/trigger" )
-            .withSchedule( scheduleBuilder )
-            .build();
+            Trigger trigger = newTrigger()
+                .withIdentity( identity + "/trigger" )
+                .withSchedule( scheduleBuilder )
+                .build();
 
-         jobFactory.register( job, runnable );
+            jobFactory.register( job, runnable );
 
-         scheduler.scheduleJob( job, trigger );
-         log.trace( "scheduling job {} with trigger {}", job, trigger );
-         return new QuartzScheduled( job );
-      } catch( org.quartz.SchedulerException e ) {
-         throw new SchedulerException( e );
-      }
-   }
+            scheduler.scheduleJob( job, trigger );
+            log.trace( "scheduling job {} with trigger {}", job, trigger );
+            return new QuartzScheduled( job );
+        } catch( org.quartz.SchedulerException e ) {
+            throw new SchedulerException( e );
+        }
+    }
 
-   public static Scheduled scheduleCron( String cron, Runnable runnable ) {
-      return schedule( Try.catching( runnable )
-            .logOnException( log )
-            .propagate(),
-         CronScheduleBuilder.cronSchedule( cron ) );
-   }
+    public static Scheduled scheduleCron( String cron, Runnable runnable ) {
+        return schedule( Try.catching( runnable )
+                .logOnException( log )
+                .propagate(),
+            CronScheduleBuilder.cronSchedule( cron ) );
+    }
 
-   private static String identity( Runnable runnable ) {
-      if( runnable instanceof Try.CatchingRunnable ) {
-         return identity( ( ( Try.CatchingRunnable ) runnable ).getRunnable() );
-      } else if( runnable instanceof PeriodicScheduled ) {
-         return identity( ( ( PeriodicScheduled ) runnable ).getOwner() );
-      }
-      return identity( runnable.getClass() );
-   }
+    private static String identity( Runnable runnable ) {
+        if( runnable instanceof Try.CatchingRunnable ) {
+            return identity( ( ( Try.CatchingRunnable ) runnable ).getRunnable() );
+        } else if( runnable instanceof PeriodicScheduled ) {
+            return identity( ( ( PeriodicScheduled ) runnable ).getOwner() );
+        }
+        return identity( runnable.getClass() );
+    }
 
-   private static String identity( Class<?> clazz ) {
-      return clazz.getName() + "/" + ids.incrementAndGet();
-   }
+    private static String identity( Class<?> clazz ) {
+        return clazz.getName() + "/" + ids.incrementAndGet();
+    }
 
-   public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, long safePeriod, Consumer<Long> consume ) {
-      return scheduleWithFixedDelay( owner, delay, safePeriod, MILLISECONDS, consume );
-   }
+    public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, long safePeriod, Consumer<Long> consume ) {
+        return scheduleWithFixedDelay( owner, delay, safePeriod, MILLISECONDS, consume );
+    }
 
-   public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, Consumer<Long> consume ) {
-      return scheduleWithFixedDelay( owner, delay, 0, MILLISECONDS, consume );
-   }
+    public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, Consumer<Long> consume ) {
+        return scheduleWithFixedDelay( owner, delay, 0, MILLISECONDS, consume );
+    }
 
-   public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, TimeUnit timeUnit, Consumer<Long> consume ) {
-      return scheduleWithFixedDelay( owner, delay, 0, timeUnit, consume );
-   }
+    public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, TimeUnit timeUnit, Consumer<Long> consume ) {
+        return scheduleWithFixedDelay( owner, delay, 0, timeUnit, consume );
+    }
 
-   public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, long safePeriod, TimeUnit timeUnit, Consumer<Long> consume ) {
-      PeriodicScheduled scheduled = new PeriodicScheduled( owner, safePeriod, consume );
-      scheduled.scheduled = scheduleWithFixedDelay( delay, timeUnit, scheduled );
-      return scheduled;
-   }
+    public static PeriodicScheduled scheduleWithFixedDelay( Class owner, long delay, long safePeriod, TimeUnit timeUnit, Consumer<Long> consume ) {
+        PeriodicScheduled scheduled = new PeriodicScheduled( owner, safePeriod, consume );
+        scheduled.scheduled = scheduleWithFixedDelay( delay, timeUnit, scheduled );
+        return scheduled;
+    }
 
-   public static Set<JobKey> getAllJobKeys() {
-      try {
-         return scheduler.getJobKeys( GroupMatcher.anyGroup() );
-      } catch( org.quartz.SchedulerException e ) {
-         throw com.google.common.base.Throwables.propagate( e );
-      }
-   }
+    public static Set<JobKey> getAllJobKeys() {
+        try {
+            return scheduler.getJobKeys( GroupMatcher.anyGroup() );
+        } catch( org.quartz.SchedulerException e ) {
+            throw com.google.common.base.Throwables.propagate( e );
+        }
+    }
 }

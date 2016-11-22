@@ -34,71 +34,71 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReflectUtilsTest {
 
-   @Test
-   public void declaredMethods() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-      assertThat( ReflectUtils.declared( B.class, Class::getDeclaredMethods ) )
-         .containsAll( concat(
-            Lists.of( Object.class.getDeclaredMethods() ),
-            Lists.of( A.class.getDeclaredMethods() ),
-            Lists.of( B.class.getDeclaredMethods() ),
-            Lists.of( II.class.getDeclaredMethods() )
-         ) );
-   }
+    @Test
+    public void declaredMethods() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        assertThat( ReflectUtils.declared( B.class, Class::getDeclaredMethods ) )
+            .containsAll( concat(
+                Lists.of( Object.class.getDeclaredMethods() ),
+                Lists.of( A.class.getDeclaredMethods() ),
+                Lists.of( B.class.getDeclaredMethods() ),
+                Lists.of( II.class.getDeclaredMethods() )
+            ) );
+    }
 
-   @Test
-   public void declaredFields() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-      assertThat( ReflectUtils.declared( B.class, Class::getDeclaredFields ) )
-         .containsAll( concat(
-            Lists.of( Object.class.getDeclaredFields() ),
-            Lists.of( A.class.getDeclaredFields() ),
-            Lists.of( B.class.getDeclaredFields() ),
-            Lists.of( II.class.getDeclaredFields() )
-         ) );
-   }
+    @Test
+    public void declaredFields() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        assertThat( ReflectUtils.declared( B.class, Class::getDeclaredFields ) )
+            .containsAll( concat(
+                Lists.of( Object.class.getDeclaredFields() ),
+                Lists.of( A.class.getDeclaredFields() ),
+                Lists.of( B.class.getDeclaredFields() ),
+                Lists.of( II.class.getDeclaredFields() )
+            ) );
+    }
 
-   @Test
-   public void invokeOverloads() throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-      II.class.getDeclaredMethod( "i" ).invoke( new B() );
-      assertThat( B.iCalled ).isEqualTo( 1 );
-      B.class.getDeclaredMethod( "i" ).invoke( new B() );
-      assertThat( B.iCalled ).isEqualTo( 2 );
+    @Test
+    public void invokeOverloads() throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        II.class.getDeclaredMethod( "i" ).invoke( new B() );
+        assertThat( B.iCalled ).isEqualTo( 1 );
+        B.class.getDeclaredMethod( "i" ).invoke( new B() );
+        assertThat( B.iCalled ).isEqualTo( 2 );
 
-      II.class.getDeclaredMethod( "o" ).invoke( new B() );
-      assertThat( B.oCalled ).isEqualTo( 1 );
-      B.class.getDeclaredMethod( "o" ).invoke( new B() );
-      assertThat( B.oCalled ).isEqualTo( 2 );
-   }
+        II.class.getDeclaredMethod( "o" ).invoke( new B() );
+        assertThat( B.oCalled ).isEqualTo( 1 );
+        B.class.getDeclaredMethod( "o" ).invoke( new B() );
+        assertThat( B.oCalled ).isEqualTo( 2 );
+    }
 }
 
 interface II {
-   default void d() {
-   }
+    default void d() {
+    }
 
-   void i();
+    void i();
 
-   Object o();
+    Object o();
 
 }
 
 class A {
-   void a() {
-   }
+    void a() {
+    }
 }
 
 class B extends A implements II {
-   static int iCalled = 0;
-   static int oCalled = 0;
+    static int iCalled = 0;
+    static int oCalled = 0;
 
-   void b() {
-   }
+    void b() {
+    }
 
-   @Override
-   public void i() {
-      iCalled++;
-   }
+    @Override
+    public void i() {
+        iCalled++;
+    }
 
-   public String o() {
-      oCalled++;
-      return null;
-   }
+    public String o() {
+        oCalled++;
+        return null;
+    }
 }

@@ -33,57 +33,57 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor, LimitedTimeExecutor> {
-   public final long timeout;
-   public final TimeUnit unit;
-   private final ExecutorService executor;
+    public final long timeout;
+    public final TimeUnit unit;
+    private final ExecutorService executor;
 
-   public LimitedTimeExecutor() {
-      this( Long.MAX_VALUE, TimeUnit.MILLISECONDS );
-   }
+    public LimitedTimeExecutor() {
+        this( Long.MAX_VALUE, TimeUnit.MILLISECONDS );
+    }
 
-   public LimitedTimeExecutor( long timeout, TimeUnit unit ) {
-      this( timeout, unit, Executors.newCachedThreadPool() );
-   }
+    public LimitedTimeExecutor( long timeout, TimeUnit unit ) {
+        this( timeout, unit, Executors.newCachedThreadPool() );
+    }
 
-   public LimitedTimeExecutor( long timeout, TimeUnit unit, ExecutorService executor ) {
-      this.timeout = timeout;
-      this.unit = unit;
-      this.executor = executor;
-   }
+    public LimitedTimeExecutor( long timeout, TimeUnit unit, ExecutorService executor ) {
+        this.timeout = timeout;
+        this.unit = unit;
+        this.executor = executor;
+    }
 
-   public <T> Optional<T> execute( Supplier<T> code ) {
-      return execute( this.timeout, this.unit, code );
-   }
+    public <T> Optional<T> execute( Supplier<T> code ) {
+        return execute( this.timeout, this.unit, code );
+    }
 
-   public <T> Optional<T> execute( long timeout, TimeUnit unit, Supplier<T> code ) {
-      try {
-         T value = executor.submit( code::get ).get( timeout, unit );
-         onSuccess.accept( this );
-         return Optional.ofNullable( value );
-      } catch( InterruptedException | TimeoutException e ) {
-         onTimeout.accept( this );
-         return Optional.empty();
-      } catch( ExecutionException e ) {
-         onError.accept( this, e );
-         throw Throwables.propagate( e.getCause() );
-      }
-   }
+    public <T> Optional<T> execute( long timeout, TimeUnit unit, Supplier<T> code ) {
+        try {
+            T value = executor.submit( code::get ).get( timeout, unit );
+            onSuccess.accept( this );
+            return Optional.ofNullable( value );
+        } catch( InterruptedException | TimeoutException e ) {
+            onTimeout.accept( this );
+            return Optional.empty();
+        } catch( ExecutionException e ) {
+            onError.accept( this, e );
+            throw Throwables.propagate( e.getCause() );
+        }
+    }
 
-   public void execute( Runnable code ) {
-      execute( this.timeout, this.unit, code );
-   }
+    public void execute( Runnable code ) {
+        execute( this.timeout, this.unit, code );
+    }
 
-   public void execute( long timeout, TimeUnit unit, Runnable code ) {
-      try {
-         executor.submit( code ).get( timeout, unit );
-         onSuccess.accept( this );
-      } catch( InterruptedException | TimeoutException e ) {
-         onTimeout.accept( this );
-      } catch( ExecutionException e ) {
-         onError.accept( this, e );
-         throw Throwables.propagate( e.getCause() );
-      }
-   }
+    public void execute( long timeout, TimeUnit unit, Runnable code ) {
+        try {
+            executor.submit( code ).get( timeout, unit );
+            onSuccess.accept( this );
+        } catch( InterruptedException | TimeoutException e ) {
+            onTimeout.accept( this );
+        } catch( ExecutionException e ) {
+            onError.accept( this, e );
+            throw Throwables.propagate( e.getCause() );
+        }
+    }
 
 
 }

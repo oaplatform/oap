@@ -35,12 +35,12 @@ import java.util.stream.Collector;
 
 public class Collectors {
     public static final Set<Collector.Characteristics> CH_ID
-            = Collections.unmodifiableSet( EnumSet.of( Collector.Characteristics.IDENTITY_FINISH ) );
+        = Collections.unmodifiableSet( EnumSet.of( Collector.Characteristics.IDENTITY_FINISH ) );
 
     public static class CollectorImpl<T, A, R> implements Collector<T, A, R> {
-        final private Supplier<A> supplier;
-        final private BiConsumer<A, T> accumulator;
-        final private BinaryOperator<A> combiner;
+        private final Supplier<A> supplier;
+        private final BiConsumer<A, T> accumulator;
+        private final BinaryOperator<A> combiner;
         private Function<A, R> finisher;
         private Set<Characteristics> characteristics;
 
@@ -56,7 +56,7 @@ public class Collectors {
         public CollectorImpl( Supplier<A> supplier, BiConsumer<A, T> accumulator,
                               BinaryOperator<A> combiner,
                               Set<Characteristics> characteristics ) {
-            this(supplier, accumulator, combiner, Functions.empty.id(), characteristics);
+            this( supplier, accumulator, combiner, Functions.empty.id(), characteristics );
         }
 
         @Override

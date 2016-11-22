@@ -34,47 +34,49 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 
-import static oap.io.IoStreams.Encoding.*;
+import static oap.io.IoStreams.Encoding.GZIP;
+import static oap.io.IoStreams.Encoding.LZ4;
+import static oap.io.IoStreams.Encoding.PLAIN;
 
 @Test( enabled = false )
 public class CompressionPerformance extends AbstractPerformance {
-   @DataProvider( name = "encodings" )
-   public Object[][] encodings() {
-      return new Object[][]{ { GZIP }, { LZ4 } };
-   }
+    @DataProvider( name = "encodings" )
+    public Object[][] encodings() {
+        return new Object[][] { { GZIP }, { LZ4 } };
+    }
 
-   @Test( dataProvider = "encodings" )
-   public void testC( IoStreams.Encoding encoding ) throws IOException {
-      Path path = Env.tmpPath( "test." + encoding );
+    @Test( dataProvider = "encodings" )
+    public void testC( IoStreams.Encoding encoding ) throws IOException {
+        Path path = Env.tmpPath( "test." + encoding );
 
-      benchmark( "compress " + encoding.name(), 2, 5, ( s ) -> {
-         try( InputStream is = IoStreams.in( Resources.filePath( getClass(), "/file.txt" ).get(), PLAIN );
-              OutputStream out = IoStreams.out( path, encoding, 1024 * 1024 * 10, false ) ) {
+        benchmark( "compress " + encoding.name(), 2, 5, ( s ) -> {
+            try( InputStream is = IoStreams.in( Resources.filePath( getClass(), "/file.txt" ).get(), PLAIN );
+                 OutputStream out = IoStreams.out( path, encoding, 1024 * 1024 * 10, false ) ) {
 
-            byte[] bytes = new byte[1024 * 64];
+                byte[] bytes = new byte[1024 * 64];
 
-            int read = -1;
-            while( ( read = is.read( bytes ) ) > 0 ) {
-               out.write( bytes, 0, read );
+                int read = -1;
+                while( ( read = is.read( bytes ) ) > 0 ) {
+                    out.write( bytes, 0, read );
+                }
             }
-         }
 
-      } );
+        } );
 
-      System.out.println( encoding + " = " + path.toFile().length() + " bytes" );
+        System.out.println( encoding + " = " + path.toFile().length() + " bytes" );
 
-      byte[] bytes = new byte[1024];
+        byte[] bytes = new byte[1024];
 
-      benchmark( "decompress " + encoding.name(), 100, 5, ( s ) -> {
-         try( InputStream in = IoStreams.in( path, encoding ) ) {
-            int read = 0;
-            while( ( read = in.read( bytes ) ) > 0 ) {
-               read = read + 1;
+        benchmark( "decompress " + encoding.name(), 100, 5, ( s ) -> {
+            try( InputStream in = IoStreams.in( path, encoding ) ) {
+                int read = 0;
+                while( ( read = in.read( bytes ) ) > 0 ) {
+                    read = read + 1;
+                }
             }
-         }
 
-      } );
+        } );
 
-      System.out.println( encoding + " = " + path.toFile().length() + " bytes" );
-   }
+        System.out.println( encoding + " = " + path.toFile().length() + " bytes" );
+    }
 }

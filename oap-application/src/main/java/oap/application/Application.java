@@ -31,35 +31,35 @@ import java.util.Map;
 
 public class Application {
 
-   final static Map<String, Object> services = new HashMap<>();
+    static final Map<String, Object> services = new HashMap<>();
 
-   @SuppressWarnings( "unchecked" )
-   public static <T> T service( String name ) {
-      return ( T ) services.get( name );
-   }
+    @SuppressWarnings( "unchecked" )
+    public static <T> T service( String name ) {
+        return ( T ) services.get( name );
+    }
 
-   @SuppressWarnings( "unchecked" )
-   public static <T> List<T> instancesOf( Class<T> clazz ) {
-      return Stream.of( services.values() )
-         .filter( clazz::isInstance )
-         .<T>map( x -> ( T ) x )
-         .toList();
-   }
+    @SuppressWarnings( "unchecked" )
+    public static <T> List<T> instancesOf( Class<T> clazz ) {
+        return Stream.of( services.values() )
+            .filter( clazz::isInstance )
+            .<T>map( x -> ( T ) x )
+            .toList();
+    }
 
-   public static <T> T service( Class<T> clazz ) {
-      List<T> services = instancesOf( clazz );
-      return services.isEmpty() ? null : services.get( 0 );
-   }
+    public static <T> T service( Class<T> clazz ) {
+        List<T> services = instancesOf( clazz );
+        return services.isEmpty() ? null : services.get( 0 );
+    }
 
-   public static void register( String name, Object service ) {
-      services.put( name, service );
-   }
+    public static void register( String name, Object service ) {
+        services.put( name, service );
+    }
 
-   static void unregister( String name ) {
-      services.remove( name );
-   }
+    static void unregister( String name ) {
+        services.remove( name );
+    }
 
-   static void unregisterServices() {
-      services.clear();
-   }
+    static void unregisterServices() {
+        services.clear();
+    }
 }

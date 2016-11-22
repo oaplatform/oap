@@ -26,7 +26,6 @@ package oap.reflect;
 import oap.util.Lists;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Optional;
 

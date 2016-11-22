@@ -33,30 +33,30 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LimitedTimeExecutorTest extends AbstractTest {
-   @Test
-   public void execute() {
-      assertExecution( 1, 0, 0, () -> Threads.sleepSafely( 10 ) );
-      assertExecution( 0, 1, 0, () -> Threads.sleepSafely( 200 ) );
-      assertExecution( 0, 0, 1, () -> {
-         throw new RuntimeException( "expected" );
-      } );
-   }
+    @Test
+    public void execute() {
+        assertExecution( 1, 0, 0, () -> Threads.sleepSafely( 10 ) );
+        assertExecution( 0, 1, 0, () -> Threads.sleepSafely( 200 ) );
+        assertExecution( 0, 0, 1, () -> {
+            throw new RuntimeException( "expected" );
+        } );
+    }
 
-   private void assertExecution( int expectedSuccess, int expectedTimeout, int expectedError, Runnable code ) {
-      AtomicInteger success = new AtomicInteger();
-      AtomicInteger timeout = new AtomicInteger();
-      AtomicInteger error = new AtomicInteger();
-      LimitedTimeExecutor executor = new LimitedTimeExecutor( 100, TimeUnit.MILLISECONDS )
-         .onSuccess( l -> success.incrementAndGet() )
-         .onError( ( l, e ) -> error.incrementAndGet() )
-         .onTimeout( l -> timeout.incrementAndGet() );
-      try {
-         executor.execute( code );
-      } catch( RuntimeException e ) {
-         assertThat( e.getMessage() ).isEqualTo( "expected" );
-      }
-      assertThat( success.get() ).isEqualTo( expectedSuccess );
-      assertThat( timeout.get() ).isEqualTo( expectedTimeout );
-      assertThat( error.get() ).isEqualTo( expectedError );
-   }
+    private void assertExecution( int expectedSuccess, int expectedTimeout, int expectedError, Runnable code ) {
+        AtomicInteger success = new AtomicInteger();
+        AtomicInteger timeout = new AtomicInteger();
+        AtomicInteger error = new AtomicInteger();
+        LimitedTimeExecutor executor = new LimitedTimeExecutor( 100, TimeUnit.MILLISECONDS )
+            .onSuccess( l -> success.incrementAndGet() )
+            .onError( ( l, e ) -> error.incrementAndGet() )
+            .onTimeout( l -> timeout.incrementAndGet() );
+        try {
+            executor.execute( code );
+        } catch( RuntimeException e ) {
+            assertThat( e.getMessage() ).isEqualTo( "expected" );
+        }
+        assertThat( success.get() ).isEqualTo( expectedSuccess );
+        assertThat( timeout.get() ).isEqualTo( expectedTimeout );
+        assertThat( error.get() ).isEqualTo( expectedError );
+    }
 }

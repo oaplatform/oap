@@ -37,35 +37,35 @@ import static oap.util.Arrays.map;
 
 class ReflectUtils {
 
-   static <T extends Executable> Optional<T> findExecutableByParamNames( String[] names, T[] executables ) {
-      sort( names );
-      return Arrays.find(
-         x -> {
-            String[] paramNames = map( String.class, Parameter::getName, x.getParameters() );
-            sort( paramNames );
-            return java.util.Arrays.equals( names, paramNames );
-         },
-         executables );
-   }
+    static <T extends Executable> Optional<T> findExecutableByParamNames( String[] names, T[] executables ) {
+        sort( names );
+        return Arrays.find(
+            x -> {
+                String[] paramNames = map( String.class, Parameter::getName, x.getParameters() );
+                sort( paramNames );
+                return java.util.Arrays.equals( names, paramNames );
+            },
+            executables );
+    }
 
-   static <T extends Executable> Optional<T> findExecutableByParamTypes( Class<?>[] types, T[] executables ) {
-      return Arrays.find(
-         x -> {
-            Class<?>[] paramTypes = map( Class.class, Parameter::getType, x.getParameters() );
-            if( types.length != paramTypes.length ) return false;
-            for( int i = 0; i < types.length; i++ )
-               if( !paramTypes[i].isAssignableFrom( types[i] ) ) return false;
-            return true;
-         }, executables );
-   }
+    static <T extends Executable> Optional<T> findExecutableByParamTypes( Class<?>[] types, T[] executables ) {
+        return Arrays.find(
+            x -> {
+                Class<?>[] paramTypes = map( Class.class, Parameter::getType, x.getParameters() );
+                if( types.length != paramTypes.length ) return false;
+                for( int i = 0; i < types.length; i++ )
+                    if( !paramTypes[i].isAssignableFrom( types[i] ) ) return false;
+                return true;
+            }, executables );
+    }
 
-   static <A> List<A> declared( Class<?> clazz, Function<Class<?>, A[]> collector ) {
-      Stream<A> interfaceDeclaredObjects = Stream.<Class<?>>traverse( clazz, Class::getSuperclass )
-         .flatMap( s -> Stream.of( s.getInterfaces() ) )
-         .flatMap( c -> Stream.of( collector.apply( c ) ) );
-      return Stream.<Class<?>>traverse( clazz, Class::getSuperclass )
-         .flatMap( c -> Stream.of( collector.apply( c ) ) )
-         .concat( interfaceDeclaredObjects )
-         .toList();
-   }
+    static <A> List<A> declared( Class<?> clazz, Function<Class<?>, A[]> collector ) {
+        Stream<A> interfaceDeclaredObjects = Stream.<Class<?>>traverse( clazz, Class::getSuperclass )
+            .flatMap( s -> Stream.of( s.getInterfaces() ) )
+            .flatMap( c -> Stream.of( collector.apply( c ) ) );
+        return Stream.<Class<?>>traverse( clazz, Class::getSuperclass )
+            .flatMap( c -> Stream.of( collector.apply( c ) ) )
+            .concat( interfaceDeclaredObjects )
+            .toList();
+    }
 }

@@ -28,7 +28,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.Cleaner;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -36,7 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Closeables {
-    private final static Logger logger = LoggerFactory.getLogger( Closeables.class );
+    private static final Logger logger = LoggerFactory.getLogger( Closeables.class );
 
 
     private static final Field cleanerField;
@@ -84,7 +88,7 @@ public class Closeables {
 
     public static void close( MappedByteBuffer buffer ) {
         try {
-            Cleaner cleaner = (Cleaner) cleanerField.get( buffer );
+            Cleaner cleaner = ( Cleaner ) cleanerField.get( buffer );
             cleaner.clean();
         } catch( IllegalAccessException e ) {
             logger.warn( e.getMessage(), e );

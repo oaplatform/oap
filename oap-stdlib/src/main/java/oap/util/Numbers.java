@@ -23,53 +23,55 @@
  */
 package oap.util;
 
-public class Numbers {
+public final class Numbers {
+    private Numbers() {
+    }
 
-   public static long parseLongWithUnits( String value ) {
-      if( value != null ) {
-         value = value.trim();
-         String unit = "";
-         String number = "";
-         boolean stillNumber = true;
-         for( int i = 0; i < value.length(); i++ ) {
-            char c = value.charAt( i );
-            if( Character.isDigit( c ) && stillNumber ) number += c;
-            else {
-               stillNumber = false;
-               unit += c;
+    public static long parseLongWithUnits( String value ) {
+        if( value != null ) {
+            String v = value.trim();
+            String unit = "";
+            String number = "";
+            boolean stillNumber = true;
+            for( int i = 0; i < v.length(); i++ ) {
+                char c = value.charAt( i );
+                if( Character.isDigit( c ) && stillNumber ) number += c;
+                else {
+                    stillNumber = false;
+                    unit += c;
+                }
             }
-         }
-         switch( unit.trim().toLowerCase() ) {
-            case "kb":
-               return Long.parseLong( number ) * 1024;
-            case "mb":
-               return Long.parseLong( number ) * 1024 * 1024;
-            case "gb":
-               return Long.parseLong( number ) * 1024 * 1024 * 1024;
-            case "ms":
-               return Long.parseLong( number );
-            case "s":
-            case "second":
-            case "seconds":
-               return Long.parseLong( number ) * 1000;
-            case "m":
-            case "minute":
-            case "minutes":
-               return Long.parseLong( number ) * 1000 * 60;
-            case "h":
-            case "hour":
-            case "hours":
-               return Long.parseLong( number ) * 1000 * 60 * 60;
-            case "d":
-            case "day":
-            case "days":
-               return Long.parseLong( number ) * 1000 * 60 * 60 * 24;
-            case "":
-               return Long.parseLong( number );
-            default:
-               throw new NumberFormatException( value );
-         }
-      }
-      throw new NumberFormatException( "value is null" );
-   }
+            switch( unit.trim().toLowerCase() ) {
+                case "kb":
+                    return Long.parseLong( number ) * 1024;
+                case "mb":
+                    return Long.parseLong( number ) * 1024 * 1024;
+                case "gb":
+                    return Long.parseLong( number ) * 1024 * 1024 * 1024;
+                case "ms":
+                    return Long.parseLong( number );
+                case "s":
+                case "second":
+                case "seconds":
+                    return Long.parseLong( number ) * 1000;
+                case "m":
+                case "minute":
+                case "minutes":
+                    return Long.parseLong( number ) * 1000 * 60;
+                case "h":
+                case "hour":
+                case "hours":
+                    return Long.parseLong( number ) * 1000 * 60 * 60;
+                case "d":
+                case "day":
+                case "days":
+                    return Long.parseLong( number ) * 1000 * 60 * 60 * 24;
+                case "":
+                    return Long.parseLong( number );
+                default:
+                    throw new NumberFormatException( value );
+            }
+        }
+        throw new NumberFormatException( "value is null" );
+    }
 }

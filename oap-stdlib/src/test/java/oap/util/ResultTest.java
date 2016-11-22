@@ -26,36 +26,38 @@ package oap.util;
 
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Created by Anton on 06.05.2016.
  */
 public class ResultTest {
 
-   @Test(expectedExceptions = InterruptedException.class)
-   public void testBlockingTryingInterrupted() throws Exception {
-      Result.tryingInterruptible( () -> {
-         throw new InterruptedException( "Somebody interrupted me" );
-      } );
-   }
+    @Test( expectedExceptions = InterruptedException.class )
+    public void testBlockingTryingInterrupted() throws Exception {
+        Result.tryingInterruptible( () -> {
+            throw new InterruptedException( "Somebody interrupted me" );
+        } );
+    }
 
-   @Test()
-   public void testBlockingTryingSuccess() throws Exception {
-      Result<String, Throwable> result = Result.tryingInterruptible( () -> "im ok" );
-      assertTrue( result.isSuccess() );
-      assertEquals( result.successValue, "im ok" );
-   }
+    @Test()
+    public void testBlockingTryingSuccess() throws Exception {
+        Result<String, Throwable> result = Result.tryingInterruptible( () -> "im ok" );
+        assertTrue( result.isSuccess() );
+        assertEquals( result.successValue, "im ok" );
+    }
 
-   @Test()
-   public void testBlockingTryingNormalException() throws Exception {
-      Result<String, Throwable> result = Result.tryingInterruptible( () -> {
-         throw new IllegalArgumentException( "some reason" );
-      });
+    @Test()
+    public void testBlockingTryingNormalException() throws Exception {
+        Result<String, Throwable> result = Result.tryingInterruptible( () -> {
+            throw new IllegalArgumentException( "some reason" );
+        } );
 
-      assertFalse( result.isSuccess() );
-      assertEquals( result.failureValue.getClass(), IllegalArgumentException.class );
-   }
+        assertFalse( result.isSuccess() );
+        assertEquals( result.failureValue.getClass(), IllegalArgumentException.class );
+    }
 
 
 }

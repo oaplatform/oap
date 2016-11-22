@@ -28,31 +28,30 @@ import oap.testng.AbstractPerformance;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
-@Test(enabled = false)
+@Test( enabled = false )
 public class LimitedTimeExecutorPerformance extends AbstractPerformance {
-   @Test
-   public void testPerf() {
+    @Test
+    public void testPerf() {
 
-      final int SAMPLES = 100000;
-      final int EXPERIMENTS = 5;
-      final int THREADS = 5000;
+        final int SAMPLES = 100000;
+        final int EXPERIMENTS = 5;
+        final int THREADS = 5000;
 
-      benchmark( "without-LimitedTime", SAMPLES, EXPERIMENTS, THREADS, ( i ) -> {
-         Thread.sleep( 10 );
-      } );
+        benchmark( "without-LimitedTime", SAMPLES, EXPERIMENTS, THREADS, ( i ) -> {
+            Thread.sleep( 10 );
+        } );
 
-      LimitedTimeExecutor lt = new LimitedTimeExecutor( 100, TimeUnit.MILLISECONDS );
+        LimitedTimeExecutor lt = new LimitedTimeExecutor( 100, TimeUnit.MILLISECONDS );
 
-      benchmark( "LimitedTime", SAMPLES, EXPERIMENTS, THREADS, ( i ) -> {
-         lt.execute( () -> {
-            try {
-               Thread.sleep( 10 );
-            } catch( InterruptedException e ) {
-               e.printStackTrace();
-            }
-         } );
-      } );
-   }
+        benchmark( "LimitedTime", SAMPLES, EXPERIMENTS, THREADS, ( i ) -> {
+            lt.execute( () -> {
+                try {
+                    Thread.sleep( 10 );
+                } catch( InterruptedException e ) {
+                    e.printStackTrace();
+                }
+            } );
+        } );
+    }
 }

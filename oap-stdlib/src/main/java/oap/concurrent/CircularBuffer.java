@@ -33,23 +33,23 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @ThreadSafe
 public class CircularBuffer<T> {
-   private final T[] data;
-   private final AtomicInteger index;
-   private final int size;
+    private final T[] data;
+    private final AtomicInteger index;
+    private final int size;
 
-   @SuppressWarnings( "unchecked" )
-   public CircularBuffer(int size) {
-      this.size = size;
-      index = new AtomicInteger(  );
-      data = ( T[] ) new Object[size];
-   }
+    @SuppressWarnings( "unchecked" )
+    public CircularBuffer( int size ) {
+        this.size = size;
+        index = new AtomicInteger();
+        data = ( T[] ) new Object[size];
+    }
 
-   public void add(T element) {
-      final int idx = index.updateAndGet( ( i ) -> i + 1 >= size ? 0 : i + 1 );
-      data[idx] =  element;
-   }
+    public void add( T element ) {
+        final int idx = index.updateAndGet( ( i ) -> i + 1 >= size ? 0 : i + 1 );
+        data[idx] = element;
+    }
 
-   public T[] getElements() {
-      return Arrays.copyOf(data, size);
-   }
+    public T[] getElements() {
+        return Arrays.copyOf( data, size );
+    }
 }

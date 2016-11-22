@@ -29,12 +29,12 @@ import org.testng.annotations.Test;
 
 @Test( enabled = false )
 public class SystemPerformance extends AbstractPerformance {
-   @Test
-   public void testNanoTimeVsCurrentTimeMillis() {
-      final int SAMPLES = 10000000;
-      final int EXPERIMENTS = 5;
+    @Test
+    public void testNanoTimeVsCurrentTimeMillis() {
+        final int SAMPLES = 10000000;
+        final int EXPERIMENTS = 5;
 
-      benchmark( "nanoTime", SAMPLES, EXPERIMENTS, ( i ) -> System.nanoTime() );
-      benchmark( "currentTimeMillis", SAMPLES, EXPERIMENTS, ( i ) -> System.currentTimeMillis() );
-   }
+        benchmark( "nanoTime", SAMPLES, EXPERIMENTS, ( i ) -> System.nanoTime() );
+        benchmark( "currentTimeMillis", SAMPLES, EXPERIMENTS, ( i ) -> System.currentTimeMillis() );
+    }
 }

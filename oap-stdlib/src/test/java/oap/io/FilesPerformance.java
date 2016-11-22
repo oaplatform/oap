@@ -39,52 +39,52 @@ import java.util.concurrent.TimeUnit;
 @Test( enabled = false )
 public class FilesPerformance extends AbstractPerformance {
 
-   public static final int SAMPLES = 100000;
-   private Path path;
-   private Path path2;
-   private Path pathNotExists;
+    public static final int SAMPLES = 100000;
+    private Path path;
+    private Path path2;
+    private Path pathNotExists;
 
-   @BeforeMethod
-   @Override
-   public void beforeMethod() {
-      super.beforeMethod();
+    @BeforeMethod
+    @Override
+    public void beforeMethod() {
+        super.beforeMethod();
 
-      path = Env.tmpPath( "tt/test" );
-      path2 = Env.tmpPath( "tt/test2/1/2/3/4/5/6/7/8/9/10" );
-      pathNotExists = Env.tmpPath( "tt/test2" );
-      Files.writeString( path, RandomStringUtils.random( 10 ) );
-      Files.writeString( path2, RandomStringUtils.random( 10 ) );
-   }
+        path = Env.tmpPath( "tt/test" );
+        path2 = Env.tmpPath( "tt/test2/1/2/3/4/5/6/7/8/9/10" );
+        pathNotExists = Env.tmpPath( "tt/test2" );
+        Files.writeString( path, RandomStringUtils.random( 10 ) );
+        Files.writeString( path2, RandomStringUtils.random( 10 ) );
+    }
 
-   @Test
-   public void testLastModificationTime() {
-      final long[] size = { 0 };
+    @Test
+    public void testLastModificationTime() {
+        final long[] size = { 0 };
 
-      benchmark( "java.nio.file.Files.getLastModifiedTime()", SAMPLES, 5, ( x ) -> {
-         size[0] += java.nio.file.Files.getLastModifiedTime( path ).to( TimeUnit.NANOSECONDS );
-      } );
+        benchmark( "java.nio.file.Files.getLastModifiedTime()", SAMPLES, 5, ( x ) -> {
+            size[0] += java.nio.file.Files.getLastModifiedTime( path ).to( TimeUnit.NANOSECONDS );
+        } );
 
-      benchmark( "java.nio.file.Files.getLastModifiedTime()-2", SAMPLES, 5, ( x ) -> {
-         size[0] += java.nio.file.Files.getLastModifiedTime( path2 ).to( TimeUnit.NANOSECONDS );
-      } );
+        benchmark( "java.nio.file.Files.getLastModifiedTime()-2", SAMPLES, 5, ( x ) -> {
+            size[0] += java.nio.file.Files.getLastModifiedTime( path2 ).to( TimeUnit.NANOSECONDS );
+        } );
 
-      benchmark( "java.io.File.lastModified()", SAMPLES, 5, ( x ) -> {
-         size[0] += path.toFile().lastModified();
-      } );
-      benchmark( "java.io.File.lastModified()-2", SAMPLES, 5, ( x ) -> {
-         size[0] += path2.toFile().lastModified();
-      } );
-   }
+        benchmark( "java.io.File.lastModified()", SAMPLES, 5, ( x ) -> {
+            size[0] += path.toFile().lastModified();
+        } );
+        benchmark( "java.io.File.lastModified()-2", SAMPLES, 5, ( x ) -> {
+            size[0] += path2.toFile().lastModified();
+        } );
+    }
 
-   @Test
-   public void testExists() {
-      benchmark( "java.nio.file.Files.exists()", SAMPLES, 5, ( x ) -> {
-         java.nio.file.Files.exists( path );
-         java.nio.file.Files.exists( pathNotExists );
-      } );
-      benchmark( "java.io.File.exists()", SAMPLES, 5, ( x ) -> {
-         path.toFile().exists();
-         pathNotExists.toFile().exists();
-      } );
-   }
+    @Test
+    public void testExists() {
+        benchmark( "java.nio.file.Files.exists()", SAMPLES, 5, ( x ) -> {
+            java.nio.file.Files.exists( path );
+            java.nio.file.Files.exists( pathNotExists );
+        } );
+        benchmark( "java.io.File.exists()", SAMPLES, 5, ( x ) -> {
+            path.toFile().exists();
+            pathNotExists.toFile().exists();
+        } );
+    }
 }

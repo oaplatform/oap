@@ -28,12 +28,11 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
-import oap.util.Arrays;
+import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
-import org.apache.http.Header;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.util.EntityUtils;
@@ -46,131 +45,132 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static oap.util.Pair.__;
+
 public class Request {
-   private static final Splitter SPLITTER = Splitter.on( ";" ).trimResults().omitEmptyStrings();
+    private static final Splitter SPLITTER = Splitter.on( ";" ).trimResults().omitEmptyStrings();
 
-   public final String requestLine;
-   public final HttpMethod httpMethod;
-   public final String baseUrl;
-   public final Context context;
-   public final Optional<InputStream> body;
-   public final String uri;
-   protected final Header[] headers;
-   private final ListMultimap<String, String> params;
-   public final Optional<String> ua;
-   public final Optional<String> referrer;
-   public final String ip;
-   private final Map<String, String> cookies;
+    public final String requestLine;
+    public final HttpMethod httpMethod;
+    public final String baseUrl;
+    public final Context context;
+    public final Optional<InputStream> body;
+    public final String uri;
+    protected final ListMultimap<String, String> headers;
+    private final ListMultimap<String, String> params;
+    public final Optional<String> ua;
+    public final Optional<String> referrer;
+    public final String ip;
+    private final Map<String, String> cookies;
 
-   public Request( HttpRequest req, Context context ) {
-      this.headers = req.getAllHeaders();
-      this.baseUrl = context.protocol.toLowerCase() + "://" + req.getFirstHeader( "Host" ).getValue();
-      this.uri = req.getRequestLine().getUri();
-      this.requestLine = Strings.substringBefore( req.getRequestLine().getUri(), "?" ).substring(
-         context.location.length() );
-      this.httpMethod = HttpMethod.valueOf( req.getRequestLine().getMethod().toUpperCase() );
-      this.context = context;
-      this.body = content( req );
-      this.params = params( req );
-      this.ua = header( "User-Agent" );
-      this.referrer = header( "Referrer" );
-      this.ip = context.remoteAddress.getHostAddress();
-      this.cookies = header( "Cookie" )
-         .map( cookie -> Stream.of( SPLITTER.split( cookie ).iterator() )
-            .map( s -> Strings.split( s, "=" ) )
-            .collect( Maps.Collectors.<String, String>toMap() ) )
-         .orElse( Maps.empty() );
-   }
+    public Request( HttpRequest req, Context context ) {
+        this.headers = Stream.of( req.getAllHeaders() )
+            .map( h -> __( h.getName().toLowerCase(), h.getValue() ) )
+            .collect( Maps.Collectors.toListMultimap() );
+        this.baseUrl = context.protocol.toLowerCase() + "://" + req.getFirstHeader( "Host" ).getValue();
+        this.uri = req.getRequestLine().getUri();
+        this.requestLine = Strings.substringBefore( req.getRequestLine().getUri(), "?" ).substring(
+            context.location.length() );
+        this.httpMethod = HttpMethod.valueOf( req.getRequestLine().getMethod().toUpperCase() );
+        this.context = context;
+        this.body = content( req );
+        this.params = params( req );
+        this.ua = header( "User-Agent" );
+        this.referrer = header( "Referrer" );
+        this.ip = context.remoteAddress.getHostAddress();
+        this.cookies = header( "Cookie" )
+            .map( cookie -> Stream.of( SPLITTER.split( cookie ).iterator() )
+                .map( s -> Strings.split( s, "=" ) )
+                .collect( Maps.Collectors.<String, String>toMap() ) )
+            .orElse( Maps.empty() );
+    }
 
-   private static Optional<InputStream> content( HttpRequest req ) {
-      try {
-         return req instanceof HttpEntityEnclosingRequest ?
-            Optional.of( ( ( HttpEntityEnclosingRequest ) req ).getEntity().getContent() )
-            : Optional.empty();
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
-
-   private static ListMultimap<String, String> params( HttpRequest req ) {
-      ListMultimap<String, String> query = Url.parseQuery(
-         Strings.substringAfter( req.getRequestLine().getUri(), "?" ) );
-      if( req.getFirstHeader( "Content-Type" ) != null
-         && req.getFirstHeader( "Content-Type" ).getValue().startsWith( "application/x-www-form-urlencoded" )
-         && req instanceof HttpEntityEnclosingRequest )
-         try {
-            return Maps.add( query, Url.parseQuery(
-               EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) req ).getEntity() ) ) );
-         } catch( IOException e ) {
+    private static Optional<InputStream> content( HttpRequest req ) {
+        try {
+            return req instanceof HttpEntityEnclosingRequest
+                ? Optional.of( ( ( HttpEntityEnclosingRequest ) req ).getEntity().getContent() )
+                : Optional.empty();
+        } catch( IOException e ) {
             throw new UncheckedIOException( e );
-         }
-      else return query;
-   }
+        }
+    }
 
-   public Optional<String> parameter( String name ) {
-      return parameters( name ).stream().findFirst();
-   }
+    private static ListMultimap<String, String> params( HttpRequest req ) {
+        ListMultimap<String, String> query = Url.parseQuery(
+            Strings.substringAfter( req.getRequestLine().getUri(), "?" ) );
+        if( req.getFirstHeader( "Content-Type" ) != null
+            && req.getFirstHeader( "Content-Type" ).getValue().startsWith( "application/x-www-form-urlencoded" )
+            && req instanceof HttpEntityEnclosingRequest )
+            try {
+                return Maps.add( query, Url.parseQuery(
+                    EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) req ).getEntity() ) ) );
+            } catch( IOException e ) {
+                throw new UncheckedIOException( e );
+            }
+        else return query;
+    }
 
-   public List<String> parameters( String name ) {
-      return params.containsKey( name ) ? params.get( name ) : Collections.emptyList();
+    public Optional<String> parameter( String name ) {
+        return parameters( name ).stream().findFirst();
+    }
 
-   }
+    public List<String> parameters( String name ) {
+        return params.containsKey( name ) ? params.get( name ) : Collections.emptyList();
 
-   public Optional<byte[]> readBody() {
-      return body.map( Try.mapOrThrow( ByteStreams::toByteArray, HttpException.class ) );
-   }
+    }
 
-   public Optional<String> header( String name ) {
-      return Arrays.find( h -> name.equalsIgnoreCase( h.getName() ), headers )
-         .map( Header::getValue );
-   }
+    public Optional<byte[]> readBody() {
+        return body.map( Try.mapOrThrow( ByteStreams::toByteArray, HttpException.class ) );
+    }
 
-   public List<String> headers( String name ) {
-      return Stream.of( headers )
-         .filter( h -> name.equalsIgnoreCase( h.getName() ) )
-         .map( Header::getValue )
-         .toList();
-   }
+    public Optional<String> header( String name ) {
+        return headers.containsKey( name.toLowerCase() ) ? Lists.headOpt( headers.get( name.toLowerCase() ) )
+            : Optional.empty();
+    }
 
-   public Optional<String> cookie( String name ) {
-      return Optional.ofNullable( cookies.get( name ) );
-   }
+    public List<String> headers( String name ) {
+        return headers.containsKey( name.toLowerCase() ) ? headers.get( name.toLowerCase() ) : Lists.empty();
+    }
 
-   @Deprecated
-   /**
-    * @see #cookie(String)
-    * */
-   public Map<String, String> cookies() {
-      return cookies;
-   }
+    public Optional<String> cookie( String name ) {
+        return Optional.ofNullable( cookies.get( name ) );
+    }
 
-   @Override
-   public String toString() {
-      return MoreObjects.toStringHelper( this )
-         .add( "baseUrl", baseUrl )
-         .add( "requestLine", requestLine )
-         .add( "method", httpMethod )
-         .add( "params", params )
-         .omitNullValues()
-         .toString();
-   }
+    @Deprecated
+    /**
+     * @see #cookie(String)
+     * */
+    public Map<String, String> cookies() {
+        return cookies;
+    }
 
-   public String toDetailedString() {
-      return MoreObjects.toStringHelper( this )
-         .add( "baseUrl", this.baseUrl )
-         .add( "method", this.httpMethod )
-         .add( "ip", this.ip )
-         .add( "ua", this.ua )
-         .add( "uri", this.uri )
-         .add( "params", this.params )
-         .add( "headers", this.headers )
-         .add( "cookies", this.cookies )
-         .omitNullValues()
-         .toString();
-   }
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper( this )
+            .add( "baseUrl", baseUrl )
+            .add( "requestLine", requestLine )
+            .add( "method", httpMethod )
+            .add( "params", params )
+            .omitNullValues()
+            .toString();
+    }
 
-   public enum HttpMethod {
-      GET, POST, PUT, DELETE, HEAD, OPTIONS
-   }
+    public String toDetailedString() {
+        return MoreObjects.toStringHelper( this )
+            .add( "baseUrl", this.baseUrl )
+            .add( "method", this.httpMethod )
+            .add( "ip", this.ip )
+            .add( "ua", this.ua )
+            .add( "uri", this.uri )
+            .add( "params", this.params )
+            .add( "headers", this.headers )
+            .add( "cookies", this.cookies )
+            .omitNullValues()
+            .toString();
+    }
+
+    public enum HttpMethod {
+        GET, POST, PUT, DELETE, HEAD, OPTIONS
+    }
 
 }

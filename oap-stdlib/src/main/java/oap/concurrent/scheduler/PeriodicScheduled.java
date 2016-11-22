@@ -30,35 +30,35 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class PeriodicScheduled extends Scheduled implements Runnable {
-   private final AtomicLong lastTimeExecuted = new AtomicLong( 0 );
-   Scheduled scheduled;
-   private Class owner;
-   private long safePeriod;
-   private Consumer<Long> job;
+    private final AtomicLong lastTimeExecuted = new AtomicLong( 0 );
+    Scheduled scheduled;
+    private Class owner;
+    private long safePeriod;
+    private Consumer<Long> job;
 
-   public PeriodicScheduled( Class owner, long safePeriod, Consumer<Long> job ) {
-      this.owner = owner;
-      this.safePeriod = safePeriod;
-      this.job = job;
-   }
+    public PeriodicScheduled( Class owner, long safePeriod, Consumer<Long> job ) {
+        this.owner = owner;
+        this.safePeriod = safePeriod;
+        this.job = job;
+    }
 
-   public Class getOwner() {
-      return owner;
-   }
+    public Class getOwner() {
+        return owner;
+    }
 
-   public void run() {
-      long current = DateTimeUtils.currentTimeMillis() - safePeriod;
-      this.job.accept( lastTimeExecuted.get() );
-      lastTimeExecuted.set( current );
-   }
+    public void run() {
+        long current = DateTimeUtils.currentTimeMillis() - safePeriod;
+        this.job.accept( lastTimeExecuted.get() );
+        lastTimeExecuted.set( current );
+    }
 
-   @Override
-   public void cancel() {
-      Scheduled.cancel( scheduled );
-   }
+    @Override
+    public void cancel() {
+        Scheduled.cancel( scheduled );
+    }
 
-   public long lastExecuted() {
-      return lastTimeExecuted.get();
-   }
+    public long lastExecuted() {
+        return lastTimeExecuted.get();
+    }
 
 }

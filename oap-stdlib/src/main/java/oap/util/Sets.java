@@ -28,19 +28,21 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Function;
 
-public class Sets {
-   @SafeVarargs
-   public static <E> Set<E> of( E... array ) {
-      LinkedHashSet<E> set = new LinkedHashSet<>( array.length );
-      Collections.addAll( set, array );
-      return set;
-   }
+public final class Sets {
+    private Sets() {}
 
-   public static <E> Set<E> empty() {
-      return Collections.emptySet();
-   }
+    @SafeVarargs
+    public static <E> Set<E> of( E... array ) {
+        LinkedHashSet<E> set = new LinkedHashSet<>( array.length );
+        Collections.addAll( set, array );
+        return set;
+    }
 
-   public static <E, R> Set<R> map( Set<E> set, Function<? super E, R> mapper ) {
-      return Stream.of( set ).map( mapper ).toSet();
-   }
+    public static <E> Set<E> empty() {
+        return Collections.emptySet();
+    }
+
+    public static <E, R> Set<R> map( Set<E> set, Function<? super E, R> mapper ) {
+        return Stream.of( set ).map( mapper ).toSet();
+    }
 }

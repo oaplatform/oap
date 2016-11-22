@@ -27,7 +27,12 @@ package oap.util;
 import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
-import java.util.*;
+import java.util.AbstractCollection;
+import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Optional;
 
 import static oap.util.Pair.__;
 import static org.testng.Assert.assertEquals;

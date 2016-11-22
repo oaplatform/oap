@@ -33,9 +33,9 @@ import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ResourcesTest {
-   @Test
-   public void urls() {
-      List<URL> urls = Resources.urls( getClass().getName(), "txt" );
-      assertThat( urls ).containsOnly( urlOfTestResource( getClass(), "resource.txt" ) );
-   }
+    @Test
+    public void urls() {
+        List<URL> urls = Resources.urls( getClass().getName(), "txt" );
+        assertThat( urls ).containsOnly( urlOfTestResource( getClass(), "resource.txt" ) );
+    }
 }

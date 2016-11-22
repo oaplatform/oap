@@ -36,8 +36,7 @@ public class SimpleFileVisitor2<T> extends SimpleFileVisitor<T> {
     public long visited;
 
     @Override
-    public FileVisitResult visitFile( T file, BasicFileAttributes attrs )
-         {
+    public FileVisitResult visitFile( T file, BasicFileAttributes attrs ) {
 
         visited++;
 

@@ -57,203 +57,203 @@ import static oap.io.ProgressInputStream.progress;
 
 public class IoStreams {
 
-   public static final int DEFAULT_BUFFER = 8192;
+    public static final int DEFAULT_BUFFER = 8192;
 
-   public static Stream<String> lines( URL url ) {
-      return lines( url, Encoding.from( url ), p -> {
-      } );
-   }
+    public static Stream<String> lines( URL url ) {
+        return lines( url, Encoding.from( url ), p -> {
+        } );
+    }
 
-   public static Stream<String> lines( URL url, Consumer<Integer> progress ) {
-      return lines( url, Encoding.from( url ), progress );
-   }
+    public static Stream<String> lines( URL url, Consumer<Integer> progress ) {
+        return lines( url, Encoding.from( url ), progress );
+    }
 
-   public static Stream<String> lines( URL url, Encoding encoding, Consumer<Integer> progress ) {
-      try {
-         URLConnection connection = url.openConnection();
-         InputStream stream = connection.getInputStream();
-         return lines( stream, encoding, progress( connection.getContentLengthLong(), progress ) )
-            .onClose( Try.run( stream::close ) );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
+    public static Stream<String> lines( URL url, Encoding encoding, Consumer<Integer> progress ) {
+        try {
+            URLConnection connection = url.openConnection();
+            InputStream stream = connection.getInputStream();
+            return lines( stream, encoding, progress( connection.getContentLengthLong(), progress ) )
+                .onClose( Try.run( stream::close ) );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 
-   public static Stream<String> lines( Path path ) {
-      return lines( path, Encoding.from( path ), p -> {
-      } );
-   }
+    public static Stream<String> lines( Path path ) {
+        return lines( path, Encoding.from( path ), p -> {
+        } );
+    }
 
-   public static Stream<String> lines( Path path, Encoding encoding ) {
-      return lines( path, encoding, p -> {
-      } );
-   }
+    public static Stream<String> lines( Path path, Encoding encoding ) {
+        return lines( path, encoding, p -> {
+        } );
+    }
 
-   public static Stream<String> lines( Path path, Encoding encoding, Consumer<Integer> progress ) {
-      InputStream stream = in( path, Encoding.PLAIN );
-      try {
-         return lines( stream, encoding, progress( path.toFile().length(), progress ) )
-            .onClose( Try.run( stream::close ) );
-      } catch( final RuntimeException e ) {
-         throw new RuntimeException( "Couldn't open file " + path.toString(), e );
-      }
-   }
+    public static Stream<String> lines( Path path, Encoding encoding, Consumer<Integer> progress ) {
+        InputStream stream = in( path, Encoding.PLAIN );
+        try {
+            return lines( stream, encoding, progress( path.toFile().length(), progress ) )
+                .onClose( Try.run( stream::close ) );
+        } catch( final RuntimeException e ) {
+            throw new RuntimeException( "Couldn't open file " + path.toString(), e );
+        }
+    }
 
-   private static Stream<String> lines( InputStream stream, Encoding encoding, ProgressInputStream.Progress progress ) {
-      return lines( in( new ProgressInputStream( stream, progress ), encoding ) );
-   }
+    private static Stream<String> lines( InputStream stream, Encoding encoding, ProgressInputStream.Progress progress ) {
+        return lines( in( new ProgressInputStream( stream, progress ), encoding ) );
+    }
 
-   public static Stream<String> lines( InputStream stream ) {
-      return Stream.of( new BufferedReader( new InputStreamReader( stream, StandardCharsets.UTF_8 ) ).lines() );
-   }
+    public static Stream<String> lines( InputStream stream ) {
+        return Stream.of( new BufferedReader( new InputStreamReader( stream, StandardCharsets.UTF_8 ) ).lines() );
+    }
 
-   public static void write( Path path, Encoding encoding, String value ) {
-      write( path, encoding, new ByteArrayInputStream( Strings.toByteArray( value ) ) );
-   }
+    public static void write( Path path, Encoding encoding, String value ) {
+        write( path, encoding, new ByteArrayInputStream( Strings.toByteArray( value ) ) );
+    }
 
-   public static void write( Path path, Encoding encoding, InputStream in ) {
-      write( path, encoding, in, ProgressInputStream.empty() );
-   }
+    public static void write( Path path, Encoding encoding, InputStream in ) {
+        write( path, encoding, in, ProgressInputStream.empty() );
+    }
 
-   public static void write( Path path, Encoding encoding, InputStream in, ProgressInputStream.Progress progress ) {
-      path.toAbsolutePath().getParent().toFile().mkdirs();
-      try( OutputStream out = out( path, encoding ) ) {
-         ByteStreams.copy( new ProgressInputStream( in, progress ), out );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
+    public static void write( Path path, Encoding encoding, InputStream in, ProgressInputStream.Progress progress ) {
+        path.toAbsolutePath().getParent().toFile().mkdirs();
+        try( OutputStream out = out( path, encoding ) ) {
+            ByteStreams.copy( new ProgressInputStream( in, progress ), out );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 
-   public static OutputStream out( Path path ) {
-      return out( path, Encoding.from( path ), DEFAULT_BUFFER );
-   }
+    public static OutputStream out( Path path ) {
+        return out( path, Encoding.from( path ), DEFAULT_BUFFER );
+    }
 
-   public static OutputStream out( Path path, Encoding encoding ) {
-      return out( path, encoding, DEFAULT_BUFFER );
-   }
+    public static OutputStream out( Path path, Encoding encoding ) {
+        return out( path, encoding, DEFAULT_BUFFER );
+    }
 
-   public static OutputStream out( Path path, Encoding encoding, int bufferSize ) {
-      return out( path, encoding, bufferSize, false );
-   }
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize ) {
+        return out( path, encoding, bufferSize, false );
+    }
 
-   public static OutputStream out( Path path, Encoding encoding, boolean append ) {
-      return out( path, encoding, DEFAULT_BUFFER, append );
-   }
+    public static OutputStream out( Path path, Encoding encoding, boolean append ) {
+        return out( path, encoding, DEFAULT_BUFFER, append );
+    }
 
-   public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) {
-      return out( path, encoding, bufferSize, append, false, false );
-   }
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) {
+        return out( path, encoding, bufferSize, append, false, false );
+    }
 
-   public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe, boolean removeEmptyIfSafe ) {
-      assert ( !removeEmptyIfSafe || safe );
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe, boolean removeEmptyIfSafe ) {
+        assert ( !removeEmptyIfSafe || safe );
 
-      path.toAbsolutePath().getParent().toFile().mkdirs();
-      try {
-         OutputStream fos = new BufferedOutputStream( safe ?
-            new SafeFileOutputStream( path, append, removeEmptyIfSafe ) :
-            new FileOutputStream( path.toFile(), append ),
-            bufferSize );
-         switch( encoding ) {
+        path.toAbsolutePath().getParent().toFile().mkdirs();
+        try {
+            OutputStream fos = new BufferedOutputStream( safe
+                ? new SafeFileOutputStream( path, append, removeEmptyIfSafe )
+                : new FileOutputStream( path.toFile(), append ),
+                bufferSize );
+            switch( encoding ) {
+                case GZIP:
+                    return new GZIPOutputStream( fos );
+                case ZIP:
+                    if( append ) throw new IllegalArgumentException( "cannot append zip file" );
+                    ZipOutputStream zip = new ZipOutputStream( fos );
+                    zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
+                    return zip;
+                case LZ4:
+                    return new KafkaLZ4BlockOutputStream( fos, BLOCKSIZE_4MB, false, false );
+                case PLAIN:
+                    return fos;
+                default:
+                    throw new IllegalArgumentException( "Unknown encoding " + encoding );
+            }
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static InputStream in( Path path, Encoding encoding ) {
+        return in( path, encoding, DEFAULT_BUFFER );
+    }
+
+    public static InputStream in( Path path ) {
+        return in( path, DEFAULT_BUFFER );
+    }
+
+    public static InputStream in( Path path, int bufferSIze ) {
+        return in( path, Encoding.from( path ), bufferSIze );
+    }
+
+    public static InputStream in( Path path, Encoding encoding, int bufferSIze ) {
+        try {
+            return getInputStream( new BufferedInputStream( new FileInputStream( path.toFile() ) ), encoding );
+        } catch( FileNotFoundException e ) {
+            throw new UncheckedIOException( e );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( "Couldn't open file " + path.toString(), e );
+        }
+    }
+
+    public static InputStream in( InputStream stream, Encoding encoding ) {
+        try {
+            return getInputStream( stream, encoding );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+
+    }
+
+    private static InputStream getInputStream( InputStream stream, Encoding encoding ) throws IOException {
+        switch( encoding ) {
             case GZIP:
-               return new GZIPOutputStream( fos );
+                return new GZIPInputStream( stream );
             case ZIP:
-               if( append ) throw new IllegalArgumentException( "cannot append zip file" );
-               ZipOutputStream zip = new ZipOutputStream( fos );
-               zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
-               return zip;
-            case LZ4:
-               return new KafkaLZ4BlockOutputStream( fos, BLOCKSIZE_4MB, false, false );
+                ZipInputStream zip = new ZipInputStream( stream );
+                if( zip.getNextEntry() == null )
+                    throw new IllegalArgumentException( "zip stream contains no entries" );
+                return zip;
             case PLAIN:
-               return fos;
+                return stream;
+            case LZ4:
+                return new KafkaLZ4BlockInputStream( stream );
             default:
-               throw new IllegalArgumentException( "Unknown encoding " + encoding );
-         }
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
+                throw new IllegalArgumentException( "Unknown encoding " + encoding );
+        }
+    }
 
-   public static InputStream in( Path path, Encoding encoding ) {
-      return in( path, encoding, DEFAULT_BUFFER );
-   }
+    public enum Encoding {
+        PLAIN( Optional.empty(), false ),
+        ZIP( Optional.of( "zip" ), true ),
+        GZIP( Optional.of( "gz" ), true ),
+        LZ4( Optional.of( "lz4" ), true );
 
-   public static InputStream in( Path path ) {
-      return in( path, DEFAULT_BUFFER );
-   }
+        public final Optional<String> extension;
+        public final boolean compress;
 
-   public static InputStream in( Path path, int bufferSIze ) {
-      return in( path, Encoding.from( path ), bufferSIze );
-   }
+        Encoding( Optional<String> extension, boolean compress ) {
+            this.extension = extension;
+            this.compress = compress;
+        }
 
-   public static InputStream in( Path path, Encoding encoding, int bufferSIze ) {
-      try {
-         return getInputStream( new BufferedInputStream( new FileInputStream( path.toFile() ) ), encoding );
-      } catch( FileNotFoundException e ) {
-         throw new UncheckedIOException( e );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( "Couldn't open file " + path.toString(), e );
-      }
-   }
+        public static Encoding from( Path path ) {
+            final String strPath = path.toString();
 
-   public static InputStream in( InputStream stream, Encoding encoding ) {
-      try {
-         return getInputStream( stream, encoding );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
+            return from( strPath );
+        }
 
-   }
+        public static Encoding from( URL url ) {
+            final String strPath = url.toString();
 
-   private static InputStream getInputStream( InputStream stream, Encoding encoding ) throws IOException {
-      switch( encoding ) {
-         case GZIP:
-            return new GZIPInputStream( stream );
-         case ZIP:
-            ZipInputStream zip = new ZipInputStream( stream );
-            if( zip.getNextEntry() == null )
-               throw new IllegalArgumentException( "zip stream contains no entries" );
-            return zip;
-         case PLAIN:
-            return stream;
-         case LZ4:
-            return new KafkaLZ4BlockInputStream( stream );
-         default:
-            throw new IllegalArgumentException( "Unknown encoding " + encoding );
-      }
-   }
+            return from( strPath );
+        }
 
-   public enum Encoding {
-      PLAIN( Optional.empty(), false ),
-      ZIP( Optional.of( "zip" ), true ),
-      GZIP( Optional.of( "gz" ), true ),
-      LZ4( Optional.of( "lz4" ), true );
-
-      public final Optional<String> extension;
-      public final boolean compress;
-
-      Encoding( Optional<String> extension, boolean compress ) {
-         this.extension = extension;
-         this.compress = compress;
-      }
-
-      public static Encoding from( Path path ) {
-         final String strPath = path.toString();
-
-         return from( strPath );
-      }
-
-      public static Encoding from( URL url ) {
-         final String strPath = url.toString();
-
-         return from( strPath );
-      }
-
-      public static Encoding from( String strPath ) {
-         return Stream
-            .of( values() )
-            .filter( e -> e.extension.filter( strPath::endsWith ).isPresent() )
-            .findAny()
-            .orElse( PLAIN );
-      }
-   }
+        public static Encoding from( String strPath ) {
+            return Stream
+                .of( values() )
+                .filter( e -> e.extension.filter( strPath::endsWith ).isPresent() )
+                .findAny()
+                .orElse( PLAIN );
+        }
+    }
 }

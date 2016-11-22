@@ -23,90 +23,90 @@ import static org.testng.Assert.assertEqualsNoOrder;
  */
 public class FileWalkerTest extends AbstractTest {
 
-   @BeforeMethod
-   @Override
-   public void beforeMethod() {
-      super.beforeMethod();
+    @BeforeMethod
+    @Override
+    public void beforeMethod() {
+        super.beforeMethod();
 
-      Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
-      Files.writeString( Env.tmp( "/wildcard/w2/3.txt" ), "1" );
-      Files.writeString( Env.tmp( "/wildcard/w2/33.txt" ), "1" );
-      Files.writeString( Env.tmp( "/wildcard/w2/w1/4.txt" ), "1" );
-   }
+        Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
+        Files.writeString( Env.tmp( "/wildcard/w2/3.txt" ), "1" );
+        Files.writeString( Env.tmp( "/wildcard/w2/33.txt" ), "1" );
+        Files.writeString( Env.tmp( "/wildcard/w2/w1/4.txt" ), "1" );
+    }
 
-   @Test
-   public void testWalkFileTree_basePath_not_found() throws Exception {
-      final MockVisitor visitor = new MockVisitor();
-      new FileWalker( Paths.get( "/aaa" ), "*.txt" ).walkFileTree( visitor );
+    @Test
+    public void walkFileTreeBasePathNotFound() throws Exception {
+        final MockVisitor visitor = new MockVisitor();
+        new FileWalker( Paths.get( "/aaa" ), "*.txt" ).walkFileTree( visitor );
 
-      assertThat( visitor.files ).isEmpty();
-   }
+        assertThat( visitor.files ).isEmpty();
+    }
 
-   @Test
-   public void testWalkFileTree_static_path() throws Exception {
-      final MockVisitor visitor = new MockVisitor();
-      new FileWalker( tmpPath( "wildcard" ), "w2/3.txt" ).walkFileTree( visitor );
+    @Test
+    public void walkFileTreeStaticPath() throws Exception {
+        final MockVisitor visitor = new MockVisitor();
+        new FileWalker( tmpPath( "wildcard" ), "w2/3.txt" ).walkFileTree( visitor );
 
-      assertEquals( visitor.files, singletonList( tmpPath( "/wildcard/w2/3.txt" ) ) );
-   }
+        assertEquals( visitor.files, singletonList( tmpPath( "/wildcard/w2/3.txt" ) ) );
+    }
 
-   @Test
-   public void testWalkFileTree_static_path_not_found() throws Exception {
-      final MockVisitor visitor = new MockVisitor();
-      new FileWalker( tmpPath( "wildcard" ), "unknown/3.txt" ).walkFileTree( visitor );
+    @Test
+    public void walkFileTreeStaticPathNotFound() throws Exception {
+        final MockVisitor visitor = new MockVisitor();
+        new FileWalker( tmpPath( "wildcard" ), "unknown/3.txt" ).walkFileTree( visitor );
 
-      assertEquals( visitor.files, emptyList() );
-   }
+        assertEquals( visitor.files, emptyList() );
+    }
 
-   @Test
-   public void testWalkFileTree_any() throws Exception {
-      final MockVisitor visitor = new MockVisitor();
-      new FileWalker( tmpPath( "wildcard" ), "w2\\*" ).walkFileTree( visitor );
+    @Test
+    public void walkFileTreeAny() throws Exception {
+        final MockVisitor visitor = new MockVisitor();
+        new FileWalker( tmpPath( "wildcard" ), "w2\\*" ).walkFileTree( visitor );
 
-      assertEqualsNoOrder( visitor.files.toArray(), new Path[]{
-         tmpPath( "/wildcard/w2/33.txt" ), tmpPath( "/wildcard/w2/w1" ), tmpPath( "/wildcard/w2/3.txt" )
-      } );
-   }
+        assertEqualsNoOrder( visitor.files.toArray(), new Path[] {
+            tmpPath( "/wildcard/w2/33.txt" ), tmpPath( "/wildcard/w2/w1" ), tmpPath( "/wildcard/w2/3.txt" )
+        } );
+    }
 
-   @Test
-   public void testWalkFileTree_any2() throws Exception {
-      final MockVisitor visitor = new MockVisitor();
-      new FileWalker( tmpPath( "wildcard" ), "*/*.txt" ).walkFileTree( visitor );
+    @Test
+    public void walkFileTreeAny2() throws Exception {
+        final MockVisitor visitor = new MockVisitor();
+        new FileWalker( tmpPath( "wildcard" ), "*/*.txt" ).walkFileTree( visitor );
 
-      assertEqualsNoOrder( visitor.files.toArray(), new Path[]{
-         tmpPath( "/wildcard/w2/33.txt" ), tmpPath( "/wildcard/w2/3.txt" )
-      } );
-   }
+        assertEqualsNoOrder( visitor.files.toArray(), new Path[] {
+            tmpPath( "/wildcard/w2/33.txt" ), tmpPath( "/wildcard/w2/3.txt" )
+        } );
+    }
 
-   @Test
-   public void testWalkFileTree_file_pattern() throws Exception {
-      final MockVisitor visitor = new MockVisitor();
-      new FileWalker( tmpPath( "wildcard" ), "w2/3*.txt" ).walkFileTree( visitor );
+    @Test
+    public void walkFileTreeFilePattern() throws Exception {
+        final MockVisitor visitor = new MockVisitor();
+        new FileWalker( tmpPath( "wildcard" ), "w2/3*.txt" ).walkFileTree( visitor );
 
-      assertEquals( visitor.files, asList(
-         tmpPath( "/wildcard/w2/3.txt" ), tmpPath( "/wildcard/w2/33.txt" )
-      ) );
-   }
+        assertEquals( visitor.files, asList(
+            tmpPath( "/wildcard/w2/3.txt" ), tmpPath( "/wildcard/w2/33.txt" )
+        ) );
+    }
 
-   @Test
-   public void testWalkFileTree_file_pattern_cache() throws Exception {
-      final FileWalkerCache fwc = new FileWalkerCache();
+    @Test
+    public void walkFileTreeFilePatternCache() throws Exception {
+        final FileWalkerCache fwc = new FileWalkerCache();
 
-      final MockVisitor visitor1 = new MockVisitor();
-      new FileWalker( tmpPath( "wildcard" ), "w2/3*.txt", fwc ).walkFileTree( visitor1 );
-      assertThat( visitor1.files ).containsOnly( tmpPath( "/wildcard/w2/3.txt" ), tmpPath( "/wildcard/w2/33.txt" ) );
+        final MockVisitor visitor1 = new MockVisitor();
+        new FileWalker( tmpPath( "wildcard" ), "w2/3*.txt", fwc ).walkFileTree( visitor1 );
+        assertThat( visitor1.files ).containsOnly( tmpPath( "/wildcard/w2/3.txt" ), tmpPath( "/wildcard/w2/33.txt" ) );
 
-      final MockVisitor visitor2 = new MockVisitor();
-      new FileWalker( tmpPath( "wildcard" ), "w2/3*.txt", fwc ).walkFileTree( visitor2 );
-      assertThat( visitor2.files ).containsOnly( tmpPath( "/wildcard/w2/3.txt" ), tmpPath( "/wildcard/w2/33.txt" ) );
-   }
+        final MockVisitor visitor2 = new MockVisitor();
+        new FileWalker( tmpPath( "wildcard" ), "w2/3*.txt", fwc ).walkFileTree( visitor2 );
+        assertThat( visitor2.files ).containsOnly( tmpPath( "/wildcard/w2/3.txt" ), tmpPath( "/wildcard/w2/33.txt" ) );
+    }
 
-   private class MockVisitor implements Consumer<Path> {
-      public final ArrayList<Path> files = new ArrayList<>();
+    private class MockVisitor implements Consumer<Path> {
+        public final ArrayList<Path> files = new ArrayList<>();
 
-      @Override
-      public void accept( Path path ) {
-         files.add( path );
-      }
-   }
+        @Override
+        public void accept( Path path ) {
+            files.add( path );
+        }
+    }
 }

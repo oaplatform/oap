@@ -25,6 +25,9 @@
 package oap.util;
 
 public final class BinaryTreePrinter {
+    private BinaryTreePrinter() {
+    }
+
     public interface TreeNode {
         TreeNode getLeft();
 
@@ -45,12 +48,13 @@ public final class BinaryTreePrinter {
             node.print( out );
             out.append( "\n" );
 
-            if( node.getLeft() != null ) print( prefix + (isTail ? "    " : "│   "), false, node.getLeft(), out, "l" );
+            if( node.getLeft() != null )
+                print( prefix + ( isTail ? "    " : "│   " ), false, node.getLeft(), out, "l" );
             if( node.getRight() != null ) {
-                print( prefix + (isTail ? "    " : "│   "), node.getAny() == null, node.getRight(), out, "r" );
+                print( prefix + ( isTail ? "    " : "│   " ), node.getAny() == null, node.getRight(), out, "r" );
             }
             if( node.getAny() != null ) {
-                print( prefix + (isTail ? "    " : "│   "), true, node.getAny(), out, "a" );
+                print( prefix + ( isTail ? "    " : "│   " ), true, node.getAny(), out, "a" );
             }
         }
     }

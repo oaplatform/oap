@@ -29,24 +29,24 @@ import java.security.NoSuchAlgorithmException;
 
 public final class Hash {
 
-   private Hash() {
-   }
+    private Hash() {
+    }
 
-   public static String sha256( String salt, String input ) {
-      return hash( salt, input, "SHA-256" );
-   }
+    public static String sha256( String salt, String input ) {
+        return hash( salt, input, "SHA-256" );
+    }
 
-   public static String hash( String salt, String input, String algorithm ) {
-      try {
-         final MessageDigest messageDigest = MessageDigest.getInstance( algorithm );
+    public static String hash( String salt, String input, String algorithm ) {
+        try {
+            final MessageDigest messageDigest = MessageDigest.getInstance( algorithm );
 
-         messageDigest.update( salt.getBytes( "UTF-8" ) );
+            messageDigest.update( salt.getBytes( "UTF-8" ) );
 
-         final byte[] hashedInput = messageDigest.digest( input.getBytes() );
+            final byte[] hashedInput = messageDigest.digest( input.getBytes() );
 
-         return Strings.toHexString( hashedInput );
-      } catch( NoSuchAlgorithmException | UnsupportedEncodingException e ) {
-         throw new RuntimeException( e );
-      }
-   }
+            return Strings.toHexString( hashedInput );
+        } catch( NoSuchAlgorithmException | UnsupportedEncodingException e ) {
+            throw new RuntimeException( e );
+        }
+    }
 }

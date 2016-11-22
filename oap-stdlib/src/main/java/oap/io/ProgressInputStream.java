@@ -32,77 +32,77 @@ import java.util.function.Consumer;
 import static oap.util.Functions.empty.consume;
 
 public class ProgressInputStream extends FilterInputStream {
-   private Progress progress;
-   private long total;
+    private Progress progress;
+    private long total;
 
-   protected ProgressInputStream( InputStream in, Progress progress ) {
-      super( in );
-      this.progress = progress;
-   }
+    protected ProgressInputStream( InputStream in, Progress progress ) {
+        super( in );
+        this.progress = progress;
+    }
 
-   @Override
-   public int read() throws IOException {
-      int read = super.read();
-      progress.soFar( ++total );
-      return read;
-   }
+    @Override
+    public int read() throws IOException {
+        int read = super.read();
+        progress.soFar( ++total );
+        return read;
+    }
 
-   @Override
-   public int read( byte[] b ) throws IOException {
-      return read( b, 0, b.length );
-   }
+    @Override
+    public int read( byte[] b ) throws IOException {
+        return read( b, 0, b.length );
+    }
 
-   @Override
-   public int read( byte[] b, int off, int len ) throws IOException {
-      int read = super.read( b, off, len );
-      progress.soFar( total += read );
-      return read;
-   }
+    @Override
+    public int read( byte[] b, int off, int len ) throws IOException {
+        int read = super.read( b, off, len );
+        progress.soFar( total += read );
+        return read;
+    }
 
-   @Override
-   public long skip( long n ) throws IOException {
-      long skip = super.skip( n );
-      progress.soFar( total += skip );
-      return skip;
-   }
+    @Override
+    public long skip( long n ) throws IOException {
+        long skip = super.skip( n );
+        progress.soFar( total += skip );
+        return skip;
+    }
 
-   public static Progress progress( long total, Consumer<Integer> percentage ) {
-      return new Progress( total ) {
-         @Override
-         public void percent( int soFar ) {
-            percentage.accept( soFar );
-         }
-      };
-   }
+    public static Progress progress( long total, Consumer<Integer> percentage ) {
+        return new Progress( total ) {
+            @Override
+            public void percent( int soFar ) {
+                percentage.accept( soFar );
+            }
+        };
+    }
 
-   public static Progress empty() {
-      return progress( Long.MAX_VALUE, consume() );
-   }
+    public static Progress empty() {
+        return progress( Long.MAX_VALUE, consume() );
+    }
 
-   public static abstract class Progress {
-      private long total;
-      private int lastReport;
+    public abstract static class Progress {
+        private long total;
+        private int lastReport;
 
-      public Progress( long total ) {
-         this.total = total;
-      }
+        public Progress( long total ) {
+            this.total = total;
+        }
 
 
-      void soFar( Long soFar ) {
-         int current = ( int ) Math.ceil( soFar * 100d / total );
-         if( current > lastReport ) {
-            lastReport = current;
-            percent( lastReport );
-         }
-      }
+        void soFar( Long soFar ) {
+            int current = ( int ) Math.ceil( soFar * 100d / total );
+            if( current > lastReport ) {
+                lastReport = current;
+                percent( lastReport );
+            }
+        }
 
-      public abstract void percent( int soFar );
-   }
+        public abstract void percent( int soFar );
+    }
 
-   public static Consumer<Integer> scale( int by, Consumer<Integer> progress ) {
-      AtomicInteger last = new AtomicInteger( 0 );
-      return p -> {
-         if( last.get() + by < p || p == 100 ) progress.accept( last.updateAndGet( x -> p ) );
-      };
-   }
+    public static Consumer<Integer> scale( int by, Consumer<Integer> progress ) {
+        AtomicInteger last = new AtomicInteger( 0 );
+        return p -> {
+            if( last.get() + by < p || p == 100 ) progress.accept( last.updateAndGet( x -> p ) );
+        };
+    }
 }

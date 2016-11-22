@@ -31,12 +31,12 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 public class NumbersTest {
 
-   @Test
-   public void parseLongWithUnits() {
-      assertThat( Numbers.parseLongWithUnits( "1s" ) ).isEqualTo( 1000L );
-      assertThat( Numbers.parseLongWithUnits( "30 days" ) ).isEqualTo( 2592000000L );
-      assertThatExceptionOfType( NumberFormatException.class )
-         .isThrownBy( () -> Numbers.parseLongWithUnits( "1aaa" ) )
-         .withMessage( "1aaa" );
-   }
+    @Test
+    public void parseLongWithUnits() {
+        assertThat( Numbers.parseLongWithUnits( "1s" ) ).isEqualTo( 1000L );
+        assertThat( Numbers.parseLongWithUnits( "30 days" ) ).isEqualTo( 2592000000L );
+        assertThatExceptionOfType( NumberFormatException.class )
+            .isThrownBy( () -> Numbers.parseLongWithUnits( "1aaa" ) )
+            .withMessage( "1aaa" );
+    }
 }

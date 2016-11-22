@@ -27,73 +27,73 @@ package oap.util;
 import java.util.ArrayList;
 
 public class BitSet extends java.util.BitSet {
-   public final int nbits;
+    public final int nbits;
 
-   public BitSet() {
-      nbits = Integer.MAX_VALUE;
-   }
+    public BitSet() {
+        nbits = Integer.MAX_VALUE;
+    }
 
-   public BitSet( Enum[] e, ArrayList<? extends Enum<?>> enums, boolean fill ) {
-      super( e.length );
-      nbits = e.length;
+    public BitSet( Enum[] e, ArrayList<? extends Enum<?>> enums, boolean fill ) {
+        super( e.length );
+        nbits = e.length;
 
-      if( enums == null || enums.isEmpty() ) {
-         if( fill ) set( 0, e.length );
-      } else
-         enums.forEach( ee -> set( ee.ordinal() ) );
-   }
+        if( enums == null || enums.isEmpty() ) {
+            if( fill ) set( 0, e.length );
+        } else
+            enums.forEach( ee -> set( ee.ordinal() ) );
+    }
 
-   public BitSet( int nbits ) {
-      super( nbits );
-      this.nbits = nbits;
-   }
+    public BitSet( int nbits ) {
+        super( nbits );
+        this.nbits = nbits;
+    }
 
-   public boolean getAnd( int[] bitIndex ) {
-      for( int i : bitIndex ) {
-         if( !get( i ) ) return false;
-      }
+    public boolean getAnd( int[] bitIndex ) {
+        for( int i : bitIndex ) {
+            if( !get( i ) ) return false;
+        }
 
-      return true;
-   }
+        return true;
+    }
 
-   public boolean getAnd( long[] bitIndex ) {
-      for( long i : bitIndex ) {
-         if( !get( i ) ) return false;
-      }
+    public boolean getAnd( long[] bitIndex ) {
+        for( long i : bitIndex ) {
+            if( !get( i ) ) return false;
+        }
 
-      return true;
-   }
+        return true;
+    }
 
-   public boolean xorAnd( int[] bitIndex ) {
-      for( int i : bitIndex ) {
-         if( get( i ) ) return false;
-      }
+    public boolean xorAnd( int[] bitIndex ) {
+        for( int i : bitIndex ) {
+            if( get( i ) ) return false;
+        }
 
-      return true;
-   }
+        return true;
+    }
 
-   public final boolean getOr( int[] bitIndex ) {
-      for( int i : bitIndex ) {
-         if( get( i ) ) return true;
-      }
+    public final boolean getOr( int[] bitIndex ) {
+        for( int i : bitIndex ) {
+            if( get( i ) ) return true;
+        }
 
-      return false;
-   }
+        return false;
+    }
 
-   public final boolean getOr( long[] bitIndex ) {
-      for( long i : bitIndex ) {
-         if( get( i ) ) return true;
-      }
+    public final boolean getOr( long[] bitIndex ) {
+        for( long i : bitIndex ) {
+            if( get( i ) ) return true;
+        }
 
-      return false;
-   }
+        return false;
+    }
 
-   public final boolean get( long bitIndex ) {
-      return get( ( int ) bitIndex );
-   }
+    public final boolean get( long bitIndex ) {
+        return get( ( int ) bitIndex );
+    }
 
-   public final int max() {
-      return previousSetBit( size() - 1 );
-   }
+    public final int max() {
+        return previousSetBit( size() - 1 );
+    }
 
 }

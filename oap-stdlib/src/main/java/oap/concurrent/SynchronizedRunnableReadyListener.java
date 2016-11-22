@@ -24,5 +24,5 @@
 package oap.concurrent;
 
 public interface SynchronizedRunnableReadyListener {
-   void notifyReady();
+    void notifyReady();
 }

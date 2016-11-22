@@ -26,7 +26,6 @@ package oap.testng;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import oap.util.Functions;
 import oap.util.Try;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -47,193 +46,193 @@ import static oap.util.Functions.empty.consume;
 
 public abstract class AbstractPerformance extends AbstractTest {
 
-   public static final int WARMING = 1000;
-   /**
-    * @see Functions.empty#consume()
-    */
-   @Deprecated
-   protected final static Consumer<Integer> none = ( i ) -> {
-   };
-   private final static Function<Long, String> actions_s = ( rate ) -> rate + " action/s";
+    public static final int WARMING = 1000;
+    /**
+     * @see oap.util.Functions.empty#consume()
+     */
+    @Deprecated
+    protected static final Consumer<Integer> none = ( i ) -> {
+    };
+    private static final Function<Long, String> actions_s = ( rate ) -> rate + " action/s";
 
-   public static void benchmark( String name, int samples, Try.ThrowingConsumer<Integer> code ) {
-      benchmark( name, samples, 5, code, consume(), consume(), actions_s );
-   }
+    public static void benchmark( String name, int samples, Try.ThrowingConsumer<Integer> code ) {
+        benchmark( name, samples, 5, code, consume(), consume(), actions_s );
+    }
 
-   public static BenchmarkResult benchmark( String name, int samples, int experiments,
-                                            Try.ThrowingConsumer<Integer> code ) {
-      return benchmark( name, samples, experiments, code, consume(), consume(), actions_s );
-   }
+    public static BenchmarkResult benchmark( String name, int samples, int experiments,
+                                             Try.ThrowingConsumer<Integer> code ) {
+        return benchmark( name, samples, experiments, code, consume(), consume(), actions_s );
+    }
 
-   public static BenchmarkResult benchmark( String name, int samples, int experiments,
-                                            Try.ThrowingConsumer<Integer> code,
-                                            Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment ) {
-      return benchmark( name, samples, experiments, code, initExperiment, doneExperiment, actions_s );
-   }
+    public static BenchmarkResult benchmark( String name, int samples, int experiments,
+                                             Try.ThrowingConsumer<Integer> code,
+                                             Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment ) {
+        return benchmark( name, samples, experiments, code, initExperiment, doneExperiment, actions_s );
+    }
 
-   public static BenchmarkResult benchmark( String name, int samples, int experiments,
-                                            Try.ThrowingConsumer<Integer> code,
-                                            Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment, Function<Long, String> rateToString ) {
-      return Teamcity.progress( name + "...", () -> {
-         List<BenchmarkResult> results = IntStream.range( 0, experiments )
-            .mapToObj( x -> {
-                  initExperiment.accept( x );
+    public static BenchmarkResult benchmark( String name, int samples, int experiments,
+                                             Try.ThrowingConsumer<Integer> code,
+                                             Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment, Function<Long, String> rateToString ) {
+        return Teamcity.progress( name + "...", () -> {
+            List<BenchmarkResult> results = IntStream.range( 0, experiments )
+                .mapToObj( x -> {
+                        initExperiment.accept( x );
 
-                  BenchmarkResult progress = Teamcity.progress( name + " e=" + x + "...", () -> {
-                        long total = IntStream.range( 0, samples ).mapToLong( time -> {
-                           long start = System.nanoTime();
-                           code.asConsumer().accept( time );
-                           return System.nanoTime() - start;
-                        } ).sum();
+                        BenchmarkResult progress = Teamcity.progress( name + " e=" + x + "...", () -> {
+                                long total = IntStream.range( 0, samples ).mapToLong( time -> {
+                                    long start = System.nanoTime();
+                                    code.asConsumer().accept( time );
+                                    return System.nanoTime() - start;
+                                } ).sum();
+                                long avg = total / samples / 1000;
+                                long rate = ( long ) ( samples / ( total / 1000000000f ) );
+                                System.out.format(
+                                    "benchmarking %s: %d samples, %d usec, avg time %d usec, rate %s\n",
+                                    name, samples, total / 1000, avg, rateToString.apply( rate ) );
+                                return new BenchmarkResult( avg, rate );
+                            }
+                        );
+
+                        doneExperiment.accept( x );
+
+                        return progress;
+                    }
+                )
+                .collect( toList() );
+            long avgTime = results.stream()
+                .skip( 1 )
+                .mapToLong( r -> r.time )
+                .sum() / ( experiments - 1 );
+            long avgRate = results.stream()
+                .skip( 1 )
+                .mapToLong( r -> r.rate )
+                .sum() / ( experiments - 1 );
+            System.out.format( "benchmarking %s : avg time %d usec, avg rate %s\n",
+                name, avgTime, rateToString.apply( avgRate ) );
+
+            Teamcity.performance( name, avgRate );
+
+            return new BenchmarkResult( avgTime, avgRate );
+        } );
+    }
+
+    public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
+                                             Try.ThrowingConsumer<Integer> code ) {
+        return benchmark( name, samples, experiments, threads, code, WARMING );
+    }
+
+    public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
+                                             Try.ThrowingConsumer<Integer> code, int warming ) {
+        return benchmark( name, samples, experiments, threads, code, consume(), consume(), warming );
+    }
+
+    public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
+                                             Try.ThrowingConsumer<Integer> code,
+                                             Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment,
+                                             int warming ) {
+
+        return Teamcity.progress( name + "...", () -> {
+            System.out.println( "pool threads = " + threads );
+            ExecutorService pool = oap.concurrent.Executors.newFixedThreadPool( threads, new ThreadFactoryBuilder().setNameFormat( "name-%d" ).build() );
+            if( warming > 0 ) {
+                System.out.println( "warming up..." );
+                IntStream
+                    .range( 0, warming )
+                    .mapToObj( i -> pool.submit( () -> code.asConsumer().accept( 0 ) ) )
+                    .collect( toList() )
+                    .forEach( Try.consume( Future::get ) );
+            }
+            System.out.println( "starting test..." );
+
+            List<BenchmarkResult> results = IntStream
+                .range( 0, experiments )
+                .mapToObj( x -> Teamcity.progress( name + " e=" + x + "...", () -> {
+
+                        initExperiment.accept( x );
+
+                        int threadSamles = samples / threads;
+
+                        long start = System.nanoTime();
+                        IntStream
+                            .range( 0, threads )
+                            .mapToObj( t -> pool.submit( () -> IntStream
+                                .range( t * threadSamles, ( t + 1 ) * threadSamles )
+                                .forEach( code.asConsumer()::accept )
+
+                            ) )
+                            .collect( toList() )
+                            .stream()
+                            .forEach( Try.consume( Future::get ) );
+
+                        long total = System.nanoTime() - start;
+
                         long avg = total / samples / 1000;
                         long rate = ( long ) ( samples / ( total / 1000000000f ) );
                         System.out.format(
-                           "benchmarking %s: %d samples, %d usec, avg time %d usec, rate %s\n",
-                           name, samples, total / 1000, avg, rateToString.apply( rate ) );
+                            "benchmarking %s: %d samples, %d usec, avg time %d usec, rate %d actions/s\n",
+                            name, samples, total / 1000, avg, rate );
+
+                        doneExperiment.accept( x );
+
                         return new BenchmarkResult( avg, rate );
-                     }
-                  );
+                    } )
+                )
+                .collect( toList() );
 
-                  doneExperiment.accept( x );
+            long avgTime = results.stream()
+                .skip( 1 )
+                .mapToLong( r -> r.time )
+                .sum() / ( experiments - 1 );
+            long avgRate = results.stream()
+                .skip( 1 )
+                .mapToLong( r -> r.rate )
+                .sum() / ( experiments - 1 );
+            System.out.format( "benchmarking %s : avg time %d usec, avg rate %d actions/s\n",
+                name, avgTime, avgRate );
 
-                  return progress;
-               }
-            )
-            .collect( toList() );
-         long avgTime = results.stream()
-            .skip( 1 )
-            .mapToLong( r -> r.time )
-            .sum() / ( experiments - 1 );
-         long avgRate = results.stream()
-            .skip( 1 )
-            .mapToLong( r -> r.rate )
-            .sum() / ( experiments - 1 );
-         System.out.format( "benchmarking %s : avg time %d usec, avg rate %s\n",
-            name, avgTime, rateToString.apply( avgRate ) );
+            Teamcity.performance( name, avgRate );
 
-         Teamcity.performance( name, avgRate );
+            return new BenchmarkResult( avgTime, avgRate );
+        } );
+    }
 
-         return new BenchmarkResult( avgTime, avgRate );
-      } );
-   }
+    public static <T> T time( String name, Supplier<T> code ) {
+        long start = System.nanoTime();
+        T result = code.get();
+        System.out.println( name + " took " + ( ( System.nanoTime() - start ) / 1000 ) + " usec" );
+        return result;
+    }
 
-   public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
-                                            Try.ThrowingConsumer<Integer> code ) {
-      return benchmark( name, samples, experiments, threads, code, WARMING );
-   }
+    @BeforeMethod
+    @Override
+    public void beforeMethod() {
+        Logger root = ( Logger ) LoggerFactory.getLogger( Logger.ROOT_LOGGER_NAME );
+        root.setLevel( Level.INFO );
 
-   public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
-                                            Try.ThrowingConsumer<Integer> code, int warming ) {
-      return benchmark( name, samples, experiments, threads, code, consume(), consume(), warming );
-   }
+        super.beforeMethod();
+    }
 
-   public static BenchmarkResult benchmark( String name, int samples, int experiments, int threads,
-                                            Try.ThrowingConsumer<Integer> code,
-                                            Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment,
-                                            int warming ) {
+    @AfterMethod
+    @Override
+    public void afterMethod() throws IOException {
+        Logger root = ( Logger ) LoggerFactory.getLogger( Logger.ROOT_LOGGER_NAME );
+        root.setLevel( Level.TRACE );
 
-      return Teamcity.progress( name + "...", () -> {
-         System.out.println( "pool threads = " + threads );
-         ExecutorService pool = oap.concurrent.Executors.newFixedThreadPool( threads, new ThreadFactoryBuilder().setNameFormat( "name-%d" ).build() );
-         if( warming > 0 ) {
-            System.out.println( "warming up..." );
-            IntStream
-               .range( 0, warming )
-               .mapToObj( i -> pool.submit( () -> code.asConsumer().accept( 0 ) ) )
-               .collect( toList() )
-               .forEach( Try.consume( Future::get ) );
-         }
-         System.out.println( "starting test..." );
+        super.afterMethod();
+    }
 
-         List<BenchmarkResult> results = IntStream
-            .range( 0, experiments )
-            .mapToObj( x -> Teamcity.progress( name + " e=" + x + "...", () -> {
+    public static class BenchmarkResult {
+        public long rate;
+        public long time;
 
-                  initExperiment.accept( x );
+        public BenchmarkResult( long time, long rate ) {
+            this.time = time;
+            this.rate = rate;
+        }
 
-                  int threadSamles = samples / threads;
-
-                  long start = System.nanoTime();
-                  IntStream
-                     .range( 0, threads )
-                     .mapToObj( t -> pool.submit( () -> IntStream
-                        .range( t * threadSamles, ( t + 1 ) * threadSamles )
-                        .forEach( code.asConsumer()::accept )
-
-                     ) )
-                     .collect( toList() )
-                     .stream()
-                     .forEach( Try.consume( Future::get ) );
-
-                  long total = System.nanoTime() - start;
-
-                  long avg = total / samples / 1000;
-                  long rate = ( long ) ( samples / ( total / 1000000000f ) );
-                  System.out.format(
-                     "benchmarking %s: %d samples, %d usec, avg time %d usec, rate %d actions/s\n",
-                     name, samples, total / 1000, avg, rate );
-
-                  doneExperiment.accept( x );
-
-                  return new BenchmarkResult( avg, rate );
-               } )
-            )
-            .collect( toList() );
-
-         long avgTime = results.stream()
-            .skip( 1 )
-            .mapToLong( r -> r.time )
-            .sum() / ( experiments - 1 );
-         long avgRate = results.stream()
-            .skip( 1 )
-            .mapToLong( r -> r.rate )
-            .sum() / ( experiments - 1 );
-         System.out.format( "benchmarking %s : avg time %d usec, avg rate %d actions/s\n",
-            name, avgTime, avgRate );
-
-         Teamcity.performance( name, avgRate );
-
-         return new BenchmarkResult( avgTime, avgRate );
-      } );
-   }
-
-   public static <T> T time( String name, Supplier<T> code ) {
-      long start = System.nanoTime();
-      T result = code.get();
-      System.out.println( name + " took " + ( ( System.nanoTime() - start ) / 1000 ) + " usec" );
-      return result;
-   }
-
-   @BeforeMethod
-   @Override
-   public void beforeMethod() {
-      Logger root = ( Logger ) LoggerFactory.getLogger( Logger.ROOT_LOGGER_NAME );
-      root.setLevel( Level.INFO );
-
-      super.beforeMethod();
-   }
-
-   @AfterMethod
-   @Override
-   public void afterMethod() throws IOException {
-      Logger root = ( Logger ) LoggerFactory.getLogger( Logger.ROOT_LOGGER_NAME );
-      root.setLevel( Level.TRACE );
-
-      super.afterMethod();
-   }
-
-   public static class BenchmarkResult {
-      public long rate;
-      public long time;
-
-      public BenchmarkResult( long time, long rate ) {
-         this.time = time;
-         this.rate = rate;
-      }
-
-      public void assertPerformace( long time, long rate ) {
-         Assert.assertTrue( this.time < time, "expected time < " + time + " but was " + this.time + "." );
-         Assert.assertTrue( this.rate > rate, "expected rate > " + rate + " but was " + this.rate + "." );
-      }
-   }
+        public void assertPerformace( long time, long rate ) {
+            Assert.assertTrue( this.time < time, "expected time < " + time + " but was " + this.time + "." );
+            Assert.assertTrue( this.rate > rate, "expected rate > " + rate + " but was " + this.rate + "." );
+        }
+    }
 }

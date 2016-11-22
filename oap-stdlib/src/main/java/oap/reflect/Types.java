@@ -31,30 +31,29 @@ import java.lang.reflect.Type;
 
 /**
  * Created by igor.petrenko on 01.09.2016.
+ *
  */
 public final class Types {
-   public static Type getOptionalArgumentType( Type type ) {
-      return ( ( ParameterizedType ) type ).getActualTypeArguments()[0];
-   }
+    public static Type getOptionalArgumentType( Type type ) {
+        return ( ( ParameterizedType ) type ).getActualTypeArguments()[0];
+    }
 
-   public static boolean isInstance( Class<?> clazz, Type type ) {
-      if( type instanceof Class ) return clazz.isAssignableFrom( ( Class ) type );
-      else return isInstance( clazz, ( ( ParameterizedType ) type ).getRawType() );
-   }
+    public static boolean isInstance( Class<?> clazz, Type type ) {
+        if( type instanceof Class ) return clazz.isAssignableFrom( ( Class ) type );
+        else return isInstance( clazz, ( ( ParameterizedType ) type ).getRawType() );
+    }
 
-   public static boolean isPrimitive( Type type ) {
-      return type instanceof ParameterizedType ? isPrimitive( ( ( ParameterizedType ) type ).getRawType() ) : ( ( Class ) type ).isPrimitive();
-   }
+    public static boolean isPrimitive( Type type ) {
+        return type instanceof ParameterizedType ? isPrimitive( ( ( ParameterizedType ) type ).getRawType() )
+            : ( ( Class ) type ).isPrimitive();
+    }
 
-   public static boolean isPrimitiveOrWrapped( Type type ) {
-      return type instanceof ParameterizedType ? isPrimitive( ( ( ParameterizedType ) type ).getRawType() ) :
-         ClassUtils.isPrimitiveOrWrapper( ( Class ) type );
-   }
+    public static boolean isPrimitiveOrWrapped( Type type ) {
+        return type instanceof ParameterizedType ? isPrimitive( ( ( ParameterizedType ) type ).getRawType() )
+            : ClassUtils.isPrimitiveOrWrapper( ( Class ) type );
+    }
 
-   public static String toJavaType( Type genericType ) {
-      final StringBuilder sb = new StringBuilder();
-      sb.append( genericType.getTypeName().replace( '$', '.' ) );
-
-      return sb.toString();
-   }
+    public static String toJavaType( Type genericType ) {
+        return genericType.getTypeName().replace( '$', '.' );
+    }
 }

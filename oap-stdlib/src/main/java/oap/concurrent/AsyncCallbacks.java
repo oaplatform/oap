@@ -30,22 +30,22 @@ import java.util.function.Consumer;
 
 @SuppressWarnings( "unchecked" )
 public class AsyncCallbacks<T extends AsyncCallbacks<T, P>, P> {
-   public Consumer<P> onTimeout = Functions.empty.consume();
-   public Consumer<P> onSuccess = Functions.empty.consume();
-   public BiConsumer<P, Exception> onError = Functions.empty.biConsume();
+    public Consumer<P> onTimeout = Functions.empty.consume();
+    public Consumer<P> onSuccess = Functions.empty.consume();
+    public BiConsumer<P, Exception> onError = Functions.empty.biConsume();
 
-   public T onTimeout( Consumer<P> onTimeout ) {
-      this.onTimeout = onTimeout;
-      return ( T ) this;
-   }
+    public T onTimeout( Consumer<P> onTimeout ) {
+        this.onTimeout = onTimeout;
+        return ( T ) this;
+    }
 
-   public T onSuccess( Consumer<P> onSuccess ) {
-      this.onSuccess = onSuccess;
-      return ( T ) this;
-   }
+    public T onSuccess( Consumer<P> onSuccess ) {
+        this.onSuccess = onSuccess;
+        return ( T ) this;
+    }
 
-   public T onError( BiConsumer<P, Exception> onError ) {
-      this.onError = onError;
-      return ( T ) this;
-   }
+    public T onError( BiConsumer<P, Exception> onError ) {
+        this.onError = onError;
+        return ( T ) this;
+    }
 }

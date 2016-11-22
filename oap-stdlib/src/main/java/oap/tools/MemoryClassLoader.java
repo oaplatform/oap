@@ -44,77 +44,76 @@ import static java.util.Collections.singletonMap;
  * Created by igor.petrenko on 30.08.2016.
  */
 public class MemoryClassLoader extends ClassLoader {
-   private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-   private final MemoryFileManager manager = new MemoryFileManager( this.compiler );
+    private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+    private final MemoryFileManager manager = new MemoryFileManager( this.compiler );
 
-   public MemoryClassLoader( String classname, String filecontent ) {
-      this( singletonMap( classname, filecontent ) );
-   }
+    public MemoryClassLoader( String classname, String filecontent ) {
+        this( singletonMap( classname, filecontent ) );
+    }
 
-   private MemoryClassLoader( Map<String, String> map ) {
-      List<Source> list = new ArrayList<>();
-      for( Map.Entry<String, String> entry : map.entrySet() ) {
-         list.add( new Source( entry.getKey(), JavaFileObject.Kind.SOURCE, entry.getValue() ) );
-      }
-      this.compiler.getTask( null, this.manager, null, null, null, list ).call();
-   }
+    private MemoryClassLoader( Map<String, String> map ) {
+        List<Source> list = new ArrayList<>();
+        for( Map.Entry<String, String> entry : map.entrySet() ) {
+            list.add( new Source( entry.getKey(), JavaFileObject.Kind.SOURCE, entry.getValue() ) );
+        }
+        this.compiler.getTask( null, this.manager, null, null, null, list ).call();
+    }
 
-   @Override
-   protected Class<?> findClass( String name ) throws ClassNotFoundException {
-      synchronized( this.manager ) {
-         Output mc = this.manager.map.remove( name );
-         if( mc != null ) {
-            byte[] array = mc.toByteArray();
-            return defineClass( name, array, 0, array.length );
-         }
-      }
-      return super.findClass( name );
-   }
+    @Override
+    protected Class<?> findClass( String name ) throws ClassNotFoundException {
+        synchronized( this.manager ) {
+            Output mc = this.manager.map.remove( name );
+            if( mc != null ) {
+                byte[] array = mc.toByteArray();
+                return defineClass( name, array, 0, array.length );
+            }
+        }
+        return super.findClass( name );
+    }
 
-   private static class Source extends SimpleJavaFileObject {
-      private final String content;
+    private static class Source extends SimpleJavaFileObject {
+        private final String content;
 
-      Source( String name, Kind kind, String content ) {
-         super( URI.create( "memo:///" + name.replace( '.', '/' ) + kind.extension ), kind );
-         this.content = content;
-      }
+        Source( String name, Kind kind, String content ) {
+            super( URI.create( "memo:///" + name.replace( '.', '/' ) + kind.extension ), kind );
+            this.content = content;
+        }
 
-      @Override
-      public CharSequence getCharContent( boolean ignore ) {
-         return this.content;
-      }
-   }
+        @Override
+        public CharSequence getCharContent( boolean ignore ) {
+            return this.content;
+        }
+    }
 
-   private static class Output extends SimpleJavaFileObject {
-      private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    private static class Output extends SimpleJavaFileObject {
+        private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-      Output( String name, Kind kind ) {
-         super( URI.create( "memo:///" + name.replace( '.', '/' ) + kind.extension ), kind );
-      }
+        Output( String name, Kind kind ) {
+            super( URI.create( "memo:///" + name.replace( '.', '/' ) + kind.extension ), kind );
+        }
 
-      byte[] toByteArray() {
-         return this.baos.toByteArray();
-      }
+        byte[] toByteArray() {
+            return this.baos.toByteArray();
+        }
 
-      @Override
-      public ByteArrayOutputStream openOutputStream() {
-         return this.baos;
-      }
-   }
+        @Override
+        public ByteArrayOutputStream openOutputStream() {
+            return this.baos;
+        }
+    }
 
-   private static class MemoryFileManager extends ForwardingJavaFileManager<JavaFileManager> {
-      private final Map<String, Output> map = new HashMap<>();
+    private static class MemoryFileManager extends ForwardingJavaFileManager<JavaFileManager> {
+        private final Map<String, Output> map = new HashMap<>();
 
-      MemoryFileManager( JavaCompiler compiler ) {
-         super( compiler.getStandardFileManager( null, null, null ) );
-      }
+        MemoryFileManager( JavaCompiler compiler ) {
+            super( compiler.getStandardFileManager( null, null, null ) );
+        }
 
-      @Override
-      public JavaFileObject getJavaFileForOutput
-         ( Location location, String name, JavaFileObject.Kind kind, FileObject source ) {
-         Output mc = new Output( name, kind );
-         this.map.put( name, mc );
-         return mc;
-      }
-   }
+        @Override
+        public JavaFileObject getJavaFileForOutput( Location location, String name, JavaFileObject.Kind kind, FileObject source ) {
+            Output mc = new Output( name, kind );
+            this.map.put( name, mc );
+            return mc;
+        }
+    }
 }

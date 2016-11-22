@@ -34,25 +34,25 @@ import org.quartz.JobListener;
  */
 @Slf4j
 public class SchedulerLogging implements JobListener {
-   @Override
-   public String getName() {
-      return "SchedulerLogging";
-   }
+    @Override
+    public String getName() {
+        return "SchedulerLogging";
+    }
 
-   @Override
-   public void jobToBeExecuted( JobExecutionContext context ) {
+    @Override
+    public void jobToBeExecuted( JobExecutionContext context ) {
 
-   }
+    }
 
-   @Override
-   public void jobExecutionVetoed( JobExecutionContext context ) {
+    @Override
+    public void jobExecutionVetoed( JobExecutionContext context ) {
 
-   }
+    }
 
-   @Override
-   public void jobWasExecuted( JobExecutionContext context, JobExecutionException jobException ) {
-      if( jobException != null ) {
-         log.error( jobException.getMessage(), jobException.getCause() );
-      }
-   }
+    @Override
+    public void jobWasExecuted( JobExecutionContext context, JobExecutionException jobException ) {
+        if( jobException != null ) {
+            log.error( jobException.getMessage(), jobException.getCause() );
+        }
+    }
 }

@@ -29,203 +29,208 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.function.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 
 public class Try {
 
-   public static CatchingRunnable catching( Runnable runnable ) {
-      return new CatchingRunnable( runnable );
-   }
+    public static CatchingRunnable catching( Runnable runnable ) {
+        return new CatchingRunnable( runnable );
+    }
 
-   public static Runnable run( ThrowingRunnable<? extends Exception> throwing ) {
-      return throwing.asRunnable();
-   }
+    public static Runnable run( ThrowingRunnable<? extends Exception> throwing ) {
+        return throwing.asRunnable();
+    }
 
-   public static <R> Supplier<R> supply( ThrowingSupplier<R> throwing ) {
-      return throwing.asSupplier();
-   }
+    public static <R> Supplier<R> supply( ThrowingSupplier<R> throwing ) {
+        return throwing.asSupplier();
+    }
 
-   public static <T> Consumer<T> consume( ThrowingConsumer<T> throwing ) {
-      return throwing.asConsumer();
-   }
+    public static <T> Consumer<T> consume( ThrowingConsumer<T> throwing ) {
+        return throwing.asConsumer();
+    }
 
-   public static <T, U> BiConsumer<T, U> consume( ThrowingBiConsumer<T, U> throwing ) {
-      return throwing.asConsumer();
-   }
+    public static <T, U> BiConsumer<T, U> consume( ThrowingBiConsumer<T, U> throwing ) {
+        return throwing.asConsumer();
+    }
 
-   public static <T> Predicate<T> filter( ThrowingPredicate<T> throwing ) {
-      return throwing.asPredicate();
-   }
+    public static <T> Predicate<T> filter( ThrowingPredicate<T> throwing ) {
+        return throwing.asPredicate();
+    }
 
-   public static <T, R> Function<T, R> map( ThrowingFunction<T, R> throwing ) {
-      return throwing.asFunction();
-   }
+    public static <T, R> Function<T, R> map( ThrowingFunction<T, R> throwing ) {
+        return throwing.asFunction();
+    }
 
-   public static <T, R> Function<T, R> mapOrThrow( ThrowingFunction<T, R> throwing,
-                                                   Class<? extends RuntimeException> e ) {
-      return throwing.orElseThrow( e );
-   }
+    public static <T, R> Function<T, R> mapOrThrow( ThrowingFunction<T, R> throwing,
+                                                    Class<? extends RuntimeException> e ) {
+        return throwing.orElseThrow( e );
+    }
 
-   public static <T> ToLongFunction<T> mapToLong( ThrowingToLongFunction<T> throwing ) {
-      return throwing.asFunction();
-   }
+    public static <T> ToLongFunction<T> mapToLong( ThrowingToLongFunction<T> throwing ) {
+        return throwing.asFunction();
+    }
 
-   public static class CatchingRunnable implements Runnable {
-      private Runnable runnable;
-      private Consumer<Throwable> onException = Functions.empty.consume();
-      private boolean propagate = false;
+    public static class CatchingRunnable implements Runnable {
+        private Runnable runnable;
+        private Consumer<Throwable> onException = Functions.empty.consume();
+        private boolean propagate = false;
 
-      public CatchingRunnable( Runnable runnable ) {
-         this.runnable = runnable;
-      }
+        public CatchingRunnable( Runnable runnable ) {
+            this.runnable = runnable;
+        }
 
-      public CatchingRunnable propagate() {
-         propagate = true;
-         return this;
-      }
+        public CatchingRunnable propagate() {
+            propagate = true;
+            return this;
+        }
 
-      public CatchingRunnable logOnException( Logger log ) {
-         return onException( e -> log.error( e.getMessage(), e ) );
-      }
+        public CatchingRunnable logOnException( Logger log ) {
+            return onException( e -> log.error( e.getMessage(), e ) );
+        }
 
-      public CatchingRunnable onException( Consumer<Throwable> onException ) {
-         this.onException = onException;
-         return this;
-      }
+        public CatchingRunnable onException( Consumer<Throwable> onException ) {
+            this.onException = onException;
+            return this;
+        }
 
-      public Runnable getRunnable() {
-         return runnable;
-      }
+        public Runnable getRunnable() {
+            return runnable;
+        }
 
-      @Override
-      public void run() {
-         try {
-            runnable.run();
-         } catch( Throwable e ) {
-            onException.accept( e );
-            if( propagate ) Throwables.propagate( e );
-         }
-      }
-   }
-
-   @FunctionalInterface
-   public interface ThrowingPredicate<T> {
-      boolean test( T t ) throws Exception;
-
-      default Predicate<T> asPredicate() {
-         return t -> {
+        @Override
+        public void run() {
             try {
-               return this.test( t );
-            } catch( Exception e ) {
-               throw Throwables.propagate( e );
+                runnable.run();
+            } catch( Throwable e ) {
+                onException.accept( e );
+                if( propagate ) Throwables.propagate( e );
             }
-         };
-      }
+        }
+    }
+
+    @FunctionalInterface
+    public interface ThrowingPredicate<T> {
+        boolean test( T t ) throws Exception;
+
+        default Predicate<T> asPredicate() {
+            return t -> {
+                try {
+                    return this.test( t );
+                } catch( Exception e ) {
+                    throw Throwables.propagate( e );
+                }
+            };
+        }
 
 
-   }
+    }
 
-   @FunctionalInterface
-   public interface ThrowingFunction<T, R> {
-      R apply( T t ) throws Exception;
+    @FunctionalInterface
+    public interface ThrowingFunction<T, R> {
+        R apply( T t ) throws Exception;
 
-      default Function<T, R> asFunction() {
-         return t -> {
-            try {
-               return this.apply( t );
-            } catch( IOException e ) {
-               throw new UncheckedIOException( e );
-            } catch( Exception e ) {
-               throw Throwables.propagate( e );
-            }
-         };
-      }
+        default Function<T, R> asFunction() {
+            return t -> {
+                try {
+                    return this.apply( t );
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                } catch( Exception e ) {
+                    throw Throwables.propagate( e );
+                }
+            };
+        }
 
-      default Function<T, R> orElseThrow( Class<? extends RuntimeException> clazz ) {
-         return t -> {
-            try {
-               return this.apply( t );
-            } catch( Exception e ) {
-               throw Reflect.newInstance( clazz, e );
-            }
-         };
-      }
-   }
+        default Function<T, R> orElseThrow( Class<? extends RuntimeException> clazz ) {
+            return t -> {
+                try {
+                    return this.apply( t );
+                } catch( Exception e ) {
+                    throw Reflect.newInstance( clazz, e );
+                }
+            };
+        }
+    }
 
-   @FunctionalInterface
-   public interface ThrowingRunnable<T extends Exception> {
-      void run() throws T;
+    @FunctionalInterface
+    public interface ThrowingRunnable<T extends Exception> {
+        void run() throws T;
 
-      default Runnable asRunnable() {
-         return () -> {
-            try {
-               this.run();
-            } catch( Exception e ) {
-               Throwables.propagate( e );
-            }
-         };
-      }
+        default Runnable asRunnable() {
+            return () -> {
+                try {
+                    this.run();
+                } catch( Exception e ) {
+                    Throwables.propagate( e );
+                }
+            };
+        }
 
-   }
+    }
 
-   @FunctionalInterface
-   public interface ThrowingSupplier<R> {
-      R get() throws Exception;
+    @FunctionalInterface
+    public interface ThrowingSupplier<R> {
+        R get() throws Exception;
 
-      default Supplier<R> asSupplier() {
-         return () -> {
-            try {
-               return this.get();
-            } catch( Exception e ) {
-               throw Throwables.propagate( e );
-            }
-         };
-      }
+        default Supplier<R> asSupplier() {
+            return () -> {
+                try {
+                    return this.get();
+                } catch( Exception e ) {
+                    throw Throwables.propagate( e );
+                }
+            };
+        }
 
-   }
+    }
 
-   @FunctionalInterface
-   public interface ThrowingConsumer<T> {
-      void accept( T t ) throws Exception;
+    @FunctionalInterface
+    public interface ThrowingConsumer<T> {
+        void accept( T t ) throws Exception;
 
-      default Consumer<T> asConsumer() {
-         return t -> {
-            try {
-               this.accept( t );
-            } catch( Exception e ) {
-               Throwables.propagate( e );
-            }
-         };
-      }
-   }
+        default Consumer<T> asConsumer() {
+            return t -> {
+                try {
+                    this.accept( t );
+                } catch( Exception e ) {
+                    Throwables.propagate( e );
+                }
+            };
+        }
+    }
 
-   @FunctionalInterface
-   public interface ThrowingToLongFunction<T> {
-      long applyToLong( T t ) throws Exception;
+    @FunctionalInterface
+    public interface ThrowingToLongFunction<T> {
+        long applyToLong( T t ) throws Exception;
 
-      default ToLongFunction<T> asFunction() {
-         return t -> {
-            try {
-               return this.applyToLong( t );
-            } catch( Exception e ) {
-               throw Throwables.propagate( e );
-            }
-         };
-      }
-   }
+        default ToLongFunction<T> asFunction() {
+            return t -> {
+                try {
+                    return this.applyToLong( t );
+                } catch( Exception e ) {
+                    throw Throwables.propagate( e );
+                }
+            };
+        }
+    }
 
-   @FunctionalInterface
-   public interface ThrowingBiConsumer<T, U> {
-      void accept( T t, U u ) throws Exception;
+    @FunctionalInterface
+    public interface ThrowingBiConsumer<T, U> {
+        void accept( T t, U u ) throws Exception;
 
-      default BiConsumer<T, U> asConsumer() {
-         return ( t, u ) -> {
-            try {
-               this.accept( t, u );
-            } catch( Exception e ) {
-               Throwables.propagate( e );
-            }
-         };
-      }
-   }
+        default BiConsumer<T, U> asConsumer() {
+            return ( t, u ) -> {
+                try {
+                    this.accept( t, u );
+                } catch( Exception e ) {
+                    Throwables.propagate( e );
+                }
+            };
+        }
+    }
 }

@@ -44,188 +44,189 @@ import java.util.regex.Pattern;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.util.Pair.__;
 
-public class Strings {
-   public static final String UNDEFINED = "UNDEFINED";
-   public static final String UNKNOWN = "UNKNOWN";
+public final class Strings {
+    public static final String UNDEFINED = "UNDEFINED";
+    public static final String UNKNOWN = "UNKNOWN";
 
-   public static String substringAfter( String s, String delimiter ) {
-      return s != null && s.contains( delimiter ) ?
-         s.substring( s.indexOf( delimiter ) + delimiter.length() ) : "";
-   }
+    private Strings() {}
 
-   public static String substringAfterLast( String s, String delimiter ) {
-      return s != null && s.contains( delimiter ) ?
-         s.substring( s.lastIndexOf( delimiter ) + delimiter.length() ) : "";
-   }
+    public static String substringAfter( String s, String delimiter ) {
+        return s != null && s.contains( delimiter )
+            ? s.substring( s.indexOf( delimiter ) + delimiter.length() ) : "";
+    }
 
-   public static String substringBefore( String s, String delimiter ) {
-      return s != null && s.contains( delimiter ) ?
-         s.substring( 0, s.indexOf( delimiter ) ) : s;
-   }
+    public static String substringAfterLast( String s, String delimiter ) {
+        return s != null && s.contains( delimiter )
+            ? s.substring( s.lastIndexOf( delimiter ) + delimiter.length() ) : "";
+    }
 
-   public static String substringBeforeLast( String s, String delimiter ) {
-      return s != null && s.contains( delimiter ) ?
-         s.substring( 0, s.lastIndexOf( delimiter ) ) : s;
-   }
+    public static String substringBefore( String s, String delimiter ) {
+        return s != null && s.contains( delimiter )
+            ? s.substring( 0, s.indexOf( delimiter ) ) : s;
+    }
 
-   public static boolean isEmpty( String s ) {
-      return s == null || s.equals( "" );
-   }
+    public static String substringBeforeLast( String s, String delimiter ) {
+        return s != null && s.contains( delimiter )
+            ? s.substring( 0, s.lastIndexOf( delimiter ) ) : s;
+    }
 
-   public static Pair<String, String> split( String s, String delimiter ) {
-      String[] split = StringUtils.splitByWholeSeparatorPreserveAllTokens( s, delimiter, 2 );
-      return split.length == 2 ? __( split[0], split[1] ) : __( split[0], null );
-   }
+    public static boolean isEmpty( String s ) {
+        return s == null || s.equals( "" );
+    }
 
-   public static byte[] toByteArray( String s ) {
-      return s == null ? new byte[0] : s.getBytes( UTF_8 );
-   }
+    public static Pair<String, String> split( String s, String delimiter ) {
+        String[] split = StringUtils.splitByWholeSeparatorPreserveAllTokens( s, delimiter, 2 );
+        return split.length == 2 ? __( split[0], split[1] ) : __( split[0], null );
+    }
 
-   public static String toString( byte[] bytes ) {
-      return bytes == null ? "" : new String( bytes, UTF_8 );
-   }
+    public static byte[] toByteArray( String s ) {
+        return s == null ? new byte[0] : s.getBytes( UTF_8 );
+    }
 
-   public static String readString( InputStream is ) {
-      try {
-         return toString( ByteStreams.toByteArray( is ) );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
+    public static String toString( byte[] bytes ) {
+        return bytes == null ? "" : new String( bytes, UTF_8 );
+    }
 
-   public static String readString( URL url ) {
-      try( InputStream is = url.openStream() ) {
-         return Strings.readString( is );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
+    public static String readString( InputStream is ) {
+        try {
+            return toString( ByteStreams.toByteArray( is ) );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 
-   public static boolean isUndefined( String s ) {
-      return UNDEFINED.equals( s );
-   }
+    public static String readString( URL url ) {
+        try( InputStream is = url.openStream() ) {
+            return Strings.readString( is );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 
-
-   private static String[] hex = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F" };
-
-   public static String toHexString( byte[] bytes ) {
-      if( bytes == null ) return "";
-      String result = "";
-      for( byte b : bytes ) {
-         int masked = b & 0xFF;
-         result += masked < 16 ? "0" + hex[masked] : hex[masked >> 4] + hex[masked & 0x0F];
-      }
-      return result;
-   }
-
-   @SafeVarargs
-   public static String substitute( String s, Pair<String, Object>... map ) {
-      return new StrSubstitutor( Maps.ofStrings( map ) ).replace( s );
-   }
-
-   public static String substitute( String s, Function<String, Object> mapper ) {
-      return new StrSubstitutor( new StrLookup<Object>() {
-         @Override
-         public String lookup( String key ) {
-            Object value = mapper.apply( key );
-            return value == null ? "" : String.valueOf( value );
-         }
-      } ).replace( s );
-   }
-
-   public static String join( Collection<?> list ) {
-      return join( ",", list );
-   }
+    public static boolean isUndefined( String s ) {
+        return UNDEFINED.equals( s );
+    }
 
 
-   public static String join( String delimiter, Collection<?> items ) {
-      return join( delimiter, items, "", "" );
-   }
+    private static String[] hex = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F" };
 
-   public static String join( String delimiter, Collection<?> items, String prefix, String suffix ) {
-      StringJoiner joiner = new StringJoiner( delimiter, prefix, suffix );
-      items.forEach( e -> joiner.add( String.valueOf( e ) ) );
-      return joiner.toString();
-   }
+    public static String toHexString( byte[] bytes ) {
+        if( bytes == null ) return "";
+        String result = "";
+        for( byte b : bytes ) {
+            int masked = b & 0xFF;
+            result += masked < 16 ? "0" + hex[masked] : hex[masked >> 4] + hex[masked & 0x0F];
+        }
+        return result;
+    }
 
-   public static void join( StringBuilder builder, Collection<?> items ) {
-      join( builder, ",", items );
-   }
+    @SafeVarargs
+    public static String substitute( String s, Pair<String, Object>... map ) {
+        return new StrSubstitutor( Maps.ofStrings( map ) ).replace( s );
+    }
 
-   public static void join( StringBuilder builder, String delimiter, Collection<?> items ) {
-      boolean first = true;
-      for( Object value : items ) {
-         if( first ) first = false;
-         else builder.append( delimiter );
-         builder.append( String.valueOf( value ) );
-      }
-   }
-
-   public static String removeControl( String s ) {
-      return s == null ? null : CharMatcher.JAVA_ISO_CONTROL.removeFrom( s );
-   }
-
-   public static String fill( String content, int times ) {
-      String result = "";
-      for( int i = 0; i < times; i++ ) result += content;
-      return result;
-   }
-
-
-   public static String regex( String s, String regex ) {
-      Matcher matcher = Pattern.compile( regex, Pattern.MULTILINE ).matcher( s );
-      return matcher.find() ? matcher.group( 1 ) : null;
-   }
-
-   public static List<String> regexAll( String s, String regex ) {
-      Matcher matcher = Pattern.compile( regex, Pattern.MULTILINE ).matcher( s );
-      List<String> result = new ArrayList<>();
-      while( matcher.find() )
-         for( int i = 0; i < matcher.groupCount(); i++ )
-            result.add( matcher.group( i + 1 ) );
-      return result;
-   }
-
-   public static int indexOfAny( String value, String any ) {
-      return indexOfAny( value, any, 0 );
-   }
-
-   public static int indexOfAny( String value, String any, int start ) {
-      try {
-         int length = value.length();
-
-         for( int i = start; i < length; ++i ) {
-            if( any.indexOf( value.charAt( i ) ) >= 0 ) {
-               return i;
+    public static String substitute( String s, Function<String, Object> mapper ) {
+        return new StrSubstitutor( new StrLookup<Object>() {
+            @Override
+            public String lookup( String key ) {
+                Object value = mapper.apply( key );
+                return value == null ? "" : String.valueOf( value );
             }
-         }
+        } ).replace( s );
+    }
 
-         return -1;
-      } catch( StringIndexOutOfBoundsException var5 ) {
-         return -1;
-      }
-   }
+    public static String join( Collection<?> list ) {
+        return join( ",", list );
+    }
 
-   public static boolean isGuid( String s ) {
-      return s != null && s.length() == 36
-         && check( s, 0, 8 ) && s.charAt( 8 ) == '-'
-         && check( s, 9, 4 ) && s.charAt( 13 ) == '-'
-         && check( s, 14, 4 ) && s.charAt( 18 ) == '-'
-         && check( s, 19, 4 ) && s.charAt( 23 ) == '-'
-         && check( s, 24, 12 );
 
-   }
+    public static String join( String delimiter, Collection<?> items ) {
+        return join( delimiter, items, "", "" );
+    }
 
-   private static boolean check( String idfa, int start, int length ) {
-      for( int i = start; i < start + length; i++ ) {
-         char ch = idfa.charAt( i );
-         if( !( ( ch >= '0' && ch <= '9' ) ||
-            ( ch >= 'A' && ch <= 'F' ) ||
-            ( ch >= 'a' && ch <= 'f' )
-         ) ) return false;
-      }
+    public static String join( String delimiter, Collection<?> items, String prefix, String suffix ) {
+        StringJoiner joiner = new StringJoiner( delimiter, prefix, suffix );
+        items.forEach( e -> joiner.add( String.valueOf( e ) ) );
+        return joiner.toString();
+    }
 
-      return true;
-   }
+    public static void join( StringBuilder builder, Collection<?> items ) {
+        join( builder, ",", items );
+    }
+
+    public static void join( StringBuilder builder, String delimiter, Collection<?> items ) {
+        boolean first = true;
+        for( Object value : items ) {
+            if( first ) first = false;
+            else builder.append( delimiter );
+            builder.append( String.valueOf( value ) );
+        }
+    }
+
+    public static String removeControl( String s ) {
+        return s == null ? null : CharMatcher.JAVA_ISO_CONTROL.removeFrom( s );
+    }
+
+    public static String fill( String content, int times ) {
+        String result = "";
+        for( int i = 0; i < times; i++ ) result += content;
+        return result;
+    }
+
+
+    public static String regex( String s, String regex ) {
+        Matcher matcher = Pattern.compile( regex, Pattern.MULTILINE ).matcher( s );
+        return matcher.find() ? matcher.group( 1 ) : null;
+    }
+
+    public static List<String> regexAll( String s, String regex ) {
+        Matcher matcher = Pattern.compile( regex, Pattern.MULTILINE ).matcher( s );
+        List<String> result = new ArrayList<>();
+        while( matcher.find() )
+            for( int i = 0; i < matcher.groupCount(); i++ )
+                result.add( matcher.group( i + 1 ) );
+        return result;
+    }
+
+    public static int indexOfAny( String value, String any ) {
+        return indexOfAny( value, any, 0 );
+    }
+
+    public static int indexOfAny( String value, String any, int start ) {
+        try {
+            int length = value.length();
+
+            for( int i = start; i < length; ++i ) {
+                if( any.indexOf( value.charAt( i ) ) >= 0 ) {
+                    return i;
+                }
+            }
+
+            return -1;
+        } catch( StringIndexOutOfBoundsException var5 ) {
+            return -1;
+        }
+    }
+
+    public static boolean isGuid( String s ) {
+        return s != null && s.length() == 36
+            && check( s, 0, 8 ) && s.charAt( 8 ) == '-'
+            && check( s, 9, 4 ) && s.charAt( 13 ) == '-'
+            && check( s, 14, 4 ) && s.charAt( 18 ) == '-'
+            && check( s, 19, 4 ) && s.charAt( 23 ) == '-'
+            && check( s, 24, 12 );
+
+    }
+
+    private static boolean check( String idfa, int start, int length ) {
+        for( int i = start; i < start + length; i++ ) {
+            char ch = idfa.charAt( i );
+            if( !( ( ch >= '0' && ch <= '9' )
+                || ( ch >= 'A' && ch <= 'F' )
+                || ( ch >= 'a' && ch <= 'f' ) ) ) return false;
+        }
+
+        return true;
+    }
 
 }

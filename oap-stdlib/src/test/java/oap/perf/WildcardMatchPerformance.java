@@ -31,14 +31,14 @@ import org.testng.annotations.Test;
 
 @Test( enabled = false )
 public class WildcardMatchPerformance extends AbstractPerformance {
-   @Test( enabled = false )
-   public void perf() {
-      benchmark( "FilenameUtils.wildcardMatch", 10000000, 5, ( i ) -> {
-         FilenameUtils.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" );
-      } );
+    @Test( enabled = false )
+    public void perf() {
+        benchmark( "FilenameUtils.wildcardMatch", 10000000, 5, ( i ) -> {
+            FilenameUtils.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" );
+        } );
 
-      benchmark( "wildcardMatch", 10000000, 5, ( i ) -> {
-         Files.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" );
-      } );
-   }
+        benchmark( "wildcardMatch", 10000000, 5, ( i ) -> {
+            Files.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" );
+        } );
+    }
 }

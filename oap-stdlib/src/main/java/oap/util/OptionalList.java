@@ -30,11 +30,12 @@ import java.util.function.Supplier;
 
 /**
  * to coupled with validation/either logic. No reason why list cosidered either::left
+ *
  * @param <T>
  */
 @Deprecated
 public class OptionalList<T> {
-    private final List<T> list = new ArrayList<>(  );
+    private final List<T> list = new ArrayList<>();
 
     public OptionalList<T> add( Optional<T> value ) {
         value.ifPresent( list::add );
@@ -54,6 +55,6 @@ public class OptionalList<T> {
     }
 
     public static <V> OptionalList<V> create() {
-        return new OptionalList<>(  );
+        return new OptionalList<>();
     }
 }

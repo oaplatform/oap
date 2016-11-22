@@ -38,20 +38,20 @@ import static org.testng.Assert.assertTrue;
  */
 public class CircularBufferTest {
 
-   @Test
-   public void testOldElementsAreRemoved() {
-      CircularBuffer<Integer> cb = new CircularBuffer<>( 3 );
-      cb.add( 0 );
-      cb.add( 1 );
-      cb.add( 2 );
-      cb.add( 3 );
+    @Test
+    public void testOldElementsAreRemoved() {
+        CircularBuffer<Integer> cb = new CircularBuffer<>( 3 );
+        cb.add( 0 );
+        cb.add( 1 );
+        cb.add( 2 );
+        cb.add( 3 );
 
-      List<Integer> elements = Arrays.asList(cb.getElements());
-      assertEquals(3, elements.size());
-      assertTrue( elements.contains( 3 ) );
-      assertTrue( elements.contains( 2 ) );
-      assertTrue( elements.contains( 1 ) );
-      assertFalse( elements.contains( 0 ) );
-   }
+        List<Integer> elements = Arrays.asList( cb.getElements() );
+        assertEquals( 3, elements.size() );
+        assertTrue( elements.contains( 3 ) );
+        assertTrue( elements.contains( 2 ) );
+        assertTrue( elements.contains( 1 ) );
+        assertFalse( elements.contains( 0 ) );
+    }
 
 }

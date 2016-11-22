@@ -41,49 +41,49 @@ import static org.apache.commons.io.FileUtils.iterateFiles;
 import static org.apache.commons.io.filefilter.FileFilterUtils.trueFileFilter;
 
 public abstract class AbstractTest {
-   protected boolean CLEANUP_TEMP = true;
+    protected boolean cleanupTemp = true;
 
-   @AfterSuite
-   public void afterSuite() {
-      if( CLEANUP_TEMP ) deleteDirectory( Env.tmp );
-   }
+    @AfterSuite
+    public void afterSuite() {
+        if( cleanupTemp ) deleteDirectory( Env.tmp );
+    }
 
-   @AfterClass
-   public void afterClass() {
-      if( CLEANUP_TEMP ) deleteDirectory( Env.tmpRoot );
-   }
+    @AfterClass
+    public void afterClass() {
+        if( cleanupTemp ) deleteDirectory( Env.tmpRoot );
+    }
 
-   @BeforeMethod
-   public void beforeMethod() {
-      MockitoAnnotations.initMocks( this );
-      DateTimeUtils.setCurrentMillisSystem();
-   }
+    @BeforeMethod
+    public void beforeMethod() {
+        MockitoAnnotations.initMocks( this );
+        DateTimeUtils.setCurrentMillisSystem();
+    }
 
-   @AfterMethod
-   public void afterMethod() throws IOException {
-      afterMethod( true );
-   }
+    @AfterMethod
+    public void afterMethod() throws IOException {
+        afterMethod( true );
+    }
 
-   protected void afterMethod( boolean cleanup ) throws IOException {
-      if( CLEANUP_TEMP && cleanup ) {
-         deleteDirectory( Env.tmpRoot );
-      }
-      DateTimeUtils.setCurrentMillisSystem();
-   }
+    protected void afterMethod( boolean cleanup ) throws IOException {
+        if( cleanupTemp && cleanup ) {
+            deleteDirectory( Env.tmpRoot );
+        }
+        DateTimeUtils.setCurrentMillisSystem();
+    }
 
-   private void deleteDirectory( Path path ) {
-      try {
-         Files.delete( path );
-      } catch( UncheckedIOException e ) {
-         final Iterator<File> fileIterator = iterateFiles( Env.tmp.toFile(), trueFileFilter(), trueFileFilter() );
-         while( fileIterator.hasNext() ) {
-            final File next = fileIterator.next();
-            if( next.isDirectory() ) continue;
+    private void deleteDirectory( Path path ) {
+        try {
+            Files.delete( path );
+        } catch( UncheckedIOException e ) {
+            final Iterator<File> fileIterator = iterateFiles( Env.tmp.toFile(), trueFileFilter(), trueFileFilter() );
+            while( fileIterator.hasNext() ) {
+                final File next = fileIterator.next();
+                if( next.isDirectory() ) continue;
 
-            System.err.println( "FILE " + next );
-         }
+                System.err.println( "FILE " + next );
+            }
 
-         throw e;
-      }
-   }
+            throw e;
+        }
+    }
 }

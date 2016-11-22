@@ -41,7 +41,6 @@ import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.StringJoiner;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -50,157 +49,158 @@ import static org.testng.Assert.fail;
 
 public final class Asserts {
 
-   public static void assertEventually( long retryTimeout, int retries, Try.ThrowingRunnable asserts ) {
-      boolean passed = false;
-      Throwable exception = null;
-      int count = retries;
+    public static void assertEventually( long retryTimeout, int retries, Try.ThrowingRunnable asserts ) {
+        boolean passed = false;
+        Throwable exception = null;
+        int count = retries;
 
-      while( !passed && count >= 0 ) {
-         try {
-            asserts.run();
-            passed = true;
-         } catch( Throwable e ) {
-            exception = e;
-            Threads.sleepSafely( retryTimeout );
-            count--;
-         }
-      }
-      if( !passed )
-         if( exception != null ) Throwables.propagate( exception );
-         else throw new AssertionError( "timeout" );
-   }
+        while( !passed && count >= 0 ) {
+            try {
+                asserts.run();
+                passed = true;
+            } catch( Throwable e ) {
+                exception = e;
+                Threads.sleepSafely( retryTimeout );
+                count--;
+            }
+        }
+        if( !passed )
+            if( exception != null ) Throwables.propagate( exception );
+            else throw new AssertionError( "timeout" );
+    }
 
-   @Deprecated
-   public static <A> void assertEquals( Stream<? extends A> actual, Stream<? extends A> expected ) {
-      if( actual == null && expected != null ) fail( "actual stream is null" );
-      else if( actual != null && expected != null )
-         Assert.assertEquals( actual.collect( toList() ), expected.collect( toList() ) );
-   }
+    @Deprecated
+    public static <A> void assertEquals( Stream<? extends A> actual, Stream<? extends A> expected ) {
+        if( actual == null && expected != null ) fail( "actual stream is null" );
+        else if( actual != null && expected != null )
+            Assert.assertEquals( actual.collect( toList() ), expected.collect( toList() ) );
+    }
 
-   @Deprecated
-   public static void assertEquals( int[] actual, int[] expected ) {
-      Assert.assertNotNull( actual );
-      Assert.assertNotNull( expected );
-      Assert.assertEquals( actual.length, expected.length, "array length" );
-      for( int i = 0; i < actual.length; i++ ) {
-         Assert.assertEquals( actual[i], expected[i], " at index " + i );
-      }
+    @Deprecated
+    public static void assertEquals( int[] actual, int[] expected ) {
+        Assert.assertNotNull( actual );
+        Assert.assertNotNull( expected );
+        Assert.assertEquals( actual.length, expected.length, "array length" );
+        for( int i = 0; i < actual.length; i++ ) {
+            Assert.assertEquals( actual[i], expected[i], " at index " + i );
+        }
 
-   }
+    }
 
-   public static StringAssertion assertString( CharSequence actual ) {
-      return new StringAssertion( actual );
-   }
+    public static StringAssertion assertString( CharSequence actual ) {
+        return new StringAssertion( actual );
+    }
 
-   public static FileAssertion assertFile( Path actual ) {
-      return new FileAssertion( actual );
-   }
+    public static FileAssertion assertFile( Path actual ) {
+        return new FileAssertion( actual );
+    }
 
-   public static void failNotEquals( Object actual, Object expected, String message ) {
-      try {
-         Method failNotEquals = Assert.class.getDeclaredMethod( "failNotEquals", Object.class, Object.class, String.class );
-         failNotEquals.setAccessible( true );
-         failNotEquals.invoke( null, actual, expected, message );
-      } catch( NoSuchMethodException | IllegalAccessException e ) {
-         throw new Error( e );
-      } catch( InvocationTargetException e ) {
-         if( e.getTargetException() instanceof AssertionError ) throw ( AssertionError ) e.getTargetException();
-         else throw new Error( e );
-      }
-   }
+    public static void failNotEquals( Object actual, Object expected, String message ) {
+        try {
+            Method failNotEquals = Assert.class.getDeclaredMethod( "failNotEquals", Object.class, Object.class, String.class );
+            failNotEquals.setAccessible( true );
+            failNotEquals.invoke( null, actual, expected, message );
+        } catch( NoSuchMethodException | IllegalAccessException e ) {
+            throw new Error( e );
+        } catch( InvocationTargetException e ) {
+            if( e.getTargetException() instanceof AssertionError ) throw ( AssertionError ) e.getTargetException();
+            else throw new Error( e );
+        }
+    }
 
-   public static void failNotEquals( Object actual, Object expected ) {
-      failNotEquals( actual, expected, null );
-   }
+    public static void failNotEquals( Object actual, Object expected ) {
+        failNotEquals( actual, expected, null );
+    }
 
-   public static class StringAssertion extends AbstractCharSequenceAssert<StringAssertion, CharSequence> {
-      protected StringAssertion( CharSequence value ) {
-         super( value, StringAssertion.class );
-      }
+    public static class StringAssertion extends AbstractCharSequenceAssert<StringAssertion, CharSequence> {
+        protected StringAssertion( CharSequence value ) {
+            super( value, StringAssertion.class );
+        }
 
-      @Override
-      public StringAssertion isEqualTo( Object expected ) {
-         Assert.assertEquals( this.actual, expected );
-         return this;
-      }
+        @Override
+        public StringAssertion isEqualTo( Object expected ) {
+            Assert.assertEquals( this.actual, expected );
+            return this;
+        }
 
-      @Override
-      public StringAssertion isEqualToIgnoringCase( CharSequence expected ) {
-         if( !StringUtils.equalsIgnoreCase( this.actual, expected ) ) failNotEquals( this.actual, expected );
-         return this;
-      }
+        @Override
+        public StringAssertion isEqualToIgnoringCase( CharSequence expected ) {
+            if( !StringUtils.equalsIgnoreCase( this.actual, expected ) ) failNotEquals( this.actual, expected );
+            return this;
+        }
 
-   }
+    }
 
-   public static class FileAssertion extends AbstractFileAssert<FileAssertion> {
-      protected FileAssertion( Path actual ) {
-         super( actual.toFile(), FileAssertion.class );
-      }
+    public static class FileAssertion extends AbstractFileAssert<FileAssertion> {
+        protected FileAssertion( Path actual ) {
+            super( actual.toFile(), FileAssertion.class );
+        }
 
-      public FileAssertion hasSameContentAs( Path expected ){
-         String actual = Files.readString( this.actual.toPath() );
-         assertString( actual ).isEqualTo( Files.readString( expected ) );
-         return this;
-      }
+        public FileAssertion hasSameContentAs( Path expected ) {
+            String actual = Files.readString( this.actual.toPath() );
+            assertString( actual ).isEqualTo( Files.readString( expected ) );
+            return this;
+        }
 
-      public FileAssertion hasSize( long size ) {
-         assertThat( actual.length() ).isEqualTo( size );
-         return this;
-      }
+        public FileAssertion hasSize( long size ) {
+            assertThat( actual.length() ).isEqualTo( size );
+            return this;
+        }
 
-      @Override
-      public FileAssertion hasContent( String expected ) {
-         return hasContent( expected, IoStreams.Encoding.PLAIN );
-      }
+        @Override
+        public FileAssertion hasContent( String expected ) {
+            return hasContent( expected, IoStreams.Encoding.PLAIN );
+        }
 
-      public FileAssertion hasContent( String expected, IoStreams.Encoding encoding ) {
-         exists();
-         String actual = Files.readString( this.actual.toPath(), encoding );
-         assertString( actual ).isEqualTo( expected );
-         return this;
-      }
+        public FileAssertion hasContent( String expected, IoStreams.Encoding encoding ) {
+            exists();
+            String actual = Files.readString( this.actual.toPath(), encoding );
+            assertString( actual ).isEqualTo( expected );
+            return this;
+        }
 
-      public FileAssertion hasSortedLinesContent ( String expected, IoStreams.Encoding encoding ) {
-         exists();
-         String actual = Files.readString( this.actual.toPath(), encoding );
-         assertString( lineSortedContent( actual ) ).isEqualTo( expected );
-         return this;
-      }
-   }
+        public FileAssertion hasSortedLinesContent( String expected, IoStreams.Encoding encoding ) {
+            exists();
+            String actual = Files.readString( this.actual.toPath(), encoding );
+            assertString( lineSortedContent( actual ) ).isEqualTo( expected );
+            return this;
+        }
+    }
 
-   public static String contentOfTestResource( Class<?> contextClass, String resource ) {
-      return Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
-         .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
-   }
+    public static String contentOfTestResource( Class<?> contextClass, String resource ) {
+        return Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+    }
 
-   public static String sortedLinesOfTestResource( Class<?> contextClass, String resource ) {
-      String content = Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
-         .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
-      return lineSortedContent( content );
-   }
+    public static String sortedLinesOfTestResource( Class<?> contextClass, String resource ) {
+        String content = Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+        return lineSortedContent( content );
+    }
 
-   private static String lineSortedContent( String content ) {
-      String[] lines = content.split( "\\n" );
-      Arrays.sort( lines );
-      return Strings.join( "\n", Lists.of( lines ) );
-   }
+    private static String lineSortedContent( String content ) {
+        String[] lines = content.split( "\\n" );
+        Arrays.sort( lines );
+        return Strings.join( "\n", Lists.of( lines ) );
+    }
 
-   public static Path pathOfResource( Class<?> contextClass, String resource ) {
-      return Resources.filePath( contextClass, ( resource == null ? "" : resource ) )
-         .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
-   }
+    public static Path pathOfResource( Class<?> contextClass, String resource ) {
+        return Resources.filePath( contextClass, ( resource == null ? "" : resource ) )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+    }
 
-   public static Path pathOfTestResource( Class<?> contextClass, String resource ) {
-      return pathOfResource( contextClass, contextClass.getSimpleName() + ( resource == null ? "" : "/" + resource ) );
-   }
+    public static Path pathOfTestResource( Class<?> contextClass, String resource ) {
+        return pathOfResource( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
+            : "/" + resource ) );
+    }
 
-   public static URL urlOfTestResource( Class<?> contextClass, String resource ) {
-      return Resources.url( contextClass, contextClass.getSimpleName()
-         + ( resource == null ? "" : "/" + resource ) )
-         .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
-   }
+    public static URL urlOfTestResource( Class<?> contextClass, String resource ) {
+        return Resources.url( contextClass, contextClass.getSimpleName()
+            + ( resource == null ? "" : "/" + resource ) )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+    }
 
-   public static Path pathOfTestResource( Class<?> contextClass ) {
-      return pathOfTestResource( contextClass, null );
-   }
+    public static Path pathOfTestResource( Class<?> contextClass ) {
+        return pathOfTestResource( contextClass, null );
+    }
 }

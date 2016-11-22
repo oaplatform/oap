@@ -32,49 +32,49 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.IntStream;
 
-@Test(enabled = false)
+@Test( enabled = false )
 public class HashMapPerformance extends AbstractPerformance {
-   @Test
-   public void testComputeIfAbsentVsGet() {
-      final HashMap<String, String> map = new HashMap<>();
+    @Test
+    public void testComputeIfAbsentVsGet() {
+        final HashMap<String, String> map = new HashMap<>();
 
-      final int samples = 5000000;
-      final int experiments = 5;
+        final int samples = 5000000;
+        final int experiments = 5;
 
-      benchmark( "computeIfAbsent", samples, experiments, ( i ) -> {
-         map.computeIfAbsent( "key" + i, ( k ) -> "key" );
-      } );
+        benchmark( "computeIfAbsent", samples, experiments, ( i ) -> {
+            map.computeIfAbsent( "key" + i, ( k ) -> "key" );
+        } );
 
-      benchmark( "get", samples, experiments, ( i ) -> {
-         map.get( "key" + i );
-      } );
-   }
+        benchmark( "get", samples, experiments, ( i ) -> {
+            map.get( "key" + i );
+        } );
+    }
 
-   @Test
-   public void testMultiStringKey() {
-      final int SAMPLES = 10000000;
-      final int EXPERIMENTS = 5;
+    @Test
+    public void testMultiStringKey() {
+        final int SAMPLES = 10000000;
+        final int EXPERIMENTS = 5;
 
-      String[] randoms = IntStream.range( 0, 99 ).mapToObj( i -> RandomStringUtils.random( 5, true, false ) ).toArray( String[]::new );
+        String[] randoms = IntStream.range( 0, 99 ).mapToObj( i -> RandomStringUtils.random( 5, true, false ) ).toArray( String[]::new );
 
-      final HashMap<List<String>, Object> map1 = new HashMap<>();
-      final HashMap<String, Object> map2 = new HashMap<>();
+        final HashMap<List<String>, Object> map1 = new HashMap<>();
+        final HashMap<String, Object> map2 = new HashMap<>();
 
-      for( int i = 0; i < randoms.length; i += 3 ) {
-         map1.put( java.util.Arrays.asList( randoms[i], randoms[i + 1], randoms[i + 2] ), 1 );
-         map2.put( randoms[i] + randoms[i + 1] + randoms[i + 2], 1 );
-      }
+        for( int i = 0; i < randoms.length; i += 3 ) {
+            map1.put( java.util.Arrays.asList( randoms[i], randoms[i + 1], randoms[i + 2] ), 1 );
+            map2.put( randoms[i] + randoms[i + 1] + randoms[i + 2], 1 );
+        }
 
-      benchmark( "list-string-key", SAMPLES, EXPERIMENTS, ( i ) -> {
-         int p = ( i % 33 ) * 3;
+        benchmark( "list-string-key", SAMPLES, EXPERIMENTS, ( i ) -> {
+            int p = ( i % 33 ) * 3;
 
-         map1.get( java.util.Arrays.asList( randoms[p], randoms[p + 1], randoms[p + 2] ) );
-      } );
+            map1.get( java.util.Arrays.asList( randoms[p], randoms[p + 1], randoms[p + 2] ) );
+        } );
 
-      benchmark( "one-string-key", SAMPLES, EXPERIMENTS, ( i ) -> {
-         int p = ( i % 33 ) * 3;
+        benchmark( "one-string-key", SAMPLES, EXPERIMENTS, ( i ) -> {
+            int p = ( i % 33 ) * 3;
 
-         map2.get( randoms[p] + randoms[p + 1] + randoms[p + 2] );
-      } );
-   }
+            map2.get( randoms[p] + randoms[p + 1] + randoms[p + 2] );
+        } );
+    }
 }

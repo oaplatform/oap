@@ -37,52 +37,52 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 public class FileWalkerCache {
-   private final HashMap<Path, ArrayList<Path>> map = new HashMap<>();
-   private final HashMap<Path, Boolean> isDirectory = new HashMap<>();
-   private final HashMap<Path, Boolean> exists = new HashMap<>();
-   private HashMap<Path, FileTime> lastModifiedTime = new HashMap<>();
+    private final HashMap<Path, ArrayList<Path>> map = new HashMap<>();
+    private final HashMap<Path, Boolean> isDirectory = new HashMap<>();
+    private final HashMap<Path, Boolean> exists = new HashMap<>();
+    private HashMap<Path, FileTime> lastModifiedTime = new HashMap<>();
 
-   public DirectoryStream<Path> newDirectoryStream( Path dir,
-                                                    DirectoryStream.Filter<? super Path> filter ) throws IOException {
-      final ArrayList<Path> list = map.get( dir );
-      if( list == null ) {
-         final ArrayList<Path> paths = map.computeIfAbsent( dir, ( d ) -> new ArrayList<>() );
+    public DirectoryStream<Path> newDirectoryStream( Path dir,
+                                                     DirectoryStream.Filter<? super Path> filter ) throws IOException {
+        final ArrayList<Path> list = map.get( dir );
+        if( list == null ) {
+            final ArrayList<Path> paths = map.computeIfAbsent( dir, ( d ) -> new ArrayList<>() );
 
-         return java.nio.file.Files.newDirectoryStream( dir, ( file ) -> {
-            paths.add( file );
-            exists.put( file, true );
-            return filter.accept( file );
-         } );
-      }
-
-      return new DirectoryStream<Path>() {
-         @Override
-         public Iterator<Path> iterator() {
-            return Iterators.filter( list.iterator(), ( p ) -> {
-               try {
-                  return filter.accept( p );
-               } catch( IOException e ) {
-                  throw new DirectoryIteratorException( e );
-               }
+            return java.nio.file.Files.newDirectoryStream( dir, ( file ) -> {
+                paths.add( file );
+                exists.put( file, true );
+                return filter.accept( file );
             } );
-         }
+        }
 
-         @Override
-         public void close() throws IOException {
+        return new DirectoryStream<Path>() {
+            @Override
+            public Iterator<Path> iterator() {
+                return Iterators.filter( list.iterator(), ( p ) -> {
+                    try {
+                        return filter.accept( p );
+                    } catch( IOException e ) {
+                        throw new DirectoryIteratorException( e );
+                    }
+                } );
+            }
 
-         }
-      };
-   }
+            @Override
+            public void close() throws IOException {
 
-   public boolean isDirectory( Path path ) {
-      return isDirectory.computeIfAbsent( path, ( p ) -> java.nio.file.Files.isDirectory( p ) );
-   }
+            }
+        };
+    }
 
-   public boolean exists( Path path ) {
-      return exists.computeIfAbsent( path, ( p ) -> java.nio.file.Files.exists( p ) );
-   }
+    public boolean isDirectory( Path path ) {
+        return isDirectory.computeIfAbsent( path, ( p ) -> java.nio.file.Files.isDirectory( p ) );
+    }
 
-   public FileTime getLastModifiedTime( Path path ) {
-      return lastModifiedTime.computeIfAbsent( path, Try.map( p -> java.nio.file.Files.getLastModifiedTime( p ) ) );
-   }
+    public boolean exists( Path path ) {
+        return exists.computeIfAbsent( path, ( p ) -> java.nio.file.Files.exists( p ) );
+    }
+
+    public FileTime getLastModifiedTime( Path path ) {
+        return lastModifiedTime.computeIfAbsent( path, Try.map( p -> java.nio.file.Files.getLastModifiedTime( p ) ) );
+    }
 }

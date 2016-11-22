@@ -26,8 +26,8 @@ package oap.archive;
 import org.testng.annotations.Test;
 
 public class ArchiverTest {
-   @Test
-   public void unpack() {
+    @Test
+    public void unpack() {
 
-   }
+    }
 }

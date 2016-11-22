@@ -52,7 +52,7 @@ public class Teamcity {
 
     public static void statistics( String name, Object value ) {
         if( isTeamcity() )
-        System.out.format( "##teamcity[buildStatisticValue key='%s' value='%s']\n",
+            System.out.format( "##teamcity[buildStatisticValue key='%s' value='%s']\n",
                 escape( name ),
                 String.valueOf( value ) );
     }
@@ -77,7 +77,7 @@ public class Teamcity {
 
     private static void progressEnd( String message ) {
         if( isTeamcity() )
-        System.out.format( "##teamcity[progressFinish '%s']\n", escape( message ) );
+            System.out.format( "##teamcity[progressFinish '%s']\n", escape( message ) );
     }
 
     public static void performance( String name, long rate ) {

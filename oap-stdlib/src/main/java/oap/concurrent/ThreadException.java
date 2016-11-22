@@ -23,7 +23,7 @@
  */
 package oap.concurrent;
 
-public class ThreadException extends RuntimeException{
+public class ThreadException extends RuntimeException {
     public ThreadException( String message ) {
         super( message );
     }

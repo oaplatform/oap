@@ -44,71 +44,72 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Log
 public class Env {
-   public static final String LOCALHOST;
-   static final Path tmp = Paths.get( "/tmp/test" + teamcityBuildPrefix() );
-   public static final Path tmpRoot = tmp.resolve( "temp-" + System.currentTimeMillis() );
-   private static Map<String, Integer> ports = new ConcurrentHashMap<>();
+    public static final String LOCALHOST;
+    static final Path tmp = Paths.get( "/tmp/test" + teamcityBuildPrefix() );
+    public static final Path tmpRoot = tmp.resolve( "temp-" + System.currentTimeMillis() );
+    private static Map<String, Integer> ports = new ConcurrentHashMap<>();
 
-   static {
-      try {
-         LOCALHOST = InetAddress.getByName( "127.0.0.1" ).getCanonicalHostName();
-      } catch( UnknownHostException e ) {
-         throw Throwables.propagate( e );
-      }
-   }
+    static {
+        try {
+            LOCALHOST = InetAddress.getByName( "127.0.0.1" ).getCanonicalHostName();
+        } catch( UnknownHostException e ) {
+            throw Throwables.propagate( e );
+        }
+    }
 
-   private static String teamcityBuildPrefix() {
-      return Optional.ofNullable( System.getenv( "TEAMCITY_BUILDCONF_NAME" ) ).map( v -> "_" + v ).orElse( "" );
-   }
+    private static String teamcityBuildPrefix() {
+        return Optional.ofNullable( System.getenv( "TEAMCITY_BUILDCONF_NAME" ) ).map( v -> "_" + v ).orElse( "" );
+    }
 
-   public static String tmp( String name ) {
-      return tmpPath( name ).toString();
-   }
+    public static String tmp( String name ) {
+        return tmpPath( name ).toString();
+    }
 
-   public static URI tmpURI( String name ) {
-      return tmpPath( name ).toUri();
-   }
+    public static URI tmpURI( String name ) {
+        return tmpPath( name ).toUri();
+    }
 
-   public static URL tmpURL( String name ) {
-      try {
-         return tmpURI( name ).toURL();
-      } catch( MalformedURLException e ) {
-         throw Throwables.propagate( e );
-      }
-   }
+    public static URL tmpURL( String name ) {
+        try {
+            return tmpURI( name ).toURL();
+        } catch( MalformedURLException e ) {
+            throw Throwables.propagate( e );
+        }
+    }
 
-   public static Path tmpPath( String name ) {
-      Path tmpPath = tmpRoot.resolve( name.startsWith( "/" ) || name.startsWith( "\\" ) ? name.substring( 1 ) : name );
-      try {
-         java.nio.file.Files.createDirectories( tmpPath.getParent() );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-      return tmpPath;
-   }
-
-   public static Path deployTestData( Class<?> contextClass ) {
-      return deployTestData( contextClass, "" );
-   }
-
-   public static Path deployTestData( Class<?> contextClass, String name ) {
-      Path to = tmpPath( name );
-      Resources.filePath( contextClass, contextClass.getSimpleName() + "/" + name )
-         .ifPresent( path -> Files.copyDirectory( path, to ) );
-      return to;
-   }
-
-   public static int port() {
-      return port( "DEFAULT" );
-   }
-
-   public static int port( String key ) {
-      return ports.computeIfAbsent( key, k -> {
-         try( ServerSocket socket = new ServerSocket( 0 ) ) {
-            return socket.getLocalPort();
-         } catch( IOException e ) {
+    public static Path tmpPath( String name ) {
+        Path tmpPath = tmpRoot.resolve(
+            name.startsWith( "/" ) || name.startsWith( "\\" ) ? name.substring( 1 ) : name );
+        try {
+            java.nio.file.Files.createDirectories( tmpPath.getParent() );
+        } catch( IOException e ) {
             throw new UncheckedIOException( e );
-         }
-      } );
-   }
+        }
+        return tmpPath;
+    }
+
+    public static Path deployTestData( Class<?> contextClass ) {
+        return deployTestData( contextClass, "" );
+    }
+
+    public static Path deployTestData( Class<?> contextClass, String name ) {
+        Path to = tmpPath( name );
+        Resources.filePath( contextClass, contextClass.getSimpleName() + "/" + name )
+            .ifPresent( path -> Files.copyDirectory( path, to ) );
+        return to;
+    }
+
+    public static int port() {
+        return port( "DEFAULT" );
+    }
+
+    public static int port( String key ) {
+        return ports.computeIfAbsent( key, k -> {
+            try( ServerSocket socket = new ServerSocket( 0 ) ) {
+                return socket.getLocalPort();
+            } catch( IOException e ) {
+                throw new UncheckedIOException( e );
+            }
+        } );
+    }
 }

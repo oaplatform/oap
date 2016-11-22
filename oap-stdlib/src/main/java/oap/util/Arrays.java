@@ -24,7 +24,11 @@
 package oap.util;
 
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -40,14 +44,14 @@ public class Arrays {
 
     @SuppressWarnings( "unchecked" )
     public static <A, B> B[] map( Class<?> elementType, Function<A, B> mapper, A... array ) {
-        B[] result = (B[]) Array.newInstance( elementType, array.length );
+        B[] result = ( B[] ) Array.newInstance( elementType, array.length );
         for( int i = 0; i < array.length; i++ ) result[i] = mapper.apply( array[i] );
         return result;
     }
 
     @SuppressWarnings( "unchecked" )
     public static <E> E[] of( Class<?> componentType, Collection<E> collection ) {
-        return collection.toArray( (E[]) Array.newInstance( componentType, collection.size() ) );
+        return collection.toArray( ( E[] ) Array.newInstance( componentType, collection.size() ) );
     }
 
     @SafeVarargs

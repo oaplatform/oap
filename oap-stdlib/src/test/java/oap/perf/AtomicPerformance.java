@@ -35,35 +35,35 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Test( enabled = false )
 public class AtomicPerformance extends AbstractPerformance {
-   private final AtomicLong al = new AtomicLong( 0 );
-   private final AtomicInteger ai = new AtomicInteger( 0 );
-   private volatile long l = 0;
-   private volatile long l2 = 0;
+    private final AtomicLong al = new AtomicLong( 0 );
+    private final AtomicInteger ai = new AtomicInteger( 0 );
+    private volatile long l = 0;
+    private volatile long l2 = 0;
 
-   @Test
-   public void testAtomicLong() {
-      final int threads = 1024;
-      final int experiments = 5;
-      final int samples = 100000000;
+    @Test
+    public void testAtomicLong() {
+        final int threads = 1024;
+        final int experiments = 5;
+        final int samples = 100000000;
 
-      benchmark( "atomic-long", samples, experiments, threads, ( i ) -> {
-         al.incrementAndGet();
-      } );
+        benchmark( "atomic-long", samples, experiments, threads, ( i ) -> {
+            al.incrementAndGet();
+        } );
 
-      benchmark( "atomic-integer", samples, experiments, threads, ( i ) -> {
-         ai.incrementAndGet();
-      } );
+        benchmark( "atomic-integer", samples, experiments, threads, ( i ) -> {
+            ai.incrementAndGet();
+        } );
 
-      benchmark( "long", samples, experiments, threads, ( i ) -> {
-         l++;
-      } );
+        benchmark( "long", samples, experiments, threads, ( i ) -> {
+            l++;
+        } );
 
-      benchmark( "long-synchronized", samples, experiments, threads, ( i ) -> {
-         synchronized( AtomicPerformance.class ) {
-            l2++;
-         }
-      } );
+        benchmark( "long-synchronized", samples, experiments, threads, ( i ) -> {
+            synchronized( AtomicPerformance.class ) {
+                l2++;
+            }
+        } );
 
-      System.out.println( "al:" + al.get() + " vs l:" + l + " vs ls:" + l2 );
-   }
+        System.out.println( "al:" + al.get() + " vs l:" + l + " vs ls:" + l2 );
+    }
 }

@@ -23,10 +23,9 @@
  */
 package oap.reflect;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import com.google.common.reflect.TypeToken;
 import oap.util.Arrays;
+import oap.util.Functions;
 import oap.util.Lists;
 import oap.util.PairStream;
 import oap.util.Stream;
@@ -44,302 +43,302 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class Reflection extends Annotated<Class<?>> {
-   //    @todo constructors (PERFORMANCE)
-   private final Coercions coercions;
-   public final Class<?> underlying;
-   public final List<Field> fields;
-   public final List<Method> methods;
-   public final List<Reflection> typeParameters;
-   private final TypeToken<?> typeToken;
+    //    @todo constructors (PERFORMANCE)
+    private final Coercions coercions;
+    public final Class<?> underlying;
+    public final List<Field> fields;
+    public final List<Method> methods;
+    public final List<Reflection> typeParameters;
+    private final TypeToken<?> typeToken;
 
-   Reflection( TypeToken<?> typeToken ) {
-      this( typeToken, Coercions.basic().withIdentity() );
-   }
+    Reflection( TypeToken<?> typeToken ) {
+        this( typeToken, Coercions.basic().withIdentity() );
+    }
 
-   Reflection( TypeToken<?> typeToken, Coercions coercions ) {
-      super( typeToken.getRawType() );
-      this.coercions = coercions;
-      this.typeToken = Objects.requireNonNull( typeToken );
-      this.methods =
-         Lists.map( ReflectUtils.declared( typeToken.getRawType(), Class::getDeclaredMethods ), Method::new
-         );
-      this.fields = Lists.map( ReflectUtils.declared( typeToken.getRawType(), Class::getDeclaredFields ), Field::new
-      );
-      this.underlying = typeToken.getRawType();
-      this.typeParameters = Lists.map( typeToken.getRawType().getTypeParameters(), this::resolve );
-   }
+    Reflection( TypeToken<?> typeToken, Coercions coercions ) {
+        super( typeToken.getRawType() );
+        this.coercions = coercions;
+        this.typeToken = Objects.requireNonNull( typeToken );
+        this.methods =
+            Lists.map( ReflectUtils.declared( typeToken.getRawType(), Class::getDeclaredMethods ), Method::new
+            );
+        this.fields = Lists.map( ReflectUtils.declared( typeToken.getRawType(), Class::getDeclaredFields ), Field::new
+        );
+        this.underlying = typeToken.getRawType();
+        this.typeParameters = Lists.map( typeToken.getRawType().getTypeParameters(), this::resolve );
+    }
 
-   @SuppressWarnings( "unchecked" )
-   public <T> T newInstance() {
-      try {
-         Class<?> rawType = typeToken.getRawType();
-         Constructor<?> constructor = rawType.getDeclaredConstructor();
-         constructor.setAccessible( true );
-         return ( T ) constructor.newInstance();
-      } catch( InstantiationException | IllegalAccessException |
-         NoSuchMethodException | InvocationTargetException e ) {
-         throw new ReflectException( e );
-      }
-   }
-
-   @SuppressWarnings( "unchecked" )
-   public <T> T newInstance( Object... args ) {
-      return ReflectUtils.findExecutableByParamTypes(
-         Arrays.map( Class.class, Object::getClass, args ),
-         typeToken.getRawType().getConstructors() )
-         .map( Try.map( constructor -> {
+    @SuppressWarnings( "unchecked" )
+    public <T> T newInstance() {
+        try {
+            Class<?> rawType = typeToken.getRawType();
+            Constructor<?> constructor = rawType.getDeclaredConstructor();
             constructor.setAccessible( true );
-            return ( T ) constructor.newInstance( args );
-         } ) )
-         .orElseThrow( () -> new ReflectException(
-            "cannot find matching constructor: " + java.util.Arrays.toString( args ) + " in " +
-               typeToken.getRawType() ) );
-   }
+            return ( T ) constructor.newInstance();
+        } catch( InstantiationException | IllegalAccessException
+            | NoSuchMethodException | InvocationTargetException e ) {
+            throw new ReflectException( e );
+        }
+    }
 
-   @SuppressWarnings( "unchecked" )
-   public <T> T newInstance( Map<String, Object> args ) throws ReflectException {
-      Constructor<?>[] constructors = typeToken.getRawType().getConstructors();
+    @SuppressWarnings( "unchecked" )
+    public <T> T newInstance( Object... args ) {
+        return ReflectUtils.findExecutableByParamTypes(
+            Arrays.map( Class.class, Object::getClass, args ),
+            typeToken.getRawType().getConstructors() )
+            .map( Try.map( constructor -> {
+                constructor.setAccessible( true );
+                return ( T ) constructor.newInstance( args );
+            } ) )
+            .orElseThrow( () -> new ReflectException(
+                "cannot find matching constructor: " + java.util.Arrays.toString( args ) + " in " + typeToken.getRawType() ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <T> T newInstance( Map<String, Object> args ) throws ReflectException {
+        Constructor<?>[] constructors = typeToken.getRawType().getConstructors();
 //              @todo initialization of constructorless classes
-      java.util.Arrays.sort( constructors, Comparator
-         .<Constructor<?>>comparingInt( Constructor::getParameterCount )
-         .reversed() );
-      for( Constructor<?> constructor : constructors ) {
-         List<String> paramNames = Lists.of( Arrays.map( String.class,
-            java.lang.reflect.Parameter::getName,
-            constructor.getParameters() ) );
+        java.util.Arrays.sort( constructors, Comparator
+            .<Constructor<?>>comparingInt( Constructor::getParameterCount )
+            .reversed() );
+        for( Constructor<?> constructor : constructors ) {
+            List<String> paramNames = Lists.of( Arrays.map( String.class,
+                java.lang.reflect.Parameter::getName,
+                constructor.getParameters() ) );
 //      @todo check correspondence of parameter types
-         if( args.keySet().containsAll( paramNames ) ) try {
-            constructor.setAccessible( true );
-            ArrayList<java.lang.reflect.Parameter> params = Lists.of( constructor.getParameters() );
-            final Object[] cArgs = params
-               .stream()
-               .map( p -> coercions.cast(
-                  resolve( p.getParameterizedType() ),
-                  args.get( p.getName() ) ) )
-               .collect( toList() )
-               .toArray();
-            T instance = ( T ) constructor.newInstance( cArgs );
-            args.keySet()
-               .stream()
-               .filter( ( ( Predicate<Object> ) paramNames::contains ).negate() )
-               .forEach( key -> field( key ).ifPresent( f -> {
-                     final Object arg = coercions.cast( f.type(), args.get( key ) );
-                     f.set( instance, arg );
-                  }
-               ) );
-            return instance;
-         } catch( Exception e ) {
-            throw new ReflectException( constructorToString( constructor ) + ":" + argsToString( args ), e );
-         }
-      }
-      List<String> candidates = Stream.of( constructors ).map( this::constructorToString ).toList();
+            if( args.keySet().containsAll( paramNames ) ) try {
+                constructor.setAccessible( true );
+                ArrayList<java.lang.reflect.Parameter> params = Lists.of( constructor.getParameters() );
+                final Object[] cArgs = params
+                    .stream()
+                    .map( p -> coercions.cast(
+                        resolve( p.getParameterizedType() ),
+                        args.get( p.getName() ) ) )
+                    .collect( toList() )
+                    .toArray();
+                T instance = ( T ) constructor.newInstance( cArgs );
+                args.keySet()
+                    .stream()
+                    .filter( ( ( Predicate<Object> ) paramNames::contains ).negate() )
+                    .forEach( key -> field( key ).ifPresent( f -> {
+                            final Object arg = coercions.cast( f.type(), args.get( key ) );
+                            f.set( instance, arg );
+                        }
+                    ) );
+                return instance;
+            } catch( Exception e ) {
+                throw new ReflectException( constructorToString( constructor ) + ":" + argsToString( args ), e );
+            }
+        }
+        List<String> candidates = Stream.of( constructors ).map( this::constructorToString ).toList();
 
-      throw new ReflectException( "cannot find matching constructor: " + argsToString( args ) + " in " + typeToken.getRawType() + " candidates: " + candidates );
-   }
+        throw new ReflectException( "cannot find matching constructor: " + argsToString( args ) + " in " + typeToken.getRawType() + " candidates: " + candidates );
+    }
 
-   private String argsToString( Map<String, Object> args ) {
-      return PairStream.of( args )
-         .mapToObj( ( k, v ) -> k + ":" + ( v != null ? v.getClass() : "(null)" ) )
-         .toList()
-         .toString();
-   }
+    private String argsToString( Map<String, Object> args ) {
+        return PairStream.of( args )
+            .mapToObj( ( k, v ) -> k + ":" + ( v != null ? v.getClass() : "(null)" ) )
+            .toList()
+            .toString();
+    }
 
-   private String constructorToString( Constructor<?> c ) {
-      return c.getName() + "(" + Stream.of( c.getParameters() )
-         .map( parameter -> parameter.getParameterizedType() + " " + parameter.getName() )
-         .collect( joining( "," ) ) + ")";
-   }
+    private String constructorToString( Constructor<?> c ) {
+        return c.getName() + "(" + Stream.of( c.getParameters() )
+            .map( parameter -> parameter.getParameterizedType() + " " + parameter.getName() )
+            .collect( joining( "," ) ) + ")";
+    }
 
-   public boolean assignableTo( Class<?> clazz ) {
-      return clazz.isAssignableFrom( this.underlying );
-   }
+    public boolean assignableTo( Class<?> clazz ) {
+        return clazz.isAssignableFrom( this.underlying );
+    }
 
-   public boolean assignableFrom( Class<?> clazz ) {
-      return this.underlying.isAssignableFrom( clazz );
-   }
+    public boolean assignableFrom( Class<?> clazz ) {
+        return this.underlying.isAssignableFrom( clazz );
+    }
 
-   public boolean isEnum() {
-      return this.typeToken.getRawType().isEnum();
-   }
+    public boolean isEnum() {
+        return this.typeToken.getRawType().isEnum();
+    }
 
-   public boolean isOptional() {
-      return Optional.class.equals( this.typeToken.getRawType() );
-   }
+    public boolean isOptional() {
+        return Optional.class.equals( this.typeToken.getRawType() );
+    }
 
-   public Optional<? extends Enum<?>> enumValue( String value ) {
-      return Arrays.find(
-         constant -> Objects.equals( constant.name(), value ),
-         ( Enum<?>[] ) this.typeToken.getRawType().getEnumConstants()
-      );
-   }
+    public Optional<? extends Enum<?>> enumValue( String value ) {
+        return Arrays.find(
+            constant -> Objects.equals( constant.name(), value ),
+            ( Enum<?>[] ) this.typeToken.getRawType().getEnumConstants()
+        );
+    }
 
-   //    todo cache all invokers of resolve (PERFORMANCE)
-   Reflection resolve( Type type ) {
-      return Reflect.reflect( typeToken.resolveType( type ) );
-   }
-
-
-   public Optional<Field> field( String name ) {
-      return Lists.find( fields, f -> f.name().equals( name ) );
-   }
-
-   public Optional<Method> method( Predicate<Method> matcher ) {
-      return this.methods.stream().filter( matcher ).findFirst();
-   }
-
-   public Optional<Method> method( String name ) {
-      return method( m -> Objects.equals( m.name(), name ) );
-   }
-
-   public Optional<Method> method( java.lang.reflect.Method jmethod ) {
-      return method( method ->
-         Objects.equals( method.underlying.getName(), jmethod.getName() )
-            && Objects.equals( method.underlying.getReturnType(), jmethod.getReturnType() )
-            && method.underlying.getParameterCount() == jmethod.getParameterCount()
-            && java.util.Arrays.equals( method.underlying.getParameterTypes(), jmethod.getParameterTypes() )
-      );
-   }
-
-   public Type getType() {
-      return typeToken.getType();
-   }
-
-   public Reflection getCollectionComponentType() {
-      return Stream.<Class<?>>traverse( typeToken.getRawType(), Class::getSuperclass )
-         .filter( i -> Collection.class.isAssignableFrom( i ) && i.getTypeParameters().length > 0 )
-         .map( i -> resolve( i.getTypeParameters()[0] ) )
-         .findAny()
-         .orElse( null );
-   }
-
-   @Override
-   public String toString() {
-      return "Reflection(" + typeToken + ")";
-   }
-
-   @Override
-   public boolean equals( Object obj ) {
-      return obj != null
-         && obj instanceof Reflection
-         && this.typeToken.equals( ( ( Reflection ) obj ).typeToken );
-   }
-
-   @Override
-   public int hashCode() {
-      return this.typeToken.hashCode();
-   }
-
-   public String name() {
-      return this.typeToken.getRawType().getCanonicalName();
-   }
-
-   public class Field extends Annotated<java.lang.reflect.Field> implements Comparable<Field> {
-      private final Supplier<Reflection> type = Suppliers.memoize( () ->
-         Reflect.reflect( typeToken.resolveType( this.underlying.getGenericType() ) ) );
-
-      Field( java.lang.reflect.Field field ) {
-         super( field );
-         this.underlying.setAccessible( true );
-      }
-
-      public Object get( Object instance ) {
-         try {
-            return this.underlying.get( instance );
-         } catch( IllegalAccessException e ) {
-            throw new ReflectException( e );
-         }
-      }
-
-      public void set( Object instance, Object value ) {
-         try {
-            this.underlying.set( instance, value );
-         } catch( IllegalAccessException e ) {
-            throw new ReflectException( e );
-         }
-      }
-
-      public String name() {
-         return underlying.getName();
-      }
+    //    todo cache all invokers of resolve (PERFORMANCE)
+    Reflection resolve( Type type ) {
+        return Reflect.reflect( typeToken.resolveType( type ) );
+    }
 
 
-      public Reflection type() {
-         return type.get();
-      }
+    public Optional<Field> field( String name ) {
+        return Lists.find( fields, f -> f.name().equals( name ) );
+    }
 
-      @Override
-      public int compareTo( Field o ) {
-         return this.name().compareTo( o.name() );
-      }
+    public Optional<Method> method( Predicate<Method> matcher ) {
+        return this.methods.stream().filter( matcher ).findFirst();
+    }
 
-      public boolean isTransient() {
-         return Modifier.isTransient( underlying.getModifiers() );
-      }
+    public Optional<Method> method( String name ) {
+        return method( m -> Objects.equals( m.name(), name ) );
+    }
 
-      public boolean isStatic() {
-         return Modifier.isStatic( underlying.getModifiers() );
-      }
+    public Optional<Method> method( java.lang.reflect.Method jmethod ) {
+        return method( method ->
+            Objects.equals( method.underlying.getName(), jmethod.getName() )
+                && Objects.equals( method.underlying.getReturnType(), jmethod.getReturnType() )
+                && method.underlying.getParameterCount() == jmethod.getParameterCount()
+                && java.util.Arrays.equals( method.underlying.getParameterTypes(), jmethod.getParameterTypes() )
+        );
+    }
 
-      public boolean isSynthetic() {
-         return underlying.isSynthetic();
-      }
-   }
+    public Type getType() {
+        return typeToken.getType();
+    }
 
-   public class Method extends Annotated<java.lang.reflect.Method> {
-      public List<Parameter> parameters;
+    public Reflection getCollectionComponentType() {
+        return Stream.<Class<?>>traverse( typeToken.getRawType(), Class::getSuperclass )
+            .filter( i -> Collection.class.isAssignableFrom( i ) && i.getTypeParameters().length > 0 )
+            .map( i -> resolve( i.getTypeParameters()[0] ) )
+            .findAny()
+            .orElse( null );
+    }
 
-      Method( java.lang.reflect.Method method ) {
-         super( method );
-         this.underlying.setAccessible( true );
-         this.parameters = Lists.map( method.getParameters(), Parameter::new );
-      }
+    @Override
+    public String toString() {
+        return "Reflection(" + typeToken + ")";
+    }
 
-      public boolean hasParameter( String name ) {
-         return Lists.find( this.parameters, p -> Objects.equals( p.name(), name ) ).isPresent();
-      }
+    @Override
+    public boolean equals( Object obj ) {
+        return obj != null
+            && obj instanceof Reflection
+            && this.typeToken.equals( ( ( Reflection ) obj ).typeToken );
+    }
 
-      public String name() {
-         return underlying.getName();
-      }
+    @Override
+    public int hashCode() {
+        return this.typeToken.hashCode();
+    }
 
-      @SuppressWarnings( "unchecked" )
-      public <T> T invoke( Object instance, Object... args ) {
-         try {
-            return ( T ) underlying.invoke( instance, args );
-         } catch( IllegalAccessException | InvocationTargetException | IllegalArgumentException e ) {
-            throw new ReflectException( e );
-         }
-      }
+    public String name() {
+        return this.typeToken.getRawType().getCanonicalName();
+    }
 
-      public boolean isPublic() {
-         return Modifier.isPublic( underlying.getModifiers() );
-      }
+    public class Field extends Annotated<java.lang.reflect.Field> implements Comparable<Field> {
+        private final Supplier<Reflection> type = Functions.memoize( () ->
+            Reflect.reflect( typeToken.resolveType( this.underlying.getGenericType() ) ) );
 
-      public boolean isVoid() {
-         return underlying.getReturnType().equals( Void.TYPE );
-      }
-   }
+        Field( java.lang.reflect.Field field ) {
+            super( field );
+            this.underlying.setAccessible( true );
+        }
 
-   public class Parameter extends Annotated<java.lang.reflect.Parameter> {
-      private final Supplier<Reflection> type = Suppliers.memoize( () ->
-         Reflect.reflect( typeToken.resolveType( this.underlying.getParameterizedType() ) ) );
+        public Object get( Object instance ) {
+            try {
+                return this.underlying.get( instance );
+            } catch( IllegalAccessException e ) {
+                throw new ReflectException( e );
+            }
+        }
 
-      Parameter( java.lang.reflect.Parameter parameter ) {
-         super( parameter );
-      }
+        public void set( Object instance, Object value ) {
+            try {
+                this.underlying.set( instance, value );
+            } catch( IllegalAccessException e ) {
+                throw new ReflectException( e );
+            }
+        }
 
-      public Reflection type() {
-         return type.get();
-      }
+        public String name() {
+            return underlying.getName();
+        }
 
-      public String name() {
-         return underlying.getName();
-      }
-   }
+
+        public Reflection type() {
+            return type.get();
+        }
+
+        @Override
+        public int compareTo( Field o ) {
+            return this.name().compareTo( o.name() );
+        }
+
+        public boolean isTransient() {
+            return Modifier.isTransient( underlying.getModifiers() );
+        }
+
+        public boolean isStatic() {
+            return Modifier.isStatic( underlying.getModifiers() );
+        }
+
+        public boolean isSynthetic() {
+            return underlying.isSynthetic();
+        }
+    }
+
+    public class Method extends Annotated<java.lang.reflect.Method> {
+        public List<Parameter> parameters;
+
+        Method( java.lang.reflect.Method method ) {
+            super( method );
+            this.underlying.setAccessible( true );
+            this.parameters = Lists.map( method.getParameters(), Parameter::new );
+        }
+
+        public boolean hasParameter( String name ) {
+            return Lists.find( this.parameters, p -> Objects.equals( p.name(), name ) ).isPresent();
+        }
+
+        public String name() {
+            return underlying.getName();
+        }
+
+        @SuppressWarnings( "unchecked" )
+        public <T> T invoke( Object instance, Object... args ) {
+            try {
+                return ( T ) underlying.invoke( instance, args );
+            } catch( IllegalAccessException | InvocationTargetException | IllegalArgumentException e ) {
+                throw new ReflectException( e );
+            }
+        }
+
+        public boolean isPublic() {
+            return Modifier.isPublic( underlying.getModifiers() );
+        }
+
+        public boolean isVoid() {
+            return underlying.getReturnType().equals( Void.TYPE );
+        }
+    }
+
+    public class Parameter extends Annotated<java.lang.reflect.Parameter> {
+        private final Supplier<Reflection> type = Functions.memoize( () ->
+            Reflect.reflect( typeToken.resolveType( this.underlying.getParameterizedType() ) ) );
+
+        Parameter( java.lang.reflect.Parameter parameter ) {
+            super( parameter );
+        }
+
+        public Reflection type() {
+            return type.get();
+        }
+
+        public String name() {
+            return underlying.getName();
+        }
+    }
 
 }

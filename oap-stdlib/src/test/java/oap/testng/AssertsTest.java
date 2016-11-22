@@ -37,12 +37,12 @@ import static oap.testng.Asserts.pathOfTestResource;
  */
 public class AssertsTest {
 
-   @Test
-   public void testSortedContentOfFileResource() {
-      Path unsorted = pathOfTestResource( getClass(), "random-flow-of-mind.txt" );
-      String expected = contentOfTestResource( getClass(), "sorted-flow-of-mind.txt" );
-      Asserts.assertFile( unsorted ).hasSortedLinesContent( expected, IoStreams.Encoding.PLAIN );
-   }
+    @Test
+    public void testSortedContentOfFileResource() {
+        Path unsorted = pathOfTestResource( getClass(), "random-flow-of-mind.txt" );
+        String expected = contentOfTestResource( getClass(), "sorted-flow-of-mind.txt" );
+        Asserts.assertFile( unsorted ).hasSortedLinesContent( expected, IoStreams.Encoding.PLAIN );
+    }
 
 
 }

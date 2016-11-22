@@ -26,66 +26,66 @@ package oap.concurrent;
 import java.util.concurrent.Semaphore;
 
 public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyListener {
-   private Thread thread = new Thread( this );
-   private Runnable child;
-   private Semaphore semaphore = new Semaphore( 0 );
-   private boolean stopped = true;
+    private Thread thread = new Thread( this );
+    private Runnable child;
+    private Semaphore semaphore = new Semaphore( 0 );
+    private boolean stopped = true;
 
-   public SynchronizedThread( SynchronizedRunnable child ) {
-      this.child = child;
-      child.listener = this;
-   }
+    public SynchronizedThread( SynchronizedRunnable child ) {
+        this.child = child;
+        child.listener = this;
+    }
 
-   public SynchronizedThread( Runnable child ) {
-      this.child = child;
-   }
+    public SynchronizedThread( Runnable child ) {
+        this.child = child;
+    }
 
-   public SynchronizedThread( String name, Runnable child ) {
-      this( child );
-      this.thread.setName( name );
-   }
+    public SynchronizedThread( String name, Runnable child ) {
+        this( child );
+        this.thread.setName( name );
+    }
 
-   @Override
-   public void run() {
-      semaphore.release();
-      child.run();
-   }
+    @Override
+    public void run() {
+        semaphore.release();
+        child.run();
+    }
 
-   public synchronized void start() {
-      stopped = false;
-      thread.start();
-      try {
-         semaphore.acquire( child instanceof SynchronizedRunnable ? 2 : 1 );
-      } catch( InterruptedException e ) {
-         throw new ThreadException( e );
-      }
-   }
+    public synchronized void start() {
+        stopped = false;
+        thread.start();
+        try {
+            semaphore.acquire( child instanceof SynchronizedRunnable ? 2 : 1 );
+        } catch( InterruptedException e ) {
+            throw new ThreadException( e );
+        }
+    }
 
-   public synchronized void stop() {
-      try {
-         stopped = true;
-         thread.interrupt();
-         thread.join();
-      } catch( InterruptedException e ) {
-         throw new ThreadException( e );
-      }
-   }
+    public synchronized void stop() {
+        try {
+            stopped = true;
+            thread.interrupt();
+            thread.join();
+        } catch( InterruptedException e ) {
+            throw new ThreadException( e );
+        }
+    }
 
-   public void setName( String name ) {
-      this.thread.setName( name );
-   }
+    public void setName( String name ) {
+        this.thread.setName( name );
+    }
 
-   public String getName() {
-      return this.thread.getName();
-   }
+    public String getName() {
+        return this.thread.getName();
+    }
 
-   public boolean isRunning() {
-      return !stopped;
-   }
+    public boolean isRunning() {
+        return !stopped;
+    }
 
-   @Override
-   public void notifyReady() {
-      this.semaphore.release();
-   }
+    @Override
+    public void notifyReady() {
+        this.semaphore.release();
+    }
 
 }

@@ -29,9 +29,9 @@ import org.testng.annotations.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SetsTest {
-   @Test
-   public void map() {
-      assertThat( Sets.map( Sets.of( "1", "2", "3" ), x -> x + "1" ) )
-         .containsOnly( "11", "21", "31" );
-   }
+    @Test
+    public void map() {
+        assertThat( Sets.map( Sets.of( "1", "2", "3" ), x -> x + "1" ) )
+            .containsOnly( "11", "21", "31" );
+    }
 }

@@ -27,12 +27,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Once {
-   private static Set<Object> done = new HashSet<>();
+    private static Set<Object> done = new HashSet<>();
 
-   public static void once( Runnable runnable ) {
-      if( !done.contains( runnable.getClass() ) ) {
-         runnable.run();
-         done.add( runnable.getClass() );
-      }
-   }
+    public static void once( Runnable runnable ) {
+        if( !done.contains( runnable.getClass() ) ) {
+            runnable.run();
+            done.add( runnable.getClass() );
+        }
+    }
 }

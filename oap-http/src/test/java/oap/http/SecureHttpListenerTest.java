@@ -4,7 +4,6 @@ import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.IoStreams;
 import oap.testng.Env;
-import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -16,7 +15,11 @@ import org.testng.annotations.Test;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.IOException;
-import java.security.*;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 
 import static oap.io.IoStreams.Encoding.PLAIN;
@@ -25,57 +28,55 @@ import static org.testng.Assert.assertEquals;
 
 public class SecureHttpListenerTest {
 
-   private static final String KEYSTORE_PASSWORD = "123456";
+    private static final String KEYSTORE_PASSWORD = "123456";
 
-   private final Server server = new Server( 10 );
-   private SynchronizedThread listener;
+    private final Server server = new Server( 10 );
+    private SynchronizedThread listener;
 
-   @BeforeClass
-   public void setUp() {
-      server.bind( "test", GenericCorsPolicy.DEFAULT, ( request, response ) -> {
+    @BeforeClass
+    public void setUp() {
+        server.bind( "test", GenericCorsPolicy.DEFAULT, ( request, response ) -> {
 
-         System.out.println( "Base URL " + request.baseUrl );
-         System.out.println( "Headers:" );
+            System.out.println( "Base URL " + request.baseUrl );
+            System.out.println( "Headers:" );
 
-         for( Header header : request.headers ) {
-            System.out.println( header.getName() + " " + header.getValue() );
-         }
+            System.out.println( request.headers );
 
-         response.respond( new HttpResponse( 200 ) );
-      }, Protocol.HTTPS );
+            response.respond( new HttpResponse( 200 ) );
+        }, Protocol.HTTPS );
 
-      SecureHttpListener http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port() );
-      listener = new SynchronizedThread( http );
-      listener.start();
-   }
+        SecureHttpListener http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port() );
+        listener = new SynchronizedThread( http );
+        listener.start();
+    }
 
-   @Test
-   public void testShouldVerifySSLCommunication() throws KeyStoreException, IOException, CertificateException,
-      NoSuchAlgorithmException, KeyManagementException, UnrecoverableKeyException {
+    @Test
+    public void testShouldVerifySSLCommunication() throws KeyStoreException, IOException, CertificateException,
+        NoSuchAlgorithmException, KeyManagementException, UnrecoverableKeyException {
 
-      KeyStore keyStore = KeyStore.getInstance( "JKS" );
-      keyStore.load( IoStreams.in( pathOfTestResource( getClass(), "client_truststore.jks" ), PLAIN ),
-         KEYSTORE_PASSWORD.toCharArray() );
+        KeyStore keyStore = KeyStore.getInstance( "JKS" );
+        keyStore.load( IoStreams.in( pathOfTestResource( getClass(), "client_truststore.jks" ), PLAIN ),
+            KEYSTORE_PASSWORD.toCharArray() );
 
-      TrustManagerFactory trustManagerFactory =
-         TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-      trustManagerFactory.init( keyStore );
+        TrustManagerFactory trustManagerFactory =
+            TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+        trustManagerFactory.init( keyStore );
 
-      SSLContext sslContext = SSLContext.getInstance( "TLS" );
-      sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
+        SSLContext sslContext = SSLContext.getInstance( "TLS" );
+        sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
 
-      CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
+        CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
 
-      HttpGet httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
+        HttpGet httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
 
-      CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute( httpGet );
+        CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute( httpGet );
 
-      assertEquals( closeableHttpResponse.getStatusLine().getStatusCode(), 200 );
-   }
+        assertEquals( closeableHttpResponse.getStatusLine().getStatusCode(), 200 );
+    }
 
-   @AfterClass
-   public void tearDown() {
-      listener.stop();
-      server.stop();
-   }
+    @AfterClass
+    public void tearDown() {
+        listener.stop();
+        server.stop();
+    }
 }

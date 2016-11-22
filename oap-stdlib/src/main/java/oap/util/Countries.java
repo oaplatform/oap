@@ -30,7 +30,7 @@ import java.util.Locale;
 
 import static java.util.stream.Collectors.toList;
 
-public class Countries {
+public final class Countries {
     public static final String[] iso3Countries;
     private static final HashMap<String, Integer> bitMap = new HashMap<>();
     private static final HashMap<String, String> twoChTo3Ch = new HashMap<>();
@@ -77,7 +77,7 @@ public class Countries {
     }
 
     public static Object valueOf( long ordinal ) {
-        if(ordinal == 0) return Strings.UNKNOWN;
-        return iso3Countries[((int) ordinal - 1)];
+        if( ordinal == 0 ) return Strings.UNKNOWN;
+        return iso3Countries[( ( int ) ordinal - 1 )];
     }
 }

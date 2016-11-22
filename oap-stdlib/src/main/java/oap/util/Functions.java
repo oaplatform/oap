@@ -23,48 +23,54 @@
  */
 package oap.util;
 
+import com.google.common.base.Suppliers;
+
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class Functions {
 
-   @FunctionalInterface
-   public interface TriFunction<T, U, S, R> {
+    @FunctionalInterface
+    public interface TriFunction<T, U, S, R> {
 
-      /**
-       * Applies this function to the given arguments.
-       *
-       * @param t the first function argument
-       * @param u the second function argument
-       * @param s the third function argument
-       * @return the function result
-       */
-      R apply( T t, U u, S s );
-   }
+        /**
+         * Applies this function to the given arguments.
+         *
+         * @param t the first function argument
+         * @param u the second function argument
+         * @param s the third function argument
+         * @return the function result
+         */
+        R apply( T t, U u, S s );
+    }
 
-   @SuppressWarnings( "unchecked" )
-   public static class empty {
+    @SuppressWarnings( "unchecked" )
+//    CHECKSTYLE:OFF
+    public static class empty {
+//    CHECKSTYLE:ON
 
-      private static final Consumer<?> CONSUMER = v -> {
-      };
+        private static final Consumer<?> CONSUMER = v -> {};
 
-      private static final BiConsumer<?, ?> BI_CONSUMER = ( v, u ) -> {
-      };
+        private static final BiConsumer<?, ?> BI_CONSUMER = ( v, u ) -> {};
 
-      public static Runnable run = () -> {
-      };
+        public static Runnable run = () -> {};
 
-      public static <T> Consumer<T> consume() {
-         return ( Consumer<T> ) CONSUMER;
-      }
+        public static <T> Consumer<T> consume() {
+            return ( Consumer<T> ) CONSUMER;
+        }
 
-      public static <T, U> BiConsumer<T, U> biConsume() {
-         return ( BiConsumer<T, U> ) BI_CONSUMER;
-      }
+        public static <T, U> BiConsumer<T, U> biConsume() {
+            return ( BiConsumer<T, U> ) BI_CONSUMER;
+        }
 
-      static <I, R> Function<I, R> id() {
-         return i -> ( R ) i;
-      }
-   }
+        static <I, R> Function<I, R> id() {
+            return i -> ( R ) i;
+        }
+    }
+
+    public static <T> Supplier<T> memoize( Supplier<T> delegate ) {
+        return () -> Suppliers.memoize( delegate::get ).get();
+    }
 }

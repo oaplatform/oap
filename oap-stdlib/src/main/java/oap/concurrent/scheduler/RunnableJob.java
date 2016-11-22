@@ -33,23 +33,23 @@ import org.quartz.UnableToInterruptJobException;
 
 @DisallowConcurrentExecution
 public class RunnableJob implements Job, InterruptableJob {
-   final Runnable runnable;
+    final Runnable runnable;
 
-   public RunnableJob( Runnable runnable ) {
-      this.runnable = runnable;
-   }
+    public RunnableJob( Runnable runnable ) {
+        this.runnable = runnable;
+    }
 
-   @Override
-   public void execute( JobExecutionContext context ) throws JobExecutionException {
-      try {
-         runnable.run();
-      } catch( Exception e ) {
-         throw new JobExecutionException( e );
-      }
-   }
+    @Override
+    public void execute( JobExecutionContext context ) throws JobExecutionException {
+        try {
+            runnable.run();
+        } catch( Exception e ) {
+            throw new JobExecutionException( e );
+        }
+    }
 
-   @Override
-   public void interrupt() throws UnableToInterruptJobException {
-      Thread.currentThread().interrupt();
-   }
+    @Override
+    public void interrupt() throws UnableToInterruptJobException {
+        Thread.currentThread().interrupt();
+    }
 }

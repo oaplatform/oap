@@ -26,14 +26,14 @@ package oap.concurrent.scheduler;
 import java.io.Closeable;
 
 public abstract class Scheduled implements Closeable {
-   public static void cancel( Scheduled scheduled ) {
-      if( scheduled != null ) scheduled.cancel();
-   }
+    public static void cancel( Scheduled scheduled ) {
+        if( scheduled != null ) scheduled.cancel();
+    }
 
-   public abstract void cancel();
+    public abstract void cancel();
 
-   @Override
-   public void close() {
-      cancel();
-   }
+    @Override
+    public void close() {
+        cancel();
+    }
 }

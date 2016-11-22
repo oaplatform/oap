@@ -26,7 +26,13 @@ package oap.concurrent;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Igor Petrenko on 29.01.2016.
@@ -52,15 +58,16 @@ public class ThreadPoolExecutor extends java.util.concurrent.ThreadPoolExecutor 
     @Override
     protected void afterExecute( Runnable r, Throwable t ) {
         super.afterExecute( r, t );
-        if( t == null && r instanceof Future<?> ) try {
+        Throwable throwable = t;
+        if( throwable == null && r instanceof Future<?> ) try {
             ( ( Future<?> ) r ).get();
         } catch( CancellationException ce ) {
-            t = ce;
+            throwable = ce;
         } catch( ExecutionException ee ) {
-            t = ee.getCause();
+            throwable = ee.getCause();
         } catch( InterruptedException ie ) {
             Thread.currentThread().interrupt(); // ignore/reset
         }
-        if( t != null ) log.error( t.getMessage(), t );
+        if( throwable != null ) log.error( throwable.getMessage(), throwable );
     }
 }

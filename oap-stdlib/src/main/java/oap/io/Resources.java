@@ -51,86 +51,86 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 public final class Resources {
-   private static final boolean IS_WINDOWS = System.getProperty( "os.name" ).contains( "indow" );
+    private static final boolean IS_WINDOWS = System.getProperty( "os.name" ).contains( "indow" );
 
-   @Deprecated
-   public static Path deepPath( Path basePath, String name ) {
-      return Files.deepPath( basePath, name );
-   }
+    @Deprecated
+    public static Path deepPath( Path basePath, String name ) {
+        return Files.deepPath( basePath, name );
+    }
 
-   private static String path( URL url ) {
-      String filePath = url.getPath();
-      return IS_WINDOWS && filePath.startsWith( "/" ) ? filePath.substring( 1 ) : filePath;
-   }
+    private static String path( URL url ) {
+        String filePath = url.getPath();
+        return IS_WINDOWS && filePath.startsWith( "/" ) ? filePath.substring( 1 ) : filePath;
+    }
 
-   public static Optional<String> path( Class<?> contextClass, String name ) {
-      return url( contextClass, name ).map( Resources::path );
-   }
+    public static Optional<String> path( Class<?> contextClass, String name ) {
+        return url( contextClass, name ).map( Resources::path );
+    }
 
-   public static Optional<Path> filePath( Class<?> contextClass, String name ) {
-      return url( contextClass, name ).map( u -> Paths.get( path( u ) ) );
-   }
+    public static Optional<Path> filePath( Class<?> contextClass, String name ) {
+        return url( contextClass, name ).map( u -> Paths.get( path( u ) ) );
+    }
 
-   public static Optional<URL> url( Class<?> contextClass, String name ) {
-      return Optional.ofNullable( contextClass.getResource( name ) );
-   }
+    public static Optional<URL> url( Class<?> contextClass, String name ) {
+        return Optional.ofNullable( contextClass.getResource( name ) );
+    }
 
-   public static Optional<String> readString( Class<?> contextClass, String name ) {
-      try( InputStream is = contextClass.getResourceAsStream( name ) ) {
-         return is == null ? Optional.empty()
-            : Optional.of( Strings.readString( is ) );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
+    public static Optional<String> readString( Class<?> contextClass, String name ) {
+        try( InputStream is = contextClass.getResourceAsStream( name ) ) {
+            return is == null ? Optional.empty()
+                : Optional.of( Strings.readString( is ) );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 
 
-   public static Optional<byte[]> read( Class<?> contextClass, String name ) {
-      try( InputStream is = contextClass.getResourceAsStream( name ) ) {
-         return is == null ? Optional.empty()
-            : Optional.of( ByteStreams.toByteArray( is ) );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
+    public static Optional<byte[]> read( Class<?> contextClass, String name ) {
+        try( InputStream is = contextClass.getResourceAsStream( name ) ) {
+            return is == null ? Optional.empty()
+                : Optional.of( ByteStreams.toByteArray( is ) );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 
-   public static List<String> readStrings ( Class<?> contextClass, String name ) {
-      return Lists.map( urls( name ), Try.map( Strings::readString ) );
-   }
+    public static List<String> readStrings( Class<?> contextClass, String name ) {
+        return Lists.map( urls( name ), Try.map( Strings::readString ) );
+    }
 
-   public static List<String> readStrings( String name ) {
-      return Lists.map( urls( name ), Try.map( Strings::readString ) );
-   }
+    public static List<String> readStrings( String name ) {
+        return Lists.map( urls( name ), Try.map( Strings::readString ) );
+    }
 
-   public static List<URL> urls( String name ) {
-      try {
-         return Collections.list( Thread.currentThread().getContextClassLoader().getResources( name ) );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
+    public static List<URL> urls( String name ) {
+        try {
+            return Collections.list( Thread.currentThread().getContextClassLoader().getResources( name ) );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 
-   public static List<URL> urls( String atPackage, String ext ) {
-      final ExecutorService executorService = Executors.newFixedThreadPool(
-         Runtime.getRuntime().availableProcessors(),
-         new ThreadFactoryBuilder().setNameFormat( "reflections-%d" ).build()
-      );
-      try {
-         final ConfigurationBuilder configuration = new ConfigurationBuilder()
-            .setUrls( ClasspathHelper.forPackage( atPackage ) )
-            .setScanners( new ResourcesScanner() )
-            .filterInputsBy( new FilterBuilder().includePackage( atPackage ) )
-            .setExecutorService( executorService );
-         final Reflections reflections = new Reflections( configuration );
+    public static List<URL> urls( String atPackage, String ext ) {
+        final ExecutorService executorService = Executors.newFixedThreadPool(
+            Runtime.getRuntime().availableProcessors(),
+            new ThreadFactoryBuilder().setNameFormat( "reflections-%d" ).build()
+        );
+        try {
+            final ConfigurationBuilder configuration = new ConfigurationBuilder()
+                .setUrls( ClasspathHelper.forPackage( atPackage ) )
+                .setScanners( new ResourcesScanner() )
+                .filterInputsBy( new FilterBuilder().includePackage( atPackage ) )
+                .setExecutorService( executorService );
+            final Reflections reflections = new Reflections( configuration );
 
-         final Set<String> resources = reflections.getResources( in -> in.endsWith( "." + ext ) );
-         return new ArrayList<>( Sets.map( resources, r -> Thread.currentThread().getContextClassLoader().getResource( r ) ) );
-      } finally {
-         executorService.shutdown();
-      }
-   }
+            final Set<String> resources = reflections.getResources( in -> in.endsWith( "." + ext ) );
+            return new ArrayList<>( Sets.map( resources, r -> Thread.currentThread().getContextClassLoader().getResource( r ) ) );
+        } finally {
+            executorService.shutdown();
+        }
+    }
 
-   public static Optional<Stream<String>> lines( Class<?> contextClass, String name ) {
-      return filePath( contextClass, name ).map( Files::lines );
-   }
+    public static Optional<Stream<String>> lines( Class<?> contextClass, String name ) {
+        return filePath( contextClass, name ).map( Files::lines );
+    }
 }

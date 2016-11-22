@@ -50,8 +50,8 @@ public class StringBitsTest extends AbstractTest {
         final long test1 = stringBits.computeIfAbsent( "test" );
         final long test2 = stringBits.computeIfAbsent( "test2" );
 
-        assertThat( stringBits.valueOf( new int[]{ ( int ) test2, ( int ) test1 } ) ).containsExactly( "test2", "test" );
-        assertThat( stringBits.valueOf( new int[]{ ( int ) test1, ( int ) test2 + 1 } ) ).containsExactly( "test", Strings.UNKNOWN );
+        assertThat( stringBits.valueOf( new int[] { ( int ) test2, ( int ) test1 } ) ).containsExactly( "test2", "test" );
+        assertThat( stringBits.valueOf( new int[] { ( int ) test1, ( int ) test2 + 1 } ) ).containsExactly( "test", Strings.UNKNOWN );
     }
 
     @Test
@@ -59,8 +59,8 @@ public class StringBitsTest extends AbstractTest {
         final StringBits stringBits = new StringBits();
         final long[] test = stringBits.computeIfAbsent( java.util.Arrays.asList( "test", "test2" ) );
 
-        assertThat( stringBits.valueOf( new long[]{ test[1], test[0] } ) ).containsExactly( "test2", "test" );
-        assertThat( stringBits.valueOf( new long[]{ test[0], test[1] + 1 } ) ).containsExactly( "test", Strings.UNKNOWN );
+        assertThat( stringBits.valueOf( new long[] { test[1], test[0] } ) ).containsExactly( "test2", "test" );
+        assertThat( stringBits.valueOf( new long[] { test[0], test[1] + 1 } ) ).containsExactly( "test", Strings.UNKNOWN );
     }
 
     @Test
