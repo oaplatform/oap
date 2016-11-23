@@ -46,4 +46,8 @@ public class Logger {
       return backend.isLoggingAvailable( Inet.HOSTNAME, selector );
    }
 
+   public AvailabilityReport availabilityReport() {
+      return backend.availabilityReport();
+   }
+
 }

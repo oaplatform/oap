@@ -38,7 +38,7 @@ public class AvailabilityReport {
     public final Map<String, State> subsystemStates;
 
     public AvailabilityReport( State state ) {
-        this( state, Maps.empty() );
+        this( state, ImmutableMap.of() );
     }
 
     public AvailabilityReport( State state, Map<String, State> subsystemStates ) {
