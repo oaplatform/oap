@@ -78,14 +78,14 @@ public class StringsPerformance extends AbstractPerformance {
         } );
 
         benchmark( "remove", samples, experiments, ( i ) -> {
-//            Strings.remove( "12345", ' ', '-' );
-//            Strings.remove( "-123 - 45-", ' ', '-', '_' );
+            Strings.remove( "12345", ' ', '-' );
+            Strings.remove( "-123 - 45-", ' ', '-', '_' );
             Strings.remove( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
         } );
 
         benchmark( "remove-set", samples, experiments, ( i ) -> {
-//            test_remove_set( "12345", ' ', '-' );
-//            test_remove_set( "-123 - 45-", ' ', '-', '_' );
+            test_remove_set( "12345", ' ', '-' );
+            test_remove_set( "-123 - 45-", ' ', '-', '_' );
             test_remove_set( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
         } );
 
