@@ -47,6 +47,7 @@ import static oap.util.Pair.__;
 public final class Strings {
     public static final String UNDEFINED = "UNDEFINED";
     public static final String UNKNOWN = "UNKNOWN";
+    private static String[] hex = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F" };
 
     private Strings() {}
 
@@ -107,9 +108,6 @@ public final class Strings {
         return UNDEFINED.equals( s );
     }
 
-
-    private static String[] hex = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F" };
-
     public static String toHexString( byte[] bytes ) {
         if( bytes == null ) return "";
         String result = "";
@@ -167,10 +165,33 @@ public final class Strings {
         return s == null ? null : CharMatcher.JAVA_ISO_CONTROL.removeFrom( s );
     }
 
+    /**
+     * <p>Removes all occurrences of characters from within the source string.</p>
+     */
+    public static String remove( String str, char... characters ) {
+        if( StringUtils.indexOfAny( str, characters ) < 0 ) return str;
+
+        char[] output = new char[str.length()];
+        int i = 0;
+
+        next_ch:
+        for( char ch : str.toCharArray() ) {
+            for( char s : characters ) {
+                if( ch == s ) continue next_ch;
+            }
+            output[i++] = ch;
+        }
+
+        return new String( output, 0, i );
+    }
+
     public static String fill( String content, int times ) {
-        String result = "";
-        for( int i = 0; i < times; i++ ) result += content;
-        return result;
+        final char[] charArray = content.toCharArray();
+        final StringBuilder sb = new StringBuilder( content.length() * times + 1 );
+        for( int i = 0; i < times; i++ ) {
+            sb.append( charArray );
+        }
+        return sb.toString();
     }
 
 
