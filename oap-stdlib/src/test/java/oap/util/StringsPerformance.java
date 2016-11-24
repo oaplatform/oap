@@ -72,9 +72,9 @@ public class StringsPerformance extends AbstractPerformance {
         final int samples = 10000000;
         final int experiments = 5;
         benchmark( "remove-bit-set", samples, experiments, ( i ) -> {
-//            test_remove_set( "12345", ' ', '-' );
-//            test_remove_set( "-123 - 45-", ' ', '-', '_' );
-            test_remove_set( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
+            test_remove_bitset( "12345", ' ', '-' );
+            test_remove_bitset( "-123 - 45-", ' ', '-', '_' );
+            test_remove_bitset( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
         } );
 
         benchmark( "remove", samples, experiments, ( i ) -> {
