@@ -36,7 +36,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static oap.logstream.AvailabilityReport.State.*;
+import static oap.logstream.AvailabilityReport.State.FAILED;
+import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 
 @Slf4j
 public class DiskLoggingBackend implements LoggingBackend {
@@ -90,8 +91,8 @@ public class DiskLoggingBackend implements LoggingBackend {
 
    @Override
    public String toString() {
-      return "DiskLoggingBackend{" +
-              "logDirectory=" + logDirectory +
-              '}';
+      return "DiskLoggingBackend{"
+          + "logDirectory=" + logDirectory
+          + '}';
    }
 }

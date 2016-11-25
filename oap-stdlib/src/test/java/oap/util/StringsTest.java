@@ -24,8 +24,6 @@
 package oap.util;
 
 import oap.testng.AbstractTest;
-import oap.testng.Asserts;
-import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Test;
 
 import static oap.testng.Asserts.assertString;

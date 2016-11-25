@@ -25,7 +25,6 @@
 package oap.logstream;
 
 import com.google.common.collect.ImmutableMap;
-import oap.util.Maps;
 
 import java.util.Map;
 

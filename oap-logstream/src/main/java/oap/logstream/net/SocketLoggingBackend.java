@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
-import oap.io.Files;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LoggingBackend;
 import oap.metrics.Metrics;
@@ -42,114 +41,115 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 @Slf4j
 public class SocketLoggingBackend implements LoggingBackend {
 
-   private final String host;
-   private final int port;
-   private final Scheduled scheduled;
-   protected int maxBuffers = 5000;
-   protected long timeout = 5000;
-   protected boolean blocking = true;
-   private Connection connection;
-   private Buffers buffers;
-   private boolean loggingAvailable = true;
-   private boolean closed = false;
+    private final String host;
+    private final int port;
+    private final Scheduled scheduled;
+    protected int maxBuffers = 5000;
+    protected long timeout = 5000;
+    protected boolean blocking = true;
+    private Connection connection;
+    private Buffers buffers;
+    private boolean loggingAvailable = true;
+    private boolean closed = false;
 
-   public SocketLoggingBackend( String host, int port, Path location, int bufferSize, long flushInterval ) {
-      this.host = host;
-      this.port = port;
-      this.buffers = new Buffers( location, bufferSize );
-      this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::send );
-      Metrics.measureGauge( Metrics.name( "logging.buffers_cache." + host ), () -> buffers.cache.size() );
-   }
+    public SocketLoggingBackend( String host, int port, Path location, int bufferSize, long flushInterval ) {
+        this.host = host;
+        this.port = port;
+        this.buffers = new Buffers( location, bufferSize );
+        this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::send );
+        Metrics.measureGauge( Metrics.name( "logging.buffers_cache." + host ), () -> buffers.cache.size() );
+    }
 
-   public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
-      this( host, port, location, bufferSize, 5000 );
-   }
+    public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
+        this( host, port, location, bufferSize, 5000 );
+    }
 
-   public synchronized void send() {
-      if( !closed ) try {
-         if( buffers.isEmpty() ) loggingAvailable = true;
+    public synchronized void send() {
+        if( !closed ) try {
+            if( buffers.isEmpty() ) loggingAvailable = true;
 
-         refreshConnection();
+            refreshConnection();
 
-         log.debug( "sending data to server..." );
+            log.debug( "sending data to server..." );
 
-         buffers.forEachReadyData( buffer -> {
-            if( !sendBuffer( buffer ) ) {
-               log.debug( "send unsuccessful..." );
-               refreshConnection();
-               return sendBuffer( buffer );
-            }
-            return true;
+            buffers.forEachReadyData( buffer -> {
+                if( !sendBuffer( buffer ) ) {
+                    log.debug( "send unsuccessful..." );
+                    refreshConnection();
+                    return sendBuffer( buffer );
+                }
+                return true;
 
-         } );
-         log.debug( "sending done" );
-      } catch( Exception e ) {
-         loggingAvailable = false;
-         log.warn( e.getMessage() );
-         log.trace( e.getMessage(), e );
-         Closeables.close( connection );
-      }
-
-      if( !loggingAvailable ) log.debug( "logging unavailable" );
-
-   }
-
-   private void refreshConnection() {
-      if( this.connection == null || !connection.isConnected() ) {
-         Closeables.close( connection );
-         log.debug( "opening connection..." );
-         this.connection = blocking ? new SocketConnection( host, port, timeout ) : new ChannelConnection( host, port, timeout );
-         log.debug( "connected!" );
-      }
-   }
-
-   private Boolean sendBuffer( Buffer buffer ) {
-      return Metrics.measureTimer( Metrics.name( "logging.buffer_send_time." + host), () -> {
-         try {
-            log.trace( "sending {}", buffer );
-            connection.write( buffer.data(), 0, buffer.length() );
-            int size = connection.read();
-            if( size <= 0 ) {
-               loggingAvailable = false;
-               log.error( "Error completing remote write: {}", SocketError.fromCode( size ) );
-               return false;
-            }
-            Metrics.measureCounterIncrement( Metrics.name( "logging.socket." + host ), buffer.length() );
-            loggingAvailable = true;
-            return true;
-         } catch( Exception e ) {
+            } );
+            log.debug( "sending done" );
+        } catch( Exception e ) {
             loggingAvailable = false;
             log.warn( e.getMessage() );
             log.trace( e.getMessage(), e );
             Closeables.close( connection );
-            return false;
-         }
-      } );
-   }
+        }
 
-   @Override
-   public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
-      buffers.put( fileName, buffer, offset, length );
-   }
+        if( !loggingAvailable ) log.debug( "logging unavailable" );
 
-   @Override
-   public synchronized void close() {
-      closed = true;
-      Scheduled.cancel( scheduled );
-      Closeables.close( connection );
-      Closeables.close( buffers );
-   }
+    }
 
-   @Override
-   public AvailabilityReport availabilityReport() {
-      boolean operational = loggingAvailable && !closed && buffers.readyBuffers() < maxBuffers;
-      return new AvailabilityReport( operational ? OPERATIONAL : FAILED );
-   }
+    private void refreshConnection() {
+        if( this.connection == null || !connection.isConnected() ) {
+            Closeables.close( connection );
+            log.debug( "opening connection..." );
+            this.connection =
+                blocking ? new SocketConnection( host, port, timeout ) : new ChannelConnection( host, port, timeout );
+            log.debug( "connected!" );
+        }
+    }
 
-   @Override
-   public String toString() {
-      return "SocketLoggingBackend{" +
-              "host='" + host + '\'' +
-              '}';
-   }
+    private Boolean sendBuffer( Buffer buffer ) {
+        return Metrics.measureTimer( Metrics.name( "logging.buffer_send_time." + host ), () -> {
+            try {
+                log.trace( "sending {}", buffer );
+                connection.write( buffer.data(), 0, buffer.length() );
+                int size = connection.read();
+                if( size <= 0 ) {
+                    loggingAvailable = false;
+                    log.error( "Error completing remote write: {}", SocketError.fromCode( size ) );
+                    return false;
+                }
+                Metrics.measureCounterIncrement( Metrics.name( "logging.socket." + host ), buffer.length() );
+                loggingAvailable = true;
+                return true;
+            } catch( Exception e ) {
+                loggingAvailable = false;
+                log.warn( e.getMessage() );
+                log.trace( e.getMessage(), e );
+                Closeables.close( connection );
+                return false;
+            }
+        } );
+    }
+
+    @Override
+    public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
+        buffers.put( fileName, buffer, offset, length );
+    }
+
+    @Override
+    public synchronized void close() {
+        closed = true;
+        Scheduled.cancel( scheduled );
+        Closeables.close( connection );
+        Closeables.close( buffers );
+    }
+
+    @Override
+    public AvailabilityReport availabilityReport() {
+        boolean operational = loggingAvailable && !closed && buffers.readyBuffers() < maxBuffers;
+        return new AvailabilityReport( operational ? OPERATIONAL : FAILED );
+    }
+
+    @Override
+    public String toString() {
+        return "SocketLoggingBackend{"
+            + "host='" + host + '\''
+            + '}';
+    }
 }

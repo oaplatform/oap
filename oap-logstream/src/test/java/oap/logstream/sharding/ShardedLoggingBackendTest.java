@@ -98,13 +98,13 @@ public class ShardedLoggingBackendTest {
         when( log2.availabilityReport() ).thenReturn( new AvailabilityReport( OPERATIONAL ) );
         assertEquals( slb.availabilityReport().state, OPERATIONAL );
         assertEquals( slb.availabilityReport().subsystemStates.size(), 2 );
-        assertTrue( Stream.of(slb.availabilityReport().subsystemStates.values()).allMatch( s -> s == OPERATIONAL ) );
+        assertTrue( Stream.of( slb.availabilityReport().subsystemStates.values() ).allMatch( s -> s == OPERATIONAL ) );
 
         when( log1.availabilityReport() ).thenReturn( new AvailabilityReport( FAILED ) );
         when( log2.availabilityReport() ).thenReturn( new AvailabilityReport( FAILED ) );
         assertEquals( slb.availabilityReport().state, FAILED );
         assertEquals( slb.availabilityReport().subsystemStates.size(), 2 );
-        assertTrue( Stream.of(slb.availabilityReport().subsystemStates.values()).allMatch( s -> s == FAILED ) );
+        assertTrue( Stream.of( slb.availabilityReport().subsystemStates.values() ).allMatch( s -> s == FAILED ) );
 
         when( log1.availabilityReport() ).thenReturn( new AvailabilityReport( OPERATIONAL ) );
         when( log2.availabilityReport() ).thenReturn( new AvailabilityReport( FAILED ) );

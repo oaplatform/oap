@@ -32,7 +32,7 @@ import java.util.HashSet;
 
 @Test( enabled = false )
 public class StringsPerformance extends AbstractPerformance {
-    private static String test_remove_set( String str, char... characters ) {
+    private static String removeSet( String str, char... characters ) {
         if( StringUtils.indexOfAny( str, characters ) < 0 ) return str;
 
         final HashSet<Character> set = new HashSet<>( characters.length );
@@ -49,7 +49,7 @@ public class StringsPerformance extends AbstractPerformance {
         return new String( output, 0, i );
     }
 
-    private static String test_remove_bitset( String str, char... characters ) {
+    private static String removeBitset( String str, char... characters ) {
         if( StringUtils.indexOfAny( str, characters ) < 0 ) return str;
 
         final BitSet set = new BitSet( 256 );
@@ -72,9 +72,9 @@ public class StringsPerformance extends AbstractPerformance {
         final int samples = 10000000;
         final int experiments = 5;
         benchmark( "remove-bit-set", samples, experiments, ( i ) -> {
-            test_remove_bitset( "12345", ' ', '-' );
-            test_remove_bitset( "-123 - 45-", ' ', '-', '_' );
-            test_remove_bitset( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
+            removeBitset( "12345", ' ', '-' );
+            removeBitset( "-123 - 45-", ' ', '-', '_' );
+            removeBitset( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
         } );
 
         benchmark( "remove", samples, experiments, ( i ) -> {
@@ -84,9 +84,9 @@ public class StringsPerformance extends AbstractPerformance {
         } );
 
         benchmark( "remove-set", samples, experiments, ( i ) -> {
-            test_remove_set( "12345", ' ', '-' );
-            test_remove_set( "-123 - 45-", ' ', '-', '_' );
-            test_remove_set( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
+            removeSet( "12345", ' ', '-' );
+            removeSet( "-123 - 45-", ' ', '-', '_' );
+            removeSet( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
         } );
 
     }
