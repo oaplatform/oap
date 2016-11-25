@@ -1,0 +1,25 @@
+#!/bin/sh
+
+CHECKSTYLE=checkstyle.jar
+PROFILE=checkstyle.xml
+
+if [[ -e $CHECKSTYLE ]]; then CS_Z="-z $CHECKSTYLE"; fi
+if [[ -e $PROFILE ]]; then P_Z="-z $PROFILE"; fi
+
+curl -L http://downloads.sourceforge.net/project/checkstyle/checkstyle/7.2/checkstyle-7.2-all.jar $CS_Z -o $CHECKSTYLE --silent
+curl -L https://raw.githubusercontent.com/oaplatform/oap/master/.checkstyle/checkstyle.xml $P_Z -o $PROFILE --silent
+
+OIFS=$IFS
+IFS='
+'
+for f in `git status`
+do
+	if [[ $f =~ ^[^m]*(modified|new file)\:.*java$ ]]
+	then
+		FILES="$FILES ${f:12}"
+	fi
+done
+IFS=$OIFS
+java -jar $CHECKSTYLE -c $PROFILE $FILES
+exit $?
+

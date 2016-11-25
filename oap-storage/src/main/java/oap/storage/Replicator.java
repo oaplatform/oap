@@ -27,6 +27,7 @@ package oap.storage;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.util.Lists;
 import oap.util.Optionals;
 import oap.util.Stream;
 
@@ -35,40 +36,52 @@ import java.util.List;
 
 @Slf4j
 public class Replicator<T> implements Closeable {
-   private final MemoryStorage<T> slave;
-   private final ReplicationMaster<T> master;
-   private final Scheduled scheduled;
+    private final MemoryStorage<T> slave;
+    private final ReplicationMaster<T> master;
+    private final Scheduled scheduled;
+    protected int batchSize = 10;
 
-   public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval, long safeModificationTime ) {
-      this.slave = slave;
-      this.master = master;
-      this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, safeModificationTime, this::replicate );
-   }
+    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval, long safeModificationTime ) {
+        this.slave = slave;
+        this.master = master;
+        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, safeModificationTime, this::replicate );
+    }
 
-   public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval ) {
-      this( slave, master, interval, 1000 );
-   }
+    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval ) {
+        this( slave, master, interval, 1000 );
+    }
 
-   public synchronized void replicate( long last ) {
-      List<Metadata<T>> updates = master.updatedSince( last );
-      log.trace( "replicate {} to {} last: {}, to scheduled {}", master, slave, last, updates.size() );
-      for( Metadata<T> metadata : updates ) {
-         log.trace( "replicate {}", metadata );
-         slave.data.put( metadata.id, metadata );
-      }
-      slave.fireUpdated( Stream.of( updates ).map( m -> m.object ).toList() );
-      List<String> ids = master.ids();
-      log.trace( "master ids: {}", ids );
-      List<T> deletedObjects = Stream.of( slave.data.keySet() )
-         .filter( id -> !ids.contains( id ) )
-         .flatMap( id -> Optionals.toStream( slave.deleteObject( id ).map( m -> m.object ) ) )
-         .toList();
-      log.trace( "deleted: {}", deletedObjects );
-      slave.fireDeleted( deletedObjects );
-   }
+    public synchronized void replicate( long last ) {
+        List<Metadata<T>> newUpdates = Lists.empty();
+        for( int b = 0; b < 100000; b++ ) {
+            int offset = b * batchSize;
+            List<Metadata<T>> updates = master.updatedSince( last, batchSize, offset );
+            log.trace( "replicate {} to {} last: {}, size {}, batch {}, offset {}",
+                master, slave, last, updates.size(), batchSize, offset );
+            if( updates.isEmpty() ) break;
+            newUpdates.addAll( updates );
+        }
+        log.trace( "updated objects {}", newUpdates.size() );
 
-   @Override
-   public void close() {
-      Scheduled.cancel( scheduled );
-   }
+        for( Metadata<T> metadata : newUpdates ) {
+            log.trace( "replicate {}", metadata );
+            slave.data.put( metadata.id, metadata );
+        }
+        slave.fireUpdated( Stream.of( newUpdates ).map( m -> m.object ).toList() );
+
+        List<String> ids = master.ids();
+        log.trace( "master ids {}", ids );
+        List<T> deletedObjects = Stream.of( slave.data.keySet() )
+            .filter( id -> !ids.contains( id ) )
+            .flatMap( id -> Optionals.toStream( slave.deleteObject( id ).map( m -> m.object ) ) )
+            .toList();
+        log.trace( "deleted {}", deletedObjects );
+        slave.fireDeleted( deletedObjects );
+
+    }
+
+    @Override
+    public void close() {
+        Scheduled.cancel( scheduled );
+    }
 }

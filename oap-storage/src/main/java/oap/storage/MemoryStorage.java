@@ -138,7 +138,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
    protected Optional<Metadata<T>> deleteObject( String id ) {
       synchronized( id.intern() ) {
          Optional<Metadata<T>> metadata = Maps.get( data, id );
-         if( metadata.isPresent() ) data.remove( id );
+         metadata.ifPresent( m -> data.remove( id ) );
          return metadata;
       }
    }
@@ -180,7 +180,18 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
    @Override
    public List<Metadata<T>> updatedSince( long time ) {
-      return Stream.of( data.values() ).filter( m -> m.modified > time ).toList();
+      return Stream.of( data.values() )
+          .filter( m -> m.modified > time )
+          .toList();
+   }
+
+   @Override
+   public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
+      return Stream.of( data.values() )
+          .filter( m -> m.modified > time )
+          .skip( offset )
+          .limit( limit )
+          .toList();
    }
 
    @Override
