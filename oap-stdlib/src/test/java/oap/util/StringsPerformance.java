@@ -67,17 +67,41 @@ public class StringsPerformance extends AbstractPerformance {
         return new String( output, 0, i );
     }
 
-    @Test( enabled = false )
+   private static String removeBitwise( String str, char... characters ) {
+      if( StringUtils.indexOfAny( str, characters ) < 0 ) return str;
+
+      int bitset = 0;
+
+      for( char ch : characters ) bitset |= (1 << (ch - 1));
+
+      char[] output = new char[str.length()];
+      int i = 0;
+
+      for( char ch : str.toCharArray() ) {
+         if( (bitset & (1 << (ch - 1) ) ) == 0 )
+            output[i++] = ch;
+      }
+
+      return new String( output, 0, i );
+   }
+
+   @Test( enabled = false )
     public void testRemove() {
         final int samples = 10000000;
         final int experiments = 5;
-        benchmark( "remove-bit-set", samples, experiments, ( i ) -> {
-            removeBitset( "12345", ' ', '-' );
-            removeBitset( "-123 - 45-", ' ', '-', '_' );
-            removeBitset( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
-        } );
+       benchmark( "remove-bidwise", samples, experiments, ( i ) -> {
+          removeBitwise( "12345", ' ', '-' );
+          removeBitwise( "-123 - 45-", ' ', '-', '_' );
+          removeBitwise( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
+       } );
 
-        benchmark( "remove", samples, experiments, ( i ) -> {
+       benchmark( "remove-bit-set", samples, experiments, ( i ) -> {
+          removeBitset( "12345", ' ', '-' );
+          removeBitset( "-123 - 45-", ' ', '-', '_' );
+          removeBitset( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
+       } );
+
+       benchmark( "remove", samples, experiments, ( i ) -> {
             Strings.remove( "12345", ' ', '-' );
             Strings.remove( "-123 - 45-", ' ', '-', '_' );
             Strings.remove( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
