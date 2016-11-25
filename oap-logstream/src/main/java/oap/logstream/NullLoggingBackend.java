@@ -13,4 +13,9 @@ public class NullLoggingBackend implements LoggingBackend {
     public void close() {
 
     }
+
+    @Override
+    public AvailabilityReport availabilityReport() {
+        return new AvailabilityReport( AvailabilityReport.State.OPERATIONAL );
+    }
 }

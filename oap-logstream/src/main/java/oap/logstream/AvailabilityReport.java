@@ -21,33 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.logstream;
 
-import oap.net.Inet;
-import oap.util.Dates;
-import org.joda.time.DateTimeUtils;
+import com.google.common.collect.ImmutableMap;
+import oap.util.Maps;
 
-public class Logger {
-   private LoggingBackend backend;
+import java.util.Map;
 
-   public Logger( LoggingBackend backend ) {
-      this.backend = backend;
-   }
+/**
+ * Created by anton on 11/22/16.
+ */
+public class AvailabilityReport {
 
-   public void log( String selector, String line ) {
-      backend.log( Inet.HOSTNAME, selector, Dates.formatDateWihMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
-   }
+    public final State state;
+    public final Map<String, State> subsystemStates;
 
-   public boolean isLoggingAvailable() {
-      return backend.isLoggingAvailable();
-   }
+    public AvailabilityReport( State state ) {
+        this( state, ImmutableMap.of() );
+    }
 
-   public boolean isLoggingAvailable( String selector ) {
-      return backend.isLoggingAvailable( Inet.HOSTNAME, selector );
-   }
+    public AvailabilityReport( State state, Map<String, State> subsystemStates ) {
+        this.state = state;
+        this.subsystemStates = ImmutableMap.copyOf( subsystemStates );
+    }
 
-   public AvailabilityReport availabilityReport() {
-      return backend.availabilityReport();
-   }
-
+    public enum State {
+        OPERATIONAL,
+        PARTIALLY_OPERATIONAL,
+        FAILED
+    }
 }

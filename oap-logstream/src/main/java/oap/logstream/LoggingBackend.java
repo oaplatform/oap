@@ -38,8 +38,10 @@ public interface LoggingBackend extends Closeable {
 
     void close();
 
+    AvailabilityReport availabilityReport();
+
     default boolean isLoggingAvailable() {
-        return true;
+        return availabilityReport().state == AvailabilityReport.State.OPERATIONAL;
     }
 
     default boolean isLoggingAvailable( String hostName, String fileName ) {

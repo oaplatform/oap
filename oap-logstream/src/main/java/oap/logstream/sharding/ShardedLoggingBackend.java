@@ -25,11 +25,17 @@
 package oap.logstream.sharding;
 
 import com.google.common.base.Preconditions;
+import oap.logstream.AvailabilityReport;
 import oap.logstream.LoggingBackend;
+import oap.util.Maps;
 import oap.util.Stream;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import static oap.util.Maps.Collectors.*;
+import static oap.util.Pair.__;
 
 /**
  * Created by anton on 11/2/16.
@@ -77,6 +83,24 @@ public class ShardedLoggingBackend implements LoggingBackend {
    @Override
    public void close() {
       //NOOP because it's wrapper only
+   }
+
+   @Override
+   public AvailabilityReport availabilityReport() {
+      Map<String, AvailabilityReport.State> reports = Stream.of( loggers )
+              .distinct()
+              .map( lb -> __( lb.toString(), lb.availabilityReport().state ) )
+              .collect( toMap() );
+
+      AvailabilityReport.State state = AvailabilityReport.State.PARTIALLY_OPERATIONAL;
+
+      if(Stream.of( reports.values() ).allMatch( s -> s == AvailabilityReport.State.OPERATIONAL )) {
+         state = AvailabilityReport.State.OPERATIONAL;
+      } else if (Stream.of( reports.values() ).allMatch( s -> s == AvailabilityReport.State.FAILED )) {
+         state = AvailabilityReport.State.FAILED;
+      }
+
+      return new AvailabilityReport( state, reports );
    }
 
    @Override

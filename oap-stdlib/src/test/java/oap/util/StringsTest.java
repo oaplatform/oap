@@ -24,8 +24,11 @@
 package oap.util;
 
 import oap.testng.AbstractTest;
+import oap.testng.Asserts;
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Test;
 
+import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -71,5 +74,16 @@ public class StringsTest extends AbstractTest {
     public void isGuid() {
         assertTrue( Strings.isGuid( "22345200-abe8-4f60-90c8-0d43c5f6c0f6" ) );
         assertFalse( Strings.isGuid( "2i345200-abe8-4f60-90c8-0d43c5f6c0f6" ) );
+    }
+
+    @Test
+    public void testRemove() {
+        assertString( Strings.remove( "12345", ' ', '-' ) ).isEqualTo( "12345" );
+        assertString( Strings.remove( "-123 - 45-", ' ', '-' ) ).isEqualTo( "12345" );
+    }
+
+    @Test
+    public void testFill() {
+        assertString( Strings.fill( "12", 2 ) ).isEqualTo( "1212" );
     }
 }
