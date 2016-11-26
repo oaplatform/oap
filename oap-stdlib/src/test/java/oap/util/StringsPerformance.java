@@ -70,22 +70,48 @@ public class StringsPerformance extends AbstractPerformance {
    private static String removeBitwise( String str, char... characters ) {
       if( StringUtils.indexOfAny( str, characters ) < 0 ) return str;
 
-      int bitset = 0;
-
-      for( char ch : characters ) bitset |= (1 << (ch - 1));
+      long bitwise_0 = 0;
+      long bitwise_1 = 0;
+      long bitwise_2 = 0;
+      long bitwise_3 = 0;
+      
+      for( char ch : characters ) {
+         long shift = (1 << (ch - 1));
+         if( ch < 64 ){
+            bitwise_0 |= shift;
+         } else if (ch < 128){
+            bitwise_1 |= shift;
+         } else if (ch < 192) {
+            bitwise_2 |= shift;
+         } else {
+            bitwise_3 |= shift;
+         }
+      }
 
       char[] output = new char[str.length()];
       int i = 0;
 
       for( char ch : str.toCharArray() ) {
-         if( (bitset & (1 << (ch - 1) ) ) == 0 )
-            output[i++] = ch;
+         long shift = (1 << (ch - 1));
+         if( ch < 64 ){
+            if( (bitwise_0 & shift ) == 0 )
+               output[i++] = ch;
+         } else if (ch < 128){
+            if( (bitwise_1 & shift ) == 0 )
+               output[i++] = ch;
+         } else if (ch < 192) {
+            if( (bitwise_2 & shift ) == 0 )
+               output[i++] = ch;
+         } else {
+            if( (bitwise_3 & shift ) == 0 )
+               output[i++] = ch;
+         }
       }
 
       return new String( output, 0, i );
    }
 
-   @Test( enabled = false )
+   @Test
     public void testRemove() {
         final int samples = 10000000;
         final int experiments = 5;
