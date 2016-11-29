@@ -34,6 +34,7 @@ import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -149,7 +150,7 @@ public class DictionaryParser {
       validate( "", invalid, dictionaryRoot );
 
       if( !invalid.isEmpty() ) {
-         invalid.sort( ( l, r ) -> l.path.compareTo( r.path ) );
+         invalid.sort( Comparator.comparing( l -> l.path ) );
          final String msg = invalid
             .stream()
             .map( e -> "path: " + e.path + "; eid: " + e.one.getExternalId() + "; one: " + e.one.getId() + "; two: " + e.two.getId() )
