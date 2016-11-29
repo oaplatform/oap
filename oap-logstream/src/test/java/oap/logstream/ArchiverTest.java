@@ -53,14 +53,15 @@ public class ArchiverTest extends AbstractTest {
       Path logs = Env.tmpPath( "logs" );
       Path archives = Env.tmpPath( "archives" );
       String[] files = {
-         "a/a_2015-10-10-11-10.log",
-         "a/a_2015-10-10-11-11.log",
-         "a/a_2015-10-10-12-00.log",
-         "a/b_2015-10-10-11-11.log",
-         "b/c/a_2015-10-10-11-10.log",
-         "b/c/a_2015-10-10-11-11.log",
-         "b/c/a_2015-10-10-12-00.log",
-         "b/c/b_2015-10-10-11-11.log"
+         "a/a-2015-10-10-11-10.log",
+         "a/a-2015-10-10-11-11.log",
+         "a/a-2015-10-10-12-00.log",
+         "a/b-2015-10-10-11-11.log",
+         "b/c/a-2015-10-10-11-10.log",
+         "b/c/a-2015-10-10-11-11.log",
+         "b/c/a-2015-10-10-12-00.log",
+         "b/c/a-2015-10-10-12-01.log",
+         "b/c/b-2015-10-10-11-11.log"
       };
 
       for( String file : files ) Files.writeString( logs.resolve( file ), "data" );
@@ -76,7 +77,8 @@ public class ArchiverTest extends AbstractTest {
 
       for( String file : files ) {
          Path path = archives.resolve( file + destEncoding.extension.map( e -> "." + e ).orElse( "" ) );
-         if( file.contains( "12-00" ) ) assertFile( path ).doesNotExist();
+         if( file.matches( ".*-12-0[01]\\.log" ) )
+            assertFile( path ).doesNotExist();
          else {
             assertFile( logs.resolve( file ) ).doesNotExist();
             assertFile( path ).hasContent( "data", destEncoding );

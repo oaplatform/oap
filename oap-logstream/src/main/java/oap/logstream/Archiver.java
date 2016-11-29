@@ -32,8 +32,6 @@ import org.joda.time.DateTimeUtils;
 
 import java.nio.file.Path;
 
-import static oap.io.IoStreams.Encoding.PLAIN;
-
 @Slf4j
 public class Archiver implements Runnable {
    private final Path sourceDirectory;
@@ -63,16 +61,16 @@ public class Archiver implements Runnable {
       String timestamp = Timestamp.format( DateTime.now(), bucketsPerHour );
 
       log.debug( "current timestamp is {}", timestamp );
-      long elapsed = DateTimeUtils.currentTimeMillis() - Timestamp.currentBucketStartMillis( bucketsPerHour );
+      final long bucketStartTime = Timestamp.currentBucketStartMillis( bucketsPerHour );
+      long elapsed = DateTimeUtils.currentTimeMillis() - bucketStartTime;
       if( elapsed < safeInterval )
          log.debug( "not safe to process yet ({}ms), some of the files could still be open, waiting...", elapsed );
       else for( Path path : Files.wildcard( sourceDirectory, mask ) ) {
-         if( path.getFileName().toString().contains( timestamp ) ) {
+         if( Timestamp.parseFileNameWithTimestamp( path.getFileName().toString(), bucketsPerHour ).get().isBefore( bucketStartTime ) )
+            archive( path );
+         else
             log.debug( "skipping (current timestamp) {}", path );
-            continue;
-         }
 
-         archive( path );
       }
       log.debug( "packing is done" );
    }
