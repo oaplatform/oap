@@ -23,17 +23,20 @@
  */
 package oap.util;
 
+import com.google.common.base.Preconditions;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
@@ -112,6 +115,21 @@ public class Lists {
         return list.isEmpty() ? Optional.empty()
             : Optional.of( list.get( random.nextInt( list.size() ) ) );
     }
+
+    public static <E> List<E> randomSublist( List<E> list ) {
+        return randomSublist( list, random.nextInt( list.size() + 1 ) );
+    }
+
+    public static <E> List<E> randomSublist( List<E> list, int sublistSize ) {
+        Preconditions.checkArgument(sublistSize <= list.size());
+        return shuffle( list ).subList( 0, sublistSize );
+    }
+
+   public static <E> List<E> shuffle( List<E> list ) {
+      List<E> localCopy = new ArrayList<>( list );
+      Collections.shuffle( localCopy );
+      return localCopy;
+   }
 
     public static <E> ArrayList<E> distinct( List<E> list ) {
         return new ArrayList<>( new HashSet<>( list ) );
