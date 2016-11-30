@@ -31,8 +31,8 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Sampling;
 import com.codahale.metrics.Timer;
+import oap.util.BiStream;
 import oap.util.Pair;
-import oap.util.PairStream;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -141,11 +141,11 @@ public final class Metrics {
    }
 
    public static List<Snapshot> snapshots() {
-      return PairStream.of( registry.getMetrics() ).mapToObj( Metrics::toSnapshot ).toList();
+      return BiStream.of( registry.getMetrics() ).mapToObj( Metrics::toSnapshot ).toList();
    }
 
    public static List<Snapshot> snapshots( Predicate<Pair<String, Metric>> filter ) {
-      return PairStream
+      return BiStream
          .of( registry.getMetrics() )
          .filter( filter )
          .mapToObj( Metrics::toSnapshot )

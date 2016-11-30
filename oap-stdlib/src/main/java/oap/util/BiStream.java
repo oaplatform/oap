@@ -24,53 +24,113 @@
 
 package oap.util;
 
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
-/**
- * Created by Admin on 10.05.2016.
- */
-public class BiStream<K, V> extends Stream<Pair<K, V>> {
-    BiStream( java.util.stream.Stream<Pair<K, V>> underlying ) {
+import static oap.util.Pair.__;
+
+public class BiStream<A, B> extends Stream<Pair<A, B>> {
+    protected BiStream( java.util.stream.Stream<Pair<A, B>> underlying ) {
         super( underlying );
     }
 
+    public static <A, B> BiStream<A, B> of( Stream<Pair<A, B>> stream ) {
+        return new BiStream<>( stream );
+    }
+
+    public static <A, B> BiStream<A, B> of( Map<A, B> map ) {
+        return new BiStream<>( map.entrySet().stream().map( e -> __( e.getKey(), e.getValue() ) ) );
+    }
+
+    public BiStream<A, B> reversed() {
+        return new BiStream<>( Stream.of(
+            this.collect( java.util.stream.Collectors.toCollection( LinkedList::new ) )
+                .descendingIterator()
+        ) );
+    }
+
+    @Deprecated
+    /**
+     * @see #of(Stream)
+     * */
     static <K, V> BiStream<K, V> of2( java.util.stream.Stream<Pair<K, V>> stream ) {
         return new BiStream<>( stream );
     }
 
-    public void forEach( BiConsumer<K, V> action ) {
-        super.forEach( p -> action.accept( p._1, p._2 ) );
+    public void forEach( BiConsumer<A, B> consumer ) {
+        super.forEach( p -> consumer.accept( p._1, p._2 ) );
     }
 
-    public <R> Stream<R> map( BiFunction<K, V, ? extends R> mapper ) {
+
+    public <R> Stream<R> mapToObj( BiFunction<A, B, ? extends R> mapper ) {
         return super.map( p -> mapper.apply( p._1, p._2 ) );
     }
 
-    public <RK, RV> BiStream<RK, RV> map2( BiFunction<K, V, Pair<RK, RV>> mapper ) {
-        return of2( super.map( p -> mapper.apply( p._1, p._2 ) ) );
-    }
-
-    public BiStream<K, V> filter( BiPredicate<K, V> predicate ) {
-        return of2( super.filter( p -> predicate.test( p._1, p._2 ) ) );
-    }
-
-    public <R> Stream<R> flatMap( BiFunction<K, V, ? extends java.util.stream.Stream<? extends R>> mapper ) {
+    public <R> Stream<R> flatMapToObj( BiFunction<A, B, Stream<? extends R>> mapper ) {
         return super.flatMap( p -> mapper.apply( p._1, p._2 ) );
     }
 
-    public <RK, RV> BiStream<RK, RV> flatMap2( BiFunction<K, V, BiStream<RK, RV>> mapper ) {
+//    @Deprecated
+//    /**
+//     * @see #mapToObj(BiFunction)
+//     */
+//    public <R> Stream<R> map( BiFunction<A, B, ? extends R> mapper ) {
+//        return super.map( p -> mapper.apply( p._1, p._2 ) );
+//    }
+
+    public <A2, B2> BiStream<A2, B2> map( BiFunction<? super A, ? super B, Pair<A2, B2>> mapper ) {
+        return new BiStream<>( super.map( p -> mapper.apply( p._1, p._2 ) ) );
+    }
+
+
+    @Deprecated
+    /**
+     * @see #map(BiFunction)
+     */
+    public <RK, RV> BiStream<RK, RV> map2( BiFunction<A, B, Pair<RK, RV>> mapper ) {
+        return of2( super.map( p -> mapper.apply( p._1, p._2 ) ) );
+    }
+
+    @Override
+    public BiStream<A, B> filter( Predicate<? super Pair<A, B>> predicate ) {
+        return new BiStream<>( super.filter( predicate ) );
+    }
+
+    public BiStream<A, B> filter( BiPredicate<? super A, ? super B> predicate ) {
+        return new BiStream<>( super.filter( p -> predicate.test( p._1, p._2 ) ) );
+    }
+
+//    public BiStream<A, B> filter( BiPredicate<A, B> predicate ) {
+//        return of2( super.filter( p -> predicate.test( p._1, p._2 ) ) );
+//    }
+
+    public <A2, B2> BiStream<A2, B2> flatMap( BiFunction<A, B, ? extends BiStream<A2, B2>> mapper ) {
+        return new BiStream<>( flatMap( p -> mapper.apply( p._1, p._2 ) ) );
+    }
+
+
+//    public <R> Stream<R> flatMap( BiFunction<A, B, ? extends java.util.stream.Stream<? extends R>> mapper ) {
+//        return super.flatMap( p -> mapper.apply( p._1, p._2 ) );
+//    }
+
+    @Deprecated
+    /**
+     * @see #flatMap(BiFunction)
+     */
+    public <RK, RV> BiStream<RK, RV> flatMap2( BiFunction<A, B, BiStream<RK, RV>> mapper ) {
         return of2( super.flatMap( p -> mapper.apply( p._1, p._2 ) ) );
     }
 
-    public Pair<BiStream<K, V>, BiStream<K, V>> partition( BiPredicate<K, V> criteria ) {
-        Pair<Stream<Pair<K, V>>, Stream<Pair<K, V>>> partition = super.partition( p -> criteria.test( p._1, p._2 ) );
-        return new Pair<>( of2( partition._1 ), of2( partition._2 ) );
+    public Pair<BiStream<A, B>, BiStream<A, B>> partition( BiPredicate<A, B> predicate ) {
+        Pair<Stream<Pair<A, B>>, Stream<Pair<A, B>>> partition = super.partition( p -> predicate.test( p._1, p._2 ) );
+        return new Pair<>( of( partition._1 ), of( partition._2 ) );
     }
 
-    public Map<K, V> toMap() {
+    public Map<A, B> toMap() {
         return collect( Maps.Collectors.toMap() );
     }
 }

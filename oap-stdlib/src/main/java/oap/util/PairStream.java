@@ -32,6 +32,10 @@ import java.util.function.Predicate;
 
 import static oap.util.Pair.__;
 
+@Deprecated
+/**
+ * @see BiStream
+ */
 public class PairStream<A, B> extends Stream<Pair<A, B>> {
     protected PairStream( java.util.stream.Stream<Pair<A, B>> underlying ) {
         super( underlying );
@@ -59,6 +63,10 @@ public class PairStream<A, B> extends Stream<Pair<A, B>> {
 
     public <R> Stream<R> flatMapToObj( BiFunction<A, B, Stream<? extends R>> mapper ) {
         return super.flatMap( p -> mapper.apply( p._1, p._2 ) );
+    }
+
+    public <A2, B2> PairStream<A2, B2> flatMap( BiFunction<A, B, ? extends PairStream<A2, B2>> mapper ) {
+        return of( flatMap( p -> mapper.apply( p._1, p._2 ) ) );
     }
 
     public <A2, B2> PairStream<A2, B2> map( BiFunction<? super A, ? super B, Pair<A2, B2>> mapper ) {

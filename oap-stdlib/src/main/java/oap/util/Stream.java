@@ -169,7 +169,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     public <B> BiStream<E, B> zip( java.util.stream.Stream<? extends B> b ) {
-        return BiStream.of2( zip( b, Pair::__ ) );
+        return BiStream.of( zip( b, Pair::__ ) );
     }
 
     public BiStream<E, Integer> zipWithIndex() {
@@ -257,8 +257,8 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return underlying.mapToDouble( mapper );
     }
 
-    public <A, B> PairStream<A, B> mapToPairs( Function<E, Pair<A, B>> mapper ) {
-        return PairStream.of( map( mapper ) );
+    public <A, B> BiStream<A, B> mapToPairs( Function<E, Pair<A, B>> mapper ) {
+        return BiStream.of( map( mapper ) );
     }
 
     @Override
@@ -477,7 +477,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     public Stream<E> takeWhile( Predicate<? super E> predicate ) {
-        return of( StreamSupport.stream( takeWhile( spliterator(), predicate ), false ) );
+        return of( StreamSupport.stream( takeWhile( spliterator(), predicate ), underlying.isParallel() ) );
     }
 
     @Override

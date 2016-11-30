@@ -25,9 +25,9 @@ package oap.reflect;
 
 import com.google.common.reflect.TypeToken;
 import oap.util.Arrays;
+import oap.util.BiStream;
 import oap.util.Functions;
 import oap.util.Lists;
-import oap.util.PairStream;
 import oap.util.Stream;
 import oap.util.Try;
 
@@ -142,7 +142,7 @@ public class Reflection extends Annotated<Class<?>> {
     }
 
     private String argsToString( Map<String, Object> args ) {
-        return PairStream.of( args )
+        return BiStream.of( args )
             .mapToObj( ( k, v ) -> k + ":" + ( v != null ? v.getClass() : "(null)" ) )
             .toList()
             .toString();

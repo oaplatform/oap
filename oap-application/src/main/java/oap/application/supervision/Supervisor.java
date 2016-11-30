@@ -24,7 +24,7 @@
 package oap.application.supervision;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.util.PairStream;
+import oap.util.BiStream;
 
 import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +44,7 @@ public class Supervisor {
     }
 
     public void startThread( String name, Object instance ) {
-        this.supervised.put( name, new ThreadService( name, (Runnable) instance, this ) );
+        this.supervised.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
     }
 
     public void scheduleWithFixedDelay( String name, Runnable service, long delay, TimeUnit unit ) {
@@ -75,14 +75,16 @@ public class Supervisor {
         if( !stopped ) {
             log.debug( "stopping..." );
             this.stopped = true;
-            PairStream.reversed( this.scheduled )
+            BiStream.of( this.scheduled )
+                .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
                     service.stop();
                     log.debug( "stopped {}", name );
                 } );
             this.scheduled.clear();
-            PairStream.reversed( this.supervised )
+            BiStream.of( this.supervised )
+                .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
                     service.stop();
