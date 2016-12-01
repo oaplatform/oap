@@ -23,12 +23,18 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import oap.application.remote.FST;
+import oap.application.remote.RemoteLocation;
 import oap.json.Binder;
 import oap.reflect.Coercions;
+import oap.reflect.Reflect;
+import oap.reflect.Reflection;
+import oap.util.Functions;
 import oap.util.Stream;
 
 import java.lang.reflect.Type;
@@ -39,6 +45,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
+
+import static java.util.stream.Collectors.joining;
 
 @EqualsAndHashCode
 @ToString
@@ -68,8 +77,9 @@ public class Module {
     public ArrayList<String> dependsOn = new ArrayList<>();
     public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
 
-    @EqualsAndHashCode
-    @ToString
+    @EqualsAndHashCode( exclude = "remoteCache" )
+    @ToString( exclude = "remoteCache" )
+    @Slf4j
     public static class Service {
         public String implementation;
         public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
@@ -84,6 +94,32 @@ public class Module {
         public Optional<Long> timeout = Optional.empty();
         public Optional<FST.SerializationMethod> serialization = Optional.empty();
         public LinkedHashMap<String, Object> listen = new LinkedHashMap<>();
+        public RemoteLocation remote;
+        @JsonIgnore
+        private Supplier<RemoteLocation> remoteCache = Functions.memoize( () -> {
+            log.warn( "service attributes remoteUrl, remoteName, cerrificateLocation, certificatePassword,"
+                + " timeout, serialization are deprecated. Use remote { "
+                + Reflect.reflect( RemoteLocation.class )
+                .fields
+                .stream()
+                .filter( f -> !f.isStatic() )
+                .map( Reflection.Field::name )
+                .collect( joining( ", " ) )
+                + " } instead." );
+            return new RemoteLocation( remoteUrl, remoteName, certificateLocation,
+                certificatePassword, timeout.orElse( RemoteLocation.DEFAULT_TIMEOUT ),
+                serialization.orElse( RemoteLocation.DEFAULT_SERIALIZATION ) );
+        } );
+
+        public RemoteLocation remoting() {
+            return remoteName != null ? remoteCache.get() : remote;
+        }
+
+        @JsonIgnore
+        public boolean isRemoteService() {
+            return remoting() != null;
+        }
+
     }
 
     @EqualsAndHashCode
@@ -97,4 +133,5 @@ public class Module {
         public long delay; //ms
         public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
     }
+
 }

@@ -21,31 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
 
-import oap.json.Binder;
-import oap.json.JsonException;
-import oap.json.schema.JsonValidatorFactory;
-import oap.json.schema.ResourceSchemaStorage;
-import oap.ws.WsClientException;
+package oap.application.remote;
 
-import java.util.Map;
+import oap.application.Application;
+import oap.application.Kernel;
+import oap.application.Module;
+import org.testng.annotations.Test;
 
-public class JsonValidatorPeer implements ValidatorPeer {
-    private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
-    private final JsonValidatorFactory factory;
+import java.net.URL;
+import java.util.List;
 
-    public JsonValidatorPeer( WsValidateJson validate, Object instance ) {
-        factory = JsonValidatorFactory.schema( validate.schema(), storage );
-    }
+import static oap.testng.Asserts.assertEventually;
+import static oap.testng.Asserts.assertString;
+import static oap.testng.Asserts.pathOfTestResource;
+import static oap.testng.Asserts.urlOfTestResource;
+import static org.testng.Assert.assertTrue;
 
-    @Override
-    public ValidationErrors validate( Object value ) {
+
+public class RemotingTest {
+    @Test
+    public void start() {
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
+        modules.add( urlOfTestResource( RemotingTest.class, "module.conf" ) );
+
+        Kernel kernel = new Kernel( modules );
         try {
-            Map<?, ?> unmarshal = Binder.json.unmarshal( Map.class, ( String ) value );
-            return ValidationErrors.errors( factory.validate( unmarshal, false ) );
-        } catch( JsonException e ) {
-            throw new WsClientException( e.getMessage(), e );
+            kernel.start( pathOfTestResource( getClass(), "application.conf" ) );
+            assertEventually( 50, 1, () -> {
+
+                RemoteClient remote = Application.service( "remote-client" );
+                assertTrue( remote.accessible() );
+                assertString( remote.toString() ).isEqualTo( "remote:remote-service-impl@https://localhost:8980/remote/" );
+            } );
+        } finally {
+            kernel.stop();
         }
     }
+
+
 }

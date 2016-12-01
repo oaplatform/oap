@@ -21,31 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
 
-import oap.json.Binder;
-import oap.json.JsonException;
-import oap.json.schema.JsonValidatorFactory;
-import oap.json.schema.ResourceSchemaStorage;
-import oap.ws.WsClientException;
+package oap.application.remote;
 
-import java.util.Map;
+import java.net.URI;
+import java.nio.file.Path;
 
-public class JsonValidatorPeer implements ValidatorPeer {
-    private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
-    private final JsonValidatorFactory factory;
+public class RemoteLocation {
+    public static final long DEFAULT_TIMEOUT = 5000L;
+    public static final FST.SerializationMethod DEFAULT_SERIALIZATION = FST.SerializationMethod.DEFAULT;
+    public URI url;
+    public String name;
+    public Path certificateLocation;
+    public String certificatePassword;
+    public long timeout = DEFAULT_TIMEOUT;
+    public FST.SerializationMethod serialization = DEFAULT_SERIALIZATION;
 
-    public JsonValidatorPeer( WsValidateJson validate, Object instance ) {
-        factory = JsonValidatorFactory.schema( validate.schema(), storage );
+    public RemoteLocation() {
     }
 
-    @Override
-    public ValidationErrors validate( Object value ) {
-        try {
-            Map<?, ?> unmarshal = Binder.json.unmarshal( Map.class, ( String ) value );
-            return ValidationErrors.errors( factory.validate( unmarshal, false ) );
-        } catch( JsonException e ) {
-            throw new WsClientException( e.getMessage(), e );
-        }
+    public RemoteLocation( URI url, String name, Path certificateLocation, String certificatePassword, long timeout, FST.SerializationMethod serialization ) {
+        this.url = url;
+        this.name = name;
+        this.certificateLocation = certificateLocation;
+        this.certificatePassword = certificatePassword;
+        this.timeout = timeout;
+        this.serialization = serialization;
     }
 }

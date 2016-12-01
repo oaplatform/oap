@@ -21,31 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
 
-import oap.json.Binder;
-import oap.json.JsonException;
-import oap.json.schema.JsonValidatorFactory;
-import oap.json.schema.ResourceSchemaStorage;
-import oap.ws.WsClientException;
+package oap.application.remote;
 
-import java.util.Map;
-
-public class JsonValidatorPeer implements ValidatorPeer {
-    private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
-    private final JsonValidatorFactory factory;
-
-    public JsonValidatorPeer( WsValidateJson validate, Object instance ) {
-        factory = JsonValidatorFactory.schema( validate.schema(), storage );
-    }
-
-    @Override
-    public ValidationErrors validate( Object value ) {
-        try {
-            Map<?, ?> unmarshal = Binder.json.unmarshal( Map.class, ( String ) value );
-            return ValidationErrors.errors( factory.validate( unmarshal, false ) );
-        } catch( JsonException e ) {
-            throw new WsClientException( e.getMessage(), e );
-        }
-    }
+public interface RemoteClient {
+    boolean accessible();
 }

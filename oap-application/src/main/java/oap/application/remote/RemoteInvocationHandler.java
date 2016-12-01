@@ -35,81 +35,82 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
 @Slf4j
 public class RemoteInvocationHandler implements InvocationHandler {
 
-   private static final long DEFAULT_TIMEOUT = 5000L;
+    private final URI uri;
+    private final FST fst;
+    private final String service;
+    private final Client client;
+    private final long timeout;
 
-   private final URI uri;
-   private final FST fst;
-   private final String service;
-   private final Client client;
-   private final long timeout;
+    private RemoteInvocationHandler( URI uri,
+                                     String service,
+                                     Path certificateLocation,
+                                     String certificatePassword,
+                                     long timeout,
+                                     FST.SerializationMethod serialization ) {
+        this.uri = uri;
+        this.service = service;
+        this.timeout = timeout;
+        this.fst = new FST( serialization );
+        this.client = Client.custom( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
+            .onTimeout( client -> {
+                log.error( "timeout invoking {}", uri );
+                client.reset();
+            } )
+            .onError( ( c, e ) -> log.error( "error invoking {}: {}", uri, e ) )
+            .setMaxConnPerRoute( 1 )
+            .setMaxConnTotal( 1 )
+            .build();
+    }
 
-   private RemoteInvocationHandler( URI uri,
-                                    String service,
-                                    Path certificateLocation,
-                                    String certificatePassword,
-                                    Optional<Long> timeout,
-                                    Optional<FST.SerializationMethod> serialization ) {
-      this.uri = uri;
-      this.service = service;
-      this.timeout = timeout.orElse( DEFAULT_TIMEOUT );
-      this.fst = new FST( serialization.orElse( FST.SerializationMethod.DEFAULT ) );
-      this.client = Client.custom( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
-         .onTimeout( client -> {
-            log.error( "timeout invoking {}", uri );
-            client.reset();
-         } )
-         .onError( ( c, e ) -> log.error( "error invoking {}: {}", uri, e ) )
-         .setMaxConnPerRoute( 1 )
-         .setMaxConnTotal( 1 )
-         .build();
-   }
+    public static Object proxy( RemoteLocation remote, Class<?> clazz ) {
+        return proxy( remote.url, remote.name, clazz, remote.certificateLocation, remote.certificatePassword, remote.timeout, remote.serialization );
+    }
 
-   public static Object proxy( URI uri, String service, Class<?> clazz,
-                               Path certificateLocation, String certificatePassword,
-                               Optional<Long> timeout, Optional<FST.SerializationMethod> serialization ) {
-      log.debug( "remote interface for {} at {} wich certs {}", service, uri, certificateLocation );
-      return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[]{ clazz },
-         new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout, serialization ) );
-   }
+    public static Object proxy( URI uri, String service, Class<?> clazz,
+                                Path certificateLocation, String certificatePassword,
+                                long timeout, FST.SerializationMethod serialization ) {
+        log.debug( "remote interface for {} at {} wich certs {}", service, uri, certificateLocation );
+        return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[] { clazz },
+            new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout, serialization ) );
+    }
 
-   @Override
-   @SuppressWarnings( "unchecked" )
-   public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
-      if( method.getDeclaringClass() == Object.class ) {
-         return method.invoke( this, args );
-      }
-      Parameter[] parameters = method.getParameters();
-      List<RemoteInvocation.Argument> arguments = new ArrayList<>();
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
+        if( method.getDeclaringClass() == Object.class ) {
+            return method.invoke( this, args );
+        }
+        Parameter[] parameters = method.getParameters();
+        List<RemoteInvocation.Argument> arguments = new ArrayList<>();
 
-      for( int i = 0; i < parameters.length; i++ ) {
-         arguments.add( new RemoteInvocation.Argument( parameters[i].getName(),
-            parameters[i].getType(), args[i] ) );
-      }
+        for( int i = 0; i < parameters.length; i++ ) {
+            arguments.add( new RemoteInvocation.Argument( parameters[i].getName(),
+                parameters[i].getType(), args[i] ) );
+        }
 
-      return client.post( uri.toString(),
-         fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) ),
-         timeout )
-         .<Result<Object, Throwable>>map( response -> {
-            if( response.code == HTTP_OK ) {
-               return response.content
-                  .map( b -> ( Result<Object, Throwable> ) fst.conf.asObject( b ) )
-                  .orElse( Result.failure( new RemoteInvocationException( "no content " + uri ) ) );
-            } else return Result.failure( new RemoteInvocationException( response.code + " " + response.reasonPhrase
-               + "\n" + response.contentString ) );
-         } )
-         .orElseThrow( () -> new RemoteInvocationException( "invocation failed " + uri ) )
-         .orElseThrow( t -> t );
-   }
+        return client.post( uri.toString(),
+            fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) ),
+            timeout )
+            .<Result<Object, Throwable>>map( response -> {
+                if( response.code == HTTP_OK ) {
+                    return response.content
+                        .map( b -> ( Result<Object, Throwable> ) fst.conf.asObject( b ) )
+                        .orElse( Result.failure( new RemoteInvocationException( "no content " + uri ) ) );
+                } else return Result.failure( new RemoteInvocationException( response.code + " " + response.reasonPhrase
+                    + "\n" + response.contentString ) );
+            } )
+            .orElseThrow( () -> new RemoteInvocationException( "invocation failed " + uri ) )
+            .orElseThrow( t -> t );
+    }
 
-   @Override
-   public String toString() {
-      return "remote:" + service + "@" + uri;
-   }
+    @Override
+    public String toString() {
+        return "remote:" + service + "@" + uri;
+    }
 }

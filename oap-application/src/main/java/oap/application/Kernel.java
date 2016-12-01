@@ -75,7 +75,7 @@ public class Kernel {
                 Reflection reflect = Reflect.reflect( service.implementation, Module.coersions );
 
                 Object instance;
-                if( service.remoteUrl == null ) {
+                if( !service.isRemoteService() ) {
                     try {
                         initializeServiceLinks( serviceName, service );
                         instance = reflect.newInstance( service.parameters );
@@ -85,14 +85,8 @@ public class Kernel {
                         throw e;
                     }
                 } else instance = RemoteInvocationHandler.proxy(
-                    service.remoteUrl,
-                    service.remoteName,
-                    reflect.underlying,
-                    service.certificateLocation,
-                    service.certificatePassword,
-                    service.timeout, //TODO refactor to have Remoting class with related properties
-                    service.serialization
-                );
+                    service.remoting(),
+                    reflect.underlying );
                 Application.register( serviceName, instance );
                 Application.register( entry.getKey(), instance );
 
@@ -143,7 +137,7 @@ public class Kernel {
     private void initializeListeners( Map<String, Object> listeners, Object instance ) {
         listeners.forEach( ( listener, service ) -> {
             log.debug( "setting " + instance + " to listen to " + service + " with " + listener );
-            String methodName = "add" + StringUtils.capitalize( listener );
+            String methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
             Optionals.fork( Reflect.reflect( service.getClass() ).method( methodName ) )
                 .ifPresent( m -> m.invoke( service, instance ) )
                 .ifAbsentThrow( () ->

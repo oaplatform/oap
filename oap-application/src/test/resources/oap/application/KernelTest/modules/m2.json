@@ -11,7 +11,7 @@
         "one": "@service:ServiceOne"
       },
       "listen": {
-        "someListener": "@service:ServiceOne"
+        "some": "@service:ServiceOne"
       },
       "supervision": {
         "supervise": true
