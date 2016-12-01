@@ -25,11 +25,13 @@ package oap.application;
 
 import lombok.ToString;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
 @ToString
-public class ServiceTwo implements Hello {
+public class ServiceTwo implements Hello, ActionListener {
     public ServiceOne one;
     int j;
     boolean started;
@@ -57,4 +59,6 @@ public class ServiceTwo implements Hello {
         this.test = test;
     }
 
+    @Override
+    public void actionPerformed( ActionEvent e ) {}
 }

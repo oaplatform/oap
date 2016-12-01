@@ -34,62 +34,67 @@ import oap.util.Stream;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @EqualsAndHashCode
 @ToString
 public class Module {
-   public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
-   @SuppressWarnings( "unchecked" )
-   static final Coercions coersions = Coercions.basic()
-      .with( r -> r.underlying.isAssignableFrom( List.class ),
-         ( r, list ) -> {
-            if( list instanceof List<?>
-               && ( ( List<?> ) list ).stream().allMatch( o -> o instanceof Map<?, ?> ) ) {
-               return Stream.of( ( List<?> ) list )
-                  .map( map -> Binder.json.unmarshal(
-                     r.getCollectionComponentType().underlying, ( Map<String, Object> ) map ) )
-                  .toList();
-            } else return list;
-         } )
-      .with( r -> !r.assignableFrom( Map.class ),
-         ( r, map ) -> map instanceof Map<?, ?> ? Binder.json.unmarshal( new TypeReference<Object>() {
-            @Override
-            public Type getType() {
-               return r.getType();
-            }
-         }, ( Map<String, Object> ) map ) : map )
-      .withIdentity();
-   public String name;
-   public ArrayList<String> dependsOn = new ArrayList<>();
-   public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
+    public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
+    @SuppressWarnings( "unchecked" )
+    static final Coercions coersions = Coercions.basic()
+        .with( r -> r.underlying.isAssignableFrom( List.class ),
+            ( r, list ) -> {
+                if( list instanceof List<?>
+                    && ( ( List<?> ) list ).stream().allMatch( o -> o instanceof Map<?, ?> ) ) {
+                    return Stream.of( ( List<?> ) list )
+                        .map( map -> Binder.json.unmarshal(
+                            r.getCollectionComponentType().underlying, ( Map<String, Object> ) map ) )
+                        .toList();
+                } else return list;
+            } )
+        .with( r -> !r.assignableFrom( Map.class ),
+            ( r, map ) -> map instanceof Map<?, ?> ? Binder.json.unmarshal( new TypeReference<Object>() {
+                @Override
+                public Type getType() {
+                    return r.getType();
+                }
+            }, ( Map<String, Object> ) map ) : map )
+        .withIdentity();
+    public String name;
+    public ArrayList<String> dependsOn = new ArrayList<>();
+    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
 
-   @EqualsAndHashCode
-   @ToString
-   public static class Service {
-      public String implementation;
-      public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
-      public Supervision supervision = new Supervision();
-      public ArrayList<String> dependsOn = new ArrayList<>();
-      public URI remoteUrl;
-      public String remoteName;
-      public Path certificateLocation;
-      public String certificatePassword;
-      public String profile;
-      public String name;
-      public Optional<Long> timeout = Optional.empty();
-      public Optional<FST.SerializationMethod> serialization = Optional.empty();
-   }
+    @EqualsAndHashCode
+    @ToString
+    public static class Service {
+        public String implementation;
+        public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
+        public Supervision supervision = new Supervision();
+        public ArrayList<String> dependsOn = new ArrayList<>();
+        public URI remoteUrl;
+        public String remoteName;
+        public Path certificateLocation;
+        public String certificatePassword;
+        public String profile;
+        public String name;
+        public Optional<Long> timeout = Optional.empty();
+        public Optional<FST.SerializationMethod> serialization = Optional.empty();
+        public LinkedHashMap<String, Object> listen = new LinkedHashMap<>();
+    }
 
-   @EqualsAndHashCode
-   @ToString
-   public static class Supervision {
-      public boolean supervise;
-      public boolean thread;
-      public boolean schedule;
-      public String startWith = "start";
-      public String stopWith = "stop";
-      public long delay; //ms
-      public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
-   }
+    @EqualsAndHashCode
+    @ToString
+    public static class Supervision {
+        public boolean supervise;
+        public boolean thread;
+        public boolean schedule;
+        public String startWith = "start";
+        public String stopWith = "stop";
+        public long delay; //ms
+        public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
+    }
 }

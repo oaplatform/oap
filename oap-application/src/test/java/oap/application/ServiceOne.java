@@ -28,31 +28,38 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@ToString
+@ToString( exclude = "listener" )
 public class ServiceOne {
-   static volatile int instances;
-   int i;
-   int i2;
-   Complex complex;
-   List<Complex> complexes = new ArrayList<>();
+    static volatile int instances;
+    int i;
+    int i2;
+    Complex complex;
+    List<Complex> complexes = new ArrayList<>();
+    ActionListener listener;
 
-   public ServiceOne( int i ) {
-      this.i = i;
-   }
+    public ServiceOne( int i ) {
+        this.i = i;
+    }
 
-   @EqualsAndHashCode
-   @ToString
-   public static class Complex {
-      int i;
-      Map<String, Complex> map = new HashMap<>(  );
-      @JsonCreator
-      public Complex( @JsonProperty( "i" ) int i ) {
-         this.i = i;
-      }
-   }
+    @EqualsAndHashCode
+    @ToString
+    public static class Complex {
+        int i;
+        Map<String, Complex> map = new HashMap<>();
+
+        @JsonCreator
+        public Complex( @JsonProperty( "i" ) int i ) {
+            this.i = i;
+        }
+    }
+
+    public void addSomeListener( ActionListener listener ) {
+        this.listener = listener;
+    }
 }

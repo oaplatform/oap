@@ -26,6 +26,7 @@ package oap.util;
 
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class Optionals {
     public static <T> Stream<T> toStream( Optional<T> opt ) {
@@ -53,8 +54,13 @@ public class Optionals {
             return this;
         }
 
-        public Fork<T> ifAbsent( Runnable run ) {
-            if( !opt.isPresent() ) run.run();
+        public Fork<T> ifAbsent( Runnable code ) {
+            if( !opt.isPresent() ) code.run();
+            return this;
+        }
+
+        public <X extends Throwable> Fork<T> ifAbsentThrow( Supplier<? extends X> supplier ) throws X {
+            if( !opt.isPresent() ) throw supplier.get();
             return this;
         }
     }

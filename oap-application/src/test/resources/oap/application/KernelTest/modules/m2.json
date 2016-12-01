@@ -10,9 +10,15 @@
         "j": 1,
         "one": "@service:ServiceOne"
       },
+      "listen": {
+        "someListener": "@service:ServiceOne"
+      },
       "supervision": {
         "supervise": true
-      }
+      },
+      "dependsOn": [
+        "ServiceOne"
+      ]
     },
     "ServiceScheduled": {
       "implementation": "oap.application.ServiceScheduled",
