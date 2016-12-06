@@ -24,7 +24,6 @@
 package oap.http;
 
 
-import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.ThreadPoolExecutor;
@@ -32,6 +31,7 @@ import oap.http.cors.CorsPolicy;
 import oap.io.Closeables;
 import oap.metrics.Metrics;
 import oap.net.Inet;
+import oap.util.Throwables;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpConnection;
 import org.apache.http.impl.DefaultBHttpServerConnection;
@@ -162,7 +162,7 @@ public class Server implements HttpServer {
          connections.values().forEach( Closeables::close );
          connections.clear();
 
-         Throwables.propagate( e );
+         throw Throwables.propagate( e );
       }
    }
 

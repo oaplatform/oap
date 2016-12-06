@@ -22,41 +22,29 @@
  * SOFTWARE.
  */
 
-package oap.concurrent;
+package oap.util;
 
-import oap.util.Throwables;
+import org.testng.annotations.Test;
 
-public class Threads {
-    public static void interruptAndJoin( Thread thread ) {
-        if( thread != null ) {
-            thread.interrupt();
-            try {
-                thread.join();
-            } catch( InterruptedException ignored ) {
-            }
-        }
-    }
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
-    public static void sleepSafely( long time ) {
-        try {
-            Thread.sleep( time );
-        } catch( InterruptedException ignored ) {
-        }
-    }
+/**
+ * Created by igor.petrenko on 06.12.2016.
+ */
+public class ThrowablesTest {
+   @Test( expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = "^test$" )
+   public void testPropagateIOException() throws Exception {
+      throw Throwables.propagate( new IOException( "test" ) );
+   }
 
-    public static void waitFor( Object monitor ) {
-        synchronized( monitor ) {
-            try {
-                monitor.wait();
-            } catch( InterruptedException e ) {
-                throw Throwables.propagate( e );
-            }
-        }
-    }
+   @Test( expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = "^test$" )
+   public void testPropagateUncheckedIOException() throws Exception {
+      throw Throwables.propagate( new UncheckedIOException( new IOException( "test" ) ) );
+   }
 
-    public static void notifyAllFor( Object monitor ) {
-        synchronized( monitor ) {
-            monitor.notifyAll();
-        }
-    }
+   @Test( expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = "^test$" )
+   public void testPropagateAnyException() throws Exception {
+      throw Throwables.propagate( new Exception( "test" ) );
+   }
 }

@@ -133,7 +133,7 @@ public class DictionaryParser {
    }
 
    public static DictionaryRoot parse( String resource ) {
-      final Map map = Binder.hoconWithoutSystemProperties.unmarshalResource( DictionaryParser.class, Map.class, resource ).get();
+      final Map map = Binder.hoconWithoutSystemProperties.unmarshalResource( DictionaryParser.class, Map.class, resource );
 
       return parse( map );
    }

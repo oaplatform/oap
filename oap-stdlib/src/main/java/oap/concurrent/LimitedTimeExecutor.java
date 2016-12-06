@@ -23,7 +23,7 @@
  */
 package oap.concurrent;
 
-import com.google.common.base.Throwables;
+import oap.util.Throwables;
 
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;

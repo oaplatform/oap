@@ -24,10 +24,10 @@
 
 package oap.tsv.genrator;
 
-import com.google.common.base.Throwables;
 import lombok.extern.slf4j.Slf4j;
 import oap.tools.MemoryClassLoader;
 import oap.util.Pair;
+import oap.util.Throwables;
 import oap.util.Try;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;

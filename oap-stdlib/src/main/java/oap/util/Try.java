@@ -23,7 +23,6 @@
  */
 package oap.util;
 
-import com.google.common.base.Throwables;
 import oap.reflect.Reflect;
 import org.slf4j.Logger;
 

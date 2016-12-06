@@ -23,7 +23,6 @@
  */
 package oap.http;
 
-import com.google.common.base.Throwables;
 import com.google.common.io.ByteStreams;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +34,7 @@ import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
+import oap.util.Throwables;
 import oap.util.Try;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;

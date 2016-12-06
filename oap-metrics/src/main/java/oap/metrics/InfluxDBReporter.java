@@ -26,9 +26,9 @@ package oap.metrics;
 
 import com.codahale.metrics.*;
 import com.codahale.metrics.Timer;
-import com.google.common.base.Throwables;
 import com.google.common.escape.Escapers;
 import com.squareup.okhttp.OkHttpClient;
+import oap.util.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;

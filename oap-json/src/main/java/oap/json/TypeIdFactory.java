@@ -29,8 +29,8 @@ import com.fasterxml.jackson.databind.DatabindContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import com.google.common.base.Throwables;
 import oap.io.Resources;
+import oap.util.Throwables;
 
 import java.io.IOException;
 import java.io.InputStream;

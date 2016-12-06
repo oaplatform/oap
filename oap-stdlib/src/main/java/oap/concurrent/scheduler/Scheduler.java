@@ -25,6 +25,7 @@
 package oap.concurrent.scheduler;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Throwables;
 import oap.util.Try;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobDetail;
@@ -151,7 +152,7 @@ public final class Scheduler {
         try {
             return scheduler.getJobKeys( GroupMatcher.anyGroup() );
         } catch( org.quartz.SchedulerException e ) {
-            throw com.google.common.base.Throwables.propagate( e );
+            throw Throwables.propagate( e );
         }
     }
 }

@@ -24,9 +24,9 @@
 
 package oap.http;
 
-import com.google.common.base.Throwables;
 import oap.util.Maps;
 import oap.util.Pair;
+import oap.util.Throwables;
 import org.apache.http.client.utils.URIBuilder;
 
 import java.net.URI;

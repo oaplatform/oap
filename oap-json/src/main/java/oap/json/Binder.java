@@ -60,11 +60,9 @@ import org.joda.time.ReadableInstant;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 public class Binder {
@@ -121,63 +119,63 @@ public class Binder {
       return ( JsonDeserializer<T> ) new DateTimeDeserializer( cls, jodaDateFormat );
    }
 
-   public final JsonGenerator getJsonGenerator( Path path ) {
+   public final JsonGenerator getJsonGenerator( Path path ) throws JsonException {
       try {
          return mapper.getFactory().createGenerator( path.toFile(), JsonEncoding.UTF8 );
       } catch( IOException e ) {
-         throw new UncheckedIOException( e );
+         throw new JsonException( e );
       }
    }
 
-   public String canonicalize( Class<?> clazz, String json ) {
+   public String canonicalize( Class<?> clazz, String json ) throws JsonException {
       return marshal( unmarshal( clazz, json ) );
    }
 
-   public String marshal( Object value ) {
+   public String marshal( Object value ) throws JsonException {
       try {
          return mapper.writeValueAsString( value );
       } catch( IOException e ) {
-         throw new UncheckedIOException( e );
+         throw new JsonException( e );
       }
    }
 
-   public <T> String marshal( TypeReference<T> ref, Object value ) {
+   public <T> String marshal( TypeReference<T> ref, Object value ) throws JsonException {
       try {
          return mapper.writerFor( ref ).writeValueAsString( value );
       } catch( IOException e ) {
-         throw new UncheckedIOException( e );
+         throw new JsonException( e );
       }
    }
 
-   public void marshal( OutputStream os, Object value ) {
+   public void marshal( OutputStream os, Object value ) throws JsonException {
       try {
          mapper.writeValue( os, value );
       } catch( IOException e ) {
-         throw new UncheckedIOException( e );
+         throw new JsonException( e );
       }
    }
 
 
-   public void marshal( Path path, Object object ) {
+   public void marshal( Path path, Object object ) throws JsonException {
       Files.ensureFile( path );
 
       try( final OutputStream os = IoStreams.out( path ) ) {
          marshal( os, object );
       } catch( IOException e ) {
-         throw new UncheckedIOException( e );
+         throw new JsonException( e );
       }
    }
 
-   public <T> T unmarshal( Class<T> clazz, Path path ) {
+   public <T> T unmarshal( Class<T> clazz, Path path ) throws JsonException {
       return unmarshal( clazz, Files.readString( path ) );
    }
 
-   public <T> T unmarshal( Class<T> clazz, URL url ) {
+   public <T> T unmarshal( Class<T> clazz, URL url ) throws JsonException {
       return unmarshal( clazz, Strings.readString( url ) );
    }
 
    @SuppressWarnings( "unchecked" )
-   public <T> T unmarshal( TypeReference<T> ref, String string ) {
+   public <T> T unmarshal( TypeReference<T> ref, String string ) throws JsonException {
       try {
          return ( T ) mapper.readValue( string, ref );
       } catch( IOException e ) {
@@ -194,7 +192,7 @@ public class Binder {
       return mapper.writerFor( ref );
    }
 
-   public <T> T unmarshal( TypeReference<T> ref, Path path ) {
+   public <T> T unmarshal( TypeReference<T> ref, Path path ) throws JsonException {
       return unmarshal( ref, Files.readString( path ) );
    }
 
@@ -203,7 +201,7 @@ public class Binder {
    }
 
    @SuppressWarnings( "unchecked" )
-   public <T> T unmarshal( TypeReference<T> ref, InputStream is ) {
+   public <T> T unmarshal( TypeReference<T> ref, InputStream is ) throws JsonException {
       try {
          return ( T ) mapper.readValue( is, ref );
       } catch( IOException e ) {
@@ -212,7 +210,7 @@ public class Binder {
    }
 
    @SuppressWarnings( "unchecked" )
-   public <T> T unmarshal( Class<?> clazz, String string ) {
+   public <T> T unmarshal( Class<?> clazz, String string ) throws JsonException {
       try {
          return ( T ) mapper.readValue( string, clazz );
       } catch( Exception e ) {
@@ -222,7 +220,7 @@ public class Binder {
    }
 
    @SuppressWarnings( "unchecked" )
-   public <T> T unmarshal( Class<?> clazz, Map<String, Object> map ) {
+   public <T> T unmarshal( Class<?> clazz, Map<String, Object> map ) throws JsonException {
       try {
          return ( T ) mapper.convertValue( map, clazz );
       } catch( Exception e ) {
@@ -232,7 +230,7 @@ public class Binder {
    }
 
    @SuppressWarnings( "unchecked" )
-   public <T> T unmarshal( TypeReference<T> ref, Map<String, Object> map ) {
+   public <T> T unmarshal( TypeReference<T> ref, Map<String, Object> map ) throws JsonException {
       try {
          return ( T ) mapper.convertValue( map, ref );
       } catch( Exception e ) {
@@ -242,7 +240,7 @@ public class Binder {
    }
 
    @SuppressWarnings( "unchecked" )
-   public <T> T unmarshal( Class<?> clazz, InputStream json ) {
+   public <T> T unmarshal( Class<?> clazz, InputStream json ) throws JsonException {
       try {
          return ( T ) mapper.readValue( json, clazz );
       } catch( IOException e ) {
@@ -250,34 +248,35 @@ public class Binder {
       }
    }
 
-   public <T> Optional<T> unmarshalResource( Class<?> context, Class<T> clazz,
-                                             String resourceJsonPath ) {
-      return Resources.readString( context, resourceJsonPath ).
-         map( json -> unmarshal( clazz, json ) );
+   public <T> T unmarshalResource( Class<?> context, Class<T> clazz,
+                                   String resourceJsonPath ) throws JsonException {
+      return Resources.readString( context, resourceJsonPath )
+         .map( json -> this.<T>unmarshal( clazz, json ) )
+         .orElseThrow( () -> new JsonException( "not found " + resourceJsonPath ) );
 
    }
 
    @SuppressWarnings( "unchecked" )
-   public <T> T clone( T object ) {
+   public <T> T clone( T object ) throws JsonException {
       return unmarshal( ( Class<T> ) object.getClass(), marshal( object ) );
    }
 
-   public void update( Object obj, Map<String, Object> values ) {
+   public void update( Object obj, Map<String, Object> values ) throws JsonException {
       try {
          final String marshal = json.marshal( obj );
          final String vs = json.marshal( values );
 
          hoconWithConfig( vs ).mapper.readerForUpdating( obj ).readValue( marshal );
       } catch( IOException e ) {
-         throw new UncheckedIOException( e );
+         throw new JsonException( e );
       }
    }
 
-   public void update( Object obj, String json ) {
+   public void update( Object obj, String json ) throws JsonException {
       try {
          mapper.readerForUpdating( obj ).readValue( json );
       } catch( IOException e ) {
-         throw new UncheckedIOException( e );
+         throw new JsonException( e );
       }
    }
 }

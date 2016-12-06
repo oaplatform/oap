@@ -24,8 +24,8 @@
 
 package oap.storage.migration;
 
-import com.google.common.base.Throwables;
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 

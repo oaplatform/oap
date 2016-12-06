@@ -24,11 +24,11 @@
 package oap.json.schema;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.base.Throwables;
 import lombok.val;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.util.Lists;
+import oap.util.Throwables;
 
 import java.net.URL;
 import java.util.HashMap;

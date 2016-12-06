@@ -66,14 +66,12 @@ public class JsonAsserts {
     */
    @Deprecated
    public static <T> T readObject( Class<?> context, Class<T> clazz, String resourcePath ) {
-      return Binder.json.unmarshalResource( context, clazz, resourcePath )
-         .orElseThrow( () -> new AssertionError( "not found " + resourcePath ) );
+      return Binder.json.unmarshalResource( context, clazz, resourcePath );
 
    }
 
    public static <T> T unmarshalTestResource( Class<?> context, Class<T> clazz, String resourcePath ) {
-      return Binder.json.unmarshalResource( context, clazz, context.getSimpleName() + "/" + resourcePath )
-         .orElseThrow( () -> new AssertionError( "not found " + resourcePath ) );
+      return Binder.json.unmarshalResource( context, clazz, context.getSimpleName() + "/" + resourcePath );
    }
 
    public static JsonAssertion assertJson( String json ) {

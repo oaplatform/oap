@@ -54,8 +54,7 @@ public class ConfigurationJoinTest extends AbstractTest {
       System.out.println( Binder.json.marshal( aggregatorConfiguration2 ) );
 
       val aggregatorConfiguration =
-         Binder.json.unmarshalResource( getClass(), Aggregator.class, "configuration.json" )
-            .orElseThrow( () -> new IllegalArgumentException( "configuration.json not found" ) );
+         Binder.json.unmarshalResource( getClass(), Aggregator.class, "configuration.json" );
 
       System.out.println( "json: " + aggregatorConfiguration );
 
@@ -90,8 +89,7 @@ public class ConfigurationJoinTest extends AbstractTest {
    @Test
    public void testBidImpJoin() {
       val aggregatorConfiguration =
-         Binder.json.unmarshalResource( getClass(), Aggregator.class, "bid_imp_configuration.json" )
-            .orElseThrow( () -> new IllegalArgumentException( "bid_imp_configuration.json not found" ) );
+         Binder.json.unmarshalResource( getClass(), Aggregator.class, "bid_imp_configuration.json" );
 
       final Model bidModel = new Model( false ).s( "BID_ID", 0 ).s( "EXCHANGE", 1 ).i( "BID_PRICE", 2 );
       final Model impressionModel = new Model( false ).s( "BID_ID", 0 ).i( "PRICE", 1 );

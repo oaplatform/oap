@@ -22,41 +22,27 @@
  * SOFTWARE.
  */
 
-package oap.concurrent;
+package oap.util;
 
-import oap.util.Throwables;
+import javax.annotation.CheckReturnValue;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
-public class Threads {
-    public static void interruptAndJoin( Thread thread ) {
-        if( thread != null ) {
-            thread.interrupt();
-            try {
-                thread.join();
-            } catch( InterruptedException ignored ) {
-            }
-        }
-    }
+/**
+ * Created by igor.petrenko on 06.12.2016.
+ */
+public final class Throwables {
+   private Throwables() {
+   }
 
-    public static void sleepSafely( long time ) {
-        try {
-            Thread.sleep( time );
-        } catch( InterruptedException ignored ) {
-        }
-    }
+   public static RuntimeException propagate( Throwable throwable ) throws RuntimeException {
+      if( throwable instanceof IOException ) throw new UncheckedIOException( ( IOException ) throwable );
+      else if( throwable instanceof UncheckedIOException ) throw ( UncheckedIOException ) throwable;
+      throw new RuntimeException( throwable );
+   }
 
-    public static void waitFor( Object monitor ) {
-        synchronized( monitor ) {
-            try {
-                monitor.wait();
-            } catch( InterruptedException e ) {
-                throw Throwables.propagate( e );
-            }
-        }
-    }
-
-    public static void notifyAllFor( Object monitor ) {
-        synchronized( monitor ) {
-            monitor.notifyAll();
-        }
-    }
+   @CheckReturnValue
+   public static Throwable getRootCause( Throwable throwable ) {
+      return com.google.common.base.Throwables.getRootCause( throwable );
+   }
 }

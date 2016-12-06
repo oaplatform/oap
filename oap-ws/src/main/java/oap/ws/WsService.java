@@ -23,7 +23,6 @@
  */
 package oap.ws;
 
-import com.google.common.base.Throwables;
 import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.Request;
@@ -39,6 +38,7 @@ import oap.reflect.Reflection;
 import oap.util.Optionals;
 import oap.util.Stream;
 import oap.util.Strings;
+import oap.util.Throwables;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;

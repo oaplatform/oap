@@ -23,9 +23,9 @@
  */
 package oap.application.supervision;
 
-import com.google.common.base.Throwables;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
+import oap.util.Throwables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +52,7 @@ public class StartableService implements Supervised {
             started = true;
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
-            Throwables.propagate( e );
+            throw Throwables.propagate( e );
         }
     }
 

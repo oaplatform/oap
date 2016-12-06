@@ -23,10 +23,10 @@
  */
 package oap.testng;
 
-import com.google.common.base.Throwables;
 import lombok.extern.java.Log;
 import oap.io.Files;
 import oap.io.Resources;
+import oap.util.Throwables;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

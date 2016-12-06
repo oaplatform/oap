@@ -23,13 +23,13 @@
  */
 package oap.testng;
 
-import com.google.common.base.Throwables;
 import oap.concurrent.Threads;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.util.Lists;
 import oap.util.Strings;
+import oap.util.Throwables;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.AbstractCharSequenceAssert;
@@ -65,7 +65,7 @@ public final class Asserts {
             }
         }
         if( !passed )
-            if( exception != null ) Throwables.propagate( exception );
+            if( exception != null ) throw Throwables.propagate( exception );
             else throw new AssertionError( "timeout" );
     }
 
