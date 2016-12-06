@@ -37,7 +37,9 @@
           <option name="ASSERT_STATEMENT_COLON_ON_NEXT_LINE" value="true" />
           <option name="SPACE_WITHIN_ANNOTATION_PARENTHESES" value="true" />
           <indentOptions>
-            <option name="CONTINUATION_INDENT_SIZE" value="4" />
+            <option name="INDENT_SIZE" value="3" />
+            <option name="CONTINUATION_INDENT_SIZE" value="3" />
+            <option name="TAB_SIZE" value="3" />
           </indentOptions>
         </codeStyleSettings>
       </value>
