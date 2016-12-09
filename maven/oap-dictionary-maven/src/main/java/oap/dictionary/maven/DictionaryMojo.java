@@ -117,7 +117,7 @@ public class DictionaryMojo extends AbstractMojo {
             .stream()
             .collect( toMap(
                k -> k,
-               k -> dictionary.getValues().stream().filter( v -> !v.containsProperty( k ) ).findAny().isPresent()
+               k -> dictionary.getValues().stream().anyMatch( v -> !v.containsProperty( k ) )
             ) );
 
          final Map<String, Class<?>> types = properties
@@ -176,8 +176,28 @@ public class DictionaryMojo extends AbstractMojo {
          }
 
          out
-            .append( "  }\n" )
-            .append( "\n" +
+            .append( "  }\n" +
+               "\n" +
+               "  public static " + enumClass + " valueOf( int externalId ) {\n" +
+               "    switch( externalId ) {\n" );
+
+         dictionary.getValues().forEach( d -> {
+            out.append( "      case " ).append( d.getExternalId() ).append( ": return " ).append( d.getId() ).append( ";\n" );
+         } );
+
+         out.append( "      default: " );
+
+         if( dictionary.containsValueWithId( "UNKNOWN" ) ) {
+            out.append( "return UNKNOWN" );
+         } else {
+            out.append( "throw new java.lang.IllegalArgumentException( \"Unknown id \" + externalId )" );
+         }
+
+         out.append(
+            ";\n" +
+               "    }\n" +
+               "  }\n" +
+               "\n" +
                "  @Override\n" +
                "  public int getOrDefault( String id, int defaultValue ) {\n" +
                "    return defaultValue;\n" +
