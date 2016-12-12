@@ -31,11 +31,34 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public abstract class MemoryMeter {
+   private static final MemoryMeter NULL_MEMORY_METER = new MemoryMeter() {
+      @Override
+      public long measureDeep( Object object ) {
+         return 0;
+      }
+
+      @Override
+      public long countChildren( Object object ) {
+         return 0;
+      }
+
+      @Override
+      public long measure( Object object ) {
+         return 0;
+      }
+   };
+   private static JavaAgentStatus javaagent = JavaAgentStatus.UNKNOWN;
+
    public static MemoryMeter get() {
+      if( javaagent == JavaAgentStatus.OFF ) return NULL_MEMORY_METER;
+
       final org.github.jamm.MemoryMeter memoryMeter = new org.github.jamm.MemoryMeter();
 
       try {
-         memoryMeter.measure( 1 );
+         if( javaagent == JavaAgentStatus.UNKNOWN ) {
+            memoryMeter.measure( 1 );
+            javaagent = JavaAgentStatus.ON;
+         }
 
          return new MemoryMeter() {
             @Override
@@ -54,24 +77,10 @@ public abstract class MemoryMeter {
             }
          };
       } catch( IllegalStateException e ) {
+         javaagent = JavaAgentStatus.OFF;
          log.error( e.getMessage() );
 
-         return new MemoryMeter() {
-            @Override
-            public long measureDeep( Object object ) {
-               return 0;
-            }
-
-            @Override
-            public long countChildren( Object object ) {
-               return 0;
-            }
-
-            @Override
-            public long measure( Object object ) {
-               return 0;
-            }
-         };
+         return NULL_MEMORY_METER;
       }
    }
 
@@ -80,4 +89,8 @@ public abstract class MemoryMeter {
    public abstract long countChildren( Object object );
 
    public abstract long measure( Object object );
+
+   private static enum JavaAgentStatus {
+      UNKNOWN, ON, OFF
+   }
 }

@@ -33,6 +33,7 @@ public class MemoryMeterTest {
    @Test
    public void testGet() throws Exception {
       MemoryMeter.get().measure( "sdfsdf" );
+      MemoryMeter.get().measure( "sdfsdf" );
    }
 
 }
