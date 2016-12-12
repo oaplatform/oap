@@ -25,14 +25,15 @@
 package oap.tsv.genrator;
 
 import com.google.common.collect.ImmutableMap;
+import oap.io.Files;
 import oap.testng.AbstractTest;
+import oap.tools.MemoryClassLoader;
 import oap.tsv.genrator.CsvGenerator.Line;
-import oap.util.Maps;
 import org.mockito.internal.util.collections.Sets;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Created by igor.petrenko on 01.09.2016.
  */
 public class CsvGeneratorTest extends AbstractTest {
+   @BeforeMethod
+   @Override
+   public void beforeMethod() {
+      super.beforeMethod();
+
+      Files.delete( CsvGenerator.TMP_FILE_CACHE );
+   }
+
    @Test
    public void testProcessString() throws Exception {
       assertThat( new CsvGenerator<>( Test1.class, asList( line( "testStr", "testStr", "d" ) ), ' ', DEFAULT )
@@ -57,7 +66,19 @@ public class CsvGeneratorTest extends AbstractTest {
    }
 
    @Test
+   public void testProcessStringReload() throws Exception {
+      assertThat( new CsvGenerator<>( Test1.class, asList( line( "testStr", "testStr", "d" ) ), ' ', DEFAULT )
+         .process( new Test1( "val" ) ) ).isEqualTo( "val" );
+   }
+
+   @Test
    public void testProcessDefault() throws Exception {
+      new CsvGenerator<>( Test1.class, asList( line( "testStr", "testStr", "d1" ), line( "testStr2", "optTest2.testStr", "d2" ) ), ' ', DEFAULT )
+         .process( new Test1( Optional.empty(), Optional.of( new Test2() ) ) );
+
+
+      assertThat( new CsvGenerator<>( Test1.class, asList( line( "testStr", "testStr", "d1" ), line( "testStr2", "optTest2.testStr", "d2" ) ), ' ', DEFAULT )
+         .process( new Test1( Optional.empty(), Optional.of( new Test2() ) ) ) ).isEqualTo( "d1 d2" );
       assertThat( new CsvGenerator<>( Test1.class, asList( line( "testStr", "testStr", "d1" ), line( "testStr2", "optTest2.testStr", "d2" ) ), ' ', DEFAULT )
          .process( new Test1( Optional.empty(), Optional.of( new Test2() ) ) ) ).isEqualTo( "d1 d2" );
    }
@@ -71,7 +92,7 @@ public class CsvGeneratorTest extends AbstractTest {
    @Test
    public void testProcessSet() throws Exception {
       Test1 source = new Test1( asList( "1", "2" ) );
-      source.set = Sets.newSet("4", "5");
+      source.set = Sets.newSet( "4", "5" );
       assertThat( new CsvGenerator<>( Test1.class, asList( line( "array", "set", emptyList() ) ), ' ', DEFAULT )
          .process( source ) ).isEqualTo( "[4,5]" );
    }
@@ -270,6 +291,7 @@ public class CsvGeneratorTest extends AbstractTest {
          this.test3 = test3;
       }
    }
+
    public static class Test3 {
       public final Map<?, Object> map;
 

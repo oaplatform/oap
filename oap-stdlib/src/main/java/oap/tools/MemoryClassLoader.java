@@ -24,6 +24,8 @@
 
 package oap.tools;
 
+import oap.util.Throwables;
+
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaCompiler;
@@ -32,7 +34,10 @@ import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,76 +49,114 @@ import static java.util.Collections.singletonMap;
  * Created by igor.petrenko on 30.08.2016.
  */
 public class MemoryClassLoader extends ClassLoader {
-    private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    private final MemoryFileManager manager = new MemoryFileManager( this.compiler );
+   private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+   private final MemoryFileManager manager = new MemoryFileManager( this.compiler );
+   private Path diskCache;
 
-    public MemoryClassLoader( String classname, String filecontent ) {
-        this( singletonMap( classname, filecontent ) );
-    }
+   public MemoryClassLoader( String classname, String filecontent, Path diskCache ) {
+      this( singletonMap( classname, filecontent ), diskCache );
+   }
 
-    private MemoryClassLoader( Map<String, String> map ) {
-        List<Source> list = new ArrayList<>();
-        for( Map.Entry<String, String> entry : map.entrySet() ) {
-            list.add( new Source( entry.getKey(), JavaFileObject.Kind.SOURCE, entry.getValue() ) );
-        }
-        this.compiler.getTask( null, this.manager, null, null, null, list ).call();
-    }
+   private MemoryClassLoader( Map<String, String> map, Path diskCache ) {
+      this.diskCache = diskCache;
 
-    @Override
-    protected Class<?> findClass( String name ) throws ClassNotFoundException {
-        synchronized( this.manager ) {
-            Output mc = this.manager.map.remove( name );
-            if( mc != null ) {
-                byte[] array = mc.toByteArray();
-                return defineClass( name, array, 0, array.length );
-            }
-        }
-        return super.findClass( name );
-    }
+      List<Source> list = new ArrayList<>();
+      for( Map.Entry<String, String> entry : map.entrySet() ) {
+         final String name = entry.getKey();
 
-    private static class Source extends SimpleJavaFileObject {
-        private final String content;
+         final Path sourceFile = diskCache.resolve( name + ".java" );
+         final Path classFile = diskCache.resolve( name + ".class" );
+         if(
+            Files.exists( sourceFile )
+               && entry.getValue().equals( oap.io.Files.readString( sourceFile ) )
+               && Files.exists( classFile ) ) {
 
-        Source( String name, Kind kind, String content ) {
-            super( URI.create( "memo:///" + name.replace( '.', '/' ) + kind.extension ), kind );
-            this.content = content;
-        }
+            final byte[] bytes = oap.io.Files.read( classFile );
+            this.manager.map.put( name, new Output( name, JavaFileObject.Kind.CLASS, bytes ) );
+         } else {
+            list.add( new Source( name, JavaFileObject.Kind.SOURCE, entry.getValue() ) );
+         }
+      }
+      if( !list.isEmpty() ) {
+         this.compiler.getTask( null, this.manager, null, null, null, list ).call();
 
-        @Override
-        public CharSequence getCharContent( boolean ignore ) {
-            return this.content;
-        }
-    }
+         oap.io.Files.ensureDirectory( diskCache );
 
-    private static class Output extends SimpleJavaFileObject {
-        private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+         for( Source source : list ) {
+            oap.io.Files.writeString( diskCache.resolve( source.originalName + ".java" ), source.content );
+            final byte[] bytes = manager.map.get( source.originalName ).toByteArray();
+            oap.io.Files.write( diskCache.resolve( source.originalName + ".class" ), bytes );
+         }
+      }
+   }
 
-        Output( String name, Kind kind ) {
-            super( URI.create( "memo:///" + name.replace( '.', '/' ) + kind.extension ), kind );
-        }
+   @Override
+   protected Class<?> findClass( String name ) throws ClassNotFoundException {
+      synchronized( this.manager ) {
+         Output mc = this.manager.map.remove( name );
+         if( mc != null ) {
+            byte[] array = mc.toByteArray();
+            return defineClass( name, array, 0, array.length );
+         }
+      }
+      return super.findClass( name );
+   }
 
-        byte[] toByteArray() {
-            return this.baos.toByteArray();
-        }
+   private static class Source extends SimpleJavaFileObject {
+      private final String content;
+      public final String originalName;
 
-        @Override
-        public ByteArrayOutputStream openOutputStream() {
-            return this.baos;
-        }
-    }
+      Source( String name, Kind kind, String content ) {
+         super( URI.create( "memo:///" + name.replace( '.', '/' ) + kind.extension ), kind );
+         this.content = content;
+         this.originalName = name;
+      }
 
-    private static class MemoryFileManager extends ForwardingJavaFileManager<JavaFileManager> {
-        private final Map<String, Output> map = new HashMap<>();
+      @Override
+      public CharSequence getCharContent( boolean ignore ) {
+         return this.content;
+      }
+   }
 
-        MemoryFileManager( JavaCompiler compiler ) {
-            super( compiler.getStandardFileManager( null, null, null ) );
-        }
+   private static class Output extends SimpleJavaFileObject {
+      private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-        @Override
-        public JavaFileObject getJavaFileForOutput( Location location, String name, JavaFileObject.Kind kind, FileObject source ) {
-            Output mc = new Output( name, kind );
-            this.map.put( name, mc );
-            return mc;
-        }
-    }
+      Output( String name, Kind kind ) {
+         super( URI.create( "memo:///" + name.replace( '.', '/' ) + kind.extension ), kind );
+      }
+
+      Output( String name, Kind kind, byte[] bytes ) {
+         this( name, kind );
+
+         try {
+            baos.write( bytes );
+         } catch( IOException e ) {
+            throw Throwables.propagate( e );
+         }
+      }
+
+      byte[] toByteArray() {
+         return this.baos.toByteArray();
+      }
+
+      @Override
+      public ByteArrayOutputStream openOutputStream() {
+         return this.baos;
+      }
+   }
+
+   private static class MemoryFileManager extends ForwardingJavaFileManager<JavaFileManager> {
+      private final Map<String, Output> map = new HashMap<>();
+
+      MemoryFileManager( JavaCompiler compiler ) {
+         super( compiler.getStandardFileManager( null, null, null ) );
+      }
+
+      @Override
+      public JavaFileObject getJavaFileForOutput( Location location, String name, JavaFileObject.Kind kind, FileObject source ) {
+         Output mc = new Output( name, kind );
+         this.map.put( name, mc );
+         return mc;
+      }
+   }
 }
