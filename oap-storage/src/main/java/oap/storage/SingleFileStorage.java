@@ -78,7 +78,14 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
       if( modified.getAndSet( false ) ) {
          final Path tmpPath = path.resolveSibling( path.getFileName() + ".tmp" );
          log.debug( "fsync storing {}...", tmpPath );
-         Binder.json.marshal( IoStreams.out( tmpPath, IoStreams.Encoding.from( path ) ), data.values() );
+         StringBuilder stringBuilder = new StringBuilder(  ).append( "[" );
+
+         for( final Metadata<T> o : data.values() ){
+            synchronized( o.id.intern() ){
+               stringBuilder.append( Binder.json.marshal( o.id ) );
+            }
+         }
+         Files.writeString( path, stringBuilder.append( "]" ).toString() );
          Files.rename( tmpPath, path );
          log.debug( "fsync storing {}... done", path );
       }
