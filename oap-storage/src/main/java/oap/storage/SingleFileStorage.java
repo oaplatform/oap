@@ -35,6 +35,7 @@ import oap.json.Binder;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -78,14 +79,17 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
       if( modified.getAndSet( false ) ) {
          final Path tmpPath = path.resolveSibling( path.getFileName() + ".tmp" );
          log.debug( "fsync storing {}...", tmpPath );
-         StringBuilder stringBuilder = new StringBuilder(  ).append( "[" );
+         StringBuilder sb = new StringBuilder(  ).append( "[" );
 
-         for( final Metadata<T> o : data.values() ){
-            synchronized( o.id.intern() ){
-               stringBuilder.append( Binder.json.marshal( o.id ) );
+         Iterator<Metadata<T>> it = data.values().iterator();
+         while( it.hasNext() ){
+            Metadata<T> metadata = it.next();
+            synchronized( metadata.id.intern() ){
+               sb.append( Binder.json.marshal( metadata ) );
             }
          }
-         Files.writeString( path, stringBuilder.append( "]" ).toString() );
+
+         Files.writeString( path, sb.append( "]" ).toString() );
          Files.rename( tmpPath, path );
          log.debug( "fsync storing {}... done", path );
       }
