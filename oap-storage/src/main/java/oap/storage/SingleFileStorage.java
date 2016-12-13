@@ -87,9 +87,12 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
             synchronized( metadata.id.intern() ){
                sb.append( Binder.json.marshal( metadata ) );
             }
+            if (it.hasNext()){
+               sb.append( "," );
+            }
          }
 
-         Files.writeString( tmpPath, sb.append( "]" ).toString() );
+         Files.writeString( tmpPath, IoStreams.Encoding.from( path ), sb.append( "]" ).toString() );
          Files.rename( tmpPath, path );
          log.debug( "fsync storing {}... done", path );
       }
