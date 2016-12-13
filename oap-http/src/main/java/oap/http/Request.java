@@ -56,18 +56,18 @@ public class Request {
     public final Context context;
     public final Optional<InputStream> body;
     public final String uri;
-    protected final ListMultimap<String, String> headers;
-    private final ListMultimap<String, String> params;
-    public final Optional<String> ua;
-    public final Optional<String> referrer;
+    public final ListMultimap<String, String> headers;
+    public final ListMultimap<String, String> params;
+    public final String ua;
+    public final String referrer;
     public final String ip;
-    private final Map<String, String> cookies;
+    public final Map<String, String> cookies;
 
     public Request( HttpRequest req, Context context ) {
         this.headers = Stream.of( req.getAllHeaders() )
             .map( h -> __( h.getName().toLowerCase(), h.getValue() ) )
             .collect( Maps.Collectors.toListMultimap() );
-        this.baseUrl = context.protocol.toLowerCase() + "://" + req.getFirstHeader( "Host" ).getValue();
+        this.baseUrl = context.protocol.toLowerCase() + "://" + header( "Host" ).orElse( "localhost" );
         this.uri = req.getRequestLine().getUri();
         this.requestLine = Strings.substringBefore( req.getRequestLine().getUri(), "?" ).substring(
             context.location.length() );
@@ -75,9 +75,9 @@ public class Request {
         this.context = context;
         this.body = content( req );
         this.params = params( req );
-        this.ua = header( "User-Agent" );
-        this.referrer = header( "Referrer" );
-        this.ip = context.remoteAddress.getHostAddress();
+        this.ua = header( "User-Agent" ).orElse( null );
+        this.referrer = header( "Referrer" ).orElse( null );
+        this.ip = header( "X-Forwarded-For" ).orElse( context.remoteAddress.getHostAddress() );
         this.cookies = header( "Cookie" )
             .map( cookie -> Stream.of( SPLITTER.split( cookie ).iterator() )
                 .map( s -> Strings.split( s, "=" ) )
