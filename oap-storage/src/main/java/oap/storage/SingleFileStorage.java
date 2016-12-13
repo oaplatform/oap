@@ -89,7 +89,7 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
             }
          }
 
-         Files.writeString( path, sb.append( "]" ).toString() );
+         Files.writeString( tmpPath, sb.append( "]" ).toString() );
          Files.rename( tmpPath, path );
          log.debug( "fsync storing {}... done", path );
       }
