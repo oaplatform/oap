@@ -23,6 +23,7 @@
  */
 package oap.metrics;
 
+import com.codahale.metrics.CachedGauge;
 import com.codahale.metrics.Counting;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metered;
@@ -40,131 +41,144 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class Metrics {
-   static final MetricRegistry registry = new MetricRegistry();
+    static final MetricRegistry registry = new MetricRegistry();
 
-   private static Snapshot toSnapshot( String name, Metric value ) {
-      Snapshot snapshot = new Snapshot( name );
-      if( value instanceof Sampling )
-         snapshot.mean = ( ( Sampling ) value ).getSnapshot().getMean();
-      if( value instanceof Metered )
-         snapshot.meanRate = ( ( Metered ) value ).getMeanRate();
-      if( value instanceof Counting )
-         snapshot.count = ( ( Counting ) value ).getCount();
-      if( value instanceof Gauge )
-         snapshot.count = ( ( Number ) ( ( Gauge ) value ).getValue() ).longValue();
-      return snapshot;
-   }
+    private static Snapshot toSnapshot( String name, Metric value ) {
+        Snapshot snapshot = new Snapshot( name );
+        if( value instanceof Sampling )
+            snapshot.mean = ( ( Sampling ) value ).getSnapshot().getMean();
+        if( value instanceof Metered )
+            snapshot.meanRate = ( ( Metered ) value ).getMeanRate();
+        if( value instanceof Counting )
+            snapshot.count = ( ( Counting ) value ).getCount();
+        if( value instanceof Gauge )
+            snapshot.count = ( ( Number ) ( ( Gauge ) value ).getValue() ).longValue();
+        return snapshot;
+    }
 
-   public static void measureTimer( Name metric, Runnable code ) {
-      try( Timer.Context ignored = registry.timer( metric.line ).time() ) {
-         code.run();
-      }
-   }
+    public static void measureTimer( Name metric, Runnable code ) {
+        try( Timer.Context ignored = registry.timer( metric.line ).time() ) {
+            code.run();
+        }
+    }
 
-   public static void measureTimer( Name metric, long duration, TimeUnit unit ) {
-      registry.timer( metric.line ).update( duration, unit );
-   }
+    public static void measureTimer( Name metric, long duration, TimeUnit unit ) {
+        registry.timer( metric.line ).update( duration, unit );
+    }
 
-   public static <T> void measureGauge( String metric, Supplier<T> get ) {
-      registry.register( metric, ( Gauge ) get::get );
-   }
+    public static <T> void measureGauge( String metric, Supplier<T> get ) {
+        registry.register( metric, ( Gauge ) get::get );
+    }
 
-   public static <T> void measureGauge( Name metric, Supplier<T> get ) {
-      measureGauge( metric.line, get );
-   }
+    public static <T> void measureCachedGauge( String metric, long timeout, TimeUnit timeUnit, Supplier<T> get ) {
+        registry.register( metric, new CachedGauge<T>( timeout, timeUnit ) {
+            @Override
+            protected T loadValue() {
+                return get.get();
+            }
+        } );
+    }
 
-   public static <T> T measureTimer( String metric, Supplier<T> code ) {
-      return measureTimer( name( metric ), code );
-   }
+    public static <T> void measureGauge( Name metric, Supplier<T> get ) {
+        measureGauge( metric.line, get );
+    }
 
-   public static <T> T measureTimer( Name metric, Supplier<T> code ) {
-      try( Timer.Context ignored = registry.timer( metric.line ).time() ) {
-         return code.get();
-      }
-   }
+    public static <T> void measureCachedGauge( Name metric, long timeout, TimeUnit timeUnit, Supplier<T> get ) {
+        measureGauge( metric.line, get );
+    }
 
-   public static Timer.Context measureTimerCodehale( String metric ) {
-      return registry.timer( name( metric ).line ).time();
-   }
+    public static <T> T measureTimer( String metric, Supplier<T> code ) {
+        return measureTimer( name( metric ), code );
+    }
 
-   public static void measureMeter( Name metric ) {
-      registry.meter( MetricRegistry.name( metric.line ) ).mark();
-   }
+    public static <T> T measureTimer( Name metric, Supplier<T> code ) {
+        try( Timer.Context ignored = registry.timer( metric.line ).time() ) {
+            return code.get();
+        }
+    }
 
-   public static void measureMeter( Name metric, long n ) {
-      registry.meter( MetricRegistry.name( metric.line ) ).mark( n );
-   }
+    public static Timer.Context measureTimerCodehale( String metric ) {
+        return registry.timer( name( metric ).line ).time();
+    }
 
-   public static void measureHistogram( String metric, long count ) {
-      measureHistogram( name( metric ), count );
-   }
+    public static void measureMeter( Name metric ) {
+        registry.meter( MetricRegistry.name( metric.line ) ).mark();
+    }
 
-   public static <T extends Metric> T register( Name name, T metric ) {
-      return registry.register( MetricRegistry.name( name.line ), metric );
-   }
+    public static void measureMeter( Name metric, long n ) {
+        registry.meter( MetricRegistry.name( metric.line ) ).mark( n );
+    }
 
-   public static void measureHistogram( Name metric, long count ) {
-      registry.histogram( metric.line ).update( count );
-   }
+    public static void measureHistogram( String metric, long count ) {
+        measureHistogram( name( metric ), count );
+    }
 
-   public static void measureCounterIncrement( Name metric ) {
-      registry.counter( metric.line ).inc();
-   }
+    public static <T extends Metric> T register( Name name, T metric ) {
+        return registry.register( MetricRegistry.name( name.line ), metric );
+    }
 
-   public static void measureCounterIncrement( Name metric, long count ) {
-      registry.counter( metric.line ).inc( count );
-   }
+    public static void measureHistogram( Name metric, long count ) {
+        registry.histogram( metric.line ).update( count );
+    }
 
-   public static void measureCounterDecrement( Name metric ) {
-      registry.counter( metric.line ).dec();
-   }
+    public static void measureCounterIncrement( Name metric ) {
+        registry.counter( metric.line ).inc();
+    }
 
-   public static Name name( String measurement ) {
-      return new Name( measurement );
-   }
+    public static void measureCounterIncrement( Name metric, long count ) {
+        registry.counter( metric.line ).inc( count );
+    }
 
-   public static void reset( Name metric ) {
-      registry.remove( metric.line );
-   }
+    public static void measureCounterDecrement( Name metric ) {
+        registry.counter( metric.line ).dec();
+    }
 
-   public static void resetAll() {
-      registry.removeMatching( MetricFilter.ALL );
-   }
+    public static Name name( String measurement ) {
+        return new Name( measurement );
+    }
 
-   public static Snapshot snapshot( Name name ) {
-      return snapshot( name.line );
-   }
+    public static void reset( Name metric ) {
+        registry.remove( metric.line );
+    }
 
-   public static Snapshot snapshot( String name ) {
-      Metric metric = registry.getMetrics().get( name );
-      return metric != null ? toSnapshot( name, metric ) : new Snapshot( name );
-   }
+    public static void resetAll() {
+        registry.removeMatching( MetricFilter.ALL );
+    }
 
-   public static List<Snapshot> snapshots() {
-      return BiStream.of( registry.getMetrics() ).mapToObj( Metrics::toSnapshot ).toList();
-   }
+    public static Snapshot snapshot( Name name ) {
+        return snapshot( name.line );
+    }
 
-   public static List<Snapshot> snapshots( Predicate<Pair<String, Metric>> filter ) {
-      return BiStream
-         .of( registry.getMetrics() )
-         .filter( filter )
-         .mapToObj( Metrics::toSnapshot )
-         .toList();
-   }
+    public static Snapshot snapshot( String name ) {
+        Metric metric = registry.getMetrics().get( name );
+        return metric != null ? toSnapshot( name, metric ) : new Snapshot( name );
+    }
 
-   public static void unregister( String metric ) {
-      registry.remove( metric );
-   }
+    public static List<Snapshot> snapshots() {
+        return BiStream.of( registry.getMetrics() ).mapToObj( Metrics::toSnapshot ).toList();
+    }
 
-   public static class Snapshot {
-      public final String name;
-      public double mean;
-      public long count;
-      public double meanRate;
+    public static List<Snapshot> snapshots( Predicate<Pair<String, Metric>> filter ) {
+        return BiStream
+            .of( registry.getMetrics() )
+            .filter( filter )
+            .mapToObj( Metrics::toSnapshot )
+            .toList();
+    }
 
-      public Snapshot( String name ) {
-         this.name = name;
-      }
-   }
+    public static void unregister( String metric ) {
+        registry.remove( metric );
+    }
+
+    public static class Snapshot {
+        public final String name;
+        public double mean;
+        public long count;
+        public double meanRate;
+
+        public Snapshot( String name ) {
+            this.name = name;
+        }
+    }
 
 }
