@@ -23,6 +23,7 @@
  */
 package oap.json;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -30,9 +31,11 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.util.Dates;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
+import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
@@ -49,176 +52,181 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class BinderTest extends AbstractTest {
 
-   //todo generic map-list binding
-   private static <T> void assertBind( Class<T> clazz, T source ) {
-      System.out.println( "========================================" );
-      String json = Binder.json.marshal( source );
-      System.out.println( "JSON2:" );
-      System.out.println( json );
-      T result = Binder.json.unmarshal( clazz, json );
-      System.out.println( "Object:" );
-      System.out.println( result );
-      assertThat( result ).isEqualTo( source );
-   }
+    //todo generic map-list binding
+    private static <T> void assertBind( Class<T> clazz, T source ) {
+        System.out.println( "========================================" );
+        String json = Binder.json.marshal( source );
+        System.out.println( "JSON:" );
+        System.out.println( json );
+        T result = Binder.json.unmarshal( clazz, json );
+        System.out.println( "Object:" );
+        System.out.println( result );
+        assertThat( result ).isEqualTo( source );
+    }
 
-   private static <T> void assertBindWithTyping( Class<T> clazz, T source ) {
-      System.out.println( "========================================" );
-      String json = Binder.jsonWithTyping.marshal( source );
-      System.out.println( "JSON:" );
-      System.out.println( json );
-      T result = Binder.jsonWithTyping.unmarshal( clazz, json );
-      System.out.println( "Object:" );
-      System.out.println( result );
-      assertThat( result ).isEqualTo( source );
-   }
+    private static <T> void assertBindWithTyping( Class<T> clazz, T source ) {
+        System.out.println( "========================================" );
+        String json = Binder.jsonWithTyping.marshal( source );
+        System.out.println( "JSON:" );
+        System.out.println( json );
+        T result = Binder.jsonWithTyping.unmarshal( clazz, json );
+        System.out.println( "Object:" );
+        System.out.println( result );
+        assertThat( result ).isEqualTo( source );
+    }
 
-   private static <T> void assertBind( TypeReference<T> ref, T source ) {
-      System.out.println( "========================================" );
-      String json = Binder.json.marshal( source );
-      System.out.println( "JSON:" );
-      System.out.println( json );
-      T result = Binder.json.unmarshal( ref, json );
-      System.out.println( "Object:" );
-      System.out.println( result );
-      assertThat( result ).isEqualTo( source );
-   }
+    private static <T> void assertBind( TypeReference<T> ref, T source ) {
+        System.out.println( "========================================" );
+        String json = Binder.json.marshal( source );
+        System.out.println( "JSON:" );
+        System.out.println( json );
+        T result = Binder.json.unmarshal( ref, json );
+        System.out.println( "Object:" );
+        System.out.println( result );
+        assertThat( result ).isEqualTo( source );
+    }
 
-   @Test
-   public void bindPrimitives() {
-      assertBind( boolean.class, true );
-      assertBind( boolean.class, false );
-      assertBind( Object.class, null );
-      assertBind( int.class, 10 );
-      assertBind( double.class, 10.3 );
-      assertBind( char.class, 'a' );
-      assertBind( Path.class, Paths.get( "/var/lib" ) );
-   }
+    @Test
+    public void bindPrimitives() {
+        assertBind( boolean.class, true );
+        assertBind( boolean.class, false );
+        assertBind( Object.class, null );
+        assertBind( int.class, 10 );
+        assertBind( double.class, 10.3 );
+        assertBind( char.class, 'a' );
+        assertBind( Path.class, Paths.get( "/var/lib" ) );
+    }
 
-   @Test
-   public void bindString() {
-      assertBind( String.class, "test" );
-      assertThat( Binder.json.<String>unmarshal( String.class, "\"test\"" ) ).isEqualTo( "test" );
-      assertThat( Binder.json.<Double>unmarshal( double.class, "\"1.1\"" ) ).isEqualTo( 1.1d );
-   }
+    @Test
+    public void bindString() {
+        assertBind( String.class, "test" );
+        assertThat( Binder.json.<String>unmarshal( String.class, "\"test\"" ) ).isEqualTo( "test" );
+        assertThat( Binder.json.<Double>unmarshal( double.class, "\"1.1\"" ) ).isEqualTo( 1.1d );
+    }
 
-   @Test
-   public void bindEnum() {
-      assertBind( TestEnum.class, TestEnum.C );
-      assertBind( EnumBean.class, new EnumBean( TestEnum.B ) );
-   }
+    @Test
+    public void bindEnum() {
+        assertBind( TestEnum.class, TestEnum.C );
+        assertBind( EnumBean.class, new EnumBean( TestEnum.B ) );
+    }
 
-   @Test
-   public void bindList() {
-      assertBind( new TypeReference<ArrayList<Integer>>() {
-      }, Lists.of( 1, 2, 3 ) );
-   }
+    @Test
+    public void bindList() {
+        assertBind( new TypeReference<ArrayList<Integer>>() {
+        }, Lists.of( 1, 2, 3 ) );
+    }
 
-   @Test
-   public void bindObject() {
-      assertBind( Bean.class, new Bean( "x", 10, new Bean2( "y", 15, Lists.of( 1, 2, 3 ) ) ) );
-   }
+    @Test
+    public void bindObject() {
+        assertBind( Bean.class, new Bean( "x", 10, new Bean2( "y", 15, Lists.of( 1, 2, 3 ) ) ) );
+    }
 
-   @Test
-   public void bindQuote() {
-      assertBind( Bean.class, new Bean( "\\\n\r\t\"'x", 10, null ) );
-   }
+    @Test
+    public void bindQuote() {
+        assertBind( Bean.class, new Bean( "\\\n\r\t\"'x", 10, null ) );
+    }
 
-   @Test
-   public void bindNulls() {
-      assertBind( Bean.class, new Bean( null, 10, null ) );
-   }
+    @Test
+    public void bindNulls() {
+        assertBind( Bean.class, new Bean( null, 10, null ) );
+    }
 
-   @Test
-   public void bindBeanListList() {
-      assertBind( ListBean.class, new ListBean( Lists.of( Lists.of( 1, 2, 3 ), Lists.of( 4, 5, 6 ) ) ) );
-   }
+    @Test
+    public void bindBeanListList() {
+        assertBind( ListBean.class, new ListBean( Lists.of( Lists.of( 1, 2, 3 ), Lists.of( 4, 5, 6 ) ) ) );
+    }
 
-   @Test
-   public void bindBeanEmptyList() {
-      assertBind( Bean3.class, new Bean3() );
-   }
+    @Test
+    public void bindBeanEmptyList() {
+        assertBind( Bean3.class, new Bean3() );
+    }
 
-   @Test
-   public void bindGenericObject() {
-      assertBind( BeanGB.class, new BeanGB( new BeanGeneric<>( Lists.of( 1, 2, 3 ) ) ) );
-   }
+    @Test
+    public void bindGenericObject() {
+        assertBind( BeanGB.class, new BeanGB( new BeanGeneric<>( Lists.of( 1, 2, 3 ) ) ) );
+    }
 
-   @Test
-   public void bindEmptyObject() {
-      assertBind( EmptyBean.class, new EmptyBean() );
-   }
+    @Test
+    public void bindEmptyObject() {
+        assertBind( EmptyBean.class, new EmptyBean() );
+    }
 
-   @Test
-   public void bindAtomicLong() {
-      assertBind( AtomicLongBean.class, new AtomicLongBean( 10 ) );
-      assertBindWithTyping( AtomicLongBean.class, new AtomicLongBean( 10 ) );
-   }
+    @Test
+    public void bindDateTime() {
+        assertBind( DateTimeBean.class, new DateTimeBean( Dates.nowUtc() ) );
+    }
 
-   @Test
-   public void bindDeepGeneric() {
-      assertBind( BeanGB2.class, new BeanGB2(
-         new BeanGeneric<>( Lists.of( new BeanGeneric<>( Lists.of( 1, 2 ) ),
-            new BeanGeneric<>( Lists.of( 3, 4 ) ) ) ),
-         new BeanGeneric<>(
-            Lists.of( new BeanGeneric<>( Lists.of( 5, 6 ) ), new BeanGeneric<>( Lists.of( 7, 8 ) ) ) )
-      ) );
-   }
+    @Test
+    public void bindAtomicLong() {
+        assertBind( AtomicLongBean.class, new AtomicLongBean( 10 ) );
+        assertBindWithTyping( AtomicLongBean.class, new AtomicLongBean( 10 ) );
+    }
 
-   @Test
-   public void bindAnyRefField() {
-      assertBind( BeanAnyRef.class, new BeanAnyRef( 1 ) );
-      assertBind( BeanAnyRef.class, new BeanAnyRef( "str" ) );
-      assertBind( BeanAnyRef.class, new BeanAnyRef( TestEnum.B ) );
-      assertBind( BeanAnyRef.class, new BeanAnyRef( new EnumBean( TestEnum.B ) ) );
+    @Test
+    public void bindDeepGeneric() {
+        assertBind( BeanGB2.class, new BeanGB2(
+            new BeanGeneric<>( Lists.of( new BeanGeneric<>( Lists.of( 1, 2 ) ),
+                new BeanGeneric<>( Lists.of( 3, 4 ) ) ) ),
+            new BeanGeneric<>(
+                Lists.of( new BeanGeneric<>( Lists.of( 5, 6 ) ), new BeanGeneric<>( Lists.of( 7, 8 ) ) ) )
+        ) );
+    }
+
+    @Test
+    public void bindAnyRefField() {
+        assertBind( BeanAnyRef.class, new BeanAnyRef( 1 ) );
+        assertBind( BeanAnyRef.class, new BeanAnyRef( "str" ) );
+        assertBind( BeanAnyRef.class, new BeanAnyRef( TestEnum.B ) );
+        assertBind( BeanAnyRef.class, new BeanAnyRef( new EnumBean( TestEnum.B ) ) );
 //        assertException( new JsonException( "a requires :type hint" ),
 //            () -> Binder.unmarshalString( BeanAnyRef.class, "{\"a\":\"str\"}" ) );
-   }
+    }
 
-   @Test
-   public void bindNamed() {
-      assertBind( NamedBean.class, new NamedBean( 10 ) );
-      assertString( Binder.json.marshal( new NamedBean( 10 ) ) ).isEqualTo( "{\"y\":10}" );
-   }
+    @Test
+    public void bindNamed() {
+        assertBind( NamedBean.class, new NamedBean( 10 ) );
+        assertString( Binder.json.marshal( new NamedBean( 10 ) ) ).isEqualTo( "{\"y\":10}" );
+    }
 
-   @Test
-   public void bindMap() {
-      assertBind( MapBean.class, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
-      assertString( Binder.json.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ) )
-         .isEqualTo( "{\"map\":{\"a\":1,\"b\":2}}" );
-   }
+    @Test
+    public void bindMap() {
+        assertBind( MapBean.class, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
+        assertString( Binder.json.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ) )
+            .isEqualTo( "{\"map\":{\"a\":1,\"b\":2}}" );
+    }
 
-   @Test
-   void optional() {
-      assertBind( OptBean.class, new OptBean() );
-   }
+    @Test
+    void optional() {
+        assertBind( OptBean.class, new OptBean() );
+    }
 
-   @Test
-   public void customLong() {
-      assertThat( Binder.hocon.<LongBean>unmarshal( LongBean.class, "{l = 2s}" ) ).isEqualTo( new LongBean( 2000 ) );
-      assertThat( Binder.json.<LongBean>unmarshal( LongBean.class, "{\"l\" : \"2kb\"}" ) ).isEqualTo( new LongBean( 2048 ) );
-   }
+    @Test
+    public void customLong() {
+        assertThat( Binder.hocon.<LongBean>unmarshal( LongBean.class, "{l = 2s}" ) ).isEqualTo( new LongBean( 2000 ) );
+        assertThat( Binder.json.<LongBean>unmarshal( LongBean.class, "{\"l\" : \"2kb\"}" ) ).isEqualTo( new LongBean( 2048 ) );
+    }
 
-   @Test
-   public void map() {
-      Bean bean = Binder.json.unmarshal( Bean.class, Maps.of(
-         __( "str", "aaa" ),
-         __( "i", 1 ),
-         __( "sb2", Maps.of(
-            __( "s2", "bbb" ),
-            __( "i2", 2 ),
-            __( "list", Lists.of( 1, 2, 3, 4 ) )
-         ) )
-      ) );
-      assertThat( bean ).isEqualTo( new Bean( "aaa", 1, new Bean2( "bbb", 2, Lists.of( 1, 2, 3, 4 ) ) ) );
-   }
+    @Test
+    public void map() {
+        Bean bean = Binder.json.unmarshal( Bean.class, Maps.of(
+            __( "str", "aaa" ),
+            __( "i", 1 ),
+            __( "sb2", Maps.of(
+                __( "s2", "bbb" ),
+                __( "i2", 2 ),
+                __( "list", Lists.of( 1, 2, 3, 4 ) )
+            ) )
+        ) );
+        assertThat( bean ).isEqualTo( new Bean( "aaa", 1, new Bean2( "bbb", 2, Lists.of( 1, 2, 3, 4 ) ) ) );
+    }
 
-   @Test
-   public void testMarshalToPath() {
-      final Path path = Env.tmpPath( "test.json" );
-      Binder.json.marshal( path, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
+    @Test
+    public void marshalToPath() {
+        Path path = Env.tmpPath( "test.json" );
+        Binder.json.marshal( path, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
 
-      assertThat( path ).hasContent( "{\"map\":{\"a\":1,\"b\":2}}" );
-   }
+        assertThat( path ).hasContent( "{\"map\":{\"a\":1,\"b\":2}}" );
+    }
 }
 
 @ToString
@@ -229,85 +237,85 @@ class EmptyBean {
 @EqualsAndHashCode
 @ToString
 class Bean {
-   public String str;
-   public int i;
-   public Bean2 sb2;
+    public String str;
+    public int i;
+    public Bean2 sb2;
 
-   public Bean() {
-   }
+    public Bean() {
+    }
 
-   public Bean( String str, int i, Bean2 sb2 ) {
-      this.str = str;
-      this.i = i;
-      this.sb2 = sb2;
-   }
+    public Bean( String str, int i, Bean2 sb2 ) {
+        this.str = str;
+        this.i = i;
+        this.sb2 = sb2;
+    }
 
 }
 
 @EqualsAndHashCode
 @ToString
 class Bean2 {
-   String s2;
-   int i2;
-   ArrayList<Integer> list = new ArrayList<>();
+    String s2;
+    int i2;
+    ArrayList<Integer> list = new ArrayList<>();
 
-   public Bean2() {
-   }
+    public Bean2() {
+    }
 
-   public Bean2( String s2, int i2, ArrayList<Integer> list ) {
-      this.s2 = s2;
-      this.i2 = i2;
-      this.list = list;
-   }
+    public Bean2( String s2, int i2, ArrayList<Integer> list ) {
+        this.s2 = s2;
+        this.i2 = i2;
+        this.list = list;
+    }
 }
 
 @EqualsAndHashCode
 @ToString
 class Bean3 {
-   public ArrayList<Integer> list = new ArrayList<>();
+    public ArrayList<Integer> list = new ArrayList<>();
 
-   public Bean3() {
-   }
+    public Bean3() {
+    }
 }
 
 @EqualsAndHashCode
 @ToString
 class ListBean {
-   public ArrayList<ArrayList<Integer>> l;
+    public ArrayList<ArrayList<Integer>> l;
 
-   public ListBean() {
-   }
+    public ListBean() {
+    }
 
-   public ListBean( ArrayList<ArrayList<Integer>> l ) {
-      this.l = l;
-   }
+    public ListBean( ArrayList<ArrayList<Integer>> l ) {
+        this.l = l;
+    }
 
 }
 
 @EqualsAndHashCode
 @ToString
 class BeanGeneric<A> {
-   A a;
+    A a;
 
-   public BeanGeneric() {
-   }
+    public BeanGeneric() {
+    }
 
-   public BeanGeneric( A a ) {
-      this.a = a;
-   }
+    public BeanGeneric( A a ) {
+        this.a = a;
+    }
 }
 
 @EqualsAndHashCode
 @ToString
 class BeanGB {
-   BeanGeneric<ArrayList<Integer>> bg;
+    BeanGeneric<ArrayList<Integer>> bg;
 
-   public BeanGB() {
-   }
+    public BeanGB() {
+    }
 
-   public BeanGB( BeanGeneric<ArrayList<Integer>> bg ) {
-      this.bg = bg;
-   }
+    public BeanGB( BeanGeneric<ArrayList<Integer>> bg ) {
+        this.bg = bg;
+    }
 
 }
 
@@ -315,127 +323,139 @@ class BeanGB {
 @EqualsAndHashCode
 @ToString
 class BeanGB2 {
-   BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg;
-   BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg2;
+    BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg;
+    BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg2;
 
-   public BeanGB2() {
-   }
+    public BeanGB2() {
+    }
 
-   public BeanGB2( BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg,
-                   BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg2 ) {
-      this.bg = bg;
-      this.bg2 = bg2;
-   }
+    public BeanGB2( BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg,
+                    BeanGeneric<ArrayList<BeanGeneric<ArrayList<Integer>>>> bg2 ) {
+        this.bg = bg;
+        this.bg2 = bg2;
+    }
 }
 
 @EqualsAndHashCode
 @ToString
 class EnumBean {
-   TestEnum v;
+    TestEnum v;
 
-   public EnumBean() {
-   }
+    public EnumBean() {
+    }
 
-   public EnumBean( TestEnum v ) {
-      this.v = v;
-   }
+    public EnumBean( TestEnum v ) {
+        this.v = v;
+    }
 }
 
 @EqualsAndHashCode
 @ToString
 class BeanAnyRef {
-   @JsonTypeInfo( use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "a:type" )
-   public Object a;
+    @JsonTypeInfo( use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "a:type" )
+    public Object a;
 
-   public BeanAnyRef() {
-   }
+    public BeanAnyRef() {
+    }
 
-   public BeanAnyRef( Object a ) {
-      this.a = a;
-   }
+    public BeanAnyRef( Object a ) {
+        this.a = a;
+    }
 
 }
 
 @EqualsAndHashCode
 @ToString
 class OptBean {
-   Optional<Integer> i1 = Optional.empty();
-   Optional<Integer> i2 = Optional.of( 1 );
-   Optional<List<String>> list = Optional.of( Lists.of( "a", "b" ) );
-   Optional<List<String>> emptyList = Optional.empty();
+    Optional<Integer> i1 = Optional.empty();
+    Optional<Integer> i2 = Optional.of( 1 );
+    Optional<List<String>> list = Optional.of( Lists.of( "a", "b" ) );
+    Optional<List<String>> emptyList = Optional.empty();
 
-   public OptBean() {
-   }
+    public OptBean() {
+    }
 
 }
 
 @EqualsAndHashCode
 @ToString
 class NamedBean {
-   @JsonProperty( "y" )
-   public int x;
+    @JsonProperty( "y" )
+    public int x;
 
-   public NamedBean() {
+    public NamedBean() {
 
-   }
+    }
 
-   public NamedBean( int x ) {
-      this.x = x;
-   }
+    public NamedBean( int x ) {
+        this.x = x;
+    }
 }
 
 @EqualsAndHashCode
 @ToString
 class MapBean {
-   public LinkedHashMap<String, Long> map;
+    public LinkedHashMap<String, Long> map;
 
-   public MapBean() {
+    public MapBean() {
 
-   }
+    }
 
-   @SafeVarargs
-   public MapBean( Pair<String, Long>... pairs ) {
-      this.map = Maps.of( pairs );
-   }
+    @SafeVarargs
+    public MapBean( Pair<String, Long>... pairs ) {
+        this.map = Maps.of( pairs );
+    }
 }
 
 @ToString
 class AtomicLongBean {
-   public AtomicLong v = new AtomicLong();
+    public AtomicLong v = new AtomicLong();
 
-   public AtomicLongBean() {
-   }
+    public AtomicLongBean() {
+    }
 
-   public AtomicLongBean( long v ) {
-      this.v.set( v );
-   }
+    public AtomicLongBean( long v ) {
+        this.v.set( v );
+    }
 
-   @Override
-   public boolean equals( Object o ) {
-      if( this == o ) return true;
-      if( o == null || getClass() != o.getClass() ) return false;
+    @Override
+    public boolean equals( Object o ) {
+        if( this == o ) return true;
+        if( o == null || getClass() != o.getClass() ) return false;
 
-      AtomicLongBean that = ( AtomicLongBean ) o;
+        AtomicLongBean that = ( AtomicLongBean ) o;
 
-      return v.get() == that.v.get();
+        return v.get() == that.v.get();
 
-   }
+    }
 
-   @Override
-   public int hashCode() {
-      return Long.hashCode( v.get() );
-   }
+    @Override
+    public int hashCode() {
+        return Long.hashCode( v.get() );
+    }
 }
 
 @ToString
 @EqualsAndHashCode
 class LongBean {
-   long l;
+    long l;
 
-   public LongBean( long l ) {
-      this.l = l;
-   }
+    public LongBean( long l ) {
+        this.l = l;
+    }
 
-   public LongBean() {
-   }
+    public LongBean() {
+
+    }
+}
+
+@ToString
+@EqualsAndHashCode
+class DateTimeBean {
+    DateTime date;
+
+    @JsonCreator
+    public DateTimeBean( DateTime date ) {
+        this.date = date;
+    }
 }

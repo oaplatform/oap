@@ -54,6 +54,10 @@ public class Dates {
         }
     }
 
+    public static DateTime nowUtc() {
+        return DateTime.now( DateTimeZone.UTC );
+    }
+
     public static long currentTimeHour() {
         return DateTimeUtils.currentTimeMillis() / 1000 / 60 / 60;
     }
