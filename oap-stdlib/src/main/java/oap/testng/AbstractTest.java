@@ -44,23 +44,23 @@ public abstract class AbstractTest {
     protected boolean cleanupTemp = true;
 
     @AfterSuite
-    public void afterSuite() {
+    public void afterSuite() throws Exception {
         if( cleanupTemp ) deleteDirectory( Env.tmp );
     }
 
     @AfterClass
-    public void afterClass() {
+    public void afterClass() throws Exception {
         if( cleanupTemp ) deleteDirectory( Env.tmpRoot );
     }
 
     @BeforeMethod
-    public void beforeMethod() {
+    public void beforeMethod() throws Exception {
         MockitoAnnotations.initMocks( this );
         DateTimeUtils.setCurrentMillisSystem();
     }
 
     @AfterMethod
-    public void afterMethod() throws IOException {
+    public void afterMethod() throws Exception {
         afterMethod( true );
     }
 
