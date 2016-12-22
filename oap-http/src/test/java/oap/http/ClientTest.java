@@ -32,7 +32,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,72 +46,72 @@ import static org.mockserver.model.HttpResponse.response;
 
 @Slf4j
 public class ClientTest extends AbstractTest {
-   public static final int PORT = 1080;
-   private ClientAndServer mockServer;
+    public static final int PORT = 1080;
+    private ClientAndServer mockServer;
 
-   @BeforeMethod
-   @Override
-   public void beforeMethod() {
-      super.beforeMethod();
+    @BeforeMethod
+    @Override
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
 
-      mockServer = startClientAndServer( PORT );
-   }
+        mockServer = startClientAndServer( PORT );
+    }
 
-   @AfterMethod
-   @Override
-   public void afterMethod() throws IOException {
-      mockServer.stop( true );
+    @AfterMethod
+    @Override
+    public void afterMethod() throws Exception {
+        mockServer.stop( true );
 
-      super.afterMethod();
-   }
+        super.afterMethod();
+    }
 
-   @Test
-   public void download() {
-      mockServer
-         .when(
-            request()
-               .withMethod( "GET" )
-               .withPath( "/file" ),
-            once()
-         )
-         .respond(
-            response()
-               .withStatusCode( HTTP_OK )
-               .withBody( "test1" )
-         );
+    @Test
+    public void download() {
+        mockServer
+            .when(
+                request()
+                    .withMethod( "GET" )
+                    .withPath( "/file" ),
+                once()
+            )
+            .respond(
+                response()
+                    .withStatusCode( HTTP_OK )
+                    .withBody( "test1" )
+            );
 
-      final Path path = Env.tmpPath( "new.file" );
-      AtomicInteger progress = new AtomicInteger();
-      final Optional<Path> download = Client.DEFAULT.download( "http://localhost:" + PORT + "/file",
-         Optional.empty(), Optional.of( path ), progress::set );
+        final Path path = Env.tmpPath( "new.file" );
+        AtomicInteger progress = new AtomicInteger();
+        final Optional<Path> download = Client.DEFAULT.download( "http://localhost:" + PORT + "/file",
+            Optional.empty(), Optional.of( path ), progress::set );
 
-      assertThat( download ).contains( path );
-      assertThat( download ).isPresent();
-      assertFile( path ).exists().hasSize( 5 );
-      assertThat( progress.get() ).isEqualTo( 100 );
-   }
+        assertThat( download ).contains( path );
+        assertThat( download ).isPresent();
+        assertFile( path ).exists().hasSize( 5 );
+        assertThat( progress.get() ).isEqualTo( 100 );
+    }
 
-   @Test
-   public void downloadTempFile() {
-      mockServer
-         .when(
-            request()
-               .withMethod( "GET" )
-               .withPath( "/file.gz" ),
-            once()
-         )
-         .respond(
-            response()
-               .withStatusCode( HTTP_OK )
-               .withBody( "test1" )
-         );
+    @Test
+    public void downloadTempFile() {
+        mockServer
+            .when(
+                request()
+                    .withMethod( "GET" )
+                    .withPath( "/file.gz" ),
+                once()
+            )
+            .respond(
+                response()
+                    .withStatusCode( HTTP_OK )
+                    .withBody( "test1" )
+            );
 
-      AtomicInteger progress = new AtomicInteger();
-      final Optional<Path> download = Client.DEFAULT.download( "http://localhost:" + PORT + "/file.gz",
-         Optional.empty(), Optional.empty(), progress::set );
-      assertThat( download ).isPresent();
-      assertFile( download.get() ).exists().hasSize( 5 );
-      assertFile( download.get() ).hasExtension( "gz" );
-      assertThat( progress.get() ).isEqualTo( 100 );
-   }
+        AtomicInteger progress = new AtomicInteger();
+        final Optional<Path> download = Client.DEFAULT.download( "http://localhost:" + PORT + "/file.gz",
+            Optional.empty(), Optional.empty(), progress::set );
+        assertThat( download ).isPresent();
+        assertFile( download.get() ).exists().hasSize( 5 );
+        assertFile( download.get() ).hasExtension( "gz" );
+        assertThat( progress.get() ).isEqualTo( 100 );
+    }
 }

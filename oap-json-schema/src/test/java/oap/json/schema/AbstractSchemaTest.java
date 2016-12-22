@@ -34,50 +34,50 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class AbstractSchemaTest extends AbstractTest {
-   protected static final SchemaStorage NO_STORAGE = new NoStorage();
+    protected static final SchemaStorage NO_STORAGE = new NoStorage();
 
-   protected static SchemaAST schema( String schema ) {
-      return JsonValidatorFactory.schemaFromString( schema, NO_STORAGE ).schema;
-   }
+    protected static SchemaAST schema( String schema ) {
+        return JsonValidatorFactory.schemaFromString( schema, NO_STORAGE ).schema;
+    }
 
-   protected static void assertOk( String schema, String json ) {
-      assertOk( schema, json, NO_STORAGE, false );
-   }
+    protected static void assertOk( String schema, String json ) {
+        assertOk( schema, json, NO_STORAGE, false );
+    }
 
-   protected static Object assertOk( String schema, String json, SchemaStorage storage, boolean ignoreRequiredDefault ) {
-      final Object obj = Binder.json.unmarshal( Object.class, json );
-      List<String> result =
-         JsonValidatorFactory.schemaFromString( schema, storage )
-            .validate( obj, ignoreRequiredDefault );
-      if( !result.isEmpty() ) throw new AssertionError( String.join( "\n", result ) );
+    protected static Object assertOk( String schema, String json, SchemaStorage storage, boolean ignoreRequiredDefault ) {
+        final Object obj = Binder.json.unmarshal( Object.class, json );
+        List<String> result =
+            JsonValidatorFactory.schemaFromString( schema, storage )
+                .validate( obj, ignoreRequiredDefault );
+        if( !result.isEmpty() ) throw new AssertionError( String.join( "\n", result ) );
 
-      return obj;
-   }
+        return obj;
+    }
 
-   protected static void assertFailure( String schema, String json, String error ) {
-      assertFailure( schema, json, error, NO_STORAGE );
-   }
+    protected static void assertFailure( String schema, String json, String error ) {
+        assertFailure( schema, json, error, NO_STORAGE );
+    }
 
-   protected static void assertFailure( String schema, String json, String error, SchemaStorage storage ) {
-      List<String> result =
-         JsonValidatorFactory.schemaFromString( schema, storage )
-            .validate( Binder.json.unmarshal( Object.class, json ), false );
-      if( result.isEmpty() ) Assert.fail( json + " -> " + error );
-      assertThat( result ).containsOnly( error );
-   }
+    protected static void assertFailure( String schema, String json, String error, SchemaStorage storage ) {
+        List<String> result =
+            JsonValidatorFactory.schemaFromString( schema, storage )
+                .validate( Binder.json.unmarshal( Object.class, json ), false );
+        if( result.isEmpty() ) Assert.fail( json + " -> " + error );
+        assertThat( result ).containsOnly( error );
+    }
 
-   @BeforeMethod
-   @Override
-   public void beforeMethod() {
-      super.beforeMethod();
+    @BeforeMethod
+    @Override
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
 
-      JsonValidatorFactory.reset();
-   }
+        JsonValidatorFactory.reset();
+    }
 
-   private static class NoStorage implements SchemaStorage {
-      @Override
-      public String get( String name ) {
-         throw new NotImplementedException( "" );
-      }
-   }
+    private static class NoStorage implements SchemaStorage {
+        @Override
+        public String get( String name ) {
+            throw new NotImplementedException( "" );
+        }
+    }
 }

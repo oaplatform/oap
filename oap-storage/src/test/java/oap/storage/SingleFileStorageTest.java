@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class SingleFileStorageTest extends AbstractTest {
    @BeforeMethod
    @Override
-   public void beforeMethod() {
+   public void beforeMethod() throws Exception {
       super.beforeMethod();
 
       TypeIdFactory.register( TestSFS.class, TestSFS.class.getName() );

@@ -25,7 +25,7 @@ public class FileWalkerTest extends AbstractTest {
 
     @BeforeMethod
     @Override
-    public void beforeMethod() {
+    public void beforeMethod() throws Exception {
         super.beforeMethod();
 
         Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );

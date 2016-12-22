@@ -46,7 +46,7 @@ public class FilesPerformance extends AbstractPerformance {
 
     @BeforeMethod
     @Override
-    public void beforeMethod() {
+    public void beforeMethod() throws Exception {
         super.beforeMethod();
 
         path = Env.tmpPath( "tt/test" );

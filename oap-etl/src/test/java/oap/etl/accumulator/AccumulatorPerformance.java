@@ -52,63 +52,64 @@ import java.util.stream.Stream;
 @Test( enabled = false )
 public class AccumulatorPerformance extends AbstractPerformance {
 
-   public static final int SAMPLES = 200;
-   public static final int EXPERIMENTS = 5;
-   private Path path1;
-   private Path path2;
-   private Random random;
+    public static final int SAMPLES = 200;
+    public static final int EXPERIMENTS = 5;
+    private Path path1;
+    private Path path2;
+    private Random random;
 
-   @BeforeMethod
-   @Override
-   public void beforeMethod() {
-      super.beforeMethod();
+    @BeforeMethod
+    @Override
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
 
-      path1 = Env.tmpPath( "test.tsv" );
-      path2 = Env.tmpPath( "test2.tsv" );
+        path1 = Env.tmpPath( "test.tsv" );
+        path2 = Env.tmpPath( "test2.tsv" );
 
-      writeFile( path1 );
-      writeFile( path2 );
-   }
+        writeFile( path1 );
+        writeFile( path2 );
+    }
 
-   @DataProvider( name = "count" )
-   public Object[][] aggregates() {
-      return new Object[][]{ { 1 }, { 2 }, { 4 }, { 8 } };
-   }
+    @DataProvider( name = "count" )
+    public Object[][] aggregates() {
+        return new Object[][] { { 1 }, { 2 }, { 4 }, { 8 } };
+    }
 
-   private void writeFile( Path path ) {
-      try( OutputStream out = IoStreams.out( path, IoStreams.Encoding.GZIP ) ) {
-         for( int y = 0; y < 10000; y++ ) {
-            random = new Random();
-            final String row = IntStream
-               .range( 0, 6 )
-               .mapToObj( x -> x > 2 ? String.valueOf( random.nextInt( 10 ) ) : "test-" + x + "-" + random.nextInt( 10 ) )
-               .collect( Collectors.joining( "\t" ) ) + "\n";
-            out.write( row.getBytes() );
-         }
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
+    private void writeFile( Path path ) {
+        try( OutputStream out = IoStreams.out( path, IoStreams.Encoding.GZIP ) ) {
+            for( int y = 0; y < 10000; y++ ) {
+                random = new Random();
+                final String row = IntStream
+                    .range( 0, 6 )
+                    .mapToObj( x -> x > 2 ? String.valueOf( random.nextInt( 10 ) )
+                        : "test-" + x + "-" + random.nextInt( 10 ) )
+                    .collect( Collectors.joining( "\t" ) ) + "\n";
+                out.write( row.getBytes() );
+            }
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 
-   @Test( dataProvider = "count" )
-   public void testAggregatedByHM( int count ) {
-      benchmark( "accumulator.without_sort", SAMPLES, EXPERIMENTS, ( i ) -> {
+    @Test( dataProvider = "count" )
+    public void testAggregatedByHM( int count ) {
+        benchmark( "accumulator.without_sort", SAMPLES, EXPERIMENTS, ( i ) -> {
 
-         Table.GroupBy[] groups = Stream
-            .generate( () -> new Table.GroupBy( "agg_name", new int[]{ 0, 1, 2 }, Accumulator.count(), Accumulator.intSum( 3 ), Accumulator.intSum( 4 ) ) )
-            .limit( count )
-            .toArray( Table.GroupBy[]::new );
+            Table.GroupBy[] groups = Stream
+                .generate( () -> new Table.GroupBy( "agg_name", new int[] { 0, 1, 2 }, Accumulator.count(), Accumulator.intSum( 3 ), Accumulator.intSum( 4 ) ) )
+                .limit( count )
+                .toArray( Table.GroupBy[]::new );
 
-         List<Pair<String, Table>> tables = Table.fromPaths( Arrays.asList( path1, path2 ),
-            Model.withoutHeader().s( "c0", 0 ).s( "c1", 1 ).s( "c2", 2 ).i( "c3", 3 ).i( "c4", 4 ).i( "c5", 5 ) )
-            .groupBy( groups )
-            .getTables();
+            List<Pair<String, Table>> tables = Table.fromPaths( Arrays.asList( path1, path2 ),
+                Model.withoutHeader().s( "c0", 0 ).s( "c1", 1 ).s( "c2", 2 ).i( "c3", 3 ).i( "c4", 4 ).i( "c5", 5 ) )
+                .groupBy( groups )
+                .getTables();
 
-         for( int x = 0; x < count; x++ ) {
-            StringExport export = new StringExport();
+            for( int x = 0; x < count; x++ ) {
+                StringExport export = new StringExport();
 
-            tables.get( x )._2.sort( new int[]{ 0, 1, 2 } ).export( export ).compute();
-         }
-      } );
-   }
+                tables.get( x )._2.sort( new int[] { 0, 1, 2 } ).export( export ).compute();
+            }
+        } );
+    }
 }

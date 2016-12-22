@@ -32,7 +32,6 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -205,7 +204,7 @@ public abstract class AbstractPerformance extends AbstractTest {
 
     @BeforeMethod
     @Override
-    public void beforeMethod() {
+    public void beforeMethod() throws Exception {
         Logger root = ( Logger ) LoggerFactory.getLogger( Logger.ROOT_LOGGER_NAME );
         root.setLevel( Level.INFO );
 
@@ -214,7 +213,7 @@ public abstract class AbstractPerformance extends AbstractTest {
 
     @AfterMethod
     @Override
-    public void afterMethod() throws IOException {
+    public void afterMethod() throws Exception {
         Logger root = ( Logger ) LoggerFactory.getLogger( Logger.ROOT_LOGGER_NAME );
         root.setLevel( Level.TRACE );
 
