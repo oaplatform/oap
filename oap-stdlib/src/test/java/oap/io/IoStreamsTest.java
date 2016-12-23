@@ -25,7 +25,6 @@ package oap.io;
 
 import oap.io.IoStreams.Encoding;
 import oap.testng.AbstractTest;
-import oap.util.Lists;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -38,11 +37,9 @@ import java.nio.file.Paths;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
-import static oap.io.IoStreams.Encoding.ZIP;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.fail;
 
 public class IoStreamsTest extends AbstractTest {
     @Test
@@ -57,20 +54,26 @@ public class IoStreamsTest extends AbstractTest {
         assertFile( path ).hasContent( "", GZIP );
     }
 
-    @Test
-    public void append() throws IOException {
-        Path path = tmpPath( "test.gz" );
-        for( Encoding encoding : Lists.of( PLAIN, GZIP ) ) {
-            OutputStream out = IoStreams.out( path, encoding );
-            out.write( "12345".getBytes() );
-            out.flush();
-            out.close();
-            out = IoStreams.out( path, encoding, true );
-            out.write( "12345".getBytes() );
-            out.flush();
-            out.close();
-            assertFile( path ).hasContent( "1234512345", encoding );
-        }
+    @DataProvider
+    public Object[][] encodings() {
+        return new Object[][] {
+            { PLAIN },
+            { GZIP }
+        };
+    }
+
+    @Test( dataProvider = "encodings" )
+    public void append( Encoding encoding ) throws IOException {
+        Path path = tmpPath( "test.txt" + encoding.extension );
+        OutputStream out = IoStreams.out( path, encoding );
+        out.write( "12345".getBytes() );
+        out.flush();
+        out.close();
+        out = IoStreams.out( path, encoding, true );
+        out.write( "12345".getBytes() );
+        out.flush();
+        out.close();
+        assertFile( path ).hasContent( "1234512345", encoding );
     }
 
     @Test
