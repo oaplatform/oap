@@ -34,8 +34,8 @@ import static oap.io.IoStreams.DEFAULT_BUFFER;
 
 public class FileExport extends OutputStreamExport<OutputStream> {
 
-    public FileExport( Path path, IoStreams.Encoding encoding, boolean safe, boolean removeEmpty ) {
-        super( IoStreams.out( path, encoding, DEFAULT_BUFFER, false, safe, removeEmpty ) );
+    public FileExport( Path path, IoStreams.Encoding encoding, boolean safe ) {
+        super( IoStreams.out( path, encoding, DEFAULT_BUFFER, false, safe ) );
     }
 
     @Override

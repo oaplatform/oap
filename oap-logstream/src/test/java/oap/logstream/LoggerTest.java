@@ -24,6 +24,7 @@
 
 package oap.logstream;
 
+import oap.io.IoStreams.Encoding;
 import oap.logstream.disk.DiskLoggingBackend;
 import oap.logstream.net.SocketLoggingBackend;
 import oap.logstream.net.SocketLoggingServer;
@@ -33,91 +34,89 @@ import oap.util.Dates;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import static oap.io.IoStreams.Encoding.GZIP;
-import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_BUFFER;
 import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_FREE_SPACE_REQUIRED;
 import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
-import static oap.util.Dates.formatDateWihMillis;
+import static oap.util.Dates.formatDateWithMillis;
 import static org.joda.time.DateTimeUtils.currentTimeMillis;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class LoggerTest extends AbstractTest {
 
-   //   compress, useClientHostPrefix
-   @DataProvider
-   public Object[][] variance() {
-      return new Object[][]{
-         { false, false },
-         { false, true },
-         { true, false },
-         { true, true }
-      };
-   }
+    //   ext, useClientHostPrefix
+    @DataProvider
+    public Object[][] variance() {
+        return new Object[][] {
+            { ".log", false },
+            { ".log", true },
+            { ".log.gz", false },
+            { ".log.gz", true }
+        };
+    }
 
-   @Test( dataProvider = "variance" )
-   public void disk( boolean compress, boolean useClientHostPrefix ) {
-      Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
+    @Test( dataProvider = "variance" )
+    public void disk( String ext, boolean useClientHostPrefix ) {
+        Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-      String host = useClientHostPrefix ? HOSTNAME + "/" : "";
-      String content = "12345678";
-      try( DiskLoggingBackend backend = new DiskLoggingBackend( tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, compress ) ) {
-         backend.useClientHostPrefix = useClientHostPrefix;
-         Logger logger = new Logger( backend );
-         logger.log( "a", content );
-         logger.log( "b", content );
-         logger.log( "a", content );
-         logger.log( "d", content );
-      }
-
-      assertFile( tmpPath( "logs/" + host + "2015-10/10/a-2015-10-10-01-00.log" ) )
-         .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
-            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n", compress ? GZIP : PLAIN );
-      assertFile( tmpPath( "logs/" + host + "/2015-10/10/b-2015-10-10-01-00.log" ) )
-         .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n", compress ? GZIP : PLAIN );
-      assertFile( tmpPath( "logs/" + host + "/2015-10/10/d-2015-10-10-01-00.log" ) )
-         .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n", compress ? GZIP : PLAIN );
-   }
-
-   @Test
-   public void net() {
-      Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
-      String content = "12345678";
-
-      try( DiskLoggingBackend serverBackend = new DiskLoggingBackend( tmpPath( "logs" ), "log", DEFAULT_BUFFER, 12, false ) ) {
-         SocketLoggingServer server = new SocketLoggingServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
-         try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", Env.port( "net" ), tmpPath( "buffers" ), 50 ) ) {
-            serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 1000L;
-            assertFalse( serverBackend.isLoggingAvailable() );
-            Logger logger = new Logger( clientBackend );
+        String host = useClientHostPrefix ? HOSTNAME + "/" : "";
+        String content = "12345678";
+        try( DiskLoggingBackend backend = new DiskLoggingBackend( tmpPath( "logs" ), ext, DEFAULT_BUFFER, 12 ) ) {
+            backend.useClientHostPrefix = useClientHostPrefix;
+            Logger logger = new Logger( backend );
             logger.log( "a", content );
-            clientBackend.send();
-            assertFalse( logger.isLoggingAvailable() );
-            server.start();
-            clientBackend.send();
-            assertFalse( logger.isLoggingAvailable() );
-            serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
-            assertTrue( serverBackend.isLoggingAvailable() );
-            clientBackend.send();
-            assertTrue( logger.isLoggingAvailable() );
             logger.log( "b", content );
             logger.log( "a", content );
             logger.log( "d", content );
-            clientBackend.send();
-         } finally {
-            server.stop();
-         }
-      }
+        }
 
-      assertFile( tmpPath( "logs/localhost/2015-10/10/a-2015-10-10-01-00.log" ) )
-         .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" +
-            formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-      assertFile( tmpPath( "logs/localhost/2015-10/10/b-2015-10-10-01-00.log" ) )
-         .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-      assertFile( tmpPath( "logs/localhost/2015-10/10/d-2015-10-10-01-00.log" ) )
-         .hasContent( formatDateWihMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-   }
+        assertFile( tmpPath( "logs/" + host + "2015-10/10/a-2015-10-10-01-00" + ext ) )
+            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n"
+                + formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.from( ext ) );
+        assertFile( tmpPath( "logs/" + host + "/2015-10/10/b-2015-10-10-01-00" + ext ) )
+            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.from( ext ) );
+        assertFile( tmpPath( "logs/" + host + "/2015-10/10/d-2015-10-10-01-00" + ext ) )
+            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.from( ext ) );
+    }
+
+    @Test
+    public void net() {
+        Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
+        String content = "12345678";
+
+        try( DiskLoggingBackend serverBackend = new DiskLoggingBackend( tmpPath( "logs" ), ".log", DEFAULT_BUFFER, 12 ) ) {
+            SocketLoggingServer server = new SocketLoggingServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
+            try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", Env.port( "net" ), tmpPath( "buffers" ), 50 ) ) {
+                serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 1000L;
+                assertFalse( serverBackend.isLoggingAvailable() );
+                Logger logger = new Logger( clientBackend );
+                logger.log( "a", content );
+                clientBackend.send();
+                assertFalse( logger.isLoggingAvailable() );
+                server.start();
+                clientBackend.send();
+                assertFalse( logger.isLoggingAvailable() );
+                serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
+                assertTrue( serverBackend.isLoggingAvailable() );
+                clientBackend.send();
+                assertTrue( logger.isLoggingAvailable() );
+                logger.log( "b", content );
+                logger.log( "a", content );
+                logger.log( "d", content );
+                clientBackend.send();
+            } finally {
+                server.stop();
+            }
+        }
+
+        assertFile( tmpPath( "logs/localhost/2015-10/10/a-2015-10-10-01-00.log" ) )
+            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n"
+                + formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+        assertFile( tmpPath( "logs/localhost/2015-10/10/b-2015-10-10-01-00.log" ) )
+            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+        assertFile( tmpPath( "logs/localhost/2015-10/10/d-2015-10-10-01-00.log" ) )
+            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+    }
 }

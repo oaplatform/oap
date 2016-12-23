@@ -44,7 +44,6 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
 import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
-import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
@@ -52,10 +51,9 @@ import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
+import oap.util.Dates;
 import oap.util.Strings;
-import org.joda.time.DateTime;
 import org.joda.time.ReadableInstant;
-import org.joda.time.format.DateTimeFormat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,8 +64,7 @@ import java.util.Map;
 
 @Slf4j
 public class Binder {
-    private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( DateTimeFormat
-        .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSSZ" ) );
+    private static final JacksonJodaDateFormat JACKSON_DATE_FORMAT = new JacksonJodaDateFormat( Dates.FORMAT_FULL );
 
     public static final Binder hocon =
         new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false ) );
@@ -115,7 +112,7 @@ public class Binder {
 
     @SuppressWarnings( "unchecked" )
     private static <T extends ReadableInstant> JsonDeserializer<T> forType( Class<T> cls ) {
-        return ( JsonDeserializer<T> ) new DateTimeDeserializer( cls, jodaDateFormat );
+        return ( JsonDeserializer<T> ) new DateTimeDeserializer( cls, JACKSON_DATE_FORMAT );
     }
 
     public final JsonGenerator getJsonGenerator( Path path ) throws JsonException {

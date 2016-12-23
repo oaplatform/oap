@@ -30,6 +30,9 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 public class Dates {
+    public static final DateTimeFormatter FORMAT_FULL = DateTimeFormat
+        .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSSZ" );
+
     public static final DateTimeFormatter FORMAT_MILLIS = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSS" )
         .withZone( DateTimeZone.getDefault() );
@@ -66,12 +69,16 @@ public class Dates {
         return DateTimeUtils.currentTimeMillis() / 1000 / 60 / 60 / 24;
     }
 
-    public static String formatDateWihMillis( DateTime date ) {
+    public static String formatDateWithMillis( DateTime date ) {
         return FORMAT_MILLIS.print( date );
     }
 
-    public static String formatDateWihMillis( long millis ) {
+    public static String formatDateWithMillis( long millis ) {
         return FORMAT_MILLIS.print( millis );
+    }
+
+    public static String format( DateTime date ) {
+        return FORMAT_FULL.print( date );
     }
 
     public static void setTimeFixed( int year, int monthOfYear, int dayOfMonth, int hourOfDay ) {

@@ -44,7 +44,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.Optional;
+import java.nio.file.Paths;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -141,16 +141,21 @@ public class IoStreams {
     }
 
     public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append ) {
-        return out( path, encoding, bufferSize, append, false, false );
+        return out( path, encoding, bufferSize, append, false );
     }
 
-    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe, boolean removeEmptyIfSafe ) {
-        assert ( !removeEmptyIfSafe || safe );
+    public static OutputStream out( Path path, Encoding encoding, int bufferSize, boolean append, boolean safe ) {
 
         path.toAbsolutePath().getParent().toFile().mkdirs();
+
+        if( append ) try {
+            Files.ensureFileEncodingValid( path );
+        } catch( InvalidFileEncodingException e ) {
+            Files.rename( path, Paths.get( path + ".corrupted" ) );
+        }
         try {
             OutputStream fos = new BufferedOutputStream( safe
-                ? new SafeFileOutputStream( path, append, removeEmptyIfSafe )
+                ? new SafeFileOutputStream( path, append )
                 : new FileOutputStream( path.toFile(), append ),
                 bufferSize );
             switch( encoding ) {
@@ -166,7 +171,7 @@ public class IoStreams {
                 case PLAIN:
                     return fos;
                 default:
-                    throw new IllegalArgumentException( "Unknown encoding " + encoding );
+                    throw new IllegalArgumentException( "unknown encoding " + encoding );
             }
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
@@ -223,17 +228,17 @@ public class IoStreams {
     }
 
     public enum Encoding {
-        PLAIN( Optional.empty(), false ),
-        ZIP( Optional.of( "zip" ), true ),
-        GZIP( Optional.of( "gz" ), true ),
-        LZ4( Optional.of( "lz4" ), true );
+        PLAIN( "", false ),
+        ZIP( ".zip", true ),
+        GZIP( ".gz", true ),
+        LZ4( ".lz4", true );
 
-        public final Optional<String> extension;
-        public final boolean compress;
+        public final String extension;
+        public final boolean compressed;
 
-        Encoding( Optional<String> extension, boolean compress ) {
+        Encoding( String extension, boolean compressed ) {
             this.extension = extension;
-            this.compress = compress;
+            this.compressed = compressed;
         }
 
         public static Encoding from( Path path ) {
@@ -248,12 +253,17 @@ public class IoStreams {
             return from( strPath );
         }
 
-        public static Encoding from( String strPath ) {
+        public static Encoding from( String name ) {
             return Stream
                 .of( values() )
-                .filter( e -> e.extension.filter( strPath::endsWith ).isPresent() )
+                .filter( e -> e.compressed && name.endsWith( e.extension ) )
                 .findAny()
                 .orElse( PLAIN );
+        }
+
+        public Path resolve( Path path ) {
+            String s = path.toString();
+            return Paths.get( s.substring( 0, s.length() - from( path ).extension.length() ) + extension );
         }
     }
 }

@@ -24,53 +24,56 @@
 
 package oap.logstream.disk;
 
-import oap.io.IoStreams;
+import oap.io.IoStreams.Encoding;
 import oap.testng.AbstractTest;
 import oap.util.Dates;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import static oap.io.IoStreams.Encoding.GZIP;
-import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
 
 public class WriterTest extends AbstractTest {
 
-   @DataProvider
-   public Object[][] encodings() {
-      return new Object[][]{ { PLAIN }, { GZIP } };
-   }
+    @DataProvider
+    public Object[][] encodings() {
+        return new Object[][] { { ".log" }, { ".log.gz" } };
+    }
 
-   @Test( dataProvider = "encodings" )
-   public void testWrite( IoStreams.Encoding encoding ) {
-      Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
-      String content = "1234567890";
-      byte[] bytes = content.getBytes();
-      Writer writer = new Writer( tmpPath( "logs" ), "test/file", "log", 10, 12, GZIP == encoding );
+    @Test( dataProvider = "encodings" )
+    public void write( String ext ) {
+        Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
+        String content = "1234567890";
+        byte[] bytes = content.getBytes();
+        Writer writer = new Writer( tmpPath( "logs" ), "test/file", ext, 10, 12 );
 
-      writer.write( bytes );
+        writer.write( bytes );
 
-      Dates.setTimeFixed( 2015, 10, 10, 1, 5 );
-      writer.write( bytes );
+        Dates.setTimeFixed( 2015, 10, 10, 1, 5 );
+        writer.write( bytes );
 
-      Dates.setTimeFixed( 2015, 10, 10, 1, 10 );
-      writer.write( bytes );
+        Dates.setTimeFixed( 2015, 10, 10, 1, 10 );
+        writer.write( bytes );
 
-      writer.close();
+        writer.close();
 
-      writer = new Writer( tmpPath( "logs" ), "test/file", "log", 10, 12, GZIP == encoding );
+        writer = new Writer( tmpPath( "logs" ), "test/file", ext, 10, 12 );
 
-      Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
-      writer.write( bytes );
+        Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
+        writer.write( bytes );
 
-      Dates.setTimeFixed( 2015, 10, 10, 1, 59 );
-      writer.write( bytes );
-      writer.close();
-      assertFile( tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-00.log" ) ).hasContent( content, encoding );
-      assertFile( tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-00.log" ) ).hasContent( content, encoding );
-      assertFile( tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-01.log" ) ).hasContent( content, encoding );
-      assertFile( tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-02.log" ) ).hasContent( content + content, encoding );
-      assertFile( tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-11.log" ) ).hasContent( content, encoding );
-   }
+        Dates.setTimeFixed( 2015, 10, 10, 1, 59 );
+        writer.write( bytes );
+        writer.close();
+        assertFile( tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-00" + ext ) )
+            .hasContent( content, Encoding.from( ext ) );
+        assertFile( tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-00" + ext ) )
+            .hasContent( content, Encoding.from( ext ) );
+        assertFile( tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-01" + ext ) )
+            .hasContent( content, Encoding.from( ext ) );
+        assertFile( tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-02" + ext ) )
+            .hasContent( content + content, Encoding.from( ext ) );
+        assertFile( tmpPath( "logs/test/2015-10/10/file-2015-10-10-01-11" + ext ) )
+            .hasContent( content, Encoding.from( ext ) );
+    }
 }

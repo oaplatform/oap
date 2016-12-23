@@ -23,29 +23,10 @@
  */
 package oap.io;
 
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
-public class SafeFileOutputStream extends FileOutputStream {
-    private final Path path;
-
-    public SafeFileOutputStream( Path path, boolean append ) throws FileNotFoundException {
-        super( path + ".unsafe", append );
-        this.path = path;
+public class InvalidFileEncodingException extends IllegalArgumentException {
+    public InvalidFileEncodingException( Path path ) {
+        super( path.toString() );
     }
-
-    @Override
-    public void close() throws IOException {
-        super.close();
-        final Path unsafePath = Paths.get( this.path + ".unsafe" );
-        if( unsafePath.toFile().length() == 0 )
-            Files.delete( unsafePath );
-        else
-            Files.rename( unsafePath, this.path );
-    }
-
-
 }

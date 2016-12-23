@@ -30,6 +30,7 @@ import oap.concurrent.Stopwatch;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.IoStreams;
+import oap.io.IoStreams.Encoding;
 import oap.logstream.Timestamp;
 import oap.metrics.Metrics;
 import org.joda.time.DateTime;
@@ -42,96 +43,92 @@ import java.nio.file.Paths;
 import java.util.Objects;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static oap.io.IoStreams.Encoding.GZIP;
-import static oap.io.IoStreams.Encoding.PLAIN;
 
 @Slf4j
 public class Writer implements Closeable {
-   private final String ext;
-   private final Path logDirectory;
-   private final String filename;
-   private int bufferSize;
-   private int bucketsPerHour;
-   private boolean compress;
-   private CountingOutputStream out;
-   private String lastPattern;
-   private Scheduled refresher;
-   private Stopwatch stopwatch = new Stopwatch();
+    private final String ext;
+    private final Path logDirectory;
+    private final String filename;
+    private int bufferSize;
+    private int bucketsPerHour;
+    private CountingOutputStream out;
+    private String lastPattern;
+    private Scheduled refresher;
+    private Stopwatch stopwatch = new Stopwatch();
 
-   public Writer( Path logDirectory, String filename, String ext, int bufferSize, int bucketsPerHour, boolean compress ) {
-      this.logDirectory = logDirectory;
-      this.filename = filename;
-      this.ext = ext;
-      this.bufferSize = bufferSize;
-      this.bucketsPerHour = bucketsPerHour;
-      this.compress = compress;
-      this.lastPattern = currentPattern();
-      this.refresher = Scheduler.scheduleWithFixedDelay( 10, SECONDS, this::refresh );
-      log.debug( "spawning {}", this );
-   }
+    public Writer( Path logDirectory, String filename, String ext, int bufferSize, int bucketsPerHour ) {
+        this.logDirectory = logDirectory;
+        this.filename = filename;
+        this.ext = ext;
+        this.bufferSize = bufferSize;
+        this.bucketsPerHour = bucketsPerHour;
+        this.lastPattern = currentPattern();
+        this.refresher = Scheduler.scheduleWithFixedDelay( 10, SECONDS, this::refresh );
+        log.debug( "spawning {}", this );
+    }
 
 
-   @Override
-   public void close() {
-      log.debug( "closing {}", this );
-      Scheduled.cancel( refresher );
-      closeOutput();
-   }
+    @Override
+    public void close() {
+        log.debug( "closing {}", this );
+        Scheduled.cancel( refresher );
+        closeOutput();
+    }
 
-   private void closeOutput() {
-      if( out != null ) try {
-         log.trace( "closing output {} ({} bytes)", this, out.getCount() );
-         stopwatch.measure( out::flush );
-         stopwatch.measure( out::close );
-         Metrics.measureHistogram( "logging.server_bucket_size", out.getCount() );
-         Metrics.measureHistogram( "logging.server_bucket_time", stopwatch.elapsed() / 1000000L );
-         out = null;
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
-
-   public synchronized void write( byte[] buffer ) {
-      write( buffer, 0, buffer.length );
-   }
-
-   public synchronized void write( byte[] buffer, int offset, int length ) {
-      try {
-         refresh();
-         if( out == null )
-            out = new CountingOutputStream( IoStreams.out( filename(), compress ? GZIP : PLAIN, bufferSize, true ) );
-         log.trace( "writing {} bytes to {}", length, this );
-         out.write( buffer, offset, length );
-
-      } catch( IOException e ) {
-         log.error( e.getMessage(), e );
-         try {
-            closeOutput();
-         } finally {
+    private void closeOutput() {
+        if( out != null ) try {
+            log.trace( "closing output {} ({} bytes)", this, out.getCount() );
+            stopwatch.measure( out::flush );
+            stopwatch.measure( out::close );
+            Metrics.measureHistogram( "logging.server_bucket_size", out.getCount() );
+            Metrics.measureHistogram( "logging.server_bucket_time", stopwatch.elapsed() / 1000000L );
             out = null;
-         }
-         throw new UncheckedIOException( e );
-      }
-   }
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 
-   private Path filename() {
-      return Paths.get( Timestamp.path( logDirectory.toString(), lastPattern, filename, ext ) );
-   }
+    public synchronized void write( byte[] buffer ) {
+        write( buffer, 0, buffer.length );
+    }
 
-   private synchronized void refresh() {
-      String currentPattern = currentPattern();
-      if( !Objects.equals( this.lastPattern, currentPattern ) ) {
-         closeOutput();
-         lastPattern = currentPattern;
-      }
-   }
+    public synchronized void write( byte[] buffer, int offset, int length ) {
+        try {
+            refresh();
+            if( out == null )
+                out = new CountingOutputStream( IoStreams.out( filename(), Encoding.from( ext ), bufferSize, true ) );
+            log.trace( "writing {} bytes to {}", length, this );
+            out.write( buffer, offset, length );
 
-   private String currentPattern() {
-      return Timestamp.format( DateTime.now(), bucketsPerHour );
-   }
+        } catch( IOException e ) {
+            log.error( e.getMessage(), e );
+            try {
+                closeOutput();
+            } finally {
+                out = null;
+            }
+            throw new UncheckedIOException( e );
+        }
+    }
 
-   @Override
-   public String toString() {
-      return getClass().getSimpleName() + "@" + filename();
-   }
+    private Path filename() {
+        return Paths.get( Timestamp.path( logDirectory.toString(), lastPattern, filename, ext ) );
+    }
+
+    private synchronized void refresh() {
+        String currentPattern = currentPattern();
+        if( !Objects.equals( this.lastPattern, currentPattern ) ) {
+            closeOutput();
+            lastPattern = currentPattern;
+        }
+    }
+
+    private String currentPattern() {
+        return Timestamp.format( DateTime.now(), bucketsPerHour );
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "@" + filename();
+    }
 }

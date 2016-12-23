@@ -33,12 +33,8 @@ public interface Export {
         return new BufferedConsoleExport();
     }
 
-    static Export toFile( Path path, IoStreams.Encoding encoding, boolean safe, boolean removeEmpty ) {
-        return new FileExport( path, encoding, safe, removeEmpty );
-    }
-
     static Export toFile( Path path, IoStreams.Encoding encoding, boolean safe ) {
-        return toFile( path, encoding, safe, false );
+        return new FileExport( path, encoding, safe );
     }
 
     void line( List<?> list );

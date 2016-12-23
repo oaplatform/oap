@@ -33,56 +33,70 @@ import org.joda.time.DateTimeUtils;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
+import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
 
 public class ArchiverTest extends AbstractTest {
 
-   @DataProvider
-   public Object[][] encoding() {
-      return new Object[][]{ { PLAIN, LZ4 }, { PLAIN, PLAIN } };
-   }
+    @DataProvider
+    public Object[][] encoding() {
+        return new Object[][] {
+            { PLAIN, LZ4 },
+            { PLAIN, PLAIN },
+            { GZIP, PLAIN },
+            { GZIP, LZ4 }
+        };
+    }
 
-   @Test( dataProvider = "encoding" )
-   public void archive( IoStreams.Encoding srcEncoding, IoStreams.Encoding destEncoding ) {
-      DateTime now = new DateTime( 2015, 10, 10, 12, 0, 0 );
-      DateTimeUtils.setCurrentMillisFixed( now.getMillis() );
-      Path logs = Env.tmpPath( "logs" );
-      Path archives = Env.tmpPath( "archives" );
-      String[] files = {
-         "a/a-2015-10-10-11-10.log",
-         "a/a-2015-10-10-11-11.log",
-         "a/a-2015-10-10-12-00.log",
-         "a/b-2015-10-10-11-11.log",
-         "b/c/a-2015-10-10-11-10.log",
-         "b/c/a-2015-10-10-11-11.log",
-         "b/c/a-2015-10-10-12-00.log",
-         "b/c/a-2015-10-10-12-01.log",
-         "b/c/b-2015-10-10-11-11.log"
-      };
+    @Test( dataProvider = "encoding" )
+    public void archive( IoStreams.Encoding srcEncoding, IoStreams.Encoding destEncoding ) throws IOException {
+        DateTime now = new DateTime( 2015, 10, 10, 12, 0, 0 );
+        DateTimeUtils.setCurrentMillisFixed( now.getMillis() );
+        Path logs = Env.tmpPath( "logs" );
+        Path archives = Env.tmpPath( "archives" );
+        String[] files = {
+            "a/a-2015-10-10-11-10.log" + srcEncoding.extension,
+            "a/a-2015-10-10-11-11.log" + srcEncoding.extension,
+            "a/a-2015-10-10-12-00.log" + srcEncoding.extension,
+            "a/b-2015-10-10-11-11.log" + srcEncoding.extension,
+            "b/c/a-2015-10-10-11-10.log" + srcEncoding.extension,
+            "b/c/a-2015-10-10-11-11.log" + srcEncoding.extension,
+            "b/c/a-2015-10-10-12-00.log" + srcEncoding.extension,
+            "b/c/a-2015-10-10-12-01.log" + srcEncoding.extension,
+            "b/c/b-2015-10-10-11-11.log" + srcEncoding.extension
+        };
 
-      for( String file : files ) Files.writeString( logs.resolve( file ), "data" );
+        for( String file : files ) Files.writeString( logs.resolve( file ), srcEncoding, "data" );
 
-      Archiver archiver = new Archiver( logs, archives, 10000, "**/*.log", srcEncoding, destEncoding, 12 );
-      archiver.run();
+        String corrupted = "a/corrupted-2015-10-10-11-10.txt.gz";
+        Files.writeString( logs.resolve( corrupted ), PLAIN, "data" );
 
-      for( String file : files )
-         assertFile( archives.resolve( file + destEncoding.extension.map( e -> "." + e ).orElse( "" ) ) ).doesNotExist();
+        Archiver archiver = new Archiver( logs, archives, 10000, "**/*", destEncoding, 12 );
+        archiver.run();
 
-      DateTimeUtils.setCurrentMillisFixed( now.plusSeconds( 11 ).getMillis() );
-      archiver.run();
+        for( String file : files )
+            assertFile( archives.resolve( destEncoding.resolve( Paths.get( file ) ) ) ).doesNotExist();
 
-      for( String file : files ) {
-         Path path = archives.resolve( file + destEncoding.extension.map( e -> "." + e ).orElse( "" ) );
-         if( file.matches( ".*-12-0[01]\\.log" ) )
-            assertFile( path ).doesNotExist();
-         else {
-            assertFile( logs.resolve( file ) ).doesNotExist();
-            assertFile( path ).hasContent( "data", destEncoding );
-         }
-      }
-   }
+        DateTimeUtils.setCurrentMillisFixed( now.plusSeconds( 11 ).getMillis() );
+        archiver.run();
+
+        for( String file : files ) {
+            Path path = archives.resolve( destEncoding.resolve( Paths.get( file ) ) );
+            if( file.contains( "-12-00." ) || file.contains( "-12-01." ) )
+                assertFile( path ).doesNotExist();
+            else {
+                assertFile( logs.resolve( file ) ).doesNotExist();
+                assertFile( path ).hasContent( "data", destEncoding );
+            }
+        }
+        assertFile( archiver.corruptedDirectory.resolve( corrupted ) ).exists();
+        assertFile( logs.resolve( corrupted ) ).doesNotExist();
+        assertFile( archives.resolve( corrupted ) ).doesNotExist();
+    }
 }

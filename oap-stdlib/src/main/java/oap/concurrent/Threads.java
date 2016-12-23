@@ -59,4 +59,8 @@ public class Threads {
             monitor.notifyAll();
         }
     }
+
+    public static boolean isInterrupted() {
+        return Thread.currentThread().isInterrupted();
+    }
 }

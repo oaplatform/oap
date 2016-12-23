@@ -25,25 +25,29 @@ package oap.io;
 
 import oap.io.IoStreams.Encoding;
 import oap.testng.AbstractTest;
-import oap.testng.Env;
 import oap.util.Lists;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
+import static oap.io.IoStreams.Encoding.ZIP;
 import static oap.testng.Asserts.assertFile;
+import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.testng.Assert.fail;
 
 public class IoStreamsTest extends AbstractTest {
     @Test
     public void emptyGz() throws IOException {
-        Path path = Env.tmpPath( "test.gz" );
+        Path path = tmpPath( "test.gz" );
         OutputStream out = IoStreams.out( path, GZIP );
         out.flush();
         out.close();
@@ -55,7 +59,7 @@ public class IoStreamsTest extends AbstractTest {
 
     @Test
     public void append() throws IOException {
-        Path path = Env.tmpPath( "test.gz" );
+        Path path = tmpPath( "test.gz" );
         for( Encoding encoding : Lists.of( PLAIN, GZIP ) ) {
             OutputStream out = IoStreams.out( path, encoding );
             out.write( "12345".getBytes() );
@@ -70,8 +74,8 @@ public class IoStreamsTest extends AbstractTest {
     }
 
     @Test
-    public void testLZ4() throws IOException {
-        Path path = Env.tmpPath( "test.lz4" );
+    public void lz4() throws IOException {
+        Path path = tmpPath( "test.lz4" );
 
         OutputStream out = IoStreams.out( path, LZ4 );
         out.write( "12345".getBytes() );
@@ -79,5 +83,12 @@ public class IoStreamsTest extends AbstractTest {
         out.close();
 
         assertFile( path ).hasContent( "12345", LZ4 );
+    }
+
+    @Test
+    public void encodingResolve() {
+        assertThat( LZ4.resolve( Paths.get( "/x/a.txt.gz" ) ) ).isEqualTo( Paths.get( "/x/a.txt.lz4" ) );
+        assertThat( PLAIN.resolve( Paths.get( "/x/a.txt.gz" ) ) ).isEqualTo( Paths.get( "/x/a.txt" ) );
+        assertThat( GZIP.resolve( Paths.get( "/x/a.txt" ) ) ).isEqualTo( Paths.get( "/x/a.txt.gz" ) );
     }
 }

@@ -48,14 +48,10 @@ public class SafeFileOutputStreamTest extends AbstractTest {
     @Test
     public void removeIfEmpty() throws IOException {
         Path path = Env.tmpPath( "1" );
-        SafeFileOutputStream stream1 = new SafeFileOutputStream( path, false, true );
-        stream1.flush();
-        stream1.close();
+        SafeFileOutputStream stream = new SafeFileOutputStream( path, false );
+        stream.flush();
+        stream.close();
         assertFile( path ).doesNotExist();
 
-        SafeFileOutputStream stream2 = new SafeFileOutputStream( path, false, false );
-        stream2.flush();
-        stream2.close();
-        assertFile( path ).exists();
     }
 }
