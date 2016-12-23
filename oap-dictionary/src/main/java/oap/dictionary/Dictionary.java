@@ -68,7 +68,7 @@ public interface Dictionary {
 
     default <T> T getPropertyOrThrow( String name ) {
         return this.<T>getProperty( name )
-            .orElseThrow( () -> new IllegalArgumentException( getId() + ": type not found" ) );
+            .orElseThrow( () -> new IllegalArgumentException( getId() + ": not found" ) );
     }
 
     boolean isEnabled();
