@@ -49,6 +49,10 @@ public class Dates {
         return parse( date, FORMAT_SIMPLE );
     }
 
+    public static Result<DateTime, Exception> parseDateWithTimeZone( String date ) {
+        return parse( date, FORMAT_FULL );
+    }
+
     private static Result<DateTime, Exception> parse( String date, DateTimeFormatter formatter ) {
         try {
             return Result.success( formatter.parseDateTime( date ) );
