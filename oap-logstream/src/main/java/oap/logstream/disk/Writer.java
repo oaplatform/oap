@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Stopwatch;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.IoStreams.Encoding;
 import oap.logstream.Timestamp;
@@ -95,8 +96,16 @@ public class Writer implements Closeable {
     public synchronized void write( byte[] buffer, int offset, int length ) {
         try {
             refresh();
+            Path filename = filename();
             if( out == null )
-                out = new CountingOutputStream( IoStreams.out( filename(), Encoding.from( ext ), bufferSize, true ) );
+                if( Files.isFileEncodingValid( filename ) )
+                    out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( ext ), bufferSize, true ) );
+                else {
+                    log.error( "corrupted file, cannot append {}", filename );
+                    Files.rename( filename, logDirectory.resolve( ".corrupted" )
+                        .resolve( logDirectory.relativize( filename ) ) );
+                    out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( ext ), bufferSize ) );
+                }
             log.trace( "writing {} bytes to {}", length, this );
             out.write( buffer, offset, length );
 

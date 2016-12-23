@@ -148,11 +148,7 @@ public class IoStreams {
 
         path.toAbsolutePath().getParent().toFile().mkdirs();
 
-        if( append ) try {
-            Files.ensureFileEncodingValid( path );
-        } catch( InvalidFileEncodingException e ) {
-            Files.rename( path, Paths.get( path + ".corrupted" ) );
-        }
+        if( append ) Files.ensureFileEncodingValid( path );
         try {
             OutputStream fos = new BufferedOutputStream( safe
                 ? new SafeFileOutputStream( path, append )
