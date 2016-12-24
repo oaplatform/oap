@@ -76,7 +76,7 @@ public class SocketLoggingServer implements Runnable {
         this.controlState = controlState;
         this.workersMetric = Metrics.measureGauge(
             Metrics.name( "logging.server." + port + ".workers" ),
-            executor::getTaskCount );
+            executor::getActiveCount );
     }
 
     @Override
