@@ -55,16 +55,20 @@ public class Tree<T> {
     private List<Dimension<?>> dimensions;
     private TreeNode<T> root = new Leaf<>( emptyList() );
 
-    public Tree( List<Dimension<?>> dimensions ) {
+    Tree( List<Dimension<?>> dimensions ) {
         this.dimensions = dimensions;
-    }
-
-    public Tree( Dimension<?>... dimensions ) {
-        this( asList( dimensions ) );
     }
 
     public static <T> ValueData<T> s( T selection, Object... data ) {
         return new ValueData<>( data, selection );
+    }
+
+    public static <T> TreeBuilder<T> tree( List<Dimension<?>> dimensions ) {
+        return new TreeBuilder<>( dimensions );
+    }
+
+    public static <T> TreeBuilder<T> tree( Dimension<?>... dimensions ) {
+        return new TreeBuilder<>( asList( dimensions ) );
     }
 
     public void load( ValueData<T>[] data ) {
@@ -74,6 +78,13 @@ public class Tree<T> {
 
     @SuppressWarnings( "unchecked" )
     private LongValueData<T>[] convertObjectToLong( ValueData<T>[] data ) {
+        Stream.of( dimensions )
+            .zipWithIndex()
+            .forEach( p -> {
+                final Stream<Object> rStream = Stream.of( data ).map( d -> d.data[p._2] );
+                ( ( Dimension<Object> ) p._1 ).init( rStream );
+            } );
+
         return Stream.of( data )
             .<LongValueData>map( vd -> new LongValueData<>( convertDataToLong( vd.data ), vd.value ) )
             .toArray( ( IntFunction<LongValueData<T>[]> ) LongValueData[]::new );
@@ -85,7 +96,7 @@ public class Tree<T> {
         for( int i = 0; i < dimensions.size(); i++ ) {
             final Object value = data[i];
             if( value == null ) longData[i] = ANY;
-            else longData[i] = ( ( Dimension<Object> ) dimensions.get( i ) ).toLong( value );
+            else longData[i] = ( ( Dimension<Object> ) dimensions.get( i ) ).getOrDefault( value );
         }
 
         return longData;
@@ -418,10 +429,11 @@ public class Tree<T> {
 
         @Override
         public void print( StringBuilder out ) {
+            final Dimension<?> dimension = dimensions.get( this.dimension );
             out.append( "kdn|" )
                 .append( "d:" )
-                .append( dimensions.get( dimension ) ).append( '/' ).append( dimension )
-                .append( ",sv:" ).append( eqValue );
+                .append( dimension.name ).append( '/' ).append( this.dimension )
+                .append( ",sv:" ).append( dimension.toString( eqValue ) );
         }
     }
 }

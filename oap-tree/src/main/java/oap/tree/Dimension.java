@@ -24,8 +24,9 @@
 
 package oap.tree;
 
-import java.util.Map;
-import java.util.stream.Collectors;
+import oap.util.StringBits;
+
+import java.util.Comparator;
 import java.util.stream.Stream;
 
 /**
@@ -38,19 +39,44 @@ public abstract class Dimension<T> {
         this.name = name;
     }
 
-    public static <T extends Enum<?>> Dimension<T> ENUM( String name, Class<T> clazz ) {
-        final T[] enumConstants = clazz.getEnumConstants();
-        final Map<Integer, String> hash = Stream.of( enumConstants ).collect( Collectors.toMap( e -> e.ordinal(), e -> e.name() ) );
+    public static <T extends Enum<?>> Dimension<T> ENUM( String name ) {
+        final StringBits bits = new StringBits();
 
         return new Dimension<T>( name ) {
             @Override
             public String toString( long value ) {
-                return hash.get( ( int ) value );
+                return bits.valueOf( value );
             }
 
             @Override
-            public long toLong( Enum value ) {
-                return value.ordinal();
+            public void init( Stream<T> value ) {
+                value.sorted( Comparator.comparing( e -> e.name() ) ).forEach( e -> bits.computeIfAbsent( e.name() ) );
+            }
+
+            @Override
+            public long getOrDefault( T value ) {
+                return bits.get( value.name() );
+            }
+        };
+    }
+
+    public static Dimension<String> STRING( String name ) {
+        final StringBits bits = new StringBits();
+
+        return new Dimension<String>( name ) {
+            @Override
+            public String toString( long value ) {
+                return bits.valueOf( value );
+            }
+
+            @Override
+            public void init( Stream<String> value ) {
+                value.sorted().forEach( bits::computeIfAbsent );
+            }
+
+            @Override
+            public long getOrDefault( String value ) {
+                return bits.get( value );
             }
         };
     }
@@ -63,7 +89,11 @@ public abstract class Dimension<T> {
             }
 
             @Override
-            public long toLong( Long value ) {
+            public void init( Stream<Long> value ) {
+            }
+
+            @Override
+            public long getOrDefault( Long value ) {
                 return value;
             }
         };
@@ -71,7 +101,9 @@ public abstract class Dimension<T> {
 
     public abstract String toString( long value );
 
-    public abstract long toLong( T value );
+    public abstract void init( Stream<T> value );
+
+    public abstract long getOrDefault( T value );
 
     @Override
     public String toString() {
