@@ -24,31 +24,27 @@
 
 package oap.http;
 
+import lombok.SneakyThrows;
 import oap.util.Maps;
 import oap.util.Pair;
-import oap.util.Throwables;
 import org.apache.http.client.utils.URIBuilder;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Map;
 
 public class Uri {
-   public static URI uri( String uri, Map<String, Object> params ) {
-      try {
-         URIBuilder uriBuilder = new URIBuilder( uri );
-         params.forEach( ( name, value ) ->
+    @SneakyThrows
+    public static URI uri( String uri, Map<String, Object> params ) {
+        URIBuilder uriBuilder = new URIBuilder( uri );
+        params.forEach( ( name, value ) ->
             uriBuilder.addParameter( name, value == null ? "" : value.toString() )
-         );
-         return uriBuilder.build();
-      } catch( URISyntaxException e ) {
-         throw Throwables.propagate( e );
-      }
+        );
+        return uriBuilder.build();
 
-   }
+    }
 
-   @SafeVarargs
-   public static URI uri( String uri, Pair<String, Object>... params ) {
-      return uri( uri, Maps.of( params ) );
-   }
+    @SafeVarargs
+    public static URI uri( String uri, Pair<String, Object>... params ) {
+        return uri( uri, Maps.of( params ) );
+    }
 }

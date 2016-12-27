@@ -23,6 +23,7 @@
  */
 package oap.util;
 
+import lombok.SneakyThrows;
 import oap.reflect.Reflect;
 import org.slf4j.Logger;
 
@@ -74,44 +75,6 @@ public class Try {
         return throwing.asFunction();
     }
 
-    public static class CatchingRunnable implements Runnable {
-        private Runnable runnable;
-        private Consumer<Throwable> onException = Functions.empty.consume();
-        private boolean propagate = false;
-
-        public CatchingRunnable( Runnable runnable ) {
-            this.runnable = runnable;
-        }
-
-        public CatchingRunnable propagate() {
-            propagate = true;
-            return this;
-        }
-
-        public CatchingRunnable logOnException( Logger log ) {
-            return onException( e -> log.error( e.getMessage(), e ) );
-        }
-
-        public CatchingRunnable onException( Consumer<Throwable> onException ) {
-            this.onException = onException;
-            return this;
-        }
-
-        public Runnable getRunnable() {
-            return runnable;
-        }
-
-        @Override
-        public void run() {
-            try {
-                runnable.run();
-            } catch( Throwable e ) {
-                onException.accept( e );
-                if( propagate ) Throwables.propagate( e );
-            }
-        }
-    }
-
     @FunctionalInterface
     public interface ThrowingPredicate<T> {
         boolean test( T t ) throws Exception;
@@ -137,8 +100,6 @@ public class Try {
             return t -> {
                 try {
                     return this.apply( t );
-                } catch( IOException e ) {
-                    throw new UncheckedIOException( e );
                 } catch( Exception e ) {
                     throw Throwables.propagate( e );
                 }
@@ -176,6 +137,7 @@ public class Try {
     public interface ThrowingSupplier<R> {
         R get() throws Exception;
 
+        @SneakyThrows
         default Supplier<R> asSupplier() {
             return () -> {
                 try {
@@ -192,6 +154,7 @@ public class Try {
     public interface ThrowingConsumer<T> {
         void accept( T t ) throws Exception;
 
+        @SneakyThrows
         default Consumer<T> asConsumer() {
             return t -> {
                 try {
@@ -207,6 +170,7 @@ public class Try {
     public interface ThrowingToLongFunction<T> {
         long applyToLong( T t ) throws Exception;
 
+        @SneakyThrows
         default ToLongFunction<T> asFunction() {
             return t -> {
                 try {
@@ -222,6 +186,7 @@ public class Try {
     public interface ThrowingBiConsumer<T, U> {
         void accept( T t, U u ) throws Exception;
 
+        @SneakyThrows
         default BiConsumer<T, U> asConsumer() {
             return ( t, u ) -> {
                 try {
@@ -230,6 +195,45 @@ public class Try {
                     Throwables.propagate( e );
                 }
             };
+        }
+    }
+
+    public static class CatchingRunnable implements Runnable {
+        private Runnable runnable;
+        private Consumer<Throwable> onException = Functions.empty.consume();
+        private boolean propagate = false;
+
+        public CatchingRunnable( Runnable runnable ) {
+            this.runnable = runnable;
+        }
+
+        public CatchingRunnable propagate() {
+            propagate = true;
+            return this;
+        }
+
+        public CatchingRunnable logOnException( Logger log ) {
+            return onException( e -> log.error( e.getMessage(), e ) );
+        }
+
+        public CatchingRunnable onException( Consumer<Throwable> onException ) {
+            this.onException = onException;
+            return this;
+        }
+
+        public Runnable getRunnable() {
+            return runnable;
+        }
+
+        @SneakyThrows
+        @Override
+        public void run() {
+            try {
+                runnable.run();
+            } catch( Throwable e ) {
+                onException.accept( e );
+                if( propagate ) throw e;
+            }
         }
     }
 }

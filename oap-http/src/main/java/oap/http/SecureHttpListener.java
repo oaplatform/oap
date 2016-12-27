@@ -1,19 +1,17 @@
 package oap.http;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams;
-import oap.util.Throwables;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.*;
+import java.security.KeyStore;
 import java.security.cert.CertificateException;
 
 import static oap.io.IoStreams.Encoding.PLAIN;
@@ -30,16 +28,17 @@ public class SecureHttpListener extends AbstractHttpListener {
         this.keystoreLocation = keystoreLocation;
         this.keystorePassword = keystorePassword;
         this.port = port;
-        log.info("Secure HTTP listener configured to use {} and bind to port {}",
-                keystoreLocation,
-                port);
+        log.info( "Secure HTTP listener configured to use {} and bind to port {}",
+            keystoreLocation,
+            port );
     }
 
+    @SneakyThrows
     @Override
     protected ServerSocket createSocket() {
         if( Files.exists( keystoreLocation ) ) {
             try {
-                log.info("Keystore {} exists, trying to initialize", keystoreLocation);
+                log.info( "Keystore {} exists, trying to initialize", keystoreLocation );
                 KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
                 keyStore.load( IoStreams.in( keystoreLocation, PLAIN ), keystorePassword.toCharArray() );
 
@@ -55,18 +54,14 @@ public class SecureHttpListener extends AbstractHttpListener {
                 serverSocket.setSoTimeout( timeout );
                 serverSocket.bind( new InetSocketAddress( port ) );
 
-                log.info("Successfully initialized secure http listener");
+                log.info( "Successfully initialized secure http listener" );
                 return serverSocket;
-            } catch( KeyStoreException | NoSuchAlgorithmException | CertificateException | UnrecoverableKeyException | KeyManagementException e ) {
-                throw Throwables.propagate( e );
             } catch( BindException e ) {
                 log.error( "Cannot bind to port [{}]", port );
-                throw new UncheckedIOException( e );
-            } catch( IOException e ) {
-                throw new UncheckedIOException( e );
+                throw e;
             }
         } else {
-            throw Throwables.propagate( new CertificateException( keystoreLocation + " not found" ) );
+            throw new CertificateException( keystoreLocation + " not found" );
         }
     }
 }

@@ -37,9 +37,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.LongStream;
+import java.util.function.IntFunction;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -53,35 +52,55 @@ import static oap.util.Pair.__;
 public class Tree<T> {
     public static final long ANY = Long.MIN_VALUE;
 
-    private List<String> dimensions;
+    private List<Dimension<?>> dimensions;
     private TreeNode<T> root = new Leaf<>( emptyList() );
 
-    public Tree( List<String> dimensions ) {
+    public Tree( List<Dimension<?>> dimensions ) {
         this.dimensions = dimensions;
     }
 
-    public Tree( String... dimensions ) {
+    public Tree( Dimension<?>... dimensions ) {
         this( asList( dimensions ) );
     }
 
-    public static <T> SelectionData<T> s( T selection, long... data ) {
-        return new SelectionData<>( data, selection );
+    public static <T> ValueData<T> s( T selection, Object... data ) {
+        return new ValueData<>( data, selection );
     }
 
-    public void load( SelectionData<T>[] data ) {
-        root = toNode( asList( data ), new BitSet( dimensions.size() ) );
+    public void load( ValueData<T>[] data ) {
+        final LongValueData<T>[] longData = convertObjectToLong( data );
+        root = toNode( asList( longData ), new BitSet( dimensions.size() ) );
     }
 
-    private TreeNode<T> toNode( List<SelectionData<T>> data, BitSet eq ) {
+    @SuppressWarnings( "unchecked" )
+    private LongValueData<T>[] convertObjectToLong( ValueData<T>[] data ) {
+        return Stream.of( data )
+            .<LongValueData>map( vd -> new LongValueData<>( convertDataToLong( vd.data ), vd.value ) )
+            .toArray( ( IntFunction<LongValueData<T>[]> ) LongValueData[]::new );
+    }
+
+    private long[] convertDataToLong( Object[] data ) {
+        final long[] longData = new long[dimensions.size()];
+
+        for( int i = 0; i < dimensions.size(); i++ ) {
+            final Object value = data[i];
+            if( value == null ) longData[i] = ANY;
+            else longData[i] = ( ( Dimension<Object> ) dimensions.get( i ) ).toLong( value );
+        }
+
+        return longData;
+    }
+
+    private TreeNode<T> toNode( List<LongValueData<T>> data, BitSet eq ) {
         if( data.isEmpty() ) return null;
 
-        final SplitDimension<T> splitDimension = findSplitDimension( data, eq );
+        final SplitDimension splitDimension = findSplitDimension( data, eq );
 
-        if( splitDimension == null ) return new Leaf<>( data.stream().map( sd -> sd.selection ).collect( toList() ) );
+        if( splitDimension == null ) return new Leaf<>( data.stream().map( sd -> sd.value ).collect( toList() ) );
 
         final BitSet bitSetWithDimension = withSet( eq, splitDimension.dimension );
 
-        return new Node<>(
+        return new Node(
             splitDimension.dimension,
             splitDimension.value,
             toNode( splitDimension.left, eq ),
@@ -97,7 +116,7 @@ public class Tree<T> {
         return bitSet;
     }
 
-    private SplitDimension<T> findSplitDimension( List<SelectionData<T>> data, BitSet eqBitSet ) {
+    private SplitDimension findSplitDimension( List<LongValueData<T>> data, BitSet eqBitSet ) {
         long uniqueSize = 0;
         int splitDimension = -1;
         for( int i = 0; i < dimensions.size(); i++ ) {
@@ -122,7 +141,7 @@ public class Tree<T> {
         final int finalSplitDimension = splitDimension;
         val partition_any_other = Stream.of( data ).partition( sd -> sd.data[finalSplitDimension] == ANY );
 
-        final List<SelectionData<T>> sorted = partition_any_other._2
+        final List<LongValueData<T>> sorted = partition_any_other._2
             .sorted( Comparator.comparingLong( sd -> sd.data[finalSplitDimension] ) )
             .collect( toList() );
 
@@ -133,16 +152,17 @@ public class Tree<T> {
         val partition_left_eq_right = Stream.of( sorted ).partition( sd -> sd.data[finalSplitDimension] < splitValue );
         val partition_eq_right = partition_left_eq_right._2.partition( sd -> sd.data[finalSplitDimension] == splitValue );
 
-        final List<SelectionData<T>> left = partition_left_eq_right._1.collect( toList() );
-        final List<SelectionData<T>> right = partition_eq_right._2.collect( toList() );
-        final List<SelectionData<T>> eq = partition_eq_right._1.collect( toList() );
-        final List<SelectionData<T>> any = partition_any_other._1.collect( toList() );
-        return new SplitDimension<>( splitDimension, splitValue, left, right, eq, any );
+        final List<LongValueData<T>> left = partition_left_eq_right._1.collect( toList() );
+        final List<LongValueData<T>> right = partition_eq_right._2.collect( toList() );
+        final List<LongValueData<T>> eq = partition_eq_right._1.collect( toList() );
+        final List<LongValueData<T>> any = partition_any_other._1.collect( toList() );
+        return new SplitDimension( splitDimension, splitValue, left, right, eq, any );
     }
 
-    public Set<T> find( long... query ) {
+    public Set<T> find( Object... query ) {
         final HashSet<T> result = new HashSet<>();
-        find( root, query, result );
+        final long[] longQuery = convertDataToLong( query );
+        find( root, longQuery, result );
         return result;
     }
 
@@ -152,7 +172,7 @@ public class Tree<T> {
         if( node instanceof Leaf ) {
             result.addAll( ( ( Leaf<T> ) node ).selections );
         } else {
-            final Node<T> n = ( Node<T> ) node;
+            final Node n = ( Node ) node;
             find( n.any, query, result );
 
             final long qValue = query[n.dimension];
@@ -174,17 +194,19 @@ public class Tree<T> {
     public String toString() {
         StringBuilder out = new StringBuilder();
 
-        TreePrinter.print( root, out );
+        print( root, out );
 
         return out.toString();
     }
 
-    public String trace( long... query ) {
+    public String trace( Object... query ) {
+
+        final long[] longQuery = convertDataToLong( query );
 
         final BitSet fails = new BitSet();
         final HashMap<T, List<long[]>> notFound = new HashMap<>();
 
-        trace( root, query, notFound, new long[dimensions.size()], fails );
+        trace( root, longQuery, notFound, new long[dimensions.size()], fails );
 
         if( !notFound.isEmpty() ) {
             return notFound
@@ -192,7 +214,7 @@ public class Tree<T> {
                 .stream()
                 .map(
                     s ->
-                        s.getKey() + " -> " + arrayToString( query ) + " not in: " + Stream.of( s.getValue() )
+                        s.getKey() + " -> " + arrayToString( longQuery ) + " not in: " + Stream.of( s.getValue() )
                             .map( this::arrayToString )
                             .collect( joining( ",", "[", "]" ) )
                 )
@@ -203,9 +225,23 @@ public class Tree<T> {
         }
     }
 
-    public String arrayToString( long[] set ) {
-        return LongStream.of( set ).mapToObj( v -> v == ANY ? "ANY"
-            : String.valueOf( v ) ).collect( joining( ",", "(", ")" ) );
+    private String arrayToString( long[] set ) {
+        final StringBuilder result = new StringBuilder( "(" );
+
+        for( int i = 0; i < dimensions.size(); i++ ) {
+            if( i > 0 ) result.append( "," );
+
+            final long value = set[i];
+            if( value == ANY ) result.append( "ANY" );
+            else {
+                final Dimension<?> dimension = dimensions.get( i );
+                result.append( dimension.toString( value ) );
+            }
+        }
+
+        result.append( ')' );
+
+        return result.toString();
     }
 
     private void trace( TreeNode<T> node, long[] query, HashMap<T, List<long[]>> notFound, long[] eq, BitSet fail ) {
@@ -215,14 +251,12 @@ public class Tree<T> {
             if( !fail.isEmpty() ) {
                 final Leaf<T> n = ( Leaf<T> ) node;
 
-                n.selections.forEach( s -> {
-                    notFound
-                        .computeIfAbsent( s, ( ss ) -> new ArrayList<>() )
-                        .add( eq );
-                } );
+                n.selections.forEach( s -> notFound
+                    .computeIfAbsent( s, ( ss ) -> new ArrayList<>() )
+                    .add( eq ) );
             }
         } else {
-            final Node<T> n = ( Node<T> ) node;
+            final Node n = ( Node ) node;
             final long[] newEq = Arrays.copyOf( eq, eq.length );
             newEq[n.dimension] = n.eqValue;
 
@@ -252,7 +286,7 @@ public class Tree<T> {
         }
     }
 
-    private BitSet logFail( BitSet fail, Node<T> n ) {
+    private BitSet logFail( BitSet fail, Node n ) {
         BitSet newFail = fail;
         if( !fail.get( n.dimension ) ) {
             newFail = BitSet.valueOf( fail.toLongArray() );
@@ -261,26 +295,61 @@ public class Tree<T> {
         return newFail;
     }
 
+    private void print( TreeNode<T> node, StringBuilder out ) {
+        print( "", true, node, out, "root" );
+    }
+
+    private void print( String prefix, boolean isTail, TreeNode<T> node, StringBuilder out, String type ) {
+        out.append( prefix ).append( isTail ? "└── " : "├── " ).append( type ).append( ":" );
+        if( node != null ) {
+            node.print( out );
+            out.append( "\n" );
+
+            final List<Pair<String, TreeNode<T>>> children =
+                node.children().stream().filter( p -> p._2 != null ).collect( toList() );
+
+            for( int i = 0; i < children.size(); i++ ) {
+                final Pair<String, TreeNode<T>> child = children.get( i );
+                final String name = child._1;
+                final TreeNode<T> value = child._2;
+
+                if( value != null )
+                    print( prefix + ( isTail ? "    " : "│   " ), i + 1 >= children.size(), value, out, name );
+
+            }
+        }
+    }
+
     private interface TreeNode<T> {
         List<Pair<String, TreeNode<T>>> children();
 
         void print( StringBuilder out );
     }
 
-    public static class SelectionData<T> {
-        public final long[] data;
-        public final T selection;
+    public static class ValueData<T> {
+        public final Object[] data;
+        public final T value;
 
-        public SelectionData( long[] data, T selection ) {
+        public ValueData( Object[] data, T value ) {
             this.data = data;
-            this.selection = selection;
+            this.value = value;
+        }
+    }
+
+    private static class LongValueData<T> {
+        private final long[] data;
+        private final T value;
+
+        private LongValueData( long[] data, T value ) {
+            this.data = data;
+            this.value = value;
         }
     }
 
     private static class Leaf<T> implements TreeNode<T> {
         private final List<T> selections;
 
-        public Leaf( List<T> selections ) {
+        private Leaf( List<T> selections ) {
             this.selections = selections;
         }
 
@@ -300,21 +369,21 @@ public class Tree<T> {
         }
     }
 
-    private static class SplitDimension<T> {
-        public final List<SelectionData<T>> left;
-        public final List<SelectionData<T>> right;
-        public final List<SelectionData<T>> equal;
-        public final List<SelectionData<T>> any;
-        public final int dimension;
-        public final long value;
+    private class SplitDimension {
+        private final List<LongValueData<T>> left;
+        private final List<LongValueData<T>> right;
+        private final List<LongValueData<T>> equal;
+        private final List<LongValueData<T>> any;
+        private final int dimension;
+        private final long value;
 
-        public SplitDimension(
+        private SplitDimension(
             int dimension,
             long value,
-            List<SelectionData<T>> left,
-            List<SelectionData<T>> right,
-            List<SelectionData<T>> equal,
-            List<SelectionData<T>> any ) {
+            List<LongValueData<T>> left,
+            List<LongValueData<T>> right,
+            List<LongValueData<T>> equal,
+            List<LongValueData<T>> any ) {
             this.dimension = dimension;
             this.value = value;
 
@@ -325,34 +394,7 @@ public class Tree<T> {
         }
     }
 
-    static final class TreePrinter {
-        static <T> void print( TreeNode<T> node, StringBuilder out ) {
-            print( "", true, node, out, "root" );
-        }
-
-        private static <T> void print( String prefix, boolean isTail, TreeNode<T> node, StringBuilder out, String type ) {
-            out.append( prefix ).append( isTail ? "└── " : "├── " ).append( type ).append( ":" );
-            if( node != null ) {
-                node.print( out );
-                out.append( "\n" );
-
-                final List<Pair<String, TreeNode<T>>> children =
-                    node.children().stream().filter( p -> p._2 != null ).collect( toList() );
-
-                for( int i = 0; i < children.size(); i++ ) {
-                    final Pair<String, TreeNode<T>> child = children.get( i );
-                    final String name = child._1;
-                    final TreeNode<T> value = child._2;
-
-                    if( value != null )
-                        print( prefix + ( isTail ? "    " : "│   " ), i + 1 >= children.size(), value, out, name );
-
-                }
-            }
-        }
-    }
-
-    private class Node<T> implements TreeNode<T> {
+    private class Node implements TreeNode<T> {
         final TreeNode<T> left;
         final TreeNode<T> right;
         final TreeNode<T> equal;
@@ -360,7 +402,7 @@ public class Tree<T> {
         final int dimension;
         final long eqValue;
 
-        public Node( int dimension, long eqValue, TreeNode<T> left, TreeNode<T> right, TreeNode<T> equal, TreeNode<T> any ) {
+        private Node( int dimension, long eqValue, TreeNode<T> left, TreeNode<T> right, TreeNode<T> equal, TreeNode<T> any ) {
             this.dimension = dimension;
             this.eqValue = eqValue;
             this.left = left;

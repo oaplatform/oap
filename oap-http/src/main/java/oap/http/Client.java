@@ -24,6 +24,7 @@
 package oap.http;
 
 import com.google.common.io.ByteStreams;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.AsyncCallbacks;
@@ -34,7 +35,6 @@ import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
-import oap.util.Throwables;
 import oap.util.Try;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -84,11 +84,7 @@ import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.security.KeyManagementException;
 import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -113,9 +109,9 @@ import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 @Slf4j
 public class Client implements Closeable {
     public static final Client DEFAULT = custom()
-            .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
-            .onTimeout( ( c ) -> log.error( "timeout" ) )
-            .build();
+        .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
+        .onTimeout( ( c ) -> log.error( "timeout" ) )
+        .build();
     private static final long FOREVER = Long.MAX_VALUE;
     private static final FutureCallback<org.apache.http.HttpResponse> FUTURE_CALLBACK = new FutureCallback<org.apache.http.HttpResponse>() {
         @Override
@@ -153,26 +149,23 @@ public class Client implements Closeable {
 
     private static Map<String, String> headers( org.apache.http.HttpResponse response ) {
         return Arrays.stream( response.getAllHeaders() )
-                .map( h -> __( h.getName(), h.getValue() ) )
-                .collect( toMap() );
+            .map( h -> __( h.getName(), h.getValue() ) )
+            .collect( toMap() );
     }
 
+    @SneakyThrows
     private static SSLContext createSSLContext( Path certificateLocation, String certificatePassword ) {
-        try {
-            KeyStore keyStore = KeyStore.getInstance( "JKS" );
-            keyStore.load( IoStreams.in( certificateLocation, PLAIN ),
-                    certificatePassword.toCharArray() );
+        KeyStore keyStore = KeyStore.getInstance( "JKS" );
+        keyStore.load( IoStreams.in( certificateLocation, PLAIN ),
+            certificatePassword.toCharArray() );
 
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-            trustManagerFactory.init( keyStore );
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+        trustManagerFactory.init( keyStore );
 
-            SSLContext sslContext = SSLContext.getInstance( "TLS" );
-            sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
+        SSLContext sslContext = SSLContext.getInstance( "TLS" );
+        sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
 
-            return sslContext;
-        } catch( KeyStoreException | IOException | CertificateException | NoSuchAlgorithmException | KeyManagementException e ) {
-            throw Throwables.propagate( e );
-        }
+        return sslContext;
     }
 
     public Response get( String uri ) {
@@ -190,7 +183,7 @@ public class Client implements Closeable {
 
     public Response get( String uri, Map<String, Object> params, Map<String, Object> headers ) {
         return get( uri, params, headers, FOREVER )
-                .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) );
+            .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) );
     }
 
     public Optional<Response> get( String uri, Map<String, Object> params, long timeout ) {
@@ -207,7 +200,7 @@ public class Client implements Closeable {
 
     public Response post( String uri, Map<String, Object> params, Map<String, Object> headers ) {
         return post( uri, params, headers, FOREVER )
-                .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Optional<Response> post( String uri, Map<String, Object> params, long timeout ) {
@@ -218,9 +211,9 @@ public class Client implements Closeable {
         try {
             HttpPost request = new HttpPost( uri );
             request.setEntity( new UrlEncodedFormEntity( Stream.of( params.entrySet() )
-                    .<NameValuePair>map( e -> new BasicNameValuePair( e.getKey(),
-                            e.getValue() == null ? "" : e.getValue().toString() ) )
-                    .toList()
+                .<NameValuePair>map( e -> new BasicNameValuePair( e.getKey(),
+                    e.getValue() == null ? "" : e.getValue().toString() ) )
+                .toList()
             ) );
             return execute( request, headers, timeout );
         } catch( UnsupportedEncodingException e ) {
@@ -234,7 +227,7 @@ public class Client implements Closeable {
 
     public Response post( String uri, String content, ContentType contentType, Map<String, Object> headers ) {
         return post( uri, content, contentType, headers, FOREVER )
-                .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Optional<Response> post( String uri, String content, ContentType contentType, long timeout ) {
@@ -257,14 +250,14 @@ public class Client implements Closeable {
         HttpPost request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, contentType ) );
         return execute( request, Maps.empty(), FOREVER )
-                .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response put( String uri, String content, ContentType contentType ) {
         HttpPut request = new HttpPut( uri );
         request.setEntity( new StringEntity( content, contentType ) );
         return execute( request, Maps.empty(), FOREVER )
-                .orElseThrow( () -> new RuntimeException( "no response" ) );
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response delete( String uri ) {
@@ -292,13 +285,14 @@ public class Client implements Closeable {
         basicCookieStore.clear();
     }
 
+    @SneakyThrows
     private Optional<Response> execute( HttpUriRequest request, Map<String, Object> headers, long timeout ) {
         try {
             headers.forEach( ( name, value ) -> request.setHeader( name, value == null ? "" : value.toString() ) );
 
             Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
             HttpResponse response = timeout == FOREVER ? future.get() :
-                    future.get( timeout, MILLISECONDS );
+                future.get( timeout, MILLISECONDS );
 
             Map<String, String> responsHeaders = headers( response );
             Response result;
@@ -306,33 +300,34 @@ public class Client implements Closeable {
                 HttpEntity entity = response.getEntity();
                 try( InputStream is = entity.getContent() ) {
                     result = new Response(
-                            response.getStatusLine().getStatusCode(),
-                            response.getStatusLine().getReasonPhrase(),
-                            responsHeaders,
-                            Optional.ofNullable( entity.getContentType() )
-                                    .map( ct -> ContentType.parse( entity.getContentType().getValue() ) ),
-                            ByteStreams.toByteArray( is )
+                        response.getStatusLine().getStatusCode(),
+                        response.getStatusLine().getReasonPhrase(),
+                        responsHeaders,
+                        Optional.ofNullable( entity.getContentType() )
+                            .map( ct -> ContentType.parse( entity.getContentType().getValue() ) ),
+                        ByteStreams.toByteArray( is )
                     );
                 }
             } else result = new Response(
-                    response.getStatusLine().getStatusCode(),
-                    response.getStatusLine().getReasonPhrase(),
-                    responsHeaders
+                response.getStatusLine().getStatusCode(),
+                response.getStatusLine().getReasonPhrase(),
+                responsHeaders
             );
             builder.onSuccess.accept( this );
             return Optional.of( result );
         } catch( ExecutionException e ) {
             builder.onError.accept( this, e );
-            throw Throwables.propagate( e );
+            throw e;
         } catch( IOException e ) {
             builder.onError.accept( this, e );
-            throw new UncheckedIOException( e );
+            throw e;
         } catch( InterruptedException | TimeoutException e ) {
             builder.onTimeout.accept( this );
             return Optional.empty();
         }
     }
 
+    @SneakyThrows
     public Optional<Path> download( String url, Optional<Long> modification, Optional<Path> file, Consumer<Integer> progress ) {
         try {
             final Optional<HttpResponse> responseOpt = resolve( url, modification );
@@ -364,10 +359,10 @@ public class Client implements Closeable {
             return Optional.of( path );
         } catch( ExecutionException e ) {
             builder.onError.accept( this, e );
-            throw Throwables.propagate( e );
+            throw e;
         } catch( IOException e ) {
             builder.onError.accept( this, e );
-            throw new UncheckedIOException( e );
+            throw e;
         } catch( InterruptedException e ) {
             builder.onTimeout.accept( this );
             return Optional.empty();
@@ -422,8 +417,8 @@ public class Client implements Closeable {
             this.contentType = contentType;
             this.content = Optional.ofNullable( content );
             this.contentString = this.content.map( bytes ->
-                    new String( bytes, contentType.map( ContentType::getCharset )
-                            .orElse( StandardCharsets.UTF_8 ) ) );
+                new String( bytes, contentType.map( ContentType::getCharset )
+                    .orElse( StandardCharsets.UTF_8 ) ) );
         }
 
         public Response( int code, String reasonPhrase, Map<String, String> headers ) {
@@ -459,37 +454,38 @@ public class Client implements Closeable {
         private HttpAsyncClientBuilder initialize() {
             try {
                 final PoolingNHttpClientConnectionManager connManager = new PoolingNHttpClientConnectionManager(
-                        new DefaultConnectingIOReactor( IOReactorConfig.custom()
-                                .setConnectTimeout( connectTimeout )
-                                .setSoTimeout( readTimeout )
-                                .build() ),
-                        RegistryBuilder.<SchemeIOSessionStrategy>create()
-                                .register( "http", NoopIOSessionStrategy.INSTANCE )
-                                .register( "https",
-                                        new SSLIOSessionStrategy( certificateLocation != null ?
-                                                createSSLContext( certificateLocation, certificatePassword ) : SSLContexts.createDefault(),
-                                                split( System.getProperty( "https.protocols" ) ),
-                                                split( System.getProperty( "https.cipherSuites" ) ),
-                                                new DefaultHostnameVerifier( PublicSuffixMatcherLoader.getDefault() ) ) )
-                                .build() );
+                    new DefaultConnectingIOReactor( IOReactorConfig.custom()
+                        .setConnectTimeout( connectTimeout )
+                        .setSoTimeout( readTimeout )
+                        .build() ),
+                    RegistryBuilder.<SchemeIOSessionStrategy>create()
+                        .register( "http", NoopIOSessionStrategy.INSTANCE )
+                        .register( "https",
+                            new SSLIOSessionStrategy( certificateLocation != null ?
+                                createSSLContext( certificateLocation, certificatePassword )
+                                : SSLContexts.createDefault(),
+                                split( System.getProperty( "https.protocols" ) ),
+                                split( System.getProperty( "https.cipherSuites" ) ),
+                                new DefaultHostnameVerifier( PublicSuffixMatcherLoader.getDefault() ) ) )
+                        .build() );
 
                 connManager.setMaxTotal( maxConnTotal );
                 connManager.setDefaultMaxPerRoute( maxConnPerRoute );
 
                 return ( certificateLocation != null ?
-                        HttpAsyncClients.custom()
-                                .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
-                        : HttpAsyncClients.custom() )
-                        .setMaxConnPerRoute( maxConnPerRoute )
-                        .setConnectionManager( connManager )
-                        .setMaxConnTotal( maxConnTotal )
-                        .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
-                        .setDefaultRequestConfig( RequestConfig
-                                .custom()
-                                .setRedirectsEnabled( redirectsEnabled )
-                                .setCookieSpec( cookieSpec )
-                                .build() )
-                        .setDefaultCookieStore( basicCookieStore );
+                    HttpAsyncClients.custom()
+                        .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
+                    : HttpAsyncClients.custom() )
+                    .setMaxConnPerRoute( maxConnPerRoute )
+                    .setConnectionManager( connManager )
+                    .setMaxConnTotal( maxConnTotal )
+                    .setKeepAliveStrategy( DefaultConnectionKeepAliveStrategy.INSTANCE )
+                    .setDefaultRequestConfig( RequestConfig
+                        .custom()
+                        .setRedirectsEnabled( redirectsEnabled )
+                        .setCookieSpec( cookieSpec )
+                        .build() )
+                    .setDefaultCookieStore( basicCookieStore );
             } catch( IOReactorException e ) {
                 throw new UncheckedIOException( e );
             }

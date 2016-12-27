@@ -23,6 +23,7 @@
  */
 package oap.testng;
 
+import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import oap.io.Files;
 import oap.io.Resources;
@@ -31,7 +32,6 @@ import oap.util.Throwables;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
@@ -69,12 +69,9 @@ public class Env {
         return tmpPath( name ).toUri();
     }
 
+    @SneakyThrows
     public static URL tmpURL( String name ) {
-        try {
-            return tmpURI( name ).toURL();
-        } catch( MalformedURLException e ) {
-            throw Throwables.propagate( e );
-        }
+        return tmpURI( name ).toURL();
     }
 
     public static Path tmpPath( String name ) {
