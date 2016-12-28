@@ -60,7 +60,7 @@ public class TreeTest {
     @Test
     public void testEnum() {
         final Tree<String> tree = Tree
-            .<String>tree( ENUM( "d1" ) )
+            .<String>tree( ENUM( "d1", TestEnum.class ) )
             .load( l( v( "1", Test1 ), v( "2", Test2 ), v( "3", Test3 ), v( "33", Test3 ) ) );
 
         System.out.println( tree.toString() );
@@ -122,7 +122,7 @@ public class TreeTest {
     @Test
     public void testTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1" ), ENUM( "d2" ) )
+            .<String>tree( LONG( "d1" ), ENUM( "d2", TestEnum.class ) )
             .load( l( v( "1", 1L, Test1 ), v( "2", 2L, Test2 ), v( "3", 1L, Test3 ), v( "33", 1L, Test3 ) ) );
 
         System.out.println( tree.toString() );
@@ -139,10 +139,10 @@ public class TreeTest {
             "3 -> (3,Test3) not in: [(1,Test3)]\n" );
 
         assertThat( tree.trace( 4L, Test4 ) ).isEqualTo( "" +
-            "33 -> (4,UNKNOWN) not in: [(1,Test3)]\n" +
-            "1 -> (4,UNKNOWN) not in: [(1,Test1)]\n" +
-            "2 -> (4,UNKNOWN) not in: [(2,Test2)]\n" +
-            "3 -> (4,UNKNOWN) not in: [(1,Test3)]\n" );
+            "33 -> (4,Test4) not in: [(1,Test3)]\n" +
+            "1 -> (4,Test4) not in: [(1,Test1)]\n" +
+            "2 -> (4,Test4) not in: [(2,Test2)]\n" +
+            "3 -> (4,Test4) not in: [(1,Test3)]\n" );
         assertThat( tree.trace( 1L, Test1 ) ).isEqualTo( "" +
             "33 -> (1,Test1) not in: [(1,Test3)]\n" +
             "2 -> (1,Test1) not in: [(2,Test2)]\n" +

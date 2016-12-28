@@ -49,8 +49,4 @@ public class TreeArrayTest {
 
         assertThat( tree.find( 5L ) ).isEmpty();
     }
-
-    public enum TestEnum {
-        Test1, Test2, Test3, Test4
-    }
 }

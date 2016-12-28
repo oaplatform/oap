@@ -26,6 +26,7 @@ package oap.tree;
 
 import oap.util.StringBits;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
@@ -41,29 +42,35 @@ public abstract class Dimension {
         this.array = array;
     }
 
-    public static Dimension ENUM( String name ) {
-        return ENUM( name, false );
+    public static Dimension ENUM( String name, Class<? extends Enum> clazz ) {
+        return ENUM( name, clazz, false );
     }
 
-    public static Dimension ENUM( String name, boolean array ) {
-        final StringBits bits = new StringBits();
+    public static Dimension ENUM( String name, Class<? extends Enum> clazz, boolean array ) {
+        final Enum[] enumConstantsSortedByName = clazz.getEnumConstants();
+        Arrays.sort( enumConstantsSortedByName, Comparator.comparing( Enum::name ) );
+
+        final String[] sortedToName = new String[enumConstantsSortedByName.length];
+        final int[] ordinalToSorted = new int[enumConstantsSortedByName.length];
+
+        for( int i = 0; i < enumConstantsSortedByName.length; i++ ) {
+            sortedToName[i] = enumConstantsSortedByName[i].name();
+            ordinalToSorted[enumConstantsSortedByName[i].ordinal()] = i;
+        }
 
         return new Dimension( name, array ) {
             @Override
             public String toString( long value ) {
-                return bits.valueOf( value );
+                return sortedToName[( int ) value];
             }
 
             @Override
             public void init( Stream<Object> value ) {
-                value
-                    .sorted( Comparator.comparing( e -> ( ( Enum ) e ).name() ) )
-                    .forEach( e -> bits.computeIfAbsent( ( ( Enum ) e ).name() ) );
             }
 
             @Override
             public long getOrDefault( Object value ) {
-                return bits.get( ( ( Enum ) value ).name() );
+                return ordinalToSorted[( ( Enum ) value ).ordinal()];
             }
         };
     }
