@@ -32,13 +32,13 @@ import oap.util.Stream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.IntFunction;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -52,51 +52,74 @@ import static oap.util.Pair.__;
 public class Tree<T> {
     public static final long ANY = Long.MIN_VALUE;
 
-    private List<Dimension<?>> dimensions;
+    private List<Dimension> dimensions;
     private TreeNode<T> root = new Leaf<>( emptyList() );
 
-    Tree( List<Dimension<?>> dimensions ) {
+    Tree( List<Dimension> dimensions ) {
         this.dimensions = dimensions;
     }
 
-    public static <T> ValueData<T> s( T selection, Object... data ) {
+    public static <T> ValueData<T> v( T selection, List<Object> data ) {
         return new ValueData<>( data, selection );
     }
 
-    public static <T> TreeBuilder<T> tree( List<Dimension<?>> dimensions ) {
+    public static <T> List<T> l( T... data ) {
+        return asList( data );
+    }
+
+    public static <T> ValueData<T> v( T selection, Object... data ) {
+        return v( selection, asList( data ) );
+    }
+
+    public static <T> TreeBuilder<T> tree( List<Dimension> dimensions ) {
         return new TreeBuilder<>( dimensions );
     }
 
-    public static <T> TreeBuilder<T> tree( Dimension<?>... dimensions ) {
+    public static <T> TreeBuilder<T> tree( Dimension... dimensions ) {
         return new TreeBuilder<>( asList( dimensions ) );
     }
 
-    public void load( ValueData<T>[] data ) {
-        final LongValueData<T>[] longData = convertObjectToLong( data );
-        root = toNode( asList( longData ), new BitSet( dimensions.size() ) );
+    public void load( List<ValueData<T>> data ) {
+        final List<LongValueData<T>> longData = convertObjectToLong( data );
+        root = toNode( longData, new BitSet( dimensions.size() ) );
     }
 
     @SuppressWarnings( "unchecked" )
-    private LongValueData<T>[] convertObjectToLong( ValueData<T>[] data ) {
+    private List<LongValueData<T>> convertObjectToLong( List<ValueData<T>> data ) {
+        final List<Pair<Dimension, Integer>> arrays = Stream.of( dimensions )
+            .zipWithIndex()
+            .filter( d -> d._1.array )
+            .collect( toList() );
+
+        Stream<ValueData<T>> sdata = Stream.of( data );
+
+        for( val p : arrays ) {
+            sdata = sdata
+                .flatMap( vd -> ( ( Collection ) vd.data.get( p._2 ) ).stream().map( item -> vd.withData( p._2, item ) ) );
+        }
+
+        final List<ValueData<T>> mdata = sdata.collect( toList() );
+
         Stream.of( dimensions )
             .zipWithIndex()
             .forEach( p -> {
-                final Stream<Object> rStream = Stream.of( data ).map( d -> d.data[p._2] );
-                ( ( Dimension<Object> ) p._1 ).init( rStream );
+                p._1.init( mdata.stream().map( d -> d.data.get( p._2 ) ) );
             } );
 
-        return Stream.of( data )
-            .<LongValueData>map( vd -> new LongValueData<>( convertDataToLong( vd.data ), vd.value ) )
-            .toArray( ( IntFunction<LongValueData<T>[]> ) LongValueData[]::new );
+
+        return mdata
+            .stream()
+            .map( vd -> new LongValueData<>( convertDataToLong( vd.data ), vd.value ) )
+            .collect( toList() );
     }
 
-    private long[] convertDataToLong( Object[] data ) {
+    private long[] convertDataToLong( List<Object> data ) {
         final long[] longData = new long[dimensions.size()];
 
         for( int i = 0; i < dimensions.size(); i++ ) {
-            final Object value = data[i];
+            final Object value = data.get( i );
             if( value == null ) longData[i] = ANY;
-            else longData[i] = ( ( Dimension<Object> ) dimensions.get( i ) ).getOrDefault( value );
+            else longData[i] = dimensions.get( i ).getOrDefault( value );
         }
 
         return longData;
@@ -171,6 +194,10 @@ public class Tree<T> {
     }
 
     public Set<T> find( Object... query ) {
+        return find( asList( query ) );
+    }
+
+    public Set<T> find( List<Object> query ) {
         final HashSet<T> result = new HashSet<>();
         final long[] longQuery = convertDataToLong( query );
         find( root, longQuery, result );
@@ -211,7 +238,10 @@ public class Tree<T> {
     }
 
     public String trace( Object... query ) {
+        return trace( asList( query ) );
+    }
 
+    public String trace( List<Object> query ) {
         final long[] longQuery = convertDataToLong( query );
 
         final BitSet fails = new BitSet();
@@ -245,7 +275,7 @@ public class Tree<T> {
             final long value = set[i];
             if( value == ANY ) result.append( "ANY" );
             else {
-                final Dimension<?> dimension = dimensions.get( i );
+                final Dimension dimension = dimensions.get( i );
                 result.append( dimension.toString( value ) );
             }
         }
@@ -338,12 +368,18 @@ public class Tree<T> {
     }
 
     public static class ValueData<T> {
-        public final Object[] data;
+        public final List<Object> data;
         public final T value;
 
-        public ValueData( Object[] data, T value ) {
+        public ValueData( List<Object> data, T value ) {
             this.data = data;
             this.value = value;
+        }
+
+        public ValueData<T> withData( int dimension, Object value ) {
+            final List<Object> newData = new ArrayList<>( this.data );
+            newData.set( dimension, value );
+            return new ValueData<>( newData, this.value );
         }
     }
 
@@ -429,7 +465,7 @@ public class Tree<T> {
 
         @Override
         public void print( StringBuilder out ) {
-            final Dimension<?> dimension = dimensions.get( this.dimension );
+            final Dimension dimension = dimensions.get( this.dimension );
             out.append( "kdn|" )
                 .append( "d:" )
                 .append( dimension.name ).append( '/' ).append( this.dimension )

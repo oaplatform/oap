@@ -30,7 +30,8 @@ import static oap.tree.Dimension.ENUM;
 import static oap.tree.Dimension.LONG;
 import static oap.tree.Dimension.STRING;
 import static oap.tree.Tree.ANY;
-import static oap.tree.Tree.s;
+import static oap.tree.Tree.l;
+import static oap.tree.Tree.v;
 import static oap.tree.TreeTest.TestEnum.Test1;
 import static oap.tree.TreeTest.TestEnum.Test2;
 import static oap.tree.TreeTest.TestEnum.Test3;
@@ -41,15 +42,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Created by igor.petrenko on 26.12.2016.
  */
 public class TreeTest {
-    private static <T> Tree.ValueData<T>[] a( Tree.ValueData<T>... values ) {
-        return values;
-    }
-
     @Test
     public void testFindOneDimension() {
         final Tree<String> tree = Tree
             .<String>tree( LONG( "d1" ) )
-            .load( a( s( "1", 1L ), s( "2", 2L ), s( "3", 3L ), s( "33", 3L ) ) );
+            .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
 
         System.out.println( tree.toString() );
 
@@ -64,7 +61,7 @@ public class TreeTest {
     public void testEnum() {
         final Tree<String> tree = Tree
             .<String>tree( ENUM( "d1" ) )
-            .load( a( s( "1", Test1 ), s( "2", Test2 ), s( "3", Test3 ), s( "33", Test3 ) ) );
+            .load( l( v( "1", Test1 ), v( "2", Test2 ), v( "3", Test3 ), v( "33", Test3 ) ) );
 
         System.out.println( tree.toString() );
 
@@ -79,7 +76,7 @@ public class TreeTest {
     public void testString() {
         final Tree<String> tree = Tree
             .<String>tree( STRING( "d1" ) )
-            .load( a( s( "1", "s1" ), s( "2", "s2" ), s( "3", "s3" ), s( "33", "s3" ) ) );
+            .load( l( v( "1", "s1" ), v( "2", "s2" ), v( "3", "s3" ), v( "33", "s3" ) ) );
 
         System.out.println( tree.toString() );
 
@@ -94,7 +91,7 @@ public class TreeTest {
     public void testFindTwoDimension() {
         final Tree<String> tree = Tree
             .<String>tree( LONG( "d1" ), LONG( "d2" ) )
-            .load( a( s( "1", 1L, 1L ), s( "2", 2L, 2L ), s( "3", 1L, 3L ), s( "33", 1L, 3L ) ) );
+            .load( l( v( "1", 1L, 1L ), v( "2", 2L, 2L ), v( "3", 1L, 3L ), v( "33", 1L, 3L ) ) );
 
         System.out.println( tree.toString() );
 
@@ -110,7 +107,7 @@ public class TreeTest {
     public void testFindAny() {
         final Tree<String> tree = Tree
             .<String>tree( LONG( "d1" ), LONG( "d2" ) )
-            .load( a( s( "1", 1L, ANY ), s( "2", 2L, 2L ), s( "3", 1L, 3L ), s( "33", 1L, 3L ) ) );
+            .load( l( v( "1", 1L, ANY ), v( "2", 2L, 2L ), v( "3", 1L, 3L ), v( "33", 1L, 3L ) ) );
 
         System.out.println( tree.toString() );
 
@@ -126,7 +123,7 @@ public class TreeTest {
     public void testTrace() {
         final Tree<String> tree = Tree
             .<String>tree( LONG( "d1" ), ENUM( "d2" ) )
-            .load( a( s( "1", 1L, Test1 ), s( "2", 2L, Test2 ), s( "3", 1L, Test3 ), s( "33", 1L, Test3 ) ) );
+            .load( l( v( "1", 1L, Test1 ), v( "2", 2L, Test2 ), v( "3", 1L, Test3 ), v( "33", 1L, Test3 ) ) );
 
         System.out.println( tree.toString() );
 

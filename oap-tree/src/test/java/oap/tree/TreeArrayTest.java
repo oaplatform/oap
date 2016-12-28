@@ -24,22 +24,33 @@
 
 package oap.tree;
 
-import java.util.List;
+import org.testng.annotations.Test;
+
+import static oap.tree.Dimension.LONG;
+import static oap.tree.Tree.l;
+import static oap.tree.Tree.v;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Created by igor.petrenko on 27.12.2016.
+ * Created by igor.petrenko on 26.12.2016.
  */
-public class TreeBuilder<T> {
-    private List<Dimension> dimensions;
+public class TreeArrayTest {
+    @Test
+    public void testArray() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", true ) )
+            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
 
-    public TreeBuilder( List<Dimension> dimensions ) {
-        this.dimensions = dimensions;
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( 1L ) ).containsOnlyOnce( "1", "3" );
+        assertThat( tree.find( 2L ) ).containsOnlyOnce( "1", "2", "3" );
+        assertThat( tree.find( 3L ) ).containsOnlyOnce( "3" );
+
+        assertThat( tree.find( 5L ) ).isEmpty();
     }
 
-    public final Tree<T> load( List<Tree.ValueData<T>> data ) {
-        final Tree<T> tree = new Tree<>( dimensions );
-        tree.load( data );
-
-        return tree;
+    public enum TestEnum {
+        Test1, Test2, Test3, Test4
     }
 }

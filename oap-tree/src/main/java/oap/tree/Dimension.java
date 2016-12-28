@@ -32,78 +32,94 @@ import java.util.stream.Stream;
 /**
  * Created by igor.petrenko on 27.12.2016.
  */
-public abstract class Dimension<T> {
+public abstract class Dimension {
     public final String name;
+    public final boolean array;
 
-    public Dimension( String name ) {
+    public Dimension( String name, boolean array ) {
         this.name = name;
+        this.array = array;
     }
 
-    public static <T extends Enum<?>> Dimension<T> ENUM( String name ) {
+    public static Dimension ENUM( String name ) {
+        return ENUM( name, false );
+    }
+
+    public static Dimension ENUM( String name, boolean array ) {
         final StringBits bits = new StringBits();
 
-        return new Dimension<T>( name ) {
+        return new Dimension( name, array ) {
             @Override
             public String toString( long value ) {
                 return bits.valueOf( value );
             }
 
             @Override
-            public void init( Stream<T> value ) {
-                value.sorted( Comparator.comparing( e -> e.name() ) ).forEach( e -> bits.computeIfAbsent( e.name() ) );
+            public void init( Stream<Object> value ) {
+                value
+                    .sorted( Comparator.comparing( e -> ( ( Enum ) e ).name() ) )
+                    .forEach( e -> bits.computeIfAbsent( ( ( Enum ) e ).name() ) );
             }
 
             @Override
-            public long getOrDefault( T value ) {
-                return bits.get( value.name() );
+            public long getOrDefault( Object value ) {
+                return bits.get( ( ( Enum ) value ).name() );
             }
         };
     }
 
-    public static Dimension<String> STRING( String name ) {
+    public static Dimension STRING( String name ) {
+        return STRING( name, false );
+    }
+
+    public static Dimension STRING( String name, boolean array ) {
         final StringBits bits = new StringBits();
 
-        return new Dimension<String>( name ) {
+        return new Dimension( name, array ) {
             @Override
             public String toString( long value ) {
                 return bits.valueOf( value );
             }
 
             @Override
-            public void init( Stream<String> value ) {
-                value.sorted().forEach( bits::computeIfAbsent );
+            public void init( Stream<Object> value ) {
+                value.sorted().forEach( v -> bits.computeIfAbsent( ( String ) v ) );
             }
 
             @Override
-            public long getOrDefault( String value ) {
-                return bits.get( value );
+            public long getOrDefault( Object value ) {
+                return bits.get( ( String ) value );
             }
         };
     }
 
-    public static Dimension<Long> LONG( String name ) {
-        return new Dimension<Long>( name ) {
+    public static Dimension LONG( String name ) {
+        return LONG( name, false );
+    }
+
+    public static Dimension LONG( String name, boolean array ) {
+        return new Dimension( name, array ) {
             @Override
             public String toString( long value ) {
                 return String.valueOf( value );
             }
 
             @Override
-            public void init( Stream<Long> value ) {
+            public void init( Stream<Object> value ) {
             }
 
             @Override
-            public long getOrDefault( Long value ) {
-                return value;
+            public long getOrDefault( Object value ) {
+                return ( ( Number ) value ).longValue();
             }
         };
     }
 
     public abstract String toString( long value );
 
-    public abstract void init( Stream<T> value );
+    public abstract void init( Stream<Object> value );
 
-    public abstract long getOrDefault( T value );
+    public abstract long getOrDefault( Object value );
 
     @Override
     public String toString() {
