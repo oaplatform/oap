@@ -24,18 +24,16 @@
 
 package oap.storage.migration;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.util.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,172 +49,169 @@ import static oap.util.Lists.tail;
  */
 @Slf4j
 public class JsonObject extends Json<Map<String, Object>> {
-   public final Map<String, Object> underlying;
+    public final Map<String, Object> underlying;
 
-   public JsonObject( Optional<String> field, Optional<Json<?>> parent, Map<String, Object> underlying ) {
-      super( underlying, field, parent );
-      this.underlying = underlying;
-   }
+    public JsonObject( Optional<String> field, Optional<Json<?>> parent, Map<String, Object> underlying ) {
+        super( underlying, field, parent );
+        this.underlying = underlying;
+    }
 
-   public Optional<Json<?>> field( String name ) {
-      final Object o = underlying.get( name );
-      return map( Optional.of( name ), o, Optional.of( this ) );
-   }
+    public Optional<Json<?>> field( String name ) {
+        final Object o = underlying.get( name );
+        return map( Optional.of( name ), o, Optional.of( this ) );
+    }
 
-   public JsonObject mapScript( String javascript ) throws ScriptException {
-      ScriptEngine engine = new ScriptEngineManager().getEngineByName( "nashorn" );
-      engine.put( "obj", underlying );
+    public JsonObject mapScript( String javascript ) throws ScriptException {
+        ScriptEngine engine = new ScriptEngineManager().getEngineByName( "nashorn" );
+        engine.put( "obj", underlying );
 
-      engine.eval( javascript );
+        engine.eval( javascript );
 
-      return this;
-   }
+        return this;
+    }
 
-   public JsonObject mapScriptFromResource( String resource ) {
-      ScriptEngine engine = new ScriptEngineManager().getEngineByName( "nashorn" );
-      engine.put( "obj", underlying );
+    @SneakyThrows
+    public JsonObject mapScriptFromResource( String resource ) {
+        ScriptEngine engine = new ScriptEngineManager().getEngineByName( "nashorn" );
+        engine.put( "obj", underlying );
 
-      try( InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream( resource ) ) {
-         engine.eval( new InputStreamReader( inputStream ) );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      } catch( ScriptException e ) {
-         throw Throwables.propagate( e );
-      }
+        try( InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream( resource ) ) {
+            engine.eval( new InputStreamReader( inputStream ) );
+        }
 
-      return this;
-   }
+        return this;
+    }
 
-   private boolean rename( JsonObject root, JsonObject parent, List<String> oldName, List<String> newName ) {
-      if( oldName.size() > 1 ) {
-         final String oldFirst = head( oldName );
-         final String newFirst = head( newName );
-         final boolean equals = oldFirst.equals( newFirst ) && root == parent;
+    private boolean rename( JsonObject root, JsonObject parent, List<String> oldName, List<String> newName ) {
+        if( oldName.size() > 1 ) {
+            final String oldFirst = head( oldName );
+            final String newFirst = head( newName );
+            final boolean equals = oldFirst.equals( newFirst ) && root == parent;
 
-         final Optional<Json<?>> v = parent.field( oldFirst );
-         if( !v.isPresent() ) {
-            return false;
-         }
-
-         final Json<?> json = v.get();
-
-         if( json instanceof JsonObject ) {
-            final JsonObject jo = ( JsonObject ) json;
-            return rename(
-               equals ? jo : root,
-               jo,
-               tail( oldName ),
-               equals ? tail( newName ) : newName
-            );
-         } else if( json instanceof JsonArray ) {
-            if( !equals ) {
-               log.error( "array chains" );
-               return false;
+            final Optional<Json<?>> v = parent.field( oldFirst );
+            if( !v.isPresent() ) {
+                return false;
             }
 
-            final JsonArray jsonA = ( JsonArray ) json;
-            jsonA
-               .stream()
-               .filter( j -> j instanceof JsonObject )
-               .map( j -> ( JsonObject ) j )
-               .forEach( jo -> rename( jo, jo, tail( oldName ), tail( newName ) ) );
-         } else {
-            return false;
-         }
-      } else {
-         final String oldField = oldName.get( oldName.size() - 1 );
-         final Optional<Json<?>> field = parent.field( oldField );
-         final JsonObject finalP = parent;
-         field.ifPresent( f -> {
-            finalP.deleteField( oldField );
+            final Json<?> json = v.get();
 
-            JsonObject np = root;
-            for( String nf : newName.subList( 0, newName.size() - 1 ) ) {
-               final JsonObject finalParent = np;
-               np = finalParent.objectOpt( nf ).orElseGet( () -> {
-                  final JsonObject jsonObject = new JsonObject( Optional.of( nf ), Optional.of( finalParent ), new HashMap<>() );
-                  finalParent.underlying.put( nf, jsonObject.underlying );
-                  return jsonObject;
-               } );
+            if( json instanceof JsonObject ) {
+                final JsonObject jo = ( JsonObject ) json;
+                return rename(
+                    equals ? jo : root,
+                    jo,
+                    tail( oldName ),
+                    equals ? tail( newName ) : newName
+                );
+            } else if( json instanceof JsonArray ) {
+                if( !equals ) {
+                    log.error( "array chains" );
+                    return false;
+                }
 
-               finalParent.underlying.put( nf, np.underlying );
+                final JsonArray jsonA = ( JsonArray ) json;
+                jsonA
+                    .stream()
+                    .filter( j -> j instanceof JsonObject )
+                    .map( j -> ( JsonObject ) j )
+                    .forEach( jo -> rename( jo, jo, tail( oldName ), tail( newName ) ) );
+            } else {
+                return false;
             }
+        } else {
+            final String oldField = oldName.get( oldName.size() - 1 );
+            final Optional<Json<?>> field = parent.field( oldField );
+            final JsonObject finalP = parent;
+            field.ifPresent( f -> {
+                finalP.deleteField( oldField );
 
-            np.underlying.put( newName.get( newName.size() - 1 ), f.underlying );
-         } );
-      }
+                JsonObject np = root;
+                for( String nf : newName.subList( 0, newName.size() - 1 ) ) {
+                    final JsonObject finalParent = np;
+                    np = finalParent.objectOpt( nf ).orElseGet( () -> {
+                        final JsonObject jsonObject = new JsonObject( Optional.of( nf ), Optional.of( finalParent ), new HashMap<>() );
+                        finalParent.underlying.put( nf, jsonObject.underlying );
+                        return jsonObject;
+                    } );
 
-      return true;
-   }
+                    finalParent.underlying.put( nf, np.underlying );
+                }
 
-   public JsonObject rename( String oldName, String newName ) {
-      rename(
-         this,
-         this,
-         asList( StringUtils.split( oldName, '.' ) ),
-         asList( StringUtils.split( newName, '.' ) )
-      );
+                np.underlying.put( newName.get( newName.size() - 1 ), f.underlying );
+            } );
+        }
 
-      return this;
-   }
+        return true;
+    }
 
-   public JsonObject deleteField( String field ) {
-      final Optional<Json<?>> f = field( field );
-      f.ifPresent( ff -> underlying.remove( field ) );
-      return this;
-   }
+    public JsonObject rename( String oldName, String newName ) {
+        rename(
+            this,
+            this,
+            asList( StringUtils.split( oldName, '.' ) ),
+            asList( StringUtils.split( newName, '.' ) )
+        );
 
-   @SuppressWarnings( "unchecked" )
-   public <TIn extends Json, TOut extends Json> JsonObject map( String field, Function<TIn, TOut> func ) {
-      field( field ).ifPresent( in -> underlying.put( field, func.apply( ( TIn ) in ).underlying ) );
+        return this;
+    }
 
-      return this;
-   }
+    public JsonObject deleteField( String field ) {
+        final Optional<Json<?>> f = field( field );
+        f.ifPresent( ff -> underlying.remove( field ) );
+        return this;
+    }
 
-   public Optional<String> stringOpt( String field ) {
-      final Optional<Json<?>> f = field( field );
-      return f.filter( ff -> ff.underlying instanceof String ).map( ff -> ( String ) ff.underlying );
-   }
+    @SuppressWarnings( "unchecked" )
+    public <TIn extends Json, TOut extends Json> JsonObject map( String field, Function<TIn, TOut> func ) {
+        field( field ).ifPresent( in -> underlying.put( field, func.apply( ( TIn ) in ).underlying ) );
 
-   public Optional<Long> longOpt( String field ) {
-      final Optional<Json<?>> f = field( field );
-      return f.filter( ff -> ff.underlying instanceof Number ).map( ff -> ( ( Number ) ff.underlying ).longValue() );
-   }
+        return this;
+    }
 
-   public Optional<JsonObject> objectOpt( String field ) {
-      final Optional<Json<?>> f = field( field );
-      return f.filter( ff -> ff.underlying instanceof Map ).map( ff -> ( JsonObject ) ff );
-   }
+    public Optional<String> stringOpt( String field ) {
+        final Optional<Json<?>> f = field( field );
+        return f.filter( ff -> ff.underlying instanceof String ).map( ff -> ( String ) ff.underlying );
+    }
 
-   public String stringField( String field ) {
-      return stringOpt( field ).orElseThrow( () -> new FileStorageMigrationException( "String field " + field + " not found" ) );
-   }
+    public Optional<Long> longOpt( String field ) {
+        final Optional<Json<?>> f = field( field );
+        return f.filter( ff -> ff.underlying instanceof Number ).map( ff -> ( ( Number ) ff.underlying ).longValue() );
+    }
 
-   public long longField( String field ) {
-      return longOpt( field ).orElseThrow( () -> new FileStorageMigrationException( "String field " + field + " not found" ) );
-   }
+    public Optional<JsonObject> objectOpt( String field ) {
+        final Optional<Json<?>> f = field( field );
+        return f.filter( ff -> ff.underlying instanceof Map ).map( ff -> ( JsonObject ) ff );
+    }
 
-   public <T> JsonObject mapString( String field, Function<String, T> func ) {
-      field( field ).ifPresent( in -> underlying.put( field, func.apply( ( String ) in.underlying ) ) );
+    public String stringField( String field ) {
+        return stringOpt( field ).orElseThrow( () -> new FileStorageMigrationException( "String field " + field + " not found" ) );
+    }
 
-      return this;
-   }
+    public long longField( String field ) {
+        return longOpt( field ).orElseThrow( () -> new FileStorageMigrationException( "String field " + field + " not found" ) );
+    }
 
-   public <T> JsonObject mapLong( String field, Function<Long, T> func ) {
-      field( field ).ifPresent( in -> underlying.put( field, func.apply( ( Long ) in.underlying ) ) );
+    public <T> JsonObject mapString( String field, Function<String, T> func ) {
+        field( field ).ifPresent( in -> underlying.put( field, func.apply( ( String ) in.underlying ) ) );
 
-      return this;
-   }
+        return this;
+    }
 
-   public <T> JsonObject mapDouble( String field, Function<Double, T> func ) {
-      field( field ).ifPresent( in -> underlying.put( field, func.apply( ( Double ) in.underlying ) ) );
+    public <T> JsonObject mapLong( String field, Function<Long, T> func ) {
+        field( field ).ifPresent( in -> underlying.put( field, func.apply( ( Long ) in.underlying ) ) );
 
-      return this;
-   }
+        return this;
+    }
 
-   public <T> JsonObject mapDateTime( String field, Function<DateTime, T> func ) {
-      field( field ).ifPresent( in -> underlying.put( field, func.apply( ( DateTime ) in.underlying ) ) );
+    public <T> JsonObject mapDouble( String field, Function<Double, T> func ) {
+        field( field ).ifPresent( in -> underlying.put( field, func.apply( ( Double ) in.underlying ) ) );
 
-      return this;
-   }
+        return this;
+    }
+
+    public <T> JsonObject mapDateTime( String field, Function<DateTime, T> func ) {
+        field( field ).ifPresent( in -> underlying.put( field, func.apply( ( DateTime ) in.underlying ) ) );
+
+        return this;
+    }
 }

@@ -23,22 +23,18 @@
  */
 package oap.net;
 
-import oap.util.Throwables;
+import lombok.SneakyThrows;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.net.UnknownHostException;
 
 public class Inet {
     public static final String HOSTNAME = hostname();
 
+    @SneakyThrows
     public static String hostname() {
-        try {
-            return InetAddress.getLocalHost().getHostName();
-        } catch( UnknownHostException e ) {
-            throw Throwables.propagate( e );
-        }
+        return InetAddress.getLocalHost().getHostName();
     }
 
     public static boolean isLocalAddress( InetAddress addr ) {

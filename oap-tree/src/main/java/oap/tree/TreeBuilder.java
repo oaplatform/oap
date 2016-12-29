@@ -22,29 +22,24 @@
  * SOFTWARE.
  */
 
-package oap.http;
+package oap.tree;
 
-import lombok.SneakyThrows;
-import oap.util.Maps;
-import oap.util.Pair;
-import org.apache.http.client.utils.URIBuilder;
+import java.util.List;
 
-import java.net.URI;
-import java.util.Map;
+/**
+ * Created by igor.petrenko on 27.12.2016.
+ */
+public class TreeBuilder<T> {
+    private List<Dimension> dimensions;
 
-public class Uri {
-    @SneakyThrows
-    public static URI uri( String uri, Map<String, Object> params ) {
-        URIBuilder uriBuilder = new URIBuilder( uri );
-        params.forEach( ( name, value ) ->
-            uriBuilder.addParameter( name, value == null ? "" : value.toString() )
-        );
-        return uriBuilder.build();
-
+    public TreeBuilder( List<Dimension> dimensions ) {
+        this.dimensions = dimensions;
     }
 
-    @SafeVarargs
-    public static URI uri( String uri, Pair<String, Object>... params ) {
-        return uri( uri, Maps.of( params ) );
+    public final Tree<T> load( List<Tree.ValueData<T>> data ) {
+        final Tree<T> tree = new Tree<>( dimensions );
+        tree.load( data );
+
+        return tree;
     }
 }

@@ -32,17 +32,21 @@ import java.io.UncheckedIOException;
  * Created by igor.petrenko on 06.12.2016.
  */
 public final class Throwables {
-   private Throwables() {
-   }
+    private Throwables() {
+    }
 
-   public static RuntimeException propagate( Throwable throwable ) throws RuntimeException {
-      if( throwable instanceof IOException ) throw new UncheckedIOException( ( IOException ) throwable );
-      else if( throwable instanceof RuntimeException ) throw ( RuntimeException ) throwable;
-      throw new RuntimeException( throwable );
-   }
+    @Deprecated
+    /**
+     * @SneakyThrows
+     */
+    public static RuntimeException propagate( Throwable throwable ) throws RuntimeException {
+        if( throwable instanceof IOException ) throw new UncheckedIOException( ( IOException ) throwable );
+        else if( throwable instanceof RuntimeException ) throw ( RuntimeException ) throwable;
+        throw new RuntimeException( throwable );
+    }
 
-   @CheckReturnValue
-   public static Throwable getRootCause( Throwable throwable ) {
-      return com.google.common.base.Throwables.getRootCause( throwable );
-   }
+    @CheckReturnValue
+    public static Throwable getRootCause( Throwable throwable ) {
+        return com.google.common.base.Throwables.getRootCause( throwable );
+    }
 }

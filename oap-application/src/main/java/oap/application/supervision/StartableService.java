@@ -23,9 +23,9 @@
  */
 package oap.application.supervision;
 
+import lombok.SneakyThrows;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
-import oap.util.Throwables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +45,7 @@ public class StartableService implements Supervised {
         this.logger = LoggerFactory.getLogger( supervised.getClass() );
     }
 
+    @SneakyThrows
     @Override
     public void start() {
         try {
@@ -52,7 +53,7 @@ public class StartableService implements Supervised {
             started = true;
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
-            throw Throwables.propagate( e );
+            throw e;
         }
     }
 

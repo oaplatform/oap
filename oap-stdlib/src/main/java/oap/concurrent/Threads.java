@@ -24,7 +24,7 @@
 
 package oap.concurrent;
 
-import oap.util.Throwables;
+import lombok.SneakyThrows;
 
 public class Threads {
     public static void interruptAndJoin( Thread thread ) {
@@ -44,13 +44,10 @@ public class Threads {
         }
     }
 
+    @SneakyThrows
     public static void waitFor( Object monitor ) {
         synchronized( monitor ) {
-            try {
-                monitor.wait();
-            } catch( InterruptedException e ) {
-                throw Throwables.propagate( e );
-            }
+            monitor.wait();
         }
     }
 

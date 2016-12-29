@@ -23,13 +23,13 @@
  */
 package oap.testng;
 
+import lombok.SneakyThrows;
 import oap.concurrent.Threads;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.util.Lists;
 import oap.util.Strings;
-import oap.util.Throwables;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.AbstractCharSequenceAssert;
@@ -49,6 +49,7 @@ import static org.testng.Assert.fail;
 
 public final class Asserts {
 
+    @SneakyThrows
     public static void assertEventually( long retryTimeout, int retries, Try.ThrowingRunnable asserts ) {
         boolean passed = false;
         Throwable exception = null;
@@ -65,7 +66,7 @@ public final class Asserts {
             }
         }
         if( !passed )
-            if( exception != null ) throw Throwables.propagate( exception );
+            if( exception != null ) throw exception;
             else throw new AssertionError( "timeout" );
     }
 
@@ -110,6 +111,43 @@ public final class Asserts {
 
     public static void failNotEquals( Object actual, Object expected ) {
         failNotEquals( actual, expected, null );
+    }
+
+    public static String contentOfTestResource( Class<?> contextClass, String resource ) {
+        return Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+    }
+
+    public static String sortedLinesOfTestResource( Class<?> contextClass, String resource ) {
+        String content = Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+        return lineSortedContent( content );
+    }
+
+    private static String lineSortedContent( String content ) {
+        String[] lines = content.split( "\\n" );
+        Arrays.sort( lines );
+        return Strings.join( "\n", Lists.of( lines ) );
+    }
+
+    public static Path pathOfResource( Class<?> contextClass, String resource ) {
+        return Resources.filePath( contextClass, ( resource == null ? "" : resource ) )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+    }
+
+    public static Path pathOfTestResource( Class<?> contextClass, String resource ) {
+        return pathOfResource( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
+            : "/" + resource ) );
+    }
+
+    public static URL urlOfTestResource( Class<?> contextClass, String resource ) {
+        return Resources.url( contextClass, contextClass.getSimpleName()
+            + ( resource == null ? "" : "/" + resource ) )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+    }
+
+    public static Path pathOfTestResource( Class<?> contextClass ) {
+        return pathOfTestResource( contextClass, null );
     }
 
     public static class StringAssertion extends AbstractCharSequenceAssert<StringAssertion, CharSequence> {
@@ -165,42 +203,5 @@ public final class Asserts {
             assertString( lineSortedContent( actual ) ).isEqualTo( expected );
             return this;
         }
-    }
-
-    public static String contentOfTestResource( Class<?> contextClass, String resource ) {
-        return Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
-            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
-    }
-
-    public static String sortedLinesOfTestResource( Class<?> contextClass, String resource ) {
-        String content = Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
-            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
-        return lineSortedContent( content );
-    }
-
-    private static String lineSortedContent( String content ) {
-        String[] lines = content.split( "\\n" );
-        Arrays.sort( lines );
-        return Strings.join( "\n", Lists.of( lines ) );
-    }
-
-    public static Path pathOfResource( Class<?> contextClass, String resource ) {
-        return Resources.filePath( contextClass, ( resource == null ? "" : resource ) )
-            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
-    }
-
-    public static Path pathOfTestResource( Class<?> contextClass, String resource ) {
-        return pathOfResource( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
-            : "/" + resource ) );
-    }
-
-    public static URL urlOfTestResource( Class<?> contextClass, String resource ) {
-        return Resources.url( contextClass, contextClass.getSimpleName()
-            + ( resource == null ? "" : "/" + resource ) )
-            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
-    }
-
-    public static Path pathOfTestResource( Class<?> contextClass ) {
-        return pathOfTestResource( contextClass, null );
     }
 }

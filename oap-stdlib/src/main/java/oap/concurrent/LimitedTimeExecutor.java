@@ -23,7 +23,7 @@
  */
 package oap.concurrent;
 
-import oap.util.Throwables;
+import lombok.SneakyThrows;
 
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -55,6 +55,7 @@ public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor, Lim
         return execute( this.timeout, this.unit, code );
     }
 
+    @SneakyThrows
     public <T> Optional<T> execute( long timeout, TimeUnit unit, Supplier<T> code ) {
         try {
             T value = executor.submit( code::get ).get( timeout, unit );
@@ -65,7 +66,7 @@ public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor, Lim
             return Optional.empty();
         } catch( ExecutionException e ) {
             onError.accept( this, e );
-            throw Throwables.propagate( e.getCause() );
+            throw e.getCause();
         }
     }
 
@@ -73,6 +74,7 @@ public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor, Lim
         execute( this.timeout, this.unit, code );
     }
 
+    @SneakyThrows
     public void execute( long timeout, TimeUnit unit, Runnable code ) {
         try {
             executor.submit( code ).get( timeout, unit );
@@ -81,7 +83,7 @@ public class LimitedTimeExecutor extends AsyncCallbacks<LimitedTimeExecutor, Lim
             onTimeout.accept( this );
         } catch( ExecutionException e ) {
             onError.accept( this, e );
-            throw Throwables.propagate( e.getCause() );
+            throw e.getCause();
         }
     }
 
