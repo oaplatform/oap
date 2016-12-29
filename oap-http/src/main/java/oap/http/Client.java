@@ -338,7 +338,7 @@ public class Client implements Closeable {
             final Path path = file.orElseGet( Try.supply( () -> {
                 final IoStreams.Encoding encoding = IoStreams.Encoding.from( url );
 
-                final File tempFile = File.createTempFile( "file", "down" + encoding.extension.map( e -> "." + e ).orElse( "" ) );
+                final File tempFile = File.createTempFile( "file", "down" + encoding.extension );
                 tempFile.deleteOnExit();
                 return tempFile.toPath();
             } ) );

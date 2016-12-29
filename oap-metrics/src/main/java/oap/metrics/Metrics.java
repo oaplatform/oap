@@ -79,12 +79,14 @@ public final class Metrics {
         } );
     }
 
-    public static <T> void measureGauge( Name metric, Supplier<T> get ) {
+    public static <T> Name measureGauge( Name metric, Supplier<T> get ) {
         measureGauge( metric.line, get );
+        return metric;
     }
 
-    public static <T> void measureCachedGauge( Name metric, long timeout, TimeUnit timeUnit, Supplier<T> get ) {
+    public static <T> Name measureCachedGauge( Name metric, long timeout, TimeUnit timeUnit, Supplier<T> get ) {
         measureGauge( metric.line, get );
+        return metric;
     }
 
     public static <T> T measureTimer( String metric, Supplier<T> code ) {
@@ -168,6 +170,10 @@ public final class Metrics {
 
     public static void unregister( String metric ) {
         registry.remove( metric );
+    }
+
+    public static void unregister( Name metric ) {
+        unregister( metric.line );
     }
 
     public static class Snapshot {

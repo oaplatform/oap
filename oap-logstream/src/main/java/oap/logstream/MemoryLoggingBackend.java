@@ -38,24 +38,31 @@ import static java.util.stream.Collectors.toList;
  * Created by igor.petrenko on 19.12.2016.
  */
 public class MemoryLoggingBackend implements LoggingBackend {
-    private final HashMap<String, HashMap<String, ByteArrayOutputStream>> baos = new HashMap<>();
+    private final HashMap<String, HashMap<String, ByteArrayOutputStream>> outputs = new HashMap<>();
 
     @Override
     public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
-        baos
+        outputs
             .computeIfAbsent( hostName, ( hn ) -> new HashMap<>() )
             .computeIfAbsent( fileName, ( fn ) -> new ByteArrayOutputStream() )
             .write( buffer, offset, length );
     }
 
     public List<String> getLines( String hostName, String fileName ) {
-        final String s = new String( baos.getOrDefault( hostName, new HashMap<>() ).getOrDefault( fileName, new ByteArrayOutputStream() ).toByteArray() );
-        return new BufferedReader( new StringReader( s ) ).lines().collect( toList() );
+        String s = outputs.getOrDefault( hostName, new HashMap<>() )
+            .getOrDefault( fileName, new ByteArrayOutputStream() )
+            .toString();
+        return new BufferedReader( new StringReader( s ) )
+            .lines()
+            .collect( toList() );
     }
 
     @Override
     public void close() {
-        baos.values().stream().flatMap( v -> v.values().stream() ).forEach( Closeables::close );
+        outputs.values()
+            .stream()
+            .flatMap( v -> v.values().stream() )
+            .forEach( Closeables::close );
     }
 
     @Override

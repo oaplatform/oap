@@ -27,16 +27,24 @@ import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Sets;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+import static oap.io.IoStreams.Encoding.GZIP;
+import static oap.io.IoStreams.Encoding.LZ4;
+import static oap.io.IoStreams.Encoding.PLAIN;
+import static oap.io.IoStreams.Encoding.ZIP;
 import static oap.testng.Asserts.assertFile;
+import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 
 public class FilesTest extends AbstractTest {
@@ -97,7 +105,7 @@ public class FilesTest extends AbstractTest {
     }
 
     @Test
-    public void testIsDirectoryEmpty() {
+    public void isDirectoryEmpty() {
         Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
 
         assertThat( Files.isDirectoryEmpty( Env.tmpPath( "/wildcard" ) ) ).isFalse();
@@ -108,7 +116,7 @@ public class FilesTest extends AbstractTest {
     }
 
     @Test
-    public void testWildcardMatch() {
+    public void wildcardMatch() {
         assertThat( Files.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" ) ).isTrue();
         assertThat( Files.wildcardMatch( "bid", "bid*" ) ).isTrue();
         assertThat( Files.wildcardMatch( "bid_", "bid?" ) ).isTrue();
@@ -117,5 +125,30 @@ public class FilesTest extends AbstractTest {
         assertThat( Files.wildcardMatch( "bid_v", "bb" ) ).isFalse();
         assertThat( Files.wildcardMatch( "b", "bb" ) ).isFalse();
 
+    }
+
+    @DataProvider
+    public Object[][] variants() {
+        return new Object[][] {
+            { ".txt", PLAIN },
+            { ".txt.gz", GZIP },
+            { ".txt.gz", PLAIN },
+            { ".zip", ZIP },
+            { ".zip", PLAIN },
+            { ".txt.lz4", LZ4 },
+            { ".txt.lz4", PLAIN }
+        };
+    }
+
+    @Test( dataProvider = "variants" )
+    public void ensureFileEncodingValid( String ext, IoStreams.Encoding encoding ) {
+        try {
+            Path path = tmpPath( "file" + ext );
+            Files.writeString( path, encoding, "value" );
+            Files.ensureFileEncodingValid( path );
+            if( IoStreams.Encoding.from( ext ) != encoding ) fail( "should throw exception" );
+        } catch( InvalidFileEncodingException e ) {
+            if( IoStreams.Encoding.from( ext ) == encoding ) fail( "should not throw exception: " + e );
+        }
     }
 }

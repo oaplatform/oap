@@ -41,7 +41,7 @@ public class DateJsonValidator extends JsonSchemaValidator<DefaultSchemaAST> {
    public List<String> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
       if( !( value instanceof String ) ) return typeFailed( properties, schema, value );
 
-      Result<DateTime, List<String>> result = Dates.parseDate( ( String ) value )
+      Result<DateTime, List<String>> result = Dates.parseDateWithTimeZone( ( String ) value )
          .mapFailure( e -> Lists.of( e.getMessage() ) );
       return result.isSuccess() ? Lists.empty() : result.failureValue;
    }

@@ -193,9 +193,12 @@ public final class Files {
         writeString( path, IoStreams.Encoding.from( path ), value );
     }
 
-    @SneakyThrows
     public static void write( Path path, byte[] value ) {
-        java.nio.file.Files.write( path, value );
+        try {
+            java.nio.file.Files.write( path, value );
+        } catch( IOException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
     public static void writeString( Path path, IoStreams.Encoding encoding, String value ) {
@@ -248,7 +251,7 @@ public final class Files {
                                       IoStreams.Encoding destEncoding, int bufferSize, boolean append ) {
         destPath.getParent().toFile().mkdirs();
         try( InputStream is = IoStreams.in( sourcePath, sourceEncoding, bufferSize );
-             OutputStream os = IoStreams.out( destPath, destEncoding, bufferSize, append ) ) {
+             OutputStream os = IoStreams.out( destPath, destEncoding, bufferSize, append, true ) ) {
             IOUtils.copy( is, os );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
@@ -305,6 +308,7 @@ public final class Files {
 
     public static void rename( Path sourcePath, Path destPath ) {
         try {
+            ensureFile( destPath );
             java.nio.file.Files.move( sourcePath, destPath, ATOMIC_MOVE, REPLACE_EXISTING );
         } catch( IOException e ) {
             throw new UncheckedIOException( "cannot rename " + sourcePath + " to " + destPath, e );
@@ -408,5 +412,23 @@ public final class Files {
         }
 
         return !noend;
+    }
+
+    public static void ensureFileEncodingValid( Path path ) {
+        if( !path.toFile().exists() ) return;
+        try( InputStream is = IoStreams.in( path, IoStreams.Encoding.from( path ) ) ) {
+            is.read();
+        } catch( Exception e ) {
+            throw new InvalidFileEncodingException( path );
+        }
+    }
+
+    public static boolean isFileEncodingValid( Path path ) {
+        try {
+            ensureFileEncodingValid( path );
+            return true;
+        } catch( InvalidFileEncodingException e ) {
+            return false;
+        }
     }
 }
