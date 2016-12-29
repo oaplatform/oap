@@ -24,26 +24,29 @@
 
 package oap.tree;
 
+import lombok.ToString;
 import lombok.val;
-import oap.util.Lists;
 import oap.util.Pair;
 import oap.util.Stream;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import static oap.tree.Dimension.OperationType.CONTAINS;
+import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
 import static oap.util.Pair.__;
 
 /**
@@ -51,9 +54,8 @@ import static oap.util.Pair.__;
  */
 public class Tree<T> {
     public static final long ANY = Long.MIN_VALUE;
-
+    TreeNode<T> root = new Leaf<>( emptyList() );
     private List<Dimension> dimensions;
-    private TreeNode<T> root = new Leaf<>( emptyList() );
 
     Tree( List<Dimension> dimensions ) {
         this.dimensions = dimensions;
@@ -80,37 +82,15 @@ public class Tree<T> {
     }
 
     public void load( List<ValueData<T>> data ) {
-        final List<LongValueData<T>> longData = convertObjectToLong( data );
-        root = toNode( longData, new BitSet( dimensions.size() ) );
+        init( data );
+        root = toNode( data, new BitSet( dimensions.size() ) );
     }
 
     @SuppressWarnings( "unchecked" )
-    private List<LongValueData<T>> convertObjectToLong( List<ValueData<T>> data ) {
-        final List<Pair<Dimension, Integer>> arrays = Stream.of( dimensions )
-            .zipWithIndex()
-            .filter( d -> d._1.array )
-            .collect( toList() );
-
-        Stream<ValueData<T>> sdata = Stream.of( data );
-
-        for( val p : arrays ) {
-            sdata = sdata
-                .flatMap( vd -> ( ( Collection ) vd.data.get( p._2 ) ).stream().map( item -> vd.withData( p._2, item ) ) );
-        }
-
-        final List<ValueData<T>> mdata = sdata.collect( toList() );
-
+    private void init( List<ValueData<T>> data ) {
         Stream.of( dimensions )
             .zipWithIndex()
-            .forEach( p -> {
-                p._1.init( mdata.stream().map( d -> d.data.get( p._2 ) ) );
-            } );
-
-
-        return mdata
-            .stream()
-            .map( vd -> new LongValueData<>( convertDataToLong( vd.data ), vd.value ) )
-            .collect( toList() );
+            .forEach( p -> p._1.init( data.stream().map( d -> d.data.get( p._2 ) ) ) );
     }
 
     private long[] convertDataToLong( List<Object> data ) {
@@ -125,7 +105,7 @@ public class Tree<T> {
         return longData;
     }
 
-    private TreeNode<T> toNode( List<LongValueData<T>> data, BitSet eq ) {
+    private TreeNode<T> toNode( List<ValueData<T>> data, BitSet eq ) {
         if( data.isEmpty() ) return null;
 
         final SplitDimension splitDimension = findSplitDimension( data, eq );
@@ -134,13 +114,22 @@ public class Tree<T> {
 
         final BitSet bitSetWithDimension = withSet( eq, splitDimension.dimension );
 
+        final Dimension dimension = dimensions.get( splitDimension.dimension );
+        final List<ArrayBitSet> sets = splitDimension.sets
+            .stream()
+            .collect( groupingBy( s -> s.data.get( splitDimension.dimension ) ) )
+            .entrySet()
+            .stream()
+            .map( es -> new ArrayBitSet( dimension.toBitSet( ( List ) es.getKey() ), dimension.operationType == CONTAINS, toNode( es.getValue(), bitSetWithDimension ) ) )
+            .collect( toList() );
         return new Node(
             splitDimension.dimension,
             splitDimension.value,
             toNode( splitDimension.left, eq ),
             toNode( splitDimension.right, eq ),
             toNode( splitDimension.equal, bitSetWithDimension ),
-            toNode( splitDimension.any, bitSetWithDimension )
+            toNode( splitDimension.any, bitSetWithDimension ),
+            sets
         );
     }
 
@@ -150,21 +139,23 @@ public class Tree<T> {
         return bitSet;
     }
 
-    private SplitDimension findSplitDimension( List<LongValueData<T>> data, BitSet eqBitSet ) {
+    private SplitDimension findSplitDimension( List<ValueData<T>> data, BitSet eqBitSet ) {
         long uniqueSize = 0;
         int splitDimension = -1;
         for( int i = 0; i < dimensions.size(); i++ ) {
             if( eqBitSet.get( i ) ) continue;
 
             final int finalI = i;
+            final Dimension dimension = dimensions.get( finalI );
             long count = data
                 .stream()
-                .mapToLong( s -> s.data[finalI] )
+                .filter( s -> !( s.data.get( finalI ) instanceof List ) )
+                .mapToLong( s -> dimension.getOrDefault( s.data.get( finalI ) ) )
                 .filter( v -> v != ANY )
                 .distinct()
                 .count();
 
-            if( count > uniqueSize ) {
+            if( count > uniqueSize || dimension.array ) {
                 uniqueSize = count;
                 splitDimension = i;
             }
@@ -172,25 +163,36 @@ public class Tree<T> {
 
         if( splitDimension < 0 ) return null;
 
-        final int finalSplitDimension = splitDimension;
-        val partition_any_other = Stream.of( data ).partition( sd -> sd.data[finalSplitDimension] == ANY );
+        if( uniqueSize == 0 ) { //array
+            return new SplitDimension( splitDimension, ANY, emptyList(), emptyList(), emptyList(), emptyList(), data );
+        } else {
 
-        final List<LongValueData<T>> sorted = partition_any_other._2
-            .sorted( Comparator.comparingLong( sd -> sd.data[finalSplitDimension] ) )
-            .collect( toList() );
+            final int finalSplitDimension = splitDimension;
+            final Dimension dimension = dimensions.get( finalSplitDimension );
 
-        final long[] unique = sorted.stream().mapToLong( sd -> sd.data[finalSplitDimension] ).distinct().toArray();
+            val partition_sets_other = Stream.of( data ).partition( sd -> sd.data.get( finalSplitDimension ) instanceof List );
 
-        final long splitValue = unique[unique.length / 2];
+            val partition_any_other = partition_sets_other._2.partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) == ANY );
 
-        val partition_left_eq_right = Stream.of( sorted ).partition( sd -> sd.data[finalSplitDimension] < splitValue );
-        val partition_eq_right = partition_left_eq_right._2.partition( sd -> sd.data[finalSplitDimension] == splitValue );
+            final List<ValueData<T>> sorted = partition_any_other._2
+                .sorted( Comparator.comparingLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) ) )
+                .collect( toList() );
 
-        final List<LongValueData<T>> left = partition_left_eq_right._1.collect( toList() );
-        final List<LongValueData<T>> right = partition_eq_right._2.collect( toList() );
-        final List<LongValueData<T>> eq = partition_eq_right._1.collect( toList() );
-        final List<LongValueData<T>> any = partition_any_other._1.collect( toList() );
-        return new SplitDimension( splitDimension, splitValue, left, right, eq, any );
+            final long[] unique = sorted.stream().mapToLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) ).distinct().toArray();
+
+            final long splitValue = unique[unique.length / 2];
+
+            val partition_left_eq_right = Stream.of( sorted ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) < splitValue );
+            val partition_eq_right = partition_left_eq_right._2.partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) == splitValue );
+
+            final List<ValueData<T>> left = partition_left_eq_right._1.collect( toList() );
+            final List<ValueData<T>> right = partition_eq_right._2.collect( toList() );
+            final List<ValueData<T>> eq = partition_eq_right._1.collect( toList() );
+            final List<ValueData<T>> any = partition_any_other._1.collect( toList() );
+            final List<ValueData<T>> sets = partition_sets_other._1.collect( toList() );
+
+            return new SplitDimension( splitDimension, splitValue, left, right, eq, any, sets );
+        }
     }
 
     public Set<T> find( Object... query ) {
@@ -214,10 +216,23 @@ public class Tree<T> {
             find( n.any, query, result );
 
             final long qValue = query[n.dimension];
+
+            for( ArrayBitSet set : n.sets ) {
+                if( set.bitSet.get( ( int ) qValue ) == set.include )
+                    find( set.equal, query, result );
+            }
+
+            final Dimension dimension = dimensions.get( n.dimension );
+
             if( qValue == ANY ) {
                 find( n.equal, query, result );
                 find( n.right, query, result );
                 find( n.left, query, result );
+            } else if( dimension.operationType == NOT_CONTAINS ) {
+                find( n.left, query, result );
+                find( n.right, query, result );
+                if( qValue != n.eqValue )
+                    find( n.equal, query, result );
             } else if( qValue < n.eqValue ) {
                 find( n.left, query, result );
             } else if( qValue == n.eqValue ) {
@@ -304,40 +319,79 @@ public class Tree<T> {
             trace( n.any, query, notFound, newEq, fail );
 
             final long qValue = query[n.dimension];
+
+            for( ArrayBitSet set : n.sets ) {
+                if( set.bitSet.get( ( int ) qValue ) )
+                    trace( set.equal, query, notFound, newEq, fail );
+                else {
+                    BitSet newFail = logFail( fail, n.dimension );
+                    trace( set.equal, query, notFound, newEq, newFail );
+                }
+            }
+
             if( qValue == ANY ) {
                 trace( n.equal, query, notFound, newEq, fail );
                 trace( n.right, query, notFound, eq, fail );
                 trace( n.left, query, notFound, eq, fail );
             } else if( qValue < n.eqValue ) {
                 trace( n.left, query, notFound, eq, fail );
-                BitSet newFail = logFail( fail, n );
+                BitSet newFail = logFail( fail, n.dimension );
                 trace( n.equal, query, notFound, newEq, newFail );
                 trace( n.right, query, notFound, eq, newFail );
             } else if( qValue == n.eqValue ) {
                 trace( n.equal, query, notFound, newEq, fail );
-                BitSet newFail = logFail( fail, n );
+                BitSet newFail = logFail( fail, n.dimension );
                 trace( n.right, query, notFound, eq, newFail );
                 trace( n.left, query, notFound, eq, newFail );
             } else {
                 trace( n.right, query, notFound, eq, fail );
-                BitSet newFail = logFail( fail, n );
+                BitSet newFail = logFail( fail, n.dimension );
                 trace( n.left, query, notFound, eq, newFail );
                 trace( n.equal, query, notFound, newEq, newFail );
             }
         }
     }
 
-    private BitSet logFail( BitSet fail, Node n ) {
+    private BitSet logFail( BitSet fail, int dimension ) {
         BitSet newFail = fail;
-        if( !fail.get( n.dimension ) ) {
+        if( !fail.get( dimension ) ) {
             newFail = BitSet.valueOf( fail.toLongArray() );
-            newFail.set( n.dimension );
+            newFail.set( dimension );
         }
         return newFail;
     }
 
     private void print( TreeNode<T> node, StringBuilder out ) {
         print( "", true, node, out, "root" );
+    }
+
+    public int getMaxDepth() {
+        final AtomicInteger depth = new AtomicInteger( 0 );
+        findMaxDepth( root, depth, 1 );
+
+        return depth.get();
+    }
+
+    private void findMaxDepth( TreeNode<T> node, AtomicInteger maxDepth, int currentDepth ) {
+        if( node == null ) {
+            if( currentDepth - 1 > maxDepth.get() ) maxDepth.set( currentDepth - 1 );
+            return;
+        }
+
+        if( node instanceof Leaf ) {
+            if( currentDepth > maxDepth.get() ) maxDepth.set( currentDepth );
+            return;
+        }
+
+        final Node n = ( Node ) node;
+        findMaxDepth( n.left, maxDepth, currentDepth + 1 );
+        findMaxDepth( n.right, maxDepth, currentDepth + 1 );
+        findMaxDepth( n.any, maxDepth, currentDepth + 1 );
+        findMaxDepth( n.equal, maxDepth, currentDepth + 1 );
+
+        for( ArrayBitSet abs : n.sets ) {
+            findMaxDepth( abs.equal, maxDepth, currentDepth + 1 );
+        }
     }
 
     private void print( String prefix, boolean isTail, TreeNode<T> node, StringBuilder out, String type ) {
@@ -375,22 +429,6 @@ public class Tree<T> {
             this.data = data;
             this.value = value;
         }
-
-        public ValueData<T> withData( int dimension, Object value ) {
-            final List<Object> newData = new ArrayList<>( this.data );
-            newData.set( dimension, value );
-            return new ValueData<>( newData, this.value );
-        }
-    }
-
-    private static class LongValueData<T> {
-        private final long[] data;
-        private final T value;
-
-        private LongValueData( long[] data, T value ) {
-            this.data = data;
-            this.value = value;
-        }
     }
 
     private static class Leaf<T> implements TreeNode<T> {
@@ -416,21 +454,36 @@ public class Tree<T> {
         }
     }
 
+    @ToString
+    private class ArrayBitSet {
+        private final BitSet bitSet;
+        private final boolean include;
+        private final TreeNode<T> equal;
+
+        public ArrayBitSet( BitSet bitSet, boolean include, TreeNode<T> equal ) {
+            this.bitSet = bitSet;
+            this.include = include;
+            this.equal = equal;
+        }
+    }
+
     private class SplitDimension {
-        private final List<LongValueData<T>> left;
-        private final List<LongValueData<T>> right;
-        private final List<LongValueData<T>> equal;
-        private final List<LongValueData<T>> any;
+        private final List<ValueData<T>> left;
+        private final List<ValueData<T>> right;
+        private final List<ValueData<T>> equal;
+        private final List<ValueData<T>> any;
+        private final List<ValueData<T>> sets;
         private final int dimension;
         private final long value;
 
         private SplitDimension(
             int dimension,
             long value,
-            List<LongValueData<T>> left,
-            List<LongValueData<T>> right,
-            List<LongValueData<T>> equal,
-            List<LongValueData<T>> any ) {
+            List<ValueData<T>> left,
+            List<ValueData<T>> right,
+            List<ValueData<T>> equal,
+            List<ValueData<T>> any,
+            List<ValueData<T>> sets ) {
             this.dimension = dimension;
             this.value = value;
 
@@ -438,10 +491,12 @@ public class Tree<T> {
             this.right = right;
             this.equal = equal;
             this.any = any;
+            this.sets = sets;
         }
     }
 
-    private class Node implements TreeNode<T> {
+    class Node implements TreeNode<T> {
+        final List<ArrayBitSet> sets;
         final TreeNode<T> left;
         final TreeNode<T> right;
         final TreeNode<T> equal;
@@ -449,18 +504,37 @@ public class Tree<T> {
         final int dimension;
         final long eqValue;
 
-        private Node( int dimension, long eqValue, TreeNode<T> left, TreeNode<T> right, TreeNode<T> equal, TreeNode<T> any ) {
+        private Node( int dimension, long eqValue, TreeNode<T> left, TreeNode<T> right,
+                      TreeNode<T> equal, TreeNode<T> any, List<ArrayBitSet> sets ) {
             this.dimension = dimension;
             this.eqValue = eqValue;
             this.left = left;
             this.right = right;
             this.equal = equal;
             this.any = any;
+            this.sets = sets;
         }
 
         @Override
         public List<Pair<String, TreeNode<T>>> children() {
-            return Lists.of( __( "l", left ), __( "r", right ), __( "eq", equal ), __( "a", any ) );
+            final ArrayList<Pair<String, TreeNode<T>>> result = new ArrayList<>();
+            result.add( __( "l", left ) );
+            result.add( __( "r", right ) );
+            result.add( __( "eq", equal ) );
+            result.add( __( "a", any ) );
+
+            for( int i = 0; i < sets.size(); i++ ) {
+                final ArrayBitSet set = sets.get( i );
+                result.add( __( ( set.include ? "in:" : "not in:" ) + bitSetToData( set.bitSet ), set.equal ) );
+            }
+
+            return result;
+        }
+
+        private String bitSetToData( BitSet bitSet ) {
+            final Dimension dimension = dimensions.get( this.dimension );
+
+            return bitSet.stream().mapToObj( dimension::toString ).collect( joining( ",", "[", "]" ) );
         }
 
         @Override

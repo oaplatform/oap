@@ -27,6 +27,8 @@ package oap.tree;
 import org.testng.annotations.Test;
 
 import static oap.tree.Dimension.LONG;
+import static oap.tree.Dimension.OperationType.CONTAINS;
+import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +40,7 @@ public class TreeArrayTest {
     @Test
     public void testArray() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true ) )
+            .<String>tree( LONG( "d1", true, CONTAINS ) )
             .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
 
         System.out.println( tree.toString() );
@@ -48,5 +50,39 @@ public class TreeArrayTest {
         assertThat( tree.find( 3L ) ).containsOnlyOnce( "3" );
 
         assertThat( tree.find( 5L ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
+        assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 3 );
+    }
+
+    @Test
+    public void testArrayNotContains() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", true, NOT_CONTAINS ) )
+            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( 2L ) ).isEmpty();
+        assertThat( tree.find( 1L ) ).containsOnlyOnce( "2" );
+
+        assertThat( tree.find( 5L ) ).containsOnlyOnce( "1", "2", "3" );
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
+        assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 3 );
+    }
+
+    @Test
+    public void testArrayOptimize() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", true, CONTAINS ) )
+            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 1L, 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( 1L ) ).containsOnlyOnce( "1", "2", "3" );
+        assertThat( tree.find( 2L ) ).containsOnlyOnce( "1", "2", "3" );
+
+        assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 2 );
     }
 }

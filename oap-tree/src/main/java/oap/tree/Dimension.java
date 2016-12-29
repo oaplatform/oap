@@ -27,8 +27,13 @@ package oap.tree;
 import oap.util.StringBits;
 
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Stream;
+
+import static oap.tree.Dimension.OperationType.CONTAINS;
+import static oap.tree.Tree.ANY;
 
 /**
  * Created by igor.petrenko on 27.12.2016.
@@ -37,16 +42,19 @@ public abstract class Dimension {
     public final String name;
     public final boolean array;
 
-    public Dimension( String name, boolean array ) {
+    public OperationType operationType;
+
+    public Dimension( String name, boolean array, OperationType operationType ) {
         this.name = name;
         this.array = array;
+        this.operationType = operationType;
     }
 
     public static Dimension ENUM( String name, Class<? extends Enum> clazz ) {
-        return ENUM( name, clazz, false );
+        return ENUM( name, clazz, false, CONTAINS );
     }
 
-    public static Dimension ENUM( String name, Class<? extends Enum> clazz, boolean array ) {
+    public static Dimension ENUM( String name, Class<? extends Enum> clazz, boolean array, OperationType operationType ) {
         final Enum[] enumConstantsSortedByName = clazz.getEnumConstants();
         Arrays.sort( enumConstantsSortedByName, Comparator.comparing( Enum::name ) );
 
@@ -58,7 +66,7 @@ public abstract class Dimension {
             ordinalToSorted[enumConstantsSortedByName[i].ordinal()] = i;
         }
 
-        return new Dimension( name, array ) {
+        return new Dimension( name, array, operationType ) {
             @Override
             public String toString( long value ) {
                 return sortedToName[( int ) value];
@@ -70,19 +78,20 @@ public abstract class Dimension {
 
             @Override
             public long getOrDefault( Object value ) {
+                if( value == null ) return ANY;
                 return ordinalToSorted[( ( Enum ) value ).ordinal()];
             }
         };
     }
 
     public static Dimension STRING( String name ) {
-        return STRING( name, false );
+        return STRING( name, false, CONTAINS );
     }
 
-    public static Dimension STRING( String name, boolean array ) {
+    public static Dimension STRING( String name, boolean array, OperationType operationType ) {
         final StringBits bits = new StringBits();
 
-        return new Dimension( name, array ) {
+        return new Dimension( name, array, operationType ) {
             @Override
             public String toString( long value ) {
                 return bits.valueOf( value );
@@ -95,17 +104,18 @@ public abstract class Dimension {
 
             @Override
             public long getOrDefault( Object value ) {
+                if( value == null ) return ANY;
                 return bits.get( ( String ) value );
             }
         };
     }
 
     public static Dimension LONG( String name ) {
-        return LONG( name, false );
+        return LONG( name, false, CONTAINS );
     }
 
-    public static Dimension LONG( String name, boolean array ) {
-        return new Dimension( name, array ) {
+    public static Dimension LONG( String name, boolean array, OperationType operationType ) {
+        return new Dimension( name, array, operationType ) {
             @Override
             public String toString( long value ) {
                 return String.valueOf( value );
@@ -117,6 +127,7 @@ public abstract class Dimension {
 
             @Override
             public long getOrDefault( Object value ) {
+                if( value == null ) return ANY;
                 return ( ( Number ) value ).longValue();
             }
         };
@@ -131,5 +142,16 @@ public abstract class Dimension {
     @Override
     public String toString() {
         return name;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public BitSet toBitSet( List list ) {
+        final BitSet bitSet = new BitSet();
+        list.forEach( item -> bitSet.set( ( int ) this.getOrDefault( item ) ) );
+        return bitSet;
+    }
+
+    public enum OperationType {
+        CONTAINS, NOT_CONTAINS
     }
 }

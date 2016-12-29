@@ -28,8 +28,8 @@ import org.testng.annotations.Test;
 
 import static oap.tree.Dimension.ENUM;
 import static oap.tree.Dimension.LONG;
+import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
 import static oap.tree.Dimension.STRING;
-import static oap.tree.Tree.ANY;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
 import static oap.tree.TreeTest.TestEnum.Test1;
@@ -55,6 +55,25 @@ public class TreeTest {
         assertThat( tree.find( 3L ) ).containsOnlyOnce( "3", "33" );
 
         assertThat( tree.find( 5L ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
+    }
+
+    @Test
+    public void testNotContains() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", false, NOT_CONTAINS ) )
+            .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( 1L ) ).containsOnlyOnce( "2", "3", "33" );
+        assertThat( tree.find( 2L ) ).containsOnlyOnce( "1", "3", "33" );
+        assertThat( tree.find( 3L ) ).containsOnlyOnce( "1", "2" );
+
+        assertThat( tree.find( 5L ) ).containsOnlyOnce( "1", "2", "3", "33" );
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
     }
 
     @Test
@@ -70,6 +89,8 @@ public class TreeTest {
         assertThat( tree.find( Test3 ) ).containsOnlyOnce( "3", "33" );
 
         assertThat( tree.find( Test4 ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
     }
 
     @Test
@@ -85,6 +106,8 @@ public class TreeTest {
         assertThat( tree.find( "s3" ) ).containsOnlyOnce( "3", "33" );
 
         assertThat( tree.find( "s4" ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
     }
 
     @Test
@@ -101,13 +124,15 @@ public class TreeTest {
 
         assertThat( tree.find( 1L, 2L ) ).isEmpty();
         assertThat( tree.find( 3L, 3L ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 4 );
     }
 
     @Test
     public void testFindAny() {
         final Tree<String> tree = Tree
             .<String>tree( LONG( "d1" ), LONG( "d2" ) )
-            .load( l( v( "1", 1L, ANY ), v( "2", 2L, 2L ), v( "3", 1L, 3L ), v( "33", 1L, 3L ) ) );
+            .load( l( v( "1", 1L, null ), v( "2", 2L, 2L ), v( "3", 1L, 3L ), v( "33", 1L, 3L ) ) );
 
         System.out.println( tree.toString() );
 
@@ -116,7 +141,9 @@ public class TreeTest {
         assertThat( tree.find( 1L, 3L ) ).containsOnlyOnce( "1", "3", "33" );
 
         assertThat( tree.find( 1L, 2L ) ).containsOnlyOnce( "1" );
-        assertThat( tree.find( ANY, 3L ) ).containsOnlyOnce( "3", "33" );
+        assertThat( tree.find( null, 3L ) ).containsOnlyOnce( "3", "33" );
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 4 );
     }
 
     @Test
