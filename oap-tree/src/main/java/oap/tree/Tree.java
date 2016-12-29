@@ -26,6 +26,7 @@ package oap.tree;
 
 import lombok.ToString;
 import lombok.val;
+import oap.tree.Dimension.OperationType;
 import oap.util.Pair;
 import oap.util.Stream;
 
@@ -39,6 +40,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.LongStream;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -217,17 +219,17 @@ public class Tree<T> {
 
             final long qValue = query[n.dimension];
 
-            for( ArrayBitSet set : n.sets ) {
-                if( set.bitSet.get( ( int ) qValue ) == set.include )
-                    find( set.equal, query, result );
-            }
-
             final Dimension dimension = dimensions.get( n.dimension );
 
             if( qValue == ANY ) {
                 find( n.equal, query, result );
                 find( n.right, query, result );
                 find( n.left, query, result );
+            } else if( !n.sets.isEmpty() ) {
+                for( ArrayBitSet set : n.sets ) {
+                    if( set.bitSet.get( ( int ) qValue ) == set.include )
+                        find( set.equal, query, result );
+                }
             } else if( dimension.operationType == NOT_CONTAINS ) {
                 find( n.left, query, result );
                 find( n.right, query, result );
@@ -260,19 +262,18 @@ public class Tree<T> {
         final long[] longQuery = convertDataToLong( query );
 
         final BitSet fails = new BitSet();
-        final HashMap<T, List<long[]>> notFound = new HashMap<>();
+        final HashMap<T, List<Pair<OperationType, long[][]>>> notFound = new HashMap<>();
 
-        trace( root, longQuery, notFound, new long[dimensions.size()], fails );
+        trace( root, longQuery, notFound, new long[dimensions.size()][], fails, null );
 
         if( !notFound.isEmpty() ) {
             return notFound
                 .entrySet()
                 .stream()
                 .map(
-                    s ->
-                        s.getKey() + " -> " + arrayToString( longQuery ) + " not in: " + Stream.of( s.getValue() )
-                            .map( this::arrayToString )
-                            .collect( joining( ",", "[", "]" ) )
+                    s -> s.getKey() + " -> " + arrayToString( longQuery ) + " not in: " + Stream.of( s.getValue() )
+                        .map( this::arrayToString )
+                        .collect( joining( ",", "[", "]" ) )
                 )
                 .collect( joining( "\n" ) )
                 + "\n";
@@ -300,7 +301,36 @@ public class Tree<T> {
         return result.toString();
     }
 
-    private void trace( TreeNode<T> node, long[] query, HashMap<T, List<long[]>> notFound, long[] eq, BitSet fail ) {
+    private String arrayToString( Pair<OperationType, long[][]> p ) {
+        final StringBuilder result = new StringBuilder( "(" );
+
+        for( int i = 0; i < dimensions.size(); i++ ) {
+            final Dimension dimension = dimensions.get( i );
+
+            if( i > 0 ) result.append( "," );
+
+            final long[] value = p._2[i];
+
+            if( p._1 == NOT_CONTAINS ) result.append( "!" );
+
+            if( dimension.array ) {
+                result.append( LongStream.of( value ).mapToObj( dimension::toString ).collect( joining( ",", "{", "}" ) ) );
+            } else {
+                if( value[0] == ANY ) result.append( "ANY" );
+                else {
+                    result.append( dimension.toString( value[0] ) );
+                }
+            }
+        }
+
+        result.append( ')' );
+
+        return result.toString();
+    }
+
+    private void trace( TreeNode<T> node, long[] query,
+                        HashMap<T, List<Pair<OperationType, long[][]>>> notFound,
+                        long[][] eq, BitSet fail, OperationType failBy ) {
         if( node == null ) return;
 
         if( node instanceof Leaf ) {
@@ -309,45 +339,60 @@ public class Tree<T> {
 
                 n.selections.forEach( s -> notFound
                     .computeIfAbsent( s, ( ss ) -> new ArrayList<>() )
-                    .add( eq ) );
+                    .add( __( failBy, eq ) ) );
             }
         } else {
             final Node n = ( Node ) node;
-            final long[] newEq = Arrays.copyOf( eq, eq.length );
-            newEq[n.dimension] = n.eqValue;
+            final long[][] newEq = Arrays.copyOf( eq, eq.length );
+            newEq[n.dimension] = new long[] { n.eqValue };
 
-            trace( n.any, query, notFound, newEq, fail );
+            trace( n.any, query, notFound, newEq, fail, failBy );
 
             final long qValue = query[n.dimension];
 
-            for( ArrayBitSet set : n.sets ) {
-                if( set.bitSet.get( ( int ) qValue ) )
-                    trace( set.equal, query, notFound, newEq, fail );
-                else {
-                    BitSet newFail = logFail( fail, n.dimension );
-                    trace( set.equal, query, notFound, newEq, newFail );
-                }
-            }
+            final Dimension dimension = dimensions.get( n.dimension );
 
             if( qValue == ANY ) {
-                trace( n.equal, query, notFound, newEq, fail );
-                trace( n.right, query, notFound, eq, fail );
-                trace( n.left, query, notFound, eq, fail );
+                trace( n.equal, query, notFound, newEq, fail, failBy );
+                trace( n.right, query, notFound, eq, fail, failBy );
+                trace( n.left, query, notFound, eq, fail, failBy );
+            } else if( !n.sets.isEmpty() ) {
+                for( ArrayBitSet set : n.sets ) {
+                    if( set.bitSet.get( ( int ) qValue ) == set.include )
+                        trace( set.equal, query, notFound, newEq, fail, failBy );
+                    else {
+                        BitSet newFail = logFail( fail, n.dimension );
+                        final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
+                        newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
+
+
+                        trace( set.equal, query, notFound, newEqArray, newFail, !set.include ? NOT_CONTAINS : failBy );
+                    }
+                }
+            } else if( dimension.operationType == NOT_CONTAINS ) {
+                trace( n.left, query, notFound, eq, fail, failBy );
+                trace( n.right, query, notFound, eq, fail, failBy );
+                if( qValue != n.eqValue )
+                    trace( n.equal, query, notFound, newEq, fail, failBy );
+                else {
+                    BitSet newFail = logFail( fail, n.dimension );
+                    trace( n.equal, query, notFound, newEq, newFail, NOT_CONTAINS );
+                }
             } else if( qValue < n.eqValue ) {
-                trace( n.left, query, notFound, eq, fail );
+                trace( n.left, query, notFound, eq, fail, failBy );
                 BitSet newFail = logFail( fail, n.dimension );
-                trace( n.equal, query, notFound, newEq, newFail );
-                trace( n.right, query, notFound, eq, newFail );
+                trace( n.equal, query, notFound, newEq, newFail, failBy );
+                trace( n.right, query, notFound, eq, newFail, failBy );
             } else if( qValue == n.eqValue ) {
-                trace( n.equal, query, notFound, newEq, fail );
+                trace( n.equal, query, notFound, newEq, fail, failBy );
                 BitSet newFail = logFail( fail, n.dimension );
-                trace( n.right, query, notFound, eq, newFail );
-                trace( n.left, query, notFound, eq, newFail );
+                trace( n.right, query, notFound, eq, newFail, failBy );
+                trace( n.left, query, notFound, eq, newFail, failBy );
             } else {
-                trace( n.right, query, notFound, eq, fail );
+                trace( n.right, query, notFound, eq, fail, failBy );
                 BitSet newFail = logFail( fail, n.dimension );
-                trace( n.left, query, notFound, eq, newFail );
-                trace( n.equal, query, notFound, newEq, newFail );
+                trace( n.left, query, notFound, eq, newFail, failBy );
+                trace( n.equal, query, notFound, newEq, newFail, failBy );
             }
         }
     }

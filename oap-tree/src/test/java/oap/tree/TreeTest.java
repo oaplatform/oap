@@ -176,6 +176,23 @@ public class TreeTest {
             "3 -> (1,Test1) not in: [(1,Test3)]\n" );
     }
 
+    @Test
+    public void testTraceNotContains() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", false, NOT_CONTAINS ) )
+            .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.trace( 1L ) ).isEqualTo( "1 -> (1) not in: [(!1)]\n" );
+        assertThat( tree.trace( 2L ) ).isEqualTo( "2 -> (2) not in: [(!2)]\n" );
+        assertThat( tree.trace( 3L ) ).isEqualTo( "" +
+            "33 -> (3) not in: [(!3)]\n" +
+            "3 -> (3) not in: [(!3)]\n" );
+
+        assertThat( tree.trace( 5L ) ).isEqualTo( "ALL OK" );
+    }
+
     public enum TestEnum {
         Test1, Test2, Test3, Test4
     }
