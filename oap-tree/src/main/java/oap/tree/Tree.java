@@ -235,7 +235,7 @@ public class Tree<T> {
             } else if( !n.sets.isEmpty() ) {
                 for( long v : qValue ) {
                     for( ArrayBitSet set : n.sets ) {
-                        if( set.bitSet.get( ( int ) v ) == set.include )
+                        if( set.bitSet.isEmpty() || set.bitSet.get( ( int ) v ) == set.include )
                             find( set.equal, query, result );
                     }
                 }
@@ -379,7 +379,7 @@ public class Tree<T> {
             } else if( !n.sets.isEmpty() ) {
                 for( ArrayBitSet set : n.sets ) {
                     for( long v : qValue ) {
-                        if( set.bitSet.get( ( int ) v ) == set.include )
+                        if( set.bitSet.isEmpty() || set.bitSet.get( ( int ) v ) == set.include )
                             trace( set.equal, query, notFound, newEq, fail, failBy );
                         else {
                             BitSet newFail = logFail( fail, n.dimension );

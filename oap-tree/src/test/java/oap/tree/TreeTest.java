@@ -206,6 +206,19 @@ public class TreeTest {
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "ALL OK" );
     }
 
+    @Test
+    public void testFindNoData() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", true, NOT_CONTAINS ) )
+            .load( l( v( "1", l( l() ) ), v( "2", l( l() ) ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "1", "2" );
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
+    }
+
     public enum TestEnum {
         Test1, Test2, Test3, Test4
     }
