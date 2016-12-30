@@ -65,7 +65,7 @@ public class Tree<T> {
         this.dimensions = dimensions;
     }
 
-    public static <T> ValueData<T> v( T selection, List<Object> data ) {
+    public static <T> ValueData<T> v( T selection, List<?> data ) {
         return new ValueData<>( data, selection );
     }
 
@@ -97,7 +97,7 @@ public class Tree<T> {
             .forEach( p -> p._1.init( data.stream().map( d -> d.data.get( p._2 ) ) ) );
     }
 
-    private long[][] convertQueryToLong( List<Object> query ) {
+    private long[][] convertQueryToLong( List<?> query ) {
         final long[][] longData = new long[dimensions.size()][];
 
         for( int i = 0; i < dimensions.size(); i++ ) {
@@ -208,7 +208,7 @@ public class Tree<T> {
         }
     }
 
-    public Set<T> find( List<Object> query ) {
+    public Set<T> find( List<?> query ) {
         final HashSet<T> result = new HashSet<>();
         final long[][] longQuery = convertQueryToLong( query );
         find( root, longQuery, result );
@@ -270,11 +270,7 @@ public class Tree<T> {
         return out.toString();
     }
 
-    public String trace( Object... query ) {
-        return trace( asList( query ) );
-    }
-
-    public String trace( List<Object> query ) {
+    public String trace( List<?> query ) {
         final long[][] longQuery = convertQueryToLong( query );
 
         final BitSet fails = new BitSet();
@@ -500,10 +496,10 @@ public class Tree<T> {
     }
 
     public static class ValueData<T> {
-        public final List<Object> data;
+        public final List<?> data;
         public final T value;
 
-        public ValueData( List<Object> data, T value ) {
+        public ValueData( List<?> data, T value ) {
             this.data = data;
             this.value = value;
         }

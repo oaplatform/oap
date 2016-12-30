@@ -94,11 +94,11 @@ public class TreeArrayTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( 1L ) ).isEqualTo( "ALL OK" );
-        assertThat( tree.trace( 3L ) ).isEqualTo( "" +
+        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "ALL OK" );
+        assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "" +
             "1 -> (3) not in: [({1,2})]\n" +
             "2 -> (3) not in: [({1,2})]\n" );
-        assertThat( tree.trace( 5L ) ).isEqualTo( "1 -> (5) not in: [({1,2})]\n" +
+        assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "1 -> (5) not in: [({1,2})]\n" +
             "2 -> (5) not in: [({1,2})]\n" +
             "3 -> (5) not in: [({1,2,3})]\n" );
     }
@@ -111,15 +111,14 @@ public class TreeArrayTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( 2L ) ).isEqualTo( "" +
+        assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "" +
             "1 -> (2) not in: [(!{1,2})]\n" +
             "2 -> (2) not in: [(!{2})]\n" +
             "3 -> (2) not in: [(!{1,2,3})]\n" );
-        assertThat( tree.trace( 1L ) ).isEqualTo( "" +
+        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "" +
             "1 -> (1) not in: [(!{1,2})]\n" +
             "3 -> (1) not in: [(!{1,2,3})]\n" );
 
-        assertThat( tree.trace( 5L ) ).isEqualTo( "ALL OK" );
+        assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "ALL OK" );
     }
-
 }
