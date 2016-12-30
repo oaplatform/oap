@@ -56,6 +56,8 @@ import static oap.util.Pair.__;
  */
 public class Tree<T> {
     public static final long ANY = Long.MIN_VALUE;
+    public static final long[] ANY_AS_ARRAY = new long[] { ANY };
+
     TreeNode<T> root = new Leaf<>( emptyList() );
     private List<Dimension> dimensions;
 
@@ -95,13 +97,22 @@ public class Tree<T> {
             .forEach( p -> p._1.init( data.stream().map( d -> d.data.get( p._2 ) ) ) );
     }
 
-    private long[] convertDataToLong( List<Object> data ) {
-        final long[] longData = new long[dimensions.size()];
+    private long[][] convertQueryToLong( List<Object> query ) {
+        final long[][] longData = new long[dimensions.size()][];
 
         for( int i = 0; i < dimensions.size(); i++ ) {
-            final Object value = data.get( i );
-            if( value == null ) longData[i] = ANY;
-            else longData[i] = dimensions.get( i ).getOrDefault( value );
+            final Object value = query.get( i );
+            if( value == null ) longData[i] = ANY_AS_ARRAY;
+            else {
+                final Dimension dimension = dimensions.get( i );
+                if( value instanceof List ) {
+                    final List<?> list = ( List<?> ) value;
+                    longData[i] =
+                        list.isEmpty() ? ANY_AS_ARRAY : list.stream().mapToLong( dimension::getOrDefault ).toArray();
+                } else {
+                    longData[i] = new long[] { dimension.getOrDefault( value ) };
+                }
+            }
         }
 
         return longData;
@@ -197,18 +208,14 @@ public class Tree<T> {
         }
     }
 
-    public Set<T> find( Object... query ) {
-        return find( asList( query ) );
-    }
-
     public Set<T> find( List<Object> query ) {
         final HashSet<T> result = new HashSet<>();
-        final long[] longQuery = convertDataToLong( query );
+        final long[][] longQuery = convertQueryToLong( query );
         find( root, longQuery, result );
         return result;
     }
 
-    private void find( TreeNode<T> node, long[] query, HashSet<T> result ) {
+    private void find( TreeNode<T> node, long[][] query, HashSet<T> result ) {
         if( node == null ) return;
 
         if( node instanceof Leaf ) {
@@ -217,30 +224,39 @@ public class Tree<T> {
             final Node n = ( Node ) node;
             find( n.any, query, result );
 
-            final long qValue = query[n.dimension];
+            final long[] qValue = query[n.dimension];
 
             final Dimension dimension = dimensions.get( n.dimension );
 
-            if( qValue == ANY ) {
+            if( qValue == ANY_AS_ARRAY ) {
                 find( n.equal, query, result );
                 find( n.right, query, result );
                 find( n.left, query, result );
             } else if( !n.sets.isEmpty() ) {
-                for( ArrayBitSet set : n.sets ) {
-                    if( set.bitSet.get( ( int ) qValue ) == set.include )
-                        find( set.equal, query, result );
+                for( long v : qValue ) {
+                    for( ArrayBitSet set : n.sets ) {
+                        if( set.bitSet.get( ( int ) v ) == set.include )
+                            find( set.equal, query, result );
+                    }
                 }
             } else if( dimension.operationType == NOT_CONTAINS ) {
                 find( n.left, query, result );
                 find( n.right, query, result );
-                if( qValue != n.eqValue )
-                    find( n.equal, query, result );
-            } else if( qValue < n.eqValue ) {
-                find( n.left, query, result );
-            } else if( qValue == n.eqValue ) {
-                find( n.equal, query, result );
+
+                for( long v : qValue ) {
+                    if( v != n.eqValue )
+                        find( n.equal, query, result );
+                }
             } else {
-                find( n.right, query, result );
+                for( long v : qValue ) {
+                    if( v < n.eqValue ) {
+                        find( n.left, query, result );
+                    } else if( v == n.eqValue ) {
+                        find( n.equal, query, result );
+                    } else {
+                        find( n.right, query, result );
+                    }
+                }
             }
         }
     }
@@ -259,7 +275,7 @@ public class Tree<T> {
     }
 
     public String trace( List<Object> query ) {
-        final long[] longQuery = convertDataToLong( query );
+        final long[][] longQuery = convertQueryToLong( query );
 
         final BitSet fails = new BitSet();
         final HashMap<T, List<Pair<OperationType, long[][]>>> notFound = new HashMap<>();
@@ -282,17 +298,25 @@ public class Tree<T> {
         }
     }
 
-    private String arrayToString( long[] set ) {
+    private String arrayToString( long[][] set ) {
         final StringBuilder result = new StringBuilder( "(" );
 
         for( int i = 0; i < dimensions.size(); i++ ) {
             if( i > 0 ) result.append( "," );
 
-            final long value = set[i];
-            if( value == ANY ) result.append( "ANY" );
+            final long[] value = set[i];
+            if( value == ANY_AS_ARRAY ) result.append( "ANY" );
             else {
                 final Dimension dimension = dimensions.get( i );
-                result.append( dimension.toString( value ) );
+                if( value.length == 1 ) {
+                    result.append( dimension.toString( value[0] ) );
+                } else {
+                    result.append( LongStream
+                        .of( value )
+                        .mapToObj( dimension::toString )
+                        .collect( joining( ",", "[", "]" ) )
+                    );
+                }
             }
         }
 
@@ -328,7 +352,7 @@ public class Tree<T> {
         return result.toString();
     }
 
-    private void trace( TreeNode<T> node, long[] query,
+    private void trace( TreeNode<T> node, long[][] query,
                         HashMap<T, List<Pair<OperationType, long[][]>>> notFound,
                         long[][] eq, BitSet fail, OperationType failBy ) {
         if( node == null ) return;
@@ -348,51 +372,60 @@ public class Tree<T> {
 
             trace( n.any, query, notFound, newEq, fail, failBy );
 
-            final long qValue = query[n.dimension];
+            final long[] qValue = query[n.dimension];
 
             final Dimension dimension = dimensions.get( n.dimension );
 
-            if( qValue == ANY ) {
+            if( qValue == ANY_AS_ARRAY ) {
                 trace( n.equal, query, notFound, newEq, fail, failBy );
                 trace( n.right, query, notFound, eq, fail, failBy );
                 trace( n.left, query, notFound, eq, fail, failBy );
             } else if( !n.sets.isEmpty() ) {
                 for( ArrayBitSet set : n.sets ) {
-                    if( set.bitSet.get( ( int ) qValue ) == set.include )
-                        trace( set.equal, query, notFound, newEq, fail, failBy );
-                    else {
-                        BitSet newFail = logFail( fail, n.dimension );
-                        final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
-                        newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
+                    for( long v : qValue ) {
+                        if( set.bitSet.get( ( int ) v ) == set.include )
+                            trace( set.equal, query, notFound, newEq, fail, failBy );
+                        else {
+                            BitSet newFail = logFail( fail, n.dimension );
+                            final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
+                            newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
 
 
-                        trace( set.equal, query, notFound, newEqArray, newFail, !set.include ? NOT_CONTAINS : failBy );
+                            trace( set.equal, query, notFound, newEqArray, newFail,
+                                !set.include ? NOT_CONTAINS : failBy );
+                        }
                     }
                 }
             } else if( dimension.operationType == NOT_CONTAINS ) {
                 trace( n.left, query, notFound, eq, fail, failBy );
                 trace( n.right, query, notFound, eq, fail, failBy );
-                if( qValue != n.eqValue )
-                    trace( n.equal, query, notFound, newEq, fail, failBy );
-                else {
-                    BitSet newFail = logFail( fail, n.dimension );
-                    trace( n.equal, query, notFound, newEq, newFail, NOT_CONTAINS );
+                for( long v : qValue ) {
+                    if( v != n.eqValue )
+                        trace( n.equal, query, notFound, newEq, fail, failBy );
+                    else {
+                        BitSet newFail = logFail( fail, n.dimension );
+                        trace( n.equal, query, notFound, newEq, newFail, NOT_CONTAINS );
+                    }
                 }
-            } else if( qValue < n.eqValue ) {
-                trace( n.left, query, notFound, eq, fail, failBy );
-                BitSet newFail = logFail( fail, n.dimension );
-                trace( n.equal, query, notFound, newEq, newFail, failBy );
-                trace( n.right, query, notFound, eq, newFail, failBy );
-            } else if( qValue == n.eqValue ) {
-                trace( n.equal, query, notFound, newEq, fail, failBy );
-                BitSet newFail = logFail( fail, n.dimension );
-                trace( n.right, query, notFound, eq, newFail, failBy );
-                trace( n.left, query, notFound, eq, newFail, failBy );
             } else {
-                trace( n.right, query, notFound, eq, fail, failBy );
-                BitSet newFail = logFail( fail, n.dimension );
-                trace( n.left, query, notFound, eq, newFail, failBy );
-                trace( n.equal, query, notFound, newEq, newFail, failBy );
+                for( long v : qValue ) {
+                    if( v < n.eqValue ) {
+                        trace( n.left, query, notFound, eq, fail, failBy );
+                        BitSet newFail = logFail( fail, n.dimension );
+                        trace( n.equal, query, notFound, newEq, newFail, failBy );
+                        trace( n.right, query, notFound, eq, newFail, failBy );
+                    } else if( v == n.eqValue ) {
+                        trace( n.equal, query, notFound, newEq, fail, failBy );
+                        BitSet newFail = logFail( fail, n.dimension );
+                        trace( n.right, query, notFound, eq, newFail, failBy );
+                        trace( n.left, query, notFound, eq, newFail, failBy );
+                    } else {
+                        trace( n.right, query, notFound, eq, fail, failBy );
+                        BitSet newFail = logFail( fail, n.dimension );
+                        trace( n.left, query, notFound, eq, newFail, failBy );
+                        trace( n.equal, query, notFound, newEq, newFail, failBy );
+                    }
+                }
             }
         }
     }

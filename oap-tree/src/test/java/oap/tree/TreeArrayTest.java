@@ -45,11 +45,11 @@ public class TreeArrayTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.find( 1L ) ).containsOnlyOnce( "1", "3" );
-        assertThat( tree.find( 2L ) ).containsOnlyOnce( "1", "2", "3" );
-        assertThat( tree.find( 3L ) ).containsOnlyOnce( "3" );
+        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "1", "3" );
+        assertThat( tree.find( l( 2L ) ) ).containsOnlyOnce( "1", "2", "3" );
+        assertThat( tree.find( l( 3L ) ) ).containsOnlyOnce( "3" );
 
-        assertThat( tree.find( 5L ) ).isEmpty();
+        assertThat( tree.find( l( 5L ) ) ).isEmpty();
 
         assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
         assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 3 );
@@ -63,10 +63,10 @@ public class TreeArrayTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.find( 2L ) ).isEmpty();
-        assertThat( tree.find( 1L ) ).containsOnlyOnce( "2" );
+        assertThat( tree.find( l( 2L ) ) ).isEmpty();
+        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "2" );
 
-        assertThat( tree.find( 5L ) ).containsOnlyOnce( "1", "2", "3" );
+        assertThat( tree.find( l( 5L ) ) ).containsOnlyOnce( "1", "2", "3" );
 
         assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
         assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 3 );
@@ -80,8 +80,8 @@ public class TreeArrayTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.find( 1L ) ).containsOnlyOnce( "1", "2", "3" );
-        assertThat( tree.find( 2L ) ).containsOnlyOnce( "1", "2", "3" );
+        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "1", "2", "3" );
+        assertThat( tree.find( l( 2L ) ) ).containsOnlyOnce( "1", "2", "3" );
 
         assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 2 );
     }
