@@ -56,7 +56,7 @@ import static oap.util.Pair.__;
  */
 public class Tree<T> {
     public static final long ANY = Long.MIN_VALUE;
-    public static final long[] ANY_AS_ARRAY = new long[] { ANY };
+    public static final long[] ANY_AS_ARRAY = new long[0];
 
     TreeNode<T> root = new Leaf<>( emptyList() );
     private List<Dimension> dimensions;
@@ -236,6 +236,10 @@ public class Tree<T> {
                 find( n.equal, query, result );
                 find( n.right, query, result );
                 find( n.left, query, result );
+
+                for( ArrayBitSet set : n.sets ) {
+                    find( set.equal, query, result );
+                }
             } else if( !n.sets.isEmpty() ) {
                 for( long v : qValue ) {
                     for( ArrayBitSet set : n.sets ) {
@@ -380,6 +384,9 @@ public class Tree<T> {
                 trace( n.equal, query, notFound, newEq, fail, failBy );
                 trace( n.right, query, notFound, eq, fail, failBy );
                 trace( n.left, query, notFound, eq, fail, failBy );
+                for( ArrayBitSet set : n.sets ) {
+                    trace( set.equal, query, notFound, newEq, fail, failBy );
+                }
             } else if( !n.sets.isEmpty() ) {
                 for( ArrayBitSet set : n.sets ) {
                     for( long v : qValue ) {

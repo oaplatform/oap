@@ -100,6 +100,17 @@ public class TreeArrayTest {
     }
 
     @Test
+    public void testArrayAnyAny() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", true, NOT_CONTAINS ) )
+            .load( l( v( "1", l( l() ) ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( l() ) ) ).containsOnlyOnce( "1" );
+    }
+
+    @Test
     public void testArrayTrace() {
         final Tree<String> tree = Tree
             .<String>tree( LONG( "d1", true, CONTAINS ) )
