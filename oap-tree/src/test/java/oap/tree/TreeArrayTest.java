@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 import static oap.tree.Dimension.LONG;
 import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
+import static oap.tree.Dimension.STRING;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,6 +54,18 @@ public class TreeArrayTest {
 
         assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
         assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 3 );
+    }
+
+    @Test
+    public void testArrayString() {
+        final Tree<String> tree = Tree
+            .<String>tree( STRING( "d1", true, CONTAINS ) )
+            .load( l( v( "1", l( l( "s1", "s2" ) ) ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( "s1" ) ) ).containsOnlyOnce( "1" );
+        assertThat( tree.find( l( "s5" ) ) ).isEmpty();
     }
 
     @Test

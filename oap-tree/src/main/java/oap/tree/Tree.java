@@ -94,7 +94,11 @@ public class Tree<T> {
     private void init( List<ValueData<T>> data ) {
         Stream.of( dimensions )
             .zipWithIndex()
-            .forEach( p -> p._1.init( data.stream().map( d -> d.data.get( p._2 ) ) ) );
+            .forEach( p -> p._1.init( data.stream().flatMap( d -> toStream( d.data.get( p._2 ) ) ) ) );
+    }
+
+    private Stream<?> toStream( Object item ) {
+        return item instanceof List ? Stream.of( ( ( List<?> ) item ) ) : Stream.of( item );
     }
 
     private long[][] convertQueryToLong( List<?> query ) {
