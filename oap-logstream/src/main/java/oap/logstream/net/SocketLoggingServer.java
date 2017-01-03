@@ -65,18 +65,18 @@ public class SocketLoggingServer implements Runnable {
     private int port;
     private int bufferSize;
     private LoggingBackend backend;
-    private Path controlState;
+    private Path controlStatePath;
     private ServerSocket serverSocket;
     private Map<String, Long> control = new ConcurrentHashMap<>();
 
-    public SocketLoggingServer( int port, int bufferSize, LoggingBackend backend, Path controlState ) {
+    public SocketLoggingServer( int port, int bufferSize, LoggingBackend backend, Path controlStatePath ) {
         this.port = port;
         this.bufferSize = bufferSize;
         this.backend = backend;
-        this.controlState = controlState;
+        this.controlStatePath = controlStatePath;
         this.workersMetric = Metrics.measureGauge(
             Metrics.name( "logging.server." + port + ".workers" ),
-            executor::getActiveCount );
+            () -> executor.getTaskCount() - executor.getCompletedTaskCount() );
     }
 
     @Override
@@ -99,7 +99,7 @@ public class SocketLoggingServer implements Runnable {
 
     public void start() {
         try {
-            if( controlState.toFile().exists() ) this.control = Files.readObject( controlState );
+            if( controlStatePath.toFile().exists() ) this.control = Files.readObject( controlStatePath );
         } catch( Exception e ) {
             log.warn( e.getMessage() );
         }
@@ -120,7 +120,7 @@ public class SocketLoggingServer implements Runnable {
         thread.stop();
         Closeables.close( executor );
         Metrics.unregister( workersMetric );
-        Files.writeObject( controlState, control );
+        Files.writeObject( controlStatePath, control );
     }
 
     public class Worker implements Runnable, Closeable {
@@ -150,7 +150,7 @@ public class SocketLoggingServer implements Runnable {
                     String selector = in.readUTF();
                     if( size > bufferSize ) {
                         out.writeInt( SocketError.BUFFER_OVERFLOW.code );
-                        throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize + " from " + hostName );
+                        throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize + " from " + hostName + " with " + selector );
                     }
                     in.readFully( buffer, 0, size );
                     if( !backend.isLoggingAvailable() ) {
@@ -161,8 +161,8 @@ public class SocketLoggingServer implements Runnable {
                         log.trace( "[{}] logging ({}, {}, {})", hostName, digestionId, selector, size );
                         backend.log( hostName, selector, buffer, 0, size );
                         control.put( hostName, digestionId );
-                    } else log.warn( "[{}] buffer {} already written ({})", hostName, digestionId, lastId );
-                    log.trace( "chunk size {}", size );
+                    } else
+                        log.warn( "[{}] buffer ({}, {}, {}) already written. Last written buffer is ({})", hostName, digestionId, selector, size, lastId );
                     out.writeInt( size );
                 }
             } catch( EOFException e ) {
@@ -170,7 +170,7 @@ public class SocketLoggingServer implements Runnable {
             } catch( SocketTimeoutException e ) {
                 log.info( "[{}] no activity on socket for {}ms, timeout, closing...", hostName, soTimeout );
                 log.trace( "[" + hostName + "] " + e.getMessage(), e );
-            } catch( IOException e ) {
+            } catch( Exception e ) {
                 log.error( "[" + hostName + "] " + e.getMessage(), e );
             } finally {
                 Sockets.close( socket );

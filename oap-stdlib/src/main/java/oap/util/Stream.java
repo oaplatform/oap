@@ -57,6 +57,7 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.StreamSupport;
 
+import static oap.util.Functions.empty.consume;
 import static oap.util.Pair.__;
 
 public class Stream<E> implements java.util.stream.Stream<E> {
@@ -111,15 +112,14 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return of( java.util.stream.Stream.generate( s ) );
     }
 
-    static <T> Spliterator<T> takeWhile(
-        Spliterator<T> splitr, Predicate<? super T> predicate ) {
-        return new Spliterators.AbstractSpliterator<T>( splitr.estimateSize(), 0 ) {
+    static <T> Spliterator<T> takeWhile( Spliterator<T> spliterator, Predicate<? super T> predicate ) {
+        return new Spliterators.AbstractSpliterator<T>( spliterator.estimateSize(), 0 ) {
             boolean stillGoing = true;
 
             @Override
             public boolean tryAdvance( Consumer<? super T> consumer ) {
                 if( stillGoing ) {
-                    boolean hadNext = splitr.tryAdvance( elem -> {
+                    boolean hadNext = spliterator.tryAdvance( elem -> {
                         if( predicate.test( elem ) ) {
                             consumer.accept( elem );
                         } else {
@@ -472,7 +472,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
 
     @Override
     public Stream<E> onClose( Runnable closeHandler ) {
-//        todo - multiple handlers do not go - check wat's wrong with it
+//        todo - multiple handlers do not go - check what's wrong with it
         return of( underlying.onClose( closeHandler ) );
     }
 
@@ -486,8 +486,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     public void drain() {
-        underlying.forEach( e -> {
-        } );
+        underlying.forEach( consume() );
         close();
     }
 }

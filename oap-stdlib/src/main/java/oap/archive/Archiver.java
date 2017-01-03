@@ -23,18 +23,47 @@
  */
 package oap.archive;
 
+import lombok.SneakyThrows;
 import oap.io.IoStreams;
+import oap.util.Try;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Path;
+import java.util.function.Function;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
 
 public class Archiver {
+    private static final Function<InputStream, InputStream> gzipInputStreamSupplyer;
+    private static final Function<OutputStream, OutputStream> gzipOutputStreamSupplier;
+
+    static {
+        CompressorStreamFactory factory = new CompressorStreamFactory( true );
+        if( "apache".equals( System.getProperty( "oap.io.gzip", "apache" ) ) ) {
+            gzipInputStreamSupplyer = Try.map( is -> factory.createCompressorInputStream( CompressorStreamFactory.GZIP, is ) );
+            gzipOutputStreamSupplier = Try.map( os -> factory.createCompressorOutputStream( CompressorStreamFactory.GZIP, os ) );
+        } else {
+            gzipInputStreamSupplyer = Try.map( GZIPInputStream::new );
+            gzipOutputStreamSupplier = Try.map( GZIPOutputStream::new );
+        }
+    }
+
+    public static OutputStream ungzip( OutputStream os ) {
+        return gzipOutputStreamSupplier.apply( os );
+    }
+
+    public static InputStream gzip( InputStream is ) {
+        return gzipInputStreamSupplyer.apply( is );
+    }
+
+    @SneakyThrows
     public void unpack( Path archive, Path dest, ArchiveType type ) {
         switch( type ) {
             case TAR_GZ:
@@ -47,8 +76,6 @@ public class Archiver {
                         else IoStreams.write( path, PLAIN, tar );
                     }
                     tar.close();
-                } catch( IOException e ) {
-                    throw new UncheckedIOException( e );
                 }
         }
     }

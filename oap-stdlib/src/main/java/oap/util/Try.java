@@ -126,7 +126,7 @@ public class Try {
                 try {
                     this.run();
                 } catch( Exception e ) {
-                    Throwables.propagate( e );
+                    throw Throwables.propagate( e );
                 }
             };
         }
@@ -137,7 +137,6 @@ public class Try {
     public interface ThrowingSupplier<R> {
         R get() throws Exception;
 
-        @SneakyThrows
         default Supplier<R> asSupplier() {
             return () -> {
                 try {
@@ -154,13 +153,12 @@ public class Try {
     public interface ThrowingConsumer<T> {
         void accept( T t ) throws Exception;
 
-        @SneakyThrows
         default Consumer<T> asConsumer() {
             return t -> {
                 try {
                     this.accept( t );
                 } catch( Exception e ) {
-                    Throwables.propagate( e );
+                    throw Throwables.propagate( e );
                 }
             };
         }
@@ -170,7 +168,6 @@ public class Try {
     public interface ThrowingToLongFunction<T> {
         long applyToLong( T t ) throws Exception;
 
-        @SneakyThrows
         default ToLongFunction<T> asFunction() {
             return t -> {
                 try {
@@ -186,13 +183,12 @@ public class Try {
     public interface ThrowingBiConsumer<T, U> {
         void accept( T t, U u ) throws Exception;
 
-        @SneakyThrows
         default BiConsumer<T, U> asConsumer() {
             return ( t, u ) -> {
                 try {
                     this.accept( t, u );
                 } catch( Exception e ) {
-                    Throwables.propagate( e );
+                    throw Throwables.propagate( e );
                 }
             };
         }

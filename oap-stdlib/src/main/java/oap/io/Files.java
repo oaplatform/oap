@@ -26,12 +26,14 @@ package oap.io;
 import com.google.common.hash.Hashing;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.io.IoStreams.Encoding;
 import oap.util.Lists;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.NullOutputStream;
 import org.codehaus.plexus.util.DirectoryScanner;
 import org.joda.time.DateTime;
 
@@ -147,21 +149,21 @@ public final class Files {
     @SneakyThrows
     @SuppressWarnings( "unchecked" )
     public static <T> T readObject( Path path ) {
-        try( ObjectInputStream is = new ObjectInputStream( IoStreams.in( path, IoStreams.Encoding.PLAIN ) ) ) {
+        try( ObjectInputStream is = new ObjectInputStream( IoStreams.in( path, Encoding.PLAIN ) ) ) {
             return ( T ) is.readObject();
         }
     }
 
     public static String readString( String path ) {
-        return readString( Paths.get( path ), IoStreams.Encoding.from( path ) );
+        return readString( Paths.get( path ), Encoding.from( path ) );
     }
 
     public static String readString( Path path ) {
-        return readString( path, IoStreams.Encoding.from( path ) );
+        return readString( path, Encoding.from( path ) );
     }
 
     @SneakyThrows
-    public static String readString( Path path, IoStreams.Encoding encoding ) {
+    public static String readString( Path path, Encoding encoding ) {
         try( InputStream in = IoStreams.in( path, encoding ) ) {
             return Strings.readString( in );
         }
@@ -177,7 +179,7 @@ public final class Files {
     }
 
     public static void writeString( Path path, String value ) {
-        writeString( path, IoStreams.Encoding.from( path ), value );
+        writeString( path, Encoding.from( path ), value );
     }
 
     @SneakyThrows
@@ -185,13 +187,17 @@ public final class Files {
         java.nio.file.Files.write( path, value );
     }
 
-    public static void writeString( Path path, IoStreams.Encoding encoding, String value ) {
+    public static void writeString( Path path, Encoding encoding, String value ) {
         IoStreams.write( path, encoding, value );
+    }
+
+    public static void writeString( Path path, Encoding encoding, boolean append, String value ) {
+        IoStreams.write( path, encoding, value, append );
     }
 
     @SneakyThrows
     public static void writeObject( Path path, Object value ) {
-        try( ObjectOutputStream os = new ObjectOutputStream( IoStreams.out( path, IoStreams.Encoding.PLAIN ) ) ) {
+        try( ObjectOutputStream os = new ObjectOutputStream( IoStreams.out( path, Encoding.PLAIN ) ) ) {
             os.writeObject( value );
         }
     }
@@ -225,8 +231,8 @@ public final class Files {
     }
 
     @SneakyThrows
-    private static void copyOrAppend( Path sourcePath, IoStreams.Encoding sourceEncoding, Path destPath,
-                                      IoStreams.Encoding destEncoding, int bufferSize, boolean append ) {
+    private static void copyOrAppend( Path sourcePath, Encoding sourceEncoding, Path destPath,
+                                      Encoding destEncoding, int bufferSize, boolean append ) {
         ensureFile( destPath );
         try( InputStream is = IoStreams.in( sourcePath, sourceEncoding, bufferSize );
              OutputStream os = IoStreams.out( destPath, destEncoding, bufferSize, append, true ) ) {
@@ -234,18 +240,18 @@ public final class Files {
         }
     }
 
-    public static void copy( Path sourcePath, IoStreams.Encoding sourceEncoding,
-                             Path destPath, IoStreams.Encoding destEncoding, int bufferSize ) {
+    public static void copy( Path sourcePath, Encoding sourceEncoding,
+                             Path destPath, Encoding destEncoding, int bufferSize ) {
         copyOrAppend( sourcePath, sourceEncoding, destPath, destEncoding, bufferSize, false );
     }
 
-    public static void copy( Path sourcePath, IoStreams.Encoding sourceEncoding,
-                             Path destPath, IoStreams.Encoding destEncoding ) {
+    public static void copy( Path sourcePath, Encoding sourceEncoding,
+                             Path destPath, Encoding destEncoding ) {
         copy( sourcePath, sourceEncoding, destPath, destEncoding, IoStreams.DEFAULT_BUFFER );
     }
 
-    public static void append( Path sourcePath, IoStreams.Encoding sourceEncoding,
-                               Path destPath, IoStreams.Encoding destEncoding, int bufferSize ) {
+    public static void append( Path sourcePath, Encoding sourceEncoding,
+                               Path destPath, Encoding destEncoding, int bufferSize ) {
         copyOrAppend( sourcePath, sourceEncoding, destPath, destEncoding, bufferSize, true );
     }
 
@@ -268,7 +274,7 @@ public final class Files {
             Path src = basePath.resolve( included );
             Path dst = destPath.resolve( included );
             if( filtering ) Files.writeString( dst, Strings.substitute( Files.readString( src ), mapper ) );
-            else copy( src, IoStreams.Encoding.PLAIN, dst, IoStreams.Encoding.PLAIN );
+            else copy( src, Encoding.PLAIN, dst, Encoding.PLAIN );
             setPosixPermissions( dst, getPosixPermissions( src ) );
         }
     }
@@ -382,8 +388,8 @@ public final class Files {
 
     public static void ensureFileEncodingValid( Path path ) {
         if( !path.toFile().exists() ) return;
-        try( InputStream is = IoStreams.in( path, IoStreams.Encoding.from( path ) ) ) {
-            is.read();
+        try( InputStream is = IoStreams.in( path, Encoding.from( path ) ) ) {
+            IOUtils.copy( is, NullOutputStream.NULL_OUTPUT_STREAM );
         } catch( Exception e ) {
             throw new InvalidFileEncodingException( path );
         }

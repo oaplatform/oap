@@ -28,6 +28,7 @@ import com.google.common.base.Suppliers;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public class Functions {
@@ -54,6 +55,7 @@ public class Functions {
         private static final Consumer<?> CONSUMER = v -> {};
 
         private static final BiConsumer<?, ?> BI_CONSUMER = ( v, u ) -> {};
+        private static final Predicate<?> acceptAll = x -> true;
 
         public static Runnable run = () -> {};
 
@@ -65,8 +67,12 @@ public class Functions {
             return ( BiConsumer<T, U> ) BI_CONSUMER;
         }
 
-        static <I, R> Function<I, R> id() {
+        public static <I, R> Function<I, R> identity() {
             return i -> ( R ) i;
+        }
+
+        public static <T> Predicate<T> accept() {
+            return ( Predicate<T> ) acceptAll;
         }
     }
 

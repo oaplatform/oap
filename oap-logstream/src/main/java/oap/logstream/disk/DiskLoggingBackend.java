@@ -25,6 +25,10 @@
 package oap.logstream.disk;
 
 import com.google.common.base.MoreObjects;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
 import oap.io.Files;
@@ -34,9 +38,8 @@ import oap.metrics.Metrics;
 import oap.metrics.Name;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import static oap.logstream.AvailabilityReport.State.FAILED;
 import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
@@ -45,11 +48,12 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 public class DiskLoggingBackend implements LoggingBackend {
     public static final int DEFAULT_BUFFER = 1024 * 100;
     public static final String METRICS_LOGGING_DISK = "logging.disk";
+    public static final String METRICS_LOGGING_DISK_BUFFERS = "logging.disk.buffers";
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
     private final Path logDirectory;
     private final String ext;
     private final int bufferSize;
-    private final ConcurrentHashMap<String, Writer> writers = new ConcurrentHashMap<>();
+    private final LoadingCache<String, Writer> writers;
     private final int bucketsPerHour;
     private final Name writersMetric;
     private boolean closed;
@@ -61,6 +65,15 @@ public class DiskLoggingBackend implements LoggingBackend {
         this.ext = ext;
         this.bufferSize = bufferSize;
         this.bucketsPerHour = bucketsPerHour;
+        this.writers = CacheBuilder.newBuilder()
+            .expireAfterAccess( 60 / bucketsPerHour * 3, TimeUnit.MINUTES )
+            .removalListener( notification -> Closeables.close( ( Writer ) notification.getValue() ) )
+            .build( new CacheLoader<String, Writer>() {
+                @Override
+                public Writer load( String fullFileName ) throws Exception {
+                    return new Writer( logDirectory, fullFileName, ext, bufferSize, bucketsPerHour );
+                }
+            } );
         this.writersMetric = Metrics.measureGauge(
             Metrics.name( METRICS_LOGGING_DISK + logDirectory.toString().replace( "/", "." ) + ".writers" ),
             writers::size );
@@ -68,13 +81,14 @@ public class DiskLoggingBackend implements LoggingBackend {
     }
 
     @Override
+    @SneakyThrows
     public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
-        if( closed ) throw new UncheckedIOException( new IOException( "already closed!" ) );
+        if( closed ) throw new IOException( "already closed!" );
 
         Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_DISK ).tag( "from", hostName ) );
+        Metrics.measureHistogram( Metrics.name( METRICS_LOGGING_DISK_BUFFERS ).tag( "from", hostName ), length );
         String fullFileName = useClientHostPrefix ? hostName + "/" + fileName : fileName;
-        Writer writer = writers.computeIfAbsent( fullFileName,
-            k -> new Writer( logDirectory, fullFileName, ext, bufferSize, bucketsPerHour ) );
+        Writer writer = writers.get( fullFileName );
         log.trace( "logging {} bytes to {}", length, writer );
         writer.write( buffer, offset, length );
     }
@@ -84,8 +98,7 @@ public class DiskLoggingBackend implements LoggingBackend {
         if( !closed ) {
             closed = true;
             Metrics.unregister( writersMetric );
-            writers.forEach( ( selector, writer ) -> Closeables.close( writer ) );
-            writers.clear();
+            writers.invalidateAll();
         }
     }
 

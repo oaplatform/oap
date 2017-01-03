@@ -47,7 +47,7 @@ public class Name {
         if( this == o ) return true;
         if( o == null || getClass() != o.getClass() ) return false;
 
-        Name name = (Name) o;
+        Name name = ( Name ) o;
 
         return line.equals( name.line );
 

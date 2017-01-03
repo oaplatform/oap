@@ -64,7 +64,7 @@ public class IoStreamsTest extends AbstractTest {
 
     @Test( dataProvider = "encodings" )
     public void append( Encoding encoding ) throws IOException {
-        Path path = tmpPath( "test.txt" + encoding.extension );
+        Path path = encoding.resolve( tmpPath( "test.txt" ) );
         OutputStream out = IoStreams.out( path, encoding );
         out.write( "12345".getBytes() );
         out.flush();

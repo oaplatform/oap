@@ -75,11 +75,15 @@ public class ProgressInputStream extends FilterInputStream {
         };
     }
 
-    public static Progress empty() {
-        return progress( Long.MAX_VALUE, consume() );
+    public static Consumer<Integer> scale( int by, Consumer<Integer> progress ) {
+        AtomicInteger last = new AtomicInteger( 0 );
+        return p -> {
+            if( last.get() + by < p || p == 100 ) progress.accept( last.updateAndGet( x -> p ) );
+        };
     }
 
     public abstract static class Progress {
+        public static final Progress EMPTY = progress( Long.MAX_VALUE, consume() );
         private long total;
         private int lastReport;
 
@@ -99,10 +103,4 @@ public class ProgressInputStream extends FilterInputStream {
         public abstract void percent( int soFar );
     }
 
-    public static Consumer<Integer> scale( int by, Consumer<Integer> progress ) {
-        AtomicInteger last = new AtomicInteger( 0 );
-        return p -> {
-            if( last.get() + by < p || p == 100 ) progress.accept( last.updateAndGet( x -> p ) );
-        };
-    }
 }

@@ -33,6 +33,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Sampling;
 import com.codahale.metrics.Timer;
 import oap.util.BiStream;
+import oap.util.Functions;
 import oap.util.Pair;
 
 import java.util.List;
@@ -99,6 +100,7 @@ public final class Metrics {
         }
     }
 
+    @Deprecated
     public static Timer.Context measureTimerCodehale( String metric ) {
         return registry.timer( name( metric ).line ).time();
     }
@@ -111,16 +113,17 @@ public final class Metrics {
         registry.meter( MetricRegistry.name( metric.line ) ).mark( n );
     }
 
-    public static void measureHistogram( String metric, long count ) {
-        measureHistogram( name( metric ), count );
+    public static void measureHistogram( String metric, long value ) {
+        measureHistogram( name( metric ), value );
     }
 
+    public static void measureHistogram( Name metric, long value ) {
+        registry.histogram( metric.line ).update( value );
+    }
+
+    @Deprecated
     public static <T extends Metric> T register( Name name, T metric ) {
         return registry.register( MetricRegistry.name( name.line ), metric );
-    }
-
-    public static void measureHistogram( Name metric, long count ) {
-        registry.histogram( metric.line ).update( count );
     }
 
     public static void measureCounterIncrement( Name metric ) {
@@ -157,12 +160,11 @@ public final class Metrics {
     }
 
     public static List<Snapshot> snapshots() {
-        return BiStream.of( registry.getMetrics() ).mapToObj( Metrics::toSnapshot ).toList();
+        return snapshots( Functions.empty.accept() );
     }
 
     public static List<Snapshot> snapshots( Predicate<Pair<String, Metric>> filter ) {
-        return BiStream
-            .of( registry.getMetrics() )
+        return BiStream.of( registry.getMetrics() )
             .filter( filter )
             .mapToObj( Metrics::toSnapshot )
             .toList();

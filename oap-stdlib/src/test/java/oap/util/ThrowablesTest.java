@@ -33,18 +33,18 @@ import java.io.UncheckedIOException;
  * Created by igor.petrenko on 06.12.2016.
  */
 public class ThrowablesTest {
-   @Test( expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = "java.io.IOException: test" )
-   public void testPropagateIOException() throws Exception {
-      throw Throwables.propagate( new IOException( "test" ) );
-   }
+    @Test( expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = "java.io.IOException: test" )
+    public void propagateIOException() throws Exception {
+        throw Throwables.propagate( new IOException( "test" ) );
+    }
 
-   @Test( expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = "test" )
-   public void testPropagateUncheckedIOException() throws Exception {
-      throw Throwables.propagate( new RuntimeException( "test") );
-   }
+    @Test( expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = "test" )
+    public void propagateUncheckedIOException() throws Exception {
+        throw Throwables.propagate( new RuntimeException( "test" ) );
+    }
 
-   @Test( expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = "java.lang.Exception: test" )
-   public void testPropagateAnyException() throws Exception {
-      throw Throwables.propagate( new Exception( "test" ) );
-   }
+    @Test( expectedExceptions = RuntimeException.class, expectedExceptionsMessageRegExp = "java.lang.Exception: test" )
+    public void propagateAnyException() throws Exception {
+        throw Throwables.propagate( new Exception( "test" ) );
+    }
 }
