@@ -196,16 +196,19 @@ public class Tree<T> {
 
         if( splitDimension < 0 ) return null;
 
-        if( uniqueSize == 0 ) { //array
-            return new SplitDimension( splitDimension, ANY, emptyList(), emptyList(), emptyList(), emptyList(), data );
-        } else {
+        final int finalSplitDimension = splitDimension;
 
-            final int finalSplitDimension = splitDimension;
+        if( uniqueSize == 0 ) { //array
+            val partition_sets_empty = Stream.of( data ).partition( vd -> !( ( Array ) vd.data.get( finalSplitDimension ) ).isEmpty() );
+
+            final List<ValueData<T>> any = Stream.of( partition_sets_empty._2 ).collect( toList() );
+            final List<ValueData<T>> sets = partition_sets_empty._1.collect( toList() );
+
+            return new SplitDimension( splitDimension, ANY, emptyList(), emptyList(), emptyList(), any, sets );
+        } else {
             final Dimension dimension = dimensions.get( finalSplitDimension );
 
-            val partition_sets_other = Stream.of( data ).partition( sd -> sd.data.get( finalSplitDimension ) instanceof Array );
-
-            val partition_any_other = partition_sets_other._2.partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) == ANY );
+            val partition_any_other = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) == ANY );
 
             final List<ValueData<T>> sorted = partition_any_other._2
                 .sorted( Comparator.comparingLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) ) )
@@ -221,10 +224,9 @@ public class Tree<T> {
             final List<ValueData<T>> left = partition_left_eq_right._1.collect( toList() );
             final List<ValueData<T>> right = partition_eq_right._2.collect( toList() );
             final List<ValueData<T>> eq = partition_eq_right._1.collect( toList() );
-            final List<ValueData<T>> any = partition_any_other._1.collect( toList() );
-            final List<ValueData<T>> sets = partition_sets_other._1.collect( toList() );
+            final List<ValueData<T>> any = Stream.of( partition_any_other._1 ).collect( toList() );
 
-            return new SplitDimension( splitDimension, splitValue, left, right, eq, any, sets );
+            return new SplitDimension( splitDimension, splitValue, left, right, eq, any, emptyList() );
         }
     }
 
@@ -536,8 +538,9 @@ public class Tree<T> {
         }
     }
 
-    private static class Leaf<T> implements TreeNode<T> {
-        private final List<T> selections;
+    @ToString
+    static class Leaf<T> implements TreeNode<T> {
+        final List<T> selections;
 
         private Leaf( List<T> selections ) {
             this.selections = selections;

@@ -98,14 +98,19 @@ public class TreeArrayTest {
             .load( l(
                 v( "1", l( a( true, 1L, 2L ) ) ),
                 v( "2", l( a( true, 1L, 2L ) ) ),
-                v( "3", l( a( true, 1L, 2L, 3L ) ) ) ) );
+                v( "3", l( a( true, 1L, 2L, 3L ) ) ),
+                v( "e1", l( a( true ) ) ),
+                v( "e2", l( a( false ) ) )
+            ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "1", "2", "3" );
-        assertThat( tree.find( l( 2L ) ) ).containsOnlyOnce( "1", "2", "3" );
+        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "1", "2", "3", "e1", "e2" );
+        assertThat( tree.find( l( 2L ) ) ).containsOnlyOnce( "1", "2", "3", "e1", "e2" );
 
         assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 2 );
+        assertThat( ( ( Tree.Node ) tree.root ).any ).isInstanceOf( Tree.Leaf.class );
+        assertThat( ( ( Tree.Leaf ) ( ( Tree.Node ) tree.root ).any ).selections ).hasSize( 2 );
     }
 
     @Test
@@ -164,13 +169,16 @@ public class TreeArrayTest {
     @Test
     public void testFindNoData() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1" ) )
-            .load( l( v( "1", l( a( true ) ) ), v( "2", l( a( true ) ) ) ) );
+            .<String>tree( ARRAY_STRING( "d1" ), ARRAY_STRING( "d2" ) )
+            .load( l(
+                v( "1", l( a( true ), a( false ) ) ),
+                v( "2", l( a( false ), a( true ) ) )
+            ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "1", "2" );
+        assertThat( tree.find( l( "1", null ) ) ).containsOnlyOnce( "1", "2" );
 
-        assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
     }
 }
