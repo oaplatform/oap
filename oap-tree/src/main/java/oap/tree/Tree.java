@@ -277,6 +277,11 @@ public class Tree<T> {
             } else if( dimension.operationType == NOT_CONTAINS ) {
                 find( n.left, query, result );
                 find( n.right, query, result );
+
+                for( long v : qValue ) {
+                    if( v != n.eqValue )
+                        find( n.equal, query, result );
+                }
             } else {
                 for( long v : qValue ) {
                     if( v < n.eqValue ) {
@@ -439,6 +444,15 @@ public class Tree<T> {
             } else if( dimension.operationType == NOT_CONTAINS ) {
                 trace( n.left, query, notFound, eq, fail, failBy );
                 trace( n.right, query, notFound, eq, fail, failBy );
+
+                for( long v : qValue ) {
+                    if( v != n.eqValue )
+                        trace( n.equal, query, notFound, newEq, fail, failBy );
+                    else {
+                        BitSet newFail = logFail( fail, n.dimension );
+                        trace( n.equal, query, notFound, newEq, newFail, NOT_CONTAINS );
+                    }
+                }
             } else {
                 for( long v : qValue ) {
                     if( v < n.eqValue ) {

@@ -61,7 +61,7 @@ public class TreeTest {
     }
 
     @Test
-    public void testNotContains() {
+    public void testExclude() {
         final Tree<String> tree = Tree
             .<String>tree( LONG( "d1", NOT_CONTAINS ) )
             .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
