@@ -49,6 +49,7 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
 import static oap.util.Pair.__;
 
@@ -263,10 +264,12 @@ public class Tree<T> {
                 for( ArrayBitSet set : n.sets ) {
                     for( long v : qValue ) {
                         final boolean c = set.bitSet.get( ( int ) v );
-                        if( set.include && c ) {
-                            break;
+                        if( c ) {
+                            if( set.include ) break;
+                            else continue nextSet;
+                        } else {
+                            if( set.include ) continue nextSet;
                         }
-                        if( !set.include && c ) continue nextSet;
                     }
 
                     find( set.equal, query, result );
@@ -404,18 +407,29 @@ public class Tree<T> {
                 for( ArrayBitSet set : n.sets ) {
                     for( long v : qValue ) {
                         final boolean c = set.bitSet.get( ( int ) v );
-                        if( set.include && c ) {
-                            break;
-                        }
-                        if( !set.include && c ) {
-                            BitSet newFail = logFail( fail, n.dimension );
-                            final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
-                            newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
+                        if( c ) {
+                            if( set.include ) break;
+                            else {
+                                BitSet newFail = logFail( fail, n.dimension );
+                                final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
+                                newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
 
 
-                            trace( set.equal, query, notFound, newEqArray, newFail, NOT_CONTAINS );
+                                trace( set.equal, query, notFound, newEqArray, newFail, NOT_CONTAINS );
 
-                            continue nextSet;
+                                continue nextSet;
+                            }
+                        } else {
+                            if( set.include ) {
+                                BitSet newFail = logFail( fail, n.dimension );
+                                final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
+                                newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
+
+
+                                trace( set.equal, query, notFound, newEqArray, newFail, CONTAINS );
+
+                                continue nextSet;
+                            }
                         }
                     }
 
