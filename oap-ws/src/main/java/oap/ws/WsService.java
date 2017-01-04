@@ -113,7 +113,7 @@ public class WsService implements Handler {
    private void wsError( Response response, Throwable e ) {
       if( e instanceof ReflectException && e.getCause() != null )
          wsError( response, e.getCause() );
-      if( e instanceof WrappingRuntimeException && e.getCause() != null )
+      else if( e instanceof WrappingRuntimeException && e.getCause() != null )
          wsError( response, e.getCause() );
       else if( e instanceof InvocationTargetException )
          wsError( response, ( ( InvocationTargetException ) e ).getTargetException() );
