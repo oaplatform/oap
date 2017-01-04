@@ -260,19 +260,10 @@ public class Tree<T> {
                     find( set.equal, query, result );
                 }
             } else if( !n.sets.isEmpty() ) {
-                nextSet:
                 for( ArrayBitSet set : n.sets ) {
-                    for( long v : qValue ) {
-                        final boolean c = set.bitSet.get( ( int ) v );
-                        if( c ) {
-                            if( set.include ) break;
-                            else continue nextSet;
-                        } else {
-                            if( set.include ) continue nextSet;
-                        }
+                    if( set.find( qValue ) ) {
+                        find( set.equal, query, result );
                     }
-
-                    find( set.equal, query, result );
                 }
             } else if( dimension.operationType == NOT_CONTAINS ) {
                 find( n.left, query, result );
@@ -410,35 +401,16 @@ public class Tree<T> {
             } else if( !n.sets.isEmpty() ) {
                 nextSet:
                 for( ArrayBitSet set : n.sets ) {
-                    for( long v : qValue ) {
-                        final boolean c = set.bitSet.get( ( int ) v );
-                        if( c ) {
-                            if( set.include ) break;
-                            else {
-                                BitSet newFail = logFail( fail, n.dimension );
-                                final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
-                                newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
+                    if( set.find( qValue ) ) {
+                        trace( set.equal, query, notFound, newEq, fail, failBy );
+                    } else {
+                        BitSet newFail = logFail( fail, n.dimension );
+                        final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
+                        newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
 
 
-                                trace( set.equal, query, notFound, newEqArray, newFail, NOT_CONTAINS );
-
-                                continue nextSet;
-                            }
-                        } else {
-                            if( set.include ) {
-                                BitSet newFail = logFail( fail, n.dimension );
-                                final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
-                                newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
-
-
-                                trace( set.equal, query, notFound, newEqArray, newFail, CONTAINS );
-
-                                continue nextSet;
-                            }
-                        }
+                        trace( set.equal, query, notFound, newEqArray, newFail, set.include ? CONTAINS : NOT_CONTAINS );
                     }
-
-                    trace( set.equal, query, notFound, newEq, fail, failBy );
                 }
 
             } else if( dimension.operationType == NOT_CONTAINS ) {
@@ -600,6 +572,22 @@ public class Tree<T> {
             this.bitSet = bitSet;
             this.include = include;
             this.equal = equal;
+        }
+
+        public final boolean find( long[] qValue ) {
+            if( include ) {
+                for( long value : qValue ) {
+                    if( bitSet.get( ( int ) value ) ) return true;
+                }
+
+                return false;
+            }
+
+            for( long value : qValue ) {
+                if( bitSet.get( ( int ) value ) ) return false;
+            }
+
+            return true;
         }
     }
 

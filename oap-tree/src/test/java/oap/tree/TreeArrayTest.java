@@ -50,6 +50,7 @@ public class TreeArrayTest {
         System.out.println( tree.toString() );
 
         assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "1", "3" );
+        assertThat( tree.find( l( l( 5L, 1L ) ) ) ).containsOnlyOnce( "1", "3" );
         assertThat( tree.find( l( 2L ) ) ).containsOnlyOnce( "1", "2", "3" );
         assertThat( tree.find( l( 3L ) ) ).containsOnlyOnce( "3" );
 
