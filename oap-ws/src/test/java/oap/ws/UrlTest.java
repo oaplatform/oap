@@ -24,15 +24,14 @@
 package oap.ws;
 
 import oap.http.Url;
-import oap.testng.AbstractTest;
-import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import static oap.util.Pair.__;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 
-public class UrlTest extends AbstractTest {
+public class UrlTest {
     @Test
     public void parseQuery() {
         assertEquals( Url.parseQuery( "a=&b=2" ), Maps.listmmap( __( "a", "" ), __( "b", "2" ) ) );
@@ -42,12 +41,13 @@ public class UrlTest extends AbstractTest {
     }
 
     @Test
-    public void subdomains() {
-        assertEquals( Url.subdomains( "test" ), Lists.of( "test" ) );
-        assertEquals( Url.subdomains( "test.com" ), Lists.of( "com", "test.com" ) );
-        assertEquals( Url.subdomains( "www.test.com" ), Lists.of( "com", "test.com", "www.test.com" ) );
-        assertEquals( Url.subdomains( "www.a.test.com" ), Lists.of( "com", "test.com", "a.test.com",
-            "www.a.test.com" ) );
+    public void testSubdomains() {
+        assertThat( Url.subdomains( null ) ).isEmpty();
+        assertThat( Url.subdomains( "test" ) ).containsSequence( "test" );
+        assertThat( Url.subdomains( "test.com" ) ).containsSequence( "com", "test.com" );
+        assertThat( Url.subdomains( "www.test.com" ) ).containsSequence( "com", "test.com", "www.test.com" );
+        assertThat( Url.subdomains( "www.a.test.com" ) ).containsSequence( "com", "test.com", "a.test.com",
+            "www.a.test.com" );
     }
 
 

@@ -36,7 +36,9 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 
+import static java.util.Collections.emptyList;
 import static oap.util.Maps.Collectors.toListMultimap;
 import static oap.util.Pair.__;
 
@@ -66,7 +68,9 @@ public class Url {
         }
     }
 
-    public static ArrayList<String> subdomains( String domain ) {
+    public static List<String> subdomains( String domain ) {
+        if( domain == null ) return emptyList();
+
         final ArrayList<String> strings = new ArrayList<>();
 
         int end;
