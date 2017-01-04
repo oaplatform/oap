@@ -28,6 +28,7 @@ import org.testng.annotations.Test;
 
 import static oap.tree.Dimension.ENUM;
 import static oap.tree.Dimension.LONG;
+import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
 import static oap.tree.Dimension.STRING;
 import static oap.tree.Tree.l;
@@ -45,7 +46,7 @@ public class TreeTest {
     @Test
     public void testFindOneDimension() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1" ) )
+            .<String>tree( LONG( "d1", CONTAINS ) )
             .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
 
         System.out.println( tree.toString() );
@@ -62,7 +63,7 @@ public class TreeTest {
     @Test
     public void testNotContains() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", false, NOT_CONTAINS ) )
+            .<String>tree( LONG( "d1", NOT_CONTAINS ) )
             .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
 
         System.out.println( tree.toString() );
@@ -79,7 +80,7 @@ public class TreeTest {
     @Test
     public void testEnum() {
         final Tree<String> tree = Tree
-            .<String>tree( ENUM( "d1", TestEnum.class ) )
+            .<String>tree( ENUM( "d1", TestEnum.class, CONTAINS ) )
             .load( l( v( "1", Test1 ), v( "2", Test2 ), v( "3", Test3 ), v( "33", Test3 ) ) );
 
         System.out.println( tree.toString() );
@@ -96,7 +97,7 @@ public class TreeTest {
     @Test
     public void testString() {
         final Tree<String> tree = Tree
-            .<String>tree( STRING( "d1" ) )
+            .<String>tree( STRING( "d1", CONTAINS ) )
             .load( l( v( "1", "s1" ), v( "2", "s2" ), v( "3", "s3" ), v( "33", "s3" ) ) );
 
         System.out.println( tree.toString() );
@@ -113,7 +114,7 @@ public class TreeTest {
     @Test
     public void testFindTwoDimension() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1" ), LONG( "d2" ) )
+            .<String>tree( LONG( "d1", CONTAINS ), LONG( "d2", CONTAINS ) )
             .load( l( v( "1", 1L, 1L ), v( "2", 2L, 2L ), v( "3", 1L, 3L ), v( "33", 1L, 3L ) ) );
 
         System.out.println( tree.toString() );
@@ -131,7 +132,7 @@ public class TreeTest {
     @Test
     public void testFindAny() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1" ), LONG( "d2" ) )
+            .<String>tree( LONG( "d1", CONTAINS ), LONG( "d2", CONTAINS ) )
             .load( l( v( "1", 1L, null ), v( "2", 2L, 2L ), v( "3", 1L, 3L ), v( "33", 1L, 3L ) ) );
 
         System.out.println( tree.toString() );
@@ -149,7 +150,7 @@ public class TreeTest {
     @Test
     public void testFindOrDimension() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1" ) )
+            .<String>tree( LONG( "d1", CONTAINS ) )
             .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
 
         System.out.println( tree.toString() );
@@ -162,61 +163,48 @@ public class TreeTest {
     @Test
     public void testTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1" ), ENUM( "d2", TestEnum.class ) )
+            .<String>tree( LONG( "d1", CONTAINS ), ENUM( "d2", TestEnum.class, CONTAINS ) )
             .load( l( v( "1", 1L, Test1 ), v( "2", 2L, Test2 ), v( "3", 1L, Test3 ), v( "33", 1L, Test3 ) ) );
 
         System.out.println( tree.toString() );
 
         assertThat( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "" +
-            "33 -> (1,Test2) not in: [(1,Test3)]\n" +
-            "1 -> (1,Test2) not in: [(1,Test1)]\n" +
-            "2 -> (1,Test2) not in: [(2,Test2)]\n" +
-            "3 -> (1,Test2) not in: [(1,Test3)]\n" );
+            "33 -> (1,Test2) not in: [({1},{Test3})]\n" +
+            "1 -> (1,Test2) not in: [({1},{Test1})]\n" +
+            "2 -> (1,Test2) not in: [({2},{Test2})]\n" +
+            "3 -> (1,Test2) not in: [({1},{Test3})]\n" );
         assertThat( tree.trace( l( 3L, Test3 ) ) ).isEqualTo( "" +
-            "33 -> (3,Test3) not in: [(1,Test3)]\n" +
-            "1 -> (3,Test3) not in: [(1,Test1)]\n" +
-            "2 -> (3,Test3) not in: [(2,Test2)]\n" +
-            "3 -> (3,Test3) not in: [(1,Test3)]\n" );
+            "33 -> (3,Test3) not in: [({1},{Test3})]\n" +
+            "1 -> (3,Test3) not in: [({1},{Test1})]\n" +
+            "2 -> (3,Test3) not in: [({2},{Test2})]\n" +
+            "3 -> (3,Test3) not in: [({1},{Test3})]\n" );
 
         assertThat( tree.trace( l( 4L, Test4 ) ) ).isEqualTo( "" +
-            "33 -> (4,Test4) not in: [(1,Test3)]\n" +
-            "1 -> (4,Test4) not in: [(1,Test1)]\n" +
-            "2 -> (4,Test4) not in: [(2,Test2)]\n" +
-            "3 -> (4,Test4) not in: [(1,Test3)]\n" );
+            "33 -> (4,Test4) not in: [({1},{Test3})]\n" +
+            "1 -> (4,Test4) not in: [({1},{Test1})]\n" +
+            "2 -> (4,Test4) not in: [({2},{Test2})]\n" +
+            "3 -> (4,Test4) not in: [({1},{Test3})]\n" );
         assertThat( tree.trace( l( 1L, Test1 ) ) ).isEqualTo( "" +
-            "33 -> (1,Test1) not in: [(1,Test3)]\n" +
-            "2 -> (1,Test1) not in: [(2,Test2)]\n" +
-            "3 -> (1,Test1) not in: [(1,Test3)]\n" );
+            "33 -> (1,Test1) not in: [({1},{Test3})]\n" +
+            "2 -> (1,Test1) not in: [({2},{Test2})]\n" +
+            "3 -> (1,Test1) not in: [({1},{Test3})]\n" );
     }
 
     @Test
     public void testTraceNotContains() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", false, NOT_CONTAINS ) )
+            .<String>tree( LONG( "d1", NOT_CONTAINS ) )
             .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "1 -> (1) not in: [(!1)]\n" );
-        assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "2 -> (2) not in: [(!2)]\n" );
+        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "1 -> (1) not in: [(!{1})]\n" );
+        assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "2 -> (2) not in: [(!{2})]\n" );
         assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "" +
-            "33 -> (3) not in: [(!3)]\n" +
-            "3 -> (3) not in: [(!3)]\n" );
+            "33 -> (3) not in: [(!{3})]\n" +
+            "3 -> (3) not in: [(!{3})]\n" );
 
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "ALL OK" );
-    }
-
-    @Test
-    public void testFindNoData() {
-        final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, NOT_CONTAINS ) )
-            .load( l( v( "1", l( l() ) ), v( "2", l( l() ) ) ) );
-
-        System.out.println( tree.toString() );
-
-        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "1", "2" );
-
-        assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
     }
 
     public enum TestEnum {

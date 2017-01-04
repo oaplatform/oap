@@ -26,10 +26,9 @@ package oap.tree;
 
 import org.testng.annotations.Test;
 
-import static oap.tree.Dimension.LONG;
-import static oap.tree.Dimension.OperationType.CONTAINS;
-import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
-import static oap.tree.Dimension.STRING;
+import static oap.tree.Dimension.ARRAY_LONG;
+import static oap.tree.Dimension.ARRAY_STRING;
+import static oap.tree.Tree.a;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,8 +40,12 @@ public class TreeArrayTest {
     @Test
     public void testArray() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, CONTAINS ) )
-            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1" ) )
+            .load( l(
+                v( "1", l( a( true, 1L, 2L ) ) ),
+                v( "2", l( a( true, 2L ) ) ),
+                v( "3", l( a( true, 1L, 2L, 3L ) ) )
+            ) );
 
         System.out.println( tree.toString() );
 
@@ -59,8 +62,8 @@ public class TreeArrayTest {
     @Test
     public void testArrayString() {
         final Tree<String> tree = Tree
-            .<String>tree( STRING( "d1", true, CONTAINS ) )
-            .load( l( v( "1", l( l( "s1", "s2" ) ) ) ) );
+            .<String>tree( ARRAY_STRING( "d1" ) )
+            .load( l( v( "1", l( a( true, "s1", "s2" ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -71,8 +74,11 @@ public class TreeArrayTest {
     @Test
     public void testArrayNotContains() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, NOT_CONTAINS ) )
-            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1" ) )
+            .load( l(
+                v( "1", l( a( false, 1L, 2L ) ) ),
+                v( "2", l( a( false, 2L ) ) ),
+                v( "3", l( a( false, 1L, 2L, 3L ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -88,8 +94,11 @@ public class TreeArrayTest {
     @Test
     public void testArrayOptimize() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, CONTAINS ) )
-            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 1L, 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1" ) )
+            .load( l(
+                v( "1", l( a( true, 1L, 2L ) ) ),
+                v( "2", l( a( true, 1L, 2L ) ) ),
+                v( "3", l( a( true, 1L, 2L, 3L ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -102,8 +111,8 @@ public class TreeArrayTest {
     @Test
     public void testArrayAnyAny() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, NOT_CONTAINS ) )
-            .load( l( v( "1", l( l() ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1" ) )
+            .load( l( v( "1", l( a( false ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -113,8 +122,11 @@ public class TreeArrayTest {
     @Test
     public void testArrayTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, CONTAINS ) )
-            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 1L, 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1" ) )
+            .load( l(
+                v( "1", l( a( true, 1L, 2L ) ) ),
+                v( "2", l( a( true, 1L, 2L ) ) ),
+                v( "3", l( a( true, 1L, 2L, 3L ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -130,8 +142,11 @@ public class TreeArrayTest {
     @Test
     public void testArrayNotContainsTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, NOT_CONTAINS ) )
-            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1" ) )
+            .load( l(
+                v( "1", l( a( false, 1L, 2L ) ) ),
+                v( "2", l( a( false, 2L ) ) ),
+                v( "3", l( a( false, 1L, 2L, 3L ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -144,5 +159,18 @@ public class TreeArrayTest {
             "3 -> (1) not in: [(!{1,2,3})]\n" );
 
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "ALL OK" );
+    }
+
+    @Test
+    public void testFindNoData() {
+        final Tree<String> tree = Tree
+            .<String>tree( ARRAY_LONG( "d1" ) )
+            .load( l( v( "1", l( a( true ) ) ), v( "2", l( a( true ) ) ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "1", "2" );
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
     }
 }
