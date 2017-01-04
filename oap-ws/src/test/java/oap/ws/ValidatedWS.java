@@ -45,6 +45,12 @@ class ValidatedWS {
         return requiredParameter;
     }
 
+    @WsMethod(method = GET)
+    @WsValidate( "wrongValidatorName" )
+    public int methodWithWrongValidatorName( @WsParam(from = QUERY) int requiredParameter ) {
+        return requiredParameter;
+    }
+
     public ValidationErrors brokenValidator( int requiredParameter ) {
         throw new IllegalStateException( "CausedByException" );
     }

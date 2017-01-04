@@ -84,6 +84,13 @@ public class ValidationTest {
     }
 
     @Test
+    public void testWrongValidatorName() {
+        assertGet( HTTP_PREFIX + "/vaildation/service/methodWithWrongValidatorName?requiredParameter=10" )
+            .responded( 500, "no such method wrongValidatorName", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ),
+                "no such method wrongValidatorName" );
+    }
+
+    @Test
     public void testValidatorWithWrongParameters() {
         assertGet( HTTP_PREFIX + "/vaildation/service/methodWithWrongValidatorArgs?requiredParameter=10" )
             .responded( 500, "missedParam required by validator wrongArgsValidatoris not supplied by web method",

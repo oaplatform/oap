@@ -24,25 +24,27 @@
 
 package oap.util;
 
-import javax.annotation.CheckReturnValue;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-
 /**
- * Created by igor.petrenko on 06.12.2016.
+ * Created by anton on 1/4/17.
  */
-public final class Throwables {
-    private Throwables() {
+public class WrappingRuntimeException extends RuntimeException {
+
+    public WrappingRuntimeException() {
     }
 
-    public static RuntimeException propagate( Throwable throwable ) throws RuntimeException {
-        if( throwable instanceof IOException ) throw new UncheckedIOException( ( IOException ) throwable );
-        else if( throwable instanceof RuntimeException ) throw ( RuntimeException ) throwable;
-        throw new WrappingRuntimeException( throwable );
+    public WrappingRuntimeException( String message ) {
+        super( message );
     }
 
-    @CheckReturnValue
-    public static Throwable getRootCause( Throwable throwable ) {
-        return com.google.common.base.Throwables.getRootCause( throwable );
+    public WrappingRuntimeException( String message, Throwable cause ) {
+        super( message, cause );
+    }
+
+    public WrappingRuntimeException( Throwable cause ) {
+        super( cause );
+    }
+
+    public WrappingRuntimeException( String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace ) {
+        super( message, cause, enableSuppression, writableStackTrace );
     }
 }
