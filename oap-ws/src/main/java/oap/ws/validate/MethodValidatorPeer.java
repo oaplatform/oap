@@ -93,8 +93,15 @@ public class MethodValidatorPeer implements ValidatorPeer {
       @Override
       ValidationErrors validate( Object value ) {
          Object[] params = new Object[method.parameters.size()];
-         for( int i = 0; i < params.length; i++ )
-            params[i] = ( ( Object[] ) value )[validatorMethodParamIndices.get( method.parameters.get( i ).name() )];
+         for( int i = 0; i < params.length; i++ ) {
+            String argumentName = method.parameters.get( i ).name();
+            Integer argumentIndex = validatorMethodParamIndices.get( argumentName );
+            if(argumentIndex == null) {
+               throw new IllegalArgumentException( argumentName + " required by validator " + this.method.name()
+                   + "is not supplied by web method" );
+            }
+            params[i] = ( ( Object[] ) value )[argumentIndex];
+         }
          return method.invoke( instance, params );
       }
    }
