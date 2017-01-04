@@ -173,23 +173,23 @@ public class Tree<T> {
             if( eqBitSet.get( i ) ) continue;
 
             final Dimension dimension = dimensions.get( i );
-            long arrayCount = 0;
 
             final HashSet<Long> unique = new HashSet<>();
+            final HashSet<Array> uniqueArray = new HashSet<>();
 
             for( val vd : data ) {
                 final Object value = vd.data.get( i );
-                if( value instanceof Array ) arrayCount++;
-                else {
+                if( value instanceof Array ) {
+                    final Array array = ( Array ) value;
+                    if( !array.isEmpty() ) uniqueArray.add( array );
+                } else {
                     final long longValue = dimension.getOrDefault( value );
                     if( longValue != ANY ) unique.add( longValue );
                 }
 
             }
 
-            assert ( ( unique.size() == 0 && arrayCount > 0 ) || ( unique.size() > 0 && arrayCount == 0 ) );
-
-            if( unique.size() > uniqueSize || arrayCount > 0 ) {
+            if( unique.size() > uniqueSize || uniqueArray.size() > 0 ) {
                 uniqueSize = unique.size();
                 splitDimension = i;
             }

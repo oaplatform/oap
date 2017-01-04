@@ -196,6 +196,6 @@ public class TreeArrayTest {
 
         assertThat( tree.find( l( "1", null ) ) ).containsOnlyOnce( "1", "2" );
 
-        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
+        assertThat( tree.getMaxDepth() ).isEqualTo( 1 );
     }
 }
