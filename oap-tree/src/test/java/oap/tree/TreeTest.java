@@ -207,6 +207,17 @@ public class TreeTest {
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "ALL OK" );
     }
 
+    @Test
+    public void testTraceAny() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", CONTAINS, false ), LONG( "d2", CONTAINS, false ) )
+            .load( l( v( "1", null, 99L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "1 -> (ANY,1) not in: [({ANY},{99})]\n" );
+    }
+
     public enum TestEnum {
         Test1, Test2, Test3, Test4
     }

@@ -359,7 +359,10 @@ public class Tree<T> {
 
             if( p._1 == NOT_CONTAINS ) result.append( "!" );
 
-            result.append( LongStream.of( value ).mapToObj( dimension::toString ).collect( joining( ",", "{", "}" ) ) );
+            if( value == null )
+                result.append( "{ANY}" );
+            else
+                result.append( LongStream.of( value ).mapToObj( dimension::toString ).collect( joining( ",", "{", "}" ) ) );
         }
 
         result.append( ')' );
