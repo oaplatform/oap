@@ -251,7 +251,7 @@ public class Tree<T> {
 
             final Dimension dimension = dimensions.get( n.dimension );
 
-            if( qValue == ANY_AS_ARRAY ) {
+            if( qValue == ANY_AS_ARRAY && !dimension.queryRequired ) {
                 find( n.equal, query, result );
                 find( n.right, query, result );
                 find( n.left, query, result );
@@ -392,11 +392,13 @@ public class Tree<T> {
             final Dimension dimension = dimensions.get( n.dimension );
 
             if( qValue == ANY_AS_ARRAY ) {
-                trace( n.equal, query, notFound, newEq, fail, failBy );
-                trace( n.right, query, notFound, eq, fail, failBy );
-                trace( n.left, query, notFound, eq, fail, failBy );
-                for( ArrayBitSet set : n.sets ) {
-                    trace( set.equal, query, notFound, newEq, fail, failBy );
+                if( !dimension.queryRequired ) {
+                    trace( n.equal, query, notFound, newEq, fail, failBy );
+                    trace( n.right, query, notFound, eq, fail, failBy );
+                    trace( n.left, query, notFound, eq, fail, failBy );
+                    for( ArrayBitSet set : n.sets ) {
+                        trace( set.equal, query, notFound, newEq, fail, failBy );
+                    }
                 }
             } else if( !n.sets.isEmpty() ) {
                 nextSet:
