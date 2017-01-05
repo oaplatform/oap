@@ -111,7 +111,9 @@
         <module name="TypecastParenPad">
             <property name="option" value="space"/>
         </module>
-        <module name="WhitespaceAfter"/>
+        <module name="WhitespaceAfter">
+            <property name="tokens" value="COMMA, SEMI, LITERAL_ELSE, LITERAL_DO"/>
+        </module>
         <module name="WhitespaceAround">
 			<property name="allowEmptyConstructors" value="true"/>
 			<property name="allowEmptyMethods" value="true"/>
