@@ -39,6 +39,7 @@ import oap.util.Optionals;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Throwables;
+import oap.util.WrappingRuntimeException;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
@@ -111,6 +112,8 @@ public class WsService implements Handler {
 
    private void wsError( Response response, Throwable e ) {
       if( e instanceof ReflectException && e.getCause() != null )
+         wsError( response, e.getCause() );
+      else if( e instanceof WrappingRuntimeException && e.getCause() != null )
          wsError( response, e.getCause() );
       else if( e instanceof InvocationTargetException )
          wsError( response, ( ( InvocationTargetException ) e ).getTargetException() );

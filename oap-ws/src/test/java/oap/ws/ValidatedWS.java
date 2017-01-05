@@ -21,33 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.ws;
 
-import oap.http.Url;
-import oap.util.Maps;
-import org.testng.annotations.Test;
+import oap.ws.validate.ValidationErrors;
+import oap.ws.validate.WsValidate;
 
-import static oap.util.Pair.__;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
+import static oap.http.Request.HttpMethod.GET;
+import static oap.ws.WsParam.From.QUERY;
 
-public class UrlTest {
-    @Test
-    public void parseQuery() {
-        assertEquals( Url.parseQuery( "a=&b=2" ), Maps.listmmap( __( "a", "" ), __( "b", "2" ) ) );
-        assertEquals( Url.parseQuery( "a=1&b=2&" ), Maps.listmmap( __( "a", "1" ), __( "b", "2" ) ) );
-        assertEquals( Url.parseQuery( "a=1&b=2&b=3&b=2" ),
-            Maps.listmmap( __( "a", "1" ), __( "b", "2" ), __( "b", "3" ), __( "b", "2" ) ) );
+class ValidatedWS {
+
+
+    @WsMethod(method = GET)
+    @WsValidate( "brokenValidator" )
+    public int methodWithBrokenValidator( @WsParam(from = QUERY) int requiredParameter ) {
+        return requiredParameter;
     }
 
-    @Test
-    public void testSubdomains() {
-        assertThat( Url.subdomains( null ) ).isEmpty();
-        assertThat( Url.subdomains( "test" ) ).containsSequence( "test" );
-        assertThat( Url.subdomains( "test.com" ) ).containsSequence( "com", "test.com" );
-        assertThat( Url.subdomains( "www.test.com" ) ).containsSequence( "com", "test.com", "www.test.com" );
-        assertThat( Url.subdomains( "www.a.test.com" ) ).containsSequence( "com", "test.com", "a.test.com",
-            "www.a.test.com" );
+    @WsMethod(method = GET)
+    @WsValidate( "wrongArgsValidator" )
+    public int methodWithWrongValidatorArgs( @WsParam(from = QUERY) int requiredParameter ) {
+        return requiredParameter;
+    }
+
+    @WsMethod(method = GET)
+    @WsValidate( "wrongValidatorName" )
+    public int methodWithWrongValidatorName( @WsParam(from = QUERY) int requiredParameter ) {
+        return requiredParameter;
+    }
+
+    public ValidationErrors brokenValidator( int requiredParameter ) {
+        throw new IllegalStateException( "CausedByException" );
+    }
+
+    public ValidationErrors wrongArgsValidator( int missedParam ) {
+        return ValidationErrors.empty();
     }
 
 

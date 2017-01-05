@@ -24,6 +24,7 @@
 
 package oap.tree;
 
+import lombok.NonNull;
 import oap.util.StringBits;
 
 import java.util.Arrays;
@@ -32,7 +33,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Tree.ANY;
 
 /**
@@ -40,21 +40,20 @@ import static oap.tree.Tree.ANY;
  */
 public abstract class Dimension {
     public final String name;
-    public final boolean array;
-
+    public boolean queryRequired;
     public OperationType operationType;
 
-    public Dimension( String name, boolean array, OperationType operationType ) {
+    public Dimension( @NonNull String name, OperationType operationType, boolean queryRequired ) {
         this.name = name;
-        this.array = array;
         this.operationType = operationType;
+        this.queryRequired = queryRequired;
     }
 
-    public static Dimension ENUM( String name, Class<? extends Enum> clazz ) {
-        return ENUM( name, clazz, false, CONTAINS );
+    public static Dimension ARRAY_ENUM( String name, Class<? extends Enum> clazz, boolean queryRequired ) {
+        return ENUM( name, clazz, null, queryRequired );
     }
 
-    public static Dimension ENUM( String name, Class<? extends Enum> clazz, boolean array, OperationType operationType ) {
+    public static Dimension ENUM( String name, Class<? extends Enum> clazz, OperationType operationType, boolean queryRequired ) {
         final Enum[] enumConstantsSortedByName = clazz.getEnumConstants();
         Arrays.sort( enumConstantsSortedByName, Comparator.comparing( Enum::name ) );
 
@@ -66,7 +65,7 @@ public abstract class Dimension {
             ordinalToSorted[enumConstantsSortedByName[i].ordinal()] = i;
         }
 
-        return new Dimension( name, array, operationType ) {
+        return new Dimension( name, operationType, queryRequired ) {
             @Override
             public String toString( long value ) {
                 return sortedToName[( int ) value];
@@ -84,14 +83,14 @@ public abstract class Dimension {
         };
     }
 
-    public static Dimension STRING( String name ) {
-        return STRING( name, false, CONTAINS );
+    public static Dimension ARRAY_STRING( String name, boolean queryRequired ) {
+        return STRING( name, null, queryRequired );
     }
 
-    public static Dimension STRING( String name, boolean array, OperationType operationType ) {
+    public static Dimension STRING( String name, OperationType operationType, boolean queryRequired ) {
         final StringBits bits = new StringBits();
 
-        return new Dimension( name, array, operationType ) {
+        return new Dimension( name, operationType, queryRequired ) {
             @Override
             public String toString( long value ) {
                 return bits.valueOf( value );
@@ -110,12 +109,12 @@ public abstract class Dimension {
         };
     }
 
-    public static Dimension LONG( String name ) {
-        return LONG( name, false, CONTAINS );
+    public static Dimension ARRAY_LONG( String name, boolean queryRequired ) {
+        return LONG( name, null, queryRequired );
     }
 
-    public static Dimension LONG( String name, boolean array, OperationType operationType ) {
-        return new Dimension( name, array, operationType ) {
+    public static Dimension LONG( String name, OperationType operationType, boolean queryRequired ) {
+        return new Dimension( name, operationType, queryRequired ) {
             @Override
             public String toString( long value ) {
                 return String.valueOf( value );
@@ -129,6 +128,29 @@ public abstract class Dimension {
             public long getOrDefault( Object value ) {
                 if( value == null ) return ANY;
                 return ( ( Number ) value ).longValue();
+            }
+        };
+    }
+
+    public static Dimension ARRAY_BOOLEAN( String name, boolean queryRequired ) {
+        return BOOLEAN( name, null, queryRequired );
+    }
+
+    public static Dimension BOOLEAN( String name, OperationType operationType, boolean queryRequired ) {
+        return new Dimension( name, operationType, queryRequired ) {
+            @Override
+            public String toString( long value ) {
+                return value == 0 ? "false" : "true";
+            }
+
+            @Override
+            public void init( Stream<Object> value ) {
+            }
+
+            @Override
+            public long getOrDefault( Object value ) {
+                if( value == null ) return ANY;
+                return Boolean.TRUE.equals( value ) ? 1 : 0;
             }
         };
     }

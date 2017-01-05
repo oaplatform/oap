@@ -26,10 +26,9 @@ package oap.tree;
 
 import org.testng.annotations.Test;
 
-import static oap.tree.Dimension.LONG;
-import static oap.tree.Dimension.OperationType.CONTAINS;
-import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
-import static oap.tree.Dimension.STRING;
+import static oap.tree.Dimension.ARRAY_LONG;
+import static oap.tree.Dimension.ARRAY_STRING;
+import static oap.tree.Tree.a;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,14 +40,19 @@ public class TreeArrayTest {
     @Test
     public void testArray() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, CONTAINS ) )
-            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1", false ) )
+            .load( l(
+                v( "1", l( a( true, 1L, 2L ) ) ),
+                v( "2", l( a( true, 2L ) ) ),
+                v( "3", l( a( true, 1L, 2L, 3L ) ) )
+            ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "1", "3" );
-        assertThat( tree.find( l( 2L ) ) ).containsOnlyOnce( "1", "2", "3" );
-        assertThat( tree.find( l( 3L ) ) ).containsOnlyOnce( "3" );
+        assertThat( tree.find( l( 1L ) ) ).containsOnly( "1", "3" );
+        assertThat( tree.find( l( l( 5L, 1L ) ) ) ).containsOnly( "1", "3" );
+        assertThat( tree.find( l( 2L ) ) ).containsOnly( "1", "2", "3" );
+        assertThat( tree.find( l( 3L ) ) ).containsOnly( "3" );
 
         assertThat( tree.find( l( 5L ) ) ).isEmpty();
 
@@ -59,62 +63,92 @@ public class TreeArrayTest {
     @Test
     public void testArrayString() {
         final Tree<String> tree = Tree
-            .<String>tree( STRING( "d1", true, CONTAINS ) )
-            .load( l( v( "1", l( l( "s1", "s2" ) ) ) ) );
+            .<String>tree( ARRAY_STRING( "d1", false ) )
+            .load( l( v( "1", l( a( true, "s1", "s2" ) ) ) ) ); 
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.find( l( "s1" ) ) ).containsOnlyOnce( "1" );
+        assertThat( tree.find( l( "s1" ) ) ).containsOnly( "1" );
         assertThat( tree.find( l( "s5" ) ) ).isEmpty();
     }
 
     @Test
-    public void testArrayNotContains() {
+    public void testArrayExclude() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, NOT_CONTAINS ) )
-            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1", false ) )
+            .load( l(
+                v( "1", l( a( false, 1L, 2L ) ) ),
+                v( "2", l( a( false, 2L ) ) ),
+                v( "3", l( a( false, 1L, 2L, 3L ) ) ) ) );
 
         System.out.println( tree.toString() );
 
         assertThat( tree.find( l( 2L ) ) ).isEmpty();
-        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "2" );
+        assertThat( tree.find( l( 1L ) ) ).containsOnly( "2" );
 
-        assertThat( tree.find( l( 5L ) ) ).containsOnlyOnce( "1", "2", "3" );
+        assertThat( tree.find( l( 5L ) ) ).containsOnly( "1", "2", "3" );
 
         assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
         assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 3 );
     }
 
     @Test
-    public void testArrayOptimize() {
+    public void testArrayQueryForArrayExclude() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, CONTAINS ) )
-            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 1L, 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1", false ) )
+            .load( l(
+                v( "1", l( a( false, 1L, 2L ) ) ),
+                v( "2", l( a( false, 2L ) ) )
+            ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.find( l( 1L ) ) ).containsOnlyOnce( "1", "2", "3" );
-        assertThat( tree.find( l( 2L ) ) ).containsOnlyOnce( "1", "2", "3" );
+        assertThat( tree.find( l( l( 3L, 2L ) ) ) ).isEmpty();
+        assertThat( tree.find( l( l( 1L, 3L ) ) ) ).containsOnly( "2" );
+
+        assertThat( tree.find( l( l( 5L, 6L ) ) ) ).containsOnly( "1", "2" );
+    }
+
+    @Test
+    public void testArrayOptimize() {
+        final Tree<String> tree = Tree
+            .<String>tree( ARRAY_LONG( "d1", false ), ARRAY_STRING( "d2", false ) )
+            .load( l(
+                v( "1", l( a( true, 1L, 2L ), a( true, "1", "2" ) ) ),
+                v( "2", l( a( true, 1L, 2L ), a( true, "1", "2" ) ) ),
+                v( "3", l( a( true, 1L, 2L, 3L ), a( true, "1", "2", "3" ) ) ),
+                v( "e1", l( a( true ), a( true ) ) ),
+                v( "e2", l( a( false ), a( false ) ) )
+            ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( 1L, "1" ) ) ).containsOnly( "1", "2", "3", "e1", "e2" );
+        assertThat( tree.find( l( 2L, "2" ) ) ).containsOnly( "1", "2", "3", "e1", "e2" );
 
         assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 2 );
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
     }
 
     @Test
     public void testArrayAnyAny() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, NOT_CONTAINS ) )
-            .load( l( v( "1", l( l() ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1", false ) )
+            .load( l( v( "1", l( a( false ) ) ) ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.find( l( l() ) ) ).containsOnlyOnce( "1" );
+        assertThat( tree.find( l( l() ) ) ).containsOnly( "1" );
     }
 
     @Test
     public void testArrayTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, CONTAINS ) )
-            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 1L, 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1", false ) )
+            .load( l(
+                v( "1", l( a( true, 1L, 2L ) ) ),
+                v( "2", l( a( true, 1L, 2L ) ) ),
+                v( "3", l( a( true, 1L, 2L, 3L ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -128,10 +162,13 @@ public class TreeArrayTest {
     }
 
     @Test
-    public void testArrayNotContainsTrace() {
+    public void testArrayExcludeTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", true, NOT_CONTAINS ) )
-            .load( l( v( "1", l( l( 1L, 2L ) ) ), v( "2", l( l( 2L ) ) ), v( "3", l( l( 1L, 2L, 3L ) ) ) ) );
+            .<String>tree( ARRAY_LONG( "d1", false ) )
+            .load( l(
+                v( "1", l( a( false, 1L, 2L ) ) ),
+                v( "2", l( a( false, 2L ) ) ),
+                v( "3", l( a( false, 1L, 2L, 3L ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -144,5 +181,35 @@ public class TreeArrayTest {
             "3 -> (1) not in: [(!{1,2,3})]\n" );
 
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "ALL OK" );
+    }
+
+    @Test
+    public void testFindNoData() {
+        final Tree<String> tree = Tree
+            .<String>tree( ARRAY_STRING( "d1", false ), ARRAY_STRING( "d2", false ) )
+            .load( l(
+                v( "1", l( a( true ), a( false ) ) ),
+                v( "2", l( a( false ), a( true ) ) )
+            ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( "1", null ) ) ).containsOnly( "1", "2" );
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 1 );
+    }
+
+    @Test
+    public void testFindQueryAnyAndDimensionRequired() {
+        final Tree<String> tree = Tree
+            .<String>tree( ARRAY_LONG( "d1", true ) )
+            .load( l( v( "1", l( a( true ) ) ), v( "2", l( a( true, 2L ) ) ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( l() ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( ( Long ) null ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( 1L, 3L ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( 3L, 1L ) ) ).containsOnly( "1" );
     }
 }

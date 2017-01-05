@@ -21,34 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws;
 
-import oap.http.Url;
-import oap.util.Maps;
-import org.testng.annotations.Test;
+package oap.util;
 
-import static oap.util.Pair.__;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
+/**
+ * Created by anton on 1/4/17.
+ */
+public class WrappingRuntimeException extends RuntimeException {
 
-public class UrlTest {
-    @Test
-    public void parseQuery() {
-        assertEquals( Url.parseQuery( "a=&b=2" ), Maps.listmmap( __( "a", "" ), __( "b", "2" ) ) );
-        assertEquals( Url.parseQuery( "a=1&b=2&" ), Maps.listmmap( __( "a", "1" ), __( "b", "2" ) ) );
-        assertEquals( Url.parseQuery( "a=1&b=2&b=3&b=2" ),
-            Maps.listmmap( __( "a", "1" ), __( "b", "2" ), __( "b", "3" ), __( "b", "2" ) ) );
+    public WrappingRuntimeException() {
     }
 
-    @Test
-    public void testSubdomains() {
-        assertThat( Url.subdomains( null ) ).isEmpty();
-        assertThat( Url.subdomains( "test" ) ).containsSequence( "test" );
-        assertThat( Url.subdomains( "test.com" ) ).containsSequence( "com", "test.com" );
-        assertThat( Url.subdomains( "www.test.com" ) ).containsSequence( "com", "test.com", "www.test.com" );
-        assertThat( Url.subdomains( "www.a.test.com" ) ).containsSequence( "com", "test.com", "a.test.com",
-            "www.a.test.com" );
+    public WrappingRuntimeException( String message ) {
+        super( message );
     }
 
+    public WrappingRuntimeException( String message, Throwable cause ) {
+        super( message, cause );
+    }
 
+    public WrappingRuntimeException( Throwable cause ) {
+        super( cause );
+    }
+
+    public WrappingRuntimeException( String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace ) {
+        super( message, cause, enableSuppression, writableStackTrace );
+    }
 }

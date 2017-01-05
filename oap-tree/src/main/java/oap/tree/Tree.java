@@ -24,6 +24,7 @@
 
 package oap.tree;
 
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.val;
 import oap.tree.Dimension.OperationType;
@@ -33,6 +34,7 @@ import oap.util.Stream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -85,6 +87,10 @@ public class Tree<T> {
         return new TreeBuilder<>( asList( dimensions ) );
     }
 
+    public static <T> Array a( boolean include, T... values ) {
+        return new Array( l( values ), include );
+    }
+
     public void load( List<ValueData<T>> data ) {
         init( data );
         root = toNode( data, new BitSet( dimensions.size() ) );
@@ -98,7 +104,7 @@ public class Tree<T> {
     }
 
     private Stream<?> toStream( Object item ) {
-        return item instanceof List ? Stream.of( ( ( List<?> ) item ) ) : Stream.of( item );
+        return item instanceof Array ? Stream.of( ( ( Array ) item ) ) : Stream.of( item );
     }
 
     private long[][] convertQueryToLong( List<?> query ) {
@@ -132,12 +138,16 @@ public class Tree<T> {
         final BitSet bitSetWithDimension = withSet( eq, splitDimension.dimension );
 
         final Dimension dimension = dimensions.get( splitDimension.dimension );
+
         final List<ArrayBitSet> sets = splitDimension.sets
             .stream()
             .collect( groupingBy( s -> s.data.get( splitDimension.dimension ) ) )
             .entrySet()
             .stream()
-            .map( es -> new ArrayBitSet( dimension.toBitSet( ( List ) es.getKey() ), dimension.operationType == CONTAINS, toNode( es.getValue(), bitSetWithDimension ) ) )
+            .map( es -> {
+                final Array key = ( Array ) es.getKey();
+                return new ArrayBitSet( dimension.toBitSet( key ), key.include, toNode( es.getValue(), bitSetWithDimension ) );
+            } )
             .collect( toList() );
         return new Node(
             splitDimension.dimension,
@@ -162,34 +172,44 @@ public class Tree<T> {
         for( int i = 0; i < dimensions.size(); i++ ) {
             if( eqBitSet.get( i ) ) continue;
 
-            final int finalI = i;
-            final Dimension dimension = dimensions.get( finalI );
-            long count = data
-                .stream()
-                .filter( s -> !( s.data.get( finalI ) instanceof List ) )
-                .mapToLong( s -> dimension.getOrDefault( s.data.get( finalI ) ) )
-                .filter( v -> v != ANY )
-                .distinct()
-                .count();
+            final Dimension dimension = dimensions.get( i );
 
-            if( count > uniqueSize || dimension.array ) {
-                uniqueSize = count;
+            final HashSet<Long> unique = new HashSet<>();
+            final HashSet<Array> uniqueArray = new HashSet<>();
+
+            for( val vd : data ) {
+                final Object value = vd.data.get( i );
+                if( value instanceof Array ) {
+                    final Array array = ( Array ) value;
+                    if( !array.isEmpty() ) uniqueArray.add( array );
+                } else {
+                    final long longValue = dimension.getOrDefault( value );
+                    if( longValue != ANY ) unique.add( longValue );
+                }
+
+            }
+
+            if( unique.size() > uniqueSize || uniqueArray.size() > 0 ) {
+                uniqueSize = unique.size();
                 splitDimension = i;
             }
         }
 
         if( splitDimension < 0 ) return null;
 
-        if( uniqueSize == 0 ) { //array
-            return new SplitDimension( splitDimension, ANY, emptyList(), emptyList(), emptyList(), emptyList(), data );
-        } else {
+        final int finalSplitDimension = splitDimension;
 
-            final int finalSplitDimension = splitDimension;
+        if( uniqueSize == 0 ) { //array
+            val partition_sets_empty = Stream.of( data ).partition( vd -> !( ( Array ) vd.data.get( finalSplitDimension ) ).isEmpty() );
+
+            final List<ValueData<T>> any = Stream.of( partition_sets_empty._2 ).collect( toList() );
+            final List<ValueData<T>> sets = partition_sets_empty._1.collect( toList() );
+
+            return new SplitDimension( splitDimension, ANY, emptyList(), emptyList(), emptyList(), any, sets );
+        } else {
             final Dimension dimension = dimensions.get( finalSplitDimension );
 
-            val partition_sets_other = Stream.of( data ).partition( sd -> sd.data.get( finalSplitDimension ) instanceof List );
-
-            val partition_any_other = partition_sets_other._2.partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) == ANY );
+            val partition_any_other = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) == ANY );
 
             final List<ValueData<T>> sorted = partition_any_other._2
                 .sorted( Comparator.comparingLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) ) )
@@ -205,10 +225,9 @@ public class Tree<T> {
             final List<ValueData<T>> left = partition_left_eq_right._1.collect( toList() );
             final List<ValueData<T>> right = partition_eq_right._2.collect( toList() );
             final List<ValueData<T>> eq = partition_eq_right._1.collect( toList() );
-            final List<ValueData<T>> any = partition_any_other._1.collect( toList() );
-            final List<ValueData<T>> sets = partition_sets_other._1.collect( toList() );
+            final List<ValueData<T>> any = Stream.of( partition_any_other._1 ).collect( toList() );
 
-            return new SplitDimension( splitDimension, splitValue, left, right, eq, any, sets );
+            return new SplitDimension( splitDimension, splitValue, left, right, eq, any, emptyList() );
         }
     }
 
@@ -232,7 +251,7 @@ public class Tree<T> {
 
             final Dimension dimension = dimensions.get( n.dimension );
 
-            if( qValue == ANY_AS_ARRAY ) {
+            if( qValue == ANY_AS_ARRAY && !dimension.queryRequired ) {
                 find( n.equal, query, result );
                 find( n.right, query, result );
                 find( n.left, query, result );
@@ -241,10 +260,9 @@ public class Tree<T> {
                     find( set.equal, query, result );
                 }
             } else if( !n.sets.isEmpty() ) {
-                for( long v : qValue ) {
-                    for( ArrayBitSet set : n.sets ) {
-                        if( set.bitSet.isEmpty() || set.bitSet.get( ( int ) v ) == set.include )
-                            find( set.equal, query, result );
+                for( ArrayBitSet set : n.sets ) {
+                    if( set.find( qValue ) ) {
+                        find( set.equal, query, result );
                     }
                 }
             } else if( dimension.operationType == NOT_CONTAINS ) {
@@ -341,14 +359,10 @@ public class Tree<T> {
 
             if( p._1 == NOT_CONTAINS ) result.append( "!" );
 
-            if( dimension.array ) {
+            if( value == null )
+                result.append( "{ANY}" );
+            else
                 result.append( LongStream.of( value ).mapToObj( dimension::toString ).collect( joining( ",", "{", "}" ) ) );
-            } else {
-                if( value[0] == ANY ) result.append( "ANY" );
-                else {
-                    result.append( dimension.toString( value[0] ) );
-                }
-            }
         }
 
         result.append( ')' );
@@ -381,31 +395,33 @@ public class Tree<T> {
             final Dimension dimension = dimensions.get( n.dimension );
 
             if( qValue == ANY_AS_ARRAY ) {
-                trace( n.equal, query, notFound, newEq, fail, failBy );
-                trace( n.right, query, notFound, eq, fail, failBy );
-                trace( n.left, query, notFound, eq, fail, failBy );
-                for( ArrayBitSet set : n.sets ) {
-                    trace( set.equal, query, notFound, newEq, fail, failBy );
-                }
-            } else if( !n.sets.isEmpty() ) {
-                for( ArrayBitSet set : n.sets ) {
-                    for( long v : qValue ) {
-                        if( set.bitSet.isEmpty() || set.bitSet.get( ( int ) v ) == set.include )
-                            trace( set.equal, query, notFound, newEq, fail, failBy );
-                        else {
-                            BitSet newFail = logFail( fail, n.dimension );
-                            final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
-                            newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
-
-
-                            trace( set.equal, query, notFound, newEqArray, newFail,
-                                !set.include ? NOT_CONTAINS : failBy );
-                        }
+                if( !dimension.queryRequired ) {
+                    trace( n.equal, query, notFound, newEq, fail, failBy );
+                    trace( n.right, query, notFound, eq, fail, failBy );
+                    trace( n.left, query, notFound, eq, fail, failBy );
+                    for( ArrayBitSet set : n.sets ) {
+                        trace( set.equal, query, notFound, newEq, fail, failBy );
                     }
                 }
+            } else if( !n.sets.isEmpty() ) {
+                nextSet:
+                for( ArrayBitSet set : n.sets ) {
+                    if( set.find( qValue ) ) {
+                        trace( set.equal, query, notFound, newEq, fail, failBy );
+                    } else {
+                        BitSet newFail = logFail( fail, n.dimension );
+                        final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
+                        newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
+
+
+                        trace( set.equal, query, notFound, newEqArray, newFail, set.include ? CONTAINS : NOT_CONTAINS );
+                    }
+                }
+
             } else if( dimension.operationType == NOT_CONTAINS ) {
                 trace( n.left, query, notFound, eq, fail, failBy );
                 trace( n.right, query, notFound, eq, fail, failBy );
+
                 for( long v : qValue ) {
                     if( v != n.eqValue )
                         trace( n.equal, query, notFound, newEq, fail, failBy );
@@ -506,6 +522,17 @@ public class Tree<T> {
         void print( StringBuilder out );
     }
 
+    @ToString( callSuper = true )
+    @EqualsAndHashCode( callSuper = true )
+    public static class Array extends ArrayList<Object> {
+        public final boolean include;
+
+        public Array( Collection<?> c, boolean include ) {
+            super( c );
+            this.include = include;
+        }
+    }
+
     public static class ValueData<T> {
         public final List<?> data;
         public final T value;
@@ -516,8 +543,9 @@ public class Tree<T> {
         }
     }
 
-    private static class Leaf<T> implements TreeNode<T> {
-        private final List<T> selections;
+    @ToString
+    static class Leaf<T> implements TreeNode<T> {
+        final List<T> selections;
 
         private Leaf( List<T> selections ) {
             this.selections = selections;
@@ -550,6 +578,22 @@ public class Tree<T> {
             this.include = include;
             this.equal = equal;
         }
+
+        public final boolean find( long[] qValue ) {
+            if( include ) {
+                for( long value : qValue ) {
+                    if( bitSet.get( ( int ) value ) ) return true;
+                }
+
+                return false;
+            }
+
+            for( long value : qValue ) {
+                if( bitSet.get( ( int ) value ) ) return false;
+            }
+
+            return true;
+        }
     }
 
     private class SplitDimension {
@@ -580,6 +624,7 @@ public class Tree<T> {
         }
     }
 
+    @ToString
     class Node implements TreeNode<T> {
         final List<ArrayBitSet> sets;
         final TreeNode<T> left;
