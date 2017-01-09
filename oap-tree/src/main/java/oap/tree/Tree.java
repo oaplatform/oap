@@ -329,13 +329,13 @@ public class Tree<T> {
 
             final Dimension dimension = dimensions.get( n.dimension );
 
-            if( qValue == ANY_AS_ARRAY && !dimension.queryRequired ) {
-                trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, false ), success );
-                trace( n.right, query, result, buffer.clone(), success );
-                trace( n.left, query, result, buffer.clone(), success );
+            if( qValue == ANY_AS_ARRAY ) {
+                trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, false ), success && !dimension.queryRequired );
+                trace( n.right, query, result, buffer.clone(), success && !dimension.queryRequired );
+                trace( n.left, query, result, buffer.clone(), success && !dimension.queryRequired );
 
                 for( ArrayBitSet set : n.sets ) {
-                    trace( set.equal, query, result, buffer.clone(), success );
+                    trace( set.equal, query, result, buffer.clone(), success && !dimension.queryRequired );
                 }
             } else if( !n.sets.isEmpty() ) {
                 for( ArrayBitSet set : n.sets ) {

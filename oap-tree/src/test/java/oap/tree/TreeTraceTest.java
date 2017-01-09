@@ -124,6 +124,17 @@ public class TreeTraceTest {
         assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "Expecting:\n1: \n    d2/1: [1]  CONTAINS [99]" );
     }
 
+    @Test
+    public void testTraceQueryAnyAndQueryRequired() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", CONTAINS, true ) )
+            .load( l( v( "1", 1L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.trace( l( ( Long ) null ) ) ).isEqualTo( "Expecting:\n1: \n    d1/0: []  CONTAINS [1]" );
+    }
+
     public enum TestEnum {
         Test1, Test2, Test3, Test4
     }
