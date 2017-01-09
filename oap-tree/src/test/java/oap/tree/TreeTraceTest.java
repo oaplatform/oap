@@ -50,26 +50,48 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "" +
-            "33 -> (1,Test2) not in: [({1},{Test3})]\n" +
-            "1 -> (1,Test2) not in: [({1},{Test1})]\n" +
-            "2 -> (1,Test2) not in: [({2},{Test2})]\n" +
-            "3 -> (1,Test2) not in: [({1},{Test3})]\n" );
-        assertThat( tree.trace( l( 3L, Test3 ) ) ).isEqualTo( "" +
-            "33 -> (3,Test3) not in: [({1},{Test3})]\n" +
-            "1 -> (3,Test3) not in: [({1},{Test1})]\n" +
-            "2 -> (3,Test3) not in: [({2},{Test2})]\n" +
-            "3 -> (3,Test3) not in: [({1},{Test3})]\n" );
+        assertThat( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "Expecting:\n" +
+            "33: \n" +
+            "    d2/1: [Test2]  CONTAINS [Test3]\n" +
+            "1: \n" +
+            "    d2/1: [Test2]  CONTAINS [Test1]\n" +
+            "2: \n" +
+            "    d1/0: [1]  CONTAINS [2]\n" +
+            "3: \n" +
+            "    d2/1: [Test2]  CONTAINS [Test3]" );
+        assertThat( tree.trace( l( 3L, Test3 ) ) ).isEqualTo( "Expecting:\n" +
+            "33: \n" +
+            "    d1/0: [3]  CONTAINS [1]\n" +
+            "1: \n" +
+            "    d1/0: [3]  CONTAINS [1]\n" +
+            "    d2/1: [Test3]  CONTAINS [Test1]\n" +
+            "2: \n" +
+            "    d1/0: [3]  CONTAINS [2]\n" +
+            "    d2/1: [Test3]  CONTAINS [Test2]\n" +
+            "3: \n" +
+            "    d1/0: [3]  CONTAINS [1]" );
 
-        assertThat( tree.trace( l( 4L, Test4 ) ) ).isEqualTo( "" +
-            "33 -> (4,Test4) not in: [({1},{Test3})]\n" +
-            "1 -> (4,Test4) not in: [({1},{Test1})]\n" +
-            "2 -> (4,Test4) not in: [({2},{Test2})]\n" +
-            "3 -> (4,Test4) not in: [({1},{Test3})]\n" );
-        assertThat( tree.trace( l( 1L, Test1 ) ) ).isEqualTo( "" +
-            "33 -> (1,Test1) not in: [({1},{Test3})]\n" +
-            "2 -> (1,Test1) not in: [({2},{Test2})]\n" +
-            "3 -> (1,Test1) not in: [({1},{Test3})]\n" );
+        assertThat( tree.trace( l( 4L, Test4 ) ) ).isEqualTo( "Expecting:\n" +
+            "33: \n" +
+            "    d1/0: [4]  CONTAINS [1]\n" +
+            "    d2/1: [Test4]  CONTAINS [Test3]\n" +
+            "1: \n" +
+            "    d1/0: [4]  CONTAINS [1]\n" +
+            "    d2/1: [Test4]  CONTAINS [Test1]\n" +
+            "2: \n" +
+            "    d1/0: [4]  CONTAINS [2]\n" +
+            "    d2/1: [Test4]  CONTAINS [Test2]\n" +
+            "3: \n" +
+            "    d1/0: [4]  CONTAINS [1]\n" +
+            "    d2/1: [Test4]  CONTAINS [Test3]" );
+        assertThat( tree.trace( l( 1L, Test1 ) ) ).isEqualTo( "Expecting:\n" +
+            "33: \n" +
+            "    d2/1: [Test1]  CONTAINS [Test3]\n" +
+            "2: \n" +
+            "    d1/0: [1]  CONTAINS [2]\n" +
+            "    d2/1: [Test1]  CONTAINS [Test2]\n" +
+            "3: \n" +
+            "    d2/1: [Test1]  CONTAINS [Test3]" );
     }
 
     @Test
@@ -80,11 +102,13 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "1 -> (1) not in: [(!{1})]\n" );
-        assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "2 -> (2) not in: [(!{2})]\n" );
-        assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "" +
-            "33 -> (3) not in: [(!{3})]\n" +
-            "3 -> (3) not in: [(!{3})]\n" );
+        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "Expecting:\n1: \n    d1/0: [1]  NOT_CONTAINS [1]" );
+        assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "Expecting:\n2: \n    d1/0: [2]  NOT_CONTAINS [2]" );
+        assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "Expecting:\n" +
+            "33: \n" +
+            "    d1/0: [3]  NOT_CONTAINS [3]\n" +
+            "3: \n" +
+            "    d1/0: [3]  NOT_CONTAINS [3]" );
 
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "ALL OK" );
     }
@@ -97,7 +121,7 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "1 -> (ANY,1) not in: [({ANY},{99})]\n" );
+        assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "Expecting:\n1: \n    d2/1: [1]  CONTAINS [99]" );
     }
 
     public enum TestEnum {

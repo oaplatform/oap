@@ -24,7 +24,9 @@
 
 package oap.tree;
 
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import lombok.ToString;
 import oap.util.StringBits;
 
 import java.util.Arrays;
@@ -39,6 +41,8 @@ import static oap.tree.Tree.ANY_AS_ARRAY;
 /**
  * Created by igor.petrenko on 27.12.2016.
  */
+@EqualsAndHashCode
+@ToString
 public abstract class Dimension {
     public final String name;
     public boolean queryRequired;

@@ -64,7 +64,7 @@ public class TreeArrayTest {
     public void testArrayString() {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_STRING( "d1", false ) )
-            .load( l( v( "1", l( a( true, "s1", "s2" ) ) ) ) ); 
+            .load( l( v( "1", l( a( true, "s1", "s2" ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -142,7 +142,7 @@ public class TreeArrayTest {
     }
 
     @Test
-    public void testArrayTrace() {
+    public void testArrayTrace2() {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_LONG( "d1", false ) )
             .load( l(
@@ -153,12 +153,18 @@ public class TreeArrayTest {
         System.out.println( tree.toString() );
 
         assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "ALL OK" );
-        assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "" +
-            "1 -> (3) not in: [({1,2})]\n" +
-            "2 -> (3) not in: [({1,2})]\n" );
-        assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "1 -> (5) not in: [({1,2})]\n" +
-            "2 -> (5) not in: [({1,2})]\n" +
-            "3 -> (5) not in: [({1,2,3})]\n" );
+        assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [3]  CONTAINS [1,2]\n" +
+            "2: \n" +
+            "    d1/0: [3]  CONTAINS [1,2]" );
+        assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [5]  CONTAINS [1,2]\n" +
+            "2: \n" +
+            "    d1/0: [5]  CONTAINS [1,2]\n" +
+            "3: \n" +
+            "    d1/0: [5]  CONTAINS [1,2,3]" );
     }
 
     @Test
@@ -172,13 +178,18 @@ public class TreeArrayTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "" +
-            "1 -> (2) not in: [(!{1,2})]\n" +
-            "2 -> (2) not in: [(!{2})]\n" +
-            "3 -> (2) not in: [(!{1,2,3})]\n" );
-        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "" +
-            "1 -> (1) not in: [(!{1,2})]\n" +
-            "3 -> (1) not in: [(!{1,2,3})]\n" );
+        assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [2]  NOT_CONTAINS [1,2]\n" +
+            "2: \n" +
+            "    d1/0: [2]  NOT_CONTAINS [2]\n" +
+            "3: \n" +
+            "    d1/0: [2]  NOT_CONTAINS [1,2,3]" );
+        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [1]  NOT_CONTAINS [1,2]\n" +
+            "3: \n" +
+            "    d1/0: [1]  NOT_CONTAINS [1,2,3]" );
 
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "ALL OK" );
     }

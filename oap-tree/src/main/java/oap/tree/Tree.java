@@ -32,7 +32,6 @@ import oap.util.Pair;
 import oap.util.Stream;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,8 +39,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
 import static java.util.Arrays.asList;
@@ -278,6 +279,90 @@ public class Tree<T> {
         }
     }
 
+    public String trace( List<?> query ) {
+        final HashMap<T, HashMap<Integer, TraceOperationTypeValues>> result = new HashMap<>();
+        final long[][] longQuery = convertQueryToLong( query );
+        trace( root, longQuery, result, new TraceBuffer(), true );
+
+        final String out = result.entrySet().stream().map( e -> e.getKey().toString() + ": \n" +
+            e.getValue().entrySet().stream().map( dv -> {
+                    final Dimension dimension = dimensions.get( dv.getKey() );
+                    return "    " + dimension.name + "/" + dv.getKey() + ": " + queryToString( longQuery, dv.getKey() )
+                        + " " + dv.getValue().toString( dimension );
+                }
+            ).collect( joining( "\n" ) )
+        ).collect( joining( "\n" ) );
+        return out.length() > 0 ? "Expecting:\n" + out : "ALL OK";
+    }
+
+    private String queryToString( long[][] query, int key ) {
+        final long[] value = query[key];
+        return LongStream.of( value ).mapToObj( dimensions.get( key )::toString ).collect( joining( ",", "[", "]" ) );
+    }
+
+    private void trace( TreeNode<T> node, long[][] query,
+                        HashMap<T, HashMap<Integer, TraceOperationTypeValues>> result,
+                        TraceBuffer buffer, boolean success ) {
+        if( node == null ) return;
+
+        if( node instanceof Leaf ) {
+            final List<T> selections = ( ( Leaf<T> ) node ).selections;
+            if( !success ) {
+                selections.forEach( s -> {
+                    final HashMap<Integer, TraceOperationTypeValues> dv = result.computeIfAbsent( s, ( ss ) -> new HashMap<>() );
+                    buffer.forEach( ( d, otv ) ->
+                        otv.forEach( ( ot, v ) ->
+                            dv
+                                .computeIfAbsent( d, ( dd ) -> new TraceOperationTypeValues() )
+                                .addAll( ot, v )
+                        )
+                    );
+                } );
+            } else {
+                selections.forEach( result::remove );
+            }
+        } else {
+            final Node n = ( Node ) node;
+            trace( n.any, query, result, buffer.clone(), success );
+
+            final long[] qValue = query[n.dimension];
+
+            final Dimension dimension = dimensions.get( n.dimension );
+
+            if( qValue == ANY_AS_ARRAY && !dimension.queryRequired ) {
+                trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, false ), success );
+                trace( n.right, query, result, buffer.clone(), success );
+                trace( n.left, query, result, buffer.clone(), success );
+
+                for( ArrayBitSet set : n.sets ) {
+                    trace( set.equal, query, result, buffer.clone(), success );
+                }
+            } else if( !n.sets.isEmpty() ) {
+                for( ArrayBitSet set : n.sets ) {
+                    final boolean eqSuccess = set.find( qValue );
+                    trace( set.equal, query, result, buffer.cloneWith( n.dimension, set.bitSet.stream(),
+                        set.include ? CONTAINS : NOT_CONTAINS, eqSuccess ), success && eqSuccess );
+                }
+            } else if( dimension.operationType == NOT_CONTAINS ) {
+                trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, false ), false );
+                trace( n.left, query, result, buffer.clone(), success );
+                trace( n.right, query, result, buffer.clone(), success );
+
+                for( long v : qValue ) {
+                    final boolean eqSuccess = v != n.eqValue;
+                    trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, eqSuccess ), success && eqSuccess );
+                }
+            } else {
+                for( long v : qValue ) {
+                    final boolean eqSuccess = v == n.eqValue;
+                    trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, eqSuccess ), success && eqSuccess );
+                    trace( n.left, query, result, buffer.clone(), success && v < n.eqValue );
+                    trace( n.right, query, result, buffer.clone(), success && v >= n.eqValue );
+                }
+            }
+        }
+    }
+
     @Override
     public String toString() {
         StringBuilder out = new StringBuilder();
@@ -285,172 +370,6 @@ public class Tree<T> {
         print( root, out );
 
         return out.toString();
-    }
-
-    public String trace( List<?> query ) {
-        final long[][] longQuery = convertQueryToLong( query );
-
-        final BitSet fails = new BitSet();
-        final HashMap<T, List<Pair<OperationType, long[][]>>> notFound = new HashMap<>();
-
-        trace( root, longQuery, notFound, new long[dimensions.size()][], fails, null );
-
-        if( !notFound.isEmpty() ) {
-            return notFound
-                .entrySet()
-                .stream()
-                .map(
-                    s -> s.getKey() + " -> " + arrayToString( longQuery ) + " not in: " + Stream.of( s.getValue() )
-                        .map( this::arrayToString )
-                        .collect( joining( ",", "[", "]" ) )
-                )
-                .collect( joining( "\n" ) )
-                + "\n";
-        } else {
-            return "ALL OK";
-        }
-    }
-
-    private String arrayToString( long[][] set ) {
-        final StringBuilder result = new StringBuilder( "(" );
-
-        for( int i = 0; i < dimensions.size(); i++ ) {
-            if( i > 0 ) result.append( "," );
-
-            final long[] value = set[i];
-            if( value == ANY_AS_ARRAY ) result.append( "ANY" );
-            else {
-                final Dimension dimension = dimensions.get( i );
-                if( value.length == 1 ) {
-                    result.append( dimension.toString( value[0] ) );
-                } else {
-                    result.append( LongStream
-                        .of( value )
-                        .mapToObj( dimension::toString )
-                        .collect( joining( ",", "[", "]" ) )
-                    );
-                }
-            }
-        }
-
-        result.append( ')' );
-
-        return result.toString();
-    }
-
-    private String arrayToString( Pair<OperationType, long[][]> p ) {
-        final StringBuilder result = new StringBuilder( "(" );
-
-        for( int i = 0; i < dimensions.size(); i++ ) {
-            final Dimension dimension = dimensions.get( i );
-
-            if( i > 0 ) result.append( "," );
-
-            final long[] value = p._2[i];
-
-            if( p._1 == NOT_CONTAINS ) result.append( "!" );
-
-            if( value == null )
-                result.append( "{ANY}" );
-            else
-                result.append( LongStream.of( value ).mapToObj( dimension::toString ).collect( joining( ",", "{", "}" ) ) );
-        }
-
-        result.append( ')' );
-
-        return result.toString();
-    }
-
-    private void trace( TreeNode<T> node, long[][] query,
-                        HashMap<T, List<Pair<OperationType, long[][]>>> notFound,
-                        long[][] eq, BitSet fail, OperationType failBy ) {
-        if( node == null ) return;
-
-        if( node instanceof Leaf ) {
-            if( !fail.isEmpty() ) {
-                final Leaf<T> n = ( Leaf<T> ) node;
-
-                n.selections.forEach( s -> notFound
-                    .computeIfAbsent( s, ( ss ) -> new ArrayList<>() )
-                    .add( __( failBy, eq ) ) );
-            }
-        } else {
-            final Node n = ( Node ) node;
-            final long[][] newEq = Arrays.copyOf( eq, eq.length );
-            newEq[n.dimension] = new long[] { n.eqValue };
-
-            trace( n.any, query, notFound, newEq, fail, failBy );
-
-            final long[] qValue = query[n.dimension];
-
-            final Dimension dimension = dimensions.get( n.dimension );
-
-            if( qValue == ANY_AS_ARRAY ) {
-                if( !dimension.queryRequired ) {
-                    trace( n.equal, query, notFound, newEq, fail, failBy );
-                    trace( n.right, query, notFound, eq, fail, failBy );
-                    trace( n.left, query, notFound, eq, fail, failBy );
-                    for( ArrayBitSet set : n.sets ) {
-                        trace( set.equal, query, notFound, newEq, fail, failBy );
-                    }
-                }
-            } else if( !n.sets.isEmpty() ) {
-                nextSet:
-                for( ArrayBitSet set : n.sets ) {
-                    if( set.find( qValue ) ) {
-                        trace( set.equal, query, notFound, newEq, fail, failBy );
-                    } else {
-                        BitSet newFail = logFail( fail, n.dimension );
-                        final long[][] newEqArray = Arrays.copyOf( eq, eq.length );
-                        newEqArray[n.dimension] = set.bitSet.stream().mapToLong( i -> i ).toArray();
-
-
-                        trace( set.equal, query, notFound, newEqArray, newFail, set.include ? CONTAINS : NOT_CONTAINS );
-                    }
-                }
-
-            } else if( dimension.operationType == NOT_CONTAINS ) {
-                trace( n.left, query, notFound, eq, fail, failBy );
-                trace( n.right, query, notFound, eq, fail, failBy );
-
-                for( long v : qValue ) {
-                    if( v != n.eqValue )
-                        trace( n.equal, query, notFound, newEq, fail, failBy );
-                    else {
-                        BitSet newFail = logFail( fail, n.dimension );
-                        trace( n.equal, query, notFound, newEq, newFail, NOT_CONTAINS );
-                    }
-                }
-            } else {
-                for( long v : qValue ) {
-                    if( v < n.eqValue ) {
-                        trace( n.left, query, notFound, eq, fail, failBy );
-                        BitSet newFail = logFail( fail, n.dimension );
-                        trace( n.equal, query, notFound, newEq, newFail, failBy );
-                        trace( n.right, query, notFound, eq, newFail, failBy );
-                    } else if( v == n.eqValue ) {
-                        trace( n.equal, query, notFound, newEq, fail, failBy );
-                        BitSet newFail = logFail( fail, n.dimension );
-                        trace( n.right, query, notFound, eq, newFail, failBy );
-                        trace( n.left, query, notFound, eq, newFail, failBy );
-                    } else {
-                        trace( n.right, query, notFound, eq, fail, failBy );
-                        BitSet newFail = logFail( fail, n.dimension );
-                        trace( n.left, query, notFound, eq, newFail, failBy );
-                        trace( n.equal, query, notFound, newEq, newFail, failBy );
-                    }
-                }
-            }
-        }
-    }
-
-    private BitSet logFail( BitSet fail, int dimension ) {
-        BitSet newFail = fail;
-        if( !fail.get( dimension ) ) {
-            newFail = BitSet.valueOf( fail.toLongArray() );
-            newFail.set( dimension );
-        }
-        return newFail;
     }
 
     private void print( TreeNode<T> node, StringBuilder out ) {
@@ -555,6 +474,58 @@ public class Tree<T> {
             out.append( "dn|[" )
                 .append( collect )
                 .append( "]" );
+        }
+    }
+
+    private static class TraceOperationTypeValues extends HashMap<OperationType, HashSet<Long>> {
+        public void add( OperationType operationType, long eqValue ) {
+            this.computeIfAbsent( operationType, ( ot ) -> new HashSet<>() ).add( eqValue );
+        }
+
+        public void addAll( OperationType operationType, HashSet<Long> v ) {
+            this.computeIfAbsent( operationType, ( ot ) -> new HashSet<>() ).addAll( v );
+        }
+
+        public String toString( Dimension dimension ) {
+            return entrySet().stream().map( e -> " " + e.getKey() + " " + e.getValue().stream()
+                .map( dimension::toString )
+                .collect( joining( ",", "[", "]" ) ) )
+                .collect( joining( ", " ) );
+        }
+    }
+
+    private static class TraceBuffer extends HashMap<Integer, TraceOperationTypeValues> {
+
+
+        public TraceBuffer() {
+        }
+
+        private TraceBuffer( Map<Integer, TraceOperationTypeValues> m ) {
+            super( m );
+        }
+
+        @Override
+        public TraceBuffer clone() {
+            return new TraceBuffer( this );
+        }
+
+        public TraceBuffer cloneWith( int dimension, long eqValue, OperationType operationType, boolean success ) {
+            return cloneWith( dimension, LongStream.of( eqValue ), operationType, success );
+        }
+
+        public TraceBuffer cloneWith( int dimension, IntStream eqValue, OperationType operationType, boolean success ) {
+            return cloneWith( dimension, eqValue.mapToLong( v -> v ), operationType, success );
+        }
+
+        public TraceBuffer cloneWith( int dimension, LongStream eqValue, OperationType operationType, boolean success ) {
+            final TraceBuffer clone = clone();
+            if( !success ) {
+                final TraceOperationTypeValues v = clone
+                    .computeIfAbsent( dimension, ( d ) -> new TraceOperationTypeValues() );
+
+                eqValue.forEach( eqv -> v.add( operationType, eqv ) );
+            }
+            return clone;
         }
     }
 
