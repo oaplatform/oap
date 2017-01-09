@@ -31,9 +31,10 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
-import static oap.tree.Tree.ANY;
+import static oap.tree.Tree.ANY_AS_ARRAY;
 
 /**
  * Created by igor.petrenko on 27.12.2016.
@@ -72,12 +73,11 @@ public abstract class Dimension {
             }
 
             @Override
-            public void init( Stream<Object> value ) {
+            protected void _init( Stream<Object> value ) {
             }
 
             @Override
-            public long getOrDefault( Object value ) {
-                if( value == null ) return ANY;
+            protected long _getOrDefault( Object value ) {
                 return ordinalToSorted[( ( Enum ) value ).ordinal()];
             }
         };
@@ -97,13 +97,12 @@ public abstract class Dimension {
             }
 
             @Override
-            public void init( Stream<Object> value ) {
+            protected void _init( Stream<Object> value ) {
                 value.sorted().forEach( v -> bits.computeIfAbsent( ( String ) v ) );
             }
 
             @Override
-            public long getOrDefault( Object value ) {
-                if( value == null ) return ANY;
+            protected long _getOrDefault( Object value ) {
                 return bits.get( ( String ) value );
             }
         };
@@ -121,12 +120,11 @@ public abstract class Dimension {
             }
 
             @Override
-            public void init( Stream<Object> value ) {
+            protected void _init( Stream<Object> value ) {
             }
 
             @Override
-            public long getOrDefault( Object value ) {
-                if( value == null ) return ANY;
+            protected long _getOrDefault( Object value ) {
                 return ( ( Number ) value ).longValue();
             }
         };
@@ -144,12 +142,11 @@ public abstract class Dimension {
             }
 
             @Override
-            public void init( Stream<Object> value ) {
+            protected void _init( Stream<Object> value ) {
             }
 
             @Override
-            public long getOrDefault( Object value ) {
-                if( value == null ) return ANY;
+            protected long _getOrDefault( Object value ) {
                 return Boolean.TRUE.equals( value ) ? 1 : 0;
             }
         };
@@ -157,9 +154,31 @@ public abstract class Dimension {
 
     public abstract String toString( long value );
 
-    public abstract void init( Stream<Object> value );
+    public final void init( Stream<Object> value ) {
+        _init( value
+            .filter( v -> !(v instanceof Optional) || ( ( Optional ) v ).isPresent() )
+            .map( v -> v instanceof Optional ? ( ( Optional ) v ).get() : v ) );
+    }
 
-    public abstract long getOrDefault( Object value );
+    protected abstract void _init( Stream<Object> value );
+
+    public final long[] getOrDefault( Object value ) {
+        if( value == null ) return ANY_AS_ARRAY;
+
+        if( value instanceof Optional<?> ) {
+            Optional<?> optValue = ( Optional<?> ) value;
+            return optValue.map( this::getOrDefault ).orElse( ANY_AS_ARRAY );
+        }
+
+        if( value instanceof List ) {
+            final List<?> list = ( List<?> ) value;
+            return list.isEmpty() ? ANY_AS_ARRAY : list.stream().mapToLong( this::_getOrDefault ).toArray();
+        } else {
+            return new long[] { _getOrDefault( value ) };
+        }
+    }
+
+    protected abstract long _getOrDefault( Object value );
 
     @Override
     public String toString() {
@@ -169,7 +188,7 @@ public abstract class Dimension {
     @SuppressWarnings( "unchecked" )
     public BitSet toBitSet( List list ) {
         final BitSet bitSet = new BitSet();
-        list.forEach( item -> bitSet.set( ( int ) this.getOrDefault( item ) ) );
+        list.forEach( item -> bitSet.set( ( int ) this._getOrDefault( item ) ) );
         return bitSet;
     }
 

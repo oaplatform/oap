@@ -26,6 +26,8 @@ package oap.tree;
 
 import org.testng.annotations.Test;
 
+import java.util.Optional;
+
 import static oap.tree.Dimension.ENUM;
 import static oap.tree.Dimension.LONG;
 import static oap.tree.Dimension.OperationType.CONTAINS;
@@ -161,61 +163,28 @@ public class TreeTest {
     }
 
     @Test
-    public void testTrace() {
+    public void testFindOptionalString() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, false ), ENUM( "d2", TestEnum.class, CONTAINS, false ) )
-            .load( l( v( "1", 1L, Test1 ), v( "2", 2L, Test2 ), v( "3", 1L, Test3 ), v( "33", 1L, Test3 ) ) );
+            .<String>tree( STRING( "d1", CONTAINS, false ) )
+            .load( l( v( "1", "s1" ), v( "2", "s2" ), v( "3", "s3" ), v( "33", "s3" ) ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "" +
-            "33 -> (1,Test2) not in: [({1},{Test3})]\n" +
-            "1 -> (1,Test2) not in: [({1},{Test1})]\n" +
-            "2 -> (1,Test2) not in: [({2},{Test2})]\n" +
-            "3 -> (1,Test2) not in: [({1},{Test3})]\n" );
-        assertThat( tree.trace( l( 3L, Test3 ) ) ).isEqualTo( "" +
-            "33 -> (3,Test3) not in: [({1},{Test3})]\n" +
-            "1 -> (3,Test3) not in: [({1},{Test1})]\n" +
-            "2 -> (3,Test3) not in: [({2},{Test2})]\n" +
-            "3 -> (3,Test3) not in: [({1},{Test3})]\n" );
-
-        assertThat( tree.trace( l( 4L, Test4 ) ) ).isEqualTo( "" +
-            "33 -> (4,Test4) not in: [({1},{Test3})]\n" +
-            "1 -> (4,Test4) not in: [({1},{Test1})]\n" +
-            "2 -> (4,Test4) not in: [({2},{Test2})]\n" +
-            "3 -> (4,Test4) not in: [({1},{Test3})]\n" );
-        assertThat( tree.trace( l( 1L, Test1 ) ) ).isEqualTo( "" +
-            "33 -> (1,Test1) not in: [({1},{Test3})]\n" +
-            "2 -> (1,Test1) not in: [({2},{Test2})]\n" +
-            "3 -> (1,Test1) not in: [({1},{Test3})]\n" );
+        assertThat( tree.find( l( Optional.of( "s1" ) ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( ( String ) null ) ) ).containsOnly( "1", "2", "3", "33" );
+        assertThat( tree.find( l( Optional.<String>empty() ) ) ).containsOnly( "1", "2", "3", "33" );
     }
 
     @Test
-    public void testTraceExclude() {
+    public void testOptionalData() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", NOT_CONTAINS, false ) )
-            .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
+            .<String>tree( STRING( "d1", CONTAINS, false ) )
+            .load( l( v( "1", Optional.of( "s1" ) ), v( "2", Optional.empty() ) ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "1 -> (1) not in: [(!{1})]\n" );
-        assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "2 -> (2) not in: [(!{2})]\n" );
-        assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "" +
-            "33 -> (3) not in: [(!{3})]\n" +
-            "3 -> (3) not in: [(!{3})]\n" );
-
-        assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "ALL OK" );
-    }
-
-    @Test
-    public void testTraceAny() {
-        final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, false ), LONG( "d2", CONTAINS, false ) )
-            .load( l( v( "1", null, 99L ) ) );
-
-        System.out.println( tree.toString() );
-
-        assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "1 -> (ANY,1) not in: [({ANY},{99})]\n" );
+        assertThat( tree.find( l( "s1" ) ) ).containsOnly( "1", "2" );
+        assertThat( tree.find( l( "s2" ) ) ).containsOnly( "2" );
     }
 
     public enum TestEnum {

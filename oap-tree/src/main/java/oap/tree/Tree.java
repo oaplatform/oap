@@ -112,17 +112,8 @@ public class Tree<T> {
 
         for( int i = 0; i < dimensions.size(); i++ ) {
             final Object value = query.get( i );
-            if( value == null ) longData[i] = ANY_AS_ARRAY;
-            else {
-                final Dimension dimension = dimensions.get( i );
-                if( value instanceof List ) {
-                    final List<?> list = ( List<?> ) value;
-                    longData[i] =
-                        list.isEmpty() ? ANY_AS_ARRAY : list.stream().mapToLong( dimension::getOrDefault ).toArray();
-                } else {
-                    longData[i] = new long[] { dimension.getOrDefault( value ) };
-                }
-            }
+            final Dimension dimension = dimensions.get( i );
+            longData[i] = dimension.getOrDefault( value );
         }
 
         return longData;
@@ -183,8 +174,8 @@ public class Tree<T> {
                     final Array array = ( Array ) value;
                     if( !array.isEmpty() ) uniqueArray.add( array );
                 } else {
-                    final long longValue = dimension.getOrDefault( value );
-                    if( longValue != ANY ) unique.add( longValue );
+                    final long[] longValue = dimension.getOrDefault( value );
+                    if( longValue != ANY_AS_ARRAY ) unique.add( longValue[0] );
                 }
 
             }
@@ -209,18 +200,18 @@ public class Tree<T> {
         } else {
             final Dimension dimension = dimensions.get( finalSplitDimension );
 
-            val partition_any_other = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) == ANY );
+            val partition_any_other = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) == ANY_AS_ARRAY );
 
             final List<ValueData<T>> sorted = partition_any_other._2
-                .sorted( Comparator.comparingLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) ) )
+                .sorted( Comparator.comparingLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) )[0] ) )
                 .collect( toList() );
 
-            final long[] unique = sorted.stream().mapToLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) ).distinct().toArray();
+            final long[] unique = sorted.stream().mapToLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) )[0] ).distinct().toArray();
 
             final long splitValue = unique[unique.length / 2];
 
-            val partition_left_eq_right = Stream.of( sorted ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) < splitValue );
-            val partition_eq_right = partition_left_eq_right._2.partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) == splitValue );
+            val partition_left_eq_right = Stream.of( sorted ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) )[0] < splitValue );
+            val partition_eq_right = partition_left_eq_right._2.partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) )[0] == splitValue );
 
             final List<ValueData<T>> left = partition_left_eq_right._1.collect( toList() );
             final List<ValueData<T>> right = partition_eq_right._2.collect( toList() );
