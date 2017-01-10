@@ -355,15 +355,18 @@ public class Tree<T> {
                 }
             } else {
                 final boolean eqFound = ArrayUtils.contains( qValue, n.eqValue );
-                for( long v : qValue ) {
-                    final boolean eqSuccess = v == n.eqValue;
-                    if( eqSuccess ) {
-                        trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, eqSuccess ), success && eqSuccess );
-                    } else if( !eqFound ) {
-                            trace( n.left, query, result, buffer.clone(), success && v < n.eqValue );
-                            trace( n.right, query, result, buffer.clone(), success && v >= n.eqValue );
+                if( eqFound ) {
+                    for( long v : qValue ) {
+                        if( v == n.eqValue ) {
+                            trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, true ), success );
+                        }
                     }
+                } else {
+                    trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, false ), false );
                 }
+
+                trace( n.left, query, result, buffer.clone(), success );
+                trace( n.right, query, result, buffer.clone(), success );
             }
         }
     }
