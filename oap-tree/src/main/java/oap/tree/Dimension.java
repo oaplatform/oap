@@ -31,6 +31,7 @@ import oap.util.StringBits;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -179,8 +180,8 @@ public abstract class Dimension {
             return optValue.map( this::getOrDefault ).orElse( ANY_AS_ARRAY );
         }
 
-        if( value instanceof List ) {
-            final List<?> list = ( List<?> ) value;
+        if( value instanceof Collection ) {
+            final Collection<?> list = ( Collection<?> ) value;
             return list.isEmpty() ? ANY_AS_ARRAY : list.stream().mapToLong( this::_getOrDefault ).toArray();
         } else {
             return new long[] { _getOrDefault( value ) };

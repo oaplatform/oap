@@ -26,8 +26,11 @@ package oap.tree;
 
 import org.testng.annotations.Test;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
+import static java.util.Arrays.asList;
 import static oap.tree.Dimension.ENUM;
 import static oap.tree.Dimension.LONG;
 import static oap.tree.Dimension.OperationType.CONTAINS;
@@ -45,6 +48,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Created by igor.petrenko on 26.12.2016.
  */
 public class TreeTest {
+    private static <T> Set<T> s( T... data ) {
+        return new HashSet<>( asList( data ) );
+    }
+
     @Test
     public void testFindOneDimension() {
         final Tree<String> tree = Tree
@@ -185,6 +192,21 @@ public class TreeTest {
 
         assertThat( tree.find( l( "s1" ) ) ).containsOnly( "1", "2" );
         assertThat( tree.find( l( "s2" ) ) ).containsOnly( "2" );
+    }
+
+
+    @Test
+    public void testSet() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", CONTAINS, false ) )
+            .load( l( v( "1", 1L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( s( 1L ) ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( s( 2L, 1L ) ) ) ).containsOnly( "1" );
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
     }
 
     public enum TestEnum {

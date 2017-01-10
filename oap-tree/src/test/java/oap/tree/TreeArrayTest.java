@@ -26,6 +26,10 @@ package oap.tree;
 
 import org.testng.annotations.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import static java.util.Arrays.asList;
 import static oap.tree.Dimension.ARRAY_LONG;
 import static oap.tree.Dimension.ARRAY_STRING;
 import static oap.tree.Tree.a;
@@ -37,6 +41,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Created by igor.petrenko on 26.12.2016.
  */
 public class TreeArrayTest {
+    private static <T> Set<T> s( T... data ) {
+        return new HashSet<>( asList( data ) );
+    }
+
+    private static <T> Tree.Array as( boolean include, Set<T> values ) {
+        return new Tree.Array( values, include );
+    }
+
     @Test
     public void testArray() {
         final Tree<String> tree = Tree
@@ -222,5 +234,19 @@ public class TreeArrayTest {
         assertThat( tree.find( l( ( Long ) null ) ) ).containsOnly( "1" );
         assertThat( tree.find( l( 1L, 3L ) ) ).containsOnly( "1" );
         assertThat( tree.find( l( 3L, 1L ) ) ).containsOnly( "1" );
+    }
+
+    @Test
+    public void testSet() {
+        final Tree<String> tree = Tree
+            .<String>tree( ARRAY_LONG( "d1", false ) )
+            .load( l( v( "1", l( as( true, s( 1L, 2L ) ) ) ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( s( 1L ) ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( s( 2L, 1L ) ) ) ).containsOnly( "1" );
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
     }
 }
