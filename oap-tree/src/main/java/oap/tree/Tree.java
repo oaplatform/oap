@@ -30,6 +30,7 @@ import lombok.val;
 import oap.tree.Dimension.OperationType;
 import oap.util.Pair;
 import oap.util.Stream;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -353,11 +354,15 @@ public class Tree<T> {
                     trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, eqSuccess ), success && eqSuccess );
                 }
             } else {
+                final boolean eqFound = ArrayUtils.contains( qValue, n.eqValue );
                 for( long v : qValue ) {
                     final boolean eqSuccess = v == n.eqValue;
-                    trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, eqSuccess ), success && eqSuccess );
-                    trace( n.left, query, result, buffer.clone(), success && v < n.eqValue );
-                    trace( n.right, query, result, buffer.clone(), success && v >= n.eqValue );
+                    if( eqSuccess ) {
+                        trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, eqSuccess ), success && eqSuccess );
+                    } else if( !eqFound ) {
+                            trace( n.left, query, result, buffer.clone(), success && v < n.eqValue );
+                            trace( n.right, query, result, buffer.clone(), success && v >= n.eqValue );
+                    }
                 }
             }
         }

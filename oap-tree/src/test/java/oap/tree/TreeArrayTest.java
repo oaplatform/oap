@@ -154,59 +154,6 @@ public class TreeArrayTest {
     }
 
     @Test
-    public void testArrayTrace2() {
-        final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", false ) )
-            .load( l(
-                v( "1", l( a( true, 1L, 2L ) ) ),
-                v( "2", l( a( true, 1L, 2L ) ) ),
-                v( "3", l( a( true, 1L, 2L, 3L ) ) ) ) );
-
-        System.out.println( tree.toString() );
-
-        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "ALL OK" );
-        assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "Expecting:\n" +
-            "1: \n" +
-            "    d1/0: [3]  CONTAINS [1,2]\n" +
-            "2: \n" +
-            "    d1/0: [3]  CONTAINS [1,2]" );
-        assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "Expecting:\n" +
-            "1: \n" +
-            "    d1/0: [5]  CONTAINS [1,2]\n" +
-            "2: \n" +
-            "    d1/0: [5]  CONTAINS [1,2]\n" +
-            "3: \n" +
-            "    d1/0: [5]  CONTAINS [1,2,3]" );
-    }
-
-    @Test
-    public void testArrayExcludeTrace() {
-        final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", false ) )
-            .load( l(
-                v( "1", l( a( false, 1L, 2L ) ) ),
-                v( "2", l( a( false, 2L ) ) ),
-                v( "3", l( a( false, 1L, 2L, 3L ) ) ) ) );
-
-        System.out.println( tree.toString() );
-
-        assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "Expecting:\n" +
-            "1: \n" +
-            "    d1/0: [2]  NOT_CONTAINS [1,2]\n" +
-            "2: \n" +
-            "    d1/0: [2]  NOT_CONTAINS [2]\n" +
-            "3: \n" +
-            "    d1/0: [2]  NOT_CONTAINS [1,2,3]" );
-        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "Expecting:\n" +
-            "1: \n" +
-            "    d1/0: [1]  NOT_CONTAINS [1,2]\n" +
-            "3: \n" +
-            "    d1/0: [1]  NOT_CONTAINS [1,2,3]" );
-
-        assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "ALL OK" );
-    }
-
-    @Test
     public void testFindNoData() {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_STRING( "d1", false ), ARRAY_STRING( "d2", false ) )
