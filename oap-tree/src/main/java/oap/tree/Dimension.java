@@ -82,7 +82,9 @@ public abstract class Dimension {
 
             @Override
             protected long _getOrDefault( Object value ) {
-                return ordinalToSorted[( ( Enum ) value ).ordinal()];
+                assert value instanceof Enum : "[" + name + "] value (" + value.getClass() + " ) must be Enum";
+
+                return ordinalToSorted[( ( Enum<?> ) value ).ordinal()];
             }
         };
     }
@@ -107,6 +109,7 @@ public abstract class Dimension {
 
             @Override
             protected long _getOrDefault( Object value ) {
+                assert value instanceof String : "[" + name + "] value (" + value.getClass() + " ) must be String";
                 return bits.get( ( String ) value );
             }
         };
@@ -129,6 +132,7 @@ public abstract class Dimension {
 
             @Override
             protected long _getOrDefault( Object value ) {
+                assert value instanceof Number : "value (" + value.getClass() + " ) must be Number";
                 return ( ( Number ) value ).longValue();
             }
         };
@@ -151,6 +155,7 @@ public abstract class Dimension {
 
             @Override
             protected long _getOrDefault( Object value ) {
+                assert value instanceof Boolean : "[" + name + "] value (" + value.getClass() + " ) must be Boolean";
                 return Boolean.TRUE.equals( value ) ? 1 : 0;
             }
         };
@@ -160,7 +165,7 @@ public abstract class Dimension {
 
     public final void init( Stream<Object> value ) {
         _init( value
-            .filter( v -> !(v instanceof Optional) || ( ( Optional ) v ).isPresent() )
+            .filter( v -> !( v instanceof Optional ) || ( ( Optional ) v ).isPresent() )
             .map( v -> v instanceof Optional ? ( ( Optional ) v ).get() : v ) );
     }
 
