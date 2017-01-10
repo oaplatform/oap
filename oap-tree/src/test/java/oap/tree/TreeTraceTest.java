@@ -26,13 +26,10 @@ package oap.tree;
 
 import org.testng.annotations.Test;
 
-import java.util.Optional;
-
 import static oap.tree.Dimension.ENUM;
 import static oap.tree.Dimension.LONG;
 import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
-import static oap.tree.Dimension.STRING;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
 import static oap.tree.TreeTest.TestEnum.Test1;
@@ -148,6 +145,21 @@ public class TreeTraceTest {
         System.out.println( tree.toString() );
 
         assertThat( tree.trace( l( ( Long ) null ) ) ).isEqualTo( "Expecting:\n1: \n    d1/0: []  CONTAINS [1]" );
+    }
+
+    @Test
+    public void testTraceEmptyQuery() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", CONTAINS, false ), LONG( "d2", CONTAINS, false ) )
+            .load( l( v( "1", 1L, 2L ), v( "2", 2L, 2L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.trace( l( l(), l( 3L ) ) ) ).isEqualTo( "Expecting:\n" +
+            "1: \n" +
+            "    d2/1: [3]  CONTAINS [2]\n" +
+            "2: \n" +
+            "    d2/1: [3]  CONTAINS [2]" );
     }
 
     public enum TestEnum {

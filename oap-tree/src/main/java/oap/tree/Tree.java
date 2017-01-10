@@ -331,7 +331,7 @@ public class Tree<T> {
             final Dimension dimension = dimensions.get( n.dimension );
 
             if( qValue == ANY_AS_ARRAY ) {
-                trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, false ), success && !dimension.queryRequired );
+                trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, !dimension.queryRequired ), success && !dimension.queryRequired );
                 trace( n.right, query, result, buffer.clone(), success && !dimension.queryRequired );
                 trace( n.left, query, result, buffer.clone(), success && !dimension.queryRequired );
 
