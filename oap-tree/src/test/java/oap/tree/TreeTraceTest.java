@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 import static oap.tree.Dimension.ENUM;
 import static oap.tree.Dimension.LONG;
 import static oap.tree.Dimension.OperationType.CONTAINS;
+import static oap.tree.Dimension.OperationType.GREATER_THEN_OR_EQUAL_TO;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
@@ -50,48 +51,52 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "Expecting:\n" +
+        assertThat( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "query = [d1:1,d2:Test2]\n" +
+            "Expecting:\n" +
             "33: \n" +
-            "    d2/1: [Test2]  CONTAINS [Test3]\n" +
+            "    d2/1: [Test3] CONTAINS [Test2]\n" +
             "1: \n" +
-            "    d2/1: [Test2]  CONTAINS [Test1]\n" +
+            "    d2/1: [Test1] CONTAINS [Test2]\n" +
             "2: \n" +
-            "    d1/0: [1]  CONTAINS [2]\n" +
+            "    d1/0: [2] CONTAINS [1]\n" +
             "3: \n" +
-            "    d2/1: [Test2]  CONTAINS [Test3]" );
-        assertThat( tree.trace( l( 3L, Test3 ) ) ).isEqualTo( "Expecting:\n" +
+            "    d2/1: [Test3] CONTAINS [Test2]" );
+        assertThat( tree.trace( l( 3L, Test3 ) ) ).isEqualTo( "query = [d1:3,d2:Test3]\n" +
+            "Expecting:\n" +
             "33: \n" +
-            "    d1/0: [3]  CONTAINS [1]\n" +
+            "    d1/0: [1] CONTAINS [3]\n" +
             "1: \n" +
-            "    d1/0: [3]  CONTAINS [1]\n" +
-            "    d2/1: [Test3]  CONTAINS [Test1]\n" +
+            "    d1/0: [1] CONTAINS [3]\n" +
+            "    d2/1: [Test1] CONTAINS [Test3]\n" +
             "2: \n" +
-            "    d1/0: [3]  CONTAINS [2]\n" +
-            "    d2/1: [Test3]  CONTAINS [Test2]\n" +
+            "    d1/0: [2] CONTAINS [3]\n" +
+            "    d2/1: [Test2] CONTAINS [Test3]\n" +
             "3: \n" +
-            "    d1/0: [3]  CONTAINS [1]" );
+            "    d1/0: [1] CONTAINS [3]" );
 
-        assertThat( tree.trace( l( 4L, Test4 ) ) ).isEqualTo( "Expecting:\n" +
+        assertThat( tree.trace( l( 4L, Test4 ) ) ).isEqualTo( "query = [d1:4,d2:Test4]\n" +
+            "Expecting:\n" +
             "33: \n" +
-            "    d1/0: [4]  CONTAINS [1]\n" +
-            "    d2/1: [Test4]  CONTAINS [Test3]\n" +
+            "    d1/0: [1] CONTAINS [4]\n" +
+            "    d2/1: [Test3] CONTAINS [Test4]\n" +
             "1: \n" +
-            "    d1/0: [4]  CONTAINS [1]\n" +
-            "    d2/1: [Test4]  CONTAINS [Test1]\n" +
+            "    d1/0: [1] CONTAINS [4]\n" +
+            "    d2/1: [Test1] CONTAINS [Test4]\n" +
             "2: \n" +
-            "    d1/0: [4]  CONTAINS [2]\n" +
-            "    d2/1: [Test4]  CONTAINS [Test2]\n" +
+            "    d1/0: [2] CONTAINS [4]\n" +
+            "    d2/1: [Test2] CONTAINS [Test4]\n" +
             "3: \n" +
-            "    d1/0: [4]  CONTAINS [1]\n" +
-            "    d2/1: [Test4]  CONTAINS [Test3]" );
-        assertThat( tree.trace( l( 1L, Test1 ) ) ).isEqualTo( "Expecting:\n" +
+            "    d1/0: [1] CONTAINS [4]\n" +
+            "    d2/1: [Test3] CONTAINS [Test4]" );
+        assertThat( tree.trace( l( 1L, Test1 ) ) ).isEqualTo( "query = [d1:1,d2:Test1]\n" +
+            "Expecting:\n" +
             "33: \n" +
-            "    d2/1: [Test1]  CONTAINS [Test3]\n" +
+            "    d2/1: [Test3] CONTAINS [Test1]\n" +
             "2: \n" +
-            "    d1/0: [1]  CONTAINS [2]\n" +
-            "    d2/1: [Test1]  CONTAINS [Test2]\n" +
+            "    d1/0: [2] CONTAINS [1]\n" +
+            "    d2/1: [Test2] CONTAINS [Test1]\n" +
             "3: \n" +
-            "    d2/1: [Test1]  CONTAINS [Test3]" );
+            "    d2/1: [Test3] CONTAINS [Test1]" );
     }
 
     @Test
@@ -102,8 +107,8 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( l( 2L, 1L ) ) ) ).isEqualTo( "ALL OK" );
-        assertThat( tree.trace( l( l( 1L, 2L ) ) ) ).isEqualTo( "ALL OK" );
+        assertThat( tree.trace( l( l( 2L, 1L ) ) ) ).isEqualTo( "query = [d1:[2, 1]]\nALL OK" );
+        assertThat( tree.trace( l( l( 1L, 2L ) ) ) ).isEqualTo( "query = [d1:[1, 2]]\nALL OK" );
     }
 
     @Test
@@ -114,15 +119,22 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "Expecting:\n1: \n    d1/0: [1]  NOT_CONTAINS [1]" );
-        assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "Expecting:\n2: \n    d1/0: [2]  NOT_CONTAINS [2]" );
-        assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "Expecting:\n" +
+        assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "query = [d1:1]\n" +
+            "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [1] NOT_CONTAINS [1]" );
+        assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "query = [d1:2]\n" +
+            "Expecting:\n" +
+            "2: \n" +
+            "    d1/0: [2] NOT_CONTAINS [2]" );
+        assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "query = [d1:3]\n" +
+            "Expecting:\n" +
             "33: \n" +
-            "    d1/0: [3]  NOT_CONTAINS [3]\n" +
+            "    d1/0: [3] NOT_CONTAINS [3]\n" +
             "3: \n" +
-            "    d1/0: [3]  NOT_CONTAINS [3]" );
+            "    d1/0: [3] NOT_CONTAINS [3]" );
 
-        assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "ALL OK" );
+        assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "query = [d1:5]\nALL OK" );
     }
 
     @Test
@@ -133,7 +145,10 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "Expecting:\n1: \n    d2/1: [1]  CONTAINS [99]" );
+        assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "query = [d1:null,d2:1]\n" +
+            "Expecting:\n" +
+            "1: \n" +
+            "    d2/1: [99] CONTAINS [1]" );
     }
 
     @Test
@@ -144,7 +159,10 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( ( Long ) null ) ) ).isEqualTo( "Expecting:\n1: \n    d1/0: []  CONTAINS [1]" );
+        assertThat( tree.trace( l( ( Long ) null ) ) ).isEqualTo( "query = [d1:null]\n" +
+            "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [1] CONTAINS []" );
     }
 
     @Test
@@ -155,11 +173,33 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( l(), l( 3L ) ) ) ).isEqualTo( "Expecting:\n" +
+        assertThat( tree.trace( l( l(), l( 3L ) ) ) ).isEqualTo( "query = [d1:[],d2:[3]]\n" +
+            "Expecting:\n" +
             "1: \n" +
-            "    d2/1: [3]  CONTAINS [2]\n" +
+            "    d2/1: [2] CONTAINS [3]\n" +
             "2: \n" +
-            "    d2/1: [3]  CONTAINS [2]" );
+            "    d2/1: [2] CONTAINS [3]" );
+    }
+
+    @Test
+    public void testGREATER_THEN_OR_EQUAL_TO() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", GREATER_THEN_OR_EQUAL_TO, false ) )
+            .load( l( v( "1", 1L ), v( "5", 5L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.trace( l( 0L ) ) ).isEqualTo( "query = [d1:0]\nALL OK" );
+        assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "query = [d1:5]\n" +
+            "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [1] GREATER_THEN_OR_EQUAL_TO [5]" );
+        assertThat( tree.trace( l( 6L ) ) ).isEqualTo( "query = [d1:6]\n" +
+            "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [1] GREATER_THEN_OR_EQUAL_TO [6]\n" +
+            "5: \n" +
+            "    d1/0: [5] GREATER_THEN_OR_EQUAL_TO [6]" );
     }
 
     public enum TestEnum {

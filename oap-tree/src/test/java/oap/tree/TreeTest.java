@@ -33,7 +33,12 @@ import java.util.Set;
 import static java.util.Arrays.asList;
 import static oap.tree.Dimension.ENUM;
 import static oap.tree.Dimension.LONG;
+import static oap.tree.Dimension.OperationType.BETWEEN_INCLUSIVE;
 import static oap.tree.Dimension.OperationType.CONTAINS;
+import static oap.tree.Dimension.OperationType.GREATER_THEN;
+import static oap.tree.Dimension.OperationType.GREATER_THEN_OR_EQUAL_TO;
+import static oap.tree.Dimension.OperationType.LESS_THEN;
+import static oap.tree.Dimension.OperationType.LESS_THEN_OR_EQUAL_TO;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
 import static oap.tree.Dimension.STRING;
 import static oap.tree.Tree.l;
@@ -53,7 +58,7 @@ public class TreeTest {
     }
 
     @Test
-    public void testFindOneDimension() {
+    public void testCONTAINS() {
         final Tree<String> tree = Tree
             .<String>tree( LONG( "d1", CONTAINS, false ) )
             .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
@@ -61,10 +66,105 @@ public class TreeTest {
         System.out.println( tree.toString() );
 
         assertThat( tree.find( l( 1L ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( l( 1L, 2L ) ) ) ).containsOnly( "1", "2" );
+        assertThat( tree.find( l( l( 1L, 3L ) ) ) ).containsOnly( "1", "3", "33" );
         assertThat( tree.find( l( 2L ) ) ).containsOnly( "2" );
         assertThat( tree.find( l( 3L ) ) ).containsOnly( "3", "33" );
 
         assertThat( tree.find( l( 5L ) ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
+    }
+
+    @Test
+    public void testGREATER_THEN_OR_EQUAL_TO() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", GREATER_THEN_OR_EQUAL_TO, false ) )
+            .load( l( v( "1", 1L ), v( "5", 5L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( 0L ) ) ).containsOnly( "1", "5" );
+        assertThat( tree.find( l( 1L ) ) ).containsOnly( "1", "5" );
+        assertThat( tree.find( l( 2L ) ) ).containsOnly( "5" );
+        assertThat( tree.find( l( 5L ) ) ).containsOnly( "5" );
+
+        assertThat( tree.find( l( 6L ) ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
+    }
+
+    @Test
+    public void testGREATER_THEN() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", GREATER_THEN, false ) )
+            .load( l( v( "1", 1L ), v( "5", 5L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( 0L ) ) ).containsOnly( "1", "5" );
+        assertThat( tree.find( l( 1L ) ) ).containsOnly( "5" );
+        assertThat( tree.find( l( 2L ) ) ).containsOnly( "5" );
+        assertThat( tree.find( l( 5L ) ) ).isEmpty();
+
+        assertThat( tree.find( l( 6L ) ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
+    }
+
+    @Test
+    public void testLESS_THEN_OR_EQUAL_TO() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", LESS_THEN_OR_EQUAL_TO, false ) )
+            .load( l( v( "1", 1L ), v( "5", 5L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( 0L ) ) ).isEmpty();
+
+        assertThat( tree.find( l( 1L ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( 2L ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( 5L ) ) ).containsOnly( "1", "5" );
+        assertThat( tree.find( l( 6L ) ) ).containsOnly( "1", "5" );
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
+    }
+
+    @Test
+    public void testLESS_THEN() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", LESS_THEN, false ) )
+            .load( l( v( "1", 1L ), v( "5", 5L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( 0L ) ) ).isEmpty();
+        assertThat( tree.find( l( 1L ) ) ).isEmpty();
+
+        assertThat( tree.find( l( 2L ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( 5L ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( 6L ) ) ).containsOnly( "1", "5" );
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
+    }
+
+    @Test
+    public void testBETWEEN_INCLUSIVE() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", BETWEEN_INCLUSIVE, false ) )
+            .load( l( v( "3", 3L ), v( "7", 7L ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( l( 0L, 9L ) ) ) ).containsOnly( "3", "7" );
+        assertThat( tree.find( l( l( 1L, 7L ) ) ) ).containsOnly( "3", "7" );
+        assertThat( tree.find( l( l( 3L, 6L ) ) ) ).containsOnly( "3" );
+        assertThat( tree.find( l( l( 3L, 7L ) ) ) ).containsOnly( "3", "7" );
+        assertThat( tree.find( l( l( 3L, 8L ) ) ) ).containsOnly( "3", "7" );
+
+        assertThat( tree.find( l( l( 4L, 6L ) ) ) ).isEmpty();
+        assertThat( tree.find( l( l( 0L, 2L ) ) ) ).isEmpty();
+        assertThat( tree.find( l( l( 8L, 10L ) ) ) ).isEmpty();
 
         assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
     }

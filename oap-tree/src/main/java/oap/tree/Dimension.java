@@ -182,7 +182,7 @@ public abstract class Dimension {
 
         if( value instanceof Collection ) {
             final Collection<?> list = ( Collection<?> ) value;
-            return list.isEmpty() ? ANY_AS_ARRAY : list.stream().mapToLong( this::_getOrDefault ).toArray();
+            return list.isEmpty() ? ANY_AS_ARRAY : list.stream().mapToLong( this::_getOrDefault ).sorted().toArray();
         } else {
             return new long[] { _getOrDefault( value ) };
         }
@@ -202,7 +202,92 @@ public abstract class Dimension {
         return bitSet;
     }
 
+    public final int direction( long[] qValue, long nodeValue ) {
+        final int qValueLength = qValue.length;
+
+        final long head = qValue[0];
+        switch( operationType ) {
+            case CONTAINS:
+                if( qValueLength == 1 ) {
+                    if( head > nodeValue ) return Direction.RIGHT;
+                    else if( head < nodeValue ) return Direction.LEFT;
+                    else return Direction.EQUAL;
+                } else {
+                    final long last = qValue[qValueLength - 1];
+
+                    int v = 0;
+                    if( last > nodeValue ) v |= Direction.RIGHT;
+                    if( head < nodeValue ) v |= Direction.LEFT;
+
+                    if( Arrays.binarySearch( qValue, nodeValue ) >= 0 ) {
+                        v |= Direction.EQUAL;
+                    }
+
+                    return v;
+                }
+
+            case NOT_CONTAINS:
+                return qValueLength > 1 || head != nodeValue ?
+                    Direction.EQUAL | Direction.LEFT | Direction.RIGHT
+                    : Direction.LEFT | Direction.RIGHT;
+
+            case GREATER_THEN:
+                assert qValueLength == 1;
+
+                if( head < nodeValue ) return Direction.RIGHT | Direction.EQUAL | Direction.LEFT;
+                return Direction.RIGHT;
+
+            case GREATER_THEN_OR_EQUAL_TO:
+                assert qValueLength == 1;
+
+                if( head < nodeValue ) return Direction.EQUAL | Direction.RIGHT | Direction.LEFT;
+                else if( head == nodeValue ) return Direction.EQUAL | Direction.RIGHT;
+                else return Direction.RIGHT;
+
+            case LESS_THEN_OR_EQUAL_TO:
+                assert qValueLength == 1;
+
+                if( head > nodeValue ) return Direction.EQUAL | Direction.RIGHT | Direction.LEFT;
+                else if( head == nodeValue ) return Direction.EQUAL | Direction.LEFT;
+                else return Direction.LEFT;
+
+            case LESS_THEN:
+                assert qValueLength == 1;
+
+                if( head > nodeValue ) return Direction.RIGHT | Direction.EQUAL | Direction.LEFT;
+                return Direction.LEFT;
+
+            case BETWEEN_INCLUSIVE:
+                assert qValueLength == 2;
+
+                int ret = 0;
+                final long right = qValue[1];
+                if( right > nodeValue ) ret |= Direction.RIGHT;
+                if( head < nodeValue ) ret |= Direction.LEFT;
+                if( right == nodeValue || head == nodeValue || ( ret == ( Direction.RIGHT | Direction.LEFT ) ) )
+                    ret |= Direction.EQUAL;
+
+                return ret;
+
+            default:
+                throw new IllegalStateException( "Unknown OperationType " + operationType );
+        }
+    }
+
     public enum OperationType {
-        CONTAINS, NOT_CONTAINS
+        CONTAINS,
+        NOT_CONTAINS,
+        GREATER_THEN,
+        GREATER_THEN_OR_EQUAL_TO,
+        LESS_THEN,
+        LESS_THEN_OR_EQUAL_TO,
+        BETWEEN_INCLUSIVE;
+    }
+
+    public interface Direction {
+        int NONE = 0;
+        int LEFT = 1;
+        int EQUAL = 1 << 1;
+        int RIGHT = 1 << 2;
     }
 }

@@ -30,7 +30,6 @@ import lombok.val;
 import oap.tree.Dimension.OperationType;
 import oap.util.Pair;
 import oap.util.Stream;
-import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -51,6 +50,7 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import static oap.tree.Dimension.Direction;
 import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
 import static oap.util.Pair.__;
@@ -258,24 +258,14 @@ public class Tree<T> {
                         find( set.equal, query, result );
                     }
                 }
-            } else if( dimension.operationType == NOT_CONTAINS ) {
-                find( n.left, query, result );
-                find( n.right, query, result );
-
-                for( long v : qValue ) {
-                    if( v != n.eqValue )
-                        find( n.equal, query, result );
-                }
             } else {
-                for( long v : qValue ) {
-                    if( v < n.eqValue ) {
-                        find( n.left, query, result );
-                    } else if( v == n.eqValue ) {
-                        find( n.equal, query, result );
-                    } else {
-                        find( n.right, query, result );
-                    }
-                }
+                final int direction = dimension.direction( qValue, n.eqValue );
+                if( ( direction & Direction.LEFT ) > 0 )
+                    find( n.left, query, result );
+                if( ( direction & Direction.EQUAL ) > 0 )
+                    find( n.equal, query, result );
+                if( ( direction & Direction.RIGHT ) > 0 )
+                    find( n.right, query, result );
             }
         }
     }
@@ -285,15 +275,21 @@ public class Tree<T> {
         final long[][] longQuery = convertQueryToLong( query );
         trace( root, longQuery, result, new TraceBuffer(), true );
 
+
+        final String queryStr = "query = " + Stream.of( query )
+            .zipWithIndex()
+            .map( p -> dimensions.get( p._2 ).name + ":" + p._1 )
+            .collect( joining( ",", "[", "]" ) ) + "\n";
+
         final String out = result.entrySet().stream().map( e -> e.getKey().toString() + ": \n" +
             e.getValue().entrySet().stream().map( dv -> {
                     final Dimension dimension = dimensions.get( dv.getKey() );
-                    return "    " + dimension.name + "/" + dv.getKey() + ": " + queryToString( longQuery, dv.getKey() )
-                        + " " + dv.getValue().toString( dimension );
+                    return "    " + dimension.name + "/" + dv.getKey() + ": "
+                        + dv.getValue().toString( dimension ) + " " + queryToString( longQuery, dv.getKey() );
                 }
             ).collect( joining( "\n" ) )
         ).collect( joining( "\n" ) );
-        return out.length() > 0 ? "Expecting:\n" + out : "ALL OK";
+        return queryStr + ( out.length() > 0 ? "Expecting:\n" + out : "ALL OK" );
     }
 
     private String queryToString( long[][] query, int key ) {
@@ -344,29 +340,17 @@ public class Tree<T> {
                     trace( set.equal, query, result, buffer.cloneWith( n.dimension, set.bitSet.stream(),
                         set.include ? CONTAINS : NOT_CONTAINS, eqSuccess ), success && eqSuccess );
                 }
-            } else if( dimension.operationType == NOT_CONTAINS ) {
-                trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, false ), false );
-                trace( n.left, query, result, buffer.clone(), success );
-                trace( n.right, query, result, buffer.clone(), success );
-
-                for( long v : qValue ) {
-                    final boolean eqSuccess = v != n.eqValue;
-                    trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, eqSuccess ), success && eqSuccess );
-                }
             } else {
-                final boolean eqFound = ArrayUtils.contains( qValue, n.eqValue );
-                if( eqFound ) {
-                    for( long v : qValue ) {
-                        if( v == n.eqValue ) {
-                            trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, true ), success );
-                        }
-                    }
-                } else {
-                    trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, false ), false );
-                }
+                final int direction = dimension.direction( qValue, n.eqValue );
 
-                trace( n.left, query, result, buffer.clone(), success );
-                trace( n.right, query, result, buffer.clone(), success );
+                final boolean left = ( direction & Direction.LEFT ) > 0;
+                trace( n.left, query, result, buffer.clone(), success && left );
+
+                final boolean right = ( direction & Direction.RIGHT ) > 0;
+                trace( n.right, query, result, buffer.clone(), success && right );
+
+                final boolean eq = ( direction & Direction.EQUAL ) > 0;
+                trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, eq ), success && eq );
             }
         }
     }
@@ -495,9 +479,9 @@ public class Tree<T> {
         }
 
         public String toString( Dimension dimension ) {
-            return entrySet().stream().map( e -> " " + e.getKey() + " " + e.getValue().stream()
+            return entrySet().stream().map( e -> e.getValue().stream()
                 .map( dimension::toString )
-                .collect( joining( ",", "[", "]" ) ) )
+                .collect( joining( ",", "[", "]" ) ) + " " + e.getKey() )
                 .collect( joining( ", " ) );
         }
     }
