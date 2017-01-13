@@ -197,7 +197,7 @@ public class Tree<T> {
 
             }
 
-            if( !isArray && unique.size() > uniqueSize ) {
+            if( !isArray && unique.size() > 0 && unique.size() > uniqueSize ) {
                 uniqueSize = unique.size();
                 splitDimension = i;
             } else if( isArray && uniqueArray.size() > 0 && uniqueArray.size() < uniqueArraySize ) {
