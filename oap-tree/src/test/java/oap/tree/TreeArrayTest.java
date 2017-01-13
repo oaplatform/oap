@@ -32,6 +32,8 @@ import java.util.Set;
 import static java.util.Arrays.asList;
 import static oap.tree.Dimension.ARRAY_LONG;
 import static oap.tree.Dimension.ARRAY_STRING;
+import static oap.tree.Dimension.LONG;
+import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Tree.a;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
@@ -70,6 +72,29 @@ public class TreeArrayTest {
 
         assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
         assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 3 );
+    }
+
+    @Test
+    public void testArrayMix() {
+        final Tree<String> tree = Tree
+            .<String>tree( ARRAY_LONG( "d1", false ), ARRAY_LONG( "d2", false ), LONG( "d2", CONTAINS, false ) )
+            .load( l(
+                v( "1", l( a( true, 1L, 2L ), a( true, 1L, 2L ), 1L ) ),
+                v( "2", l( a( true, 2L ), a( true, 2L ), 1L ) ),
+                v( "3", l( a( true, 1L, 2L, 3L ), a( true, 1L, 2L ), 2L ) )
+            ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( 1L, 1L, null ) ) ).containsOnly( "1", "3" );
+        assertThat( tree.find( l( l( 5L, 1L ), 1L, null ) ) ).containsOnly( "1", "3" );
+        assertThat( tree.find( l( 2L, null, null ) ) ).containsOnly( "1", "2", "3" );
+        assertThat( tree.find( l( 3L, null, 2L ) ) ).containsOnly( "3" );
+
+        assertThat( tree.find( l( 5L, null, 1L ) ) ).isEmpty();
+        assertThat( tree.find( l( 1L, null, 3L ) ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 5 );
     }
 
     @Test

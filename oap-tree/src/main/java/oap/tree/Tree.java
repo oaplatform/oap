@@ -28,6 +28,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.val;
 import oap.tree.Dimension.OperationType;
+import oap.util.MemoryMeter;
 import oap.util.Pair;
 import oap.util.Stream;
 
@@ -64,6 +65,7 @@ public class Tree<T> {
 
     TreeNode<T> root = new Leaf<>( emptyList() );
     private List<Dimension> dimensions;
+    private long memory;
 
     Tree( List<Dimension> dimensions ) {
         this.dimensions = dimensions;
@@ -93,9 +95,15 @@ public class Tree<T> {
         return new Array( l( values ), include );
     }
 
+    public long getMemory() {
+        return memory;
+    }
+
     public void load( List<ValueData<T>> data ) {
         init( data );
         root = toNode( data, new BitSet( dimensions.size() ) );
+
+        memory = MemoryMeter.get().measureDeep( this );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -160,8 +168,11 @@ public class Tree<T> {
     }
 
     private SplitDimension findSplitDimension( List<ValueData<T>> data, BitSet eqBitSet ) {
-        long uniqueSize = 0;
+        long uniqueSize = -1;
+        long uniqueArraySize = Long.MAX_VALUE;
         int splitDimension = -1;
+        int splitArrayDimension = -1;
+
         for( int i = 0; i < dimensions.size(); i++ ) {
             if( eqBitSet.get( i ) ) continue;
 
@@ -182,25 +193,32 @@ public class Tree<T> {
 
             }
 
-            if( unique.size() > uniqueSize || uniqueArray.size() > 0 ) {
+            final boolean array = dimension.operationType == null;
+            if( !array && unique.size() > uniqueSize ) {
                 uniqueSize = unique.size();
                 splitDimension = i;
             }
+
+            if( array && uniqueArray.size() > 0 && uniqueArray.size() < uniqueArraySize ) {
+                uniqueArraySize = uniqueArray.size();
+                splitArrayDimension = i;
+            }
         }
 
-        if( splitDimension < 0 ) return null;
+        if( splitDimension < 0 && splitArrayDimension < 0 ) return null;
 
-        final int finalSplitDimension = splitDimension;
+        final int finalSplitDimension = splitDimension >= 0 ? splitDimension : splitArrayDimension;
 
-        if( uniqueSize == 0 ) { //array
+        final Dimension dimension = dimensions.get( finalSplitDimension );
+
+        if( dimension.operationType == null ) { //array
             val partition_sets_empty = Stream.of( data ).partition( vd -> !( ( Array ) vd.data.get( finalSplitDimension ) ).isEmpty() );
 
             final List<ValueData<T>> any = Stream.of( partition_sets_empty._2 ).collect( toList() );
             final List<ValueData<T>> sets = partition_sets_empty._1.collect( toList() );
 
-            return new SplitDimension( splitDimension, ANY, emptyList(), emptyList(), emptyList(), any, sets );
+            return new SplitDimension( finalSplitDimension, ANY, emptyList(), emptyList(), emptyList(), any, sets );
         } else {
-            final Dimension dimension = dimensions.get( finalSplitDimension );
 
             val partition_any_other = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) == ANY_AS_ARRAY );
 
@@ -220,7 +238,7 @@ public class Tree<T> {
             final List<ValueData<T>> eq = partition_eq_right._1.collect( toList() );
             final List<ValueData<T>> any = Stream.of( partition_any_other._1 ).collect( toList() );
 
-            return new SplitDimension( splitDimension, splitValue, left, right, eq, any, emptyList() );
+            return new SplitDimension( finalSplitDimension, splitValue, left, right, eq, any, emptyList() );
         }
     }
 

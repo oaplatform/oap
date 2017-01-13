@@ -111,6 +111,7 @@ public abstract class Dimension {
             @Override
             protected long _getOrDefault( Object value ) {
                 assert value instanceof String : "[" + name + "] value (" + value.getClass() + " ) must be String";
+
                 return bits.get( ( String ) value );
             }
         };
@@ -133,7 +134,8 @@ public abstract class Dimension {
 
             @Override
             protected long _getOrDefault( Object value ) {
-                assert value instanceof Number : "value (" + value.getClass() + " ) must be Number";
+                assert value instanceof Number : "[" + name + "] value (" + value.getClass() + " ) must be Number";
+
                 return ( ( Number ) value ).longValue();
             }
         };
@@ -157,6 +159,7 @@ public abstract class Dimension {
             @Override
             protected long _getOrDefault( Object value ) {
                 assert value instanceof Boolean : "[" + name + "] value (" + value.getClass() + " ) must be Boolean";
+
                 return Boolean.TRUE.equals( value ) ? 1 : 0;
             }
         };
