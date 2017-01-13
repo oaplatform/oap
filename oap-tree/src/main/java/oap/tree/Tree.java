@@ -178,6 +178,10 @@ public class Tree<T> {
 
             final Dimension dimension = dimensions.get( i );
 
+            final boolean isArray = dimension.operationType == null;
+
+            if( isArray && splitDimension >= 0 ) continue;
+
             final HashSet<Long> unique = new HashSet<>();
             final HashSet<Array> uniqueArray = new HashSet<>();
 
@@ -193,13 +197,10 @@ public class Tree<T> {
 
             }
 
-            final boolean array = dimension.operationType == null;
-            if( !array && unique.size() > uniqueSize ) {
+            if( !isArray && unique.size() > uniqueSize ) {
                 uniqueSize = unique.size();
                 splitDimension = i;
-            }
-
-            if( array && uniqueArray.size() > 0 && uniqueArray.size() < uniqueArraySize ) {
+            } else if( isArray && uniqueArray.size() > 0 && uniqueArray.size() < uniqueArraySize ) {
                 uniqueArraySize = uniqueArray.size();
                 splitArrayDimension = i;
             }
