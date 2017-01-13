@@ -241,8 +241,13 @@ public class TreeTest {
     @Test
     public void testFindAny() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, false ), LONG( "d2", CONTAINS, false ) )
-            .load( l( v( "1", 1L, null ), v( "2", 2L, 2L ), v( "3", 1L, 3L ), v( "33", 1L, 3L ) ) );
+            .<String>tree( LONG( "d1", CONTAINS, false, -1 ), LONG( "d2", CONTAINS, false ) )
+            .load( l(
+                v( "1", 1L, null ),
+                v( "2", 2L, 2L ),
+                v( "3", 1L, 3L ),
+                v( "33", 1L, 3L )
+            ) );
 
         System.out.println( tree.toString() );
 

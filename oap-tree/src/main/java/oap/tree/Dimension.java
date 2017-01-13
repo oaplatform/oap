@@ -45,14 +45,20 @@ import static oap.tree.Tree.ANY_AS_ARRAY;
 @EqualsAndHashCode
 @ToString
 public abstract class Dimension {
+    public static final int PRIORITY_DEFAULT = 0;
+    public static final int PRIORITY_LOW = Integer.MIN_VALUE;
+
+
     public final String name;
+    public final int priority;
     public boolean queryRequired;
     public OperationType operationType;
 
-    public Dimension( @NonNull String name, OperationType operationType, boolean queryRequired ) {
+    public Dimension( @NonNull String name, OperationType operationType, boolean queryRequired, int priority ) {
         this.name = name;
         this.operationType = operationType;
         this.queryRequired = queryRequired;
+        this.priority = priority;
     }
 
     public static Dimension ARRAY_ENUM( String name, Class<? extends Enum> clazz, boolean queryRequired ) {
@@ -60,6 +66,10 @@ public abstract class Dimension {
     }
 
     public static Dimension ENUM( String name, Class<? extends Enum> clazz, OperationType operationType, boolean queryRequired ) {
+        return ENUM( name, clazz, operationType, queryRequired, PRIORITY_DEFAULT );
+    }
+
+    public static Dimension ENUM( String name, Class<? extends Enum> clazz, OperationType operationType, boolean queryRequired, int priority ) {
         final Enum[] enumConstantsSortedByName = clazz.getEnumConstants();
         Arrays.sort( enumConstantsSortedByName, Comparator.comparing( Enum::name ) );
 
@@ -71,7 +81,7 @@ public abstract class Dimension {
             ordinalToSorted[enumConstantsSortedByName[i].ordinal()] = i;
         }
 
-        return new Dimension( name, operationType, queryRequired ) {
+        return new Dimension( name, operationType, queryRequired, priority ) {
             @Override
             public String toString( long value ) {
                 return sortedToName[( int ) value];
@@ -95,9 +105,14 @@ public abstract class Dimension {
     }
 
     public static Dimension STRING( String name, OperationType operationType, boolean queryRequired ) {
+        return STRING( name, operationType, queryRequired, PRIORITY_DEFAULT );
+
+    }
+
+    public static Dimension STRING( String name, OperationType operationType, boolean queryRequired, int priority ) {
         final StringBits bits = new StringBits();
 
-        return new Dimension( name, operationType, queryRequired ) {
+        return new Dimension( name, operationType, queryRequired, priority ) {
             @Override
             public String toString( long value ) {
                 return bits.valueOf( value );
@@ -122,7 +137,11 @@ public abstract class Dimension {
     }
 
     public static Dimension LONG( String name, OperationType operationType, boolean queryRequired ) {
-        return new Dimension( name, operationType, queryRequired ) {
+        return LONG( name, operationType, queryRequired, PRIORITY_DEFAULT );
+    }
+
+    public static Dimension LONG( String name, OperationType operationType, boolean queryRequired, int priority ) {
+        return new Dimension( name, operationType, queryRequired, priority ) {
             @Override
             public String toString( long value ) {
                 return String.valueOf( value );
@@ -146,7 +165,11 @@ public abstract class Dimension {
     }
 
     public static Dimension BOOLEAN( String name, OperationType operationType, boolean queryRequired ) {
-        return new Dimension( name, operationType, queryRequired ) {
+        return BOOLEAN( name, operationType, queryRequired, PRIORITY_DEFAULT );
+    }
+
+    public static Dimension BOOLEAN( String name, OperationType operationType, boolean queryRequired, int priority ) {
+        return new Dimension( name, operationType, queryRequired, priority ) {
             @Override
             public String toString( long value ) {
                 return value == 0 ? "false" : "true";

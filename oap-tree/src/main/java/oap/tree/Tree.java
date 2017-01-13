@@ -168,6 +168,8 @@ public class Tree<T> {
     }
 
     private SplitDimension findSplitDimension( List<ValueData<T>> data, BitSet eqBitSet ) {
+        int priority = Dimension.PRIORITY_LOW;
+        int priorityArray = Dimension.PRIORITY_LOW;
         long uniqueSize = -1;
         long uniqueArraySize = Long.MAX_VALUE;
         int splitDimension = -1;
@@ -197,12 +199,14 @@ public class Tree<T> {
 
             }
 
-            if( !isArray && unique.size() > 0 && unique.size() > uniqueSize ) {
+            if( !isArray && unique.size() > 0 && ( unique.size() > uniqueSize || dimension.priority >= priority ) ) {
                 uniqueSize = unique.size();
                 splitDimension = i;
-            } else if( isArray && uniqueArray.size() > 0 && uniqueArray.size() < uniqueArraySize ) {
+                priority = dimension.priority;
+            } else if( isArray && uniqueArray.size() > 0 && ( uniqueArray.size() < uniqueArraySize || dimension.priority >= priorityArray ) ) {
                 uniqueArraySize = uniqueArray.size();
                 splitArrayDimension = i;
+                priorityArray = dimension.priority;
             }
         }
 
