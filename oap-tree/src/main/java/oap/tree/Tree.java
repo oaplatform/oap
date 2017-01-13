@@ -267,7 +267,9 @@ public class Tree<T> {
 
             final Dimension dimension = dimensions.get( n.dimension );
 
-            if( qValue == ANY_AS_ARRAY && !dimension.queryRequired ) {
+            if( qValue == ANY_AS_ARRAY ) {
+                if( dimension.queryRequired ) return;
+
                 find( n.equal, query, result );
                 find( n.right, query, result );
                 find( n.left, query, result );

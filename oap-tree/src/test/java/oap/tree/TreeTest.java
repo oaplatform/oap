@@ -241,24 +241,25 @@ public class TreeTest {
     @Test
     public void testFindAny() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, false, -1 ), LONG( "d2", CONTAINS, false ) )
+            .<String>tree( LONG( "d1", CONTAINS, false, -1 ), LONG( "d2", CONTAINS, false ), LONG("d3", CONTAINS, true) )
             .load( l(
-                v( "1", 1L, null ),
-                v( "2", 2L, 2L ),
-                v( "3", 1L, 3L ),
-                v( "33", 1L, 3L )
+                v( "1", 1L, null, 1L ),
+                v( "2", 2L, 2L, 1L ),
+                v( "3", 1L, 3L, 1L ),
+                v( "33", 1L, 3L, 1L )
             ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.find( l( 1L, 1L ) ) ).containsOnly( "1" );
-        assertThat( tree.find( l( 2L, 2L ) ) ).containsOnly( "2" );
-        assertThat( tree.find( l( 1L, 3L ) ) ).containsOnly( "1", "3", "33" );
+        assertThat( tree.find( l( 1L, 1L, 1L ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( 2L, 2L, 1L ) ) ).containsOnly( "2" );
+        assertThat( tree.find( l( 1L, 3L, 1L ) ) ).containsOnly( "1", "3", "33" );
 
-        assertThat( tree.find( l( 1L, 2L ) ) ).containsOnly( "1" );
-        assertThat( tree.find( l( null, 3L ) ) ).containsOnly( "1", "3", "33" );
+        assertThat( tree.find( l( 1L, 2L, 1L ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( null, 3L, 1L ) ) ).containsOnly( "1", "3", "33" );
+        assertThat( tree.find( l( null, 3L, null ) ) ).isEmpty();
 
-        assertThat( tree.getMaxDepth() ).isEqualTo( 4 );
+        assertThat( tree.getMaxDepth() ).isEqualTo( 5 );
     }
 
     @Test
