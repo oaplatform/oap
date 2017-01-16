@@ -66,6 +66,8 @@ public class Tree<T> {
     TreeNode<T> root = new Leaf<>( emptyList() );
     private List<Dimension> dimensions;
     private long memory;
+    private long nodeCount = 0;
+    private long leafCount = 0;
 
     Tree( List<Dimension> dimensions ) {
         this.dimensions = dimensions;
@@ -99,11 +101,37 @@ public class Tree<T> {
         return memory;
     }
 
+    public long getNodeCount() {
+        return nodeCount;
+    }
+
+    public long getLeafCount() {
+        return leafCount;
+    }
+
     public void load( List<ValueData<T>> data ) {
         init( data );
         root = toNode( data, new BitSet( dimensions.size() ) );
 
+        updateCount( root );
+
         memory = MemoryMeter.get().measureDeep( this );
+    }
+
+    private void updateCount( TreeNode<T> node ) {
+        if( node == null ) return;
+
+        if( node instanceof Tree.Node ) {
+            nodeCount++;
+            final Node n = ( Node ) node;
+            updateCount( n.any );
+            updateCount( n.left );
+            updateCount( n.right );
+            updateCount( n.equal );
+            n.sets.forEach( s -> updateCount( s.equal ) );
+        } else {
+            leafCount++;
+        }
     }
 
     @SuppressWarnings( "unchecked" )
