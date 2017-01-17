@@ -78,6 +78,7 @@ public class TreeArrayTest {
     public void testArrayMix() {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_LONG( "d1", false ), ARRAY_LONG( "d2", false ), LONG( "d2", CONTAINS, false ) )
+            .withHashFillFactor( 1 )
             .load( l(
                 v( "1", l( a( true, 1L, 2L ), a( true, 1L, 2L ), 1L ) ),
                 v( "2", l( a( true, 2L ), a( true, 2L ), 1L ) ),

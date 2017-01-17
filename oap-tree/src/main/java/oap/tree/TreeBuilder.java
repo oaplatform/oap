@@ -31,13 +31,20 @@ import java.util.List;
  */
 public class TreeBuilder<T> {
     private List<Dimension> dimensions;
+    private double hashFillFactor = 0.25;
 
     public TreeBuilder( List<Dimension> dimensions ) {
         this.dimensions = dimensions;
     }
 
+    public TreeBuilder<T> withHashFillFactor( double hashFillFactor ) {
+        this.hashFillFactor = hashFillFactor;
+
+        return this;
+    }
+
     public final Tree<T> load( List<Tree.ValueData<T>> data ) {
-        final Tree<T> tree = new Tree<>( dimensions );
+        final Tree<T> tree = new Tree<>( dimensions, hashFillFactor );
         tree.load( data );
 
         return tree;
