@@ -338,16 +338,15 @@ public class Tree<T> {
             e.getValue().entrySet().stream().map( dv -> {
                     final Dimension dimension = dimensions.get( dv.getKey() );
                     return "    " + dimension.name + "/" + dv.getKey() + ": "
-                        + dv.getValue().toString( dimension ) + " " + queryToString( longQuery, dv.getKey() );
+                        + dv.getValue().toString( dimension ) + " " + queryToString( query, dv.getKey() );
                 }
             ).collect( joining( "\n" ) )
         ).collect( joining( "\n" ) );
         return queryStr + ( out.length() > 0 ? "Expecting:\n" + out : "ALL OK" );
     }
 
-    private String queryToString( long[][] query, int key ) {
-        final long[] value = query[key];
-        return LongStream.of( value ).mapToObj( dimensions.get( key )::toString ).collect( joining( ",", "[", "]" ) );
+    private String queryToString( List<?> query, int key ) {
+        return String.valueOf( query.get( key ) );
     }
 
     private void trace( TreeNode<T> node, long[][] query,

@@ -31,6 +31,7 @@ import static oap.tree.Dimension.LONG;
 import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Dimension.OperationType.GREATER_THEN_OR_EQUAL_TO;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
+import static oap.tree.Dimension.STRING;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
 import static oap.tree.TreeTest.TestEnum.Test1;
@@ -54,49 +55,67 @@ public class TreeTraceTest {
         assertThat( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "query = [d1:1,d2:Test2]\n" +
             "Expecting:\n" +
             "33: \n" +
-            "    d2/1: [Test3] CONTAINS [Test2]\n" +
+            "    d2/1: [Test3] CONTAINS Test2\n" +
             "1: \n" +
-            "    d2/1: [Test1] CONTAINS [Test2]\n" +
+            "    d2/1: [Test1] CONTAINS Test2\n" +
             "2: \n" +
-            "    d1/0: [2] CONTAINS [1]\n" +
+            "    d1/0: [2] CONTAINS 1\n" +
             "3: \n" +
-            "    d2/1: [Test3] CONTAINS [Test2]" );
+            "    d2/1: [Test3] CONTAINS Test2" );
         assertThat( tree.trace( l( 3L, Test3 ) ) ).isEqualTo( "query = [d1:3,d2:Test3]\n" +
             "Expecting:\n" +
             "33: \n" +
-            "    d1/0: [1] CONTAINS [3]\n" +
+            "    d1/0: [1] CONTAINS 3\n" +
             "1: \n" +
-            "    d1/0: [1] CONTAINS [3]\n" +
-            "    d2/1: [Test1] CONTAINS [Test3]\n" +
+            "    d1/0: [1] CONTAINS 3\n" +
+            "    d2/1: [Test1] CONTAINS Test3\n" +
             "2: \n" +
-            "    d1/0: [2] CONTAINS [3]\n" +
-            "    d2/1: [Test2] CONTAINS [Test3]\n" +
+            "    d1/0: [2] CONTAINS 3\n" +
+            "    d2/1: [Test2] CONTAINS Test3\n" +
             "3: \n" +
-            "    d1/0: [1] CONTAINS [3]" );
+            "    d1/0: [1] CONTAINS 3" );
 
         assertThat( tree.trace( l( 4L, Test4 ) ) ).isEqualTo( "query = [d1:4,d2:Test4]\n" +
             "Expecting:\n" +
             "33: \n" +
-            "    d1/0: [1] CONTAINS [4]\n" +
-            "    d2/1: [Test3] CONTAINS [Test4]\n" +
+            "    d1/0: [1] CONTAINS 4\n" +
+            "    d2/1: [Test3] CONTAINS Test4\n" +
             "1: \n" +
-            "    d1/0: [1] CONTAINS [4]\n" +
-            "    d2/1: [Test1] CONTAINS [Test4]\n" +
+            "    d1/0: [1] CONTAINS 4\n" +
+            "    d2/1: [Test1] CONTAINS Test4\n" +
             "2: \n" +
-            "    d1/0: [2] CONTAINS [4]\n" +
-            "    d2/1: [Test2] CONTAINS [Test4]\n" +
+            "    d1/0: [2] CONTAINS 4\n" +
+            "    d2/1: [Test2] CONTAINS Test4\n" +
             "3: \n" +
-            "    d1/0: [1] CONTAINS [4]\n" +
-            "    d2/1: [Test3] CONTAINS [Test4]" );
+            "    d1/0: [1] CONTAINS 4\n" +
+            "    d2/1: [Test3] CONTAINS Test4" );
         assertThat( tree.trace( l( 1L, Test1 ) ) ).isEqualTo( "query = [d1:1,d2:Test1]\n" +
             "Expecting:\n" +
             "33: \n" +
-            "    d2/1: [Test3] CONTAINS [Test1]\n" +
+            "    d2/1: [Test3] CONTAINS Test1\n" +
             "2: \n" +
-            "    d1/0: [2] CONTAINS [1]\n" +
-            "    d2/1: [Test2] CONTAINS [Test1]\n" +
+            "    d1/0: [2] CONTAINS 1\n" +
+            "    d2/1: [Test2] CONTAINS Test1\n" +
             "3: \n" +
-            "    d2/1: [Test3] CONTAINS [Test1]" );
+            "    d2/1: [Test3] CONTAINS Test1" );
+    }
+
+    @Test
+    public void testTraceUNKNOWN() {
+        final Tree<String> tree = Tree
+            .<String>tree( STRING( "d1", CONTAINS, false ) )
+            .load( l( v( "1", "str" ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.trace( l( "tt" ) ) ).isEqualTo( "query = [d1:tt]\n" +
+            "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [str] CONTAINS tt" );
+        assertThat( tree.trace( l( l( "tt", "bb" ) ) ) ).isEqualTo( "query = [d1:[tt, bb]]\n" +
+            "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [str] CONTAINS [tt, bb]" );
     }
 
     @Test
@@ -122,17 +141,17 @@ public class TreeTraceTest {
         assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "query = [d1:1]\n" +
             "Expecting:\n" +
             "1: \n" +
-            "    d1/0: [1] NOT_CONTAINS [1]" );
+            "    d1/0: [1] NOT_CONTAINS 1" );
         assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "query = [d1:2]\n" +
             "Expecting:\n" +
             "2: \n" +
-            "    d1/0: [2] NOT_CONTAINS [2]" );
+            "    d1/0: [2] NOT_CONTAINS 2" );
         assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "query = [d1:3]\n" +
             "Expecting:\n" +
             "33: \n" +
-            "    d1/0: [3] NOT_CONTAINS [3]\n" +
+            "    d1/0: [3] NOT_CONTAINS 3\n" +
             "3: \n" +
-            "    d1/0: [3] NOT_CONTAINS [3]" );
+            "    d1/0: [3] NOT_CONTAINS 3" );
 
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "query = [d1:5]\nALL OK" );
     }
@@ -148,7 +167,7 @@ public class TreeTraceTest {
         assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "query = [d1:null,d2:1]\n" +
             "Expecting:\n" +
             "1: \n" +
-            "    d2/1: [99] CONTAINS [1]" );
+            "    d2/1: [99] CONTAINS 1" );
     }
 
     @Test
@@ -162,7 +181,7 @@ public class TreeTraceTest {
         assertThat( tree.trace( l( ( Long ) null ) ) ).isEqualTo( "query = [d1:null]\n" +
             "Expecting:\n" +
             "1: \n" +
-            "    d1/0: [1] CONTAINS []" );
+            "    d1/0: [1] CONTAINS null" );
     }
 
     @Test
@@ -193,13 +212,13 @@ public class TreeTraceTest {
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "query = [d1:5]\n" +
             "Expecting:\n" +
             "1: \n" +
-            "    d1/0: [1] GREATER_THEN_OR_EQUAL_TO [5]" );
+            "    d1/0: [1] GREATER_THEN_OR_EQUAL_TO 5" );
         assertThat( tree.trace( l( 6L ) ) ).isEqualTo( "query = [d1:6]\n" +
             "Expecting:\n" +
             "1: \n" +
-            "    d1/0: [1] GREATER_THEN_OR_EQUAL_TO [6]\n" +
+            "    d1/0: [1] GREATER_THEN_OR_EQUAL_TO 6\n" +
             "5: \n" +
-            "    d1/0: [5] GREATER_THEN_OR_EQUAL_TO [6]" );
+            "    d1/0: [5] GREATER_THEN_OR_EQUAL_TO 6" );
     }
 
     public enum TestEnum {

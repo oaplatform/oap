@@ -51,17 +51,17 @@ public class TreeArrayTraceTest {
         assertThat( tree.trace( l( 3L ) ) ).isEqualTo( "query = [d1:3]\n" +
             "Expecting:\n" +
             "1: \n" +
-            "    d1/0: [1,2] CONTAINS [3]\n" +
+            "    d1/0: [1,2] CONTAINS 3\n" +
             "2: \n" +
-            "    d1/0: [1,2] CONTAINS [3]" );
+            "    d1/0: [1,2] CONTAINS 3" );
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "query = [d1:5]\n" +
             "Expecting:\n" +
             "1: \n" +
-            "    d1/0: [1,2] CONTAINS [5]\n" +
+            "    d1/0: [1,2] CONTAINS 5\n" +
             "2: \n" +
-            "    d1/0: [1,2] CONTAINS [5]\n" +
+            "    d1/0: [1,2] CONTAINS 5\n" +
             "3: \n" +
-            "    d1/0: [1,2,3] CONTAINS [5]" );
+            "    d1/0: [1,2,3] CONTAINS 5" );
     }
 
     @Test
@@ -78,17 +78,17 @@ public class TreeArrayTraceTest {
         assertThat( tree.trace( l( 2L ) ) ).isEqualTo( "query = [d1:2]\n" +
             "Expecting:\n" +
             "1: \n" +
-            "    d1/0: [1,2] NOT_CONTAINS [2]\n" +
+            "    d1/0: [1,2] NOT_CONTAINS 2\n" +
             "2: \n" +
-            "    d1/0: [2] NOT_CONTAINS [2]\n" +
+            "    d1/0: [2] NOT_CONTAINS 2\n" +
             "3: \n" +
-            "    d1/0: [1,2,3] NOT_CONTAINS [2]" );
+            "    d1/0: [1,2,3] NOT_CONTAINS 2" );
         assertThat( tree.trace( l( 1L ) ) ).isEqualTo( "query = [d1:1]\n" +
             "Expecting:\n" +
             "1: \n" +
-            "    d1/0: [1,2] NOT_CONTAINS [1]\n" +
+            "    d1/0: [1,2] NOT_CONTAINS 1\n" +
             "3: \n" +
-            "    d1/0: [1,2,3] NOT_CONTAINS [1]" );
+            "    d1/0: [1,2,3] NOT_CONTAINS 1" );
 
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "query = [d1:5]\nALL OK" );
     }
