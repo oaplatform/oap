@@ -46,11 +46,11 @@ public class ReporterFilter implements MetricFilter {
 
     @Override
     public boolean matches( String name, Metric metric ) {
-        if( !include.isEmpty() && !include.stream().filter( e -> e.matcher( name ).find() ).findAny().isPresent() )
+        if( !include.isEmpty() && include.stream().noneMatch( e -> e.matcher( name ).find() ) )
             return false;
 
         if( exclude.isEmpty() ) return true;
 
-        return !exclude.stream().filter( e -> e.matcher( name ).find() ).findAny().isPresent();
+        return exclude.stream().noneMatch( e -> e.matcher( name ).find() );
     }
 }

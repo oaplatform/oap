@@ -36,6 +36,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.escape.Escapers;
 import com.squareup.okhttp.OkHttpClient;
 import lombok.SneakyThrows;
+import oap.util.Pair;
 import oap.util.Throwables;
 import org.apache.commons.lang3.StringUtils;
 import org.influxdb.InfluxDB;
@@ -65,6 +66,7 @@ import java.util.regex.Pattern;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
+import static oap.util.Pair.__;
 
 class InfluxDBReporter extends ScheduledReporter {
     private static final Logger logger = LoggerFactory.getLogger( InfluxDBReporter.class );
@@ -167,14 +169,21 @@ class InfluxDBReporter extends ScheduledReporter {
         final SortedMap<String, SortedMap<String, T>> result = new TreeMap<>();
 
         for( final Map.Entry<String, T> entry : metrics.entrySet() ) {
-            final Optional<Matcher> m = aggregates
+            final Optional<Pair<Pattern, Matcher>> m = aggregates
                 .stream()
-                .map( a -> a.matcher( entry.getKey() ) )
-                .filter( Matcher::find )
+                .map( a -> __( a, a.matcher( entry.getKey() ) ) )
+                .filter( p -> p._2.find() )
                 .findAny();
 
             if( m.isPresent() ) {
-                final Matcher matcher = m.get();
+                final Matcher matcher = m.get()._2;
+
+                if( matcher.groupCount() != 2 ) {
+                    throw new IllegalArgumentException(
+                        "Wrong reporter pattern '" + m.get()._1.pattern() + "' or input '" + entry.getKey() + "'"
+                    );
+                }
+
                 final String field = matcher.group( 1 ).substring( 1 );
                 final String tags = matcher.group( 2 );
                 final String point = StringUtils.removeEnd( entry.getKey(), matcher.group( 1 ) + tags ) + tags;
