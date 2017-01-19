@@ -29,6 +29,7 @@ import org.influxdb.dto.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.emptyList;
@@ -42,7 +43,27 @@ public class MockInfluxDB implements InfluxDB {
     }
 
     @Override
+    public InfluxDB enableGzip() {
+        return this;
+    }
+
+    @Override
+    public InfluxDB disableGzip() {
+        return this;
+    }
+
+    @Override
+    public boolean isGzipEnabled() {
+        return false;
+    }
+
+    @Override
     public InfluxDB enableBatch( int actions, int flushDuration, TimeUnit flushDurationTimeUnit ) {
+        return this;
+    }
+
+    @Override
+    public InfluxDB enableBatch( int i, int i1, TimeUnit timeUnit, ThreadFactory threadFactory ) {
         return this;
     }
 
@@ -53,7 +74,7 @@ public class MockInfluxDB implements InfluxDB {
 
     @Override
     public boolean isBatchEnabled() {
-        return true;
+        return false;
     }
 
     @Override
@@ -72,6 +93,11 @@ public class MockInfluxDB implements InfluxDB {
     }
 
     @Override
+    public void write( int i, Point point ) {
+
+    }
+
+    @Override
     public void write( BatchPoints batchPoints ) {
         writes.addAll( batchPoints.getPoints() );
 
@@ -84,6 +110,16 @@ public class MockInfluxDB implements InfluxDB {
 
     @Override
     public void write( String database, String retentionPolicy, ConsistencyLevel consistency, List<String> records ) {
+
+    }
+
+    @Override
+    public void write( int i, String s ) {
+
+    }
+
+    @Override
+    public void write( int i, List<String> list ) {
 
     }
 
@@ -110,5 +146,10 @@ public class MockInfluxDB implements InfluxDB {
     @Override
     public List<String> describeDatabases() {
         return emptyList();
+    }
+
+    @Override
+    public void close() {
+
     }
 }

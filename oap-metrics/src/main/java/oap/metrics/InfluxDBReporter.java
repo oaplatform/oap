@@ -34,10 +34,10 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Timer;
 import com.google.common.escape.Escapers;
-import com.squareup.okhttp.OkHttpClient;
 import lombok.SneakyThrows;
 import oap.util.Pair;
 import oap.util.Throwables;
+import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
@@ -46,7 +46,6 @@ import org.influxdb.dto.Point;
 import org.joda.time.DateTimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import retrofit.client.OkClient;
 
 import java.io.InterruptedIOException;
 import java.lang.reflect.Field;
@@ -271,12 +270,12 @@ class InfluxDBReporter extends ScheduledReporter {
         }
 
         public InfluxDBReporter build() {
-            final OkHttpClient client = new OkHttpClient();
-            client.setConnectTimeout( connectionTimeout, MILLISECONDS );
-            client.setReadTimeout( readTimeout, MILLISECONDS );
-            client.setWriteTimeout( writeTimeout, MILLISECONDS );
+            final OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                .connectTimeout( connectionTimeout, MILLISECONDS )
+                .readTimeout( readTimeout, MILLISECONDS )
+                .writeTimeout( writeTimeout, MILLISECONDS );
 
-            InfluxDB influxDB = InfluxDBFactory.connect( "http://" + host + ":" + port, login, password, new OkClient( client ) );
+            InfluxDB influxDB = InfluxDBFactory.connect( "http://" + host + ":" + port, login, password, builder );
 
             if( logger.isTraceEnabled() )
                 influxDB.setLogLevel( InfluxDB.LogLevel.FULL );
