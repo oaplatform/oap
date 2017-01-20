@@ -31,15 +31,16 @@ import org.joda.time.format.DateTimeFormatter;
 
 public class Dates {
     public static final DateTimeFormatter FORMAT_FULL = DateTimeFormat
-        .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSSZ" );
+        .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSSZ" )
+        .withZoneUTC();
 
     public static final DateTimeFormatter FORMAT_MILLIS = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSS" )
-        .withZone( DateTimeZone.getDefault() );
+        .withZoneUTC();
 
     public static final DateTimeFormatter FORMAT_SIMPLE = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss" )
-        .withZone( DateTimeZone.getDefault() );
+        .withZoneUTC();
 
     public static Result<DateTime, Exception> parseDateWithMillis( String date ) {
         return parse( date, FORMAT_MILLIS );
@@ -101,7 +102,7 @@ public class Dates {
     public static void setTimeFixed( int year, int monthOfYear, int dayOfMonth, int hourOfDay,
                                      int minuteOfHour, int secondOfMinute, int millisOfSecond ) {
         setTimeFixed( new DateTime( year, monthOfYear, dayOfMonth, hourOfDay, minuteOfHour, secondOfMinute,
-            millisOfSecond ).getMillis() );
+            millisOfSecond, DateTimeZone.UTC ).getMillis() );
     }
 
     public static void setTimeFixed( long millis ) {
