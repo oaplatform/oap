@@ -27,26 +27,26 @@ package oap.util;
 import oap.testng.AbstractTest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.joda.time.DateTimeZone.UTC;
 
 public class DatesTest extends AbstractTest {
     @Test
     public void parseIsoDate() throws Exception {
         assertThat( Dates.parseDateWithMillis( "2016-01-01T00:00:00.000" ).successValue )
-            .isEqualTo( new DateTime( 2016, 1, 1, 0, 0, 0 ) );
+            .isEqualTo( new DateTime( 2016, 1, 1, 0, 0, 0, UTC ) );
         assertThat( Dates.parseDate( "2016-01-01T00:00:00" ).successValue )
-            .isEqualTo( new DateTime( 2016, 1, 1, 0, 0, 0 ) );
+            .isEqualTo( new DateTime( 2016, 1, 1, 0, 0, 0, UTC ) );
     }
 
     @Test
     public void testCurrentTimeDay() {
-        DateTimeUtils.setCurrentMillisFixed( new DateTime( 1970, 1, 1, 0, 0, DateTimeZone.UTC ).getMillis() );
+        DateTimeUtils.setCurrentMillisFixed( new DateTime( 1970, 1, 1, 0, 0, UTC ).getMillis() );
         assertThat( Dates.currentTimeDay() ).isEqualTo( 0 );
 
-        DateTimeUtils.setCurrentMillisFixed( new DateTime( 1970, 2, 10, 0, 0, DateTimeZone.UTC ).getMillis() );
+        DateTimeUtils.setCurrentMillisFixed( new DateTime( 1970, 2, 10, 0, 0, UTC ).getMillis() );
         assertThat( Dates.currentTimeDay() ).isEqualTo( 40 );
     }
 }
