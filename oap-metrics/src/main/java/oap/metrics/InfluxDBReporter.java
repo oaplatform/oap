@@ -36,6 +36,7 @@ import com.codahale.metrics.Timer;
 import com.google.common.escape.Escapers;
 import lombok.SneakyThrows;
 import oap.util.Pair;
+import oap.util.Stream;
 import oap.util.Throwables;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
@@ -69,7 +70,6 @@ import static oap.util.Pair.__;
 
 class InfluxDBReporter extends ScheduledReporter {
     private static final Logger logger = LoggerFactory.getLogger( InfluxDBReporter.class );
-
     private final InfluxDB influxDB;
     private final String database;
     private final Map<String, String> tags;
@@ -147,7 +147,7 @@ class InfluxDBReporter extends ScheduledReporter {
     private <T extends Metric> void report(
         SortedMap<String, T> counters,
         SortedMap<String, Point.Builder> builders,
-        BiConsumer<Point.Builder, Map.Entry<String, T>> func ) {
+        BiConsumer<Point.Builder, Map.Entry<String, T>>... funcs ) {
 
         final Map<String, SortedMap<String, T>> ap = aggregate( counters );
 
@@ -159,7 +159,7 @@ class InfluxDBReporter extends ScheduledReporter {
             } );
 
             for( Map.Entry<String, T> entry : metrics.entrySet() ) {
-                func.accept( builder, entry );
+                Stream.of( funcs ).forEach( func -> func.accept( builder, entry ) );
             }
         } );
     }
@@ -200,11 +200,35 @@ class InfluxDBReporter extends ScheduledReporter {
     }
 
     private void reportMeters( SortedMap<String, Meter> meters, SortedMap<String, Point.Builder> builders ) {
-        report( meters, builders, ( b, e ) -> b.addField( e.getKey(), convertRate( e.getValue().getOneMinuteRate() ) ) );
+        report( meters, builders,
+            ( b, e ) -> b.addField( e.getKey(), convertRate( e.getValue().getOneMinuteRate() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_oneMinuteRate", convertRate( e.getValue().getOneMinuteRate() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_fiveMinuteRate", convertRate( e.getValue().getFiveMinuteRate() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_fifteenMinuteRate", convertRate( e.getValue().getFifteenMinuteRate() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_count", convertRate( e.getValue().getCount() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_meanRate", convertRate( e.getValue().getMeanRate() ) )
+        );
     }
 
     private void reportTimers( SortedMap<String, Timer> timers, SortedMap<String, Point.Builder> builders ) {
-        report( timers, builders, ( b, e ) -> b.addField( e.getKey(), convertDuration( e.getValue().getSnapshot().getMean() ) ) );
+        report( timers, builders,
+            ( b, e ) -> b.addField( e.getKey(), convertDuration( e.getValue().getSnapshot().getMean() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_mean", convertDuration( e.getValue().getSnapshot().getMean() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_75th", convertDuration( e.getValue().getSnapshot().get75thPercentile() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_95th", convertDuration( e.getValue().getSnapshot().get95thPercentile() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_98th", convertDuration( e.getValue().getSnapshot().get98thPercentile() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_99th", convertDuration( e.getValue().getSnapshot().get99thPercentile() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_999th", convertDuration( e.getValue().getSnapshot().get999thPercentile() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_max", convertDuration( e.getValue().getSnapshot().getMax() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_min", convertDuration( e.getValue().getSnapshot().getMin() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_median", convertDuration( e.getValue().getSnapshot().getMedian() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_stddev", convertDuration( e.getValue().getSnapshot().getStdDev() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_count", convertDuration( e.getValue().getCount() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_oneMinuteRate", convertDuration( e.getValue().getOneMinuteRate() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_fiveMinuteRate", convertDuration( e.getValue().getFiveMinuteRate() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_fifteenMinuteRate", convertDuration( e.getValue().getFifteenMinuteRate() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_meanRate", convertDuration( e.getValue().getMeanRate() ) )
+        );
     }
 
     private void reportGauges( SortedMap<String, Gauge> gauges, SortedMap<String, Point.Builder> builders ) {
@@ -220,7 +244,20 @@ class InfluxDBReporter extends ScheduledReporter {
     }
 
     private void reportHistograms( SortedMap<String, Histogram> histograms, SortedMap<String, Point.Builder> builders ) {
-        report( histograms, builders, ( b, e ) -> b.addField( e.getKey(), e.getValue().getSnapshot().getMean() ) );
+        report( histograms, builders,
+            ( b, e ) -> b.addField( e.getKey(), e.getValue().getSnapshot().getMean() ),
+            ( b, e ) -> b.addField( e.getKey() + "_mean", e.getValue().getSnapshot().getMean() ),
+            ( b, e ) -> b.addField( e.getKey() + "_75th", e.getValue().getSnapshot().get75thPercentile() ),
+            ( b, e ) -> b.addField( e.getKey() + "_95th", e.getValue().getSnapshot().get95thPercentile() ),
+            ( b, e ) -> b.addField( e.getKey() + "_98th", e.getValue().getSnapshot().get98thPercentile() ),
+            ( b, e ) -> b.addField( e.getKey() + "_99th", e.getValue().getSnapshot().get99thPercentile() ),
+            ( b, e ) -> b.addField( e.getKey() + "_999th", e.getValue().getSnapshot().get999thPercentile() ),
+            ( b, e ) -> b.addField( e.getKey() + "_max", convertDuration( e.getValue().getSnapshot().getMax() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_min", convertDuration( e.getValue().getSnapshot().getMin() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_median", convertDuration( e.getValue().getSnapshot().getMedian() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_stddev", convertDuration( e.getValue().getSnapshot().getStdDev() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_count", convertDuration( e.getValue().getCount() ) )
+        );
     }
 
     public static class Builder {
