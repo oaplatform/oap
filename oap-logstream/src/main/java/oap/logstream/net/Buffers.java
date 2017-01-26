@@ -42,6 +42,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 @EqualsAndHashCode( exclude = "closed" )
@@ -170,11 +171,11 @@ public class Buffers implements Closeable {
     }
 
     static class ReadyQueue implements Serializable {
-        static volatile long digestionIds = System.nanoTime();
+        static AtomicLong digestionIds = new AtomicLong( System.nanoTime() );
         private Queue<Buffer> buffers = new ConcurrentLinkedQueue<>();
 
         public final synchronized void ready( Buffer buffer ) {
-            buffer.close( digestionIds++ );
+            buffer.close( digestionIds.incrementAndGet() );
             buffers.offer( buffer );
         }
 
