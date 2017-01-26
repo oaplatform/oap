@@ -82,11 +82,11 @@ public class BuffersTest {
         buffers.put( "x/z", new byte[] { 16 } );
 
         ArrayList<Buffer> expected = Lists.of(
-            buffer( HEADER + 4, 0, "x/y", new byte[] { 1, 2, 3 } ),
-            buffer( HEADER + 4, 1, "x/y", new byte[] { 4, 5, 6 } ),
-            buffer( HEADER + 4, 2, "x/z", new byte[] { 11, 12, 13 } ),
-            buffer( HEADER + 4, 3, "x/z", new byte[] { 14, 15, 16 } ),
-            buffer( HEADER + 4, 4, "x/y", new byte[] { 7, 8, 9 } )
+            buffer( HEADER + 4, 1, "x/y", new byte[] { 1, 2, 3 } ),
+            buffer( HEADER + 4, 2, "x/y", new byte[] { 4, 5, 6 } ),
+            buffer( HEADER + 4, 3, "x/z", new byte[] { 11, 12, 13 } ),
+            buffer( HEADER + 4, 4, "x/z", new byte[] { 14, 15, 16 } ),
+            buffer( HEADER + 4, 5, "x/y", new byte[] { 7, 8, 9 } )
         );
         assertReadyData( buffers, expected );
         assertReadyData( buffers, Lists.empty() );
@@ -106,10 +106,10 @@ public class BuffersTest {
         buffers.put( "x/z", new byte[] { 14, 15 } );
 
         ArrayList<Buffer> expected = Lists.of(
-            buffer( HEADER + 2, 0, "x/y", new byte[] { 1, 2 } ),
-            buffer( HEADER + 4, 1, "x/z", new byte[] { 11, 12, 13 } ),
-            buffer( HEADER + 4, 2, "x/z", new byte[] { 14, 15 } ),
-            buffer( HEADER + 2, 3, "x/y", new byte[] { 3 } )
+            buffer( HEADER + 2, 1, "x/y", new byte[] { 1, 2 } ),
+            buffer( HEADER + 4, 2, "x/z", new byte[] { 11, 12, 13 } ),
+            buffer( HEADER + 4, 3, "x/z", new byte[] { 14, 15 } ),
+            buffer( HEADER + 2, 4, "x/y", new byte[] { 3 } )
         );
         assertReadyData( buffers, expected );
         assertReadyData( buffers, Lists.empty() );
@@ -128,11 +128,11 @@ public class BuffersTest {
         buffers.close();
 
         ArrayList<Buffer> expected = Lists.of(
-            buffer( HEADER + 4, 0, "x/y", new byte[] { 1, 2, 3 } ),
-            buffer( HEADER + 4, 1, "x/y", new byte[] { 4, 5, 6 } ),
-            buffer( HEADER + 4, 2, "x/z", new byte[] { 11, 12, 13 } ),
-            buffer( HEADER + 4, 3, "x/z", new byte[] { 14, 15, 16 } ),
-            buffer( HEADER + 4, 4, "x/y", new byte[] { 7, 8, 9 } )
+            buffer( HEADER + 4, 1, "x/y", new byte[] { 1, 2, 3 } ),
+            buffer( HEADER + 4, 2, "x/y", new byte[] { 4, 5, 6 } ),
+            buffer( HEADER + 4, 3, "x/z", new byte[] { 11, 12, 13 } ),
+            buffer( HEADER + 4, 4, "x/z", new byte[] { 14, 15, 16 } ),
+            buffer( HEADER + 4, 5, "x/y", new byte[] { 7, 8, 9 } )
         );
         Buffers buffers2 = new Buffers( Env.tmpPath( "bfrs" ), BufferConfigurationList.DEFAULT( HEADER + 4 ) );
         assertReadyData( buffers2, expected );
