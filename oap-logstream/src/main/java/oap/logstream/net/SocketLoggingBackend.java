@@ -24,6 +24,7 @@
 
 package oap.logstream.net;
 
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
@@ -39,6 +40,7 @@ import static oap.logstream.AvailabilityReport.State.FAILED;
 import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 
 @Slf4j
+@ToString( of = { "host" } )
 public class SocketLoggingBackend implements LoggingBackend {
 
     private final String host;
@@ -53,15 +55,29 @@ public class SocketLoggingBackend implements LoggingBackend {
     private boolean closed = false;
 
     public SocketLoggingBackend( String host, int port, Path location, int bufferSize, long flushInterval ) {
+        this( host, port, location, BufferConfigurationList.DEFAULT( bufferSize ), flushInterval );
+    }
+
+    public SocketLoggingBackend( String host, int port, Path location, BufferConfigurationList configurations, long flushInterval ) {
         this.host = host;
         this.port = port;
-        this.buffers = new Buffers( location, bufferSize );
+        this.buffers = new Buffers( location, configurations );
         this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::send );
-        Metrics.measureGauge( Metrics.name( "logging.buffers_cache." + host ), () -> buffers.cache.size() );
+        configurations.forEach( conf -> Metrics.measureGauge(
+            Metrics
+                .name( "logging.buffers_cache" )
+                .tag( "host", host )
+                .tag( "configuration", conf.name ),
+            () -> buffers.cache.size( conf.bufferSize )
+        ) );
     }
 
     public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
-        this( host, port, location, bufferSize, 5000 );
+        this( host, port, location, BufferConfigurationList.DEFAULT( bufferSize ) );
+    }
+
+    public SocketLoggingBackend( String host, int port, Path location, BufferConfigurationList configurations ) {
+        this( host, port, location, configurations, 5000 );
     }
 
     public synchronized void send() {
@@ -104,7 +120,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     }
 
     private Boolean sendBuffer( Buffer buffer ) {
-        return Metrics.measureTimer( Metrics.name( "logging.buffer_send_time." + host ), () -> {
+        return Metrics.measureTimer( Metrics.name( "logging.buffer_send_time" ).tag( "host", host ), () -> {
             try {
                 log.trace( "sending {}", buffer );
                 connection.write( buffer.data(), 0, buffer.length() );
@@ -114,7 +130,7 @@ public class SocketLoggingBackend implements LoggingBackend {
                     log.error( "Error completing remote write: {}", SocketError.fromCode( size ) );
                     return false;
                 }
-                Metrics.measureCounterIncrement( Metrics.name( "logging.socket." + host ), buffer.length() );
+                Metrics.measureCounterIncrement( Metrics.name( "logging.socket" ).tag( "host", host ), buffer.length() );
                 loggingAvailable = true;
                 return true;
             } catch( Exception e ) {
@@ -144,12 +160,5 @@ public class SocketLoggingBackend implements LoggingBackend {
     public AvailabilityReport availabilityReport() {
         boolean operational = loggingAvailable && !closed && buffers.readyBuffers() < maxBuffers;
         return new AvailabilityReport( operational ? OPERATIONAL : FAILED );
-    }
-
-    @Override
-    public String toString() {
-        return "SocketLoggingBackend{"
-            + "host='" + host + '\''
-            + '}';
     }
 }
