@@ -30,7 +30,6 @@ import lombok.val;
 import oap.io.Files;
 import oap.logstream.net.BufferConfigurationList.BufferConfiguration;
 import oap.metrics.Metrics;
-import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
 import java.io.Serializable;
@@ -171,7 +170,7 @@ public class Buffers implements Closeable {
     }
 
     static class ReadyQueue implements Serializable {
-        static volatile long digestionIds = DateTimeUtils.currentTimeMillis();
+        static volatile long digestionIds = System.nanoTime();
         private Queue<Buffer> buffers = new ConcurrentLinkedQueue<>();
 
         public final synchronized void ready( Buffer buffer ) {
