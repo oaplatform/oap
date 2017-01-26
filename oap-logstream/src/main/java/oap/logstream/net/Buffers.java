@@ -174,7 +174,7 @@ public class Buffers implements Closeable {
         static AtomicLong digestionIds = new AtomicLong( System.nanoTime() );
         private Queue<Buffer> buffers = new ConcurrentLinkedQueue<>();
 
-        public final synchronized void ready( Buffer buffer ) {
+        public final void ready( Buffer buffer ) {
             buffer.close( digestionIds.incrementAndGet() );
             buffers.offer( buffer );
         }
