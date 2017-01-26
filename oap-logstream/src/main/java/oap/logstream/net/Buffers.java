@@ -26,16 +26,20 @@ package oap.logstream.net;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.io.Files;
+import oap.logstream.net.BufferConfigurationList.BufferConfiguration;
 import oap.metrics.Metrics;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
 import java.io.Serializable;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -46,66 +50,77 @@ import java.util.function.Predicate;
 @Slf4j
 public class Buffers implements Closeable {
     private final Path location;
-    private final int bufferSize;
-    private boolean closed;
-    private final Map<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
+    //    private final int bufferSize;
+    private final ConcurrentHashMap<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, BufferConfiguration> configurationForSelector = new ConcurrentHashMap<>();
+    private final BufferConfigurationList configurations;
     ReadyQueue readyBuffers = new ReadyQueue();
     BufferCache cache;
+    private boolean closed;
 
-    public Buffers( Path location, int bufferSize ) {
+    public Buffers( Path location, BufferConfigurationList configurations ) {
         this.location = location;
-        this.bufferSize = bufferSize;
-        this.cache = new BufferCache( bufferSize );
+        this.configurations = configurations;
+        this.cache = new BufferCache();
         try {
-            if( location.toFile().exists() )
+            if( java.nio.file.Files.exists( location ) )
                 readyBuffers = Files.readObject( location );
             log.debug( "unsent buffers: {}", readyBuffers.size() );
         } catch( Exception e ) {
             log.warn( e.getMessage() );
         }
-        location.toFile().delete();
+        Files.delete( location );
     }
 
-    public void put( String key, byte[] buffer ) {
+    public final void put( String key, byte[] buffer ) {
         put( key, buffer, 0, buffer.length );
     }
 
-    public void put( String selector, byte[] buffer, int offset, int length ) {
+    public final void put( String selector, byte[] buffer, int offset, int length ) {
         if( closed ) throw new IllegalStateException( "current buffers already closed" );
-        if( length > bufferSize )
-            throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize );
+
+        BufferConfiguration conf = configurationForSelector.computeIfAbsent( selector, this::findConfiguration );
+
+        final int bufferSize = conf.bufferSize;
         String intern = selector.intern();
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized( intern ) {
-            Buffer b = currentBuffers.computeIfAbsent( selector, k -> cache.get( selector ) );
+            Buffer b = currentBuffers.computeIfAbsent( intern, k -> cache.get( intern, bufferSize ) );
+            if( bufferSize - b.headerLength() < length )
+                throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize );
             if( !b.available( length ) ) {
                 readyBuffers.ready( b );
-                currentBuffers.put( selector, b = cache.get( selector ) );
+                currentBuffers.put( intern, b = cache.get( intern, bufferSize ) );
             }
             b.put( buffer, offset, length );
         }
     }
 
-    private void flush() {
+    private BufferConfiguration findConfiguration( String selection ) {
+        for( val conf : configurations ) {
+            if( conf.pattern.matcher( selection ).find() ) return conf;
+        }
+        throw new IllegalStateException( "Pattern for " + selection + " not found" );
+    }
 
-        for( String selector : currentBuffers.keySet() ) {
-            String intern = selector.intern();
+    private void flush() {
+        for( String internSelector : currentBuffers.keySet() ) {
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized( intern ) {
-                Buffer buffer = currentBuffers.remove( intern );
+            synchronized( internSelector ) {
+                Buffer buffer = currentBuffers.remove( internSelector );
                 if( buffer != null && !buffer.isEmpty() ) readyBuffers.ready( buffer );
             }
         }
 
     }
 
-    public boolean isEmpty() {
+    public final boolean isEmpty() {
         return readyBuffers.isEmpty();
     }
 
 
     @Override
-    public synchronized void close() {
+    public final synchronized void close() {
         if( closed ) throw new IllegalStateException( "already closed" );
         closed = true;
         flush();
@@ -113,7 +128,7 @@ public class Buffers implements Closeable {
         Files.writeObject( location, readyBuffers );
     }
 
-    public synchronized void forEachReadyData( Predicate<Buffer> consumer ) {
+    public final synchronized void forEachReadyData( Predicate<Buffer> consumer ) {
         flush();
         Metrics.measureHistogram( Metrics.name( "logging.buffers_count" ), readyBuffers.size() );
         log.debug( "buffers to go " + readyBuffers.size() );
@@ -127,54 +142,52 @@ public class Buffers implements Closeable {
         }
     }
 
-    int readyBuffers() {
+    final int readyBuffers() {
         return readyBuffers.size();
     }
 
     public static class BufferCache {
-        Queue<Buffer> cache = new LinkedList<>();
-        private int bufferSize;
+        private final HashMap<Integer, Queue<Buffer>> cache = new HashMap<>();
 
-        public BufferCache( int bufferSize ) {
-            this.bufferSize = bufferSize;
-        }
+        private synchronized Buffer get( String selector, int bufferSize ) {
+            final Queue<Buffer> list = cache.computeIfAbsent( bufferSize, ( bs ) -> new LinkedList<>() );
 
-        private synchronized Buffer get( String selector ) {
-            if( cache.isEmpty() ) return new Buffer( bufferSize, selector );
+            if( list.isEmpty() ) return new Buffer( bufferSize, selector );
             else {
-                Buffer buffer = cache.poll();
+                Buffer buffer = list.poll();
                 buffer.reset( selector );
                 return buffer;
             }
         }
 
         private synchronized void release( Buffer buffer ) {
-            cache.offer( buffer );
+            final Queue<Buffer> list = cache.get( buffer.length() );
+            if( list != null ) list.offer( buffer );
         }
 
-        public int size() {
-            return cache.size();
+        public final int size( int bufferSize ) {
+            return Optional.ofNullable( cache.get( bufferSize ) ).map( Collection::size ).orElse( 0 );
         }
     }
 
     static class ReadyQueue implements Serializable {
-        private Queue<Buffer> buffers = new ConcurrentLinkedQueue<>();
         static volatile long digestionIds = DateTimeUtils.currentTimeMillis();
+        private Queue<Buffer> buffers = new ConcurrentLinkedQueue<>();
 
-        public synchronized void ready( Buffer buffer ) {
+        public final synchronized void ready( Buffer buffer ) {
             buffer.close( digestionIds++ );
             buffers.offer( buffer );
         }
 
-        public Iterator<Buffer> iterator() {
+        public final Iterator<Buffer> iterator() {
             return buffers.iterator();
         }
 
-        public int size() {
+        public final int size() {
             return buffers.size();
         }
 
-        public boolean isEmpty() {
+        public final boolean isEmpty() {
             return buffers.isEmpty();
         }
     }

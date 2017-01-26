@@ -47,11 +47,11 @@ class Buffer implements Serializable {
         if( !result ) throw new IllegalArgumentException( "buffer is too small!" );
     }
 
-    public boolean put( byte[] buf ) {
+    public final boolean put( byte[] buf ) {
         return put( buf, 0, buf.length );
     }
 
-    public boolean put( byte[] buf, int offset, int length ) {
+    public final boolean put( byte[] buf, int offset, int length ) {
         if( closed ) throw new IllegalStateException( "buffer is closed" );
         if( !available( length ) ) return false;
         System.arraycopy( buf, offset, this.data, this.position, length );
@@ -59,12 +59,12 @@ class Buffer implements Serializable {
         return true;
     }
 
-    public boolean putInt( int i ) {
+    public final boolean putInt( int i ) {
         return put( encodeInt( i ) );
     }
 
     private byte[] encodeInt( int i ) {
-        return new byte[]{
+        return new byte[] {
             ( byte ) ( ( i >>> 24 ) & 0xFF ),
             ( byte ) ( ( i >>> 16 ) & 0xFF ),
             ( byte ) ( ( i >>> 8 ) & 0xFF ),
@@ -72,12 +72,12 @@ class Buffer implements Serializable {
         };
     }
 
-    public boolean putLong( long v ) {
+    public final boolean putLong( long v ) {
         return put( encodeLong( v ) );
     }
 
     private byte[] encodeLong( long v ) {
-        return new byte[]{
+        return new byte[] {
             ( byte ) ( v >>> 56 ),
             ( byte ) ( v >>> 48 ),
             ( byte ) ( v >>> 40 ),
@@ -89,7 +89,7 @@ class Buffer implements Serializable {
         };
     }
 
-    public boolean putUTF( String str ) {
+    public final boolean putUTF( String str ) {
         int strlen = str.length();
         int utflen = 0;
         int c, count = 0;
@@ -116,7 +116,7 @@ class Buffer implements Serializable {
             buffer[count++] = ( byte ) c;
         }
 
-        for(; i < strlen; i++ ) {
+        for( ; i < strlen; i++ ) {
             c = str.charAt( i );
             if( ( c >= 0x0001 ) && ( c <= 0x007F ) ) {
                 buffer[count++] = ( byte ) c;
@@ -132,29 +132,29 @@ class Buffer implements Serializable {
         return put( buffer, 0, utflen + 2 );
     }
 
-    public boolean available( int length ) {
+    public final boolean available( int length ) {
         return this.position + length <= this.data.length;
     }
 
-    public byte[] data() {
+    public final byte[] data() {
         return this.data;
     }
 
-    public void reset( String selector ) {
+    public final void reset( String selector ) {
         this.closed = false;
         this.position = 0;
         initMetadata( selector );
     }
 
-    public boolean isEmpty() {
+    public final boolean isEmpty() {
         return dataLength() == 0;
     }
 
-    public int length() {
+    public final int length() {
         return position;
     }
 
-    public void close( long digestionId ) {
+    public final void close( long digestionId ) {
         this.closed = true;
         byte[] digestion = encodeLong( digestionId );
         byte[] length = encodeInt( dataLength() );
@@ -162,12 +162,16 @@ class Buffer implements Serializable {
         System.arraycopy( length, 0, this.data, 8, length.length );
     }
 
-    public int dataLength() {
+    public final int dataLength() {
         return position - dataStart;
     }
 
+    public final int headerLength() {
+        return dataStart;
+    }
+
     @Override
-    public String toString() {
+    public final String toString() {
         return ( selector + "," + position );
     }
 }
