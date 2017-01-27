@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 
 import java.io.Closeable;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -76,16 +77,32 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
         Files.ensureDirectory( path );
         List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
         log.debug( "found {} files", paths.size() );
+
         storage.data = paths
             .stream()
             .map( Try.map(
                 f -> {
-                    Persisted persisted = Persisted.valueOf( f );
+                    final Persisted persisted = Persisted.valueOf( f );
 
                     Path file = f;
-                    for( long v = persisted.version; v < this.version; v++ ) file = migration( file );
+                    for( long version = persisted.version; version < this.version; version++ ) {
+                        file = migration( file );
+                    }
 
-                    return ( Metadata<T> ) Binder.json.unmarshal( new TypeReference<Metadata<T>>() {}, file );
+                    final Metadata<T> unmarshal = Binder.json.unmarshal( new TypeReference<Metadata<T>>() {}, file );
+
+                    final Path newPath = filenameFor( unmarshal.object, this.version );
+
+                    if ( java.nio.file.Files.exists( f )
+                        && !java.nio.file.Files.isDirectory( f )
+                        && !newPath.toString().equals( f.toString() ) ) {
+
+                        Files.ensureDirectory( newPath );
+
+                        java.nio.file.Files.move( f, newPath, StandardCopyOption.REPLACE_EXISTING );
+                    }
+
+                    return unmarshal;
                 } ) )
             .sorted( reverseOrder() )
             .map( x -> __( x.id, x ) )
