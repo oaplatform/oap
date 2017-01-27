@@ -39,11 +39,19 @@ import java.util.function.Supplier;
 
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
    protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
-   protected Function<T, String> identify;
+   protected final Identifier<T> identifier;
    private List<DataListener<T>> dataListeners = new ArrayList<>();
 
+   /**
+    * @deprecated use {@link #MemoryStorage(IdentifierBuilder)} instead.
+    */
+   @Deprecated
    public MemoryStorage( Function<T, String> identify ) {
-      this.identify = identify;
+        this( IdentifierBuilder.identify( identify ) );
+   }
+
+   public MemoryStorage( IdentifierBuilder<T> identifierBuilder ) {
+       this.identifier = identifierBuilder.storage( this ).build();
    }
 
    @Override
@@ -53,7 +61,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
    @Override
    public void store( T object ) {
-      String id = this.identify.apply( object );
+      String id = identifier.getId( object );
       synchronized( id.intern() ) {
          Metadata<T> metadata = data.get( id );
          if( metadata != null ) metadata.update( object );
@@ -65,7 +73,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
    @Override
    public void store( Collection<T> objects ) {
       for( T object : objects ) {
-         String id = this.identify.apply( object );
+         String id = identifier.getId( object );
          synchronized( id.intern() ) {
             Metadata<T> metadata = data.get( id );
             if( metadata != null ) metadata.update( object );
@@ -95,7 +103,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
          if( m == null ) {
             if( init == null ) return Optional.empty();
             T object = init.get();
-            m = new Metadata<>( identify.apply( object ), object );
+            m = new Metadata<>( identifier.getId( object ), object );
             data.put( m.id, m );
          } else {
             update.accept( m.object );

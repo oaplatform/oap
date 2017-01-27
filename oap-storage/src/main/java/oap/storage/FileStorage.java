@@ -43,37 +43,93 @@ public class FileStorage<T> extends MemoryStorage<T> {
    private static final int VERSION = 0;
    private PersistenceBackend<T> persistence;
 
-
+   /**
+    * @deprecated use {@link #FileStorage(Path, IdentifierBuilder, long, int, List)}} instead.
+    */
+   @Deprecated
    public FileStorage( Path path, Function<T, String> identify, long fsync, int version, List<String> migrations ) {
-      this( path, ( p, object ) -> p, identify, fsync, version, migrations );
+      this( path, ( p, object ) -> p, IdentifierBuilder.identify( identify ), fsync, version, migrations );
    }
 
+   public FileStorage( Path path, IdentifierBuilder<T> identifierBuilder, long fsync, int version, List<String> migrations ) {
+      this( path, ( p, object ) -> p, identifierBuilder, fsync, version, migrations );
+   }
+
+   /**
+    * @deprecated use {@link #FileStorage(Path, BiFunction, IdentifierBuilder, long, int, List)}} instead.
+    */
+   @Deprecated
    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Function<T, String> identify,
                        long fsync, int version, List<String> migrations ) {
-      super( identify );
+      this(path, fsResolve, IdentifierBuilder.identify( identify ), fsync, version, migrations);
+   }
+
+   public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, IdentifierBuilder<T> identifierBuilder,
+                       long fsync, int version, List<String> migrations ) {
+      super( identifierBuilder );
       this.persistence = new FsPersistenceBackend<>( path, fsResolve, fsync, version, Lists.map( migrations,
          Try.map( clazz -> ( FileStorageMigration ) Class.forName( clazz ).newInstance() )
       ), this );
    }
 
+   /**
+    * @deprecated use {@link #FileStorage(Path, BiFunction, IdentifierBuilder, long)}} instead.
+    */
+   @Deprecated
    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Function<T, String> identify, long fsync ) {
-      this( path, fsResolve, identify, fsync, VERSION, empty() );
+      this( path, fsResolve, IdentifierBuilder.identify( identify ), fsync, VERSION, empty() );
    }
 
+   public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, IdentifierBuilder<T> identifierBuilder, long fsync ) {
+      this( path, fsResolve, identifierBuilder, fsync, VERSION, empty() );
+   }
+
+   /**
+    * @deprecated use {@link #FileStorage(Path , IdentifierBuilder, long )}} instead.
+    */
+   @Deprecated
    public FileStorage( Path path, Function<T, String> identify, long fsync ) {
-      this( path, identify, fsync, VERSION, empty() );
+      this( path, IdentifierBuilder.identify( identify ), fsync, VERSION, empty() );
    }
 
+   public FileStorage( Path path, IdentifierBuilder<T> identifierBuilder, long fsync ) {
+      this( path, identifierBuilder, fsync, VERSION, empty() );
+   }
+
+   /**
+    * @deprecated use {@link #FileStorage(Path, IdentifierBuilder)}} instead.
+    */
+   @Deprecated
    public FileStorage( Path path, Function<T, String> identify ) {
-      this( path, identify, VERSION, empty() );
+      this( path, IdentifierBuilder.identify( identify ), VERSION, empty() );
    }
 
+   public FileStorage( Path path, IdentifierBuilder<T> identifierBuilder ) {
+      this( path, identifierBuilder, VERSION, empty() );
+   }
+
+   /**
+    * @deprecated use {@link #FileStorage(Path, BiFunction , IdentifierBuilder , int version, List)}} instead.
+    */
+   @Deprecated
    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Function<T, String> identify, int version, List<String> migrations ) {
-      this( path, fsResolve, identify, 60000, version, migrations );
+      this( path, fsResolve, IdentifierBuilder.identify( identify ), 60000, version, migrations );
    }
 
+   public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, IdentifierBuilder<T> identifierBuilder, int version, List<String> migrations ) {
+      this( path, fsResolve, identifierBuilder, 60000, version, migrations );
+   }
+
+   /**
+    * @deprecated use {@link #FileStorage(Path, IdentifierBuilder, int, List)}} instead.
+    */
+   @Deprecated
    public FileStorage( Path path, Function<T, String> identify, int version, List<String> migrations ) {
-      this( path, identify, 60000, version, migrations );
+      this( path, IdentifierBuilder.identify( identify ), 60000, version, migrations );
+   }
+
+   public FileStorage( Path path, IdentifierBuilder<T> identifierBuilder, int version, List<String> migrations ) {
+      this( path, identifierBuilder, 60000, version, migrations );
    }
 
    @Override

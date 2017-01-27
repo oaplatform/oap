@@ -49,8 +49,16 @@ import static oap.util.Pair.__;
 public class LazyFileStorage<T> extends MemoryStorage<T> {
    private Path path;
 
+   /**
+    * @deprecated use {@link #LazyFileStorage(Path, IdentifierBuilder)}} instead.
+    */
+   @Deprecated
    public LazyFileStorage( Path path, Function<T, String> identify ) {
-      super( identify );
+      this( path, IdentifierBuilder.identify( identify ) );
+   }
+
+   public LazyFileStorage( Path path, IdentifierBuilder<T> identifierBuilder ) {
+      super( identifierBuilder );
       this.path = path;
    }
 
