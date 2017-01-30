@@ -44,99 +44,95 @@ import java.util.stream.Collectors;
  * Created by Igor Petrenko on 14.03.2016.
  */
 public class TypeIdFactory implements TypeIdResolver {
-   private final static ConcurrentHashMap<String, Class<?>> idToClass = new ConcurrentHashMap<>();
-   private final static ConcurrentHashMap<Class<?>, String> classToId = new ConcurrentHashMap<>();
-   private JavaType baseType;
+    private final static ConcurrentHashMap<String, Class<?>> idToClass = new ConcurrentHashMap<>();
+    private final static ConcurrentHashMap<Class<?>, String> classToId = new ConcurrentHashMap<>();
 
-   public static boolean containsId( String id ) {
-      return idToClass.containsKey( id );
-   }
+    static {
+        Resources.urls( "META-INF/json-mapping.properties" )
+            .forEach( url -> {
+                try( InputStream is = url.openStream() ) {
+                    final Properties properties = new Properties();
+                    properties.load( is );
+                    for( String key : properties.stringPropertyNames() ) {
+                        register( Class.forName( properties.getProperty( key ) ), key );
+                    }
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                } catch( ClassNotFoundException e ) {
+                    throw Throwables.propagate( e );
+                }
+            } );
+    }
 
-   public static boolean containsClass( Class<?> clazz ) {
-      return classToId.containsKey( clazz );
-   }
+    private JavaType baseType;
 
-   public static Class<?> get( String id ) {
-      return idToClass.get( id );
-   }
+    public static boolean containsId( String id ) {
+        return idToClass.containsKey( id );
+    }
 
-   public static void register( Class<?> bean, String id ) {
-      idToClass.put( id, bean );
-      classToId.put( bean, id );
-   }
+    public static boolean containsClass( Class<?> clazz ) {
+        return classToId.containsKey( clazz );
+    }
 
-   public static Set<String> keys() {
-      return idToClass.keySet();
-   }
+    public static Class<?> get( String id ) {
+        return idToClass.get( id );
+    }
 
-   public static Set<Class<?>> values() {
-      return classToId.keySet();
-   }
+    public static void register( Class<?> bean, String id ) {
+        idToClass.put( id, bean );
+        classToId.put( bean, id );
+    }
 
-   public static void clear() {
-      idToClass.clear();
-      classToId.clear();
-   }
+    public static Set<String> keys() {
+        return idToClass.keySet();
+    }
 
-   static {
-      Resources.urls( "META-INF/json-mapping.properties" )
-         .forEach( url -> {
-            try( InputStream is = url.openStream() ) {
-               final Properties properties = new Properties();
-               properties.load( is );
-               for( String key : properties.stringPropertyNames() ) {
-                  register( Class.forName( properties.getProperty( key ) ), key );
-               }
-            } catch( IOException e ) {
-               throw new UncheckedIOException( e );
-            } catch( ClassNotFoundException e ) {
-               throw Throwables.propagate( e );
-            }
-         } );
-   }
+    public static Set<Class<?>> values() {
+        return classToId.keySet();
+    }
 
-   @Override
-   public void init( JavaType baseType ) {
-      this.baseType = baseType;
-   }
+    public static void clear() {
+        idToClass.clear();
+        classToId.clear();
+    }
 
-   @Override
-   public String idFromValue( Object value ) {
-      return idFromValueAndType( value, value.getClass() );
-   }
+    @Override
+    public void init( JavaType baseType ) {
+        this.baseType = baseType;
+    }
 
-   @Override
-   public String idFromValueAndType( Object value, Class<?> suggestedType ) {
-      return classToId.computeIfAbsent( suggestedType, ( k ) -> {
-         throw new IllegalStateException( "cannot find class '" + k + "'" );
-      } );
-   }
+    @Override
+    public String idFromValue( Object value ) {
+        return idFromValueAndType( value, value.getClass() );
+    }
 
-   @Override
-   public String idFromBaseType() {
-      return idFromValueAndType( null, baseType.getRawClass() );
-   }
+    @Override
+    public String idFromValueAndType( Object value, Class<?> suggestedType ) {
+        return classToId.computeIfAbsent( suggestedType, ( k ) -> {
+            throw new IllegalStateException( "cannot find class '" + k + "'" );
+        } );
+    }
 
-   @Override
-   public JavaType typeFromId( String id ) {
-      final Class<?> clazz = idToClass.computeIfAbsent( id, ( k ) -> {
-         throw new IllegalStateException( "cannot find id '" + k + "'" );
-      } );
-      return TypeFactory.defaultInstance().constructSpecializedType( baseType, clazz );
-   }
+    @Override
+    public String idFromBaseType() {
+        return idFromValueAndType( null, baseType.getRawClass() );
+    }
 
-   @Override
-   public JavaType typeFromId( DatabindContext context, String id ) {
-      return typeFromId( id );
-   }
+    @Override
+    public JavaType typeFromId( DatabindContext context, String id ) {
+        final Class<?> clazz = idToClass.computeIfAbsent( id, ( k ) -> {
+            throw new IllegalStateException( "cannot find id '" + k + "'" );
+        } );
+        return TypeFactory.defaultInstance().constructSpecializedType( baseType, clazz );
+    }
 
-   @Override
-   public String getDescForKnownTypeIds() {
-      return idToClass.keySet().stream().collect( Collectors.joining( "," ) );
-   }
+    @Override
+    public String getDescForKnownTypeIds() {
+        return idToClass.keySet().stream().collect( Collectors.joining( "," ) );
+    }
 
-   @Override
-   public JsonTypeInfo.Id getMechanism() {
-      return JsonTypeInfo.Id.CLASS;
-   }
+    @Override
+    public JsonTypeInfo.Id getMechanism() {
+        return JsonTypeInfo.Id.CLASS;
+    }
 }
