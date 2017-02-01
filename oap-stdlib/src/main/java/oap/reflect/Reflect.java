@@ -23,6 +23,7 @@
  */
 package oap.reflect;
 
+import com.google.common.base.Preconditions;
 import com.google.common.reflect.TypeToken;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
@@ -32,6 +33,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static java.lang.String.format;
 
 public class Reflect {
 
@@ -102,7 +105,7 @@ public class Reflect {
 
         Object next = object;
         for( int i = 0; i < split.length - 1; i++ ) {
-            if( next == null ) break;
+            Preconditions.checkState( next != null, format("Path [%s] contains nullable objects", path ) );
 
             final Object instance = next;
             next = reflect( next.getClass() )
@@ -111,12 +114,14 @@ public class Reflect {
                 .map( v -> v instanceof Optional ? ( ( Optional ) v ).orElse( null ) : v )
                 .orElse( null );
         }
-        if( next == null ) return;
+        Preconditions.checkState( next != null, format("Path [%s] contains nullable objects", path ) );
 
         final MutableObject<Object> mutableObject = new MutableObject<>( next );
         reflect( next.getClass() )
             .field( split[split.length - 1] )
-            .ifPresent( f -> f.set( mutableObject.getValue(), value ) );
+            .ifPresent( f -> f.set( mutableObject.getValue(),
+                    f.type().isOptional() ? Optional.ofNullable( value ) : value )
+            );
     }
 
 //    unapply - check possibility to parameterize with Function to pass parameters from class.

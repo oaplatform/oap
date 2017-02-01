@@ -29,6 +29,7 @@ import oap.reflect.Reflect;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -40,7 +41,6 @@ public final class IdentifierBuilder<T> {
     private final BiConsumer<T, String> setId;
 
     private Function<T, String> suggestion;
-    private MemoryStorage<T> memoryStorage;
 
     private int size = DEFAULT_ID_SIZE;
 
@@ -56,7 +56,7 @@ public final class IdentifierBuilder<T> {
      * @param idPath - path in object to look for existing identifier and generate it in case its null
      * @param <T> - object type
      *
-     * @return instance of current builder
+     * @return instance of the current builder
      */
     @Nonnull
     public static <T> IdentifierBuilder<T> identityPath( @Nonnull final String idPath ) {
@@ -74,7 +74,7 @@ public final class IdentifierBuilder<T> {
      * @param identity - existing identifier
      * @param <T> - object type
      *
-     * @return instance of current builder
+     * @return instance of the current builder
      */
     @Nonnull
     public static <T> IdentifierBuilder<T> identify( @Nonnull final Function<T, String> identity ) {
@@ -88,7 +88,7 @@ public final class IdentifierBuilder<T> {
      *
      * @param suggestion - base string for identifier generation
      *
-     * @return instance of current builder
+     * @return instance of the current builder
      */
     @Nonnull
     public IdentifierBuilder<T> suggestion( @Nonnull final Function<T, String> suggestion ) {
@@ -102,7 +102,7 @@ public final class IdentifierBuilder<T> {
      *
      * @param size - desired identifier size
      *
-     * @return instance of current builder
+     * @return instance of the current builder
      */
     @Nonnull
     public IdentifierBuilder<T> size( final int size ) {
@@ -113,14 +113,23 @@ public final class IdentifierBuilder<T> {
     }
 
     @Nonnull
-    IdentifierBuilder<T> storage( @Nonnull final MemoryStorage<T> memoryStorage ) {
-        this.memoryStorage = Objects.requireNonNull( memoryStorage, "memory storage must not be null" );
-
-        return this;
+    public <T1 extends T> Identifier<T1> build() {
+        return new DefaultIdentifier<>( this );
     }
 
-    @Nonnull
-    Identifier<T> build() {
-        return new LocalIdentifier<>( memoryStorage, suggestion, getId, setId, size );
+    Function<T, String> getIdentityFunction() {
+        return getId;
+    }
+
+    BiConsumer<T, String> getSetIdFunction() {
+        return setId;
+    }
+
+    Optional<Function<T, String>> getSuggestion() {
+        return Optional.ofNullable( suggestion );
+    }
+
+    int getSize() {
+        return size;
     }
 }

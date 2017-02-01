@@ -53,15 +53,15 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
    private AtomicBoolean modified = new AtomicBoolean( false );
 
    /**
-    * @deprecated use {@link #SingleFileStorage(Path, IdentifierBuilder, long)} instead.
+    * @deprecated use {@link #SingleFileStorage(Path, Identifier, long)} instead.
     */
    @Deprecated
    public SingleFileStorage( Path path, Function<T, String> identify, long fsync ) {
-      this(path, IdentifierBuilder.identify( identify ), fsync);
+      this(path, IdentifierBuilder.identify( identify ).build(), fsync);
    }
 
-   public SingleFileStorage( Path path, IdentifierBuilder<T> identifierBuilder, long fsync ) {
-      super( identifierBuilder );
+   public SingleFileStorage( Path path, Identifier<T> identifier, long fsync ) {
+      super( identifier );
       this.path = path;
 
       load();

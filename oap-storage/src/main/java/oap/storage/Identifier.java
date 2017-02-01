@@ -26,5 +26,7 @@ package oap.storage;
 
 public interface Identifier<T> {
 
-    String getId( T object );
+    String getOrInit( T object, Storage<T> storage );
+
+    String get( T object );
 }

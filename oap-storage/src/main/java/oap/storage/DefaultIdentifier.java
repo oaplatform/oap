@@ -26,36 +26,39 @@ package oap.storage;
 
 import com.google.common.base.Preconditions;
 
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import static java.lang.String.format;
 
-final class LocalIdentifier<T> implements Identifier<T> {
+public final class DefaultIdentifier<T> implements Identifier<T> {
 
     private static final UnaryOperator<String> REPLACE_SPECIAL = id -> id.replaceAll( "[^a-zA-Z0-9]+", "" );
     private static final UnaryOperator<String> REPLACE_VOWELS = id -> id.replaceAll( "[AEIOUaeiou]", "" );
 
-    private final Function<T, String> getId;
-    private final BiConsumer<T, String> setId;
-    private final Function<T, String> suggestion;
-    private final MemoryStorage<T> memoryStorage;
+    private final Function<? super T, String> getId;
+    private final BiConsumer<? super T, String> setId;
+    private final Function<? super T, String> suggestion;
     private final int size;
 
-    LocalIdentifier( final MemoryStorage<T> memoryStorage, final Function<T, String> suggestion,
-                     final Function<T, String> getId, final BiConsumer<T, String> setId,
-                     final int size ) {
-        this.suggestion = suggestion == null ? null : suggestion.andThen( REPLACE_SPECIAL ).andThen( REPLACE_VOWELS );
-        this.size = size;
-        this.memoryStorage = Objects.requireNonNull( memoryStorage, "memory storage must not be null" );
-        this.getId = getId;
-        this.setId = setId;
+    DefaultIdentifier( final IdentifierBuilder<? super T> identifierBuilder ) {
+        this.size = identifierBuilder.getSize();
+        this.getId = identifierBuilder.getIdentityFunction();
+        this.setId = identifierBuilder.getSetIdFunction();
+
+        this.suggestion = identifierBuilder.getSuggestion()
+            .map( suggestion -> suggestion.andThen( REPLACE_SPECIAL ).andThen( REPLACE_VOWELS ) )
+            .orElse( null );
     }
 
     @Override
-    public String getId( final T object ) {
+    public String get( T object ) {
+        return getId.apply( object );
+    }
+
+    @Override
+    public synchronized String getOrInit( final T object, final Storage<T> storage ) {
         String id = getId.apply( object );
 
         if( id == null ) {
@@ -64,7 +67,7 @@ final class LocalIdentifier<T> implements Identifier<T> {
             Preconditions.checkState( setId != null, "Set of nullable identifier is not " +
                 "specified" );
 
-            id = suggestion.apply( object );
+            id = suggestion.apply( object ).toUpperCase();
 
             if( id.length() > size ) {
                 id = id.substring( 0, size );
@@ -74,9 +77,7 @@ final class LocalIdentifier<T> implements Identifier<T> {
                 }
             }
 
-            synchronized( memoryStorage ) {
-                id = resolveConflicts( id );
-            }
+            id = resolveConflicts( id, storage );
 
             setId.accept( object, id );
         }
@@ -84,18 +85,18 @@ final class LocalIdentifier<T> implements Identifier<T> {
         return id;
     }
 
-    private String resolveConflicts( final String newId ) {
+    private String resolveConflicts( final String newId, final Storage<T> storage ) {
         String uniqueId = newId;
 
         int currentIdChar = uniqueId.length() - 1;
-        while( identifierExists( uniqueId ) ) {
+        while( identifierExists( storage, uniqueId ) ) {
             if( currentIdChar != -1 ) {
                 for( char symbol = 48; symbol < 122; symbol++ ) {
                     if( ( symbol > 57 && symbol < 65 ) || ( symbol > 91 && symbol < 97 ) ) {
                         continue;
                     }
 
-                    if( identifierExists( uniqueId ) ) {
+                    if( identifierExists( storage, uniqueId ) ) {
                         final char[] chars = uniqueId.toCharArray();
 
                         chars[currentIdChar] = symbol;
@@ -109,7 +110,7 @@ final class LocalIdentifier<T> implements Identifier<T> {
                 currentIdChar--;
             } else {
                 throw new RuntimeException( format( "Couldn't generate non-duplicated id for following set up: " +
-                        "storage size - [%s]; required id size - [%s]; last id tried - [%s]", memoryStorage.size(),
+                        "storage size - [%s]; required id size - [%s]; last id tried - [%s]", storage.size(),
                     size, uniqueId ) );
             }
         }
@@ -117,8 +118,8 @@ final class LocalIdentifier<T> implements Identifier<T> {
         return uniqueId;
     }
 
-    private boolean identifierExists( final String identifier ) {
-        return memoryStorage.ids().stream().anyMatch( id -> id.equals( identifier ) );
+    private boolean identifierExists( final Storage<T> storage, final String identifier ) {
+        return storage.get( identifier ).isPresent();
     }
 
 }

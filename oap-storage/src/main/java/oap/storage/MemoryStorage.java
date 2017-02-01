@@ -43,15 +43,15 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
    private List<DataListener<T>> dataListeners = new ArrayList<>();
 
    /**
-    * @deprecated use {@link #MemoryStorage(IdentifierBuilder)} instead.
+    * @deprecated use {@link #MemoryStorage(Identifier)} instead.
     */
    @Deprecated
    public MemoryStorage( Function<T, String> identify ) {
-        this( IdentifierBuilder.identify( identify ) );
+        this( IdentifierBuilder.identify( identify ).build() );
    }
 
-   public MemoryStorage( IdentifierBuilder<T> identifierBuilder ) {
-       this.identifier = identifierBuilder.storage( this ).build();
+   public MemoryStorage( Identifier<T> identifier ) {
+       this.identifier = identifier;
    }
 
    @Override
@@ -61,7 +61,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
    @Override
    public void store( T object ) {
-      String id = identifier.getId( object );
+      String id = identifier.getOrInit( object, this );
       synchronized( id.intern() ) {
          Metadata<T> metadata = data.get( id );
          if( metadata != null ) metadata.update( object );
@@ -73,7 +73,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
    @Override
    public void store( Collection<T> objects ) {
       for( T object : objects ) {
-         String id = identifier.getId( object );
+         String id = identifier.getOrInit( object, this );
          synchronized( id.intern() ) {
             Metadata<T> metadata = data.get( id );
             if( metadata != null ) metadata.update( object );
@@ -103,7 +103,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
          if( m == null ) {
             if( init == null ) return Optional.empty();
             T object = init.get();
-            m = new Metadata<>( identifier.getId( object ), object );
+            m = new Metadata<>( id, object );
             data.put( m.id, m );
          } else {
             update.accept( m.object );
