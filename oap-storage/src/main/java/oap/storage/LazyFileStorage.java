@@ -48,6 +48,7 @@ import static oap.util.Pair.__;
 @Slf4j
 public class LazyFileStorage<T> extends MemoryStorage<T> {
    private Path path;
+   private boolean closed = true;
 
    public LazyFileStorage( Path path, Function<T, String> identify ) {
       super( identify );
@@ -121,17 +122,20 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
             .map( x -> __( x.id, x ) )
             .collect( toConcurrentMap() );
       }
+      closed = false;
       log.info( data.size() + " object(s) loaded." );
    }
 
    @Override
    public synchronized void close() {
+      if ( closed ) return;
       final Path tmpPath = path.resolveSibling( path.getFileName() + ".tmp" );
       log.debug( "storing {}...", tmpPath );
       Binder.json.marshal( IoStreams.out( tmpPath, IoStreams.Encoding.from( path ) ), data.values() );
       Files.rename( tmpPath, path );
       log.debug( "storing {}... done", path );
       data.clear();
+      closed = true;
    }
 
 }
