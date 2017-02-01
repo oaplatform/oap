@@ -121,8 +121,8 @@ public final class IdentifierBuilder<T> {
         return getId;
     }
 
-    BiConsumer<T, String> getSetIdFunction() {
-        return setId;
+    Optional<BiConsumer<T, String>> getSetIdFunction() {
+        return Optional.ofNullable( setId );
     }
 
     Optional<Function<T, String>> getSuggestion() {

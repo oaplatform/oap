@@ -44,8 +44,9 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
 
     DefaultIdentifier( final IdentifierBuilder<? super T> identifierBuilder ) {
         this.size = identifierBuilder.getSize();
+
         this.getId = identifierBuilder.getIdentityFunction();
-        this.setId = identifierBuilder.getSetIdFunction();
+        this.setId = identifierBuilder.getSetIdFunction().orElse( null );
 
         this.suggestion = identifierBuilder.getSuggestion()
             .map( suggestion -> suggestion.andThen( REPLACE_SPECIAL ).andThen( REPLACE_VOWELS ) )
