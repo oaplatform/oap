@@ -25,6 +25,7 @@
 package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
@@ -33,6 +34,7 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
 
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Iterator;
@@ -65,7 +67,8 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
       Files.ensureFile( path );
 
       if( java.nio.file.Files.exists( path ) ) {
-         data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {}, path )
+         data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
+         }, path )
             .stream()
             .map( x -> __( x.id, x ) )
             .collect( toConcurrentMap() );
@@ -73,26 +76,30 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
       log.info( data.size() + " object(s) loaded." );
    }
 
+   @SneakyThrows
    private synchronized void fsync( long last ) {
       log.trace( "fsync: last: {}, storage size: {}", last, data.size() );
 
       if( modified.getAndSet( false ) ) {
          final Path tmpPath = path.resolveSibling( path.getFileName() + ".tmp" );
          log.debug( "fsync storing {}...", tmpPath );
-         StringBuilder sb = new StringBuilder(  ).append( "[" );
+
+         OutputStream out = IoStreams.out( tmpPath, IoStreams.Encoding.from( path ) );
+         out.write( "[".getBytes() );
 
          Iterator<Metadata<T>> it = data.values().iterator();
-         while( it.hasNext() ){
+         while( it.hasNext() ) {
             Metadata<T> metadata = it.next();
-            synchronized( metadata.id.intern() ){
-               sb.append( Binder.json.marshal( metadata ) );
+            synchronized( metadata.id.intern() ) {
+               out.write( Binder.json.marshal( metadata ).getBytes() );
             }
-            if (it.hasNext()){
-               sb.append( "," );
+            if( it.hasNext() ) {
+               out.write( ",".getBytes() );
             }
          }
 
-         Files.writeString( tmpPath, IoStreams.Encoding.from( path ), sb.append( "]" ).toString() );
+         out.write( "]".getBytes() );
+         out.close();
          Files.rename( tmpPath, path );
          log.debug( "fsync storing {}... done", path );
       }
