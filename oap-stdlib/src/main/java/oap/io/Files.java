@@ -47,6 +47,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
+import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -301,6 +302,16 @@ public final class Files {
     public static void ensureDirectory( Path path ) {
         try {
             java.nio.file.Files.createDirectories( path );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static void move( Path source, Path target, CopyOption... options ) {
+        try {
+            Files.ensureDirectory( target );
+
+            java.nio.file.Files.move( source, target, options );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }

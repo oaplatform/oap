@@ -93,6 +93,31 @@ public class FileStorageTest extends AbstractTest {
    }
 
    @Test
+   public void restructureFsLayout() {
+      final Path data = tmpPath( "data" );
+      try( FileStorage<Bean> storage1 = new FileStorage<>( data, b -> b.id, 50 ) ) {
+         storage1.store( new Bean( "1", "aaa" ) );
+         storage1.store( new Bean( "2", "bbb") );
+      }
+
+      assertFile( data.resolve( "aaa/1.json" ) ).doesNotExist();
+      assertFile( data.resolve( "bbb/2.json" ) ).doesNotExist();
+
+      assertFile( data.resolve( "1.json" ) ).exists();
+      assertFile( data.resolve( "2.json" ) ).exists();
+
+      try( FileStorage<Bean> storage2 = new FileStorage<>( data, ( p, o ) -> p.resolve( o.s ), b -> b.id, 50 ) ) {
+         assertThat( storage2.select() ).containsExactly( new Bean( "1", "aaa" ), new Bean( "2", "bbb" ) );
+
+         assertFile( data.resolve( "aaa/1.json" ) ).exists();
+         assertFile( data.resolve( "bbb/2.json" ) ).exists();
+
+         assertFile( data.resolve( "1.json" ) ).doesNotExist();
+         assertFile( data.resolve( "2.json" ) ).doesNotExist();
+      }
+   }
+
+   @Test
    public void storeAndUpdate() {
       try( FileStorage<Bean> storage = new FileStorage<>( tmpPath( "data" ), b -> b.id, 50 ) ) {
          storage.store( new Bean( "111" ) );
