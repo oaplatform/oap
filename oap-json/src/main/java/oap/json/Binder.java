@@ -105,6 +105,7 @@ public class Binder {
         mapper.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
         mapper.disable( SerializationFeature.WRITE_EMPTY_JSON_ARRAYS );
         mapper.disable( SerializationFeature.FAIL_ON_EMPTY_BEANS );
+        mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
         mapper.registerModule( new OapJsonModule() );

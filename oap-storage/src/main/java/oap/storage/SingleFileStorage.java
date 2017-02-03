@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
+import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
 
@@ -53,6 +54,11 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
    private final PeriodicScheduled scheduled;
    private Path path;
    private AtomicBoolean modified = new AtomicBoolean( false );
+
+   private final static byte[] BEGIN_ARRAY = "[".getBytes();
+   private final static byte[] END_ARRAY = "]".getBytes();
+   private final static byte[] ITEM_SEP = ",".getBytes();
+
 
    public SingleFileStorage( Path path, Function<T, String> identify, long fsync ) {
       super( identify );
@@ -81,26 +87,24 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
       log.trace( "fsync: last: {}, storage size: {}", last, data.size() );
 
       if( modified.getAndSet( false ) ) {
-         final Path tmpPath = path.resolveSibling( path.getFileName() + ".tmp" );
-         log.debug( "fsync storing {}...", tmpPath );
+         log.debug( "fsync storing {}...", path );
 
-         OutputStream out = IoStreams.out( tmpPath, IoStreams.Encoding.from( path ) );
-         out.write( "[".getBytes() );
+         OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), DEFAULT_BUFFER, false, true );
+         out.write( BEGIN_ARRAY );
 
          Iterator<Metadata<T>> it = data.values().iterator();
          while( it.hasNext() ) {
             Metadata<T> metadata = it.next();
             synchronized( metadata.id.intern() ) {
-               out.write( Binder.json.marshal( metadata ).getBytes() );
+               Binder.json.marshal( out, metadata );
             }
             if( it.hasNext() ) {
-               out.write( ",".getBytes() );
+               out.write( ITEM_SEP );
             }
          }
+         out.write( END_ARRAY );
 
-         out.write( "]".getBytes() );
          out.close();
-         Files.rename( tmpPath, path );
          log.debug( "fsync storing {}... done", path );
       }
    }
