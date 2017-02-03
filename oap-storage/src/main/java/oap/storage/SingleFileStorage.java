@@ -60,8 +60,16 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
    private final static byte[] ITEM_SEP = ",".getBytes();
 
 
+   /**
+    * @deprecated use {@link #SingleFileStorage(Path, Identifier, long)} instead.
+    */
+   @Deprecated
    public SingleFileStorage( Path path, Function<T, String> identify, long fsync ) {
-      super( identify );
+      this(path, IdentifierBuilder.identify( identify ).build(), fsync);
+   }
+
+   public SingleFileStorage( Path path, Identifier<T> identifier, long fsync ) {
+      super( identifier );
       this.path = path;
 
       load();

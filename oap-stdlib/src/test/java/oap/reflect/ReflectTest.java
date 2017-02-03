@@ -129,6 +129,24 @@ public class ReflectTest extends AbstractTest {
     }
 
     @Test
+    public void set() {
+        final DeepBean deepBean = new DeepBean();
+        final Bean bean = new Bean();
+
+        assertEquals( Reflect.get( deepBean, "bean.str" ), "aaa" );
+        assertEquals( Reflect.get( bean, "optional" ), Optional.empty().orElse( null ) );
+        assertEquals( Reflect.get( bean, "i" ), new Integer( 10 ) );
+
+        Reflect.set( deepBean, "bean.str", "new string" );
+        Reflect.set( bean, "optional", "optional present" );
+        Reflect.set( bean, "i", 42 );
+
+        assertEquals( Reflect.get( deepBean, "bean.str" ), "new string" );
+        assertEquals( Reflect.get( bean, "i" ), new Integer( 42 ) );
+        assertEquals( Reflect.get( bean, "optional" ), "optional present" );
+    }
+
+    @Test
     public void constructor() {
         assertThatExceptionOfType( ReflectException.class )
             .isThrownBy( () -> Reflect.reflect( MatchingConstructor.class ).newInstance( Maps.empty() ) )
@@ -168,6 +186,7 @@ class Bean {
     int x = 1;
     String str = "aaa";
     List<String> l;
+    Optional<String> optional = Optional.empty();
 
     public Bean() {
         this( 10 );
