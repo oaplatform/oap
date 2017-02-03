@@ -25,6 +25,7 @@
 package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
@@ -33,6 +34,7 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
 
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Iterator;
@@ -40,6 +42,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
+import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
 
@@ -51,6 +54,11 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
    private final PeriodicScheduled scheduled;
    private Path path;
    private AtomicBoolean modified = new AtomicBoolean( false );
+
+   private final static byte[] BEGIN_ARRAY = "[".getBytes();
+   private final static byte[] END_ARRAY = "]".getBytes();
+   private final static byte[] ITEM_SEP = ",".getBytes();
+
 
    /**
     * @deprecated use {@link #SingleFileStorage(Path, Identifier, long)} instead.
@@ -73,7 +81,8 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
       Files.ensureFile( path );
 
       if( java.nio.file.Files.exists( path ) ) {
-         data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {}, path )
+         data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
+         }, path )
             .stream()
             .map( x -> __( x.id, x ) )
             .collect( toConcurrentMap() );
@@ -81,27 +90,29 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
       log.info( data.size() + " object(s) loaded." );
    }
 
+   @SneakyThrows
    private synchronized void fsync( long last ) {
       log.trace( "fsync: last: {}, storage size: {}", last, data.size() );
 
       if( modified.getAndSet( false ) ) {
-         final Path tmpPath = path.resolveSibling( path.getFileName() + ".tmp" );
-         log.debug( "fsync storing {}...", tmpPath );
-         StringBuilder sb = new StringBuilder(  ).append( "[" );
+         log.debug( "fsync storing {}...", path );
+
+         OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), DEFAULT_BUFFER, false, true );
+         out.write( BEGIN_ARRAY );
 
          Iterator<Metadata<T>> it = data.values().iterator();
-         while( it.hasNext() ){
+         while( it.hasNext() ) {
             Metadata<T> metadata = it.next();
-            synchronized( metadata.id.intern() ){
-               sb.append( Binder.json.marshal( metadata ) );
+            synchronized( metadata.id.intern() ) {
+               Binder.json.marshal( out, metadata );
             }
-            if (it.hasNext()){
-               sb.append( "," );
+            if( it.hasNext() ) {
+               out.write( ITEM_SEP );
             }
          }
+         out.write( END_ARRAY );
 
-         Files.writeString( tmpPath, IoStreams.Encoding.from( path ), sb.append( "]" ).toString() );
-         Files.rename( tmpPath, path );
+         out.close();
          log.debug( "fsync storing {}... done", path );
       }
    }

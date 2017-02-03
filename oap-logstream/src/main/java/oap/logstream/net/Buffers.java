@@ -28,7 +28,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.io.Files;
-import oap.logstream.net.BufferConfigurationList.BufferConfiguration;
+import oap.logstream.net.BufferConfigurationMap.BufferConfiguration;
 import oap.metrics.Metrics;
 
 import java.io.Closeable;
@@ -53,12 +53,12 @@ public class Buffers implements Closeable {
     //    private final int bufferSize;
     private final ConcurrentHashMap<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, BufferConfiguration> configurationForSelector = new ConcurrentHashMap<>();
-    private final BufferConfigurationList configurations;
+    private final BufferConfigurationMap configurations;
     ReadyQueue readyBuffers = new ReadyQueue();
     BufferCache cache;
     private boolean closed;
 
-    public Buffers( Path location, BufferConfigurationList configurations ) {
+    public Buffers( Path location, BufferConfigurationMap configurations ) {
         this.location = location;
         this.configurations = configurations;
         this.cache = new BufferCache();
@@ -97,8 +97,8 @@ public class Buffers implements Closeable {
     }
 
     private BufferConfiguration findConfiguration( String selection ) {
-        for( val conf : configurations ) {
-            if( conf.pattern.matcher( selection ).find() ) return conf;
+        for( val conf : configurations.entrySet() ) {
+            if( conf.getValue().pattern.matcher( selection ).find() ) return conf.getValue();
         }
         throw new IllegalStateException( "Pattern for " + selection + " not found" );
     }

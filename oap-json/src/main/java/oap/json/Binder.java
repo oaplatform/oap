@@ -40,6 +40,7 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
@@ -64,14 +65,15 @@ import java.util.Map;
 
 @Slf4j
 public class Binder {
-    private static final JacksonJodaDateFormat JACKSON_DATE_FORMAT = new JacksonJodaDateFormat( Dates.FORMAT_FULL );
-
     public static final Binder hocon =
         new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false ) );
     public static final Binder hoconWithoutSystemProperties =
         new Binder( initialize( new ObjectMapper( new HoconFactory() ), false ) );
     public static final Binder json = new Binder( initialize( new ObjectMapper(), false ) );
-    public static final Binder jsonWithTyping = new Binder( initialize( new ObjectMapper(), true ) );
+    public static final Binder jsonWithTyping = new Binder( initialize( new ObjectMapper(), false ) );
+    public static final Binder xml = new Binder( initialize( new XmlMapper(), false ) );
+    public static final Binder xmlWithTyping = new Binder( initialize( new XmlMapper(), true ) );
+    private static final JacksonJodaDateFormat JACKSON_DATE_FORMAT = new JacksonJodaDateFormat( Dates.FORMAT_FULL );
     private ObjectMapper mapper;
 
     public Binder( ObjectMapper mapper ) {
@@ -87,6 +89,9 @@ public class Binder {
     }
 
     private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping ) {
+        if( mapper instanceof XmlMapper ) {
+            ( ( XmlMapper ) mapper ).setDefaultUseWrapper( false );
+        }
         AnnotationIntrospector introspector = new JacksonAnnotationIntrospector();
         mapper.getDeserializationConfig().with( introspector );
         mapper.getSerializationConfig().with( introspector );
@@ -100,6 +105,7 @@ public class Binder {
         mapper.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
         mapper.disable( SerializationFeature.WRITE_EMPTY_JSON_ARRAYS );
         mapper.disable( SerializationFeature.FAIL_ON_EMPTY_BEANS );
+        mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
         mapper.registerModule( new OapJsonModule() );

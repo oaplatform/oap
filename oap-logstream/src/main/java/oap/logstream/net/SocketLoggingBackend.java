@@ -55,28 +55,28 @@ public class SocketLoggingBackend implements LoggingBackend {
     private boolean closed = false;
 
     public SocketLoggingBackend( String host, int port, Path location, int bufferSize, long flushInterval ) {
-        this( host, port, location, BufferConfigurationList.DEFAULT( bufferSize ), flushInterval );
+        this( host, port, location, BufferConfigurationMap.DEFAULT( bufferSize ), flushInterval );
     }
 
-    public SocketLoggingBackend( String host, int port, Path location, BufferConfigurationList configurations, long flushInterval ) {
+    public SocketLoggingBackend( String host, int port, Path location, BufferConfigurationMap configurations, long flushInterval ) {
         this.host = host;
         this.port = port;
         this.buffers = new Buffers( location, configurations );
         this.scheduled = Scheduler.scheduleWithFixedDelay( flushInterval, TimeUnit.MILLISECONDS, this::send );
-        configurations.forEach( conf -> Metrics.measureGauge(
+        configurations.forEach( ( name, conf ) -> Metrics.measureGauge(
             Metrics
                 .name( "logging.buffers_cache" )
                 .tag( "host", host )
-                .tag( "configuration", conf.name ),
+                .tag( "configuration", name ),
             () -> buffers.cache.size( conf.bufferSize )
         ) );
     }
 
     public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
-        this( host, port, location, BufferConfigurationList.DEFAULT( bufferSize ) );
+        this( host, port, location, BufferConfigurationMap.DEFAULT( bufferSize ) );
     }
 
-    public SocketLoggingBackend( String host, int port, Path location, BufferConfigurationList configurations ) {
+    public SocketLoggingBackend( String host, int port, Path location, BufferConfigurationMap configurations ) {
         this( host, port, location, configurations, 5000 );
     }
 

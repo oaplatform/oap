@@ -27,11 +27,11 @@ package oap.logstream.net;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.val;
+import oap.util.Pair;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -39,33 +39,37 @@ import java.util.regex.Pattern;
  */
 @ToString( callSuper = true )
 @EqualsAndHashCode( callSuper = true )
-public final class BufferConfigurationList extends ArrayList<BufferConfigurationList.BufferConfiguration> {
+public final class BufferConfigurationMap extends HashMap<String, BufferConfigurationMap.BufferConfiguration> {
     private static final Pattern ALL = Pattern.compile( ".*" );
 
-    private BufferConfigurationList() {
+    private BufferConfigurationMap() {
     }
 
-    private BufferConfigurationList( BufferConfiguration bufferConfiguration ) {
-        super( Collections.singletonList( bufferConfiguration ) );
+    private BufferConfigurationMap( String name, BufferConfiguration bufferConfiguration ) {
+        put( name, bufferConfiguration );
     }
 
-    private BufferConfigurationList( Collection<BufferConfiguration> c ) {
-        super( c );
+    public BufferConfigurationMap( Map<String, BufferConfiguration> m ) {
+        super( m );
     }
 
-    static BufferConfigurationList DEFAULT( int bufferSize ) {
-        return new BufferConfigurationList( new BufferConfiguration( "DEFAULT", bufferSize, ALL ) );
+    static BufferConfigurationMap DEFAULT( int bufferSize ) {
+        return new BufferConfigurationMap( "DEFAULT", new BufferConfiguration( bufferSize, ALL ) );
     }
 
-    public static BufferConfigurationList custom( BufferConfiguration... bufferConfiguration ) {
-        return new BufferConfigurationList( Arrays.asList( bufferConfiguration ) );
+    @SafeVarargs
+    public static BufferConfigurationMap custom( Pair<String, BufferConfiguration>... bufferConfiguration ) {
+        final BufferConfigurationMap bufferConfigurationMap = new BufferConfigurationMap();
+        for( val p : bufferConfiguration ) {
+            bufferConfigurationMap.put( p._1, p._2 );
+        }
+        return bufferConfigurationMap;
     }
 
     @ToString
     @EqualsAndHashCode
     @AllArgsConstructor
     public static final class BufferConfiguration {
-        public final String name;
         public final int bufferSize;
         public final Pattern pattern;
     }

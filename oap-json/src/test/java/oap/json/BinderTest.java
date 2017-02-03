@@ -64,6 +64,18 @@ public class BinderTest extends AbstractTest {
         assertThat( result ).isEqualTo( source );
     }
 
+    //todo generic map-list binding
+    private static <T> void assertBindXml( Class<T> clazz, T source ) {
+        System.out.println( "========================================" );
+        String json = Binder.xml.marshal( source );
+        System.out.println( "XML:" );
+        System.out.println( json );
+        T result = Binder.xml.unmarshal( clazz, json );
+        System.out.println( "Object:" );
+        System.out.println( result );
+        assertThat( result ).isEqualTo( source );
+    }
+
     private static <T> void assertBindWithTyping( Class<T> clazz, T source ) {
         System.out.println( "========================================" );
         String json = Binder.jsonWithTyping.marshal( source );
@@ -193,6 +205,13 @@ public class BinderTest extends AbstractTest {
         assertBind( MapBean.class, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
         assertString( Binder.json.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ) )
             .isEqualTo( "{\"map\":{\"a\":1,\"b\":2}}" );
+    }
+
+    @Test
+    public void bindMap_xml() {
+        assertBindXml( MapBean.class, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
+        assertString( Binder.xml.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ) )
+            .isEqualTo( "<MapBean><map><a>1</a><b>2</b></map></MapBean>" );
     }
 
     @Test

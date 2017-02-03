@@ -25,12 +25,14 @@
 package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
 import oap.util.Stream;
 
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
@@ -48,6 +50,7 @@ import static oap.util.Pair.__;
 @Slf4j
 public class LazyFileStorage<T> extends MemoryStorage<T> {
    private Path path;
+   private boolean closed = true;
 
    /**
     * @deprecated use {@link #LazyFileStorage(Path, Identifier)}} instead.
@@ -129,17 +132,20 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
             .map( x -> __( x.id, x ) )
             .collect( toConcurrentMap() );
       }
+      closed = false;
       log.info( data.size() + " object(s) loaded." );
    }
 
    @Override
+   @SneakyThrows
    public synchronized void close() {
-      final Path tmpPath = path.resolveSibling( path.getFileName() + ".tmp" );
-      log.debug( "storing {}...", tmpPath );
-      Binder.json.marshal( IoStreams.out( tmpPath, IoStreams.Encoding.from( path ) ), data.values() );
-      Files.rename( tmpPath, path );
+      if ( closed ) return;
+      OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), IoStreams.DEFAULT_BUFFER, false, true );
+      Binder.json.marshal( out, data.values() );
+      out.close();
       log.debug( "storing {}... done", path );
       data.clear();
+      closed = true;
    }
 
 }
