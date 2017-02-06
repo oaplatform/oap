@@ -27,6 +27,7 @@ import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.concurrent.AsyncCallbacks;
 import oap.io.Closeables;
 import oap.io.Files;
@@ -36,6 +37,7 @@ import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Try;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -58,6 +60,8 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
@@ -399,6 +403,23 @@ public class Client implements Closeable {
     @Override
     public void close() {
         Closeables.close( client );
+    }
+
+    public Response uploadFile( String uri, Path path ) {
+        return uploadFile( uri, path, FOREVER );
+    }
+
+    @SneakyThrows
+    public Response uploadFile( String uri, Path path, long timeout ) {
+        val request = new HttpPost( uri );
+        val builder = MultipartEntityBuilder.create();
+        builder.setMode( HttpMultipartMode.BROWSER_COMPATIBLE );
+        final ContentType contentType = ContentType.create( java.nio.file.Files.probeContentType( path ) );
+        builder.addBinaryBody( "upfile", path.toFile(), contentType, FilenameUtils.getName( path.toString() ) );
+        HttpEntity entity = builder.build();
+        request.setEntity( entity );
+        return execute( request, Maps.empty(), timeout )
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     @ToString

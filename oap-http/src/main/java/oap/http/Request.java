@@ -49,7 +49,6 @@ import static oap.util.Pair.__;
 
 public class Request {
     private static final Splitter SPLITTER = Splitter.on( ";" ).trimResults().omitEmptyStrings();
-
     public final String requestLine;
     public final HttpMethod httpMethod;
     public final String baseUrl;
