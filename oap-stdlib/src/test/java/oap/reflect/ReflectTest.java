@@ -74,12 +74,12 @@ public class ReflectTest extends AbstractTest {
     public void fields() {
         Bean bean = new Bean( 10 );
         assertThat( Reflect.reflect( bean.getClass() ).fields.stream().<Object>map( f -> f.get( bean ) ) )
-            .containsExactly( 10, 1, "aaa", null );
+            .containsExactly( 10, 1, "aaa", null, Optional.empty() );
     }
 
     @Test
     public void reflectToString() {
-        assertEquals( new Bean( 10 ).toString(), "Bean(i=10, x=1, str=aaa, l=null)" );
+        assertEquals( new Bean( 10 ).toString(), "Bean(i=10, x=1, str=aaa, l=null, optional=Optional.empty)" );
     }
 
     @Test

@@ -66,7 +66,7 @@ public class SocketLoggingBackend implements LoggingBackend {
         configurations.forEach( ( name, conf ) -> Metrics.measureGauge(
             Metrics
                 .name( "logging.buffers_cache" )
-                .tag( "host", host )
+                .tag( "from_host", host )
                 .tag( "configuration", name ),
             () -> buffers.cache.size( conf.bufferSize )
         ) );
@@ -120,7 +120,7 @@ public class SocketLoggingBackend implements LoggingBackend {
     }
 
     private Boolean sendBuffer( Buffer buffer ) {
-        return Metrics.measureTimer( Metrics.name( "logging.buffer_send_time" ).tag( "host", host ), () -> {
+        return Metrics.measureTimer( Metrics.name( "logging.buffer_send_time" ).tag( "from_host", host ), () -> {
             try {
                 log.trace( "sending {}", buffer );
                 connection.write( buffer.data(), 0, buffer.length() );
@@ -130,7 +130,7 @@ public class SocketLoggingBackend implements LoggingBackend {
                     log.error( "Error completing remote write: {}", SocketError.fromCode( size ) );
                     return false;
                 }
-                Metrics.measureCounterIncrement( Metrics.name( "logging.socket" ).tag( "host", host ), buffer.length() );
+                Metrics.measureCounterIncrement( Metrics.name( "logging.socket" ).tag( "from_host", host ), buffer.length() );
                 loggingAvailable = true;
                 return true;
             } catch( Exception e ) {
