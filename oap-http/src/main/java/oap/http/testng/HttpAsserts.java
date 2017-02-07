@@ -68,8 +68,8 @@ public class HttpAsserts {
         return new HttpAssertion( client.post( uri, content, contentType ) );
     }
 
-    public static HttpAssertion assertUploadFile( String uri, Path path ) {
-        return new HttpAssertion( client.uploadFile( uri, path ) );
+    public static HttpAssertion assertUploadFile( String uri, String prefix, Path path ) {
+        return new HttpAssertion( client.uploadFile( uri, prefix, path ) );
     }
 
     public static HttpAssertion assertPut( String uri, String content, ContentType contentType ) {

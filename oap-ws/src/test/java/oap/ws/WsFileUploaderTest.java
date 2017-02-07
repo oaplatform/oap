@@ -26,7 +26,6 @@ package oap.ws;
 
 import oap.application.Application;
 import oap.concurrent.SynchronizedThread;
-import oap.http.HttpResponse;
 import oap.http.PlainHttpListener;
 import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
@@ -34,7 +33,8 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import org.testng.annotations.AfterClass;
+import oap.util.Cuid;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -42,16 +42,18 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
+import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 import static oap.http.testng.HttpAsserts.assertUploadFile;
 import static oap.http.testng.HttpAsserts.reset;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by igor.petrenko on 06.02.2017.
  */
 public class WsFileUploaderTest extends AbstractTest {
-    private ArrayList<WsFileUploader.FileItem> items = new ArrayList<>();
+    private ArrayList<WsFileUploader.Item> items = new ArrayList<>();
     private Server server;
     private WebServices ws;
     private SynchronizedThread listener;
@@ -79,12 +81,15 @@ public class WsFileUploaderTest extends AbstractTest {
         listener.start();
     }
 
-    @AfterClass
-    public void stopServer() {
+    @AfterMethod
+    @Override
+    public void afterMethod() throws Exception {
         listener.stop();
         server.stop();
         ws.stop();
         reset();
+
+        Cuid.resetToDefaults();
     }
 
     @Test
@@ -92,8 +97,12 @@ public class WsFileUploaderTest extends AbstractTest {
         final Path path = Env.tmpPath( "file.txt.gz" );
         Files.writeString( path, IoStreams.Encoding.GZIP, "v1" );
 
-        assertUploadFile( HTTP_PREFIX + "/upload/", path ).hasCode( HttpResponse.NO_CONTENT.code );
+        Cuid.reset( "p", 1 );
+
+        assertUploadFile( HTTP_PREFIX + "/upload/", "test/test2", path )
+            .responded( HTTP_OK, "OK", APPLICATION_JSON, "{\"id\":\"1p\"}" );
         assertThat( items ).hasSize( 1 );
+        assertThat( items.get( 0 ).prefix ).isEqualTo( "test/test2" );
         assertThat( items.get( 0 ).name ).isEqualTo( "file.txt.gz" );
         assertThat( items.get( 0 ).contentType ).isEqualTo( "application/x-gzip" );
         assertThat( IoStreams.asString( items.get( 0 ).isF.get(), IoStreams.Encoding.GZIP ) ).isEqualTo( "v1" );

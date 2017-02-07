@@ -109,6 +109,7 @@ import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
+import static org.apache.http.entity.ContentType.DEFAULT_TEXT;
 
 @Slf4j
 public class Client implements Closeable {
@@ -405,17 +406,18 @@ public class Client implements Closeable {
         Closeables.close( client );
     }
 
-    public Response uploadFile( String uri, Path path ) {
-        return uploadFile( uri, path, FOREVER );
+    public Response uploadFile( String uri, String prefix, Path path ) {
+        return uploadFile( uri, prefix, path, FOREVER );
     }
 
     @SneakyThrows
-    public Response uploadFile( String uri, Path path, long timeout ) {
+    public Response uploadFile( String uri, String prefix, Path path, long timeout ) {
         val request = new HttpPost( uri );
         val builder = MultipartEntityBuilder.create();
         builder.setMode( HttpMultipartMode.BROWSER_COMPATIBLE );
         final ContentType contentType = ContentType.create( java.nio.file.Files.probeContentType( path ) );
         builder.addBinaryBody( "upfile", path.toFile(), contentType, FilenameUtils.getName( path.toString() ) );
+        builder.addTextBody( "prefix", prefix );
         HttpEntity entity = builder.build();
         request.setEntity( entity );
         return execute( request, Maps.empty(), timeout )

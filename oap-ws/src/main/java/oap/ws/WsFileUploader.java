@@ -24,14 +24,18 @@
 
 package oap.ws;
 
+import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Response;
+import oap.util.Cuid;
 import oap.util.Try;
+import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUpload;
 import org.apache.commons.fileupload.RequestContext;
 import org.apache.commons.fileupload.UploadContext;
@@ -44,6 +48,8 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.function.Supplier;
+
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 
 /**
  * Created by igor.petrenko on 06.02.2017.
@@ -73,7 +79,7 @@ public class WsFileUploader implements Handler {
         listeners.remove( listener );
     }
 
-    protected synchronized void fireUploaded( FileItem file ) {
+    protected synchronized void fireUploaded( Item file ) {
         listeners.forEach( l -> l.uploaded( file ) );
     }
 
@@ -83,27 +89,65 @@ public class WsFileUploader implements Handler {
         final RequestContext ctx = new RequestUploadContext( request );
         if( FileUpload.isMultipartContent( ctx ) ) {
             val items = upload.parseRequest( ctx );
-            for( val item : items ) {
-                if( !item.isFormField() )
-                    fireUploaded( new FileItem( item.getName(), item.getContentType(), Try.supply( item::getInputStream ) ) );
+
+            if( items.stream().filter( i -> !i.isFormField() ).count() != 1 ) {
+                log.trace( "Only one file allowed" );
+                response.respond( HttpResponse.status( HTTP_BAD_REQUEST, "Only one file allowed" ) );
+                return;
             }
 
-            response.respond( HttpResponse.NO_CONTENT );
+            if( items.stream().filter( i -> i.isFormField() && "prefix".equals( i.getFieldName() ) ).count() != 1 ) {
+                log.trace( "'prefix' field is required" );
+                response.respond( HttpResponse.status( HTTP_BAD_REQUEST, "'prefix' field is required" ) );
+                return;
+            }
+
+            val fileItem = items.stream().filter( i -> !i.isFormField() ).findAny().get();
+            val prefixItem = items.stream().filter( FileItem::isFormField ).findAny().get();
+
+            val id = Cuid.next();
+
+            final Item file = new Item(
+                prefixItem.getString(),
+                id,
+                fileItem.getName(),
+                fileItem.getContentType(),
+                Try.supply( fileItem::getInputStream )
+            );
+            log.debug( "new file = {}", file );
+            fireUploaded( file );
+
+            response.respond( HttpResponse.ok( new IdResponse( id ) ) );
         } else {
-            response.respond( HttpResponse.HTTP_BAD_REQUEST );
+            response.respond( HttpResponse.NOT_FOUND );
         }
     }
 
     public interface WsFileUploaderListener {
-        void uploaded( FileItem file );
+        void uploaded( Item file );
     }
 
-    public static class FileItem {
+    @ToString
+    @EqualsAndHashCode
+    public static class IdResponse {
+        public final String id;
+
+        public IdResponse( String id ) {
+            this.id = id;
+        }
+    }
+
+    @ToString( exclude = { "isF" } )
+    public static class Item {
+        public final String prefix;
+        public final String id;
         public final String name;
         public final String contentType;
         public final Supplier<InputStream> isF;
 
-        public FileItem( String name, String contentType, Supplier<InputStream> isF ) {
+        public Item( String prefix, String id, String name, String contentType, Supplier<InputStream> isF ) {
+            this.prefix = prefix;
+            this.id = id;
             this.name = name;
             this.contentType = contentType;
             this.isF = isF;
