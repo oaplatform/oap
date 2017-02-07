@@ -32,6 +32,7 @@ import oap.util.Pair;
 import org.apache.http.entity.ContentType;
 
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -65,6 +66,10 @@ public class HttpAsserts {
 
     public static HttpAssertion assertPost( String uri, InputStream content, ContentType contentType ) {
         return new HttpAssertion( client.post( uri, content, contentType ) );
+    }
+
+    public static HttpAssertion assertUploadFile( String uri, String prefix, Path path ) {
+        return new HttpAssertion( client.uploadFile( uri, prefix, path ) );
     }
 
     public static HttpAssertion assertPut( String uri, String content, ContentType contentType ) {
@@ -111,9 +116,9 @@ public class HttpAsserts {
 
         public HttpAssertion hasContentType( ContentType contentType ) {
             assertString( response.contentType
-                    .map( ContentType::toString )
-                    .orElse( null ) )
-                    .isEqualTo( contentType.toString() );
+                .map( ContentType::toString )
+                .orElse( null ) )
+                .isEqualTo( contentType.toString() );
             return this;
         }
 
@@ -134,9 +139,9 @@ public class HttpAsserts {
 
         public HttpAssertion responded( int code, String reasonPhrase, ContentType contentType, String body ) {
             return this.hasCode( code )
-                    .hasReason( reasonPhrase )
-                    .hasContentType( contentType )
-                    .hasBody( body );
+                .hasReason( reasonPhrase )
+                .hasContentType( contentType )
+                .hasBody( body );
         }
     }
 }

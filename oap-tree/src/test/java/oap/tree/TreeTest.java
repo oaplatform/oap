@@ -78,6 +78,20 @@ public class TreeTest {
     }
 
     @Test
+    public void testEmpty() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", CONTAINS, false ) )
+            .withHashFillFactor( 1 )
+            .load( l() );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( 5L ) ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 0 );
+    }
+
+    @Test
     public void testGREATER_THEN_OR_EQUAL_TO() {
         final Tree<String> tree = Tree
             .<String>tree( LONG( "d1", GREATER_THEN_OR_EQUAL_TO, false ) )
