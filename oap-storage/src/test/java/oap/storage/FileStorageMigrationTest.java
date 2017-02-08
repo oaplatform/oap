@@ -73,8 +73,8 @@ public class FileStorageMigrationTest extends AbstractTest {
       assertThat( data.resolve( "aaa/1.v1.json" ) ).doesNotExist();
       assertThat( data.resolve( "aaa/2.v1.json" ) ).doesNotExist();
 
-      assertThat( data.resolve( "aaa/1.v2.json" ) ).exists();
-      assertThat( data.resolve( "aaa/2.v2.json" ) ).exists();
+      assertThat( data.resolve( "aaa/11.v2.json" ) ).exists();
+      assertThat( data.resolve( "aaa/21.v2.json" ) ).exists();
    }
 
    @Test
