@@ -144,11 +144,10 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
             } );
     }
 
-    //todo refactor to Persisted
     private Path filenameFor( T object, long version ) {
         final String ver = this.version > 0 ? ".v" + version : "";
         return fsResolve.apply( this.path, object )
-            .resolve( this.storage.identifier.getOrInit( object, storage ) + ver + ".json" );
+            .resolve( this.storage.identifier.get( object ) + ver + ".json" );
     }
 
     public synchronized void delete( T id ) {
