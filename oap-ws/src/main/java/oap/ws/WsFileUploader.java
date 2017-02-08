@@ -46,7 +46,6 @@ import org.apache.http.protocol.HTTP;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.function.Supplier;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
@@ -55,9 +54,7 @@ import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
  * Created by igor.petrenko on 06.02.2017.
  */
 @Slf4j
-public class WsFileUploader implements Handler {
-    private final ArrayList<WsFileUploaderListener> listeners = new ArrayList<>();
-
+public class WsFileUploader extends FileUploader implements Handler {
     private final FileUpload upload;
 
     public WsFileUploader( Path path, long maxMemorySize, long maxRequestSize ) {
@@ -69,18 +66,6 @@ public class WsFileUploader implements Handler {
         factory.setFileCleaningTracker( new FileCleaningTracker() );
         upload = new FileUpload( factory );
         upload.setSizeMax( maxRequestSize );
-    }
-
-    public synchronized void addListener( WsFileUploaderListener listener ) {
-        listeners.add( listener );
-    }
-
-    public synchronized void removeListener( WsFileUploaderListener listener ) {
-        listeners.remove( listener );
-    }
-
-    protected synchronized void fireUploaded( Item file ) {
-        listeners.forEach( l -> l.uploaded( file ) );
     }
 
     @Override
