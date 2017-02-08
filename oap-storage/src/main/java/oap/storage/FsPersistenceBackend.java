@@ -93,8 +93,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
 
                     final Path newPath = filenameFor( unmarshal.object, this.version );
 
-                    if( java.nio.file.Files.exists( newPath )
-                        && !java.nio.file.Files.isSameFile( f, newPath ) ) {
+                    if( !java.nio.file.Files.exists( newPath ) || !java.nio.file.Files.isSameFile( f, newPath ) ) {
 
                         Files.move( f, newPath, StandardCopyOption.REPLACE_EXISTING );
                     }
