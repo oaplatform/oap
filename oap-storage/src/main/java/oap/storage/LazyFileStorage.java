@@ -52,8 +52,16 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
    private Path path;
    private boolean closed = true;
 
+   /**
+    * @deprecated use {@link #LazyFileStorage(Path, Identifier)}} instead.
+    */
+   @Deprecated
    public LazyFileStorage( Path path, Function<T, String> identify ) {
-      super( identify );
+      this( path, IdentifierBuilder.identify( identify ).build() );
+   }
+
+   public LazyFileStorage( Path path, Identifier<T> identifier ) {
+      super( identifier );
       this.path = path;
    }
 

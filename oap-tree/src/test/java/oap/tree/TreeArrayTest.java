@@ -163,6 +163,7 @@ public class TreeArrayTest {
 
         assertThat( tree.find( l( 1L, "1" ) ) ).containsOnly( "1", "2", "3", "e1", "e2" );
         assertThat( tree.find( l( 2L, "2" ) ) ).containsOnly( "1", "2", "3", "e1", "e2" );
+        assertThat( tree.find( l( 2L, "3" ) ) ).containsOnly( "3", "e1", "e2" );
 
         assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 2 );
         assertThat( tree.getMaxDepth() ).isEqualTo( 3 );

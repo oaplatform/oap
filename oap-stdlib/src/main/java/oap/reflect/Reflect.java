@@ -23,14 +23,18 @@
  */
 package oap.reflect;
 
+import com.google.common.base.Preconditions;
 import com.google.common.reflect.TypeToken;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static java.lang.String.format;
 
 public class Reflect {
 
@@ -69,11 +73,22 @@ public class Reflect {
         return reflect( clazz ).newInstance( args );
     }
 
+    /**
+     * Retrieves value based on specified path inside object
+     *
+     * @deprecated use {@link #get(Object, String)}} instead.
+     */
+    @Deprecated
+    public static <T> T eval( Object object, String path ) {
+        return get( object, path );
+    }
+
     @SuppressWarnings( "unchecked" )
-    public static <T> T eval( Object o, String path ) {
-        Object next = o;
+    public static <T> T get( Object object, String path ) {
+        Object next = object;
         for( String field : StringUtils.split( path, '.' ) ) {
             if( next == null ) break;
+
             final Object instance = next;
             next = reflect( next.getClass() )
                 .field( field )
@@ -82,6 +97,31 @@ public class Reflect {
                 .orElse( null );
         }
         return ( T ) next;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static void set( Object object, String path, Object value ) {
+        final String[] split = StringUtils.split( path, '.' );
+
+        Object next = object;
+        for( int i = 0; i < split.length - 1; i++ ) {
+            Preconditions.checkState( next != null, format("Path [%s] contains nullable objects", path ) );
+
+            final Object instance = next;
+            next = reflect( next.getClass() )
+                .field( split[i] )
+                .map( f -> f.get( instance ) )
+                .map( v -> v instanceof Optional ? ( ( Optional ) v ).orElse( null ) : v )
+                .orElse( null );
+        }
+        Preconditions.checkState( next != null, format("Path [%s] contains nullable objects", path ) );
+
+        final MutableObject<Object> mutableObject = new MutableObject<>( next );
+        reflect( next.getClass() )
+            .field( split[split.length - 1] )
+            .ifPresent( f -> f.set( mutableObject.getValue(),
+                    f.type().isOptional() ? Optional.ofNullable( value ) : value )
+            );
     }
 
 //    unapply - check possibility to parameterize with Function to pass parameters from class.

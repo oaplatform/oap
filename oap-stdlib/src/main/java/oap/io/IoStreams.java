@@ -30,6 +30,7 @@ import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
+import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -192,6 +193,11 @@ public class IoStreams {
     @SneakyThrows
     public static InputStream in( InputStream stream, Encoding encoding ) {
         return getInputStream( stream, encoding );
+    }
+
+    @SneakyThrows
+    public static String asString( InputStream stream, Encoding encoding ) {
+        return IOUtils.toString( getInputStream( stream, encoding ), StandardCharsets.UTF_8 );
     }
 
     @SneakyThrows
