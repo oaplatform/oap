@@ -108,10 +108,6 @@ public class WsFileUploader extends FileUploader implements Handler {
         }
     }
 
-    public interface WsFileUploaderListener {
-        void uploaded( Item file );
-    }
-
     @ToString
     @EqualsAndHashCode
     public static class IdResponse {
@@ -119,23 +115,6 @@ public class WsFileUploader extends FileUploader implements Handler {
 
         public IdResponse( String id ) {
             this.id = id;
-        }
-    }
-
-    @ToString( exclude = { "isF" } )
-    public static class Item {
-        public final String prefix;
-        public final String id;
-        public final String name;
-        public final String contentType;
-        public final Supplier<InputStream> isF;
-
-        public Item( String prefix, String id, String name, String contentType, Supplier<InputStream> isF ) {
-            this.prefix = prefix;
-            this.id = id;
-            this.name = name;
-            this.contentType = contentType;
-            this.isF = isF;
         }
     }
 

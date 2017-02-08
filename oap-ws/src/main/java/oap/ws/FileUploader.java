@@ -24,23 +24,48 @@
 
 package oap.ws;
 
+import lombok.ToString;
+
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.function.Supplier;
 
 /**
  * Created by Admin on 08.02.2017.
  */
 public abstract class FileUploader {
-    private final ArrayList<WsFileUploader.WsFileUploaderListener> listeners = new ArrayList<>();
+    private final ArrayList<FileUploaderListener> listeners = new ArrayList<>();
 
-    public synchronized void addListener( WsFileUploader.WsFileUploaderListener listener ) {
+    public synchronized void addListener( FileUploaderListener listener ) {
         listeners.add( listener );
     }
 
-    public synchronized void removeListener( WsFileUploader.WsFileUploaderListener listener ) {
+    public synchronized void removeListener( FileUploaderListener listener ) {
         listeners.remove( listener );
     }
 
-    protected synchronized void fireUploaded( WsFileUploader.Item file ) {
+    protected synchronized void fireUploaded( Item file ) {
         listeners.forEach( l -> l.uploaded( file ) );
+    }
+
+    public interface FileUploaderListener {
+        void uploaded( Item file );
+    }
+
+    @ToString( exclude = { "inputStreamFunc" } )
+    public static class Item {
+        public final String prefix;
+        public final String id;
+        public final String name;
+        public final String contentType;
+        public final Supplier<InputStream> inputStreamFunc;
+
+        public Item( String prefix, String id, String name, String contentType, Supplier<InputStream> inputStreamFunc ) {
+            this.prefix = prefix;
+            this.id = id;
+            this.name = name;
+            this.contentType = contentType;
+            this.inputStreamFunc = inputStreamFunc;
+        }
     }
 }
