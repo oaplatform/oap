@@ -105,7 +105,7 @@ public class WsFileUploaderTest extends AbstractTest {
         assertThat( items.get( 0 ).prefix ).isEqualTo( "test/test2" );
         assertThat( items.get( 0 ).name ).isEqualTo( "file.txt.gz" );
         assertThat( items.get( 0 ).contentType ).isEqualTo( "application/gzip" );
-        assertThat( IoStreams.asString( items.get( 0 ).isF.get(), IoStreams.Encoding.GZIP ) ).isEqualTo( "v1" );
+        assertThat( IoStreams.asString( items.get( 0 ).inputStreamFunc.get(), IoStreams.Encoding.GZIP ) ).isEqualTo( "v1" );
 
     }
 

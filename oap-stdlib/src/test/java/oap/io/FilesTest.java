@@ -33,6 +33,7 @@ import org.testng.annotations.Test;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
 import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
@@ -150,5 +151,18 @@ public class FilesTest extends AbstractTest {
         } catch( InvalidFileEncodingException e ) {
             if( IoStreams.Encoding.from( ext ) == encoding ) fail( "should not throw exception: " + e );
         }
+    }
+
+    @Test
+    public void testMove() {
+        final Path path = tmpPath( "file.txt" );
+        final Path newPath = tmpPath( "test/newFile.txt" );
+        Files.writeString( path, "test" );
+        Files.writeString( newPath, "test2" );
+        Files.move( path, newPath, REPLACE_EXISTING );
+
+        assertThat( path ).doesNotExist();
+        assertThat( newPath ).exists();
+        assertThat( newPath ).hasContent( "test" );
     }
 }

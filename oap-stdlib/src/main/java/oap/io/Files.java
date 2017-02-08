@@ -309,7 +309,7 @@ public final class Files {
 
     public static void move( Path source, Path target, CopyOption... options ) {
         try {
-            Files.ensureDirectory( target );
+            Files.ensureFile( target );
 
             java.nio.file.Files.move( source, target, options );
         } catch( IOException e ) {
