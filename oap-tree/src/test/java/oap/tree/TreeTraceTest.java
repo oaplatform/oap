@@ -24,6 +24,7 @@
 
 package oap.tree;
 
+import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import static oap.tree.Dimension.ENUM;
@@ -38,6 +39,7 @@ import static oap.tree.TreeTest.TestEnum.Test1;
 import static oap.tree.TreeTest.TestEnum.Test2;
 import static oap.tree.TreeTest.TestEnum.Test3;
 import static oap.tree.TreeTest.TestEnum.Test4;
+import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -283,6 +285,29 @@ public class TreeTraceTest {
             "    d1/0: [1] GREATER_THEN_OR_EQUAL_TO 6\n" +
             "5: \n" +
             "    d1/0: [5] GREATER_THEN_OR_EQUAL_TO 6" );
+    }
+
+    @Test
+    public void testTraceStatistics() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", CONTAINS, false ), ENUM( "d2", TestEnum.class, CONTAINS, false ) )
+            .withHashFillFactor( 1 )
+            .load( l(
+                v( "1", 1L, Test1 ),
+                v( "2", 2L, Test2 ),
+                v( "3", 1L, Test3 ),
+                v( "33", 1L, Test3 )
+            ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.traceStatistics( l( l( 1L, Test2 ), l( 2L, Test2 ), l( 2L, Test3 ) ) ) )
+            .isEqualTo( Maps.of(
+                __( "1", Maps.of( __( "d1", 2 ), __( "d2", 3 ) ) ),
+                __( "2", Maps.of( __( "d1", 1 ), __( "d2", 1 ) ) ),
+                __( "3", Maps.of( __( "d1", 2 ), __( "d2", 2 ) ) ),
+                __( "33", Maps.of( __( "d1", 2 ), __( "d2", 2 ) ) )
+            ) );
     }
 
     public enum TestEnum {
