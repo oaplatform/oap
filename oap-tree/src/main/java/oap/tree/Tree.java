@@ -53,6 +53,7 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static oap.tree.Dimension.Direction;
 import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
@@ -446,6 +447,42 @@ public class Tree<T> {
         return queryStr + ( out.length() > 0 ? "Expecting:\n" + out : "ALL OK" );
     }
 
+    public Map<T, Map<String, Integer>> traceStatistics( List<List<?>> queries ) {
+        final HashMap<T, Map<String, Integer>> resultStats = new HashMap<>();
+
+        for( List<?> query : queries ) {
+            final HashMap<T, HashMap<Integer, TraceOperationTypeValues>> result = new HashMap<>();
+            final long[][] longQuery = convertQueryToLong( query );
+            trace( root, longQuery, result, new TraceBuffer(), true );
+
+            final Map<T, Map<String, Integer>> stats = result
+                .entrySet()
+                .stream()
+                .collect( toMap(
+                    Map.Entry::getKey,
+                    e -> e.getValue().entrySet().stream().collect( toMap(
+                        dv -> dimensions.get( dv.getKey() ).name,
+                        dv -> 1
+                    ) )
+                ) );
+
+            mergeInto( stats, resultStats );
+        }
+
+        return resultStats;
+    }
+
+    private void mergeInto( Map<T, Map<String, Integer>> stat, HashMap<T, Map<String, Integer>> result ) {
+        stat.forEach( ( s, m ) -> {
+            final Map<String, Integer> statBySelection = result.computeIfAbsent( s, ( ss ) -> new HashMap<>() );
+
+            m.forEach( ( dimension, count ) -> {
+                statBySelection.compute( dimension, ( d, c ) -> c == null ? count : c + count );
+            } );
+        } );
+
+    }
+
     private String queryToString( List<?> query, int key ) {
         return String.valueOf( query.get( key ) );
     }
@@ -520,7 +557,7 @@ public class Tree<T> {
             } else {
                 for( int i = 0; i < n.hash.length; i++ ) {
                     final boolean contains = ArrayUtils.contains( qValue, i );
-                    trace( n.hash[i], query, result, buffer.cloneWith( n.dimension, i, dimension.operationType, contains ), success && contains);
+                    trace( n.hash[i], query, result, buffer.cloneWith( n.dimension, i, dimension.operationType, contains ), success && contains );
                 }
             }
         }

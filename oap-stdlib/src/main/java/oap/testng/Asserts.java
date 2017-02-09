@@ -92,6 +92,10 @@ public final class Asserts {
         return new StringAssertion( actual );
     }
 
+    /**
+     * // org.assertj.core.api.Assertions::assertThat
+     */
+    @Deprecated
     public static FileAssertion assertFile( Path actual ) {
         return new FileAssertion( actual );
     }

@@ -93,11 +93,8 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
 
                     final Path newPath = filenameFor( unmarshal.object, this.version );
 
-                    if ( java.nio.file.Files.exists( f )
-                        && !java.nio.file.Files.isDirectory( f )
-                        && !newPath.toString().equals( f.toString() ) ) {
-
-                        Files.move(f, newPath, StandardCopyOption.REPLACE_EXISTING );
+                    if( !java.nio.file.Files.exists( newPath ) || !java.nio.file.Files.isSameFile( file, newPath ) ) {
+                        Files.move( file, newPath, StandardCopyOption.REPLACE_EXISTING );
                     }
 
                     return unmarshal;
@@ -147,11 +144,10 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
             } );
     }
 
-    //todo refactor to Persisted
     private Path filenameFor( T object, long version ) {
         final String ver = this.version > 0 ? ".v" + version : "";
         return fsResolve.apply( this.path, object )
-            .resolve( this.storage.identifier.getOrInit( object, storage ) + ver + ".json" );
+            .resolve( this.storage.identifier.get( object ) + ver + ".json" );
     }
 
     public synchronized void delete( T id ) {
