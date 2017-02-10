@@ -64,6 +64,7 @@ public class FFProbeMediaProcessing implements MediaProcessing {
         Process p = builder.start();
         try {
             final String json = IOUtils.toString( p.getInputStream(), StandardCharsets.UTF_8 );
+            log.trace( "ffprobe: {}", json );
             final Map<String, Object> info = Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {}, json );
             mediaInfo.put( "ffprobe", info );
             p.waitFor( timeout, TimeUnit.MILLISECONDS );
