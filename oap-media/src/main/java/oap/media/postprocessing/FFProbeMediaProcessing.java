@@ -34,10 +34,11 @@ import oap.media.MediaProcessing;
 import org.apache.commons.io.IOUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Created by igor.petrenko on 10.02.2017.
@@ -58,10 +59,8 @@ public class FFProbeMediaProcessing implements MediaProcessing {
         log.debug( "ffprobe {}...", media.path );
         final ProcessBuilder builder = new ProcessBuilder();
         builder.redirectErrorStream( true );
-        final ArrayList<String> cmd = new ArrayList<>( command );
-        cmd.forEach( i -> i.replace( "{FILE}", media.path.toString() ) );
+        final List<String> cmd = command.stream().map( i -> i.replace( "{FILE}", media.path.toString() ) ).collect( toList() );
         builder.command( cmd );
-
 
         log.trace( "cmd = {}", cmd );
         Process p = builder.start();
