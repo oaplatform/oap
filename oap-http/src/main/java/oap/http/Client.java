@@ -27,7 +27,6 @@ import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.concurrent.AsyncCallbacks;
 import oap.io.Closeables;
 import oap.io.Files;
@@ -37,7 +36,11 @@ import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Try;
-import org.apache.commons.io.FilenameUtils;
+import okhttp3.Headers;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.RequestBody;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -60,8 +63,6 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.entity.mime.HttpMultipartMode;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
@@ -98,6 +99,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
 import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
@@ -109,7 +111,6 @@ import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 import static org.apache.commons.lang3.StringUtils.split;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
-import static org.apache.http.entity.ContentType.DEFAULT_TEXT;
 
 @Slf4j
 public class Client implements Closeable {
@@ -406,22 +407,32 @@ public class Client implements Closeable {
         Closeables.close( client );
     }
 
-    public Response uploadFile( String uri, String prefix, Path path ) {
-        return uploadFile( uri, prefix, path, FOREVER );
-    }
-
     @SneakyThrows
-    public Response uploadFile( String uri, String prefix, Path path, long timeout ) {
-        val request = new HttpPost( uri );
-        val builder = MultipartEntityBuilder.create();
-        builder.setMode( HttpMultipartMode.BROWSER_COMPATIBLE );
+    public Response uploadFile( String uri, String prefix, Path path ) {
         final ContentType contentType = ContentType.create( java.nio.file.Files.probeContentType( path ) );
-        builder.addBinaryBody( "upfile", path.toFile(), contentType, FilenameUtils.getName( path.toString() ) );
-        builder.addTextBody( "prefix", prefix );
-        HttpEntity entity = builder.build();
-        request.setEntity( entity );
-        return execute( request, Maps.empty(), timeout )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+
+        OkHttpClient client = new OkHttpClient();
+
+        final MultipartBody body = new MultipartBody.Builder()
+            .setType( MultipartBody.FORM )
+            .addFormDataPart( "upfile", path.toFile().getName(), RequestBody.create( MediaType.parse( contentType.toString() ), path.toFile() ) )
+            .addFormDataPart( "prefix", prefix )
+            .build();
+
+        okhttp3.Request request = new okhttp3.Request.Builder()
+            .url( uri )
+            .post( body )
+            .build();
+
+
+        final okhttp3.Response response = client.newCall( request ).execute();
+
+        final Headers headers = response.headers();
+        final java.util.stream.Stream<String> stream = headers.names().stream();
+        final Map<String, String> h = stream.collect( Collectors.toMap( n -> n, headers::get ) );
+        return new Response( response.code(), response.message(), h,
+            Optional.ofNullable( response.body().contentType() ).map( mt -> ContentType.create( mt.type() + "/" + mt.subtype(), mt.charset() ) ),
+            response.body().bytes() );
     }
 
     @ToString

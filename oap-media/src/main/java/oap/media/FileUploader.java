@@ -22,19 +22,21 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.media;
 
-import lombok.ToString;
-
-import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.function.Supplier;
+import java.util.List;
 
 /**
  * Created by Admin on 08.02.2017.
  */
 public abstract class FileUploader {
+    protected final List<MediaProcessing> postprocessing;
     private final ArrayList<FileUploaderListener> listeners = new ArrayList<>();
+
+    protected FileUploader( List<MediaProcessing> postprocessing ) {
+        this.postprocessing = postprocessing;
+    }
 
     public synchronized void addListener( FileUploaderListener listener ) {
         listeners.add( listener );
@@ -44,28 +46,12 @@ public abstract class FileUploader {
         listeners.remove( listener );
     }
 
-    protected synchronized void fireUploaded( Item file ) {
-        listeners.forEach( l -> l.uploaded( file ) );
+    protected synchronized void fireUploaded( Media media, MediaInfo mediaInfo ) {
+        listeners.forEach( l -> l.uploaded( media, mediaInfo ) );
     }
 
     public interface FileUploaderListener {
-        void uploaded( Item file );
+        void uploaded( Media file, MediaInfo mediaInfo );
     }
 
-    @ToString( exclude = { "inputStreamFunc" } )
-    public static class Item {
-        public final String prefix;
-        public final String id;
-        public final String name;
-        public final String contentType;
-        public final Supplier<InputStream> inputStreamFunc;
-
-        public Item( String prefix, String id, String name, String contentType, Supplier<InputStream> inputStreamFunc ) {
-            this.prefix = prefix;
-            this.id = id;
-            this.name = name;
-            this.contentType = contentType;
-            this.inputStreamFunc = inputStreamFunc;
-        }
-    }
 }

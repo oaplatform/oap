@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.media;
 
 import oap.application.Application;
 import oap.concurrent.SynchronizedThread;
@@ -30,10 +30,15 @@ import oap.http.PlainHttpListener;
 import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.Files;
-import oap.io.IoStreams;
+import oap.io.Resources;
+import oap.media.postprocessing.FFProbeMediaProcessing;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Cuid;
+import oap.util.Pair;
+import oap.ws.SessionManager;
+import oap.ws.WebServices;
+import oap.ws.WsConfig;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -41,19 +46,22 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
-import static java.net.HttpURLConnection.HTTP_OK;
+import static java.util.Collections.singletonList;
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 import static oap.http.testng.HttpAsserts.assertUploadFile;
 import static oap.http.testng.HttpAsserts.reset;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static oap.io.CommandLine.shell;
+import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by igor.petrenko on 06.02.2017.
  */
 public class WsFileUploaderTest extends AbstractTest {
-    private ArrayList<WsFileUploader.Item> items = new ArrayList<>();
+    private ArrayList<Pair<Media, MediaInfo>> medias = new ArrayList<>();
     private Server server;
     private WebServices ws;
     private SynchronizedThread listener;
@@ -66,15 +74,19 @@ public class WsFileUploaderTest extends AbstractTest {
 
         path = Env.tmpPath( "/tmp" );
 
-        items.clear();
+        Files.ensureDirectory( path );
+
+        medias.clear();
 
         server = new Server( 100 );
         ws = new WebServices( server, new SessionManager( 10, null, "/" ),
             GenericCorsPolicy.DEFAULT, WsConfig.CONFIGURATION.fromResource( getClass(), "ws-multipart.conf" )
         );
 
-        final WsFileUploader service = new WsFileUploader( path, 1024 * 9, -1 );
-        service.addListener( item -> WsFileUploaderTest.this.items.add( item ) );
+        final WsFileUploader service = new WsFileUploader( path, 1024 * 9, -1,
+            singletonList( new FFProbeMediaProcessing( shell( "ffprobe -v quiet -print_format json -show_format -show_streams" ), 10000L ) )
+        );
+        service.addListener( ( media, mediaInfo ) -> WsFileUploaderTest.this.medias.add( __( media, mediaInfo ) ) );
         Application.register( "upload", service );
         ws.start();
         listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
@@ -94,18 +106,26 @@ public class WsFileUploaderTest extends AbstractTest {
 
     @Test
     public void testUpload() throws IOException {
-        final Path path = Env.tmpPath( "file.txt.gz" );
-        Files.writeString( path, IoStreams.Encoding.GZIP, "v1" );
+        final Path path = Resources.filePath( getClass(), "SampleVideo_1280x720_1mb.mp4" ).get();
 
         Cuid.reset( "p", 1 );
 
+        final AtomicReference<WsFileUploader.MediaResponse> resp = new AtomicReference<>();
+
         assertUploadFile( HTTP_PREFIX + "/upload/", "test/test2", path )
-            .responded( HTTP_OK, "OK", APPLICATION_JSON, "{\"id\":\"1p\"}" );
-        assertThat( items ).hasSize( 1 );
-        assertThat( items.get( 0 ).prefix ).isEqualTo( "test/test2" );
-        assertThat( items.get( 0 ).name ).isEqualTo( "file.txt.gz" );
-        assertThat( items.get( 0 ).contentType ).isEqualTo( "application/gzip" );
-        assertThat( IoStreams.asString( items.get( 0 ).inputStreamFunc.get(), IoStreams.Encoding.GZIP ) ).isEqualTo( "v1" );
+            .isOk()
+            .is( r -> resp.set( r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get() ) );
+
+        assertThat( resp.get().id).isEqualTo( "1p" );
+        assertThat( resp.get().info.get( "ffprobe" ) ).isNotNull();
+        assertThat( ( ( Map ) resp.get().info.get( "ffprobe" ).get( "format" ) ).get( "nb_streams" ) ).isEqualTo( 2L );
+
+        assertThat( medias ).hasSize( 1 );
+        assertThat( medias.get( 0 )._1.prefix ).isEqualTo( "test/test2" );
+        assertThat( medias.get( 0 )._1.name ).isEqualTo( "SampleVideo_1280x720_1mb.mp4" );
+        assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "video/mp4" );
+        assertThat( medias.get( 0 )._2.get( "ffprobe" ) ).isNotNull();
+        assertThat( ( ( Map ) medias.get( 0 )._2.get( "ffprobe" ).get( "format" ) ).get( "nb_streams" ) ).isEqualTo( 2L );
 
     }
 

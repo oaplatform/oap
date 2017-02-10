@@ -51,7 +51,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 public final class Resources {
-    private static final boolean IS_WINDOWS = System.getProperty( "os.name" ).contains( "indow" );
+    public static final boolean IS_WINDOWS = System.getProperty( "os.name" ).contains( "indow" );
 
     @Deprecated
     public static Path deepPath( Path basePath, String name ) {

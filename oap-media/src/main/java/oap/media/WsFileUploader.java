@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.media;
 
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
@@ -34,11 +34,12 @@ import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Response;
 import oap.util.Cuid;
-import oap.util.Try;
+import oap.util.Stream;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUpload;
 import org.apache.commons.fileupload.RequestContext;
 import org.apache.commons.fileupload.UploadContext;
+import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.io.FileCleaningTracker;
 import org.apache.http.protocol.HTTP;
@@ -46,9 +47,10 @@ import org.apache.http.protocol.HTTP;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.function.Supplier;
+import java.util.List;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.util.Collections.emptyList;
 
 /**
  * Created by igor.petrenko on 06.02.2017.
@@ -58,6 +60,11 @@ public class WsFileUploader extends FileUploader implements Handler {
     private final FileUpload upload;
 
     public WsFileUploader( Path path, long maxMemorySize, long maxRequestSize ) {
+        this( path, maxMemorySize, maxRequestSize, emptyList() );
+    }
+
+    public WsFileUploader( Path path, long maxMemorySize, long maxRequestSize, List<MediaProcessing> postprocessing ) {
+        super( postprocessing );
         log.info( "file uploader path = {}", path );
 
         DiskFileItemFactory factory = new DiskFileItemFactory();
@@ -92,17 +99,25 @@ public class WsFileUploader extends FileUploader implements Handler {
 
             val id = Cuid.next();
 
-            final Item file = new Item(
+            final Media file = new Media(
                 prefixItem.getString(),
                 id,
                 fileItem.getName(),
                 fileItem.getContentType(),
-                Try.supply( fileItem::getInputStream )
+                ( ( DiskFileItem ) fileItem ).getStoreLocation().toPath()
             );
             log.debug( "new file = {}", file );
-            fireUploaded( file );
 
-            response.respond( HttpResponse.ok( new IdResponse( id ) ) );
+            final MediaInfo mediaInfo = new MediaInfo();
+
+            final Media media = Stream.of( postprocessing ).foldLeft( file, ( f, p ) -> p.process( f, mediaInfo ) );
+
+            log.trace( "media = {}", media );
+            log.trace( "info = {}", mediaInfo );
+
+            fireUploaded( media, mediaInfo );
+
+            response.respond( HttpResponse.ok( new MediaResponse( id, mediaInfo ) ) );
         } else {
             response.respond( HttpResponse.NOT_FOUND );
         }
@@ -110,11 +125,13 @@ public class WsFileUploader extends FileUploader implements Handler {
 
     @ToString
     @EqualsAndHashCode
-    public static class IdResponse {
+    public static class MediaResponse {
         public final String id;
+        public final MediaInfo info;
 
-        public IdResponse( String id ) {
+        public MediaResponse( String id, MediaInfo info ) {
             this.id = id;
+            this.info = info;
         }
     }
 
