@@ -84,7 +84,7 @@ public class WsFileUploaderTest extends AbstractTest {
         );
 
         final WsFileUploader service = new WsFileUploader( path, 1024 * 9, -1,
-            singletonList( new FFProbeMediaProcessing( shell( "ffprobe -v quiet -print_format json -show_format -show_streams" ), 10000L ) )
+            singletonList( new FFProbeMediaProcessing( shell( "ffprobe -v quiet -print_format json -show_format -show_streams {FILE}" ), 10000L ) )
         );
         service.addListener( ( media, mediaInfo ) -> WsFileUploaderTest.this.medias.add( __( media, mediaInfo ) ) );
         Application.register( "upload", service );
