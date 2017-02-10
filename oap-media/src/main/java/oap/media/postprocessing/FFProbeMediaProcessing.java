@@ -34,6 +34,9 @@ import oap.media.MediaProcessing;
 import org.apache.commons.io.IOUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +63,7 @@ public class FFProbeMediaProcessing implements MediaProcessing {
         builder.redirectErrorStream( true );
         final ArrayList<String> cmd = new ArrayList<>( command );
         cmd.add( media.path.toString() );
+        Files.copy( media.path, Paths.get("/tmp/1.mpg") );
         builder.command( cmd );
 
 
