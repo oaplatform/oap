@@ -61,6 +61,9 @@ public class FFProbeMediaProcessing implements MediaProcessing {
         final ArrayList<String> cmd = new ArrayList<>( command );
         cmd.add( media.path.toString() );
         builder.command( cmd );
+
+
+        log.trace( "cmd = {}", cmd );
         Process p = builder.start();
         try {
             final String json = IOUtils.toString( p.getInputStream(), StandardCharsets.UTF_8 );
