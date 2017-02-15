@@ -32,46 +32,58 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public interface Storage<T> extends Closeable {
-   Stream<T> select();
+    Stream<T> select();
 
-   void store( T object );
+    default <R> R lock( String id, Supplier<R> run ) {
+        synchronized( id.intern() ) {
+            return run.get();
+        }
+    }
 
-   void store( Collection<T> objects );
+    default void lock( String id, Runnable run ) {
+        synchronized( id.intern() ) {
+            run.run();
+        }
+    }
 
-   Optional<T> update( String id, Consumer<T> update );
+    void store( T object );
 
-   Optional<T> update( String id, Consumer<T> update, Supplier<T> init );
+    void store( Collection<T> objects );
 
-   void update( Collection<String> ids, Consumer<T> update );
+    Optional<T> update( String id, Consumer<T> update );
 
-   void update( Collection<String> ids, Consumer<T> update, Supplier<T> init );
+    Optional<T> update( String id, Consumer<T> update, Supplier<T> init );
 
-   Optional<T> get( String id );
+    void update( Collection<String> ids, Consumer<T> update );
 
-   void delete( String id );
+    void update( Collection<String> ids, Consumer<T> update, Supplier<T> init );
 
-   void deleteAll();
+    Optional<T> get( String id );
 
-   long size();
+    void delete( String id );
 
-   void addDataListener( DataListener<T> dataListener );
+    void deleteAll();
 
-   void removeDataListener( DataListener<T> dataListener );
+    long size();
 
-   interface DataListener<T> {
-      default void updated( T object ) {
-      }
+    void addDataListener( DataListener<T> dataListener );
+
+    void removeDataListener( DataListener<T> dataListener );
+
+    interface DataListener<T> {
+        default void updated( T object ) {
+        }
 
 
-      default void updated( Collection<T> objects ) {
-      }
+        default void updated( Collection<T> objects ) {
+        }
 
 
-      default void deleted( T object ) {
-      }
+        default void deleted( T object ) {
+        }
 
-      default void deleted( Collection<T> objects ) {
-      }
+        default void deleted( Collection<T> objects ) {
+        }
 
-   }
+    }
 }
