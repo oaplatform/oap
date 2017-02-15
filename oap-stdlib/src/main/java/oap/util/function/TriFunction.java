@@ -31,7 +31,7 @@ import java.util.function.Function;
  * Created by anton on 2/15/17.
  */
 @FunctionalInterface
-interface TriFunction<AT1,AT2,AT3,R> {
+public interface TriFunction<AT1,AT2,AT3,R> {
 
     /**
      * Applies this function to the given arguments.
