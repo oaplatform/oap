@@ -55,6 +55,10 @@ public class NumberSchemaTest extends AbstractSchemaTest {
         String schema = "{\"type\": \"double\"}";
         assertOk( schema, "-10.0" );
         assertOk( schema, "324.23" );
+        assertOk( schema, "2" );
+        assertOk( schema, "-2" );
+        assertOk( schema, "0" );
+        assertOk( schema, "-0" );
         assertOk( schema, "null" );
 
         assertFailure( schema, "\"10\"",
