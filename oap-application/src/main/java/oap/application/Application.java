@@ -56,11 +56,11 @@ public class Application {
         services.put( name, service );
     }
 
-    static synchronized void unregister( String name ) {
+    public static synchronized void unregister( String name ) {
         services.remove( name );
     }
 
-    static synchronized void unregisterServices() {
+    public static synchronized void unregisterServices() {
         services.clear();
     }
 

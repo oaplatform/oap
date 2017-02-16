@@ -101,6 +101,8 @@ public class WsFileUploaderTest extends AbstractTest {
         ws.stop();
         reset();
 
+        Application.unregisterServices();
+
         Cuid.resetToDefaults();
     }
 
@@ -116,7 +118,7 @@ public class WsFileUploaderTest extends AbstractTest {
             .isOk()
             .is( r -> resp.set( r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get() ) );
 
-        assertThat( resp.get().id).isEqualTo( "1p" );
+        assertThat( resp.get().id ).isEqualTo( "1p" );
         assertThat( resp.get().info.get( "ffprobe" ) ).isNotNull();
         assertThat( ( ( Map ) resp.get().info.get( "ffprobe" ).get( "format" ) ).get( "nb_streams" ) ).isEqualTo( 2L );
 

@@ -25,41 +25,53 @@
 package oap.ws;
 
 import oap.application.Application;
-import oap.http.HttpResponse;
+import oap.concurrent.SynchronizedThread;
+import oap.http.PlainHttpListener;
+import oap.http.Server;
+import oap.http.cors.GenericCorsPolicy;
+import oap.testng.Env;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static java.util.Collections.singletonList;
-import static oap.http.Request.HttpMethod.GET;
-import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
-import static oap.http.testng.HttpAsserts.assertGet;
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
+import static oap.http.testng.HttpAsserts.reset;
 
-public class WebServiceLocalTest extends AbstractWebServicesTest {
+/**
+ * Created by igor.petrenko on 16.02.2017.
+ */
+public class AbstractWebServicesTest {
+    private Server server;
+    private WebServices ws;
+
+    private SynchronizedThread listener;
+
     @BeforeClass
-    @Override
     public void startServer() {
-        Application.register( "test", new TestWS() );
+        server = new Server( 100 );
+        ws = new WebServices( server, new SessionManager( 10, null, "/" ),
+            GenericCorsPolicy.DEFAULT,
+            getConfig().stream().map( n -> WsConfig.CONFIGURATION.fromResource( getClass(), n ) ).collect( toList() )
+        );
 
-        super.startServer();
+        ws.start();
+        listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
+        listener.start();
     }
 
-    @Override
     protected List<String> getConfig() {
-        return singletonList( "ws-local.conf" );
+        return asList( "ws.json", "ws.conf" );
     }
 
-    @Test
-    public void testShouldAllowRequestWhenEmptyInterceptor() {
-        assertGet( HTTP_PREFIX + "/test/text?value=empty" ).isOk().hasBody( "\"" + "ok" + "\"" );
-    }
+    @AfterClass
+    public void stopServer() {
+        listener.stop();
+        server.stop();
+        ws.stop();
+        reset();
 
-    private static class TestWS {
-
-        @WsMethod( path = "/text", method = GET )
-        public HttpResponse text( @WsParam( from = WsParam.From.QUERY ) String value ) {
-            return HttpResponse.ok( "ok" );
-        }
+        Application.unregisterServices();
     }
 }
