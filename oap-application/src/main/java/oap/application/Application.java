@@ -23,15 +23,13 @@
  */
 package oap.application;
 
-import oap.util.Stream;
-
 import java.util.HashMap;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class Application {
-
-    static final Map<String, Object> services = new HashMap<>();
+    private static final Map<String, Object> services = new HashMap<>();
 
     @SuppressWarnings( "unchecked" )
     public static <T> T service( String name ) {
@@ -39,27 +37,36 @@ public class Application {
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <T> List<T> instancesOf( Class<T> clazz ) {
-        return Stream.of( services.values() )
+    public static <T> Stream<T> instancesOf( Class<T> clazz ) {
+        return services
+            .values()
+            .stream()
             .filter( clazz::isInstance )
-            .<T>map( x -> ( T ) x )
-            .toList();
+            .map( x -> ( T ) x );
     }
 
     public static <T> T service( Class<T> clazz ) {
-        List<T> services = instancesOf( clazz );
-        return services.isEmpty() ? null : services.get( 0 );
+        Iterator<T> services = instancesOf( clazz ).iterator();
+        return !services.hasNext() ? null : services.next();
     }
 
-    public static void register( String name, Object service ) {
+    public synchronized static void register( String name, Object service ) throws DuplicateServiceException {
+        if( services.containsKey( name ) ) throw new DuplicateServiceException( name );
+
         services.put( name, service );
     }
 
-    static void unregister( String name ) {
+    static synchronized void unregister( String name ) {
         services.remove( name );
     }
 
-    static void unregisterServices() {
+    static synchronized void unregisterServices() {
         services.clear();
+    }
+
+    public static class DuplicateServiceException extends RuntimeException {
+        public DuplicateServiceException( String service ) {
+            super( "Service " + service + " is already registered" );
+        }
     }
 }

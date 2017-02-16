@@ -23,6 +23,7 @@
  */
 package oap.application;
 
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.awt.event.ActionEvent;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ToString
+@EqualsAndHashCode
 public class ServiceTwo implements Hello, ActionListener {
     public ServiceOne one;
     int j;
