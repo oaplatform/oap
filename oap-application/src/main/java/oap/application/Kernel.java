@@ -71,6 +71,9 @@ public class Kernel {
             if( initialized.containsAll( service.dependsOn ) ) {
                 log.debug( "initializing {} as {}", entry.getKey(), serviceName );
 
+                if( service.implementation == null ) {
+                    throw new ApplicationException( "failed to initialize service: " + serviceName + ". implementation == null" );
+                }
                 @SuppressWarnings( "unchecked" )
                 Reflection reflect = Reflect.reflect( service.implementation, Module.coersions );
 
