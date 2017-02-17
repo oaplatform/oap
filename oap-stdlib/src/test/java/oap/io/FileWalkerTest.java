@@ -83,9 +83,8 @@ public class FileWalkerTest extends AbstractTest {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "w2/3*.txt" ).walkFileTree( visitor );
 
-        assertEquals( visitor.files, asList(
-            tmpPath( "/wildcard/w2/3.txt" ), tmpPath( "/wildcard/w2/33.txt" )
-        ) );
+        assertThat( visitor.files)
+            .containsOnly( tmpPath( "/wildcard/w2/3.txt" ), tmpPath( "/wildcard/w2/33.txt" ) );
     }
 
     @Test
