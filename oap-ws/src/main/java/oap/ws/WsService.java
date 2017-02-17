@@ -36,6 +36,7 @@ import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
 import oap.util.Optionals;
+import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Throwables;
@@ -276,6 +277,17 @@ public class WsService implements Handler {
                             .map( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) )
                             .orElseGet( () -> NOT_FOUND )
                     );
+                } else if( result instanceof Result<?, ?> ) {
+                    final Result<HttpResponse, HttpResponse> resp = ( ( Result<?, ?> ) result )
+                        .mapSuccess( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) )
+                        .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r ).withCookie( cookie ) );
+
+                    response.respond( resp.isSuccess() ? ( ( Result<?, ?> ) result )
+                        .mapSuccess( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) ).successValue
+                        : ( ( Result<?, ?> ) result )
+                            .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r ).withCookie( cookie ) )
+                            .failureValue );
+
                 } else if( result instanceof Stream<?> ) {
                     response.respond( HttpResponse.stream( ( Stream<?> ) result, isRaw, produces ).withCookie( cookie ) );
                 } else response.respond( HttpResponse.ok( result, isRaw, produces ).withCookie( cookie ) );
