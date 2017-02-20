@@ -120,12 +120,14 @@ public class WsFileUploaderTest extends AbstractTest {
 
         assertThat( resp.get().id ).isEqualTo( "1p" );
         assertThat( resp.get().info.get( "vast" ) ).isNotNull();
+        assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "video/mp4" );
 
         assertThat( medias ).hasSize( 1 );
         assertThat( medias.get( 0 )._1.prefix ).isEqualTo( "test/test2" );
         assertThat( medias.get( 0 )._1.name ).isEqualTo( "SampleVideo_1280x720_1mb.mp4" );
         assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "video/mp4" );
         assertThat( medias.get( 0 )._2.get( "vast" ) ).isNotNull();
+        assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "video/mp4" );
     }
 
 }

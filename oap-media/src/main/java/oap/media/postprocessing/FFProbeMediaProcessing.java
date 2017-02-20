@@ -35,6 +35,7 @@ import org.apache.commons.io.IOUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.stream.Collectors.toList;
@@ -67,11 +68,12 @@ public class FFProbeMediaProcessing implements MediaProcessing {
             final String xml = IOUtils.toString( p.getInputStream(), StandardCharsets.UTF_8 );
             log.trace( "ffprobe: {}", xml );
 
-            final String contentType = ContentTypeDetector.get( media.path );
+            final String contentType = ContentTypeDetector.get( media.path, Optional.of( media.name ) );
 
             final String vast = FFProbeXmlToVastConverter.convert( xml, media.id, contentType );
 
             mediaInfo.put( "vast", vast );
+            mediaInfo.put( "Content-Type", contentType );
             p.waitFor( timeout, TimeUnit.MILLISECONDS );
         } finally {
             p.destroy();
