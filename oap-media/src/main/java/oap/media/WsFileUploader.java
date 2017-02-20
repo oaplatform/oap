@@ -37,11 +37,11 @@ import oap.util.Cuid;
 import oap.util.Stream;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUpload;
-import org.apache.commons.fileupload.RequestContext;
 import org.apache.commons.fileupload.UploadContext;
 import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.io.FileCleaningTracker;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.http.protocol.HTTP;
 
 import java.io.IOException;
@@ -67,7 +67,7 @@ public class WsFileUploader extends FileUploader implements Handler {
         super( postprocessing );
         log.info( "file uploader path = {}", path );
 
-        DiskFileItemFactory factory = new DiskFileItemFactory();
+        val factory = new DiskFileItemFactory();
         factory.setSizeThreshold( ( int ) maxMemorySize );
         factory.setRepository( path.toFile() );
         factory.setFileCleaningTracker( new FileCleaningTracker() );
@@ -78,7 +78,7 @@ public class WsFileUploader extends FileUploader implements Handler {
     @Override
     @SneakyThrows
     public void handle( Request request, Response response ) {
-        final RequestContext ctx = new RequestUploadContext( request );
+        val ctx = new RequestUploadContext( request );
         if( FileUpload.isMultipartContent( ctx ) ) {
             val items = upload.parseRequest( ctx );
 
@@ -100,17 +100,18 @@ public class WsFileUploader extends FileUploader implements Handler {
             val id = Cuid.next();
 
             val prefix = prefixItem.getString();
+            val fileName = fileItem.getName();
             val file = new Media(
-                prefix.endsWith( "/" ) ? prefix + id : prefix + "/" + id,
-                fileItem.getName(),
+                prefix.endsWith( "/" ) ? prefix + id : prefix + "/" + id + "." + FilenameUtils.getExtension( fileName ),
+                fileName,
                 fileItem.getContentType(),
                 ( ( DiskFileItem ) fileItem ).getStoreLocation().toPath()
             );
             log.debug( "new file = {}", file );
 
-            final MediaInfo mediaInfo = new MediaInfo();
+            val mediaInfo = new MediaInfo();
 
-            final Media media = Stream.of( postprocessing ).foldLeft( file, ( f, p ) -> p.process( f, mediaInfo ) );
+            val media = Stream.of( postprocessing ).foldLeft( file, ( f, p ) -> p.process( f, mediaInfo ) );
 
             log.trace( "media = {}", media );
             log.trace( "info = {}", mediaInfo );
