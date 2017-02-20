@@ -124,8 +124,7 @@ public class WsFileUploaderTest extends AbstractTest {
         assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "video/mp4" );
 
         assertThat( medias ).hasSize( 1 );
-        assertThat( medias.get( 0 )._1.prefix ).isEqualTo( "test/test2" );
-        assertThat( medias.get( 0 )._1.id ).startsWith( "test/test2/" );
+        assertThat( medias.get( 0 )._1.id ).startsWith( "test/test2/1p" );
         assertThat( medias.get( 0 )._1.name ).isEqualTo( "SampleVideo_1280x720_1mb.mp4" );
         assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "video/mp4" );
         assertThat( medias.get( 0 )._2.get( "vast" ) ).isNotNull();
@@ -148,7 +147,7 @@ public class WsFileUploaderTest extends AbstractTest {
         assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "image/png" );
 
         assertThat( medias ).hasSize( 1 );
-        assertThat( medias.get( 0 )._1.prefix ).isEqualTo( "test/test2" );
+        assertThat( medias.get( 0 )._1.id ).isEqualTo( "test/test2/1p" );
         assertThat( medias.get( 0 )._1.name ).isEqualTo( "qt.png" );
         assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "image/png" );
         assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "image/png" );

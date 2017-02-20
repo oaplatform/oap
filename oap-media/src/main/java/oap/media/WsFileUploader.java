@@ -101,7 +101,6 @@ public class WsFileUploader extends FileUploader implements Handler {
 
             val prefix = prefixItem.getString();
             val file = new Media(
-                prefix,
                 prefix.endsWith( "/" ) ? prefix + id : prefix + "/" + id,
                 fileItem.getName(),
                 fileItem.getContentType(),
