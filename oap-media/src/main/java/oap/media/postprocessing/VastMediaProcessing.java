@@ -26,11 +26,11 @@ package oap.media.postprocessing;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.media.ContentTypeDetector;
 import oap.media.FFProbeXmlToVastConverter;
 import oap.media.Media;
 import oap.media.MediaInfo;
 import oap.media.MediaProcessing;
+import oap.media.MediaUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.nio.charset.StandardCharsets;
@@ -70,10 +70,9 @@ public class VastMediaProcessing implements MediaProcessing {
             final String xml = IOUtils.toString( p.getInputStream(), StandardCharsets.UTF_8 );
             log.trace( "ffprobe: {}", xml );
 
-            final String contentType = ContentTypeDetector.get( media.path, Optional.of( media.name ) );
+            final String contentType = MediaUtils.getContentType( media.path, Optional.of( media.name ) );
 
             final String vast = FFProbeXmlToVastConverter.convert( xml, mediaStorageUrl, media.id, contentType );
-
             mediaInfo.put( "vast", vast );
             mediaInfo.put( "Content-Type", contentType );
             p.waitFor( timeout, TimeUnit.MILLISECONDS );

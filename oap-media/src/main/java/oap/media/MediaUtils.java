@@ -26,14 +26,13 @@ package oap.media;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
-import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -41,18 +40,19 @@ import java.util.Optional;
  * Created by igor.petrenko on 20.02.2017.
  */
 @Slf4j
-public class ContentTypeDetector {
+public class MediaUtils {
+    private static final AutoDetectParser AUTO_DETECT_PARSER = new AutoDetectParser();
+    private static final Detector DETECTOR = AUTO_DETECT_PARSER.getDetector();
+
     @SneakyThrows
-    public static String get( Path file, Optional<String> fileName ) {
+    public static String getContentType( Path file, Optional<String> fileName ) {
         log.trace( "file = {}", file );
 
-        try( InputStream is = new FileInputStream( file.toFile() );
-             BufferedInputStream bis = new BufferedInputStream( is ) ) {
-            AutoDetectParser parser = new AutoDetectParser();
-            Detector detector = parser.getDetector();
-            Metadata md = new Metadata();
+        try( val is = new FileInputStream( file.toFile() );
+             val bis = new BufferedInputStream( is ) ) {
+            val md = new Metadata();
             md.add( Metadata.RESOURCE_NAME_KEY, fileName.orElse( file.toString() ) );
-            MediaType mediaType = detector.detect( bis, md );
+            val mediaType = DETECTOR.detect( bis, md );
             return mediaType.toString();
         }
     }

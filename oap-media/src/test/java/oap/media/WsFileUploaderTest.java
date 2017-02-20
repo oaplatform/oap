@@ -109,7 +109,7 @@ public class WsFileUploaderTest extends AbstractTest {
     }
 
     @Test
-    public void testUpload() throws IOException {
+    public void testUploadVideo() throws IOException {
         final Path path = Resources.filePath( getClass(), "SampleVideo_1280x720_1mb.mp4" ).get();
 
         Cuid.reset( "p", 1 );
@@ -132,4 +132,25 @@ public class WsFileUploaderTest extends AbstractTest {
         assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "video/mp4" );
     }
 
+    @Test
+    public void testUploadImage() throws IOException {
+        final Path path = Resources.filePath( getClass(), "qt.png" ).get();
+
+        Cuid.reset( "p", 1 );
+
+        final AtomicReference<WsFileUploader.MediaResponse> resp = new AtomicReference<>();
+
+        assertUploadFile( HTTP_PREFIX + "/upload/", "test/test2", path )
+            .isOk()
+            .is( r -> resp.set( r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get() ) );
+
+        assertThat( resp.get().id ).isEqualTo( "1p" );
+        assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "image/png" );
+
+        assertThat( medias ).hasSize( 1 );
+        assertThat( medias.get( 0 )._1.prefix ).isEqualTo( "test/test2" );
+        assertThat( medias.get( 0 )._1.name ).isEqualTo( "qt.png" );
+        assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "image/png" );
+        assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "image/png" );
+    }
 }

@@ -39,22 +39,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Created by igor.petrenko on 20.02.2017.
  */
-public class ContentTypeDetectorTest extends AbstractTest {
+public class MediaUtilsTest extends AbstractTest {
     @Test
     public void testContentType() throws IOException {
         final Path file = Resources.filePath( getClass(), "SampleVideo_1280x720_1mb.mp4" ).get();
-        assertThat( ContentTypeDetector.get( file, Optional.empty() ) )
+        assertThat( MediaUtils.getContentType( file, Optional.empty() ) )
             .isEqualTo( "video/mp4" );
 
         final Path fileWithoutExtensions = Env.tmpPath( "1" );
         Files.copy(file, fileWithoutExtensions );
 
-        assertThat( ContentTypeDetector.get( fileWithoutExtensions, Optional.empty() ) )
+        assertThat( MediaUtils.getContentType( fileWithoutExtensions, Optional.empty() ) )
             .isEqualTo( "video/quicktime" );
-        assertThat( ContentTypeDetector.get( fileWithoutExtensions, Optional.of("SampleVideo_1280x720_1mb.mp4") ) )
+        assertThat( MediaUtils.getContentType( fileWithoutExtensions, Optional.of("SampleVideo_1280x720_1mb.mp4") ) )
             .isEqualTo( "video/mp4" );
 
-        assertThat( ContentTypeDetector.get( Resources.filePath( getClass(), "ws-multipart.conf" ).get(), Optional.empty() ) )
+        assertThat( MediaUtils.getContentType( Resources.filePath( getClass(), "ws-multipart.conf" ).get(), Optional.empty() ) )
             .isEqualTo( "text/plain" );
     }
 
