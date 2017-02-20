@@ -24,17 +24,21 @@
 
 package oap.media;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import oap.io.Resources;
+import org.testng.annotations.Test;
 
-import java.io.Serializable;
-import java.util.HashMap;
+import static oap.testng.Asserts.assertString;
 
 /**
- * Created by igor.petrenko on 10.02.2017.
+ * Created by igor.petrenko on 20.02.2017.
  */
-@ToString( callSuper = true )
-@EqualsAndHashCode( callSuper = true )
-public class MediaInfo extends HashMap<String, Object> implements Serializable {
-    private static final long serialVersionUID = 8059757500236710629L;
+public class FFProbeXmlToVastConverterTest {
+    @Test
+    public void testConvert() throws Exception {
+        final String xml = Resources.readString( getClass(), "FFProbeXmlToVastConverterTest/ffprobe-out.xml" ).get();
+        final String result = Resources.readString( getClass(), "FFProbeXmlToVastConverterTest/ffprobe-vast.xml" ).get();
+        final String convert = FFProbeXmlToVastConverter.convert( xml, "uid", "video/mpeg" );
+        assertString( convert ).isEqualTo( result );
+    }
+
 }

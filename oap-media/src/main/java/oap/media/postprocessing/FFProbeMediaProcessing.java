@@ -24,10 +24,10 @@
 
 package oap.media.postprocessing;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.json.Binder;
+import oap.media.ContentTypeDetector;
+import oap.media.FFProbeXmlToVastConverter;
 import oap.media.Media;
 import oap.media.MediaInfo;
 import oap.media.MediaProcessing;
@@ -35,7 +35,6 @@ import org.apache.commons.io.IOUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.stream.Collectors.toList;
@@ -65,10 +64,14 @@ public class FFProbeMediaProcessing implements MediaProcessing {
         log.trace( "cmd = {}", cmd );
         Process p = builder.start();
         try {
-            final String json = IOUtils.toString( p.getInputStream(), StandardCharsets.UTF_8 );
-            log.trace( "ffprobe: {}", json );
-            final Map<String, Object> info = Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {}, json );
-            mediaInfo.put( "ffprobe", info );
+            final String xml = IOUtils.toString( p.getInputStream(), StandardCharsets.UTF_8 );
+            log.trace( "ffprobe: {}", xml );
+
+            final String contentType = ContentTypeDetector.get( media.path );
+
+            final String vast = FFProbeXmlToVastConverter.convert( xml, media.id, contentType );
+
+            mediaInfo.put( "vast", vast );
             p.waitFor( timeout, TimeUnit.MILLISECONDS );
         } finally {
             p.destroy();

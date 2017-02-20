@@ -84,7 +84,7 @@ public class WsFileUploaderTest extends AbstractTest {
         );
 
         final WsFileUploader service = new WsFileUploader( path, 1024 * 9, -1,
-            singletonList( new FFProbeMediaProcessing( shell( "ffprobe -v quiet -print_format json -show_format -show_streams {FILE}" ), 10000L ) )
+            singletonList( new FFProbeMediaProcessing( shell( "ffprobe -v quiet -print_format xml -show_format -show_streams {FILE}" ), 10000L ) )
         );
         service.addListener( ( media, mediaInfo ) -> WsFileUploaderTest.this.medias.add( __( media, mediaInfo ) ) );
         Application.register( "upload", service );
@@ -119,16 +119,13 @@ public class WsFileUploaderTest extends AbstractTest {
             .is( r -> resp.set( r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get() ) );
 
         assertThat( resp.get().id ).isEqualTo( "1p" );
-        assertThat( resp.get().info.get( "ffprobe" ) ).isNotNull();
-        assertThat( ( ( Map ) resp.get().info.get( "ffprobe" ).get( "format" ) ).get( "nb_streams" ) ).isEqualTo( 2L );
+        assertThat( resp.get().info.get( "vast" ) ).isNotNull();
 
         assertThat( medias ).hasSize( 1 );
         assertThat( medias.get( 0 )._1.prefix ).isEqualTo( "test/test2" );
         assertThat( medias.get( 0 )._1.name ).isEqualTo( "SampleVideo_1280x720_1mb.mp4" );
         assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "video/mp4" );
-        assertThat( medias.get( 0 )._2.get( "ffprobe" ) ).isNotNull();
-        assertThat( ( ( Map ) medias.get( 0 )._2.get( "ffprobe" ).get( "format" ) ).get( "nb_streams" ) ).isEqualTo( 2L );
-
+        assertThat( medias.get( 0 )._2.get( "vast" ) ).isNotNull();
     }
 
 }

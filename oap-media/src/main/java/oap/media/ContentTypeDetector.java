@@ -24,17 +24,18 @@
 
 package oap.media;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.SneakyThrows;
+import org.apache.tika.Tika;
 
-import java.io.Serializable;
-import java.util.HashMap;
+import java.nio.file.Path;
 
 /**
- * Created by igor.petrenko on 10.02.2017.
+ * Created by igor.petrenko on 20.02.2017.
  */
-@ToString( callSuper = true )
-@EqualsAndHashCode( callSuper = true )
-public class MediaInfo extends HashMap<String, Object> implements Serializable {
-    private static final long serialVersionUID = 8059757500236710629L;
+public class ContentTypeDetector {
+    @SneakyThrows
+    public static String get( Path file ) {
+        Tika tika = new Tika();
+        return tika.detect( file.toFile() );
+    }
 }

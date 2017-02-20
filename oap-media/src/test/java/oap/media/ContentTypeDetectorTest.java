@@ -24,17 +24,21 @@
 
 package oap.media;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import oap.io.Resources;
+import org.testng.annotations.Test;
 
-import java.io.Serializable;
-import java.util.HashMap;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Created by igor.petrenko on 10.02.2017.
+ * Created by igor.petrenko on 20.02.2017.
  */
-@ToString( callSuper = true )
-@EqualsAndHashCode( callSuper = true )
-public class MediaInfo extends HashMap<String, Object> implements Serializable {
-    private static final long serialVersionUID = 8059757500236710629L;
+public class ContentTypeDetectorTest {
+    @Test
+    public void testContentType() {
+        assertThat( ContentTypeDetector.get( Resources.filePath( getClass(), "SampleVideo_1280x720_1mb.mp4" ).get() ) )
+            .isEqualTo( "video/mp4" );
+        assertThat( ContentTypeDetector.get( Resources.filePath( getClass(), "ws-multipart.conf" ).get() ) )
+            .isEqualTo( "text/plain" );
+    }
+
 }
