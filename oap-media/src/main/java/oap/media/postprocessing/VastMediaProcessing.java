@@ -45,12 +45,10 @@ import static java.util.stream.Collectors.toList;
  */
 @Slf4j
 public class VastMediaProcessing implements MediaProcessing {
-    private final String mediaStorageUrl;
     private final List<String> command;
     private final long timeout;
 
-    public VastMediaProcessing( String mediaStorageUrl, List<String> command, long timeout ) {
-        this.mediaStorageUrl = mediaStorageUrl;
+    public VastMediaProcessing( List<String> command, long timeout ) {
         this.command = command;
         this.timeout = timeout;
     }
@@ -72,7 +70,7 @@ public class VastMediaProcessing implements MediaProcessing {
 
             final String contentType = MediaUtils.getContentType( media.path, Optional.of( media.name ) );
 
-            final String vast = FFProbeXmlToVastConverter.convert( xml, mediaStorageUrl, media.id, contentType );
+            final String vast = FFProbeXmlToVastConverter.convert( xml, media.id, contentType );
             mediaInfo.put( "vast", vast );
             mediaInfo.put( "Content-Type", contentType );
             p.waitFor( timeout, TimeUnit.MILLISECONDS );

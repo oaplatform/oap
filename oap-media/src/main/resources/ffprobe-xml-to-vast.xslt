@@ -25,7 +25,6 @@
 <xsl:stylesheet version="1.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:param name="id"/>
-    <xsl:param name="media_storage_url"/>
     <xsl:param name="contentType"/>
 
     <xsl:template match="/">
@@ -40,22 +39,11 @@
                     <Creative sequence="1" id="${$id}">
                         <Linear>
                             <Duration><xsl:value-of select="/ffprobe/format/@duration"/></Duration>
-                            <VideoClicks>
-                                <ClickThrough>https://tests.quple.rocks/rtb/someImpId_AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==/e?name=click&amp;landing=http%3A%2F%2Fsome.click.tracker</ClickThrough>
-                            </VideoClicks>
-                            <TrackingEvents>
-                                <Tracking event="start">https://test.quple.rocks/rtb/someImpId_AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==/e?name=start</Tracking>
-                                <Tracking event="firstQuartile">https://test.quple.rocks/rtb/someImpId_AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==/e?name=firstQuartile</Tracking>
-                                <Tracking event="midpoint">https://test.quple.rocks/rtb/someImpId_AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==/e?name=midpoint</Tracking>
-                                <Tracking event="thirdQuartile">https://test.quple.rocks/rtb/someImpId_AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==/e?name=thirdQuartile</Tracking>
-                                <Tracking event="complete">https://test.quple.rocks/rtb/someImpId_AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==/e?name=complete</Tracking>
-                                <Tracking event="close">https://test.quple.rocks/rtb/someImpId_AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==/e?name=close</Tracking>
-                                <Tracking event="pause">https://test.quple.rocks/rtb/someImpId_AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==/e?name=pause</Tracking>
-                                <Tracking event="resume">https://test.quple.rocks/rtb/someImpId_AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==/e?name=resume</Tracking>
-                            </TrackingEvents>
+                            <VideoClicks />
+                            <TrackingEvents />
                             <MediaFiles>
                                 <xsl:for-each select="/ffprobe/streams/stream[@codec_type='video']">
-                                    <MediaFile delivery="PROGRESSIVE" width="{current()/@width}" height="{current()/@height}" type="{$contentType}"><xsl:value-of select="$media_storage_url"/><xsl:value-of select="$id"/></MediaFile>
+                                    <MediaFile delivery="PROGRESSIVE" width="{current()/@width}" height="{current()/@height}" type="{$contentType}">${STORAGE_URL}<xsl:value-of select="$id"/></MediaFile>
                                 </xsl:for-each>
                             </MediaFiles>
                         </Linear>

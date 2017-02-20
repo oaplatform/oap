@@ -84,7 +84,6 @@ public class WsFileUploaderTest extends AbstractTest {
 
         final WsFileUploader service = new WsFileUploader( path, 1024 * 9, -1,
             singletonList( new VastMediaProcessing(
-                "http://test-cdn/",
                 shell( "ffprobe -v quiet -print_format xml -show_format -show_streams {FILE}" ), 10000L
             ) )
         );

@@ -60,7 +60,7 @@ public class FFProbeXmlToVastConverter {
     }
 
     @SneakyThrows
-    public static String convert( String xml, String mediaStorageUrl, String id, String contentType ) {
+    public static String convert( String xml, String id, String contentType ) {
         final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         final DocumentBuilder documentBuilder = factory.newDocumentBuilder();
         final Document ffprobeXml = documentBuilder.parse( new InputSource( new StringReader( xml ) ) );
@@ -69,7 +69,6 @@ public class FFProbeXmlToVastConverter {
         final Transformer transformer = templates.newTransformer();
         transformer.setParameter( "id", id );
         transformer.setParameter( "contentType", contentType );
-        transformer.setParameter( "media_storage_url", mediaStorageUrl );
         transformer.transform( new DOMSource( ffprobeXml ), new StreamResult( writer ) );
         return writer.toString();
     }
