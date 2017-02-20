@@ -24,6 +24,7 @@
 
 package oap.media;
 
+import lombok.val;
 import oap.application.Application;
 import oap.concurrent.SynchronizedThread;
 import oap.http.PlainHttpListener;
@@ -82,7 +83,7 @@ public class WsFileUploaderTest extends AbstractTest {
             GenericCorsPolicy.DEFAULT, WsConfig.CONFIGURATION.fromResource( getClass(), "ws-multipart.conf" )
         );
 
-        final WsFileUploader service = new WsFileUploader( path, 1024 * 9, -1,
+        val service = new WsFileUploader( path, 1024 * 9, -1,
             singletonList( new VastMediaProcessing(
                 shell( "ffprobe -v quiet -print_format xml -show_format -show_streams {FILE}" ), 10000L
             ) )
@@ -109,11 +110,11 @@ public class WsFileUploaderTest extends AbstractTest {
 
     @Test
     public void testUploadVideo() throws IOException {
-        final Path path = Resources.filePath( getClass(), "SampleVideo_1280x720_1mb.mp4" ).get();
+        val path = Resources.filePath( getClass(), "SampleVideo_1280x720_1mb.mp4" ).get();
 
         Cuid.reset( "p", 1 );
 
-        final AtomicReference<WsFileUploader.MediaResponse> resp = new AtomicReference<>();
+        val resp = new AtomicReference<WsFileUploader.MediaResponse>();
 
         assertUploadFile( HTTP_PREFIX + "/upload/", "test/test2", path )
             .isOk()
@@ -124,7 +125,7 @@ public class WsFileUploaderTest extends AbstractTest {
         assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "video/mp4" );
 
         assertThat( medias ).hasSize( 1 );
-        assertThat( medias.get( 0 )._1.id ).startsWith( "test/test2/1p" );
+        assertThat( medias.get( 0 )._1.id ).startsWith( "test/test2/1p.mp4" );
         assertThat( medias.get( 0 )._1.name ).isEqualTo( "SampleVideo_1280x720_1mb.mp4" );
         assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "video/mp4" );
         assertThat( medias.get( 0 )._2.get( "vast" ) ).isNotNull();
@@ -133,11 +134,11 @@ public class WsFileUploaderTest extends AbstractTest {
 
     @Test
     public void testUploadImage() throws IOException {
-        final Path path = Resources.filePath( getClass(), "qt.png" ).get();
+        val path = Resources.filePath( getClass(), "qt.png" ).get();
 
         Cuid.reset( "p", 1 );
 
-        final AtomicReference<WsFileUploader.MediaResponse> resp = new AtomicReference<>();
+        val resp = new AtomicReference<WsFileUploader.MediaResponse>();
 
         assertUploadFile( HTTP_PREFIX + "/upload/", "test/test2", path )
             .isOk()
@@ -147,7 +148,7 @@ public class WsFileUploaderTest extends AbstractTest {
         assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "image/png" );
 
         assertThat( medias ).hasSize( 1 );
-        assertThat( medias.get( 0 )._1.id ).isEqualTo( "test/test2/1p" );
+        assertThat( medias.get( 0 )._1.id ).isEqualTo( "test/test2/1p.png" );
         assertThat( medias.get( 0 )._1.name ).isEqualTo( "qt.png" );
         assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "image/png" );
         assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "image/png" );
