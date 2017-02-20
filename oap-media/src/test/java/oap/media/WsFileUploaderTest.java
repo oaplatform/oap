@@ -31,7 +31,7 @@ import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.Files;
 import oap.io.Resources;
-import oap.media.postprocessing.FFProbeMediaProcessing;
+import oap.media.postprocessing.VastMediaProcessing;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Cuid;
@@ -46,7 +46,6 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Collections.singletonList;
@@ -84,7 +83,10 @@ public class WsFileUploaderTest extends AbstractTest {
         );
 
         final WsFileUploader service = new WsFileUploader( path, 1024 * 9, -1,
-            singletonList( new FFProbeMediaProcessing( shell( "ffprobe -v quiet -print_format xml -show_format -show_streams {FILE}" ), 10000L ) )
+            singletonList( new VastMediaProcessing(
+                "http://test-cdn/",
+                shell( "ffprobe -v quiet -print_format xml -show_format -show_streams {FILE}" ), 10000L
+            ) )
         );
         service.addListener( ( media, mediaInfo ) -> WsFileUploaderTest.this.medias.add( __( media, mediaInfo ) ) );
         Application.register( "upload", service );

@@ -44,11 +44,13 @@ import static java.util.stream.Collectors.toList;
  * Created by igor.petrenko on 10.02.2017.
  */
 @Slf4j
-public class FFProbeMediaProcessing implements MediaProcessing {
+public class VastMediaProcessing implements MediaProcessing {
+    private final String mediaStorageUrl;
     private final List<String> command;
     private final long timeout;
 
-    public FFProbeMediaProcessing( List<String> command, long timeout ) {
+    public VastMediaProcessing( String mediaStorageUrl, List<String> command, long timeout ) {
+        this.mediaStorageUrl = mediaStorageUrl;
         this.command = command;
         this.timeout = timeout;
     }
@@ -70,7 +72,7 @@ public class FFProbeMediaProcessing implements MediaProcessing {
 
             final String contentType = ContentTypeDetector.get( media.path, Optional.of( media.name ) );
 
-            final String vast = FFProbeXmlToVastConverter.convert( xml, media.id, contentType );
+            final String vast = FFProbeXmlToVastConverter.convert( xml, mediaStorageUrl, media.id, contentType );
 
             mediaInfo.put( "vast", vast );
             mediaInfo.put( "Content-Type", contentType );

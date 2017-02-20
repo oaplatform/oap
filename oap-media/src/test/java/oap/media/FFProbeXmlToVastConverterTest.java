@@ -37,7 +37,7 @@ public class FFProbeXmlToVastConverterTest {
     public void testConvert() throws Exception {
         final String xml = Resources.readString( getClass(), "FFProbeXmlToVastConverterTest/ffprobe-out.xml" ).get();
         final String result = Resources.readString( getClass(), "FFProbeXmlToVastConverterTest/ffprobe-vast.xml" ).get();
-        final String convert = FFProbeXmlToVastConverter.convert( xml, "uid", "video/mpeg" );
+        final String convert = FFProbeXmlToVastConverter.convert( xml, "https://publicadserver.com/", "uid", "video/mpeg" );
         assertString( convert ).isEqualTo( result );
     }
 

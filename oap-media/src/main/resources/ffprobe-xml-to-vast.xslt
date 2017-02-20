@@ -25,6 +25,7 @@
 <xsl:stylesheet version="1.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:param name="id"/>
+    <xsl:param name="media_storage_url"/>
     <xsl:param name="contentType"/>
 
     <xsl:template match="/">
@@ -54,7 +55,7 @@
                             </TrackingEvents>
                             <MediaFiles>
                                 <xsl:for-each select="/ffprobe/streams/stream[@codec_type='video']">
-                                    <MediaFile delivery="PROGRESSIVE" width="{current()/@width}" height="{current()/@height}" type="{$contentType}">https://publicadserver.com/<xsl:value-of select="/ffprobe/format/@filename"/></MediaFile>
+                                    <MediaFile delivery="PROGRESSIVE" width="{current()/@width}" height="{current()/@height}" type="{$contentType}"><xsl:value-of select="$media_storage_url"/><xsl:value-of select="$id"/></MediaFile>
                                 </xsl:for-each>
                             </MediaFiles>
                         </Linear>
