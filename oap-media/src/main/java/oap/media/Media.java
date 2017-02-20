@@ -33,14 +33,12 @@ import java.nio.file.Path;
  */
 @ToString
 public class Media {
-    public final String prefix;
     public final String id;
     public final String name;
     public final String contentType;
     public final Path path;
 
-    public Media( String prefix, String id, String name, String contentType, Path path ) {
-        this.prefix = prefix;
+    public Media( String id, String name, String contentType, Path path ) {
         this.id = id;
         this.name = name;
         this.contentType = contentType;
