@@ -131,6 +131,10 @@ public final class Resources {
     }
 
     public static Optional<Stream<String>> lines( Class<?> contextClass, String name ) {
-        return filePath( contextClass, name ).map( Files::lines );
+        return url( contextClass, name ).map( IoStreams::lines );
+    }
+
+    public static Stream<String> lines( String name ) {
+        return Stream.of( urls( name ) ).flatMap( IoStreams::lines );
     }
 }

@@ -54,7 +54,6 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.util.Dates;
-import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
 import org.joda.time.ReadableInstant;
@@ -82,8 +81,7 @@ public class Binder {
 
     static {
         modules = Resources
-            .lines( Binder.class, "/META-INF/jackson.modules" )
-            .orElse( Stream.empty() )
+            .lines( "/META-INF/jackson.modules" )
             .map( Try.map( clazz -> ( ( Module ) Class.forName( clazz ).newInstance() ) ) )
             .collect( toSet() );
 
