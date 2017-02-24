@@ -40,12 +40,12 @@ import org.apache.commons.fileupload.FileUpload;
 import org.apache.commons.fileupload.UploadContext;
 import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.io.FileCleaningTracker;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.protocol.HTTP;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -70,7 +70,6 @@ public class WsFileUploader extends FileUploader implements Handler {
         val factory = new DiskFileItemFactory();
         factory.setSizeThreshold( ( int ) maxMemorySize );
         factory.setRepository( path.toFile() );
-        factory.setFileCleaningTracker( new FileCleaningTracker() );
         upload = new FileUpload( factory );
         upload.setSizeMax( maxRequestSize );
     }
@@ -97,28 +96,33 @@ public class WsFileUploader extends FileUploader implements Handler {
             val fileItem = items.stream().filter( i -> !i.isFormField() ).findAny().get();
             val prefixItem = items.stream().filter( FileItem::isFormField ).findAny().get();
 
-            val id = Cuid.next();
+            try {
+                val id = Cuid.next();
 
-            val prefix = prefixItem.getString();
-            val fileName = fileItem.getName();
-            val file = new Media(
-                prefix.endsWith( "/" ) ? prefix + id : prefix + "/" + id + "." + FilenameUtils.getExtension( fileName ),
-                fileName,
-                fileItem.getContentType(),
-                ( ( DiskFileItem ) fileItem ).getStoreLocation().toPath()
-            );
-            log.debug( "new file = {}", file );
+                val prefix = prefixItem.getString();
+                val fileName = fileItem.getName();
+                val file = new Media(
+                    prefix.endsWith( "/" ) ? prefix + id
+                        : prefix + "/" + id + "." + FilenameUtils.getExtension( fileName ),
+                    fileName,
+                    fileItem.getContentType(),
+                    ( ( DiskFileItem ) fileItem ).getStoreLocation().toPath()
+                );
+                log.debug( "new file = {}", file );
 
-            val mediaInfo = new MediaInfo();
+                val mediaInfo = new MediaInfo();
 
-            val media = Stream.of( postprocessing ).foldLeft( file, ( f, p ) -> p.process( f, mediaInfo ) );
+                val media = Stream.of( postprocessing ).foldLeft( file, ( f, p ) -> p.process( f, mediaInfo ) );
 
-            log.trace( "media = {}", media );
-            log.trace( "info = {}", mediaInfo );
+                log.trace( "media = {}", media );
+                log.trace( "info = {}", mediaInfo );
 
-            fireUploaded( media, mediaInfo );
+                fireUploaded( media, mediaInfo );
 
-            response.respond( HttpResponse.ok( new MediaResponse( id, mediaInfo ) ) );
+                response.respond( HttpResponse.ok( new MediaResponse( id, mediaInfo ) ) );
+            } finally {
+                Files.deleteIfExists( ( ( DiskFileItem ) fileItem ).getStoreLocation().toPath() );
+            }
         } else {
             response.respond( HttpResponse.NOT_FOUND );
         }
