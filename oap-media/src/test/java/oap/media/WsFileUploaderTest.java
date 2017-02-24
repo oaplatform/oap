@@ -83,7 +83,7 @@ public class WsFileUploaderTest extends AbstractTest {
             GenericCorsPolicy.DEFAULT, WsConfig.CONFIGURATION.fromResource( getClass(), "ws-multipart.conf" )
         );
 
-        val service = new WsFileUploader( path, 1024 * 9, -1,
+        val service = new WsFileUploader( path, 1024 * 1024, -1,
             singletonList( new VastMediaProcessing(
                 shell( "ffprobe -v quiet -print_format xml -show_format -show_streams {FILE}" ), 10000L
             ) )
