@@ -35,6 +35,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -53,7 +54,9 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.util.Dates;
+import oap.util.Stream;
 import oap.util.Strings;
+import oap.util.Try;
 import org.joda.time.ReadableInstant;
 
 import java.io.IOException;
@@ -62,18 +65,38 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
 
 @Slf4j
 public class Binder {
-    public static final Binder hocon =
-        new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false ) );
-    public static final Binder hoconWithoutSystemProperties =
-        new Binder( initialize( new ObjectMapper( new HoconFactory() ), false ) );
-    public static final Binder json = new Binder( initialize( new ObjectMapper(), false ) );
-    public static final Binder jsonWithTyping = new Binder( initialize( new ObjectMapper(), false ) );
-    public static final Binder xml = new Binder( initialize( new XmlMapper(), false ) );
-    public static final Binder xmlWithTyping = new Binder( initialize( new XmlMapper(), true ) );
+    public static final Binder hocon;
+    public static final Binder hoconWithoutSystemProperties;
+    public static final Binder json;
+    public static final Binder jsonWithTyping;
+    public static final Binder xml;
+    public static final Binder xmlWithTyping;
     private static final JacksonJodaDateFormat JACKSON_DATE_FORMAT = new JacksonJodaDateFormat( Dates.FORMAT_FULL );
+    private static Set<Module> modules;
+
+    static {
+        modules = Resources
+            .lines( Binder.class, "/META-INF/jackson.modules" )
+            .orElse( Stream.empty() )
+            .map( Try.map( clazz -> ( ( Module ) Class.forName( clazz ).newInstance() ) ) )
+            .collect( toSet() );
+
+        json = new Binder( initialize( new ObjectMapper(), false ) );
+        jsonWithTyping = new Binder( initialize( new ObjectMapper(), false ) );
+        xml = new Binder( initialize( new XmlMapper(), false ) );
+        xmlWithTyping = new Binder( initialize( new XmlMapper(), true ) );
+        hoconWithoutSystemProperties =
+            new Binder( initialize( new ObjectMapper( new HoconFactory() ), false ) );
+        hocon =
+            new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false ) );
+    }
+
     private ObjectMapper mapper;
 
     public Binder( ObjectMapper mapper ) {
@@ -105,10 +128,11 @@ public class Binder {
         mapper.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
         mapper.disable( SerializationFeature.WRITE_EMPTY_JSON_ARRAYS );
         mapper.disable( SerializationFeature.FAIL_ON_EMPTY_BEANS );
-        mapper.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
+        mapper.configure( JsonGenerator.Feature.AUTO_CLOSE_TARGET, false );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
-        mapper.registerModule( new OapJsonModule() );
+
+        modules.forEach( mapper::registerModule );
 
         if( defaultTyping )
             mapper.enableDefaultTyping( ObjectMapper.DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY );

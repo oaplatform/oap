@@ -204,6 +204,7 @@ public final class Files {
     }
 
     public static Stream<String> lines( Path path ) {
+        log.trace( "reading {}...", path );
         return Stream.of( new BufferedReader( new InputStreamReader( IoStreams.in( path ) ) ).lines() );
     }
 
