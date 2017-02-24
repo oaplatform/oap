@@ -192,7 +192,7 @@ public abstract class Dimension {
 
     public final void init( Stream<Object> value ) {
         _init( value
-            .filter( v -> !( v instanceof Optional ) || ( ( Optional ) v ).isPresent() )
+            .filter( v -> v != null && ( !( v instanceof Optional ) || ( ( Optional ) v ).isPresent() ) )
             .map( v -> v instanceof Optional ? ( ( Optional ) v ).get() : v ) );
     }
 

@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>1.30.14</version>
+    <version>1.30.15</version>
 
     <name>oap</name>
 

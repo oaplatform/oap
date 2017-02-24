@@ -341,6 +341,19 @@ public class TreeTest {
         assertThat( tree.find( l( "s2" ) ) ).containsOnly( "2" );
     }
 
+    @Test
+    public void testNullData() {
+        final Tree<String> tree = Tree
+            .<String>tree( STRING( "d1", CONTAINS, false ) )
+            .withHashFillFactor( 1 )
+            .load( l( v( "1", "s1" ), v( "2", (Object)null ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( "s1" ) ) ).containsOnly( "1", "2" );
+        assertThat( tree.find( l( "s2" ) ) ).containsOnly( "2" );
+    }
+
 
     @Test
     public void testSet() {
