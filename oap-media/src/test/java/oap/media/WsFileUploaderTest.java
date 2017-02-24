@@ -120,7 +120,7 @@ public class WsFileUploaderTest extends AbstractTest {
             .isOk()
             .is( r -> resp.set( r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get() ) );
 
-        assertThat( resp.get().id ).isEqualTo( "1p" );
+        assertThat( resp.get().id ).isEqualTo( "test/test2/1p.mp4" );
         assertThat( resp.get().info.get( "vast" ) ).isNotNull();
         assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "video/mp4" );
 
