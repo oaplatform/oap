@@ -108,7 +108,7 @@ public class WsFileUploader extends FileUploader implements Handler {
                     fileItem.getContentType(),
                     ( ( DiskFileItem ) fileItem ).getStoreLocation().toPath()
                 );
-                log.debug( "new file = {}", file );
+                log.debug( "new file = {}, exists = {}", file, Files.exists( file.path ) );
 
                 val mediaInfo = new MediaInfo();
 
