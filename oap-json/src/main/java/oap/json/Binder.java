@@ -81,7 +81,7 @@ public class Binder {
 
     static {
         modules = Resources
-            .lines( "/META-INF/jackson.modules" )
+            .lines( "META-INF/jackson.modules" )
             .map( Try.map( clazz -> ( ( Module ) Class.forName( clazz ).newInstance() ) ) )
             .collect( toSet() );
 
