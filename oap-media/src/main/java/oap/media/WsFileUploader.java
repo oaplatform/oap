@@ -102,13 +102,13 @@ public class WsFileUploader extends FileUploader implements Handler {
                 val prefix = prefixItem.getString();
                 val fileName = fileItem.getName();
                 val file = new Media(
-                    prefix.endsWith( "/" ) ? prefix + id
-                        : prefix + "/" + id + "." + FilenameUtils.getExtension( fileName ),
+                    ( prefix.endsWith( "/" ) ? prefix + id
+                        : prefix + "/" + id ) + "." + FilenameUtils.getExtension( fileName ),
                     fileName,
                     fileItem.getContentType(),
                     ( ( DiskFileItem ) fileItem ).getStoreLocation().toPath()
                 );
-                log.debug( "new file = {}, isInMemory = {}", fileItem.isInMemory() );
+                log.debug( "new file = {}, isInMemory = {}", file, fileItem.isInMemory() );
 
                 if( fileItem.isInMemory() ) {
                     fileItem.write( file.path.toFile() );
@@ -123,7 +123,7 @@ public class WsFileUploader extends FileUploader implements Handler {
 
                 fireUploaded( media, mediaInfo );
 
-                response.respond( HttpResponse.ok( new MediaResponse( id, mediaInfo ) ) );
+                response.respond( HttpResponse.ok( new MediaResponse( media.id, mediaInfo ) ) );
             } finally {
                 Files.deleteIfExists( ( ( DiskFileItem ) fileItem ).getStoreLocation().toPath() );
             }

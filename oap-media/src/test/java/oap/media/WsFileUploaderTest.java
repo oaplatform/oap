@@ -144,7 +144,7 @@ public class WsFileUploaderTest extends AbstractTest {
             .isOk()
             .is( r -> resp.set( r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get() ) );
 
-        assertThat( resp.get().id ).isEqualTo( "1p" );
+        assertThat( resp.get().id ).isEqualTo( "test/test2/1p.png" );
         assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "image/png" );
 
         assertThat( medias ).hasSize( 1 );
