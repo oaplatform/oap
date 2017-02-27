@@ -30,8 +30,10 @@ import oap.http.cors.CorsPolicy;
 import oap.http.Protocol;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 @EqualsAndHashCode
 @ToString
@@ -40,6 +42,7 @@ public class WsConfig {
     public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
     public LinkedHashMap<String, Service> handlers = new LinkedHashMap<>();
     public List<String> interceptors = new ArrayList<>();
+    public Set<String> profiles = new HashSet<>();
 
     @EqualsAndHashCode
     @ToString

@@ -23,17 +23,29 @@
  */
 package oap.application;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class Application {
-    private static final Map<String, Object> services = new HashMap<>();
+    private static final Map<String, RegisteredService> services = new HashMap<>();
 
     @SuppressWarnings( "unchecked" )
+    @Nullable
     public static <T> T service( String name ) {
-        return ( T ) services.get( name );
+        return ( T ) Optional.ofNullable( services.get( name ) )
+            .map( registeredService -> registeredService.implementation )
+            .orElse( null );
+    }
+
+    @Nullable
+    public static String profile( String name ) {
+        return Optional.ofNullable( services.get( name ) )
+            .map( registeredService -> registeredService.profile )
+            .orElse( null );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -41,6 +53,7 @@ public class Application {
         return services
             .values()
             .stream()
+            .map( registeredService -> registeredService.implementation )
             .filter( clazz::isInstance )
             .map( x -> ( T ) x );
     }
@@ -53,7 +66,13 @@ public class Application {
     public synchronized static void register( String name, Object service ) throws DuplicateServiceException {
         if( services.containsKey( name ) ) throw new DuplicateServiceException( name );
 
-        services.put( name, service );
+        services.put( name, new RegisteredService( service, null ) );
+    }
+
+    public synchronized static void register( String name, Object service, String profile ) throws DuplicateServiceException {
+        if( services.containsKey( name ) ) throw new DuplicateServiceException( name );
+
+        services.put( name, new RegisteredService( service, profile ) );
     }
 
     public static synchronized void unregister( String name ) {
@@ -69,4 +88,15 @@ public class Application {
             super( "Service " + service + " is already registered" );
         }
     }
+
+    private static class RegisteredService {
+        private final Object implementation;
+        private final String profile;
+
+        private RegisteredService( Object implementation, String profile ) {
+            this.implementation = implementation;
+            this.profile = profile;
+        }
+    }
+
 }

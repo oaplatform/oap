@@ -24,6 +24,7 @@
 package oap.ws;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import oap.application.Application;
 import oap.http.cors.CorsPolicy;
 import oap.http.HttpResponse;
@@ -81,16 +82,26 @@ public class WebServices {
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
                 final WsConfig.Service serviceConfig = entry.getValue();
                 final Object service = Application.service( serviceConfig.service );
+                final String profile = Application.profile( serviceConfig.service );
 
-                if( service == null ) throw new IllegalStateException( "Unknown service " + serviceConfig.service );
+                if ( profile != null && !config.profiles.contains( profile ) ) {
+                    logger.debug( "skipping " + entry.getKey() + " web service initialization with " +
+                        "service profile " + profile );
+                    continue;
+                }
+
+                Preconditions.checkState( service != null, "Unknown service " + serviceConfig.service );
 
                 CorsPolicy corsPolicy = serviceConfig.corsPolicy != null ? serviceConfig.corsPolicy : globalCorsPolicy;
                 bind( entry.getKey(), corsPolicy, service, serviceConfig.sessionAware,
                     sessionManager, interceptors, serviceConfig.protocol );
             }
+
             for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
                 final WsConfig.Service handlerConfig = entry.getValue();
+
                 CorsPolicy corsPolicy = handlerConfig.corsPolicy != null ? handlerConfig.corsPolicy : globalCorsPolicy;
+
                 server.bind( entry.getKey(), corsPolicy, Application.service( handlerConfig.service ), handlerConfig.protocol );
             }
         }

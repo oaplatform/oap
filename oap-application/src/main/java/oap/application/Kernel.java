@@ -90,9 +90,9 @@ public class Kernel {
                 } else instance = RemoteInvocationHandler.proxy(
                     service.remoting(),
                     reflect.underlying );
-                Application.register( serviceName, instance );
+                Application.register( serviceName, instance, service.profile );
                 if( !serviceName.equals( entry.getKey() ) )
-                    Application.register( entry.getKey(), instance );
+                    Application.register( entry.getKey(), instance, service.profile );
 
                 if( service.supervision.supervise )
                     supervisor.startSupervised( serviceName, instance,
