@@ -30,8 +30,10 @@ import oap.http.cors.CorsPolicy;
 import oap.http.Protocol;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 
 @EqualsAndHashCode
 @ToString
@@ -47,6 +49,7 @@ public class WsConfig {
         public String service;
         public CorsPolicy corsPolicy = null;
         public Protocol protocol;
+        public String profile;
         public boolean sessionAware;
     }
 }

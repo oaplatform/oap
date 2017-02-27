@@ -23,15 +23,22 @@
  */
 package oap.application;
 
+import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class Application {
     private static final Map<String, Object> services = new HashMap<>();
+    private static final Set<String> profiles = new HashSet<>();
 
     @SuppressWarnings( "unchecked" )
+    @Nullable
     public static <T> T service( String name ) {
         return ( T ) services.get( name );
     }
@@ -64,9 +71,18 @@ public class Application {
         services.clear();
     }
 
+    public static synchronized void registerProfiles( final Collection<String> inputProfiles ) {
+        profiles.addAll( inputProfiles );
+    }
+
+    public static Set<String> getProfiles() {
+        return Collections.unmodifiableSet( profiles );
+    }
+
     public static class DuplicateServiceException extends RuntimeException {
         public DuplicateServiceException( String service ) {
             super( "Service " + service + " is already registered" );
         }
     }
+
 }

@@ -216,6 +216,8 @@ public class Kernel {
             throw new ApplicationException( "failed to initialize modules: " + names );
         }
 
+        Application.registerProfiles( config.profiles );
+
         supervisor.start();
 
         log.debug( "application kernel started" );

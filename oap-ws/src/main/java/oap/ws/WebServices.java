@@ -24,6 +24,7 @@
 package oap.ws;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import oap.application.Application;
 import oap.http.cors.CorsPolicy;
 import oap.http.HttpResponse;
@@ -31,11 +32,13 @@ import oap.http.HttpServer;
 import oap.http.Protocol;
 import oap.json.Binder;
 import oap.util.Lists;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -60,8 +63,6 @@ public class WebServices {
         this( server, sessionManager, globalCorsPolicy, Lists.of( wsConfigs ) );
     }
 
-
-
     public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, List<WsConfig> wsConfigs ) {
         this.wsConfigs = wsConfigs;
         this.server = server;
@@ -72,6 +73,8 @@ public class WebServices {
     public void start() {
         logger.info( "binding web services..." );
 
+        final Set<String> profiles = Application.getProfiles();
+
         for( WsConfig config : wsConfigs ) {
             final List<Interceptor> interceptors = config.interceptors.stream()
                 .map( Application::service )
@@ -80,17 +83,27 @@ public class WebServices {
 
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
                 final WsConfig.Service serviceConfig = entry.getValue();
+
+                if ( StringUtils.isNotEmpty(serviceConfig.profile) && !profiles.contains( serviceConfig.profile ) ) {
+                    logger.debug( "skipping " + entry.getKey() + " web service initialization with " +
+                        "service profile " + serviceConfig.profile );
+                    continue;
+                }
+
                 final Object service = Application.service( serviceConfig.service );
 
-                if( service == null ) throw new IllegalStateException( "Unknown service " + serviceConfig.service );
+                Preconditions.checkState( service != null, "Unknown service " + serviceConfig.service );
 
                 CorsPolicy corsPolicy = serviceConfig.corsPolicy != null ? serviceConfig.corsPolicy : globalCorsPolicy;
                 bind( entry.getKey(), corsPolicy, service, serviceConfig.sessionAware,
                     sessionManager, interceptors, serviceConfig.protocol );
             }
+
             for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
                 final WsConfig.Service handlerConfig = entry.getValue();
+
                 CorsPolicy corsPolicy = handlerConfig.corsPolicy != null ? handlerConfig.corsPolicy : globalCorsPolicy;
+
                 server.bind( entry.getKey(), corsPolicy, Application.service( handlerConfig.service ), handlerConfig.protocol );
             }
         }
