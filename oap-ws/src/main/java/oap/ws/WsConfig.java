@@ -42,7 +42,6 @@ public class WsConfig {
     public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
     public LinkedHashMap<String, Service> handlers = new LinkedHashMap<>();
     public List<String> interceptors = new ArrayList<>();
-    public Set<String> profiles = new HashSet<>();
 
     @EqualsAndHashCode
     @ToString
@@ -50,6 +49,7 @@ public class WsConfig {
         public String service;
         public CorsPolicy corsPolicy = null;
         public Protocol protocol;
+        public String profile;
         public boolean sessionAware;
     }
 }

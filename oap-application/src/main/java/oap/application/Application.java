@@ -24,28 +24,23 @@
 package oap.application;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class Application {
-    private static final Map<String, RegisteredService> services = new HashMap<>();
+    private static final Map<String, Object> services = new HashMap<>();
+    private static final Set<String> profiles = new HashSet<>();
 
     @SuppressWarnings( "unchecked" )
     @Nullable
     public static <T> T service( String name ) {
-        return ( T ) Optional.ofNullable( services.get( name ) )
-            .map( registeredService -> registeredService.implementation )
-            .orElse( null );
-    }
-
-    @Nullable
-    public static String profile( String name ) {
-        return Optional.ofNullable( services.get( name ) )
-            .map( registeredService -> registeredService.profile )
-            .orElse( null );
+        return ( T ) services.get( name );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -53,7 +48,6 @@ public class Application {
         return services
             .values()
             .stream()
-            .map( registeredService -> registeredService.implementation )
             .filter( clazz::isInstance )
             .map( x -> ( T ) x );
     }
@@ -66,13 +60,7 @@ public class Application {
     public synchronized static void register( String name, Object service ) throws DuplicateServiceException {
         if( services.containsKey( name ) ) throw new DuplicateServiceException( name );
 
-        services.put( name, new RegisteredService( service, null ) );
-    }
-
-    public synchronized static void register( String name, Object service, String profile ) throws DuplicateServiceException {
-        if( services.containsKey( name ) ) throw new DuplicateServiceException( name );
-
-        services.put( name, new RegisteredService( service, profile ) );
+        services.put( name, service );
     }
 
     public static synchronized void unregister( String name ) {
@@ -83,19 +71,17 @@ public class Application {
         services.clear();
     }
 
+    public static synchronized void registerProfiles( final Collection<String> inputProfiles ) {
+        profiles.addAll( inputProfiles );
+    }
+
+    public static Set<String> getProfiles() {
+        return Collections.unmodifiableSet( profiles );
+    }
+
     public static class DuplicateServiceException extends RuntimeException {
         public DuplicateServiceException( String service ) {
             super( "Service " + service + " is already registered" );
-        }
-    }
-
-    private static class RegisteredService {
-        private final Object implementation;
-        private final String profile;
-
-        private RegisteredService( Object implementation, String profile ) {
-            this.implementation = implementation;
-            this.profile = profile;
         }
     }
 

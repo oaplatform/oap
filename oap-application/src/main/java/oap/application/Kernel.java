@@ -90,9 +90,9 @@ public class Kernel {
                 } else instance = RemoteInvocationHandler.proxy(
                     service.remoting(),
                     reflect.underlying );
-                Application.register( serviceName, instance, service.profile );
+                Application.register( serviceName, instance );
                 if( !serviceName.equals( entry.getKey() ) )
-                    Application.register( entry.getKey(), instance, service.profile );
+                    Application.register( entry.getKey(), instance );
 
                 if( service.supervision.supervise )
                     supervisor.startSupervised( serviceName, instance,
@@ -215,6 +215,8 @@ public class Kernel {
             log.error( "failed to initialize: {} ", names );
             throw new ApplicationException( "failed to initialize modules: " + names );
         }
+
+        Application.registerProfiles( config.profiles );
 
         supervisor.start();
 

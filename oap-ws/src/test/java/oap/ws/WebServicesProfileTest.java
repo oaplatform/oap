@@ -26,6 +26,7 @@ package oap.ws;
 
 import oap.application.Application;
 import oap.http.HttpResponse;
+import oap.util.Lists;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
@@ -42,8 +43,10 @@ public class WebServicesProfileTest extends AbstractWebServicesTest {
     @Override
     public void startServer() {
         Application.register( "no-profile", new TestWS() );
-        Application.register( "with-profile", new TestWS(), "test-profile" );
-        Application.register( "profile-not-configured", new TestWS(), "profile-not-configured" );
+        Application.register( "with-profile", new TestWS() );
+        Application.register( "new-profile", new TestWS() );
+
+        Application.registerProfiles( Lists.of( "test-profile" ) );
 
         super.startServer();
     }
@@ -65,7 +68,7 @@ public class WebServicesProfileTest extends AbstractWebServicesTest {
 
     @Test
     public void testShouldNotStartWebServiceIfProfileIsConfiguredForServiceAndNotWS() {
-        assertGet( HTTP_PREFIX + "/not-configured-profile/text?value=empty" ).hasCode( 501 );
+        assertGet( HTTP_PREFIX + "/new-profile/text?value=empty" ).hasCode( 501 );
 
     }
 

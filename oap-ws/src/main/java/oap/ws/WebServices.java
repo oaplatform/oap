@@ -32,11 +32,13 @@ import oap.http.HttpServer;
 import oap.http.Protocol;
 import oap.json.Binder;
 import oap.util.Lists;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -61,8 +63,6 @@ public class WebServices {
         this( server, sessionManager, globalCorsPolicy, Lists.of( wsConfigs ) );
     }
 
-
-
     public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, List<WsConfig> wsConfigs ) {
         this.wsConfigs = wsConfigs;
         this.server = server;
@@ -73,6 +73,8 @@ public class WebServices {
     public void start() {
         logger.info( "binding web services..." );
 
+        final Set<String> profiles = Application.getProfiles();
+
         for( WsConfig config : wsConfigs ) {
             final List<Interceptor> interceptors = config.interceptors.stream()
                 .map( Application::service )
@@ -81,14 +83,14 @@ public class WebServices {
 
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
                 final WsConfig.Service serviceConfig = entry.getValue();
-                final Object service = Application.service( serviceConfig.service );
-                final String profile = Application.profile( serviceConfig.service );
 
-                if ( profile != null && !config.profiles.contains( profile ) ) {
+                if ( StringUtils.isNotEmpty(serviceConfig.profile) && !profiles.contains( serviceConfig.profile ) ) {
                     logger.debug( "skipping " + entry.getKey() + " web service initialization with " +
-                        "service profile " + profile );
+                        "service profile " + serviceConfig.profile );
                     continue;
                 }
+
+                final Object service = Application.service( serviceConfig.service );
 
                 Preconditions.checkState( service != null, "Unknown service " + serviceConfig.service );
 
