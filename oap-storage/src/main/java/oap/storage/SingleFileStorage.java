@@ -82,7 +82,7 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
 
       if( java.nio.file.Files.exists( path ) ) {
          data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
-         }, path )
+         }, IoStreams.in( path ) )
             .stream()
             .map( x -> __( x.id, x ) )
             .collect( toConcurrentMap() );
