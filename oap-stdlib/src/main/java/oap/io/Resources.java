@@ -51,7 +51,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 public final class Resources {
-    private static final boolean IS_WINDOWS = System.getProperty( "os.name" ).contains( "indow" );
+    public static final boolean IS_WINDOWS = System.getProperty( "os.name" ).contains( "indow" );
 
     @Deprecated
     public static Path deepPath( Path basePath, String name ) {
@@ -131,6 +131,10 @@ public final class Resources {
     }
 
     public static Optional<Stream<String>> lines( Class<?> contextClass, String name ) {
-        return filePath( contextClass, name ).map( Files::lines );
+        return url( contextClass, name ).map( IoStreams::lines );
+    }
+
+    public static Stream<String> lines( String name ) {
+        return Stream.of( urls( name ) ).flatMap( IoStreams::lines );
     }
 }

@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>1.29.7</version>
+    <version>1.30.19</version>
 
     <name>oap</name>
 
@@ -56,6 +56,7 @@
         <module>oap-ws-cat</module>
         <module>oap-alert</module>
         <module>oap-alert-slack</module>
+        <module>oap-media</module>
         <module>maven</module>
     </modules>
 

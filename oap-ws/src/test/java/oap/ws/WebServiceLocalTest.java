@@ -25,45 +25,29 @@
 package oap.ws;
 
 import oap.application.Application;
-import oap.concurrent.SynchronizedThread;
 import oap.http.HttpResponse;
-import oap.http.PlainHttpListener;
-import oap.http.Server;
-import oap.http.cors.GenericCorsPolicy;
-import oap.testng.Env;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.List;
+
+import static java.util.Collections.singletonList;
 import static oap.http.Request.HttpMethod.GET;
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 import static oap.http.testng.HttpAsserts.assertGet;
-import static oap.http.testng.HttpAsserts.reset;
 
-public class WebServiceLocalTest {
-    private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, new SessionManager( 10, null, "/" ),
-       GenericCorsPolicy.DEFAULT, WsConfig.CONFIGURATION.fromResource( getClass(), "ws-local.conf" )
-    );
-
-    private SynchronizedThread listener;
-
+public class WebServiceLocalTest extends AbstractWebServicesTest {
     @BeforeClass
+    @Override
     public void startServer() {
         Application.register( "test", new TestWS() );
 
-        ws.start();
-
-        listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
-        listener.start();
+        super.startServer();
     }
 
-    @AfterClass
-    public void stopServer() {
-        listener.stop();
-        server.stop();
-        ws.stop();
-        reset();
+    @Override
+    protected List<String> getConfig() {
+        return singletonList( "ws-local.conf" );
     }
 
     @Test

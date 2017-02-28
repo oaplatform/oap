@@ -29,6 +29,7 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.util.Lists;
+import oap.util.Result;
 import oap.util.Strings;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
@@ -90,6 +91,10 @@ public final class Asserts {
 
     public static StringAssertion assertString( CharSequence actual ) {
         return new StringAssertion( actual );
+    }
+
+    public static <S, F> ResultAssertion<S, F> assertResult( Result<S, F> result ) {
+        return new ResultAssertion<>( result );
     }
 
     /**

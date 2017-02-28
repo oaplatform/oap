@@ -25,46 +25,34 @@ package oap.ws;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Application;
-import oap.concurrent.SynchronizedThread;
-import oap.http.*;
-import oap.http.cors.GenericCorsPolicy;
+import oap.http.Handler;
+import oap.http.HttpResponse;
+import oap.http.Request;
+import oap.http.Response;
 import oap.metrics.Metrics;
-import oap.testng.Env;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.nio.charset.StandardCharsets;
 
-import static oap.http.testng.HttpAsserts.*;
-import static org.apache.http.entity.ContentType.*;
+import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
+import static oap.http.testng.HttpAsserts.assertGet;
+import static oap.http.testng.HttpAsserts.assertPost;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
+import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 import static org.testng.Assert.assertEquals;
 
 @Slf4j
-public class WebServicesTest {
-    private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, new SessionManager( 10, null, "/" ),
-       GenericCorsPolicy.DEFAULT, WsConfig.CONFIGURATION.fromResource( getClass(), "ws.json" ),
-        WsConfig.CONFIGURATION.fromResource( getClass(), "ws.conf" )
-    );
-
-    private SynchronizedThread listener;
+public class WebServicesTest extends AbstractWebServicesTest {
 
     @BeforeClass
+    @Override
     public void startServer() {
         Application.register( "math", new MathWS() );
         Application.register( "handler", new TestHandler() );
-        ws.start();
-        listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
-        listener.start();
-    }
 
-    @AfterClass
-    public void stopServer() {
-        listener.stop();
-        server.stop();
-        ws.stop();
-        reset();
+        super.startServer();
     }
 
     @Test

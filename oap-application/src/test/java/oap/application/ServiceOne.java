@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 @ToString( exclude = "listener" )
+@EqualsAndHashCode
 public class ServiceOne {
     static volatile int instances;
     int i;
@@ -47,6 +48,10 @@ public class ServiceOne {
         this.i = i;
     }
 
+    public void addSomeListener( ActionListener listener ) {
+        this.listener = listener;
+    }
+
     @EqualsAndHashCode
     @ToString
     public static class Complex {
@@ -57,9 +62,5 @@ public class ServiceOne {
         public Complex( @JsonProperty( "i" ) int i ) {
             this.i = i;
         }
-    }
-
-    public void addSomeListener( ActionListener listener ) {
-        this.listener = listener;
     }
 }

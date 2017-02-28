@@ -25,6 +25,7 @@ package oap.io;
 
 import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import oap.archive.Archiver;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
@@ -56,6 +57,7 @@ import static oap.io.KafkaLZ4BlockOutputStream.BLOCKSIZE_4MB;
 import static oap.io.ProgressInputStream.progress;
 import static oap.util.Functions.empty.consume;
 
+@Slf4j
 public class IoStreams {
 
     public static final int DEFAULT_BUFFER = 8192;
@@ -70,6 +72,7 @@ public class IoStreams {
 
     @SneakyThrows
     public static Stream<String> lines( URL url, Encoding encoding, Consumer<Integer> progress ) {
+        log.trace( "loading {}...", url );
         URLConnection connection = url.openConnection();
         InputStream stream = connection.getInputStream();
         return lines( stream, encoding, progress( connection.getContentLengthLong(), progress ) )

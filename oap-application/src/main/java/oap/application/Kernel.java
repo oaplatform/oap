@@ -71,6 +71,9 @@ public class Kernel {
             if( initialized.containsAll( service.dependsOn ) ) {
                 log.debug( "initializing {} as {}", entry.getKey(), serviceName );
 
+                if( service.implementation == null ) {
+                    throw new ApplicationException( "failed to initialize service: " + serviceName + ". implementation == null" );
+                }
                 @SuppressWarnings( "unchecked" )
                 Reflection reflect = Reflect.reflect( service.implementation, Module.coersions );
 
@@ -88,7 +91,8 @@ public class Kernel {
                     service.remoting(),
                     reflect.underlying );
                 Application.register( serviceName, instance );
-                Application.register( entry.getKey(), instance );
+                if( !serviceName.equals( entry.getKey() ) )
+                    Application.register( entry.getKey(), instance );
 
                 if( service.supervision.supervise )
                     supervisor.startSupervised( serviceName, instance,
@@ -211,6 +215,8 @@ public class Kernel {
             log.error( "failed to initialize: {} ", names );
             throw new ApplicationException( "failed to initialize modules: " + names );
         }
+
+        Application.registerProfiles( config.profiles );
 
         supervisor.start();
 

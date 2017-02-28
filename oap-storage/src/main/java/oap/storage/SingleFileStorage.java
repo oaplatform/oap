@@ -51,97 +51,96 @@ import static oap.util.Pair.__;
  */
 @Slf4j
 public class SingleFileStorage<T> extends MemoryStorage<T> {
-   private final PeriodicScheduled scheduled;
-   private Path path;
-   private AtomicBoolean modified = new AtomicBoolean( false );
+    private final static byte[] BEGIN_ARRAY = "[".getBytes();
+    private final static byte[] END_ARRAY = "]".getBytes();
+    private final static byte[] ITEM_SEP = ",".getBytes();
+    private final PeriodicScheduled scheduled;
+    private Path path;
+    private AtomicBoolean modified = new AtomicBoolean( false );
 
-   private final static byte[] BEGIN_ARRAY = "[".getBytes();
-   private final static byte[] END_ARRAY = "]".getBytes();
-   private final static byte[] ITEM_SEP = ",".getBytes();
 
+    /**
+     * @deprecated use {@link #SingleFileStorage(Path, Identifier, long)} instead.
+     */
+    @Deprecated
+    public SingleFileStorage( Path path, Function<T, String> identify, long fsync ) {
+        this( path, IdentifierBuilder.identify( identify ).build(), fsync );
+    }
 
-   /**
-    * @deprecated use {@link #SingleFileStorage(Path, Identifier, long)} instead.
-    */
-   @Deprecated
-   public SingleFileStorage( Path path, Function<T, String> identify, long fsync ) {
-      this(path, IdentifierBuilder.identify( identify ).build(), fsync);
-   }
+    public SingleFileStorage( Path path, Identifier<T> identifier, long fsync ) {
+        super( identifier );
+        this.path = path;
 
-   public SingleFileStorage( Path path, Identifier<T> identifier, long fsync ) {
-      super( identifier );
-      this.path = path;
+        load();
+        addDataListener( new SFSDataListener<>() );
+        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
+    }
 
-      load();
-      addDataListener( new SFSDataListener<>() );
-      this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
-   }
+    private void load() {
+        Files.ensureFile( path );
 
-   private void load() {
-      Files.ensureFile( path );
+        if( java.nio.file.Files.exists( path ) ) {
+            data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
+            },  IoStreams.in( path )  )
+                .stream()
+                .map( x -> __( x.id, x ) )
+                .collect( toConcurrentMap() );
+        }
+        log.info( data.size() + " object(s) loaded." );
+    }
 
-      if( java.nio.file.Files.exists( path ) ) {
-         data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
-         }, IoStreams.in( path ) )
-            .stream()
-            .map( x -> __( x.id, x ) )
-            .collect( toConcurrentMap() );
-      }
-      log.info( data.size() + " object(s) loaded." );
-   }
+    @SneakyThrows
+    private synchronized void fsync( long last ) {
+        log.trace( "fsync: last: {}, storage size: {}", last, data.size() );
 
-   @SneakyThrows
-   private synchronized void fsync( long last ) {
-      log.trace( "fsync: last: {}, storage size: {}", last, data.size() );
+        if( modified.getAndSet( false ) ) {
+            log.debug( "fsync storing {}...", path );
 
-      if( modified.getAndSet( false ) ) {
-         log.debug( "fsync storing {}...", path );
+            OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), DEFAULT_BUFFER, false, true );
+            out.write( BEGIN_ARRAY );
 
-         OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), DEFAULT_BUFFER, false, true );
-         out.write( BEGIN_ARRAY );
-
-         Iterator<Metadata<T>> it = data.values().iterator();
-         while( it.hasNext() ) {
-            Metadata<T> metadata = it.next();
-            synchronized( metadata.id.intern() ) {
-               Binder.json.marshal( out, metadata );
+            Iterator<Metadata<T>> it = data.values().iterator();
+            while( it.hasNext() ) {
+                Metadata<T> metadata = it.next();
+                lock( metadata.id, () -> {
+                    Binder.json.marshal( out, metadata );
+                } );
+                if( it.hasNext() ) {
+                    out.write( ITEM_SEP );
+                }
             }
-            if( it.hasNext() ) {
-               out.write( ITEM_SEP );
-            }
-         }
-         out.write( END_ARRAY );
+            out.write( END_ARRAY );
 
-         out.close();
-         log.debug( "fsync storing {}... done", path );
-      }
-   }
+            out.close();
+            log.debug( "fsync storing {}... done", path );
+        }
+    }
 
-   @Override
-   public synchronized void close() {
-      Scheduled.cancel( scheduled );
-      fsync( scheduled.lastExecuted() );
-   }
+    @Override
+    public synchronized void close() {
+        Scheduled.cancel( scheduled );
+        fsync( scheduled.lastExecuted() );
+    }
 
-   private class SFSDataListener<T> implements DataListener<T> {
-      @Override
-      public void updated( T object ) {
-         modified.set( true );
-      }
+    private class SFSDataListener<T> implements DataListener<T> {
+        @Override
+        public void updated( T object ) {
+            modified.set( true );
+        }
 
-      @Override
-      public void updated( Collection<T> objects ) {
-         modified.set( true );
-      }
+        @Override
+        public void updated( Collection<T> objects ) {
+            modified.set( true );
+        }
 
-      @Override
-      public void deleted( T object ) {
-         modified.set( true );
-      }
+        @Override
+        public void deleted( T object ) {
+            modified.set( true );
+        }
 
-      @Override
-      public void deleted( Collection<T> objects ) {
-         modified.set( true );
-      }
-   }
+        @Override
+        public void deleted( Collection<T> objects ) {
+            modified.set( true );
+        }
+    }
 }

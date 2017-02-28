@@ -38,182 +38,182 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
-   protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
-   protected final Identifier<T> identifier;
-   private List<DataListener<T>> dataListeners = new ArrayList<>();
+    protected final Identifier<T> identifier;
+    protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
+    private List<DataListener<T>> dataListeners = new ArrayList<>();
 
-   /**
-    * @deprecated use {@link #MemoryStorage(Identifier)} instead.
-    */
-   @Deprecated
-   public MemoryStorage( Function<T, String> identify ) {
+    /**
+     * @deprecated use {@link #MemoryStorage(Identifier)} instead.
+     */
+    @Deprecated
+    public MemoryStorage( Function<T, String> identify ) {
         this( IdentifierBuilder.identify( identify ).build() );
-   }
+    }
 
-   public MemoryStorage( Identifier<T> identifier ) {
-       this.identifier = identifier;
-   }
+    public MemoryStorage( Identifier<T> identifier ) {
+        this.identifier = identifier;
+    }
 
-   @Override
-   public Stream<T> select() {
-      return Stream.of( data.values() ).map( m -> m.object );
-   }
+    @Override
+    public Stream<T> select() {
+        return Stream.of( data.values() ).map( m -> m.object );
+    }
 
-   @Override
-   public void store( T object ) {
-      String id = identifier.getOrInit( object, this );
-      synchronized( id.intern() ) {
-         Metadata<T> metadata = data.get( id );
-         if( metadata != null ) metadata.update( object );
-         else data.put( id, new Metadata<>( id, object ) );
-         fireUpdated( object );
-      }
-   }
-
-   @Override
-   public void store( Collection<T> objects ) {
-      for( T object : objects ) {
-         String id = identifier.getOrInit( object, this );
-         synchronized( id.intern() ) {
+    @Override
+    public void store( T object ) {
+        String id = identifier.getOrInit( object, this );
+        lock( id, () -> {
             Metadata<T> metadata = data.get( id );
             if( metadata != null ) metadata.update( object );
             else data.put( id, new Metadata<>( id, object ) );
-         }
-      }
-      fireUpdated( objects );
-   }
+            fireUpdated( object );
+        } );
+    }
 
-   @Override
-   public Optional<T> update( String id, Consumer<T> update ) {
-      return update( id, update, null );
-   }
+    @Override
+    public void store( Collection<T> objects ) {
+        for( T object : objects ) {
+            String id = identifier.getOrInit( object, this );
+            lock( id, () -> {
+                Metadata<T> metadata = data.get( id );
+                if( metadata != null ) metadata.update( object );
+                else data.put( id, new Metadata<>( id, object ) );
+            } );
+        }
+        fireUpdated( objects );
+    }
 
-   @Override
-   public Optional<T> update( String id, Consumer<T> update, Supplier<T> init ) {
-      return updateObject( id, update, init )
-         .map( m -> {
-            fireUpdated( m.object );
-            return m.object;
-         } );
-   }
+    @Override
+    public Optional<T> update( String id, Consumer<T> update ) {
+        return update( id, update, null );
+    }
 
-   protected Optional<Metadata<T>> updateObject( String id, Consumer<T> update, Supplier<T> init ) {
-      synchronized( id.intern() ) {
-         Metadata<T> m = data.get( id );
-         if( m == null ) {
-            if( init == null ) return Optional.empty();
-            T object = init.get();
-            m = new Metadata<>( id, object );
-            data.put( m.id, m );
-         } else {
-            update.accept( m.object );
-            m.update( m.object );
-         }
-         return Optional.of( m );
-      }
-   }
+    @Override
+    public Optional<T> update( String id, Consumer<T> update, Supplier<T> init ) {
+        return updateObject( id, update, init )
+            .map( m -> {
+                fireUpdated( m.object );
+                return m.object;
+            } );
+    }
 
-   @Override
-   public void update( Collection<String> ids, Consumer<T> update ) {
-      update( ids, update, null );
-   }
+    protected Optional<Metadata<T>> updateObject( String id, Consumer<T> update, Supplier<T> init ) {
+        return lock( id, () -> {
+            Metadata<T> m = data.get( id );
+            if( m == null ) {
+                if( init == null ) return Optional.empty();
+                T object = init.get();
+                m = new Metadata<>( id, object );
+                data.put( m.id, m );
+            } else {
+                update.accept( m.object );
+                m.update( m.object );
+            }
+            return Optional.of( m );
+        } );
+    }
 
-   @Override
-   public void update( Collection<String> ids, Consumer<T> update, Supplier<T> init ) {
-      fireUpdated( Stream.of( ids )
-         .flatMap( id -> Optionals.toStream( updateObject( id, update, init )
-            .map( m -> m.object ) ) )
-         .toList() );
-   }
+    @Override
+    public void update( Collection<String> ids, Consumer<T> update ) {
+        update( ids, update, null );
+    }
 
-   @Override
-   public Optional<T> get( String id ) {
-      return Maps.get( data, id ).map( m -> m.object );
+    @Override
+    public void update( Collection<String> ids, Consumer<T> update, Supplier<T> init ) {
+        fireUpdated( Stream.of( ids )
+            .flatMap( id -> Optionals.toStream( updateObject( id, update, init )
+                .map( m -> m.object ) ) )
+            .toList() );
+    }
 
-   }
+    @Override
+    public Optional<T> get( String id ) {
+        return Maps.get( data, id ).map( m -> m.object );
 
-   @Override
-   public void deleteAll() {
-      List<T> objects = select().toList();
-      data.clear();
-      fireDeleted( objects );
-   }
+    }
 
-   public void delete( String id ) {
-      deleteObject( id ).ifPresent( m -> fireDeleted( m.object ) );
-   }
+    @Override
+    public void deleteAll() {
+        List<T> objects = select().toList();
+        data.clear();
+        fireDeleted( objects );
+    }
 
-   protected Optional<Metadata<T>> deleteObject( String id ) {
-      synchronized( id.intern() ) {
-         Optional<Metadata<T>> metadata = Maps.get( data, id );
-         metadata.ifPresent( m -> data.remove( id ) );
-         return metadata;
-      }
-   }
+    public void delete( String id ) {
+        deleteObject( id ).ifPresent( m -> fireDeleted( m.object ) );
+    }
 
-   @Override
-   public long size() {
-      return data.size();
-   }
+    protected Optional<Metadata<T>> deleteObject( String id ) {
+        return lock( id, () -> {
+            Optional<Metadata<T>> metadata = Maps.get( data, id );
+            metadata.ifPresent( m -> data.remove( id ) );
+            return metadata;
+        } );
+    }
 
-   protected void fireUpdated( T object ) {
-      for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( object );
-   }
+    @Override
+    public long size() {
+        return data.size();
+    }
 
-   protected void fireUpdated( Collection<T> objects ) {
-      if( !objects.isEmpty() )
-         for( DataListener<T> dataListener : this.dataListeners )
-            dataListener.updated( objects );
-   }
+    protected void fireUpdated( T object ) {
+        for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( object );
+    }
 
-   protected void fireDeleted( T object ) {
-      for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( object );
-   }
+    protected void fireUpdated( Collection<T> objects ) {
+        if( !objects.isEmpty() )
+            for( DataListener<T> dataListener : this.dataListeners )
+                dataListener.updated( objects );
+    }
 
-   protected void fireDeleted( List<T> objects ) {
-      if( !objects.isEmpty() )
-         for( DataListener<T> dataListener : this.dataListeners )
-            dataListener.deleted( objects );
-   }
+    protected void fireDeleted( T object ) {
+        for( DataListener<T> dataListener : this.dataListeners ) dataListener.deleted( object );
+    }
 
-   @Override
-   public void addDataListener( DataListener<T> dataListener ) {
-      this.dataListeners.add( dataListener );
-   }
+    protected void fireDeleted( List<T> objects ) {
+        if( !objects.isEmpty() )
+            for( DataListener<T> dataListener : this.dataListeners )
+                dataListener.deleted( objects );
+    }
 
-   @Override
-   public void removeDataListener( DataListener<T> dataListener ) {
-      this.dataListeners.remove( dataListener );
-   }
+    @Override
+    public void addDataListener( DataListener<T> dataListener ) {
+        this.dataListeners.add( dataListener );
+    }
 
-   @Override
-   public List<Metadata<T>> updatedSince( long time ) {
-      return Stream.of( data.values() )
-          .filter( m -> m.modified > time )
-          .toList();
-   }
+    @Override
+    public void removeDataListener( DataListener<T> dataListener ) {
+        this.dataListeners.remove( dataListener );
+    }
 
-   @Override
-   public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
-      return Stream.of( data.values() )
-          .filter( m -> m.modified > time )
-          .skip( offset )
-          .limit( limit )
-          .toList();
-   }
+    @Override
+    public List<Metadata<T>> updatedSince( long time ) {
+        return Stream.of( data.values() )
+            .filter( m -> m.modified > time )
+            .toList();
+    }
 
-   @Override
-   public List<String> ids() {
-      return new ArrayList<>( data.keySet() );
-   }
+    @Override
+    public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
+        return Stream.of( data.values() )
+            .filter( m -> m.modified > time )
+            .skip( offset )
+            .limit( limit )
+            .toList();
+    }
 
-   public void clear() {
-      List<String> keys = new ArrayList<>( data.keySet() );
-      List<T> deleted = Stream.of( keys ).flatMapOptional( this::deleteObject ).map( m -> m.object ).toList();
-      fireDeleted( deleted );
-   }
+    @Override
+    public List<String> ids() {
+        return new ArrayList<>( data.keySet() );
+    }
 
-   @Override
-   public void close() {
-   }
+    public void clear() {
+        List<String> keys = new ArrayList<>( data.keySet() );
+        List<T> deleted = Stream.of( keys ).flatMapOptional( this::deleteObject ).map( m -> m.object ).toList();
+        fireDeleted( deleted );
+    }
+
+    @Override
+    public void close() {
+    }
 }

@@ -25,47 +25,36 @@
 package oap.ws;
 
 import oap.application.Application;
-import oap.concurrent.SynchronizedThread;
-import oap.http.*;
-import oap.http.cors.GenericCorsPolicy;
+import oap.http.HttpResponse;
+import oap.http.Request;
+import oap.http.Session;
 import oap.reflect.Reflection;
-import oap.testng.Env;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static oap.http.Request.HttpMethod.GET;
-import static oap.http.testng.HttpAsserts.*;
+import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
+import static oap.http.testng.HttpAsserts.assertGet;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
-public class WebServiceInterceptorsTest {
-    private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, new SessionManager( 10, null, "/" ),
-       GenericCorsPolicy.DEFAULT, WsConfig.CONFIGURATION.fromResource( getClass(), "ws-interceptors.conf" )
-    );
-
-    private SynchronizedThread listener;
-
+public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
     @BeforeClass
+    @Override
     public void startServer() {
         Application.register( "test", new TestWS() );
         Application.register( "empty-interceptor", new EmptyInterceptor() );
         Application.register( "error-interceptor", new ErrorInterceptor() );
 
-        ws.start();
-
-        listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
-        listener.start();
+        super.startServer();
     }
 
-    @AfterClass
-    public void stopServer() {
-        listener.stop();
-        server.stop();
-        ws.stop();
-        reset();
+    @Override
+    protected List<String> getConfig() {
+        return Collections.singletonList( "ws-interceptors.conf" );
     }
 
     @Test

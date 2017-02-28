@@ -25,20 +25,19 @@
 package oap.application;
 
 import oap.testng.AbstractTest;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
-
-import static org.testng.Assert.assertSame;
 
 public class ApplicationTest extends AbstractTest {
 
-   @Test
-   public void instancesOf() throws Exception {
-      try {
-         Application.register( "ServiceTwo", new ServiceTwo() );
-         assertSame( Application.instancesOf( ServiceTwo.class ).get( 0 ),
-            Application.instancesOf( Hello.class ).get( 0 ) );
-      } finally {
-         Application.unregister( "ServiceTwo" );
-      }
-   }
+    @Test
+    public void instancesOf() throws Exception {
+        try {
+            Application.register( "ServiceTwo", new ServiceTwo() );
+            Assertions.assertThat( Application.instancesOf( ServiceTwo.class ).findFirst().get() )
+                .isSameAs( Application.instancesOf( Hello.class ).findFirst().get() );
+        } finally {
+            Application.unregister( "ServiceTwo" );
+        }
+    }
 }
