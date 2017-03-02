@@ -78,7 +78,7 @@ public class Replicator<T> implements Closeable {
             }
         }
         if( !newObjects.isEmpty() ) slave.fireUpdated( newObjects, true );
-        if( !updatedObjects.isEmpty() ) slave.fireUpdated( newObjects, false );
+        if( !updatedObjects.isEmpty() ) slave.fireUpdated( updatedObjects, false );
 
         List<String> ids = master.ids();
         log.trace( "master ids {}", ids );

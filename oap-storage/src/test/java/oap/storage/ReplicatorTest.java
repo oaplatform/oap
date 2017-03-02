@@ -24,12 +24,15 @@
 
 package oap.storage;
 
+import lombok.val;
 import oap.json.TypeIdFactory;
 import oap.testng.AbstractTest;
+import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Env.tmpPath;
@@ -37,44 +40,63 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReplicatorTest extends AbstractTest {
 
-   @Test
-   public void masterSlave() {
-      TypeIdFactory.register( Bean.class, Bean.class.getName() );
-      MemoryStorage<Bean> slave = new MemoryStorage<>( b -> b.id );
-      try( FileStorage<Bean> master = new FileStorage<>( tmpPath( "master" ), b -> b.id, 50 );
-           Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 100 ) ) {
+    @Test
+    public void masterSlave() {
+        val time = new AtomicLong( 0 );
+        DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
+        TypeIdFactory.register( Bean.class, Bean.class.getName() );
+        MemoryStorage<Bean> slave = new MemoryStorage<>( b -> b.id );
+        try( FileStorage<Bean> master = new FileStorage<>( tmpPath( "master" ), b -> b.id, 50 );
+             Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 0 ) ) {
 
-         AtomicInteger updates = new AtomicInteger();
-         AtomicInteger deletes = new AtomicInteger();
-         slave.addDataListener( new FileStorage.DataListener<Bean>() {
-            public void updated( Collection<Bean> objects, boolean isNew ) {
-               updates.set( objects.size() );
-            }
+            val updates = new AtomicInteger();
+            val creates = new AtomicInteger();
+            val deletes = new AtomicInteger();
+            slave.addDataListener( new FileStorage.DataListener<Bean>() {
+                public void updated( Collection<Bean> objects, boolean isNew ) {
+                    ( isNew ? creates : updates ).set( objects.size() );
+                }
 
-            @Override
-            public void deleted( Collection<Bean> objects ) {
-               deletes.set( objects.size() );
-            }
-         } );
-         master.store( new Bean( "111" ) );
-         master.store( new Bean( "222" ) );
-         assertEventually( 120, 5, () -> {
-            assertThat( slave.select() ).containsExactly( new Bean( "111" ), new Bean( "222" ) );
-            assertThat( updates.get() ).isEqualTo( 2 );
-         } );
+                @Override
+                public void deleted( Collection<Bean> objects ) {
+                    deletes.set( objects.size() );
+                }
+            } );
 
-         master.store( new Bean( "111", "bbb" ) );
-         assertEventually( 120, 5, () -> {
-            assertThat( slave.select() ).containsExactly( new Bean( "111", "bbb" ), new Bean( "222" ) );
-            assertThat( updates.get() ).isEqualTo( 1 );
-         } );
+            master.store( new Bean( "111" ) );
+            master.store( new Bean( "222" ) );
+            assertEventually( 120, 5, () -> {
+                assertThat( slave.select() ).containsExactly( new Bean( "111" ), new Bean( "222" ) );
+                assertThat( updates.get() ).isEqualTo( 0 );
+                assertThat( creates.get() ).isEqualTo( 2 );
+                assertThat( deletes.get() ).isEqualTo( 0 );
+                DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
+            } );
 
-         master.delete( "111" );
-         assertEventually( 120, 5, () -> {
-            assertThat( slave.select() ).containsExactly( new Bean( "222" ) );
-            assertThat( deletes.get() ).isEqualTo( 1 );
-         } );
+            DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
+            updates.set( 0 );
+            creates.set( 0 );
+            master.store( new Bean( "111", "bbb" ) );
+            assertEventually( 120, 5, () -> {
+                assertThat( slave.select() ).containsExactly( new Bean( "111", "bbb" ), new Bean( "222" ) );
+                assertThat( updates.get() ).isEqualTo( 1 );
+                assertThat( creates.get() ).isEqualTo( 0 );
+                assertThat( deletes.get() ).isEqualTo( 0 );
+                DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
+            } );
 
-      }
-   }
+            DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
+            updates.set( 0 );
+            creates.set( 0 );
+            master.delete( "111" );
+            assertEventually( 120, 5, () -> {
+                assertThat( slave.select() ).containsExactly( new Bean( "222" ) );
+                assertThat( updates.get() ).isEqualTo( 0 );
+                assertThat( creates.get() ).isEqualTo( 0 );
+                assertThat( deletes.get() ).isEqualTo( 1 );
+                DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
+            } );
+
+        }
+    }
 }
