@@ -81,7 +81,7 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
 
         if( java.nio.file.Files.exists( path ) ) {
             data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
-            },  IoStreams.in( path )  )
+            }, IoStreams.in( path ) )
                 .stream()
                 .map( x -> __( x.id, x ) )
                 .collect( toConcurrentMap() );
@@ -124,12 +124,12 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
 
     private class SFSDataListener<T> implements DataListener<T> {
         @Override
-        public void updated( T object ) {
+        public void updated( T object, boolean isNew ) {
             modified.set( true );
         }
 
         @Override
-        public void updated( Collection<T> objects ) {
+        public void updated( Collection<T> objects, boolean isNew ) {
             modified.set( true );
         }
 

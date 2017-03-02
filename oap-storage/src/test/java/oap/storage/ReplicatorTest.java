@@ -47,7 +47,7 @@ public class ReplicatorTest extends AbstractTest {
          AtomicInteger updates = new AtomicInteger();
          AtomicInteger deletes = new AtomicInteger();
          slave.addDataListener( new FileStorage.DataListener<Bean>() {
-            public void updated( Collection<Bean> objects ) {
+            public void updated( Collection<Bean> objects, boolean isNew ) {
                updates.set( objects.size() );
             }
 

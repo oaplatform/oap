@@ -71,11 +71,29 @@ public interface Storage<T> extends Closeable {
     void removeDataListener( DataListener<T> dataListener );
 
     interface DataListener<T> {
+        @Deprecated
+        /**
+         * updated( T object, boolean isNew )
+         */
         default void updated( T object ) {
         }
 
+        default void updated( T object, boolean isNew ) {
+            updated( object );
+        }
 
+
+        @Deprecated
+        /**
+         * updated( Collection<T> objects, boolean isNew )
+         */
         default void updated( Collection<T> objects ) {
+        }
+
+        default void updated( Collection<T> objects, boolean isNew ) {
+            updated( objects );
+
+            objects.forEach( obj -> updated( obj, isNew ) );
         }
 
 
@@ -83,6 +101,7 @@ public interface Storage<T> extends Closeable {
         }
 
         default void deleted( Collection<T> objects ) {
+            objects.forEach( this::deleted );
         }
 
     }

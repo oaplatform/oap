@@ -23,6 +23,7 @@
  */
 package oap.storage;
 
+import lombok.val;
 import oap.util.Maps;
 import oap.util.Optionals;
 import oap.util.Stream;
@@ -66,21 +67,30 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             Metadata<T> metadata = data.get( id );
             if( metadata != null ) metadata.update( object );
             else data.put( id, new Metadata<>( id, object ) );
-            fireUpdated( object );
+            fireUpdated( object, metadata == null );
         } );
     }
 
     @Override
     public void store( Collection<T> objects ) {
+        val newObjects = new ArrayList<T>();
+        val updatedObjects = new ArrayList<T>();
+
         for( T object : objects ) {
             String id = identifier.getOrInit( object, this );
             lock( id, () -> {
                 Metadata<T> metadata = data.get( id );
-                if( metadata != null ) metadata.update( object );
-                else data.put( id, new Metadata<>( id, object ) );
+                if( metadata != null ) {
+                    metadata.update( object );
+                    updatedObjects.add( object );
+                } else {
+                    data.put( id, new Metadata<>( id, object ) );
+                    newObjects.add( object );
+                }
             } );
         }
-        fireUpdated( objects );
+        if( !newObjects.isEmpty() ) fireUpdated( newObjects, true );
+        if( !updatedObjects.isEmpty() ) fireUpdated( updatedObjects, false );
     }
 
     @Override
@@ -92,7 +102,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public Optional<T> update( String id, Consumer<T> update, Supplier<T> init ) {
         return updateObject( id, update, init )
             .map( m -> {
-                fireUpdated( m.object );
+                fireUpdated( m.object, false );
                 return m.object;
             } );
     }
@@ -123,7 +133,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         fireUpdated( Stream.of( ids )
             .flatMap( id -> Optionals.toStream( updateObject( id, update, init )
                 .map( m -> m.object ) ) )
-            .toList() );
+            .toList(), false );
     }
 
     @Override
@@ -156,14 +166,14 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         return data.size();
     }
 
-    protected void fireUpdated( T object ) {
-        for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( object );
+    protected void fireUpdated( T object, boolean isNew ) {
+        for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( object, isNew );
     }
 
-    protected void fireUpdated( Collection<T> objects ) {
+    protected void fireUpdated( Collection<T> objects, boolean isNew ) {
         if( !objects.isEmpty() )
             for( DataListener<T> dataListener : this.dataListeners )
-                dataListener.updated( objects );
+                dataListener.updated( objects, isNew );
     }
 
     protected void fireDeleted( T object ) {

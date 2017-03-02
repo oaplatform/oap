@@ -43,7 +43,7 @@
                             <TrackingEvents />
                             <MediaFiles>
                                 <xsl:for-each select="/ffprobe/streams/stream[@codec_type='video']">
-                                    <MediaFile delivery="PROGRESSIVE" width="{current()/@width}" height="{current()/@height}" type="{$contentType}">${STORAGE_URL}<xsl:value-of select="$id"/></MediaFile>
+                                    <MediaFile delivery="progressive" width="{current()/@width}" height="{current()/@height}" type="{$contentType}">${STORAGE_URL}<xsl:value-of select="$id"/></MediaFile>
                                 </xsl:for-each>
                             </MediaFiles>
                         </Linear>

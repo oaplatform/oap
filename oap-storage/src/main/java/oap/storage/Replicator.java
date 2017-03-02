@@ -25,6 +25,7 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.util.Lists;
@@ -32,6 +33,7 @@ import oap.util.Optionals;
 import oap.util.Stream;
 
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -63,11 +65,20 @@ public class Replicator<T> implements Closeable {
         }
         log.trace( "updated objects {}", newUpdates.size() );
 
+        val newObjects = new ArrayList<T>();
+        val updatedObjects = new ArrayList<T>();
+
         for( Metadata<T> metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
-            slave.data.put( metadata.id, metadata );
+            val object = metadata.object;
+            if( slave.data.put( metadata.id, metadata ) != null ) {
+                updatedObjects.add( object );
+            } else {
+                newObjects.add( object );
+            }
         }
-        slave.fireUpdated( Stream.of( newUpdates ).map( m -> m.object ).toList() );
+        if( !newObjects.isEmpty() ) slave.fireUpdated( newObjects, true );
+        if( !updatedObjects.isEmpty() ) slave.fireUpdated( newObjects, false );
 
         List<String> ids = master.ids();
         log.trace( "master ids {}", ids );
