@@ -63,6 +63,7 @@ public class ReplicatorTest extends AbstractTest {
                 }
             } );
 
+            DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
             master.store( new Bean( "111" ) );
             master.store( new Bean( "222" ) );
             assertEventually( 120, 5, () -> {
