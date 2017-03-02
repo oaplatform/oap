@@ -133,6 +133,23 @@ public final class JsonValidatorFactory {
         }
     }
 
+    public List<String> partialValidate( Object root, Object json, String path, boolean ignoreRequiredDefault ) {
+        final SchemaPath.Result traverseResult = SchemaPath.traverse( this.schema, path );
+        final SchemaAST partialSchema = traverseResult.schema
+            .orElseThrow( () -> new ValidationSyntaxException( "path " + path + " not found" ) );
+
+        JsonValidatorProperties properties = new JsonValidatorProperties(
+            schema,
+            root,
+            Optional.empty(),
+            traverseResult.additionalProperties,
+            ignoreRequiredDefault,
+            JsonValidatorFactory::validate
+        );
+
+        return validate( properties, partialSchema, json );
+    }
+
     @SuppressWarnings( "unchecked" )
     public List<String> validate( Object json, boolean ignoreRequiredDefault ) {
         JsonValidatorProperties properties = new JsonValidatorProperties(
