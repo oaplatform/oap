@@ -69,8 +69,12 @@ public abstract class AssocList<K, V> extends ArrayList<V> {
 
     @Override
     public synchronized boolean add( V v ) {
-        map.put( keyOf( v ), v );
-        return super.add( v );
+        if( map.put( keyOf( v ), v ) != null ) {
+            removeIf( lv -> keyOf( lv ).equals( keyOf( v ) ) );
+        }
+        super.add( v );
+
+        return true;
     }
 
     @Override
