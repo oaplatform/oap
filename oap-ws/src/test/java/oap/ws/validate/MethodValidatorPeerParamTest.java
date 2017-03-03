@@ -23,26 +23,14 @@
  */
 package oap.ws.validate;
 
-import oap.concurrent.SynchronizedThread;
-import oap.http.cors.GenericCorsPolicy;
-import oap.http.PlainHttpListener;
-import oap.http.Protocol;
-import oap.http.Server;
-import oap.http.testng.HttpAsserts;
-import oap.metrics.Metrics;
-import oap.testng.Env;
-import oap.ws.SessionManager;
-import oap.ws.WebServices;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.Collections.singletonList;
 import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.http.Request.HttpMethod.POST;
 import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
@@ -53,134 +41,110 @@ import static oap.ws.validate.ValidationErrors.empty;
 import static oap.ws.validate.ValidationErrors.error;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
-public class MethodValidatorPeerParamTest {
-   private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
+public class MethodValidatorPeerParamTest extends AbstractWsValidateTest {
+    @Override
+    protected List<Object> getWsInstances() {
+        return singletonList( new TestWS() );
+    }
 
-   private final Server server = new Server( 100 );
-   private final WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+    @Test
+    public void validationDefault() {
+        assertPost( HTTP_PREFIX + "/test/run/validation/default?q=1", "test", TEXT_PLAIN )
+            .responded( 200, "OK", APPLICATION_JSON, "\"1test\"" );
+    }
 
-   private SynchronizedThread listener;
+    @Test
+    public void validationOk() {
+        assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1", "test", TEXT_PLAIN )
+            .responded( 200, "OK", APPLICATION_JSON, "\"1test\"" );
+    }
 
-   @BeforeClass
-   public void startServer() {
-      Metrics.resetAll();
-      server.start();
-      ws.bind( "test", GenericCorsPolicy.DEFAULT, new TestWS(), false, SESSION_MANAGER,
-         Collections.emptyList(), Protocol.HTTP );
+    @Test
+    public void validationOkList() {
+        assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1&ql=_11&ql=_12", "test", TEXT_PLAIN )
+            .responded( 200, "OK", APPLICATION_JSON, "\"1_11/_12test\"" );
+    }
 
-      PlainHttpListener http = new PlainHttpListener( server, Env.port() );
-      listener = new SynchronizedThread( http );
-      listener.start();
-   }
+    @Test
+    public void validationOkOptional() {
+        assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1&q2=2", "test", TEXT_PLAIN )
+            .responded( 200, "OK", APPLICATION_JSON, "\"12test\"" );
+    }
 
-   @AfterClass
-   public void stopServer() {
-      listener.stop();
-      server.stop();
-      server.unbind( "test" );
+    @Test
+    public void validationFail() {
+        assertPost( HTTP_PREFIX + "/test/run/validation/fail?q=1", "test", TEXT_PLAIN )
+            .responded( 400, "validation failed", TEXT_PLAIN, "error:1\nerror:test" );
+    }
 
-      HttpAsserts.reset();
-      Metrics.resetAll();
-   }
+    @Test
+    public void validationRequiredFailed() {
+        assertPost( HTTP_PREFIX + "/test/run/validation/ok", "test", TEXT_PLAIN )
+            .responded( 400, "q is required", TEXT_PLAIN, "q is required" );
+    }
 
-   @Test
-   public void validationDefault() {
-      assertPost( HTTP_PREFIX + "/test/run/validation/default?q=1", "test", TEXT_PLAIN )
-         .responded( 200, "OK", APPLICATION_JSON, "\"1test\"" );
-   }
+    @Test
+    public void validationTypeFailed() {
+        assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=test", "test", TEXT_PLAIN )
+            .responded( 400, "cannot cast test to int", TEXT_PLAIN, "cannot cast test to int" );
+    }
 
-   @Test
-   public void validationOk() {
-      assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1", "test", TEXT_PLAIN )
-         .responded( 200, "OK", APPLICATION_JSON, "\"1test\"" );
-   }
+    public static class TestWS {
 
-   @Test
-   public void validationOkList() {
-      assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1&ql=_11&ql=_12", "test", TEXT_PLAIN )
-         .responded( 200, "OK", APPLICATION_JSON, "\"1_11/_12test\"" );
-   }
+        @WsMethod( path = "/run/validation/default", method = POST )
+        public String validationDefault(
+            @WsParam( from = QUERY ) int q,
+            @WsParam( from = BODY ) String body
+        ) {
+            return q + body;
+        }
 
-   @Test
-   public void validationOkOptional() {
-      assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=1&q2=2", "test", TEXT_PLAIN )
-         .responded( 200, "OK", APPLICATION_JSON, "\"12test\"" );
-   }
+        @WsMethod( path = "/run/validation/ok", method = POST )
+        public String validationOk(
+            @WsParam( from = QUERY ) @WsValidate( "validateOkInt" ) int q,
+            @WsParam( from = QUERY ) @WsValidate( "validateOkOptString" ) Optional<String> q2,
+            @WsParam( from = QUERY ) @WsValidate( "validateOkListString" ) List<String> ql,
+            @WsParam( from = BODY ) @WsValidate( "validateOkString" ) String body
+        ) {
+            return q + q2.orElse( "" ) + String.join( "/", ql ) + body;
+        }
 
-   @Test
-   public void validationFail() {
-      assertPost( HTTP_PREFIX + "/test/run/validation/fail?q=1", "test", TEXT_PLAIN )
-         .responded( 400, "validation failed", TEXT_PLAIN, "error:1\nerror:test" );
-   }
+        @WsMethod( path = "/run/validation/fail", method = POST )
+        public String validationFail(
+            @WsParam( from = QUERY ) @WsValidate( "validateFailInt" ) int q,
+            @WsParam( from = BODY ) @WsValidate( "validateFailString" ) String body
+        ) {
+            return q + body;
+        }
 
-   @Test
-   public void validationRequiredFailed() {
-      assertPost( HTTP_PREFIX + "/test/run/validation/ok", "test", TEXT_PLAIN )
-         .responded( 400, "q is required", TEXT_PLAIN, "q is required" );
-   }
+        @SuppressWarnings( "unused" )
+        public ValidationErrors validateOkInt( int value ) {
+            return empty();
+        }
 
-   @Test
-   public void validationTypeFailed() {
-      assertPost( HTTP_PREFIX + "/test/run/validation/ok?q=test", "test", TEXT_PLAIN )
-         .responded( 400, "cannot cast test to int", TEXT_PLAIN, "cannot cast test to int" );
-   }
+        @SuppressWarnings( "unused" )
+        public ValidationErrors validateOkOptString( Optional<String> value ) {
+            return empty();
+        }
 
-   public static class TestWS {
+        @SuppressWarnings( "unused" )
+        public ValidationErrors validateOkListString( List<String> value ) {
+            return empty();
+        }
 
-      @WsMethod( path = "/run/validation/default", method = POST )
-      public String validationDefault(
-         @WsParam( from = QUERY ) int q,
-         @WsParam( from = BODY ) String body
-      ) {
-         return q + body;
-      }
+        @SuppressWarnings( "unused" )
+        public ValidationErrors validateOkString( String value ) {
+            return empty();
+        }
 
-      @WsMethod( path = "/run/validation/ok", method = POST )
-      public String validationOk(
-         @WsParam( from = QUERY ) @WsValidate( "validateOkInt" ) int q,
-         @WsParam( from = QUERY ) @WsValidate( "validateOkOptString" ) Optional<String> q2,
-         @WsParam( from = QUERY ) @WsValidate( "validateOkListString" ) List<String> ql,
-         @WsParam( from = BODY ) @WsValidate( "validateOkString" ) String body
-      ) {
-         return q + q2.orElse( "" ) + String.join( "/", ql ) + body;
-      }
+        @SuppressWarnings( "unused" )
+        public ValidationErrors validateFailInt( int value ) {
+            return error( "error:" + value );
+        }
 
-      @WsMethod( path = "/run/validation/fail", method = POST )
-      public String validationFail(
-         @WsParam( from = QUERY ) @WsValidate( "validateFailInt" ) int q,
-         @WsParam( from = BODY ) @WsValidate( "validateFailString" ) String body
-      ) {
-         return q + body;
-      }
-
-      @SuppressWarnings( "unused" )
-      public ValidationErrors validateOkInt( int value ) {
-         return empty();
-      }
-
-      @SuppressWarnings( "unused" )
-      public ValidationErrors validateOkOptString( Optional<String> value ) {
-         return empty();
-      }
-
-      @SuppressWarnings( "unused" )
-      public ValidationErrors validateOkListString( List<String> value ) {
-         return empty();
-      }
-
-      @SuppressWarnings( "unused" )
-      public ValidationErrors validateOkString( String value ) {
-         return empty();
-      }
-
-      @SuppressWarnings( "unused" )
-      public ValidationErrors validateFailInt( int value ) {
-         return error( "error:" + value );
-      }
-
-      @SuppressWarnings( "unused" )
-      public ValidationErrors validateFailString( String value ) {
-         return error( "error:" + value );
-      }
-   }
+        @SuppressWarnings( "unused" )
+        public ValidationErrors validateFailString( String value ) {
+            return error( "error:" + value );
+        }
+    }
 }

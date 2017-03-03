@@ -34,6 +34,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -42,121 +43,127 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAssertion, ValidationErrors> {
 
-   protected ValidationErrorsAssertion( ValidationErrors actual ) {
-      super( actual, ValidationErrorsAssertion.class );
-   }
+    protected ValidationErrorsAssertion( ValidationErrors actual ) {
+        super( actual, ValidationErrorsAssertion.class );
+    }
 
 
-   public static ValidationErrorsAssertion assertValidationErrors( ValidationErrors actual ) {
-      return new ValidationErrorsAssertion( actual );
-   }
+    public static ValidationErrorsAssertion assertValidationErrors( ValidationErrors actual ) {
+        return new ValidationErrorsAssertion( actual );
+    }
 
-   public ValidationErrorsAssertion hasCode( int code ) {
-      assertThat( this.actual.code ).isEqualTo( code );
-      return this;
-   }
+    public static <I> ValidatedInvocation<I> validating( Class<I> anInterface ) {
+        return new ValidatedInvocation<>( anInterface );
+    }
 
-   public ValidationErrorsAssertion containsErrors( String... errors ) {
-      assertThat( this.actual.errors ).contains( errors );
-      return this;
-   }
+    public ValidationErrorsAssertion hasCode( int code ) {
+        assertThat( this.actual.code ).isEqualTo( code );
+        return this;
+    }
 
-   public ValidationErrorsAssertion isError( int code, String error ) {
-      return hasCode( code ).containsErrors( error );
-   }
+    public ValidationErrorsAssertion containsErrors( String... errors ) {
+        assertThat( this.actual.errors ).contains( errors );
+        return this;
+    }
 
-   public ValidationErrorsAssertion isFailed() {
-      assertThat( this.actual.isFailed() )
-         .withFailMessage( "should contain errors" )
-         .isTrue();
-      return this;
-   }
+    public ValidationErrorsAssertion isError( int code, String error ) {
+        return hasCode( code ).containsErrors( error );
+    }
 
-   public ValidationErrorsAssertion isNotFailed() {
-      assertThat( this.actual.isFailed() )
-         .withFailMessage( "shouldn't contain errors but contain: " + this.actual )
-         .isFalse();
-      return this;
-   }
+    public ValidationErrorsAssertion isFailed() {
+        assertThat( this.actual.isFailed() )
+            .withFailMessage( "should contain errors" )
+            .isTrue();
+        return this;
+    }
 
-   public static class ValidatedInvocation<I> implements InvocationHandler {
-      private final I proxy;
-      private List<Function<ValidationErrorsAssertion, ValidationErrorsAssertion>> assertions = new ArrayList<>();
-      private I instance;
+    public ValidationErrorsAssertion isNotFailed() {
+        assertThat( this.actual.isFailed() )
+            .withFailMessage( "shouldn't contain errors but contain: " + this.actual )
+            .isFalse();
+        return this;
+    }
 
-      @SuppressWarnings( "unchecked" )
-      public ValidatedInvocation( Class<I> anInterface ) {
-         proxy = ( I ) Proxy.newProxyInstance( anInterface.getClassLoader(), new Class[]{ anInterface }, this );
-      }
+    public static class ValidatedInvocation<I> implements InvocationHandler {
+        private final I proxy;
+        private List<Function<ValidationErrorsAssertion, ValidationErrorsAssertion>> assertions = new ArrayList<>();
+        private I instance;
 
-      public ValidatedInvocation<I> hasCode( int code ) {
-         assertions.add( a -> a.hasCode( code ) );
-         return this;
-      }
+        @SuppressWarnings( "unchecked" )
+        public ValidatedInvocation( Class<I> anInterface ) {
+            proxy = ( I ) Proxy.newProxyInstance( anInterface.getClassLoader(), new Class[] { anInterface }, this );
+        }
 
-      public ValidatedInvocation<I> containsErrors( String... errors ) {
-         assertions.add( a -> a.containsErrors( errors ) );
-         return this;
-      }
+        public ValidatedInvocation<I> hasCode( int code ) {
+            assertions.add( a -> a.hasCode( code ) );
+            return this;
+        }
 
-      public ValidatedInvocation<I> isError( int code, String error ) {
-         return hasCode( code ).containsErrors( error );
-      }
+        public ValidatedInvocation<I> containsErrors( String... errors ) {
+            assertions.add( a -> a.containsErrors( errors ) );
+            return this;
+        }
 
-      public ValidatedInvocation<I> isFailed() {
-         assertions.add( ValidationErrorsAssertion::isFailed );
-         return this;
-      }
+        public ValidatedInvocation<I> isError( int code, String error ) {
+            return hasCode( code ).containsErrors( error );
+        }
 
-      public ValidatedInvocation<I> isNotFailed() {
-         assertions.add( ValidationErrorsAssertion::isNotFailed );
-         return this;
-      }
+        public ValidatedInvocation<I> isFailed() {
+            assertions.add( ValidationErrorsAssertion::isFailed );
+            return this;
+        }
 
-      @Override
-      public Object invoke( Object proxy, Method jmethod, Object[] args ) throws Throwable {
-         Optional<Reflection.Method> methodOpt = Reflect.reflect( instance.getClass() )
-            .method( jmethod );
-         if( !methodOpt.isPresent() ) throw new NoSuchMethodError( jmethod.toString() );
-         return methodOpt
-            .map( method -> {
-               ValidationErrors paramErrors = ValidationErrors.empty();
+        public ValidatedInvocation<I> isNotFailed() {
+            assertions.add( ValidationErrorsAssertion::isNotFailed );
+            return this;
+        }
 
-               List<Reflection.Parameter> paramerers = method.parameters;
-               for( int i = 0; i < paramerers.size(); i++ ) {
-                  Reflection.Parameter parameter = paramerers.get( i );
-                  paramErrors.merge( Validators
-                     .forParameter( parameter, instance )
-                     .validate( args[i] ) );
-               }
-               if( paramErrors.isFailed() ) {
-                  runAsserts( paramErrors );
-                  return null;
-               } else {
-                  ValidationErrors methodErrors = Validators
-                     .forMethod( method, instance )
-                     .validate( args );
-                  runAsserts( methodErrors );
-                  if( methodErrors.isFailed() ) return null;
-               }
-               return method.invoke( instance, args );
-            } )
-            .orElse( null );
-      }
+        @Override
+        public Object invoke( Object proxy, Method jmethod, Object[] args ) throws Throwable {
+            Optional<Reflection.Method> methodOpt = Reflect.reflect( instance.getClass() )
+                .method( jmethod );
+            if( !methodOpt.isPresent() ) throw new NoSuchMethodError( jmethod.toString() );
+            return methodOpt
+                .map( method -> {
+                    ValidationErrors paramErrors = ValidationErrors.empty();
 
-      private void runAsserts( ValidationErrors errors ) {
-         ValidationErrorsAssertion assertion = ValidationErrorsAssertion.assertValidationErrors( errors );
-         Stream.of( assertions )
-            .foldLeft( assertion, ( a, f ) -> f.apply( a ) );
-      }
+                    List<Reflection.Parameter> parameters = method.parameters;
 
-      public I forInstance( I instance ) {
-         this.instance = instance;
-         return proxy;
-      }
-   }
+                    LinkedHashMap<Reflection.Parameter, Object> values = new LinkedHashMap<>();
+                    for( int i = 0; i < parameters.size(); i++ ) {
+                        values.put( parameters.get( i ), args[i] );
+                    }
 
-   public static <I> ValidatedInvocation<I> validating( Class<I> anInterface ) {
-      return new ValidatedInvocation<>( anInterface );
-   }
+                    for( int i = 0; i < parameters.size(); i++ ) {
+                        Reflection.Parameter parameter = parameters.get( i );
+                        paramErrors.merge( Validators
+                            .forParameter( values, method, parameter, instance, false )
+                            .validate( args[i] ) );
+                    }
+                    if( paramErrors.isFailed() ) {
+                        runAsserts( paramErrors );
+                        return null;
+                    } else {
+                        ValidationErrors methodErrors = Validators
+                            .forMethod( values, method, instance, false )
+                            .validate( args );
+                        runAsserts( methodErrors );
+                        if( methodErrors.isFailed() ) return null;
+                    }
+                    return method.invoke( instance, args );
+                } )
+                .orElse( null );
+        }
+
+        private void runAsserts( ValidationErrors errors ) {
+            ValidationErrorsAssertion assertion = ValidationErrorsAssertion.assertValidationErrors( errors );
+            Stream.of( assertions )
+                .foldLeft( assertion, ( a, f ) -> f.apply( a ) );
+        }
+
+        public I forInstance( I instance ) {
+            this.instance = instance;
+            return proxy;
+        }
+    }
 }

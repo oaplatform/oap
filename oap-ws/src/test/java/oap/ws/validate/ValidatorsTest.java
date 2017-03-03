@@ -27,24 +27,27 @@ package oap.ws.validate;
 import oap.reflect.Reflect;
 import org.testng.annotations.Test;
 
+import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ValidatorsTest {
-   @Test
-   public void caching() {
-      Validators.Validator v1 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(), new Validatee() );
-      Validators.Validator v2 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(), new Validatee() );
-      assertThat( v1 ).isNotSameAs( v2 );
-   }
+    @Test
+    public void caching() {
+        Validators.Validator v1 = Validators.forMethod(
+            emptyMap(), Reflect.reflect( Validatee.class ).method( "m" ).get(), new Validatee(), true );
+        Validators.Validator v2 = Validators.forMethod(
+            emptyMap(), Reflect.reflect( Validatee.class ).method( "m" ).get(), new Validatee(), true );
+        assertThat( v1 ).isNotSameAs( v2 );
+    }
 
-   public static class Validatee {
-      @WsValidate( "validate" )
-      public void m( String a ) {
+    public static class Validatee {
+        @WsValidate( "validate" )
+        public void m( String a ) {
 
-      }
+        }
 
-      public ValidationErrors validate( String a ) {
-         return ValidationErrors.empty();
-      }
-   }
+        public ValidationErrors validate( String a ) {
+            return ValidationErrors.empty();
+        }
+    }
 }

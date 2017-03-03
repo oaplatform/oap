@@ -32,5 +32,5 @@ import java.lang.annotation.Target;
 @Target( { ElementType.PARAMETER, ElementType.METHOD } )
 @Peer( MethodValidatorPeer.class )
 public @interface WsValidate {
-   String[] value();
+    String[] value();
 }

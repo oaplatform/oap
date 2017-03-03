@@ -26,6 +26,7 @@ package oap.util;
 
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BinaryOperator;
@@ -36,6 +37,16 @@ import java.util.stream.Collector;
 public class Collectors {
     public static final Set<Collector.Characteristics> CH_ID
         = Collections.unmodifiableSet( EnumSet.of( Collector.Characteristics.IDENTITY_FINISH ) );
+
+    public static <T, K, U>
+    Collector<T, ?, LinkedHashMap<K, U>> toLinkedHashMap( Function<? super T, ? extends K> keyMapper,
+                                                          Function<? super T, ? extends U> valueMapper ) {
+        return java.util.stream.Collectors.toMap( keyMapper, valueMapper, throwingMerger(), LinkedHashMap::new );
+    }
+
+    private static <T> BinaryOperator<T> throwingMerger() {
+        return ( u, v ) -> { throw new IllegalStateException( String.format( "Duplicate key %s", u ) ); };
+    }
 
     public static class CollectorImpl<T, A, R> implements Collector<T, A, R> {
         private final Supplier<A> supplier;

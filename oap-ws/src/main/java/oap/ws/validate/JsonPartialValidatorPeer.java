@@ -21,8 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.ws.validate;
 
+import lombok.SneakyThrows;
 import lombok.val;
 import oap.json.Binder;
 import oap.json.JsonException;
@@ -33,23 +35,44 @@ import oap.ws.WsClientException;
 
 import java.util.Map;
 
-public class JsonValidatorPeer implements ValidatorPeer {
+public class JsonPartialValidatorPeer implements ValidatorPeer {
     private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
     private final JsonValidatorFactory factory;
-    private final WsValidateJson validate;
+    private final WsPartialValidateJson validate;
+    private final Map<Reflection.Parameter, Object> values;
+    private final Reflection.Method targetMethod;
+    private final Object instance;
 
-    public JsonValidatorPeer( WsValidateJson validate,
-                              Map<Reflection.Parameter, Object> values,
-                              Reflection.Method targetMethod, Object instance, Type type ) {
+    public JsonPartialValidatorPeer( WsPartialValidateJson validate,
+                                     Map<Reflection.Parameter, Object> values,
+                                     Reflection.Method targetMethod, Object instance, Type type ) {
         factory = JsonValidatorFactory.schema( validate.schema(), storage );
         this.validate = validate;
+        this.values = values;
+        this.targetMethod = targetMethod;
+        this.instance = instance;
     }
 
     @Override
+    @SneakyThrows
     public ValidationErrors validate( Object value ) {
         try {
-            val unmarshal = Binder.json.unmarshal( Map.class, ( String ) value );
-            return ValidationErrors.errors( factory.validate( unmarshal, validate.ignoreRequired() ) );
+            val idName = validate.idParameterName();
+            final String id = values.entrySet()
+                .stream()
+                .filter( p -> p.getKey().name().equals( idName ) )
+                .findFirst()
+                .get()
+                .getValue()
+                .toString();
+            Object root = ( ( WsPartialValidateJson.PartialValidateJsonRootLoader ) (
+                validate.root().isInstance( instance )
+                    ? instance : validate.root().newInstance() ) ).get( id );
+
+            final Object rootMap = Binder.json.unmarshal( Map.class, Binder.json.marshal( root ) );
+
+            val partialValue = Binder.json.unmarshal( Map.class, ( String ) value );
+            return ValidationErrors.errors( factory.partialValidate( rootMap, partialValue, validate.path(), validate.ignoreRequired() ) );
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
         }

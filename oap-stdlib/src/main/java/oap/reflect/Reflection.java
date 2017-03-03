@@ -49,12 +49,12 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class Reflection extends Annotated<Class<?>> {
-    //    @todo constructors (PERFORMANCE)
-    private final Coercions coercions;
     public final Class<?> underlying;
     public final List<Field> fields;
     public final List<Method> methods;
     public final List<Reflection> typeParameters;
+    //    @todo constructors (PERFORMANCE)
+    private final Coercions coercions;
     private final TypeToken<?> typeToken;
 
     Reflection( TypeToken<?> typeToken ) {
@@ -300,6 +300,10 @@ public class Reflection extends Annotated<Class<?>> {
 
         public boolean hasParameter( String name ) {
             return Lists.find( this.parameters, p -> Objects.equals( p.name(), name ) ).isPresent();
+        }
+
+        public Parameter getParameter( String name ) {
+            return parameters.stream().filter( p -> p.name().equals( name ) ).findFirst().orElse( null );
         }
 
         public String name() {

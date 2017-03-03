@@ -32,77 +32,78 @@ import java.util.List;
 import java.util.Map;
 
 public class MethodValidatorPeer implements ValidatorPeer {
-   private final List<Validator> validators;
+    private final List<Validator> validators;
 
-   public MethodValidatorPeer( WsValidate validate, Object instance ) {
-      this.validators = Stream.of( validate.value() )
-         .<Validator>map( m -> new ParameterValidator( m, instance ) )
-         .toList();
-   }
+    public MethodValidatorPeer( WsValidate validate,
+                                Map<Reflection.Parameter, Object> values,
+                                Reflection.Method targetMethod, Object instance, Type type ) {
+        if( type == Type.PARAMETER )
+            this.validators = Stream.of( validate.value() )
+                .<Validator>map( m -> new ParameterValidator( m, instance ) )
+                .toList();
+        else
+            this.validators = Stream.of( validate.value() )
+                .<Validator>map( m -> new MethodValidator( m, targetMethod, instance ) )
+                .toList();
+    }
 
-   public MethodValidatorPeer( WsValidate validate, Reflection.Method targetMethod, Object instance ) {
-      this.validators = Stream.of( validate.value() )
-         .<Validator>map( m -> new MethodValidator( m, targetMethod, instance ) )
-         .toList();
-   }
+    @Override
+    public ValidationErrors validate( Object value ) {
+        return Stream.of( validators )
+            .foldLeft( ValidationErrors.empty(),
+                ( e, v ) -> e.merge( v.validate( value ) ) );
+    }
 
-   @Override
-   public ValidationErrors validate( Object value ) {
-      return Stream.of( validators )
-         .foldLeft( ValidationErrors.empty(),
-            ( e, v ) -> e.merge( v.validate( value ) ) );
-   }
+    private static abstract class Validator {
+        protected final Reflection.Method method;
+        protected final Object instance;
 
-   private static abstract class Validator {
-      protected final Reflection.Method method;
-      protected final Object instance;
+        protected Validator( String method, Object instance ) {
+            this.method = Reflect.reflect( instance.getClass() )
+                .method( method )
+                .orElseThrow( () -> new WsException( "no such method " + method ) );
+            this.instance = instance;
+        }
 
-      protected Validator( String method, Object instance ) {
-         this.method = Reflect.reflect( instance.getClass() )
-            .method( method )
-            .orElseThrow( () -> new WsException( "no such method " + method ) );
-         this.instance = instance;
-      }
+        abstract ValidationErrors validate( Object value );
+    }
 
-      abstract ValidationErrors validate( Object value );
-   }
+    private static class ParameterValidator extends Validator {
+        public ParameterValidator( String method, Object instatnce ) {
+            super( method, instatnce );
+        }
 
-   private static class ParameterValidator extends Validator {
-      public ParameterValidator( String method, Object instatnce ) {
-         super( method, instatnce );
-      }
+        @Override
+        public ValidationErrors validate( Object value ) {
+            return method.invoke( instance, value );
+        }
+    }
 
-      @Override
-      public ValidationErrors validate( Object value ) {
-         return method.invoke( instance, value );
-      }
-   }
+    private static class MethodValidator extends Validator {
+        private final Map<String, Integer> validatorMethodParamIndices;
 
-   private static class MethodValidator extends Validator {
-      private final Map<String, Integer> validatorMethodParamIndices;
+        protected MethodValidator( String method, Reflection.Method targetMethod, Object instance ) {
+            super( method, instance );
+            validatorMethodParamIndices = Stream.of( targetMethod.parameters )
+                .map( Reflection.Parameter::name )
+                .zipWithIndex()
+                .filter( ( p, i ) -> this.method.hasParameter( p ) )
+                .toMap();
+        }
 
-      protected MethodValidator( String method, Reflection.Method targetMethod, Object instance ) {
-         super( method, instance );
-         validatorMethodParamIndices = Stream.of( targetMethod.parameters )
-            .map( Reflection.Parameter::name )
-            .zipWithIndex()
-            .filter( ( p, i ) -> this.method.hasParameter( p ) )
-            .toMap();
-      }
-
-      @Override
-      ValidationErrors validate( Object value ) {
-         Object[] params = new Object[method.parameters.size()];
-         for( int i = 0; i < params.length; i++ ) {
-            String argumentName = method.parameters.get( i ).name();
-            Integer argumentIndex = validatorMethodParamIndices.get( argumentName );
-            if(argumentIndex == null) {
-               throw new IllegalArgumentException( argumentName + " required by validator " + this.method.name()
-                   + "is not supplied by web method" );
+        @Override
+        ValidationErrors validate( Object value ) {
+            Object[] params = new Object[method.parameters.size()];
+            for( int i = 0; i < params.length; i++ ) {
+                String argumentName = method.parameters.get( i ).name();
+                Integer argumentIndex = validatorMethodParamIndices.get( argumentName );
+                if( argumentIndex == null ) {
+                    throw new IllegalArgumentException( argumentName + " required by validator " + this.method.name()
+                        + "is not supplied by web method" );
+                }
+                params[i] = ( ( Object[] ) value )[argumentIndex];
             }
-            params[i] = ( ( Object[] ) value )[argumentIndex];
-         }
-         return method.invoke( instance, params );
-      }
-   }
+            return method.invoke( instance, params );
+        }
+    }
 }

@@ -21,12 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.ws.validate;
 
-public interface ValidatorPeer {
-    ValidationErrors validate( Object value );
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-    enum Type {
-        METHOD, PARAMETER
+@Retention( RetentionPolicy.RUNTIME )
+@Target( ElementType.PARAMETER )
+@Peer( value = JsonPartialValidatorPeer.class, originalParameters = true )
+public @interface WsPartialValidateJson {
+    String schema();
+
+    Class<? extends PartialValidateJsonRootLoader> root();
+
+    String idParameterName();
+
+    String path();
+
+    boolean ignoreRequired() default false;
+
+    interface PartialValidateJsonRootLoader {
+        Object get( String id );
     }
 }

@@ -32,4 +32,6 @@ import java.lang.annotation.Target;
 @Target( ElementType.ANNOTATION_TYPE )
 public @interface Peer {
     Class<? extends ValidatorPeer> value();
+
+    boolean originalParameters() default false;
 }
