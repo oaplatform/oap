@@ -31,6 +31,7 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Collections.singletonList;
 import static oap.http.ContentTypes.TEXT_PLAIN;
@@ -79,7 +80,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
             .responded( 400, "additional properties are not permitted [c]", TEXT_PLAIN, "additional properties are not permitted [c]" );
     }
 
-    public static class TestWS implements WsPartialValidateJson.PartialValidateJsonRootLoader {
+    public static class TestWS implements WsPartialValidateJson.PartialValidateJsonRootLoader<TestBean> {
         @WsMethod( path = "/run/validation/1/{id}", method = POST )
         public TestBean validation1(
             @WsParam( from = PATH ) String id,
@@ -114,8 +115,8 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
         }
 
         @Override
-        public Object get( String id ) {
-            return testBean;
+        public Optional<TestBean> get( String id ) {
+            return Optional.of( testBean );
         }
     }
 

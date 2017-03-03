@@ -65,9 +65,11 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
                 .get()
                 .getValue()
                 .toString();
-            Object root = ( ( WsPartialValidateJson.PartialValidateJsonRootLoader ) (
+            Object root = ( ( WsPartialValidateJson.PartialValidateJsonRootLoader<?> ) (
                 validate.root().isInstance( instance )
-                    ? instance : validate.root().newInstance() ) ).get( id );
+                    ? instance : validate.root().newInstance() ) ).get( id ).orElse( null );
+
+            if( root == null ) return ValidationErrors.empty();
 
             final Object rootMap = Binder.json.unmarshal( Map.class, Binder.json.marshal( root ) );
 

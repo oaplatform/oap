@@ -28,6 +28,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Optional;
 
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.PARAMETER )
@@ -35,7 +36,7 @@ import java.lang.annotation.Target;
 public @interface WsPartialValidateJson {
     String schema();
 
-    Class<? extends PartialValidateJsonRootLoader> root();
+    Class<? extends PartialValidateJsonRootLoader<?>> root();
 
     String idParameterName();
 
@@ -43,7 +44,7 @@ public @interface WsPartialValidateJson {
 
     boolean ignoreRequired() default false;
 
-    interface PartialValidateJsonRootLoader {
-        Object get( String id );
+    interface PartialValidateJsonRootLoader<T> {
+        Optional<T> get( String id );
     }
 }
