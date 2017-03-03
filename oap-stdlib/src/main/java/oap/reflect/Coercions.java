@@ -112,6 +112,8 @@ public final class Coercions {
     public Object cast( Reflection target, Object value ) {
         if( value == null ) return null;
         try {
+            if( target.assignableFrom( value.getClass() ) ) return value;
+
             Function<Object, Object> ff = convertors.getOrDefault( target.underlying, v -> {
                 if( target.isEnum() ) return value instanceof Enum ? value
                     : target.enumValue( ( String ) value )
