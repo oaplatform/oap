@@ -23,14 +23,19 @@
  */
 package oap.ws.validate;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.util.Stream;
 import oap.ws.WsException;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.stream.Collectors.toList;
+
+@Slf4j
 public class MethodValidatorPeer implements ValidatorPeer {
     private final List<Validator> validators;
 
@@ -103,7 +108,16 @@ public class MethodValidatorPeer implements ValidatorPeer {
                 }
                 params[i] = ( ( Object[] ) value )[argumentIndex];
             }
-            return method.invoke( instance, params );
+            try {
+                return method.invoke( instance, params );
+            } catch( IllegalArgumentException e ) {
+                log.error( e.getMessage() );
+                log.info( "method = " + method.name() );
+                log.info( "method parameters = " + method.parameters.stream().map( p -> p.type().underlying ).collect( toList() ) );
+                log.info( "method parameters = " + Arrays.stream( params ).map( p -> p == null ? "<NULL>"
+                    : p.getClass() ).collect( toList() ) );
+                throw e;
+            }
         }
     }
 }
