@@ -48,6 +48,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -64,6 +65,7 @@ import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.http.HttpResponse.NOT_FOUND;
 import static oap.http.HttpResponse.NO_CONTENT;
 import static oap.util.Collectors.toLinkedHashMap;
+import static oap.ws.WsResponse.TEXT;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class WsService implements Handler {
@@ -71,6 +73,7 @@ public class WsService implements Handler {
     private final Logger logger;
     private final boolean sessionAware;
     private final Reflection reflection;
+    private final WsResponse defaultResponse;
     private final SessionManager sessionManager;
     private final List<Interceptor> interceptors;
     private final Coercions coercions = Coercions.basic()
@@ -80,10 +83,11 @@ public class WsService implements Handler {
     private String cookieId;
 
     public WsService( Object impl, boolean sessionAware,
-                      SessionManager sessionManager, List<Interceptor> interceptors ) {
+                      SessionManager sessionManager, List<Interceptor> interceptors, WsResponse defaultResponse ) {
         this.impl = impl;
         this.logger = LoggerFactory.getLogger( impl.getClass() );
         this.reflection = Reflect.reflect( impl.getClass() );
+        this.defaultResponse = defaultResponse;
         this.reflection.methods.forEach( m -> m.findAnnotation( WsMethod.class )
             .ifPresent( a -> compiledPaths.put( a.path(), WsServices.compile( a.path() ) ) )
         );
@@ -124,13 +128,26 @@ public class WsService implements Handler {
             WsClientException clientException = ( WsClientException ) e;
             logger.debug( e.toString(), e );
             HttpResponse wsResponse = HttpResponse.status( clientException.code, e.getMessage() );
-            if( !clientException.errors.isEmpty() )
-                wsResponse.withContent( String.join( "\n", clientException.errors ), TEXT_PLAIN );
+            if( !clientException.errors.isEmpty() ) {
+                if( defaultResponse == TEXT ) {
+                    wsResponse.withContent( String.join( "\n", clientException.errors ), TEXT_PLAIN );
+                } else {
+                    final String json = Binder.json.marshal( new JsonErrorResponse( clientException.errors ) );
+                    wsResponse.withContent( json, APPLICATION_JSON );
+                }
+            }
             response.respond( wsResponse );
         } else {
             logger.error( e.toString(), e );
-            response.respond( HttpResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() )
-                .withContent( Throwables.getRootCause( e ).getMessage(), TEXT_PLAIN ) );
+            final HttpResponse wsResponse = HttpResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() );
+            if( defaultResponse == TEXT ) {
+                wsResponse.withContent( Throwables.getRootCause( e ).getMessage(), TEXT_PLAIN );
+            } else {
+                final String json = Binder.json.marshal( new JsonStackTraceResponse( e ) );
+                wsResponse.withContent( json, APPLICATION_JSON );
+            }
+
+            response.respond( wsResponse );
         }
     }
 
@@ -352,5 +369,25 @@ public class WsService implements Handler {
                 );
             return value;
         } ) );
+    }
+
+
+    private static class JsonErrorResponse implements Serializable {
+        private static final long serialVersionUID = 4949051855248389697L;
+        public List<String> errors;
+
+        public JsonErrorResponse( List<String> errors ) {
+            this.errors = errors;
+        }
+    }
+
+    private static class JsonStackTraceResponse implements Serializable {
+        private static final long serialVersionUID = 8431608226448804296L;
+
+        public final String message;
+
+        public JsonStackTraceResponse( Throwable t ) {
+            message = Throwables.getRootCause( t ).getMessage();
+        }
     }
 }

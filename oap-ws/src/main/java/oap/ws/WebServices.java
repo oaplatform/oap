@@ -23,29 +23,27 @@
  */
 package oap.ws;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import lombok.extern.slf4j.Slf4j;
 import oap.application.Application;
-import oap.http.cors.CorsPolicy;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
 import oap.http.Protocol;
+import oap.http.cors.CorsPolicy;
 import oap.json.Binder;
 import oap.util.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
-import org.slf4j.Logger;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
+@Slf4j
 public class WebServices {
-    private static Logger logger = getLogger( WebServices.class );
-
     static {
         HttpResponse.registerProducer( ContentType.APPLICATION_JSON.getMimeType(), Binder.json::marshal );
     }
@@ -54,6 +52,8 @@ public class WebServices {
     private final HttpServer server;
     private final SessionManager sessionManager;
     private final CorsPolicy globalCorsPolicy;
+    @JsonProperty( "default-response" )
+    public WsResponse defaultResponse = WsResponse.TEXT;
 
     public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy ) {
         this( server, sessionManager, globalCorsPolicy, WsConfig.CONFIGURATION.fromClassPath() );
@@ -71,7 +71,7 @@ public class WebServices {
     }
 
     public void start() {
-        logger.info( "binding web services..." );
+        log.info( "binding web services..." );
 
         final Set<String> profiles = Application.getProfiles();
 
@@ -84,8 +84,8 @@ public class WebServices {
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
                 final WsConfig.Service serviceConfig = entry.getValue();
 
-                if ( StringUtils.isNotEmpty(serviceConfig.profile) && !profiles.contains( serviceConfig.profile ) ) {
-                    logger.debug( "skipping " + entry.getKey() + " web service initialization with " +
+                if( StringUtils.isNotEmpty( serviceConfig.profile ) && !profiles.contains( serviceConfig.profile ) ) {
+                    log.debug( "skipping " + entry.getKey() + " web service initialization with " +
                         "service profile " + serviceConfig.profile );
                     continue;
                 }
@@ -119,7 +119,7 @@ public class WebServices {
     @VisibleForTesting
     public void bind( String context, CorsPolicy corsPolicy, Object impl, boolean sessionAware, SessionManager sessionManager,
                       List<Interceptor> interceptors, Protocol protocol ) {
-        server.bind( context, corsPolicy, new WsService( impl, sessionAware, sessionManager,interceptors ), protocol );
+        server.bind( context, corsPolicy, new WsService( impl, sessionAware, sessionManager, interceptors, defaultResponse ), protocol );
     }
 
 }
