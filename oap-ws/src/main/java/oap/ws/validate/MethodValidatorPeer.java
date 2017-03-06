@@ -25,6 +25,7 @@ package oap.ws.validate;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.Reflect;
+import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
 import oap.util.Stream;
 import oap.ws.WsException;
@@ -110,7 +111,7 @@ public class MethodValidatorPeer implements ValidatorPeer {
             }
             try {
                 return method.invoke( instance, params );
-            } catch( IllegalArgumentException e ) {
+            } catch( ReflectException e ) {
                 log.error( e.getMessage() );
                 log.info( "method = " + method.name() );
                 log.info( "method parameters = " + method.parameters.stream().map( p -> p.type().underlying ).collect( toList() ) );
@@ -119,5 +120,6 @@ public class MethodValidatorPeer implements ValidatorPeer {
                 throw e;
             }
         }
+
     }
 }
