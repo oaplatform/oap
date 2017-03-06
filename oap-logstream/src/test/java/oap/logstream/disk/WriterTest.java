@@ -75,10 +75,6 @@ public class WriterTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 59 );
         writer.write( bytes );
         writer.close();
-        assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-00" + ext ) )
-            .hasContent( content, encoding );
-        assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-00" + ext ) )
-            .hasContent( content, encoding );
         assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-01" + ext ) )
             .hasContent( content, encoding );
         assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-02" + ext ) )
@@ -88,6 +84,9 @@ public class WriterTest extends AbstractTest {
         if( encoding == GZIP )
             assertFile( logs.resolve( ".corrupted/test/2015-10/10/file-2015-10-10-01-00.log.gz" ) )
                 .hasContent( "corrupted file" );
+        else
+            assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-00" + ext ) )
+                .hasContent( content, encoding );
 
     }
 }
