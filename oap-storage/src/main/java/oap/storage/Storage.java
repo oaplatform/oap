@@ -31,7 +31,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public interface Storage<T> extends Closeable {
+public interface Storage<T> extends Closeable, Iterable<T> {
     Stream<T> select();
 
     default <R> R lock( String id, Supplier<R> run ) {

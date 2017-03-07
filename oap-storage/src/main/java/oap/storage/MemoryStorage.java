@@ -30,6 +30,7 @@ import oap.util.Stream;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -225,5 +226,26 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public void close() {
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        val iterator = data.values().iterator();
+        return new Iterator<T>() {
+            @Override
+            public boolean hasNext() {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public T next() {
+                return iterator.next().object;
+            }
+        };
+    }
+
+    @Override
+    public void forEach( Consumer<? super T> action ) {
+        data.forEach( ( k, v ) -> action.accept( v.object ) );
     }
 }
