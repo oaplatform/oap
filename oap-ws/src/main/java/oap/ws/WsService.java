@@ -77,7 +77,7 @@ public class WsService implements Handler {
     private final SessionManager sessionManager;
     private final List<Interceptor> interceptors;
     private final Coercions coercions = Coercions.basic()
-        .with( r -> true, ( r, value ) -> Binder.hocon.unmarshal( r.underlying,
+        .with( r -> true, ( r, value ) -> Binder.json.unmarshal( r.underlying,
             value instanceof String ? ( String ) value : new String( ( byte[] ) value, UTF_8 ) ) );
     private Map<String, Pattern> compiledPaths = new HashMap<>();
     private String cookieId;
