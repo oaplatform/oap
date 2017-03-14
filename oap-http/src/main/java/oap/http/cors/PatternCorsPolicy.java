@@ -24,32 +24,49 @@
 
 package oap.http.cors;
 
+import com.google.common.collect.ImmutableSet;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.http.Request;
 
+import java.util.Set;
 import java.util.regex.Pattern;
 
+import static oap.http.Request.HttpMethod.DELETE;
+import static oap.http.Request.HttpMethod.GET;
+import static oap.http.Request.HttpMethod.HEAD;
+import static oap.http.Request.HttpMethod.OPTIONS;
+import static oap.http.Request.HttpMethod.POST;
+import static oap.http.Request.HttpMethod.PUT;
 import static oap.http.cors.RequestCors.NO_ORIGIN;
 
 @EqualsAndHashCode
 @ToString
 public class PatternCorsPolicy implements CorsPolicy {
-   public final Pattern domainPattern;
-   public String allowHeaders = "Content-type, Authorization";
-   public boolean allowCredentials = true;
-   public boolean autoOptions = true;
 
-   public PatternCorsPolicy( String domainRegexp, String allowHeaders, boolean allowCredentials ) {
-      domainPattern = Pattern.compile( domainRegexp );
+   public static final PatternCorsPolicy DEFAULT = new PatternCorsPolicy("^[^:/]*\\.oaplatform\\.org$",
+       "Content-type, Authorization",true, ImmutableSet.of( HEAD, POST, GET, PUT, DELETE, OPTIONS ) );
+
+   public final Pattern domainPattern;
+   public final String allowHeaders;
+   public final boolean allowCredentials;
+   public boolean autoOptions = true;
+   public Set<Request.HttpMethod> allowMethods;
+
+   public PatternCorsPolicy( final String domainRegexp, final String allowHeaders,
+                             final boolean allowCredentials, final Set<Request.HttpMethod> allowMethods ) {
+      this.domainPattern = Pattern.compile( domainRegexp );
       this.allowHeaders = allowHeaders;
       this.allowCredentials = allowCredentials;
+      this.allowMethods = allowMethods;
    }
 
    @Override
    public RequestCors getCors( Request request ) {
-      String origin = request.header( "Origin" ).orElse( NO_ORIGIN );
-      String allowedOrigin = domainPattern.matcher( origin ).matches() ? origin : NO_ORIGIN;
-      return new RequestCors( allowedOrigin, allowHeaders, allowCredentials, autoOptions );
+      final String origin = request.header( "Origin" ).orElse( NO_ORIGIN );
+
+      final String allowedOrigin = domainPattern.matcher( origin ).matches() ? origin : NO_ORIGIN;
+
+      return new RequestCors( allowedOrigin, allowHeaders, allowCredentials, autoOptions, allowMethods );
    }
 }

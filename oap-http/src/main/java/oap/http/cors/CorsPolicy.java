@@ -26,9 +26,7 @@ package oap.http.cors;
 
 import oap.http.Request;
 
-/**
- * Created by Admin on 30.05.2016.
- */
 public interface CorsPolicy {
+
    RequestCors getCors( Request request );
 }
