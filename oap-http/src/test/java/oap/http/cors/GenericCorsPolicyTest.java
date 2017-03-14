@@ -25,11 +25,14 @@
 package oap.http.cors;
 
 import com.google.common.collect.ImmutableSet;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import oap.http.Context;
 import oap.http.Request;
+import org.apache.http.message.BasicHttpRequest;
+import org.testng.annotations.Test;
 
-import java.util.Set;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.stream.Collectors;
 
 import static oap.http.Request.HttpMethod.DELETE;
 import static oap.http.Request.HttpMethod.GET;
@@ -37,30 +40,23 @@ import static oap.http.Request.HttpMethod.HEAD;
 import static oap.http.Request.HttpMethod.OPTIONS;
 import static oap.http.Request.HttpMethod.POST;
 import static oap.http.Request.HttpMethod.PUT;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@EqualsAndHashCode
-@ToString
-public class GenericCorsPolicy implements CorsPolicy {
+public class GenericCorsPolicyTest {
 
-   public static final GenericCorsPolicy DEFAULT = new GenericCorsPolicy("*", "Content-type, Authorization",
-       true, ImmutableSet.of( HEAD, POST, GET, PUT, DELETE, OPTIONS ) );
+    @Test
+    public void testShouldVerifyDefaultAllowMethods() throws UnknownHostException {
+        final BasicHttpRequest basicHttpRequest = new BasicHttpRequest( "GET", "http://test.com" );
+        basicHttpRequest.addHeader( "Origin", "*" );
+        basicHttpRequest.addHeader( "Host", "some-host" );
 
-   public final String allowOrigin;
-   public final String allowHeaders;
-   public final boolean allowCredentials;
-   public final boolean autoOptions = true;
-   public final Set<Request.HttpMethod> allowMethods;
+        final Request request = new Request( basicHttpRequest, new Context( "not important",
+            InetAddress.getLocalHost(), "not important" )
+        );
 
-   public GenericCorsPolicy( final String allowOrigin, final String allowHeaders,
-                             final boolean allowCredentials, final Set<Request.HttpMethod> allowMethods ) {
-      this.allowOrigin = allowOrigin;
-      this.allowHeaders = allowHeaders;
-      this.allowCredentials = allowCredentials;
-      this.allowMethods = allowMethods;
-   }
+        final RequestCors requestCors = GenericCorsPolicy.DEFAULT.getCors( request );
 
-   @Override
-   public RequestCors getCors( final Request request ) {
-      return new RequestCors( allowOrigin, allowHeaders, allowCredentials, autoOptions, allowMethods );
-   }
+        assertThat( requestCors.allowMethods ).isEqualTo( "HEAD, POST, GET, PUT, DELETE, OPTIONS" );
+    }
+
 }

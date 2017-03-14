@@ -24,29 +24,35 @@
 
 package oap.http.cors;
 
-/**
+import oap.http.Request;
 
- * Created by Admin on 31.05.2016.
- */
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public class RequestCors {
+
    public static final String NO_ORIGIN = "";
 
    public final String allowOrigin;
    public final String allowHeaders;
-   public final boolean allowCredentials;
+   public final String allowCredentials;
+   public final String allowMethods;
    public final boolean autoOptions;
 
-   public RequestCors( String allowOrigin, String allowHeaders, boolean allowCredentials, boolean autoOptions ) {
+   public RequestCors( final String allowOrigin, final String allowHeaders, final boolean allowCredentials,
+                       final boolean autoOptions, final Set<Request.HttpMethod> allowMethods ) {
       this.allowOrigin = allowOrigin;
       this.allowHeaders = allowHeaders;
-      this.allowCredentials = allowCredentials;
+      this.allowCredentials = String.valueOf( allowCredentials );
       this.autoOptions = autoOptions;
+      this.allowMethods = allowMethods.stream().map( Enum::name ).collect( Collectors.joining(", ") );
    }
 
-   public void setHeaders( org.apache.http.HttpResponse response ) {
+   public void setHeaders( final org.apache.http.HttpResponse response ) {
       response.setHeader( "Access-Control-Allow-Origin", allowOrigin );
       response.setHeader( "Access-Control-Allow-Headers", allowHeaders );
-      response.setHeader( "Access-Control-Allow-Credentials", String.valueOf( allowCredentials ) );
+      response.setHeader( "Access-Control-Allow-Credentials", allowCredentials );
+      response.setHeader( "Access-Control-Allow-Methods", allowMethods );
    }
 
 }
