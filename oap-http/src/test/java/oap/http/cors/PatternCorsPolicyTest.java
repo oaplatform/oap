@@ -33,19 +33,13 @@ import org.testng.annotations.Test;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import static oap.http.Request.HttpMethod.DELETE;
-import static oap.http.Request.HttpMethod.GET;
-import static oap.http.Request.HttpMethod.HEAD;
-import static oap.http.Request.HttpMethod.OPTIONS;
-import static oap.http.Request.HttpMethod.POST;
-import static oap.http.Request.HttpMethod.PUT;
 import static org.testng.Assert.assertEquals;
 
 
 public class PatternCorsPolicyTest {
 
    private PatternCorsPolicy cors = new PatternCorsPolicy( "^(http)s?(://)[^/]*[\\.]?oaplatform\\.org/?",
-       "Autorization", true, ImmutableList.of( HEAD, POST, GET, PUT, DELETE, OPTIONS ) );
+       "Autorization", true, ImmutableList.of( "HEAD", "POST", "GET", "PUT", "DELETE", "OPTIONS" ) );
 
    @Test
    public void testSameDomainOrigin( ) throws UnknownHostException {
