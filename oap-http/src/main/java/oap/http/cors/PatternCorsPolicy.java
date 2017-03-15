@@ -32,12 +32,6 @@ import oap.http.Request;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import static oap.http.Request.HttpMethod.DELETE;
-import static oap.http.Request.HttpMethod.GET;
-import static oap.http.Request.HttpMethod.HEAD;
-import static oap.http.Request.HttpMethod.OPTIONS;
-import static oap.http.Request.HttpMethod.POST;
-import static oap.http.Request.HttpMethod.PUT;
 import static oap.http.cors.RequestCors.NO_ORIGIN;
 
 @EqualsAndHashCode
@@ -45,16 +39,16 @@ import static oap.http.cors.RequestCors.NO_ORIGIN;
 public class PatternCorsPolicy implements CorsPolicy {
 
    public static final PatternCorsPolicy DEFAULT = new PatternCorsPolicy("^[^:/]*\\.oaplatform\\.org$",
-       "Content-type, Authorization",true, ImmutableList.of( HEAD, POST, GET, PUT, DELETE, OPTIONS ) );
+       "Content-type, Authorization",true, ImmutableList.of( "HEAD", "POST", "GET", "PUT", "DELETE", "OPTIONS" ) );
 
    public final Pattern domainPattern;
    public final String allowHeaders;
    public final boolean allowCredentials;
    public boolean autoOptions = true;
-   public List<Request.HttpMethod> allowMethods;
+   public List<String> allowMethods;
 
    public PatternCorsPolicy( final String domainRegexp, final String allowHeaders,
-                             final boolean allowCredentials, final List<Request.HttpMethod> allowMethods ) {
+                             final boolean allowCredentials, final List<String> allowMethods ) {
       this.domainPattern = Pattern.compile( domainRegexp );
       this.allowHeaders = allowHeaders;
       this.allowCredentials = allowCredentials;
