@@ -24,10 +24,12 @@
 
 package oap.util;
 
+import lombok.val;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ListsTest {
@@ -37,5 +39,14 @@ public class ListsTest {
         List<Integer> ints = Lists.of( 1, 2 );
         assertThat( Lists.concat( strings, ints ) )
             .containsExactly( "a", "b", 1, 2 );
+    }
+
+    @Test
+    public void testFilter() {
+        val list = asList( 1, 2, 4, 5 );
+
+        assertThat( Lists.filter( list, i -> i > 2 ) ).containsExactly( 4, 5 );
+        assertThat( Lists.filter( list, i -> i > 5 ) ).isEmpty();
+        assertThat( Lists.filter( list, i -> i == 2 ) ).containsExactly( 2 );
     }
 }

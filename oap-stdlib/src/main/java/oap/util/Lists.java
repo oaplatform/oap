@@ -101,6 +101,10 @@ public class Lists {
         return map( of( array ), mapper );
     }
 
+    public static <E> List<E> filter( List<E> list, Predicate<E> predicate ) {
+        return list.stream().filter( predicate ).collect( toList() );
+    }
+
     public static <E, R> List<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
         return map( Collections.list( enumeration ), mapper );
     }
