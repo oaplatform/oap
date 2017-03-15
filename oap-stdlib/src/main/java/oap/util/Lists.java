@@ -105,6 +105,10 @@ public class Lists {
         return list.stream().filter( predicate ).collect( toList() );
     }
 
+    public static <E> boolean allMatch( List<E> list, Predicate<E> predicate ) {
+        return list.stream().allMatch( predicate );
+    }
+
     public static <E, R> List<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
         return map( Collections.list( enumeration ), mapper );
     }

@@ -49,4 +49,12 @@ public class ListsTest {
         assertThat( Lists.filter( list, i -> i > 5 ) ).isEmpty();
         assertThat( Lists.filter( list, i -> i == 2 ) ).containsExactly( 2 );
     }
+
+    @Test
+    public void testAllMatch() {
+        val list = asList( 1, 2, 4, 5 );
+
+        assertThat( Lists.allMatch( list, i -> i <= 5 ) ).isTrue();
+        assertThat( Lists.allMatch( list, i -> i >= 5 ) ).isFalse();
+    }
 }
