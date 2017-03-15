@@ -24,12 +24,12 @@
 
 package oap.http.cors;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.http.Request;
 
-import java.util.Set;
+import java.util.List;
 
 import static oap.http.Request.HttpMethod.DELETE;
 import static oap.http.Request.HttpMethod.GET;
@@ -43,16 +43,16 @@ import static oap.http.Request.HttpMethod.PUT;
 public class GenericCorsPolicy implements CorsPolicy {
 
    public static final GenericCorsPolicy DEFAULT = new GenericCorsPolicy("*", "Content-type, Authorization",
-       true, ImmutableSet.of( HEAD, POST, GET, PUT, DELETE, OPTIONS ) );
+       true, ImmutableList.of( HEAD, POST, GET, PUT, DELETE, OPTIONS ) );
 
    public final String allowOrigin;
    public final String allowHeaders;
    public final boolean allowCredentials;
    public final boolean autoOptions = true;
-   public final Set<Request.HttpMethod> allowMethods;
+   public final List<Request.HttpMethod> allowMethods;
 
    public GenericCorsPolicy( final String allowOrigin, final String allowHeaders,
-                             final boolean allowCredentials, final Set<Request.HttpMethod> allowMethods ) {
+                             final boolean allowCredentials, final List<Request.HttpMethod> allowMethods ) {
       this.allowOrigin = allowOrigin;
       this.allowHeaders = allowHeaders;
       this.allowCredentials = allowCredentials;

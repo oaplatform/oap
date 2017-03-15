@@ -24,11 +24,9 @@
 
 package oap.http.cors;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import oap.http.Context;
 import oap.http.Request;
-import oap.http.cors.PatternCorsPolicy;
-import oap.http.cors.RequestCors;
 import org.apache.http.message.BasicHttpRequest;
 import org.testng.annotations.Test;
 
@@ -47,7 +45,7 @@ import static org.testng.Assert.assertEquals;
 public class PatternCorsPolicyTest {
 
    private PatternCorsPolicy cors = new PatternCorsPolicy( "^(http)s?(://)[^/]*[\\.]?oaplatform\\.org/?",
-       "Autorization", true, ImmutableSet.of( HEAD, POST, GET, PUT, DELETE, OPTIONS ) );
+       "Autorization", true, ImmutableList.of( HEAD, POST, GET, PUT, DELETE, OPTIONS ) );
 
    @Test
    public void testSameDomainOrigin( ) throws UnknownHostException {
