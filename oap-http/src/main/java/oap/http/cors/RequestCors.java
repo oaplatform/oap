@@ -24,8 +24,6 @@
 
 package oap.http.cors;
 
-import oap.http.Request;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,12 +38,12 @@ public class RequestCors {
    public final boolean autoOptions;
 
    public RequestCors( final String allowOrigin, final String allowHeaders, final boolean allowCredentials,
-                       final boolean autoOptions, final List<Request.HttpMethod> allowMethods ) {
+                       final boolean autoOptions, final List<String> allowMethods ) {
       this.allowOrigin = allowOrigin;
       this.allowHeaders = allowHeaders;
       this.allowCredentials = String.valueOf( allowCredentials );
       this.autoOptions = autoOptions;
-      this.allowMethods = allowMethods.stream().map( Enum::name ).collect( Collectors.joining(", ") );
+      this.allowMethods = allowMethods.stream().collect( Collectors.joining(", ") );
    }
 
    public void setHeaders( final org.apache.http.HttpResponse response ) {

@@ -24,7 +24,6 @@
 
 package oap.http.cors;
 
-import com.google.common.collect.ImmutableSet;
 import oap.http.Context;
 import oap.http.Request;
 import org.apache.http.message.BasicHttpRequest;
@@ -32,14 +31,7 @@ import org.testng.annotations.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.stream.Collectors;
 
-import static oap.http.Request.HttpMethod.DELETE;
-import static oap.http.Request.HttpMethod.GET;
-import static oap.http.Request.HttpMethod.HEAD;
-import static oap.http.Request.HttpMethod.OPTIONS;
-import static oap.http.Request.HttpMethod.POST;
-import static oap.http.Request.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class GenericCorsPolicyTest {
