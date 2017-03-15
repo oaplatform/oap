@@ -227,7 +227,7 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "query = [d1:null,d2:1]\n" +
+        assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "query = [d1:<ANY>,d2:1]\n" +
             "Expecting:\n" +
             "1: \n" +
             "    d2/1: [99] CONTAINS 1" );
@@ -242,7 +242,7 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( ( Long ) null ) ) ).isEqualTo( "query = [d1:null]\n" +
+        assertThat( tree.trace( l( ( Long ) null ) ) ).isEqualTo( "query = [d1:<NULL>]\n" +
             "Expecting:\n" +
             "1: \n" +
             "    d1/0: [1] CONTAINS null" );
@@ -257,7 +257,7 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( l(), l( 3L ) ) ) ).isEqualTo( "query = [d1:[],d2:[3]]\n" +
+        assertThat( tree.trace( l( l(), l( 3L ) ) ) ).isEqualTo( "query = [d1:<ANY>,d2:[3]]\n" +
             "Expecting:\n" +
             "1: \n" +
             "    d2/1: [2] CONTAINS [3]\n" +

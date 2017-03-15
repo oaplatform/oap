@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
@@ -433,7 +434,7 @@ public class Tree<T> {
 
         final String queryStr = "query = " + Stream.of( query )
             .zipWithIndex()
-            .map( p -> dimensions.get( p._2 ).name + ":" + p._1 )
+            .map( p -> dimensions.get( p._2 ).name + ":" + printValue( dimensions.get( p._2 ), p._1 ) )
             .collect( joining( ",", "[", "]" ) ) + "\n";
 
         final String out = result.entrySet().stream().map( e -> e.getKey().toString() + ": \n" +
@@ -445,6 +446,17 @@ public class Tree<T> {
             ).collect( joining( "\n" ) )
         ).collect( joining( "\n" ) );
         return queryStr + ( out.length() > 0 ? "Expecting:\n" + out : "ALL OK" );
+    }
+
+    private String printValue( Dimension dimension, Object o ) {
+        if( o == null
+            || ( o instanceof Optional<?> && !( ( Optional<?> ) o ).isPresent() )
+            || ( o instanceof List<?> && ( ( List<?> ) o ).isEmpty() )
+            ) {
+            if( dimension.queryRequired ) return "<NULL>";
+            else return "<ANY>";
+        }
+        return o.toString();
     }
 
     public Map<T, Map<String, Integer>> traceStatistics( List<List<?>> queries ) {
