@@ -29,7 +29,6 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -45,7 +44,7 @@ import static oap.util.Maps.Collectors.toSetMultimap;
 public class Maps {
 
     public static <K, V> Map<K, V> empty() {
-        return Collections.emptyMap();
+        return of();
     }
 
     @SafeVarargs

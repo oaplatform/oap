@@ -75,13 +75,21 @@ public class StringsTest extends AbstractTest {
     }
 
     @Test
-    public void testRemove() {
+    public void remove() {
         assertString( Strings.remove( "12345", ' ', '-' ) ).isEqualTo( "12345" );
         assertString( Strings.remove( "-123 - 45-", ' ', '-' ) ).isEqualTo( "12345" );
     }
 
     @Test
-    public void testFill() {
+    public void fill() {
         assertString( Strings.fill( "12", 2 ) ).isEqualTo( "1212" );
+    }
+
+    @Test
+    public void deepToString() {
+        assertString( Strings.deepToString( null ) ).isEqualTo( "null" );
+        assertString( Strings.deepToString( new Object[] { "x", "y" } ) ).isEqualTo( "[x, y]" );
+        assertString( Strings.deepToString( new int[] { 1, 2 } ) ).isEqualTo( "[1, 2]" );
+        assertString( Strings.deepToString( "aaa" ) ).isEqualTo( "aaa" );
     }
 }

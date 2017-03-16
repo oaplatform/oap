@@ -41,7 +41,7 @@ public class AssertsTest {
     public void testSortedContentOfFileResource() {
         Path unsorted = pathOfTestResource( getClass(), "random-flow-of-mind.txt" );
         String expected = contentOfTestResource( getClass(), "sorted-flow-of-mind.txt" );
-        Asserts.assertFile( unsorted ).hasSortedLinesContent( expected, IoStreams.Encoding.PLAIN );
+        Asserts.assertFile( unsorted ).hasContentLineSorting( expected, IoStreams.Encoding.PLAIN );
     }
 
 

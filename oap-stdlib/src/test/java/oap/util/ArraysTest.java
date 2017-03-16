@@ -26,6 +26,7 @@ package oap.util;
 
 import org.testng.annotations.Test;
 
+import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
@@ -34,5 +35,12 @@ public class ArraysTest {
     public void reversed() {
         assertThat( Arrays.ints().range( 0, 10 ).reversed() )
             .containsExactly( 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 );
+    }
+
+    @Test
+    public void splitAt() {
+        int[] a = { 1, 2, 3, 4, 5 };
+        assertThat( Arrays.splitAt( 3, a ) )
+            .isEqualTo( __( new int[] { 1, 2, 3 }, new int[] { 4, 5 } ) );
     }
 }

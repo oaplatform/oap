@@ -43,7 +43,6 @@ import static oap.tree.Tree.ANY_AS_ARRAY;
  * Created by igor.petrenko on 27.12.2016.
  */
 @EqualsAndHashCode
-@ToString
 public abstract class Dimension {
     public static final int PRIORITY_DEFAULT = 0;
     public static final int PRIORITY_LOW = Integer.MIN_VALUE;

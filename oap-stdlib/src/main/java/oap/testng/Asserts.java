@@ -28,7 +28,6 @@ import oap.concurrent.Threads;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
-import oap.util.Lists;
 import oap.util.Result;
 import oap.util.Strings;
 import oap.util.Try;
@@ -41,7 +40,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -97,10 +95,6 @@ public final class Asserts {
         return new ResultAssertion<>( result );
     }
 
-    /**
-     * // org.assertj.core.api.Assertions::assertThat
-     */
-    @Deprecated
     public static FileAssertion assertFile( Path actual ) {
         return new FileAssertion( actual );
     }
@@ -130,13 +124,7 @@ public final class Asserts {
     public static String sortedLinesOfTestResource( Class<?> contextClass, String resource ) {
         String content = Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
-        return lineSortedContent( content );
-    }
-
-    private static String lineSortedContent( String content ) {
-        String[] lines = content.split( "\\n" );
-        Arrays.sort( lines );
-        return Strings.join( "\n", Lists.of( lines ) );
+        return Strings.sortLines( content );
     }
 
     public static Path pathOfResource( Class<?> contextClass, String resource ) {
@@ -176,6 +164,10 @@ public final class Asserts {
             return this;
         }
 
+        public StringAssertion isEqualToLineSorting( String expected ) {
+            Assert.assertEquals( Strings.sortLines( this.actual ), expected );
+            return this;
+        }
     }
 
     public static class FileAssertion extends AbstractFileAssert<FileAssertion> {
@@ -206,10 +198,15 @@ public final class Asserts {
             return this;
         }
 
+        @Deprecated
         public FileAssertion hasSortedLinesContent( String expected, IoStreams.Encoding encoding ) {
+            return hasContentLineSorting( expected, encoding );
+        }
+
+        public FileAssertion hasContentLineSorting( String expected, IoStreams.Encoding encoding ) {
             exists();
-            String actual = Files.readString( this.actual.toPath(), encoding );
-            assertString( lineSortedContent( actual ) ).isEqualTo( expected );
+            String content = Files.readString( this.actual.toPath(), encoding );
+            assertString( content ).isEqualToLineSorting( expected );
             return this;
         }
     }

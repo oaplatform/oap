@@ -28,6 +28,8 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
+import static oap.util.Strings.deepToString;
+
 public class Pair<K, V> implements Serializable {
     //CHECKSTYLE:OFF
     public final K _1;
@@ -73,6 +75,6 @@ public class Pair<K, V> implements Serializable {
 
     @Override
     public String toString() {
-        return "__(" + _1 + ", " + _2 + ')';
+        return "__(" + deepToString( _1 ) + ", " + deepToString( _2 ) + ')';
     }
 }

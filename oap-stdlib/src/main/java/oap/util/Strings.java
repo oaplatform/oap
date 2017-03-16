@@ -250,4 +250,25 @@ public final class Strings {
         return true;
     }
 
+    public static String deepToString( Object value ) {
+        if( value == null ) return "null";
+        if( value instanceof Object[] ) return java.util.Arrays.deepToString( ( Object[] ) value );
+        if( value instanceof int[] ) return java.util.Arrays.toString( ( int[] ) value );
+        if( value instanceof long[] ) return java.util.Arrays.toString( ( long[] ) value );
+        if( value instanceof short[] ) return java.util.Arrays.toString( ( short[] ) value );
+        if( value instanceof byte[] ) return java.util.Arrays.toString( ( byte[] ) value );
+        if( value instanceof boolean[] ) return java.util.Arrays.toString( ( boolean[] ) value );
+        if( value instanceof char[] ) return java.util.Arrays.toString( ( char[] ) value );
+        if( value instanceof float[] ) return java.util.Arrays.toString( ( float[] ) value );
+        if( value instanceof double[] ) return java.util.Arrays.toString( ( double[] ) value );
+        return value.toString();
+    }
+
+    public static String sortLines( CharSequence string ) {
+        String[] lines = String.valueOf( string ).split( "\\n" );
+        java.util.Arrays.sort( lines );
+        return Strings.join( "\n", Lists.of( lines ) );
+    }
+
+
 }

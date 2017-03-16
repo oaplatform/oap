@@ -32,6 +32,8 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static oap.util.Pair.__;
+
 public class Arrays {
     private static Random random = new Random();
 
@@ -52,6 +54,21 @@ public class Arrays {
     @SuppressWarnings( "unchecked" )
     public static <E> E[] of( Class<?> componentType, Collection<E> collection ) {
         return collection.toArray( ( E[] ) Array.newInstance( componentType, collection.size() ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static <E> Pair<E[], E[]> splitAt( int index, E... array ) {
+        return __(
+            java.util.Arrays.copyOfRange( array, 0, index ),
+            java.util.Arrays.copyOfRange( array, index, array.length )
+        );
+    }
+
+    public static Pair<int[], int[]> splitAt( int index, int... array ) {
+        return __(
+            java.util.Arrays.copyOfRange( array, 0, index ),
+            java.util.Arrays.copyOfRange( array, index, array.length )
+        );
     }
 
     @SafeVarargs

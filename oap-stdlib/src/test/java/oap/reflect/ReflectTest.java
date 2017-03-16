@@ -39,21 +39,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
 
 public class ReflectTest extends AbstractTest {
     @Test
     public void newInstance() {
         Reflection ref = Reflect.reflect( "oap.reflect.Bean" );
-        assertEquals( ref.newInstance(), new Bean( 10 ) );
-        assertEquals( ref.newInstance( Maps.of( __( "i", 1 ) ) ), new Bean( 1 ) );
-        assertEquals( ref.newInstance( Maps.of( __( "i", 1 ), __( "x", 2 ) ) ), new Bean( 1, 2 ) );
-        assertEquals( ref.newInstance( Maps.of( __( "x", 2 ), __( "i", 1 ) ) ), new Bean( 1, 2 ) );
+        assertThat( ref.<Bean>newInstance() ).isEqualTo( new Bean( 10 ) );
+        assertThat( ref.<Bean>newInstance( Maps.of( __( "i", 1 ) ) ) )
+            .isEqualTo( new Bean( 1 ) );
+        assertThat( ref.<Bean>newInstance( Maps.of( __( "i", 1 ), __( "x", 2 ) ) ) )
+            .isEqualTo( new Bean( 1, 2 ) );
+        assertThat( ref.<Bean>newInstance( Maps.of( __( "x", 2 ), __( "i", 1 ) ) ) )
+            .isEqualTo( new Bean( 1, 2 ) );
     }
 
     @Test
@@ -62,12 +63,12 @@ public class ReflectTest extends AbstractTest {
         Bean expected = new Bean( 2, 1 );
         expected.str = "bbb";
         expected.l = Lists.of( "a", "b" );
-        assertEquals( ref.newInstance( Maps.of(
+        assertThat( ref.<Bean>newInstance( Maps.of(
             __( "x", 1 ),
             __( "i", 2L ),
             __( "str", "bbb" ),
             __( "l", Lists.of( "a", "b" ) )
-        ) ), expected );
+        ) ) ).isEqualTo( expected );
     }
 
     @Test
@@ -79,71 +80,86 @@ public class ReflectTest extends AbstractTest {
 
     @Test
     public void reflectToString() {
-        assertEquals( new Bean( 10 ).toString(), "Bean(i=10, x=1, str=aaa, l=null, optional=Optional.empty)" );
+        assertString( new Bean( 10 ).toString() )
+            .isEqualTo( "Bean(i=10, x=1, str=aaa, l=null, optional=Optional.empty)" );
     }
 
     @Test
     public void assignableFrom() {
-        assertTrue( Reflect.reflect( Bean.class )
+        assertThat( Reflect.reflect( Bean.class )
             .field( "l" )
             .get()
             .type()
-            .assignableFrom( List.class ) );
+            .assignableFrom( List.class ) ).isTrue();
     }
 
 
     @Test
     public void annotation() {
-        assertTrue( Reflect
+        assertThat( Reflect
             .reflect( Bean.class )
             .field( "x" )
             .map( f -> f.isAnnotatedWith( Ann.class ) )
-            .orElse( false ) );
-        assertEquals( Reflect
+            .orElse( false ) ).isTrue();
+        assertThat( Reflect
             .reflect( Bean.class )
             .field( "x" )
             .map( f -> f.annotationOf( Ann.class ).get( 0 ) )
             .get()
-            .a(), 10 );
+            .a() ).isEqualTo( 10 );
     }
 
     @Test
     public void typeRef() {
         Reflection reflection = Reflect.reflect( new TypeRef<List<Map<RetentionPolicy, List<Integer>>>>() {
         } );
-        assertEquals( reflection.toString(),
+        assertString( reflection.toString() ).isEqualTo(
             "Reflection(java.util.List<java.util.Map<java.lang.annotation.RetentionPolicy, java.util.List<java.lang.Integer>>>)" );
     }
 
     @Test
     public void getCollectionElementType() {
-        assertEquals( Reflect.reflect( StringList.class ).getCollectionComponentType().underlying, String.class );
+        assertThat( Reflect.reflect( StringList.class ).getCollectionComponentType().underlying ).isEqualTo( String.class );
     }
 
     @Test
-    public void eval() {
-        assertEquals( ( int ) Reflect.<Integer>eval( new DeepBean(), "bean.x" ), 1 );
-        assertEquals( Reflect.eval( new DeepBean(), "bean.str" ), "aaa" );
-        assertEquals( Reflect.eval( new DeepBean(), "obean.str" ), "aaa" );
-        assertNull( Reflect.eval( new DeepBean(), "emptybean.str" ) );
+    public void get() {
+        Bean bean = new Bean( 1, "bbb" );
+        DeepBean deepBean = new DeepBean( bean, Optional.of( bean ), Maps.of(
+            __( "x", Maps.of(
+                __( "1", 1 ),
+                __( "2", 2 )
+            ) )
+        ) );
+        assertThat( Reflect.<Integer>get( deepBean, "bean.x" ) ).isEqualTo( 1 );
+        assertString( Reflect.<String>get( deepBean, "bean.str" ) ).isEqualTo( "bbb" );
+        assertString( Reflect.<String>get( deepBean, "beanOptional.str" ) ).isEqualTo( "bbb" );
+        assertThat( Reflect.<Integer>get( deepBean, "map.[x].[1]" ) ).isEqualTo( 1 );
+        assertThat( Reflect.<Integer>get( deepBean, "map.[x].[2]" ) ).isEqualTo( 2 );
+        assertThat( Reflect.<Integer>get( deepBean, "map.[x].[3]" ) ).isNull();
+        assertThat( Reflect.<Integer>get( deepBean, "map.[z]" ) ).isNull();
+        assertThat( Reflect.<String>get( new DeepBean( new Bean(), Optional.empty() ), "beenOptional.str" ) )
+            .isNull();
     }
 
     @Test
     public void set() {
-        final DeepBean deepBean = new DeepBean();
-        final Bean bean = new Bean();
-
-        assertEquals( Reflect.get( deepBean, "bean.str" ), "aaa" );
-        assertEquals( Reflect.get( bean, "optional" ), Optional.empty().orElse( null ) );
-        assertEquals( Reflect.get( bean, "i" ), new Integer( 10 ) );
+        DeepBean deepBean = new DeepBean( new Bean( 10, "aaa" ), Optional.empty() );
 
         Reflect.set( deepBean, "bean.str", "new string" );
-        Reflect.set( bean, "optional", "optional present" );
-        Reflect.set( bean, "i", 42 );
+        Reflect.set( deepBean, "bean.x.y.z", "anything" );
+        Reflect.set( deepBean, "map.[x]", Maps.empty() );
+        Reflect.set( deepBean, "map.[x].[1]", 1 );
+        Reflect.set( deepBean, "bean.optional", "optional present" );
+        Reflect.set( deepBean, "bean.i", 42 );
 
-        assertEquals( Reflect.get( deepBean, "bean.str" ), "new string" );
-        assertEquals( Reflect.get( bean, "i" ), new Integer( 42 ) );
-        assertEquals( Reflect.get( bean, "optional" ), "optional present" );
+
+        assertThat( deepBean )
+            .isEqualTo( new DeepBean(
+                new Bean( 42, "new string", Optional.of( "optional present" ) ),
+                Optional.empty(),
+                Maps.of( __( "x", Maps.of( __( "1", 1 ) ) ) )
+            ) );
     }
 
     @Test
@@ -196,6 +212,17 @@ class Bean {
         this.i = i;
     }
 
+    public Bean( int i, String str ) {
+        this.i = i;
+        this.str = str;
+    }
+
+    public Bean( int i, String str, Optional<String> optional ) {
+        this.i = i;
+        this.str = str;
+        this.optional = optional;
+    }
+
     public Bean( int i, int x ) {
         this.i = i;
         this.x = x;
@@ -207,10 +234,26 @@ class StringList extends ArrayList<String> {
 
 }
 
+@EqualsAndHashCode
+@ToString
 class DeepBean {
     public Bean bean = new Bean();
-    public Optional<Bean> obean = Optional.of( new Bean() );
-    public Optional<Bean> emptybean = Optional.empty();
+    public Optional<Bean> beanOptional = Optional.of( new Bean() );
+    public Map<String, Map<String, Integer>> map = Maps.empty();
+
+    public DeepBean( Bean bean, Optional<Bean> beanOptional ) {
+        this.bean = bean;
+        this.beanOptional = beanOptional;
+    }
+
+    public DeepBean( Bean bean, Optional<Bean> beanOptional, Map<String, Map<String, Integer>> map ) {
+        this.bean = bean;
+        this.beanOptional = beanOptional;
+        this.map = map;
+    }
+
+    public DeepBean() {
+    }
 }
 
 class MatchingConstructor {

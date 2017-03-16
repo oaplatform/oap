@@ -23,18 +23,16 @@
  */
 package oap.reflect;
 
-import com.google.common.base.Preconditions;
 import com.google.common.reflect.TypeToken;
+import oap.util.Arrays;
+import oap.util.Pair;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static java.lang.String.format;
 
 public class Reflect {
 
@@ -88,40 +86,40 @@ public class Reflect {
         Object next = object;
         for( String field : StringUtils.split( path, '.' ) ) {
             if( next == null ) break;
-
-            final Object instance = next;
-            next = reflect( next.getClass() )
-                .field( field )
-                .map( f -> f.get( instance ) )
-                .map( v -> v instanceof Optional ? ( ( Optional ) v ).orElse( null ) : v )
-                .orElse( null );
+            if( field.startsWith( "[" ) && next instanceof Map<?, ?> ) {
+                Map<?, ?> map = ( Map<?, ?> ) next;
+                String key = field.substring( 1, field.length() - 1 );
+                if( !map.containsKey( key ) ) next = null;
+                else next = map.get( key );
+            } else {
+                Object instance = next;
+                next = reflect( next.getClass() )
+                    .field( field )
+                    .map( f -> f.get( instance ) )
+                    .map( v -> v instanceof Optional ? ( ( Optional ) v ).orElse( null ) : v )
+                    .orElse( null );
+            }
         }
         return ( T ) next;
     }
 
     @SuppressWarnings( "unchecked" )
     public static void set( Object object, String path, Object value ) {
-        final String[] split = StringUtils.split( path, '.' );
-
-        Object next = object;
-        for( int i = 0; i < split.length - 1; i++ ) {
-            Preconditions.checkState( next != null, format("Path [%s] contains nullable objects", path ) );
-
-            final Object instance = next;
-            next = reflect( next.getClass() )
-                .field( split[i] )
-                .map( f -> f.get( instance ) )
-                .map( v -> v instanceof Optional ? ( ( Optional ) v ).orElse( null ) : v )
-                .orElse( null );
-        }
-        Preconditions.checkState( next != null, format("Path [%s] contains nullable objects", path ) );
-
-        final MutableObject<Object> mutableObject = new MutableObject<>( next );
-        reflect( next.getClass() )
-            .field( split[split.length - 1] )
-            .ifPresent( f -> f.set( mutableObject.getValue(),
+        String[] splittedPath = StringUtils.split( path, '.' );
+        Pair<String[], String[]> split = Arrays.splitAt( splittedPath.length - 1, splittedPath );
+        String field = split._2[0];
+        Object next = get( object, String.join( ".", split._1 ) );
+        if( next == null ) return;
+        if( field.startsWith( "[" ) && next instanceof Map<?, ?> ) {
+            Map<Object, Object> map = ( Map<Object, Object> ) next;
+            String key = field.substring( 1, field.length() - 1 );
+            map.put( key, value );
+        } else
+            reflect( next.getClass() )
+                .field( field )
+                .ifPresent( f -> f.set( next,
                     f.type().isOptional() ? Optional.ofNullable( value ) : value )
-            );
+                );
     }
 
 //    unapply - check possibility to parameterize with Function to pass parameters from class.
