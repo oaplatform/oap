@@ -295,11 +295,12 @@ public class WsService implements Handler {
         return values
             .entrySet()
             .stream()
-            .collect( toLinkedHashMap( p -> p.getKey(), p -> p.getKey().type().assignableFrom( List.class )
-                ? convert( p.getKey().type(), ( List ) p.getValue() )
-                : convert( p.getKey().name(), p.getKey().type(),
-                    p.getValue() instanceof Optional ? ( Optional ) p.getValue()
-                        : Optional.ofNullable( p.getValue() ) ) ) );
+            .collect( toLinkedHashMap( Map.Entry::getKey, p ->
+                convert(
+                    p.getKey().name(),
+                    p.getKey().type(),
+                    p.getValue() instanceof Optional ? ( Optional ) p.getValue() : Optional.ofNullable( p.getValue() )
+                ) ) );
     }
 
     private HttpResponse runInterceptors( Request request, Session session, Reflection.Method method ) {
