@@ -92,4 +92,25 @@ public class TreeArrayTraceTest {
 
         assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "query = [d1:5]\nALL OK" );
     }
+
+    @Test
+    public void testRequired() {
+        final Tree<String> tree = Tree
+            .<String>tree( ARRAY_LONG( "d1", true ) )
+            .load( l(
+                v( "1", l( a( true, 1L, 2L ) ) ),
+                v( "2", l( a( true, 1L, 2L ) ) ),
+                v( "3", l( a( true, 1L, 2L, 3L ) ) ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.trace( l(l() ) ) ).isEqualTo( "query = [d1:<NULL>]\n" +
+            "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [1,2] CONTAINS []\n" +
+            "2: \n" +
+            "    d1/0: [1,2] CONTAINS []\n" +
+            "3: \n" +
+            "    d1/0: [1,2,3] CONTAINS []" );
+    }
 }

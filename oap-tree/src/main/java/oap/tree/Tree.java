@@ -534,7 +534,9 @@ public class Tree<T> {
                 trace( n.left, query, result, buffer.clone(), success && !dimension.queryRequired );
 
                 for( ArrayBitSet set : n.sets ) {
-                    trace( set.equal, query, result, buffer.clone(), success && !dimension.queryRequired );
+                    trace( set.equal, query, result,
+                        buffer.cloneWith( n.dimension, set.bitSet.stream(), set.include ? CONTAINS : NOT_CONTAINS, !dimension.queryRequired ),
+                        success && !dimension.queryRequired );
                 }
             } else if( !n.sets.isEmpty() ) {
                 for( ArrayBitSet set : n.sets ) {
