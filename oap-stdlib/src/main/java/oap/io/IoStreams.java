@@ -26,6 +26,7 @@ package oap.io;
 import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.archive.Archiver;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
@@ -151,16 +152,16 @@ public class IoStreams {
 
         Files.ensureFile( path );
         if( append ) Files.ensureFileEncodingValid( path );
-        OutputStream fos = new BufferedOutputStream( safe
+        final OutputStream outputStream = safe
             ? new SafeFileOutputStream( path, append )
-            : new FileOutputStream( path.toFile(), append ),
-            bufferSize );
+            : new FileOutputStream( path.toFile(), append );
+        final OutputStream fos = bufferSize > 0 ? new BufferedOutputStream( outputStream, bufferSize ) : outputStream;
         switch( encoding ) {
             case GZIP:
                 return Archiver.ungzip( fos );
             case ZIP:
                 if( append ) throw new IllegalArgumentException( "cannot append zip file" );
-                ZipOutputStream zip = new ZipOutputStream( fos );
+                val zip = new ZipOutputStream( fos );
                 zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
                 return zip;
             case LZ4:
@@ -187,7 +188,9 @@ public class IoStreams {
     @SneakyThrows
     public static InputStream in( Path path, Encoding encoding, int bufferSize ) {
         try {
-            return getInputStream( new BufferedInputStream( new FileInputStream( path.toFile() ), bufferSize ), encoding );
+            final FileInputStream fileInputStream = new FileInputStream( path.toFile() );
+            return getInputStream(
+                bufferSize > 0 ? new BufferedInputStream( fileInputStream, bufferSize ) : fileInputStream, encoding );
         } catch( IOException e ) {
             throw new IOException( "couldn't open file " + path.toString(), e );
         }
