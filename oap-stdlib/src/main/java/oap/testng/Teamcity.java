@@ -80,7 +80,7 @@ public class Teamcity {
             System.out.format( "##teamcity[progressFinish '%s']\n", escape( message ) );
     }
 
-    public static void performance( String name, long rate ) {
+    public static void performance( String name, double rate ) {
         statistics( name + ".actions/s", rate );
     }
 }

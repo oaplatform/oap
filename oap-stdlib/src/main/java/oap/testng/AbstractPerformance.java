@@ -26,6 +26,7 @@ package oap.testng;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import oap.util.Functions;
 import oap.util.Try;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -46,13 +47,9 @@ import static oap.util.Functions.empty.consume;
 public abstract class AbstractPerformance extends AbstractTest {
 
     public static final int WARMING = 1000;
-    /**
-     * @see oap.util.Functions.empty#consume()
-     */
-    @Deprecated
-    protected static final Consumer<Integer> none = ( i ) -> {
-    };
-    private static final Function<Long, String> actions_s = ( rate ) -> rate + " action/s";
+
+    protected static final Consumer<Integer> none = Functions.empty.consume();
+    private static final Function<Double, String> actions_s = ( rate ) -> rate + " action/s";
 
     public static void benchmark( String name, int samples, Try.ThrowingConsumer<Integer> code ) {
         benchmark( name, samples, 5, code, consume(), consume(), actions_s );
@@ -71,7 +68,7 @@ public abstract class AbstractPerformance extends AbstractTest {
 
     public static BenchmarkResult benchmark( String name, int samples, int experiments,
                                              Try.ThrowingConsumer<Integer> code,
-                                             Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment, Function<Long, String> rateToString ) {
+                                             Consumer<Integer> initExperiment, Consumer<Integer> doneExperiment, Function<Double, String> rateToString ) {
         return Teamcity.progress( name + "...", () -> {
             List<BenchmarkResult> results = IntStream.range( 0, experiments )
                 .mapToObj( x -> {
@@ -84,7 +81,7 @@ public abstract class AbstractPerformance extends AbstractTest {
                                     return System.nanoTime() - start;
                                 } ).sum();
                                 long avg = total / samples / 1000;
-                                long rate = ( long ) ( samples / ( total / 1000000000f ) );
+                                double rate = samples / ( total / 1000000000f );
                                 System.out.format(
                                     "benchmarking %s: %d samples, %d usec, avg time %d usec, rate %s\n",
                                     name, samples, total / 1000, avg, rateToString.apply( rate ) );
@@ -102,9 +99,9 @@ public abstract class AbstractPerformance extends AbstractTest {
                 .skip( 1 )
                 .mapToLong( r -> r.time )
                 .sum() / ( experiments - 1 );
-            long avgRate = results.stream()
+            double avgRate = results.stream()
                 .skip( 1 )
-                .mapToLong( r -> r.rate )
+                .mapToDouble( r -> r.rate )
                 .sum() / ( experiments - 1 );
             System.out.format( "benchmarking %s : avg time %d usec, avg rate %s\n",
                 name, avgTime, rateToString.apply( avgRate ) );
@@ -160,7 +157,6 @@ public abstract class AbstractPerformance extends AbstractTest {
 
                             ) )
                             .collect( toList() )
-                            .stream()
                             .forEach( Try.consume( Future::get ) );
 
                         long total = System.nanoTime() - start;
@@ -182,11 +178,11 @@ public abstract class AbstractPerformance extends AbstractTest {
                 .skip( 1 )
                 .mapToLong( r -> r.time )
                 .sum() / ( experiments - 1 );
-            long avgRate = results.stream()
+            double avgRate = results.stream()
                 .skip( 1 )
-                .mapToLong( r -> r.rate )
+                .mapToDouble( r -> r.rate )
                 .sum() / ( experiments - 1 );
-            System.out.format( "benchmarking %s : avg time %d usec, avg rate %d actions/s\n",
+            System.out.format( "benchmarking %s : avg time %d usec, avg rate %f actions/s\n",
                 name, avgTime, avgRate );
 
             Teamcity.performance( name, avgRate );
@@ -221,10 +217,10 @@ public abstract class AbstractPerformance extends AbstractTest {
     }
 
     public static class BenchmarkResult {
-        public long rate;
+        public double rate;
         public long time;
 
-        public BenchmarkResult( long time, long rate ) {
+        public BenchmarkResult( long time, double rate ) {
             this.time = time;
             this.rate = rate;
         }
