@@ -37,67 +37,66 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 /**
  * Created by igor.petrenko on 06.12.2016.
  */
-@Test(enabled = false)
+@Test( enabled = false )
 public class BinderPerformance extends AbstractPerformance {
-   @Test(enabled = false)
-   public void testArrayVsList() {
-      final String source = "{\"test\":[\"1\",\"2\",\"3\"],\"test2\":[1,2,3]}";
+    @Test( enabled = false )
+    public void testArrayVsList() {
+        final String source = "{\"test\":[\"1\",\"2\",\"3\"],\"test2\":[1,2,3]}";
 
-      final TArray tArray = new TArray( new String[] { "1", "2", "3" }, new int[] { 1, 2, 3 } );
-      final TList tList = new TList( Arrays.asList( "1", "2", "3" ), Arrays.asList( 1, 2, 3 ) );
-      final TMix tMix = new TMix( Arrays.asList( "1", "2", "3" ), new int[] { 1, 2, 3 } );
+        final TArray tArray = new TArray( new String[] { "1", "2", "3" }, new int[] { 1, 2, 3 } );
+        final TList tList = new TList( Arrays.asList( "1", "2", "3" ), Arrays.asList( 1, 2, 3 ) );
+        final TMix tMix = new TMix( Arrays.asList( "1", "2", "3" ), new int[] { 1, 2, 3 } );
 
-      final int samples = 10000000;
-      final int experiments = 5;
+        final int samples = 10000000;
 
-      benchmark( "arraylist-deserialization", samples, experiments, ( i ) -> {
-         Binder.json.unmarshal( TMix.class, source );
-      } );
-      benchmark( "array-deserialization", samples, experiments, ( i ) -> {
-         Binder.json.unmarshal( TArray.class, source );
-      } );
-      benchmark( "list-deserialization", samples, experiments, ( i ) -> {
-         Binder.json.unmarshal( TList.class, source );
-      } );
+        benchmark( builder( "arraylist-deserialization" ).samples( samples ).build(), ( i ) -> {
+            Binder.json.unmarshal( TMix.class, source );
+        } );
+        benchmark( builder( "array-deserialization" ).samples( samples ).build(), ( i ) -> {
+            Binder.json.unmarshal( TArray.class, source );
+        } );
+        benchmark( builder( "list-deserialization" ).samples( samples ).build(), ( i ) -> {
+            Binder.json.unmarshal( TList.class, source );
+        } );
 
-      benchmark( "array-serialization", samples, experiments, ( i ) -> {
-         Binder.json.marshal( tArray );
-      } );
-      benchmark( "arraylist-serialization", samples, experiments, ( i ) -> {
-         Binder.json.marshal( tMix );
-      } );
-      benchmark( "list-serialization", samples, experiments, ( i ) -> {
-         Binder.json.marshal( tList );
-      } );
-   }
+        benchmark( builder( "array-serialization" ).samples( samples ).build(), ( i ) -> {
+            Binder.json.marshal( tArray );
+        } );
+        benchmark( builder( "arraylist-serialization" ).samples( samples ).build(), ( i ) -> {
+            Binder.json.marshal( tMix );
+        } );
+        benchmark( builder( "list-serialization" ).samples( samples ).build(), ( i ) -> {
+            Binder.json.marshal( tList );
+        } );
+    }
 
-   public static class TArray {
-      public String[] test = EMPTY_STRING_ARRAY;
-      public int[] test2 = EMPTY_INT_ARRAY;
+    public static class TArray {
+        public String[] test = EMPTY_STRING_ARRAY;
+        public int[] test2 = EMPTY_INT_ARRAY;
 
-      public TArray( String[] test, int[] test2 ) {
-         this.test = test;
-         this.test2 = test2;
-      }
-   }
+        public TArray( String[] test, int[] test2 ) {
+            this.test = test;
+            this.test2 = test2;
+        }
+    }
 
-   public static class TList {
-      public List<String> test = new ArrayList<>();
-      public List<Integer> test2 = new ArrayList<>();
+    public static class TList {
+        public List<String> test = new ArrayList<>();
+        public List<Integer> test2 = new ArrayList<>();
 
-      public TList( List<String> test, List<Integer> test2 ) {
-         this.test = test;
-         this.test2 = test2;
-      }
-   }
+        public TList( List<String> test, List<Integer> test2 ) {
+            this.test = test;
+            this.test2 = test2;
+        }
+    }
 
-   public static class TMix {
-      public List<String> test = new ArrayList<>();
-      public int[] test2 = EMPTY_INT_ARRAY;
+    public static class TMix {
+        public List<String> test = new ArrayList<>();
+        public int[] test2 = EMPTY_INT_ARRAY;
 
-      public TMix( List<String> test, int[] test2 ) {
-         this.test = test;
-         this.test2 = test2;
-      }
-   }
+        public TMix( List<String> test, int[] test2 ) {
+            this.test = test;
+            this.test2 = test2;
+        }
+    }
 }

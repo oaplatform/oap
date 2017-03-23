@@ -25,19 +25,13 @@
 package oap.logstream;
 
 import oap.testng.AbstractPerformance;
-import oap.testng.AbstractTest;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 public class TimestampPerformance extends AbstractPerformance {
-   @Test
-   public void directoryName() {
-      benchmark( "Timestamp::directoryName", 1000000, 5, (i) -> Timestamp.directoryName( "2015-12-03-11-05" ));
+    @Test
+    public void directoryName() {
+        benchmark( builder( "Timestamp::directoryName" ).samples( 1000000 ).build(),
+            ( i ) -> Timestamp.directoryName( "2015-12-03-11-05" ) );
 //      benchmark( "Timestamp::directoryName2", 1000000, 5, (i) -> Timestamp.directoryName2( "2015-12-03-11-05" ));
-   }
+    }
 }

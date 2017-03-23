@@ -67,73 +67,73 @@ public class StringsPerformance extends AbstractPerformance {
         return new String( output, 0, i );
     }
 
-   private static String removeBitwise( String str, char... characters ) {
-      if( StringUtils.indexOfAny( str, characters ) < 0 ) return str;
+    private static String removeBitwise( String str, char... characters ) {
+        if( StringUtils.indexOfAny( str, characters ) < 0 ) return str;
 
-      long bitwise_0 = 0;
-      long bitwise_1 = 0;
-      long bitwise_2 = 0;
-      long bitwise_3 = 0;
-      
-      for( char ch : characters ) {
-         long shift = (1 << (ch - 1));
-         if( ch < 64 ){
-            bitwise_0 |= shift;
-         } else if (ch < 128){
-            bitwise_1 |= shift;
-         } else if (ch < 192) {
-            bitwise_2 |= shift;
-         } else {
-            bitwise_3 |= shift;
-         }
-      }
+        long bitwise_0 = 0;
+        long bitwise_1 = 0;
+        long bitwise_2 = 0;
+        long bitwise_3 = 0;
 
-      char[] output = new char[str.length()];
-      int i = 0;
+        for( char ch : characters ) {
+            long shift = ( 1 << ( ch - 1 ) );
+            if( ch < 64 ) {
+                bitwise_0 |= shift;
+            } else if( ch < 128 ) {
+                bitwise_1 |= shift;
+            } else if( ch < 192 ) {
+                bitwise_2 |= shift;
+            } else {
+                bitwise_3 |= shift;
+            }
+        }
 
-      for( char ch : str.toCharArray() ) {
-         long shift = (1 << (ch - 1));
-         if( ch < 64 ){
-            if( (bitwise_0 & shift ) == 0 )
-               output[i++] = ch;
-         } else if (ch < 128){
-            if( (bitwise_1 & shift ) == 0 )
-               output[i++] = ch;
-         } else if (ch < 192) {
-            if( (bitwise_2 & shift ) == 0 )
-               output[i++] = ch;
-         } else {
-            if( (bitwise_3 & shift ) == 0 )
-               output[i++] = ch;
-         }
-      }
+        char[] output = new char[str.length()];
+        int i = 0;
 
-      return new String( output, 0, i );
-   }
+        for( char ch : str.toCharArray() ) {
+            long shift = ( 1 << ( ch - 1 ) );
+            if( ch < 64 ) {
+                if( ( bitwise_0 & shift ) == 0 )
+                    output[i++] = ch;
+            } else if( ch < 128 ) {
+                if( ( bitwise_1 & shift ) == 0 )
+                    output[i++] = ch;
+            } else if( ch < 192 ) {
+                if( ( bitwise_2 & shift ) == 0 )
+                    output[i++] = ch;
+            } else {
+                if( ( bitwise_3 & shift ) == 0 )
+                    output[i++] = ch;
+            }
+        }
 
-   @Test
+        return new String( output, 0, i );
+    }
+
+    @Test
     public void testRemove() {
         final int samples = 10000000;
-        final int experiments = 5;
-       benchmark( "remove-bidwise", samples, experiments, ( i ) -> {
-          removeBitwise( "12345", ' ', '-' );
-          removeBitwise( "-123 - 45-", ' ', '-', '_' );
-          removeBitwise( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
-       } );
 
-       benchmark( "remove-bit-set", samples, experiments, ( i ) -> {
-          removeBitset( "12345", ' ', '-' );
-          removeBitset( "-123 - 45-", ' ', '-', '_' );
-          removeBitset( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
-       } );
+        benchmark( builder( "remove-bidwise" ).samples( samples ).build(), ( i ) -> {
+            removeBitwise( "12345", ' ', '-' );
+            removeBitwise( "-123 - 45-", ' ', '-', '_' );
+            removeBitwise( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
+        } );
 
-       benchmark( "remove", samples, experiments, ( i ) -> {
+        benchmark( builder( "remove-bit-set" ).samples( samples ).build(), ( i ) -> {
+            removeBitset( "12345", ' ', '-' );
+            removeBitset( "-123 - 45-", ' ', '-', '_' );
+            removeBitset( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
+        } );
+
+        benchmark( builder( "remove" ).samples( samples ).build(), ( i ) -> {
             Strings.remove( "12345", ' ', '-' );
             Strings.remove( "-123 - 45-", ' ', '-', '_' );
             Strings.remove( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
         } );
 
-        benchmark( "remove-set", samples, experiments, ( i ) -> {
+        benchmark( builder( "remove-set" ).samples( samples ).build(), ( i ) -> {
             removeSet( "12345", ' ', '-' );
             removeSet( "-123 - 45-", ' ', '-', '_' );
             removeSet( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );

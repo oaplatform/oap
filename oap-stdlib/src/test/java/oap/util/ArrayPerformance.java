@@ -25,6 +25,7 @@
 package oap.util;
 
 import oap.testng.AbstractPerformance;
+import org.joda.time.Period;
 import org.testng.annotations.Test;
 
 import java.util.Random;
@@ -46,7 +47,7 @@ public class ArrayPerformance extends AbstractPerformance {
 
         final long[] sum = new long[] { 0 };
 
-        benchmark( "class_vs_array->array", samples, experiments, ( i ) -> {
+        benchmark( builder( "class_vs_array->array" ).samples( samples ).experiments( experiments ).period( Period.millis(10) ).build(), ( i ) -> {
             final int x = random.nextInt( 4 );
             switch( x ) {
                 case 0:
@@ -64,7 +65,25 @@ public class ArrayPerformance extends AbstractPerformance {
             }
         } );
 
-        benchmark( "class_vs_array->class", samples, experiments, ( i ) -> {
+        benchmark( builder( "class_vs_array->array-2" ).samples( samples ).experiments( experiments ).build(), ( i ) -> {
+            final int x = random.nextInt( 4 );
+            switch( x ) {
+                case 0:
+                    sum[0] += array[x];
+                    break;
+                case 1:
+                    sum[0] += array[x];
+                    break;
+                case 2:
+                    sum[0] += array[x];
+                    break;
+                case 3:
+                    sum[0] += array[x];
+                    break;
+            }
+        } );
+
+        benchmark( builder( "class_vs_array->class" ).samples( samples ).experiments( experiments ).build(), ( i ) -> {
             final int x = random.nextInt( 4 );
             switch( x ) {
                 case 0:
@@ -96,7 +115,7 @@ public class ArrayPerformance extends AbstractPerformance {
         long[] sum = new long[] { 0 };
 
         data[9] = new long[] { 10, 20 };
-        benchmark( "as-array", samples, experiments, ( i ) -> {
+        benchmark( builder( "as-array" ).samples( samples ).experiments( experiments ).build(), ( i ) -> {
             final int x = random.nextInt( 10 );
 
             if( data[x] instanceof Long ) sum[0] += ( long ) data[x];
@@ -108,7 +127,7 @@ public class ArrayPerformance extends AbstractPerformance {
         } );
 
         data[9] = new Test2( 10, 20 );
-        benchmark( "as-object", samples, experiments, ( i ) -> {
+        benchmark( builder( "as-object" ).samples( samples ).experiments( experiments ).build(), ( i ) -> {
             final int x = random.nextInt( 10 );
 
             if( data[x] instanceof Long ) sum[0] += ( long ) data[x];
@@ -123,7 +142,7 @@ public class ArrayPerformance extends AbstractPerformance {
         for( int i = 0; i < 9; i++ ) data2[i] = new long[] { i };
         data2[9] = new long[] { 10, 20 };
 
-        benchmark( "as-long[]", samples, experiments, ( i ) -> {
+        benchmark( builder( "as-long[]" ).samples( samples ).experiments( experiments ).build(), ( i ) -> {
             final int x = random.nextInt( 10 );
 
             if( data2[x].length == 1 ) sum[0] += data2[x][0];

@@ -24,10 +24,10 @@
 package oap.ws;
 
 import oap.concurrent.SynchronizedThread;
-import oap.http.cors.GenericCorsPolicy;
 import oap.http.PlainHttpListener;
 import oap.http.Protocol;
 import oap.http.Server;
+import oap.http.cors.GenericCorsPolicy;
 import oap.http.nio.NioServer;
 import oap.http.testng.HttpAsserts;
 import oap.testng.AbstractPerformance;
@@ -42,7 +42,6 @@ import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
 public class WebServicesPerformance extends AbstractPerformance {
     public static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
     private final int samples = 100000;
-    private final int experiments = 5;
 
     @Test
     public void blocking_threads() {
@@ -55,7 +54,7 @@ public class WebServicesPerformance extends AbstractPerformance {
                 Collections.emptyList(), Protocol.HTTP );
 
             HttpAsserts.reset();
-            benchmark( "Server.invocations", samples, experiments, 5000,
+            benchmark( builder( "Server.invocations" ).samples( samples ).threads( 5000 ).build(),
                 number -> HttpAsserts.assertGet( HTTP_PREFIX + "/x/v/math/id?a=aaa" ).responded( 200, "OK",
                     ContentType.APPLICATION_JSON, "\"aaa\"" ) );
 
@@ -77,7 +76,7 @@ public class WebServicesPerformance extends AbstractPerformance {
             Thread.sleep( 3000 ); // ??? TODO: fix me
 
             HttpAsserts.reset();
-            benchmark( "NioServer.invocations", samples, experiments, 5000, ( number ) -> {
+            benchmark( builder( "NioServer.invocations" ).samples( samples ).threads( 5000 ).build(), ( number ) -> {
                 try {
                     HttpAsserts.assertGet( HTTP_PREFIX + "/x/v/math/id?a=aaa" )
                         .responded( 200, "OK", ContentType.APPLICATION_JSON, "\"aaa\"" );

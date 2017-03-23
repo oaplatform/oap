@@ -53,7 +53,6 @@ import java.util.stream.Stream;
 public class AccumulatorPerformance extends AbstractPerformance {
 
     public static final int SAMPLES = 200;
-    public static final int EXPERIMENTS = 5;
     private Path path1;
     private Path path2;
     private Random random;
@@ -93,7 +92,7 @@ public class AccumulatorPerformance extends AbstractPerformance {
 
     @Test( dataProvider = "count" )
     public void testAggregatedByHM( int count ) {
-        benchmark( "accumulator.without_sort", SAMPLES, EXPERIMENTS, ( i ) -> {
+        benchmark( builder( "accumulator.without_sort" ).samples( SAMPLES ).build(), ( i ) -> {
 
             Table.GroupBy[] groups = Stream
                 .generate( () -> new Table.GroupBy( "agg_name", new int[] { 0, 1, 2 }, Accumulator.count(), Accumulator.intSum( 3 ), Accumulator.intSum( 4 ) ) )

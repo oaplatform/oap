@@ -33,11 +33,11 @@ import org.testng.annotations.Test;
 public class WildcardMatchPerformance extends AbstractPerformance {
     @Test( enabled = false )
     public void perf() {
-        benchmark( "FilenameUtils.wildcardMatch", 10000000, 5, ( i ) -> {
+        benchmark( builder( "FilenameUtils.wildcardMatch" ).samples( 10000000 ).experiments( 5 ).build(), ( i ) -> {
             FilenameUtils.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" );
         } );
 
-        benchmark( "wildcardMatch", 10000000, 5, ( i ) -> {
+        benchmark( builder( "wildcardMatch" ).samples( 10000000 ).experiments( 5 ).build(), ( i ) -> {
             Files.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" );
         } );
     }

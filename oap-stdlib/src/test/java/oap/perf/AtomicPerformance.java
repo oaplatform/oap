@@ -43,22 +43,21 @@ public class AtomicPerformance extends AbstractPerformance {
     @Test
     public void testAtomicLong() {
         final int threads = 1024;
-        final int experiments = 5;
         final int samples = 100000000;
 
-        benchmark( "atomic-long", samples, experiments, threads, ( i ) -> {
+        benchmark( builder( "atomic-long" ).samples( samples ).threads( threads ).build(), ( i ) -> {
             al.incrementAndGet();
         } );
 
-        benchmark( "atomic-integer", samples, experiments, threads, ( i ) -> {
+        benchmark( builder( "atomic-integer" ).samples( samples ).threads( threads ).build(), ( i ) -> {
             ai.incrementAndGet();
         } );
 
-        benchmark( "long", samples, experiments, threads, ( i ) -> {
+        benchmark( builder( "long" ).samples( samples ).threads( threads ).build(), ( i ) -> {
             l++;
         } );
 
-        benchmark( "long-synchronized", samples, experiments, threads, ( i ) -> {
+        benchmark( builder( "long-synchronized" ).samples( samples ).threads( threads ).build(), ( i ) -> {
             synchronized( AtomicPerformance.class ) {
                 l2++;
             }

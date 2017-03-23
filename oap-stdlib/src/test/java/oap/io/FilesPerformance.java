@@ -60,29 +60,29 @@ public class FilesPerformance extends AbstractPerformance {
     public void testLastModificationTime() {
         final long[] size = { 0 };
 
-        benchmark( "java.nio.file.Files.getLastModifiedTime()", SAMPLES, 5, ( x ) -> {
+        benchmark( builder( "java.nio.file.Files.getLastModifiedTime()" ).samples( SAMPLES ).build(), ( x ) -> {
             size[0] += java.nio.file.Files.getLastModifiedTime( path ).to( TimeUnit.NANOSECONDS );
         } );
 
-        benchmark( "java.nio.file.Files.getLastModifiedTime()-2", SAMPLES, 5, ( x ) -> {
+        benchmark( builder( "java.nio.file.Files.getLastModifiedTime()-2" ).samples( SAMPLES ).build(), ( x ) -> {
             size[0] += java.nio.file.Files.getLastModifiedTime( path2 ).to( TimeUnit.NANOSECONDS );
         } );
 
-        benchmark( "java.io.File.lastModified()", SAMPLES, 5, ( x ) -> {
+        benchmark( builder( "java.io.File.lastModified()" ).samples( SAMPLES ).build(), ( x ) -> {
             size[0] += path.toFile().lastModified();
         } );
-        benchmark( "java.io.File.lastModified()-2", SAMPLES, 5, ( x ) -> {
+        benchmark( builder( "java.io.File.lastModified()-2" ).samples( SAMPLES ).build(), ( x ) -> {
             size[0] += path2.toFile().lastModified();
         } );
     }
 
     @Test
     public void testExists() {
-        benchmark( "java.nio.file.Files.exists()", SAMPLES, 5, ( x ) -> {
+        benchmark( builder( "java.nio.file.Files.exists()" ).samples( SAMPLES ).build(), ( x ) -> {
             java.nio.file.Files.exists( path );
             java.nio.file.Files.exists( pathNotExists );
         } );
-        benchmark( "java.io.File.exists()", SAMPLES, 5, ( x ) -> {
+        benchmark( builder( "java.io.File.exists()" ).samples( SAMPLES ).build(), ( x ) -> {
             path.toFile().exists();
             pathNotExists.toFile().exists();
         } );

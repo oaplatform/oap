@@ -39,13 +39,12 @@ public class HashMapPerformance extends AbstractPerformance {
         final HashMap<String, String> map = new HashMap<>();
 
         final int samples = 5000000;
-        final int experiments = 5;
 
-        benchmark( "computeIfAbsent", samples, experiments, ( i ) -> {
+        benchmark( builder( "computeIfAbsent" ).samples( samples ).build(), ( i ) -> {
             map.computeIfAbsent( "key" + i, ( k ) -> "key" );
         } );
 
-        benchmark( "get", samples, experiments, ( i ) -> {
+        benchmark( builder( "get" ).samples( samples ).build(), ( i ) -> {
             map.get( "key" + i );
         } );
     }
@@ -53,7 +52,6 @@ public class HashMapPerformance extends AbstractPerformance {
     @Test
     public void testMultiStringKey() {
         final int SAMPLES = 10000000;
-        final int EXPERIMENTS = 5;
 
         String[] randoms = IntStream.range( 0, 99 ).mapToObj( i -> RandomStringUtils.random( 5, true, false ) ).toArray( String[]::new );
 
@@ -65,13 +63,13 @@ public class HashMapPerformance extends AbstractPerformance {
             map2.put( randoms[i] + randoms[i + 1] + randoms[i + 2], 1 );
         }
 
-        benchmark( "list-string-key", SAMPLES, EXPERIMENTS, ( i ) -> {
+        benchmark( builder( "list-string-key" ).samples( SAMPLES ).build(), ( i ) -> {
             int p = ( i % 33 ) * 3;
 
             map1.get( java.util.Arrays.asList( randoms[p], randoms[p + 1], randoms[p + 2] ) );
         } );
 
-        benchmark( "one-string-key", SAMPLES, EXPERIMENTS, ( i ) -> {
+        benchmark( builder( "one-string-key" ).samples( SAMPLES ).build(), ( i ) -> {
             int p = ( i % 33 ) * 3;
 
             map2.get( randoms[p] + randoms[p + 1] + randoms[p + 2] );
