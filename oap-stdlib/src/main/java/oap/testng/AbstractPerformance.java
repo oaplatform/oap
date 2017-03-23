@@ -230,9 +230,11 @@ public abstract class AbstractPerformance extends AbstractTest {
         public final LongFunction<String> rateToString;
 
         public String getPeriod() {
-            if( period.getMillis() == 1 ) return "ms";
-            else if( period.getMinutes() == 1 ) return "m";
-            else if( period.getHours() == 1 ) return "h";
+            final long millis = period.toStandardDuration().getMillis();
+            if( millis == 1 ) return "ms";
+            else if( millis == 1000 ) return "s";
+            else if( millis == 1000 * 60 ) return "m";
+            else if( millis == 1000 * 60 * 60 ) return "h";
             else return period.toString();
         }
 
