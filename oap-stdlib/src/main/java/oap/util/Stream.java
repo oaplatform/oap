@@ -227,6 +227,17 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return Result.success( container );
     }
 
+    public <T> Stream<Result<T, ? extends Throwable>> mapThrowableToResult( Function<? super E, ? extends T> mapper ) {
+        return map( (f) -> {
+            try {
+                return Result.success( mapper.apply( f ) );
+            } catch( Throwable t ) {
+                return Result.failure( t );
+            }
+        } );
+    }
+
+
     @Override
     public Stream<E> filter( Predicate<? super E> predicate ) {
         return of( underlying.filter( predicate ) );
