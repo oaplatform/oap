@@ -65,7 +65,13 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
       this.path = path;
    }
 
-   @Override
+    @Override
+    public List<Metadata<T>> updatedSince( long time ) {
+        open();
+        return super.updatedSince( time );
+    }
+
+    @Override
    public Stream<T> select() {
       open();
       return super.select();
@@ -119,7 +125,7 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
       super.delete( id );
    }
 
-   private void open() {
+   private synchronized void open() {
       if( data.size() > 0 ) {
          return;
       }
