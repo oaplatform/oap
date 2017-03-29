@@ -30,13 +30,13 @@ import oap.http.PlainHttpListener;
 import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
 import oap.testng.Env;
+import oap.util.Lists;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.toList;
 import static oap.http.testng.HttpAsserts.reset;
 
 /**
@@ -53,7 +53,7 @@ public class AbstractWebServicesTest {
         server = new Server( 100 );
         ws = new WebServices( server, new SessionManager( 10, null, "/" ),
             GenericCorsPolicy.DEFAULT,
-            getConfig().stream().map( n -> WsConfig.CONFIGURATION.fromResource( getClass(), n ) ).collect( toList() )
+            Lists.map( getConfig(), n -> WsConfig.CONFIGURATION.fromResource( getClass(), n ) )
         );
 
         ws.start();
