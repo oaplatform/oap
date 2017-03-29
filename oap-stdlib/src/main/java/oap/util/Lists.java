@@ -92,7 +92,12 @@ public class Lists {
         return __( left, right );
     }
 
-    public static <E> E find( List<E> list, Predicate<E> predicate ) {
+    public static <E> Optional<E> find( List<E> list, Predicate<E> predicate ) {
+        for( E e : list ) if( predicate.test( e ) ) return Optional.ofNullable( e );
+        return Optional.empty();
+    }
+
+    public static <E> E find2( List<E> list, Predicate<E> predicate ) {
         for( E e : list ) if( predicate.test( e ) ) return e;
         return null;
     }
