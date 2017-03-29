@@ -172,7 +172,7 @@ public abstract class AbstractPerformance extends AbstractTest {
     }
 
     public static long getRate( BenchmarkConfiguration configuration, long total ) {
-        return configuration.samples / ( total / configuration.period.toStandardDuration().getMillis() / 1000000L );
+        return ( long ) (configuration.samples / (total / configuration.period.toStandardDuration().getMillis() / 1000000f));
     }
 
     public static <T> T time( String name, Supplier<T> code ) {

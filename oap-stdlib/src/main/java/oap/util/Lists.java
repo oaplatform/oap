@@ -25,10 +25,12 @@ package oap.util;
 
 import com.google.common.base.Preconditions;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import lombok.val;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +41,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
 
-import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
 
 public class Lists {
@@ -48,13 +49,16 @@ public class Lists {
 
     @SafeVarargs
     public static <E> List<E> addAll( List<E> list, E... array ) {
-        list.addAll( of( array ) );
+        for( val e : array ) {
+            list.add( e );
+        }
         return list;
     }
 
     @SafeVarargs
     public static <E> List<E> concat( List<? extends E>... lists ) {
-        List<E> concatenated = empty();
+        final ArrayList<E> concatenated = new ArrayList<>();
+
         for( List<? extends E> list : lists ) {
             concatenated.addAll( list );
         }
@@ -88,13 +92,17 @@ public class Lists {
         return __( left, right );
     }
 
-    public static <E> Optional<E> find( List<E> list, Predicate<E> predicate ) {
-        for( E e : list ) if( predicate.test( e ) ) return Optional.ofNullable( e );
-        return Optional.empty();
+    public static <E> E find( List<E> list, Predicate<E> predicate ) {
+        for( E e : list ) if( predicate.test( e ) ) return e;
+        return null;
     }
 
     public static <E, R> List<R> map( List<? extends E> list, Function<? super E, R> mapper ) {
-        return list.stream().map( mapper ).collect( toList() );
+        final ArrayList<R> result = new ArrayList<>( list.size() );
+        for( val e : list ) {
+            result.add( mapper.apply( e ) );
+        }
+        return result;
     }
 
     public static <E, R> List<R> map( E[] array, Function<? super E, R> mapper ) {
@@ -102,19 +110,39 @@ public class Lists {
     }
 
     public static <E> List<E> filter( List<E> list, Predicate<E> predicate ) {
-        return list.stream().filter( predicate ).collect( toList() );
+        final ArrayList<E> result = new ArrayList<>();
+
+        for( val e : list ) {
+            if( predicate.test( e ) ) result.add( e );
+        }
+
+        return result;
     }
 
     public static <E> boolean allMatch( List<E> list, Predicate<E> predicate ) {
-        return list.stream().allMatch( predicate );
+        for( val e : list ) {
+            if( !predicate.test( e ) ) return false;
+        }
+        return true;
     }
 
     public static <E, R> List<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
-        return map( Collections.list( enumeration ), mapper );
+        final ArrayList<R> result = new ArrayList<>();
+        while( enumeration.hasMoreElements() ) {
+            result.add( mapper.apply( enumeration.nextElement() ) );
+        }
+        return result;
     }
 
     public static <G, E> Map<G, List<E>> groupBy( List<E> list, Function<E, G> classifier ) {
-        return Stream.of( list ).collect( java.util.stream.Collectors.groupingBy( classifier ) );
+        final HashMap<G, List<E>> result = new HashMap<>();
+
+        for( val e : list ) {
+            final G key = classifier.apply( e );
+            result.computeIfAbsent( key, ( k ) -> new ArrayList<>() ).add( e );
+        }
+
+        return result;
     }
 
     public static <E> Optional<E> random( List<E> list ) {
