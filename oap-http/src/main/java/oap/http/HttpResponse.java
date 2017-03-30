@@ -162,7 +162,7 @@ public class HttpResponse {
     }
 
     public HttpResponse withContent( String content, ContentType contentType ) {
-        this.contentEntity = new StringEntity( content( false, content, contentType ), contentType );
+        this.contentEntity = new StringEntity( content( true, content, contentType ), contentType );
         return this;
     }
 
