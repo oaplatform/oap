@@ -2,6 +2,7 @@ package oap.http;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.io.IoStreams;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -37,10 +38,10 @@ public class SecureHttpListener extends AbstractHttpListener {
     @Override
     protected ServerSocket createSocket() {
         if( Files.exists( keystoreLocation ) ) {
-            try {
+            try( val inputStream = IoStreams.in( keystoreLocation, PLAIN ) ) {
                 log.info( "Keystore {} exists, trying to initialize", keystoreLocation );
                 KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
-                keyStore.load( IoStreams.in( keystoreLocation, PLAIN ), keystorePassword.toCharArray() );
+                keyStore.load( inputStream, keystorePassword.toCharArray() );
 
                 KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
                     KeyManagerFactory.getDefaultAlgorithm() );

@@ -45,12 +45,12 @@ public class IoStreamsTest extends AbstractTest {
     @Test
     public void emptyGz() throws IOException {
         Path path = tmpPath( "test.gz" );
-        OutputStream out = IoStreams.out( path, GZIP );
-        out.flush();
-        out.close();
-        InputStream in = IoStreams.in( path, GZIP );
-        assertThat( in.read() ).isEqualTo( -1 );
-        in.close();
+        try( OutputStream out = IoStreams.out( path, GZIP ) ) {
+            out.flush();
+        }
+        try( InputStream in = IoStreams.in( path, GZIP ) ) {
+            assertThat( in.read() ).isEqualTo( -1 );
+        }
         assertFile( path ).hasContent( "", GZIP );
     }
 
@@ -65,14 +65,14 @@ public class IoStreamsTest extends AbstractTest {
     @Test( dataProvider = "encodings" )
     public void append( Encoding encoding ) throws IOException {
         Path path = encoding.resolve( tmpPath( "test.txt" ) );
-        OutputStream out = IoStreams.out( path, encoding );
-        out.write( "12345".getBytes() );
-        out.flush();
-        out.close();
-        out = IoStreams.out( path, encoding, true );
-        out.write( "12345".getBytes() );
-        out.flush();
-        out.close();
+        try( OutputStream out = IoStreams.out( path, encoding ) ) {
+            out.write( "12345".getBytes() );
+            out.flush();
+        }
+        try( OutputStream out = IoStreams.out( path, encoding, true ) ) {
+            out.write( "12345".getBytes() );
+            out.flush();
+        }
         assertFile( path ).hasContent( "1234512345", encoding );
     }
 
@@ -80,10 +80,10 @@ public class IoStreamsTest extends AbstractTest {
     public void lz4() throws IOException {
         Path path = tmpPath( "test.lz4" );
 
-        OutputStream out = IoStreams.out( path, LZ4 );
-        out.write( "12345".getBytes() );
-        out.flush();
-        out.close();
+        try( OutputStream out = IoStreams.out( path, LZ4 ) ) {
+            out.write( "12345".getBytes() );
+            out.flush();
+        }
 
         assertFile( path ).hasContent( "12345", LZ4 );
     }

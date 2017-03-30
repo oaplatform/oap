@@ -1,5 +1,6 @@
 package oap.http;
 
+import lombok.val;
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.IoStreams;
@@ -54,24 +55,25 @@ public class SecureHttpListenerTest {
     public void testShouldVerifySSLCommunication() throws KeyStoreException, IOException, CertificateException,
         NoSuchAlgorithmException, KeyManagementException, UnrecoverableKeyException {
 
-        KeyStore keyStore = KeyStore.getInstance( "JKS" );
-        keyStore.load( IoStreams.in( pathOfTestResource( getClass(), "client_truststore.jks" ), PLAIN ),
-            KEYSTORE_PASSWORD.toCharArray() );
+        try( val inputStream = IoStreams.in( pathOfTestResource( getClass(), "client_truststore.jks" ), PLAIN ) ) {
+            KeyStore keyStore = KeyStore.getInstance( "JKS" );
+            keyStore.load( inputStream, KEYSTORE_PASSWORD.toCharArray() );
 
-        TrustManagerFactory trustManagerFactory =
-            TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-        trustManagerFactory.init( keyStore );
+            TrustManagerFactory trustManagerFactory =
+                TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+            trustManagerFactory.init( keyStore );
 
-        SSLContext sslContext = SSLContext.getInstance( "TLS" );
-        sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
+            SSLContext sslContext = SSLContext.getInstance( "TLS" );
+            sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
 
-        CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
+            CloseableHttpClient closeableHttpClient = HttpClientBuilder.create().setSSLContext( sslContext ).build();
 
-        HttpGet httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
+            HttpGet httpGet = new HttpGet( "https://localhost:" + Env.port() + "/test/" );
 
-        CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute( httpGet );
+            CloseableHttpResponse closeableHttpResponse = closeableHttpClient.execute( httpGet );
 
-        assertEquals( closeableHttpResponse.getStatusLine().getStatusCode(), 200 );
+            assertEquals( closeableHttpResponse.getStatusLine().getStatusCode(), 200 );
+        }
     }
 
     @AfterClass

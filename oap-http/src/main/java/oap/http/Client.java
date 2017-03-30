@@ -27,6 +27,7 @@ import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.concurrent.AsyncCallbacks;
 import oap.io.Closeables;
 import oap.io.Files;
@@ -161,17 +162,18 @@ public class Client implements Closeable {
 
     @SneakyThrows
     private static SSLContext createSSLContext( Path certificateLocation, String certificatePassword ) {
-        KeyStore keyStore = KeyStore.getInstance( "JKS" );
-        keyStore.load( IoStreams.in( certificateLocation, PLAIN ),
-            certificatePassword.toCharArray() );
+        try( val inputStream = IoStreams.in( certificateLocation, PLAIN ) ) {
+            KeyStore keyStore = KeyStore.getInstance( "JKS" );
+            keyStore.load( inputStream, certificatePassword.toCharArray() );
 
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-        trustManagerFactory.init( keyStore );
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+            trustManagerFactory.init( keyStore );
 
-        SSLContext sslContext = SSLContext.getInstance( "TLS" );
-        sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
+            SSLContext sslContext = SSLContext.getInstance( "TLS" );
+            sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
 
-        return sslContext;
+            return sslContext;
+        }
     }
 
     public Response get( String uri ) {
