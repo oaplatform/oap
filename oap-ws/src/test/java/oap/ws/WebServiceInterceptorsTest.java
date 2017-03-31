@@ -66,7 +66,7 @@ public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
     public void testShouldNotAllowRequestWhenErrorInterceptor() {
         assertGet( HTTP_PREFIX + "/test/text?value=error" )
             .hasCode( 403 )
-            .hasBody( "\"" + "caused by interceptor" + "\"" );
+            .hasBody( "caused by interceptor" );
     }
 
     private static class TestWS {
