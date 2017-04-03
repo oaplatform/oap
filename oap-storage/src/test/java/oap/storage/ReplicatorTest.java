@@ -28,6 +28,7 @@ import lombok.val;
 import oap.json.TypeIdFactory;
 import oap.testng.AbstractTest;
 import org.joda.time.DateTimeUtils;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.Collection;
@@ -40,14 +41,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ReplicatorTest extends AbstractTest {
 
+    @BeforeClass
+    public void setUp() {
+        TypeIdFactory.register( Bean.class, Bean.class.getName() );
+    }
+
     @Test
     public void masterSlave() {
         val time = new AtomicLong( 0 );
         DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
-        TypeIdFactory.register( Bean.class, Bean.class.getName() );
+
         MemoryStorage<Bean> slave = new MemoryStorage<>( b -> b.id );
         try( FileStorage<Bean> master = new FileStorage<>( tmpPath( "master" ), b -> b.id, 50 );
-             Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 0 ) ) {
+             Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 0, object -> true ) ) {
 
             val updates = new AtomicInteger();
             val creates = new AtomicInteger();
@@ -98,6 +104,45 @@ public class ReplicatorTest extends AbstractTest {
                 DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
             } );
 
+        }
+    }
+
+    @Test
+    public void testShouldCheckReplicatorFilter() {
+        AtomicLong time = new AtomicLong( 0 );
+        DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
+
+        MemoryStorage<Bean> slave = new MemoryStorage<>( IdentifierBuilder.<Bean>identify( b -> b.id ).build() );
+        try( FileStorage<Bean> master = new FileStorage<>( tmpPath( "master" ), IdentifierBuilder.<Bean>identify( b -> b.id ).build(), 50 );
+             Replicator<Bean> replicator = new Replicator<>( slave, master, 50, 0, object -> object.s.equals( "aaa" ) ) ) {
+
+            AtomicInteger updates = new AtomicInteger();
+            AtomicInteger creates = new AtomicInteger();
+            AtomicInteger deletes = new AtomicInteger();
+
+            slave.addDataListener( new FileStorage.DataListener<Bean>() {
+                public void updated( Collection<Bean> objects, boolean isNew ) {
+                    ( isNew ? creates : updates ).set( objects.size() );
+                }
+
+                @Override
+                public void deleted( Collection<Bean> objects ) {
+                    deletes.set( objects.size() );
+                }
+            } );
+
+            DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
+
+            master.store( new Bean( "111", "aaa" ) );
+            master.store( new Bean( "222", "bbb" ) );
+
+            assertEventually( 120, 5, () -> {
+                assertThat( slave.select() ).containsExactly( new Bean( "111" ) );
+                assertThat( updates.get() ).isEqualTo( 0 );
+                assertThat( creates.get() ).isEqualTo( 1 );
+                assertThat( deletes.get() ).isEqualTo( 0 );
+                DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
+            } );
         }
     }
 }
