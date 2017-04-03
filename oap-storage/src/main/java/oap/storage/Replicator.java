@@ -35,22 +35,26 @@ import oap.util.Stream;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 @Slf4j
 public class Replicator<T> implements Closeable {
     private final MemoryStorage<T> slave;
     private final ReplicationMaster<T> master;
     private final Scheduled scheduled;
+    private final Predicate<T> filter;
     protected int batchSize = 10;
 
-    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval, long safeModificationTime ) {
+    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval, long safeModificationTime,
+                       Predicate<T> filter ) {
         this.slave = slave;
         this.master = master;
+        this.filter = filter;
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, safeModificationTime, this::replicate );
     }
 
     public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval ) {
-        this( slave, master, interval, 1000 );
+        this( slave, master, interval, 1000, object -> true );
     }
 
     public synchronized void replicate( long last ) {
@@ -71,10 +75,15 @@ public class Replicator<T> implements Closeable {
         for( Metadata<T> metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
             val object = metadata.object;
-            if( slave.data.put( metadata.id, metadata ) != null ) {
-                updatedObjects.add( object );
+
+            if ( filter.test( metadata.object ) ) {
+                if( slave.data.put( metadata.id, metadata ) != null ) {
+                    updatedObjects.add( object );
+                } else {
+                    newObjects.add( object );
+                }
             } else {
-                newObjects.add( object );
+                log.trace( "Skipping {} due to specified filter", metadata );
             }
         }
         if( !newObjects.isEmpty() ) slave.fireUpdated( newObjects, true );
