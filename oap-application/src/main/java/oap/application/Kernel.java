@@ -223,6 +223,14 @@ public class Kernel {
         log.debug( "application kernel started" );
     }
 
+    public void stop( String service ) {
+        log.debug( "stopping {}...", service );
+
+        supervisor.stop( service );
+
+        log.debug( "{} stopped", service );
+    }
+
     public void stop() {
         log.debug( "stopping application kernel..." );
         supervisor.stop();

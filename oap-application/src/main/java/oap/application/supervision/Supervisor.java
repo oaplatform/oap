@@ -94,4 +94,25 @@ public class Supervisor {
         }
     }
 
+    public synchronized void stop( String serviceName ) {
+        if( !stopped ) {
+            log.debug( "stopping..." );
+            this.stopped = true;
+            BiStream.of( this.scheduled )
+                .filter( s -> s._1.equals( serviceName ) )
+                .forEach( ( name, service ) -> {
+                    log.debug( "stopping {}...", name );
+                    service.stop();
+                    log.debug( "stopped {}", name );
+                } );
+            this.scheduled.clear();
+            BiStream.of( this.supervised )
+                .filter( s -> s._1.equals( serviceName ) )
+                .forEach( ( name, service ) -> {
+                    log.debug( "stopping {}...", name );
+                    service.stop();
+                    log.debug( "stopped {}", name );
+                } );
+        }
+    }
 }
