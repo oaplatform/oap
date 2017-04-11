@@ -27,7 +27,6 @@ package oap.metrics;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 import oap.testng.AbstractTest;
-import oap.testng.Asserts;
 import org.influxdb.dto.Point;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.BeforeMethod;
@@ -42,7 +41,6 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
 import static oap.testng.Asserts.assertString;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class InfluxDBReporterTest extends AbstractTest {
 
@@ -89,7 +87,7 @@ public class InfluxDBReporterTest extends AbstractTest {
 
         assertString( getPoints() ).contains(
             "test", "t1=10.0", "g1=10i", "h1=10.0", "h1_75th=10.0", "name1=1i,name2=2i",
-            "t1=10.0","t2=0.41666666666666663", "h2_stddev=0.0", "m2=0.0" );
+            "t1=10.0", "t2=0.41666666666666663", "h2_stddev=0.0", "m2=0.0" );
     }
 
     public InfluxDBReporter createReporter( MockInfluxDB influxDB, MetricRegistry registry, List<String> aggregates ) {
@@ -102,7 +100,8 @@ public class InfluxDBReporterTest extends AbstractTest {
             new ReporterFilter( emptyList(), emptyList() ),
             aggregates,
             TimeUnit.DAYS,
-            TimeUnit.DAYS
+            TimeUnit.DAYS,
+            false
         );
     }
 
