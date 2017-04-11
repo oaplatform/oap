@@ -35,6 +35,7 @@ import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Timer;
 import com.google.common.escape.Escapers;
 import lombok.SneakyThrows;
+import lombok.val;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Throwables;
@@ -73,17 +74,20 @@ class InfluxDBReporter extends ScheduledReporter {
     private final InfluxDB influxDB;
     private final String database;
     private final Map<String, String> tags;
+    private final boolean resetTimersAfterReport;
     private final Collection<Pattern> aggregates;
 
     @SneakyThrows
     protected InfluxDBReporter( InfluxDB influxDB, String database, Map<String, String> tags,
                                 MetricRegistry registry, String name,
                                 MetricFilter filter, Collection<String> aggregates,
-                                TimeUnit rateUnit, TimeUnit durationUnit ) {
+                                TimeUnit rateUnit, TimeUnit durationUnit,
+                                boolean resetTimersAfterReport ) {
         super( registry, name, filter, rateUnit, durationUnit );
         this.influxDB = influxDB;
         this.database = database;
         this.tags = tags;
+        this.resetTimersAfterReport = resetTimersAfterReport;
 
         final Field key_escaper = Point.class.getDeclaredField( "KEY_ESCAPER" );
         key_escaper.setAccessible( true );
@@ -229,6 +233,12 @@ class InfluxDBReporter extends ScheduledReporter {
             ( b, e ) -> b.addField( e.getKey() + "_fifteenMinuteRate", convertDuration( e.getValue().getFifteenMinuteRate() ) ),
             ( b, e ) -> b.addField( e.getKey() + "_meanRate", convertDuration( e.getValue().getMeanRate() ) )
         );
+
+        if( resetTimersAfterReport ) {
+            for( val timerName : timers.keySet() ) {
+                Metrics.registry.remove( timerName );
+            }
+        }
     }
 
     private void reportGauges( SortedMap<String, Gauge> gauges, SortedMap<String, Point.Builder> builders ) {
@@ -275,6 +285,7 @@ class InfluxDBReporter extends ScheduledReporter {
         private long connectionTimeout;
         private long readTimeout;
         private long writeTimeout;
+        private boolean resetTimersAfterReport = false;
 
         public Builder( MetricRegistry registry ) {
             this.registry = registry;
@@ -326,7 +337,8 @@ class InfluxDBReporter extends ScheduledReporter {
                 filter,
                 aggregates,
                 rateUnit,
-                durationUnit );
+                durationUnit,
+                resetTimersAfterReport );
         }
 
         public Builder withFilter( ReporterFilter filter ) {
@@ -351,6 +363,11 @@ class InfluxDBReporter extends ScheduledReporter {
 
         public Builder withWriteTimeout( long writeTimeout ) {
             this.writeTimeout = writeTimeout;
+            return this;
+        }
+
+        public Builder withResetTimersAfterReport( boolean resetTimersAfterReport ) {
+            this.resetTimersAfterReport = resetTimersAfterReport;
             return this;
         }
     }

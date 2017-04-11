@@ -47,6 +47,7 @@ public class InfluxReporter {
     protected long writeTimeout = 1000;
 
     protected long period = 60 * 1000;
+    protected boolean reset_timers_after_report = false;
 
     private InfluxDBReporter reporter;
 
@@ -67,7 +68,8 @@ public class InfluxReporter {
             .withConnect( this.host, port, database, login, password )
             .withConnectionTimeout( connectionTimeout )
             .withReadTimeout( readTimeout )
-            .withWriteTimeout( writeTimeout );
+            .withWriteTimeout( writeTimeout )
+            .withResetTimersAfterReport( reset_timers_after_report );
         tags.forEach( ( name, value ) -> builder.withTag( name, String.valueOf( value ) ) );
         reporter = builder.build();
         reporter.start( period, TimeUnit.MILLISECONDS );
