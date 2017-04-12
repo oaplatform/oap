@@ -23,6 +23,7 @@
  */
 package oap.ws;
 
+import lombok.val;
 import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.Request;
@@ -35,7 +36,6 @@ import oap.reflect.Coercions;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
-import oap.util.Optionals;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Strings;
@@ -163,37 +163,34 @@ public class WsService implements Handler {
     @Override
     public void handle( Request request, Response response ) {
         try {
-            Optionals.fork( reflection.method(
-                method -> methodMatches( request.requestLine, request.httpMethod, method ) ) )
-                .ifAbsent( () -> response.respond( NOT_FOUND ) )
-                .ifPresent(
-                    method -> {
-                        Name name = Metrics
-                            .name( "rest_timer" )
-                            .tag( "service", impl.getClass().getSimpleName() )
-                            .tag( "method", method.name() );
+            val method = reflection.method(m -> methodMatches( request.requestLine, request.httpMethod, m ) )
+                .orElse( null );
 
-                        if( !sessionAware ) {
-                            handleInternal( request, response, method, name, false );
-                        } else {
-                            final Optional<String> internalSession = request.cookie( "SID" );
-                            if( internalSession.isPresent() &&
-                                sessionManager.getSessionById( internalSession.get() ) != null ) {
+            if( method == null ) response.respond( NOT_FOUND );
+            else {
+                Name name = Metrics
+                    .name( "rest_timer" )
+                    .tag( "service", impl.getClass().getSimpleName() )
+                    .tag( "method", method.name() );
 
-                                cookieId = internalSession.get();
-                                logger.debug( "Valid SID [{}] found in cookie", cookieId );
+                if( !sessionAware ) {
+                    handleInternal( request, response, method, name, false );
+                } else {
+                    cookieId = request.cookie( "SID" ).orElse( null );
+                    if( cookieId != null && sessionManager.getSessionById( cookieId ) != null ) {
+                        logger.debug( "Valid SID [{}] found in cookie", cookieId );
 
-                                handleInternal( request, response, method, name, false );
-                            } else {
-                                cookieId = UUID.randomUUID().toString();
+                        handleInternal( request, response, method, name, true );
+                    } else {
+                        cookieId = UUID.randomUUID().toString();
 
-                                logger.debug( "Creating new session with SID [{}]", cookieId );
-                                sessionManager.put( cookieId, new Session() );
+                        logger.debug( "Creating new session with SID [{}]", cookieId );
+                        sessionManager.put( cookieId, new Session() );
 
-                                handleInternal( request, response, method, name, true );
-                            }
-                        }
-                    } );
+                        handleInternal( request, response, method, name, true );
+                    }
+                }
+            }
         } catch( Throwable e ) {
             wsError( response, e );
         }
