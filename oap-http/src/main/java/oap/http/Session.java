@@ -23,17 +23,16 @@
  */
 package oap.http;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Session {
-    public final Map<String, Object> params = Collections.synchronizedMap( new HashMap<>() );
+    public final Map<String, Object> params = new ConcurrentHashMap<>();
 
     @SuppressWarnings( "unchecked" )
     public <A> Optional<A> get( String name ) {
-        return Optional.ofNullable( (A) params.get( name ) );
+        return Optional.ofNullable( ( A ) params.get( name ) );
     }
 
     public void set( String name, Object value ) {

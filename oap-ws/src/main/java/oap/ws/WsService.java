@@ -36,6 +36,7 @@ import oap.reflect.Coercions;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
+import oap.util.Pair;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Strings;
@@ -65,6 +66,7 @@ import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.http.HttpResponse.NOT_FOUND;
 import static oap.http.HttpResponse.NO_CONTENT;
 import static oap.util.Collectors.toLinkedHashMap;
+import static oap.util.Pair.__;
 import static oap.ws.WsResponse.TEXT;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
@@ -80,7 +82,6 @@ public class WsService implements Handler {
         .with( r -> true, ( r, value ) -> Binder.json.unmarshal( r.underlying,
             value instanceof String ? ( String ) value : new String( ( byte[] ) value, UTF_8 ) ) );
     private Map<String, Pattern> compiledPaths = new HashMap<>();
-    private String cookieId;
 
     public WsService( Object impl, boolean sessionAware,
                       SessionManager sessionManager, List<Interceptor> interceptors, WsResponse defaultResponse ) {
@@ -163,7 +164,7 @@ public class WsService implements Handler {
     @Override
     public void handle( Request request, Response response ) {
         try {
-            val method = reflection.method(m -> methodMatches( request.requestLine, request.httpMethod, m ) )
+            val method = reflection.method( m -> methodMatches( request.requestLine, request.httpMethod, m ) )
                 .orElse( null );
 
             if( method == null ) response.respond( NOT_FOUND );
@@ -174,20 +175,22 @@ public class WsService implements Handler {
                     .tag( "method", method.name() );
 
                 if( !sessionAware ) {
-                    handleInternal( request, response, method, name, false );
+                    handleInternal( request, response, method, name, null );
                 } else {
-                    cookieId = request.cookie( "SID" ).orElse( null );
-                    if( cookieId != null && sessionManager.getSessionById( cookieId ) != null ) {
+                    String cookieId = request.cookie( "SID" ).orElse( null );
+                    Session session;
+                    if( cookieId != null && ( session = sessionManager.getSessionById( cookieId ) ) != null ) {
                         logger.debug( "Valid SID [{}] found in cookie", cookieId );
 
-                        handleInternal( request, response, method, name, true );
+                        handleInternal( request, response, method, name, __( cookieId, session ) );
                     } else {
                         cookieId = UUID.randomUUID().toString();
 
                         logger.debug( "Creating new session with SID [{}]", cookieId );
-                        sessionManager.put( cookieId, new Session() );
+                        session = new Session();
+                        sessionManager.put( cookieId, session );
 
-                        handleInternal( request, response, method, name, true );
+                        handleInternal( request, response, method, name, __( cookieId, session ) );
                     }
                 }
             }
@@ -197,13 +200,11 @@ public class WsService implements Handler {
     }
 
     private void handleInternal( Request request, Response response, Reflection.Method method,
-                                 Name name, boolean setCookie ) {
-        final Session sessionById = sessionManager.getSessionById( cookieId );
-
-        logger.trace( "Internal session status: [{}] with content [{}]", cookieId, sessionById );
+                                 Name name, Pair<String, Session> session ) {
+        logger.trace( "Internal session status: [{}]", session );
 
         final HttpResponse interceptorResponse =
-            runInterceptors( request, sessionById, method );
+            session != null ? runInterceptors( request, session._2, method ) : null;
 
         if( interceptorResponse != null ) {
             response.respond( interceptorResponse );
@@ -212,7 +213,7 @@ public class WsService implements Handler {
                 final Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
                 final ValidationErrors paramValidation = ValidationErrors.empty();
                 final List<Reflection.Parameter> parameters = method.parameters;
-                final LinkedHashMap<Reflection.Parameter, Object> originalValues = getOriginalValues( parameters, request, wsMethod );
+                final LinkedHashMap<Reflection.Parameter, Object> originalValues = getOriginalValues( session, parameters, request, wsMethod );
 
                 originalValues.forEach( ( parameter, value ) ->
                     paramValidation.merge(
@@ -252,9 +253,9 @@ public class WsService implements Handler {
                         .withCharset( UTF_8 ) )
                         .orElse( APPLICATION_JSON );
 
-                final String cookie = setCookie ?
+                final String cookie = session != null ?
                     new HttpResponse.CookieBuilder()
-                        .withSID( cookieId )
+                        .withSID( session._1 )
                         .withPath( sessionManager.cookiePath )
                         .withExpires( DateTime.now().plusMinutes( sessionManager.cookieExpiration ) )
                         .withDomain( sessionManager.cookieDomain )
@@ -322,10 +323,8 @@ public class WsService implements Handler {
         return opt.orElseThrow( () -> new WsClientException( parameter.name() + " is required" ) );
     }
 
-    public LinkedHashMap<Reflection.Parameter, Object> getOriginalValues(
-        List<Reflection.Parameter> parameters, Request request, Optional<WsMethod> wsMethod ) {
-
-        final Session sessionById = sessionManager.getSessionById( cookieId );
+    public LinkedHashMap<Reflection.Parameter, Object> getOriginalValues( Pair<String, Session> session,
+                                                                          List<Reflection.Parameter> parameters, Request request, Optional<WsMethod> wsMethod ) {
 
         return parameters.stream().collect( toLinkedHashMap( parameter -> parameter, parameter -> {
             Object value = parameter.findAnnotation( WsParam.class )
@@ -334,9 +333,10 @@ public class WsService implements Handler {
                         case REQUEST:
                             return request;
                         case SESSION:
+                            if( session == null ) return null;
                             return parameter.type().isOptional() ?
-                                sessionById.get( parameter.name() ) :
-                                sessionById.get( parameter.name() ).orElse( null );
+                                session._2.get( parameter.name() ) :
+                                session._2.get( parameter.name() ).orElse( null );
                         case HEADER:
                             return unwrap( parameter, request.header( parameter.name() ) );
                         case PATH:
