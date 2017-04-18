@@ -1,0 +1,20 @@
+<message>
+	<subject>[japanese xtest] サーバの接続が切断されました</subject>
+	<body type="text/html">
+<![CDATA[<h1>hello from japan　様、</h1>
+<br>
+<br>
+nVerge サーバ は、管理しているnVergeサーバから接続が切断されました。
+<br>
+<img src="cid:tux"/>
+source: <a href="cid:source">result</a>
+<br><i>--
+OAP Mail  <a href='http://github.com/oaplatform'>Dev Zero G</a></i>]]>
+	</body>
+	<attachment type="text/plain" content-id="result" name="nVerge サーバ">
+nVerge サーバ は、管理しているnVergeサーバから接続が切断されました。
+	</attachment>
+	<attachment type="image/jpeg" content-id="tux" file="oap-mail/src/test/resources/tux.jpeg" name="picture"/>
+	<attachment type="image/jpeg" content-id="att" file="oap-mail/src/test/resources/tux.jpeg" name="att.jpg"/>
+	<attachment type="text/plain" content-id="source" file="oap-mail/src/test/java/oap/mail/TestGMail.java"/>
+</message>

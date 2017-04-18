@@ -29,38 +29,38 @@ package oap.cli;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**
- * This interface defines a complete listener for a parse tree produced by
+ * This interface defines a complete listener for a template tree produced by
  * {@link CliParser}.
  */
 public interface CliListener extends ParseTreeListener {
 	/**
-	 * Enter a parse tree produced by {@link CliParser#parameters}.
-	 * @param ctx the parse tree
+	 * Enter a template tree produced by {@link CliParser#parameters}.
+	 * @param ctx the template tree
 	 */
 	void enterParameters(CliParser.ParametersContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link CliParser#parameters}.
-	 * @param ctx the parse tree
+	 * Exit a template tree produced by {@link CliParser#parameters}.
+	 * @param ctx the template tree
 	 */
 	void exitParameters(CliParser.ParametersContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link CliParser#parameter}.
-	 * @param ctx the parse tree
+	 * Enter a template tree produced by {@link CliParser#parameter}.
+	 * @param ctx the template tree
 	 */
 	void enterParameter(CliParser.ParameterContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link CliParser#parameter}.
-	 * @param ctx the parse tree
+	 * Exit a template tree produced by {@link CliParser#parameter}.
+	 * @param ctx the template tree
 	 */
 	void exitParameter(CliParser.ParameterContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link CliParser#value}.
-	 * @param ctx the parse tree
+	 * Enter a template tree produced by {@link CliParser#value}.
+	 * @param ctx the template tree
 	 */
 	void enterValue(CliParser.ValueContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link CliParser#value}.
-	 * @param ctx the parse tree
+	 * Exit a template tree produced by {@link CliParser#value}.
+	 * @param ctx the template tree
 	 */
 	void exitValue(CliParser.ValueContext ctx);
 }
