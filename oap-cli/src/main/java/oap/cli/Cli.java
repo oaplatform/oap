@@ -21,7 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-/*$Id: Options.java,v 1.1 2005/05/10 09:57:29 xpteam-krypton Exp $*/
 package oap.cli;
 
 
@@ -43,36 +42,36 @@ public class Cli {
         return new Cli();
     }
 
-    public Cli group(String name, Consumer<Map<String, Object>> action, Option<?>... options) {
-        Group group = new Group(name, action, options);
-        groups.add(group);
+    public Cli group( String name, Consumer<Map<String, Object>> action, Option<?>... options ) {
+        Group group = new Group( name, action, options );
+        groups.add( group );
         return this;
     }
 
-    public void act(String[] args) {
-        act(String.join(" ", args));
+    public void act( String[] args ) {
+        act( String.join( " ", args ) );
     }
 
-    public void act(String args) {
+    public void act( String args ) {
         try {
-            List<Pair<String, String>> parameters = new CliParser(new CommonTokenStream(new CliLexer(new ANTLRInputStream(args)))).parameters().list;
-            Optional<Group> group = groups.stream().filter(g -> g.matches(parameters)).findFirst();
-            if (group.isPresent()) group.get().act(parameters).ifFailure(failure -> {
-                System.out.println("Error: " + failure);
+            List<Pair<String, String>> parameters = new CliParser( new CommonTokenStream( new CliLexer( new ANTLRInputStream( args ) ) ) ).parameters().list;
+            Optional<Group> group = groups.stream().filter( g -> g.matches( parameters ) ).findFirst();
+            if( group.isPresent() ) group.get().act( parameters ).ifFailure( failure -> {
+                System.out.println( "Error: " + failure );
                 printHelp();
-            });
+            } );
             else printHelp();
-        } catch (RecognitionException e) {
-            System.err.println("Error: " + e.getMessage());
+        } catch( RecognitionException e ) {
+            System.err.println( "Error: " + e.getMessage() );
             printHelp();
         }
     }
 
     private void printHelp() {
-        for (Group group : groups) {
-            System.out.println(group.name);
-            for (Option<?> option : group.options()) {
-                System.out.println("\t\t" + option);
+        for( Group group : groups ) {
+            System.out.println( group.name );
+            for( Option<?> option : group.options() ) {
+                System.out.println( "\t\t" + option );
             }
         }
     }

@@ -1,0 +1,21 @@
+<?xml version="1.1"?>
+<message>
+	<subject>subject</subject>
+	<body type="text/html">
+		<![CDATA[
+<html>
+		<body>
+<h>Hello, mr President!</h>
+--
+With Best Regards,
+Hater of your politics.
+<image src='cid:logo'/>
+		<body>
+</html>
+				]]>
+	</body>
+	<attachment type="text/plain">
+		This is text attachment
+	</attachment>
+	<attachment type="image/jpeg" reference="${home}/logo.jpeg" content-id="logo"/>
+</message>

@@ -39,28 +39,28 @@ import static org.testng.Assert.assertEquals;
 public class CliParserTest extends AbstractTest {
     @Test
     public void parse() throws Exception {
-        CliParser parser = new CliParser(new CommonTokenStream(new CliLexer(new ANTLRInputStream("--help --about=th:'is --about=that\n"))));
+        CliParser parser = new CliParser( new CommonTokenStream( new CliLexer( new ANTLRInputStream( "--help --about=th:'is --about=that\n" ) ) ) );
         List<Pair<String, String>> parameters = parser.parameters().list;
-        assertEquals(parameters.get(0), __("help"));
-        assertEquals(parameters.get(1), __("about", "th:'is"));
-        assertEquals(parameters.get(2), __("about", "that"));
+        assertEquals( parameters.get( 0 ), __( "help" ) );
+        assertEquals( parameters.get( 1 ), __( "about", "th:'is" ) );
+        assertEquals( parameters.get( 2 ), __( "about", "that" ) );
     }
 
     @Test
     public void parseString() throws RecognitionException {
-        CliParser parser = new CliParser(new CommonTokenStream(new CliLexer(new ANTLRInputStream("--help --about=\"th  is\" --about=that\n"))));
+        CliParser parser = new CliParser( new CommonTokenStream( new CliLexer( new ANTLRInputStream( "--help --about=\"th  is\" --about=that\n" ) ) ) );
         List<Pair<String, String>> parameters = parser.parameters().list;
-        assertEquals(parameters.get(0), __("help"));
-        assertEquals(parameters.get(1), __("about", "th  is"));
-        assertEquals(parameters.get(2), __("about", "that"));
+        assertEquals( parameters.get( 0 ), __( "help" ) );
+        assertEquals( parameters.get( 1 ), __( "about", "th  is" ) );
+        assertEquals( parameters.get( 2 ), __( "about", "that" ) );
     }
 
     @Test
     public void parseStringEscaped() throws Exception {
-        CliParser parser = new CliParser(new CommonTokenStream(new CliLexer(new ANTLRInputStream("--help=\"\" --about=\"th\\\"is\" --about=\"th\\\\at\"\n"))));
+        CliParser parser = new CliParser( new CommonTokenStream( new CliLexer( new ANTLRInputStream( "--help=\"\" --about=\"th\\\"is\" --about=\"th\\\\at\"\n" ) ) ) );
         List<Pair<String, String>> parameters = parser.parameters().list;
-        assertEquals(parameters.get(0), __("help", ""));
-        assertEquals(parameters.get(1), __("about", "th\"is"));
-        assertEquals(parameters.get(2), __("about", "th\\at"));
+        assertEquals( parameters.get( 0 ), __( "help", "" ) );
+        assertEquals( parameters.get( 1 ), __( "about", "th\"is" ) );
+        assertEquals( parameters.get( 2 ), __( "about", "th\\at" ) );
     }
 }
