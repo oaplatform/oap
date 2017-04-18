@@ -127,14 +127,19 @@ public final class Asserts {
         return Strings.sortLines( content );
     }
 
+    /**
+     * @see oap.io.Resources#filePath(Class, String)
+     */
+    @Deprecated
     public static Path pathOfResource( Class<?> contextClass, String resource ) {
         return Resources.filePath( contextClass, ( resource == null ? "" : resource ) )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 
     public static Path pathOfTestResource( Class<?> contextClass, String resource ) {
-        return pathOfResource( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
-            : "/" + resource ) );
+        return Resources.filePath( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
+            : "/" + resource ) )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 
     public static URL urlOfTestResource( Class<?> contextClass, String resource ) {

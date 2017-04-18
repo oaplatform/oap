@@ -187,6 +187,7 @@ public class WsService implements Handler {
                         cookieId = UUID.randomUUID().toString();
 
                         logger.debug( "Creating new session with SID [{}]", cookieId );
+
                         session = new Session();
                         sessionManager.put( cookieId, session );
 

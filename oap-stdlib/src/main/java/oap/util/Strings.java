@@ -271,4 +271,19 @@ public final class Strings {
     }
 
 
+    public static String toQuotedPrintable( String string ) {
+        StringBuilder result = new StringBuilder();
+        char[] chars = string.toCharArray();
+        for( int i = 0; i < chars.length; i++ ) {
+            byte[] bytes = String.valueOf( chars[i] ).getBytes( UTF_8 );
+            result.append( "=?UTF-8?Q?" );
+            for( byte b : bytes )
+                result.append( "=" ).append( Integer.toHexString( b & 0xff ).toUpperCase() );
+
+            result.append( "?=" );
+            if( i < chars.length - 1 ) result.append( ' ' );
+        }
+
+        return result.toString();
+    }
 }

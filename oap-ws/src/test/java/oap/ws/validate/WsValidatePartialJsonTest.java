@@ -55,6 +55,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
         super.beforeMethod();
 
         testBean = new TestBean();
+        testBean.id = "id1";
     }
 
     @Override
@@ -65,18 +66,18 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
     @Test
     public void testValidation1() {
         assertPost( HTTP_PREFIX + "/test/run/validation/1/id1", "{\"b\":1}", APPLICATION_JSON )
-            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"b\":1}],\"id\":\"id1-1\"}" );
-        assertPost( HTTP_PREFIX + "/test/run/validation/1/id2", "{}", APPLICATION_JSON )
+            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"b\":1}],\"id\":\"id1\"}" );
+        assertPost( HTTP_PREFIX + "/test/run/validation/1/id1", "{}", APPLICATION_JSON )
             .responded( 400, "/b: required property is missing", TEXT_PLAIN, "/b: required property is missing" );
     }
 
     @Test
     public void testValidation2() {
         assertPost( HTTP_PREFIX + "/test/run/validation/2/id1", "{\"b\":1}", APPLICATION_JSON )
-            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"b\":1}],\"id\":\"id1-2\"}" );
-        assertPost( HTTP_PREFIX + "/test/run/validation/2/id2", "{}", APPLICATION_JSON )
-            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{}],\"id\":\"id2-2\"}" );
-        assertPost( HTTP_PREFIX + "/test/run/validation/2/id3", "{\"c\":1}", APPLICATION_JSON )
+            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"b\":1}],\"id\":\"id1\"}" );
+        assertPost( HTTP_PREFIX + "/test/run/validation/2/id1", "{}", APPLICATION_JSON )
+            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{}],\"id\":\"id1\"}" );
+        assertPost( HTTP_PREFIX + "/test/run/validation/2/id1", "{\"c\":1}", APPLICATION_JSON )
             .responded( 400, "additional properties are not permitted [c]", TEXT_PLAIN, "additional properties are not permitted [c]" );
     }
 
@@ -91,7 +92,6 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
                 schema = "/oap/ws/validate/WsValidateJsonTest/partial-schema.conf" )
             @WsParam( from = BODY ) TestBean.TestItem body
         ) {
-            testBean.id = id + "-1";
             testBean.a.clear();
             testBean.a.add( body );
             return testBean;
@@ -108,7 +108,6 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
                 ignoreRequired = true )
             @WsParam( from = BODY ) TestBean.TestItem body
         ) {
-            testBean.id = id + "-2";
             testBean.a.clear();
             testBean.a.add( body );
             return testBean;
@@ -116,7 +115,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
 
         @Override
         public Optional<TestBean> get( String id ) {
-            return Optional.of( testBean );
+            return testBean.id.equals( id ) ? Optional.of( testBean ) : Optional.empty();
         }
     }
 

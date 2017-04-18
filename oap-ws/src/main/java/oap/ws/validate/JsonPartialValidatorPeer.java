@@ -34,6 +34,7 @@ import oap.reflect.Reflection;
 import oap.ws.WsClientException;
 
 import java.util.Map;
+import java.util.Optional;
 
 public class JsonPartialValidatorPeer implements ValidatorPeer {
     private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
@@ -57,15 +58,18 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
     @SneakyThrows
     public ValidationErrors validate( Object value ) {
         try {
-            val idName = validate.idParameterName();
-            final String id = values.entrySet()
+            final String idName = validate.idParameterName();
+            final Object objectId = values.entrySet()
                 .stream()
                 .filter( p -> p.getKey().name().equals( idName ) )
                 .findFirst()
                 .get()
-                .getValue()
-                .toString();
-            Object root = ( ( WsPartialValidateJson.PartialValidateJsonRootLoader<?> ) (
+                .getValue();
+
+            final String id = objectId instanceof Optional ?
+                ( ( Optional ) objectId ).get().toString() : objectId.toString();
+
+            final Object root = ( ( WsPartialValidateJson.PartialValidateJsonRootLoader<?> ) (
                 validate.root().isInstance( instance )
                     ? instance : validate.root().newInstance() ) ).get( id ).orElse( null );
 

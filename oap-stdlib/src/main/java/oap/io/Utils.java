@@ -373,7 +373,7 @@ public class Utils {
     /**
      * Extracts the hostname from a "host:port" address string.
      *
-     * @param address address string to parse
+     * @param address address string to template
      * @return hostname or null if the given address is incorrect
      */
     public static String getHost( String address ) {
@@ -384,7 +384,7 @@ public class Utils {
     /**
      * Extracts the port number from a "host:port" address string.
      *
-     * @param address address string to parse
+     * @param address address string to template
      * @return port number or null if the given address is incorrect
      */
     public static Integer getPort( String address ) {
