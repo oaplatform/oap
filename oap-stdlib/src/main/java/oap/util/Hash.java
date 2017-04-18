@@ -24,8 +24,11 @@
 package oap.util;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public final class Hash {
 
@@ -40,12 +43,12 @@ public final class Hash {
         try {
             final MessageDigest messageDigest = MessageDigest.getInstance( algorithm );
 
-            messageDigest.update( salt.getBytes( "UTF-8" ) );
+            messageDigest.update( salt.getBytes( UTF_8 ) );
 
             final byte[] hashedInput = messageDigest.digest( input.getBytes() );
 
             return Strings.toHexString( hashedInput );
-        } catch( NoSuchAlgorithmException | UnsupportedEncodingException e ) {
+        } catch( NoSuchAlgorithmException e ) {
             throw new RuntimeException( e );
         }
     }

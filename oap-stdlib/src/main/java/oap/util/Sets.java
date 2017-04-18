@@ -24,6 +24,7 @@
 package oap.util;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Function;
@@ -39,7 +40,7 @@ public final class Sets {
     }
 
     public static <E> Set<E> empty() {
-        return Collections.emptySet();
+        return of();
     }
 
     public static <E, R> Set<R> map( Set<E> set, Function<? super E, R> mapper ) {
