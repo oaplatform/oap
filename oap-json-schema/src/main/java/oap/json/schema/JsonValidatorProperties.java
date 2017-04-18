@@ -29,48 +29,50 @@ import java.util.List;
 import java.util.Optional;
 
 public class JsonValidatorProperties {
-   public final Optional<String> path;
-   public final Optional<Boolean> additionalProperties;
-   public final boolean ignoreRequiredDefault;
-   public final Object rootJson;
-   public final SchemaAST rootSchema;
+    public final Optional<Boolean> additionalProperties;
+    public final boolean ignoreRequiredDefault;
+    public final Object rootJson;
+    public final SchemaAST rootSchema;
+    public final Functions.TriFunction<JsonValidatorProperties, SchemaAST, Object, List<String>>
+        validator;
+    public final Optional<String> path;
+    public final Optional<String> prefixPath;
 
-   public final Functions.TriFunction<JsonValidatorProperties, SchemaAST, Object, List<String>>
-      validator;
+    public JsonValidatorProperties(
+        SchemaAST rootSchema,
+        Object rootJson,
+        Optional<String> prefixPath,
+        Optional<String> path,
+        Optional<Boolean> additionalProperties,
+        boolean ignoreRequiredDefault,
+        Functions.TriFunction<JsonValidatorProperties, SchemaAST, Object, List<String>> validator ) {
+        this.rootSchema = rootSchema;
+        this.rootJson = rootJson;
+        this.prefixPath = prefixPath;
+        this.path = path;
+        this.additionalProperties = additionalProperties;
+        this.ignoreRequiredDefault = ignoreRequiredDefault;
+        this.validator = validator;
+    }
 
-   public JsonValidatorProperties(
-      SchemaAST rootSchema,
-      Object rootJson,
-      Optional<String> path,
-      Optional<Boolean> additionalProperties,
-      boolean ignoreRequiredDefault,
-      Functions.TriFunction<JsonValidatorProperties, SchemaAST, Object, List<String>> validator ) {
-      this.rootSchema = rootSchema;
-      this.rootJson = rootJson;
-      this.path = path;
-      this.additionalProperties = additionalProperties;
-      this.ignoreRequiredDefault = ignoreRequiredDefault;
-      this.validator = validator;
-   }
+    public JsonValidatorProperties withPath( String path ) {
+        return new JsonValidatorProperties( rootSchema, rootJson, prefixPath, this.path.map( p -> Optional.of( p + "/" + path ) ).orElse(
+            Optional.of( path ) ), additionalProperties, ignoreRequiredDefault, validator );
+    }
 
-   public JsonValidatorProperties withPath( String path ) {
-      return new JsonValidatorProperties( rootSchema, rootJson, this.path.map( p -> Optional.of( p + "/" + path ) ).orElse(
-         Optional.of( path ) ), additionalProperties, ignoreRequiredDefault, validator );
-   }
-
-   public JsonValidatorProperties withAdditionalProperties( Optional<Boolean> additionalProperties ) {
-      return additionalProperties.map( ap -> new JsonValidatorProperties(
-         rootSchema, rootJson, path, additionalProperties,
-         ignoreRequiredDefault, validator ) )
-         .orElse( this );
-   }
+    public JsonValidatorProperties withAdditionalProperties( Optional<Boolean> additionalProperties ) {
+        return additionalProperties.map( ap -> new JsonValidatorProperties(
+            rootSchema, rootJson, prefixPath, path, additionalProperties,
+            ignoreRequiredDefault, validator ) )
+            .orElse( this );
+    }
 
 
-   public String error( String message ) {
-      return error( path, message );
-   }
+    public String error( String message ) {
+        return error( path, message );
+    }
 
-   public String error( Optional<String> path, String message ) {
-      return path.map( p -> "/" + p + ": " ).orElse( "" ) + message;
-   }
+    public String error( Optional<String> path, String message ) {
+        return path.map( p -> "/" + p + ": " ).orElse( "" ) + message;
+    }
 }

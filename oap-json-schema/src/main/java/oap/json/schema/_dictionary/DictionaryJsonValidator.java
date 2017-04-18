@@ -49,85 +49,86 @@ import static oap.json.schema.SchemaPath.rightTrimItems;
  */
 @Slf4j
 public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchemaAST> {
-   private Result<List<Dictionary>, List<String>> validate( JsonValidatorProperties properties, Optional<DictionarySchemaAST> schemaOpt, List<Dictionary> dictionaries ) {
-      if( !schemaOpt.isPresent() ) return Result.success( dictionaries );
+    private Result<List<Dictionary>, List<String>> validate( JsonValidatorProperties properties, Optional<DictionarySchemaAST> schemaOpt, List<Dictionary> dictionaries ) {
+        if( !schemaOpt.isPresent() ) return Result.success( dictionaries );
 
-      final DictionarySchemaAST schema = schemaOpt.get();
+        final DictionarySchemaAST schema = schemaOpt.get();
 
-      final Result<List<Dictionary>, List<String>> cd = validate( properties, schema.parent, dictionaries );
+        final Result<List<Dictionary>, List<String>> cd = validate( properties, schema.parent, dictionaries );
 
-      if( !cd.isSuccess() ) return cd;
+        if( !cd.isSuccess() ) return cd;
 
-      final JsonPath jsonPath = new JsonPath( rightTrimItems( schema.path ), properties.path );
-      List<Object> parentValues = jsonPath.traverse( properties.rootJson );
+        final JsonPath jsonPath = new JsonPath( rightTrimItems( schema.path ), properties.path );
+        List<Object> parentValues = jsonPath.traverse( properties.rootJson );
 
-      if( parentValues.isEmpty() ) {
-         final String fixedPath = jsonPath.getFixedPath();
-         if( !schema.common.required.orElse( BooleanReference.FALSE ).apply( properties.rootJson, Optional.of( fixedPath ) ) )
+        if( parentValues.isEmpty() ) {
+            final String fixedPath = jsonPath.getFixedPath();
+            if( !schema.common.required.orElse( BooleanReference.FALSE )
+                .apply( properties.rootJson, properties.rootJson, Optional.of( fixedPath ), properties.prefixPath ) )
 //            return Result.failure( Lists.of( properties.error( fixedPath, "required property is missing" ) ) );
 //         else
-            parentValues = cd.successValue
-               .stream()
-               .flatMap( d -> d.getValues().stream().map( Dictionary::getId ) )
-               .collect( toList() );
-      }
+                parentValues = cd.successValue
+                    .stream()
+                    .flatMap( d -> d.getValues().stream().map( Dictionary::getId ) )
+                    .collect( toList() );
+        }
 
-      final ArrayList<Dictionary> cDict = new ArrayList<>();
+        final ArrayList<Dictionary> cDict = new ArrayList<>();
 
-      for( Object parentValue : parentValues ) {
-         List<Dictionary> children = cd.successValue
+        for( Object parentValue : parentValues ) {
+            List<Dictionary> children = cd.successValue
+                .stream()
+                .map( d -> d.getValueOpt( parentValue.toString() ) )
+                .filter( Optional::isPresent )
+                .map( Optional::get ).collect( toList() );
+            if( children.isEmpty() )
+                return Result.failure( Lists.of(
+                    properties.error( "instance does not match any member resolve the enumeration " + printIds( cd.successValue ) )
+                ) );
+
+            cDict.addAll( children );
+        }
+
+        return Result.success( cDict );
+    }
+
+    @Override
+    public List<String> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
+        try {
+            List<Dictionary> dictionaries = Lists.of( Dictionaries.getCachedDictionary( schema.name ) );
+
+            final Result<List<Dictionary>, List<String>> result = validate( properties, schema.parent, dictionaries );
+
+            if( !result.isSuccess() ) return result.failureValue;
+
+            if( !result.successValue.isEmpty() &&
+                !result.successValue.stream().filter( d -> d.containsValueWithId( String.valueOf( value ) ) ).findAny().isPresent() )
+                return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + printIds( result.successValue ) ) );
+
+            return Lists.empty();
+        } catch( DictionaryNotFoundError e ) {
+            return Lists.of( properties.error( "dictionary not found" ) );
+        }
+    }
+
+    private String printIds( List<Dictionary> dictionaries ) {
+        return dictionaries
             .stream()
-            .map( d -> d.getValueOpt( parentValue.toString() ) )
-            .filter( Optional::isPresent )
-            .map( Optional::get ).collect( toList() );
-         if( children.isEmpty() )
-            return Result.failure( Lists.of(
-               properties.error( "instance does not match any member resolve the enumeration " + printIds( cd.successValue ) )
-            ) );
+            .flatMap( d -> d.ids().stream() )
+            .distinct()
+            .collect( toList() )
+            .toString();
+    }
 
-         cDict.addAll( children );
-      }
+    @Override
+    public DictionarySchemaASTWrapper parse( JsonSchemaParserContext context ) {
+        DictionarySchemaASTWrapper wrapper = context.createWrapper( DictionarySchemaASTWrapper::new );
 
-      return Result.success( cDict );
-   }
+        wrapper.common = node( context ).asCommon();
+        wrapper.name = node( context ).asString( "name" ).optional();
+        wrapper.parent = node( context ).asMap( "parent" ).optional()
+            .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ).map( jp -> SchemaPath.resolve( context.rootPath, jp ) ) );
 
-   @Override
-   public List<String> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
-      try {
-         List<Dictionary> dictionaries = Lists.of( Dictionaries.getCachedDictionary( schema.name ) );
-
-         final Result<List<Dictionary>, List<String>> result = validate( properties, schema.parent, dictionaries );
-
-         if( !result.isSuccess() ) return result.failureValue;
-
-         if( !result.successValue.isEmpty() &&
-            !result.successValue.stream().filter( d -> d.containsValueWithId( String.valueOf( value ) ) ).findAny().isPresent() )
-            return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + printIds( result.successValue ) ) );
-
-         return Lists.empty();
-      } catch( DictionaryNotFoundError e ) {
-         return Lists.of( properties.error( "dictionary not found" ) );
-      }
-   }
-
-   private String printIds( List<Dictionary> dictionaries ) {
-      return dictionaries
-         .stream()
-         .flatMap( d -> d.ids().stream() )
-         .distinct()
-         .collect( toList() )
-         .toString();
-   }
-
-   @Override
-   public DictionarySchemaASTWrapper parse( JsonSchemaParserContext context ) {
-      DictionarySchemaASTWrapper wrapper = context.createWrapper( DictionarySchemaASTWrapper::new );
-
-      wrapper.common = node( context ).asCommon();
-      wrapper.name = node( context ).asString( "name" ).optional();
-      wrapper.parent = node( context ).asMap( "parent" ).optional()
-         .flatMap( m -> Optional.ofNullable( ( String ) m.get( "json-path" ) ).map( jp -> SchemaPath.resolve( context.rootPath, jp ) ) );
-
-      return wrapper;
-   }
+        return wrapper;
+    }
 }

@@ -50,10 +50,40 @@ public class PartialSchemaTest extends AbstractSchemaTest {
             "  }" +
             "}";
 
-        assertPartialOk( schema, "{'v2':[]}", "{}", "v2" );
-        assertPartialOk( schema, "{'v1':'10', 'v2':[]}", "{'o2':'10'}", "v2" );
-        assertPartialOk( schema, "{'v1':'test', 'v2':[]}", "{'o2':'10', 'v2':'ttt'}", "v2" );
-        assertPartialFailure( schema, "{'v1':'20', 'v2':[]}", "{'v2':'ttt'}", "v2",
+        assertPartialOk( schema, "{'v2':[]}", "{}", "v2.items" );
+        assertPartialOk( schema, "{'v1':'10', 'v2':[]}", "{'o2':'10'}", "v2.items" );
+        assertPartialOk( schema, "{'v1':'test', 'v2':[]}", "{'o2':'10', 'v2':'ttt'}", "v2.items" );
+        assertPartialFailure( schema, "{'v1':'20', 'v2':[]}", "{'v2':'ttt'}", "v2.items",
+            "additional properties are not permitted [v2]" );
+    }
+
+    @Test
+    public void testInnerObjectPath() {
+        String schema = "{" +
+            "  additionalProperties: false, " +
+            "  type: object, " +
+            "  properties {" +
+            "    v1.type = string," +
+            "    v2 {" +
+            "      type = array," +
+            "      items {" +
+            "        type = object," +
+            "        properties {" +
+            "          o2 {type = string}," +
+            "          v2 {" +
+            "            type = string," +
+            "            enabled = {json-path: v2.items.o2,eq: test}" +
+            "          }" +
+            "        }" +
+            "      }" +
+            "    }" +
+            "  }" +
+            "}";
+
+        assertPartialOk( schema, "{'v2':[]}", "{}", "v2.items" );
+        assertPartialOk( schema, "{'v1':'10', 'v2':[]}", "{'o2':'10'}", "v2.items" );
+        assertPartialOk( schema, "{'v1':'10', 'v2':[]}", "{'o2':'test', 'v2':'ttt'}", "v2.items" );
+        assertPartialFailure( schema, "{'v1':'20', 'v2':[]}", "{'v2':'ttt'}", "v2.items",
             "additional properties are not permitted [v2]" );
     }
 }

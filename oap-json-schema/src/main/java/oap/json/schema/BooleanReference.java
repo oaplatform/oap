@@ -27,29 +27,31 @@ package oap.json.schema;
 import java.util.Optional;
 
 public interface BooleanReference {
-   BooleanReference TRUE = new BooleanReference() {
-      @Override
-      public boolean apply( Object json, Optional<String> currentPath ) {
-         return true;
-      }
+    BooleanReference TRUE = new BooleanReference() {
+        @Override
+        public boolean apply( Object rootJson, Object currentJson,
+                              Optional<String> currentPath, Optional<String> prefix ) {
+            return true;
+        }
 
-      @Override
-      public String toString() {
-         return "BooleanReference::TRUE";
-      }
-   };
-   BooleanReference FALSE = new BooleanReference() {
-      @Override
-      public boolean apply( Object json, Optional<String> currentPath ) {
-         return false;
-      }
+        @Override
+        public String toString() {
+            return "BooleanReference::TRUE";
+        }
+    };
+    BooleanReference FALSE = new BooleanReference() {
+        @Override
+        public boolean apply( Object rootJson, Object currentJson,
+                              Optional<String> currentPath, Optional<String> prefix ) {
+            return false;
+        }
 
 
-      @Override
-      public String toString() {
-         return "BooleanReference::FALSE";
-      }
-   };
+        @Override
+        public String toString() {
+            return "BooleanReference::FALSE";
+        }
+    };
 
-   boolean apply( Object json, Optional<String> currentPath );
+    boolean apply( Object rootJson, Object currentJson, Optional<String> currentPath, Optional<String> prefix );
 }
