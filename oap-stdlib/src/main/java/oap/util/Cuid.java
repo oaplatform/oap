@@ -52,7 +52,7 @@ public class Cuid {
     private static String defaultSuffix() {
         try {
             return Stream.of( NetworkInterface.getNetworkInterfaces() )
-                .filter( Try.filter( i -> !i.isLoopback() && !i.isVirtual() && i.isUp() ) )
+                .filter( Try.filter( i -> !i.isLoopback() && !i.isVirtual() && i.isUp() && !i.isPointToPoint() ) )
                 .findFirst()
                 .map( Try.map( i -> Strings.toHexString( i.getHardwareAddress() ) ) )
                 .orElse( "XXXXXXXXXXXX" );
