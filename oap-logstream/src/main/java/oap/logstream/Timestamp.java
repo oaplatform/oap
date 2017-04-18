@@ -72,7 +72,7 @@ public class Timestamp {
         if( matcher.find() ) {
             return matcher.group( 1 );
         } else {
-            throw new RuntimeException( "cannot parse timestamp from: " + fileName );
+            throw new RuntimeException( "cannot template timestamp from: " + fileName );
         }
     }
 
