@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * Created by Admin on 24.05.2016.
@@ -61,32 +62,25 @@ public final class SchemaPath {
         SchemaAST schemaAST = root;
         val additionalProperties = new MutableObject<Boolean>( null );
 
-        for( val item : StringUtils.split( path, '.' ) ) {
-            schemaAST = skipArray( schemaAST, additionalProperties );
+        final Supplier<Result> empty = () -> new Result( Optional.empty(), Optional.ofNullable( additionalProperties.getValue() ) );
 
+        for( val item : StringUtils.split( path, '.' ) ) {
             if( schemaAST instanceof ObjectSchemaAST ) {
                 val objectSchemaAST = ( ObjectSchemaAST ) schemaAST;
                 schemaAST = objectSchemaAST.properties.get( item );
                 objectSchemaAST.additionalProperties.ifPresent( additionalProperties::setValue );
                 if( schemaAST == null )
-                    return new Result( Optional.empty(), Optional.ofNullable( additionalProperties.getValue() ) );
+                    return empty.get();
+            } else if( schemaAST instanceof ArraySchemaAST ) {
+                if( !"items".equals( item ) )
+                    return empty.get();
+                schemaAST = ( ( ArraySchemaAST ) schemaAST ).items;
             } else {
-                return new Result( Optional.empty(), Optional.ofNullable( additionalProperties.getValue() ) );
+                return empty.get();
             }
         }
 
-        schemaAST = skipArray( schemaAST, additionalProperties );
-
         return new Result( Optional.of( schemaAST ), Optional.ofNullable( additionalProperties.getValue() ) );
-    }
-
-    private static SchemaAST skipArray( SchemaAST schemaAST, MutableObject<Boolean> additionalProperties ) {
-        while( schemaAST instanceof ArraySchemaAST ) {
-            val arraySchemaAST = ( ArraySchemaAST ) schemaAST;
-            schemaAST = arraySchemaAST.items;
-            arraySchemaAST.additionalProperties.ifPresent( additionalProperties::setValue );
-        }
-        return schemaAST;
     }
 
     @AllArgsConstructor

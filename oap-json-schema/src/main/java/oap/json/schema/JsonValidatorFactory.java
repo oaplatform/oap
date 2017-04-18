@@ -87,7 +87,8 @@ public final class JsonValidatorFactory {
         }
 
         if( value == null && !properties.ignoreRequiredDefault
-            && schema.common.required.orElse( BooleanReference.FALSE ).apply( properties.rootJson, properties.path ) )
+            && schema.common.required.orElse( BooleanReference.FALSE )
+            .apply( properties.rootJson, value, properties.path, properties.prefixPath ) )
             return Lists.of( properties.error( "required property is missing" ) );
         else if( value == null ) return Lists.empty();
         else {
@@ -141,6 +142,7 @@ public final class JsonValidatorFactory {
         JsonValidatorProperties properties = new JsonValidatorProperties(
             schema,
             root,
+            Optional.of( path ),
             Optional.empty(),
             traverseResult.additionalProperties,
             ignoreRequiredDefault,
@@ -155,6 +157,7 @@ public final class JsonValidatorFactory {
         JsonValidatorProperties properties = new JsonValidatorProperties(
             schema,
             json,
+            Optional.empty(),
             Optional.empty(),
             Optional.empty(),
             ignoreRequiredDefault,

@@ -26,26 +26,29 @@ package oap.json.schema;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.util.Lists;
+import lombok.val;
 
+import java.util.List;
 import java.util.Optional;
 
 @ToString
 @EqualsAndHashCode
 public class DynamicBooleanReference implements BooleanReference {
-   private final String jsonPath;
-   private final OperationFunction of;
+    private final String jsonPath;
+    private final OperationFunction of;
 
-   public DynamicBooleanReference( String jsonPath, OperationFunction of ) {
+    public DynamicBooleanReference( String jsonPath, OperationFunction of ) {
+        this.jsonPath = jsonPath;
+        this.of = of;
+    }
 
-      this.jsonPath = jsonPath;
-      this.of = of;
-   }
+    @Override
+    public boolean apply( Object rootJson, Object currentJson, Optional<String> currentPath, Optional<String> prefix ) {
+        val isRoot = !prefix.isPresent() || !jsonPath.startsWith( prefix.get() );
+        val localJsonPath = isRoot ? jsonPath : jsonPath.substring( prefix.get().length() );
+        val traverseObject = isRoot ? rootJson : currentJson;
 
-   @Override
-   public boolean apply( Object json, Optional<String> currentPath ) {
-      return Lists.headOpt( new JsonPath( jsonPath, currentPath ).traverse( json ) )
-         .map( v -> of.apply( json, currentPath, v ) )
-         .orElse( false );
-   }
+        final List<Object> traverse = new JsonPath( localJsonPath, currentPath ).traverse( traverseObject );
+        return !traverse.isEmpty() && of.apply( traverseObject, currentPath, traverse.get( 0 ) );
+    }
 }

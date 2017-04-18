@@ -52,10 +52,11 @@ public class SchemaPathTest {
 
         final JsonValidatorFactory validator = JsonValidatorFactory.schemaFromString( schema, NO_STORAGE );
 
-        assertThat( SchemaPath.traverse( validator.schema, "properties.b" ).schema ).isEmpty();
+        assertThat( SchemaPath.traverse( validator.schema, "items.properties.b" ).schema ).isEmpty();
         assertThat( SchemaPath.traverse( validator.schema, "b" ).schema ).isEmpty();
-        assertThat( SchemaPath.traverse( validator.schema, "a" ).schema ).isPresent();
-        assertThat( SchemaPath.traverse( validator.schema, "a" ).schema.get().common.schemaType ).isEqualTo( "boolean" );
+        assertThat( SchemaPath.traverse( validator.schema, "a" ).schema ).isEmpty();
+        assertThat( SchemaPath.traverse( validator.schema, "items.a" ).schema ).isPresent();
+        assertThat( SchemaPath.traverse( validator.schema, "items.a.items" ).schema.get().common.schemaType ).isEqualTo( "boolean" );
     }
 
 }

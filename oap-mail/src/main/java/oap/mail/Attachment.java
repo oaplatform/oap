@@ -24,8 +24,6 @@
 package oap.mail;
 
 
-import com.google.common.base.Preconditions;
-
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class Attachment {
@@ -48,12 +46,12 @@ public class Attachment {
         this.name = name;
     }
 
-    public void setContent( String content ) {
-        this.content = content;
-    }
-
     public String getContent() {
         return content;
+    }
+
+    public void setContent( String content ) {
+        this.content = content;
     }
 
     public String getContentType() {

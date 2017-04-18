@@ -36,55 +36,57 @@ import java.util.List;
 import java.util.Map;
 
 public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
-   @Override
-   public List<String> validate( JsonValidatorProperties properties, ObjectSchemaAST schema, Object value ) {
-      if( !( value instanceof Map<?, ?> ) ) return typeFailed( properties, schema, value );
+    @Override
+    public List<String> validate( JsonValidatorProperties properties, ObjectSchemaAST schema, Object value ) {
+        if( !( value instanceof Map<?, ?> ) ) return typeFailed( properties, schema, value );
 
-      @SuppressWarnings( "unchecked" )
-      final Map<String, Object> mapValue = ( Map<String, Object> ) value;
+        @SuppressWarnings( "unchecked" ) final Map<String, Object> mapValue = ( Map<String, Object> ) value;
 
-      final List<String> errors = new ArrayList<>();
+        final List<String> errors = new ArrayList<>();
 
-      final HashMap<String, SchemaAST> objectProperties = new HashMap<>();
+        final HashMap<String, SchemaAST> objectProperties = new HashMap<>();
 
-      schema.properties.forEach( ( k, ast ) -> {
-         if( ast.common.enabled.map( e -> e.apply( properties.rootJson, properties.withPath( k ).path ) ).orElse( true ) )
-            objectProperties.put( k, ast );
-      } );
+        schema.properties.forEach( ( k, ast ) -> {
+            if( ast.common.enabled.map( e -> {
+                final JsonValidatorProperties np = properties.withPath( k );
+                return e.apply( properties.rootJson, value, np.path, np.prefixPath );
+            } ).orElse( true ) )
+                objectProperties.put( k, ast );
+        } );
 
-      objectProperties.forEach( ( k, ast ) -> {
-         Object v = mapValue.get( k );
-         if( v == null && ast.common.defaultValue.isPresent() )
-            mapValue.put( k, ast.common.defaultValue.get() );
-         else
-            errors.addAll( properties.validator
-               .apply( properties.withPath( k ).withAdditionalProperties( schema.additionalProperties ), ast, v ) );
-      } );
+        objectProperties.forEach( ( k, ast ) -> {
+            Object v = mapValue.get( k );
+            if( v == null && ast.common.defaultValue.isPresent() )
+                mapValue.put( k, ast.common.defaultValue.get() );
+            else
+                errors.addAll( properties.validator
+                    .apply( properties.withPath( k ).withAdditionalProperties( schema.additionalProperties ), ast, v ) );
+        } );
 
-      List<String> additionalProperties = Stream.of( mapValue.keySet() )
-         .filter( v -> !objectProperties.containsKey( v ) )
-         .toList();
+        List<String> additionalProperties = Stream.of( mapValue.keySet() )
+            .filter( v -> !objectProperties.containsKey( v ) )
+            .toList();
 
-      if( !schema.additionalProperties.orElse( properties.additionalProperties.orElse( true ) )
-         && !additionalProperties.isEmpty() )
-         errors.add( properties.error( "additional properties are not permitted " + additionalProperties ) );
-      return errors;
+        if( !schema.additionalProperties.orElse( properties.additionalProperties.orElse( true ) )
+            && !additionalProperties.isEmpty() )
+            errors.add( properties.error( "additional properties are not permitted " + additionalProperties ) );
+        return errors;
 
-   }
+    }
 
-   @Override
-   public ObjectSchemaASTWrapper parse( JsonSchemaParserContext context ) {
-      final ObjectSchemaASTWrapper wrapper = context.createWrapper( ObjectSchemaASTWrapper::new );
+    @Override
+    public ObjectSchemaASTWrapper parse( JsonSchemaParserContext context ) {
+        final ObjectSchemaASTWrapper wrapper = context.createWrapper( ObjectSchemaASTWrapper::new );
 
-      wrapper.common = node( context ).asCommon();
-      wrapper.additionalProperties = node( context ).asBoolean( ADDITIONAL_PROPERTIES ).optional();
-      wrapper.extendsValue = node( context ).asString( "extends" ).optional();
+        wrapper.common = node( context ).asCommon();
+        wrapper.additionalProperties = node( context ).asBoolean( ADDITIONAL_PROPERTIES ).optional();
+        wrapper.extendsValue = node( context ).asString( "extends" ).optional();
 
-      wrapper.extendsSchema = wrapper.extendsValue
-         .map( url -> ( ( ObjectSchemaASTWrapper ) context.urlParser.apply( SchemaPath.resolve( context.rootPath, context.path ), url ) ) );
+        wrapper.extendsSchema = wrapper.extendsValue
+            .map( url -> ( ( ObjectSchemaASTWrapper ) context.urlParser.apply( SchemaPath.resolve( context.rootPath, context.path ), url ) ) );
 
-      wrapper.declaredProperties = node( context ).asMapAST( "properties", context ).required();
+        wrapper.declaredProperties = node( context ).asMapAST( "properties", context ).required();
 
-      return wrapper;
-   }
+        return wrapper;
+    }
 }
