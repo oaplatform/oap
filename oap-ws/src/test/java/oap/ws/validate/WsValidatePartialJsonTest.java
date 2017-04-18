@@ -88,7 +88,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
             @WsPartialValidateJson(
                 root = TestWS.class,
                 idParameterName = "id",
-                path = "a",
+                path = "a.items",
                 schema = "/oap/ws/validate/WsValidateJsonTest/partial-schema.conf" )
             @WsParam( from = BODY ) TestBean.TestItem body
         ) {
@@ -103,7 +103,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
             @WsPartialValidateJson(
                 root = TestWS.class,
                 idParameterName = "id",
-                path = "a",
+                path = "a.items",
                 schema = "/oap/ws/validate/WsValidateJsonTest/partial-schema.conf",
                 ignoreRequired = true )
             @WsParam( from = BODY ) TestBean.TestItem body
