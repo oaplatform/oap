@@ -24,16 +24,49 @@
 
 package oap.util;
 
-import oap.testng.AbstractTest;
+import oap.concurrent.Threads;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertNotNull;
+import java.util.List;
+import java.util.Set;
 
-public class CuidTest extends AbstractTest {
+import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class CuidTest {
 
     @Test
-    public void next() throws Exception {
-        System.out.println( Cuid.next() );
-        assertNotNull( Cuid.next() );
+    public void next() {
+        for( int i = 0; i < 20; i++ ) {
+            if( i % 3 == 0 ) Threads.sleepSafely( 1 );
+            System.out.println( Cuid.next() );
+        }
     }
+
+    @Test
+    public void idLength() {
+        assertThat( Cuid.next().length() ).isEqualTo( 23 );
+    }
+
+    @Test
+    public void hiResBug() {
+        Set<String> ids = Sets.empty();
+        List<String> idl = Lists.empty();
+
+        int count = 1000000;
+        for( int i = 0; i < count; i++ ) {
+            String next = Cuid.next();
+            ids.add( next );
+            idl.add( next );
+        }
+        Cuid.resetToDefaults();
+        for( int i = 0; i < count; i++ ) {
+            String next = Cuid.next();
+            ids.add( next );
+            idl.add( next );
+        }
+        assertString( String.join( "\n", ids ) ).isEqualTo( Strings.join( "\n", idl ) );
+        assertThat( ids.size() ).isEqualTo( count * 2 );
+    }
+
 }

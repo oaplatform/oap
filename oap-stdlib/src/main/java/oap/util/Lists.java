@@ -194,7 +194,7 @@ public class Lists {
     }
 
     public static <T> ArrayList<T> empty() {
-        return new ArrayList<>();
+        return of();
     }
 
     public static <T> T last( List<T> list ) {

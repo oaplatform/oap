@@ -25,39 +25,75 @@ package oap.util;
 
 import org.joda.time.DateTimeUtils;
 
+import java.net.Inet4Address;
 import java.net.NetworkInterface;
-import java.net.SocketException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Cluster Unique Id
  */
 public class Cuid {
-    private static String suffix = defaultSuffix();
-    private static AtomicLong seed = new AtomicLong( DateTimeUtils.currentTimeMillis() );
+    private static final String UNKNOWN_IP = "UUUUUUUU";
+    private static String suffix = ipSuffix();
+    private static Counter counter = new TimeSeedCounter();
 
     public static String next() {
-        return Long.toHexString( seed.getAndIncrement() ) + suffix;
+        return Long.toHexString( counter.next() ) + suffix;
     }
 
-    public static synchronized void reset( String suffix, long seed ) {
-        Cuid.suffix = suffix;
-        Cuid.seed.set( seed );
+    public static void reset( String suffix, long seed ) {
+        reset( suffix, new SeedCounter( seed ) );
     }
 
     public static void resetToDefaults() {
-        reset( defaultSuffix(), DateTimeUtils.currentTimeMillis() );
+        reset( ipSuffix(), new TimeSeedCounter() );
     }
 
-    private static String defaultSuffix() {
+    private static void reset( String suffix, Counter counter ) {
+        Cuid.suffix = suffix;
+        Cuid.counter = counter;
+    }
+
+    private static String ipSuffix() {
         try {
             return Stream.of( NetworkInterface.getNetworkInterfaces() )
                 .filter( Try.filter( i -> !i.isLoopback() && !i.isVirtual() && i.isUp() && !i.isPointToPoint() ) )
                 .findFirst()
-                .map( Try.map( i -> Strings.toHexString( i.getHardwareAddress() ) ) )
-                .orElse( "XXXXXXXXXXXX" );
-        } catch( SocketException e ) {
-            throw new RuntimeException( e );
+                .flatMap( i -> Stream.of( i.getInetAddresses() )
+                    .filter( a -> a instanceof Inet4Address && a.isSiteLocalAddress() )
+                    .findFirst()
+                    .map( a -> Strings.toHexString( a.getAddress() ) )
+                )
+                .orElse( UNKNOWN_IP );
+        } catch( Exception e ) {
+            return UNKNOWN_IP;
+        }
+    }
+
+    public interface Counter {
+        long next();
+    }
+
+    public static class SeedCounter implements Counter {
+        private AtomicLong value = new AtomicLong();
+
+        SeedCounter( long seed ) {
+            this.value.set( seed );
+        }
+
+        @Override
+        public long next() {
+            return value.incrementAndGet();
+        }
+    }
+
+    public static class TimeSeedCounter implements Counter {
+        private AtomicLong value = new AtomicLong( DateTimeUtils.currentTimeMillis() << 16 );
+
+
+        @Override
+        public long next() {
+            return value.incrementAndGet();
         }
     }
 }
