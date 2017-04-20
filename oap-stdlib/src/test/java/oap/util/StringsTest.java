@@ -24,6 +24,7 @@
 package oap.util;
 
 import oap.testng.AbstractTest;
+import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
 import static oap.testng.Asserts.assertString;
@@ -34,11 +35,21 @@ import static org.testng.Assert.assertTrue;
 
 public class StringsTest extends AbstractTest {
     @Test
-    public void toHexString() {
+    public void toHexStringLong() {
+        assertEquals( Strings.toHexString( 0xFF000000L ), "FF000000" );
+        assertEquals( Strings.toHexString( 0x10L ), "10" );
+        assertEquals( Strings.toHexString( 0x101L ), "101" );
+        long millis = DateTimeUtils.currentTimeMillis();
+        assertEquals( Strings.toHexString( millis ), Long.toHexString( millis ).toUpperCase() );
+    }
+
+    @Test
+    public void toHexStringBytes() {
         assertEquals( Strings.toHexString( new byte[] { 16 } ), "10" );
         assertEquals( Strings.toHexString( new byte[] { 1, 10, 120, -78 } ), "010A78B2" );
         assertEquals( Strings.toHexString( new byte[] { 40, -78, -67, 42, -93, -91 } ), "28B2BD2AA3A5" );
     }
+
 
     @Test
     public void substringAfter() {

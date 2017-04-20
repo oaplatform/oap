@@ -38,7 +38,7 @@ public class Cuid {
     private static Counter counter = new TimeSeedCounter();
 
     public static String next() {
-        return Long.toHexString( counter.next() ) + suffix;
+        return Strings.toHexString( counter.next() ) + suffix;
     }
 
     public static void reset( String suffix, long seed ) {
@@ -60,7 +60,7 @@ public class Cuid {
                 .filter( Try.filter( i -> !i.isLoopback() && !i.isVirtual() && i.isUp() && !i.isPointToPoint() ) )
                 .findFirst()
                 .flatMap( i -> Stream.of( i.getInetAddresses() )
-                    .filter( a -> a instanceof Inet4Address && a.isSiteLocalAddress() )
+                    .filter( a -> a instanceof Inet4Address )
                     .findFirst()
                     .map( a -> Strings.toHexString( a.getAddress() ) )
                 )

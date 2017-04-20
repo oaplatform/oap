@@ -47,7 +47,7 @@ import static oap.util.Pair.__;
 public final class Strings {
     public static final String UNDEFINED = "UNDEFINED";
     public static final String UNKNOWN = "UNKNOWN";
-    private static String[] hex = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F" };
+    private static char[] hex = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
     private Strings() {}
 
@@ -109,13 +109,25 @@ public final class Strings {
     }
 
     public static String toHexString( byte[] bytes ) {
-        if( bytes == null ) return "";
-        String result = "";
-        for( byte b : bytes ) {
-            int masked = b & 0xFF;
-            result += masked < 16 ? "0" + hex[masked] : hex[masked >> 4] + hex[masked & 0x0F];
+        if( bytes == null || bytes.length == 0 ) return "";
+
+        char[] buf = new char[bytes.length * 2];
+        for( int i = 0; i < bytes.length; i++ ) {
+            int masked = bytes[i] & 0xFF;
+            buf[i * 2] = hex[masked >> 4];
+            buf[i * 2 + 1] = hex[masked & 0x0F];
         }
-        return result;
+        return new String( buf );
+    }
+
+    public static String toHexString( long l ) {
+        if( l == 0 ) return "0";
+        int significantBits = Long.SIZE - Long.numberOfLeadingZeros( l );
+        int chars = Math.max( ( significantBits + 3 ) / 4, 1 );
+        char[] buf = new char[chars];
+        for( int i = 0; i < chars; i++ )
+            buf[chars - ( i + 1 )] = hex[( int ) ( ( l >> ( i * 4 ) ) & 0xF )];
+        return new String( buf );
     }
 
     @SafeVarargs
@@ -162,7 +174,7 @@ public final class Strings {
     }
 
     public static String removeControl( String s ) {
-        return s == null ? null : CharMatcher.JAVA_ISO_CONTROL.removeFrom( s );
+        return s == null ? null : CharMatcher.javaIsoControl().removeFrom( s );
     }
 
     /**
@@ -286,4 +298,5 @@ public final class Strings {
 
         return result.toString();
     }
+
 }

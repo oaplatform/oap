@@ -52,7 +52,7 @@ public abstract class AbstractPerformance extends AbstractTest {
 
     protected static final Consumer<Integer> none = Functions.empty.consume();
 
-    protected static BenchmarkConfiguration.BenchmarkConfigurationBuilder builder( String name ) {
+    public static BenchmarkConfiguration.BenchmarkConfigurationBuilder builder( String name ) {
         return BenchmarkConfiguration.builder().name( name );
     }
 
