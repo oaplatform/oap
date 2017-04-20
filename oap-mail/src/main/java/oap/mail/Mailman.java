@@ -53,15 +53,15 @@ import java.util.regex.Pattern;
 @Slf4j
 public class Mailman implements Runnable {
     private final String smtpHost;
-    private final int smptPort;
+    private final int smtpPort;
     private boolean startTls;
     private final String username;
     private final String password;
     private ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
 
-    public Mailman( String smtpHost, int smptPort, boolean startTls, String username, String password ) {
+    public Mailman( String smtpHost, int smtpPort, boolean startTls, String username, String password ) {
         this.smtpHost = smtpHost;
-        this.smptPort = smptPort;
+        this.smtpPort = smtpPort;
         this.startTls = startTls;
         this.username = username;
         this.password = password;
@@ -98,7 +98,7 @@ public class Mailman implements Runnable {
     public void send( Message message ) throws MailException {
         Properties properties = new Properties();
         properties.put( "mail.smtp.host", smtpHost );
-        properties.put( "mail.smtp.port", String.valueOf( smptPort ) );
+        properties.put( "mail.smtp.port", String.valueOf( smtpPort ) );
         properties.put( "mail.smtp.starttls.enable", String.valueOf( startTls ) );
         Authenticator authenticator = null;
         if( !Strings.isEmpty( username ) ) {
