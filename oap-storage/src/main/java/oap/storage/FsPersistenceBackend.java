@@ -24,32 +24,32 @@
 package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.SneakyThrows;
 import lombok.ToString;
+import lombok.val;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Files;
+import oap.io.IoStreams;
 import oap.json.Binder;
 import oap.storage.migration.FileStorageMigration;
 import oap.storage.migration.FileStorageMigrationException;
 import oap.storage.migration.JsonMetadata;
-import oap.util.Try;
+import oap.util.Lists;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static java.util.Comparator.reverseOrder;
-import static oap.util.Maps.Collectors.toConcurrentMap;
-import static oap.util.Pair.__;
 import static org.slf4j.LoggerFactory.getLogger;
 
 class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Storage.DataListener<T> {
@@ -73,38 +73,35 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
         this.storage.addDataListener( this );
     }
 
+    @SneakyThrows
     private void load() {
         Files.ensureDirectory( path );
         List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
         log.debug( "found {} files", paths.size() );
 
-        storage.data = paths
-            .stream()
-            .map( Try.map(
-                f -> {
-                    final Persisted persisted = Persisted.valueOf( f );
+        for( Path file : paths ) {
+            final Persisted persisted = Persisted.valueOf( file );
 
-                    Path file = f;
-                    for( long version = persisted.version; version < this.version; version++ ) {
-                        file = migration( file );
-                    }
+            for( long version = persisted.version; version < this.version; version++ ) {
+                file = migration( file );
+            }
 
-                    final Metadata<T> unmarshal = Binder.json.unmarshal( new TypeReference<Metadata<T>>() {}, file );
+            final Metadata<T> unmarshal = Binder.json.unmarshal( new TypeReference<Metadata<T>>() {}, file );
 
-                    final Path newPath = filenameFor( unmarshal.object, this.version );
+            final Path newPath = filenameFor( unmarshal.object, this.version );
 
-                    if( !java.nio.file.Files.exists( newPath ) || !java.nio.file.Files.isSameFile( file, newPath ) ) {
-                        Files.move( file, newPath, StandardCopyOption.REPLACE_EXISTING );
-                    }
+            if( !java.nio.file.Files.exists( newPath ) || !java.nio.file.Files.isSameFile( file, newPath ) ) {
+                Files.move( file, newPath, StandardCopyOption.REPLACE_EXISTING );
+            }
 
-                    return unmarshal;
-                } ) )
-            .sorted( reverseOrder() )
-            .map( x -> __( x.id, x ) )
-            .collect( toConcurrentMap() );
+            storage.data.put( unmarshal.id, unmarshal );
+
+        }
+
         log.info( storage.data.size() + " object(s) loaded." );
     }
 
+    @SneakyThrows
     private Path migration( Path path ) {
         JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {
         }, path ) );
@@ -113,35 +110,34 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
 
         log.debug( "migration {}", fn );
 
-        Optional<FileStorageMigration> migration = migrations
-            .stream()
-            .filter( m -> m.fromVersion() == fn.version )
-            .findAny();
+        val migration = Lists.find2( migrations, m -> m.fromVersion() == fn.version );
+        if( migration == null )
+            throw new FileStorageMigrationException( "migration from version " + fn + " not found" );
 
-        return migration
-            .map( m -> {
-                Path name = fn.toVersion( m.fromVersion() + 1 );
-                JsonMetadata newV = m.run( oldV );
-                Binder.json.marshal( name, newV.underlying );
-                Files.delete( path );
-                return name;
-            } )
-            .orElseThrow( () -> new FileStorageMigrationException( "migration from version " + fn + " not found" ) );
+
+        Path name = fn.toVersion( migration.fromVersion() + 1 );
+        JsonMetadata newV = migration.run( oldV );
+        try( OutputStream outputStream = IoStreams.out( name, IoStreams.Encoding.PLAIN, 8192, false, true ) ) {
+            Binder.json.marshal( outputStream, newV.underlying );
+        }
+        Files.delete( path );
+        return name;
     }
 
+    @SneakyThrows
     private synchronized void fsync( long last ) {
         log.trace( "fsync: last: {}, storage size: {}", last, storage.data.size() );
 
-        storage.data.values()
-            .stream()
-            .filter( m -> m.modified >= last )
-            .forEach( m -> {
-                final Path fn = filenameFor( m.object, version );
-                log.trace( "fsync storing {} with modification time {}", fn.getFileName(), m.modified );
-                Binder.json.marshal( fn, m );
-                log.trace( "fsync storing {} done", fn.getFileName() );
+        for( val value : storage.data.values() ) {
+            if( value.modified < last ) continue;
 
-            } );
+            final Path fn = filenameFor( value.object, version );
+            try( OutputStream outputStream = IoStreams.out( fn, IoStreams.Encoding.PLAIN, 8192, false, true ) ) {
+                log.trace( "fsync storing {} with modification time {}", fn.getFileName(), value.modified );
+                Binder.json.marshal( outputStream, value );
+                log.trace( "fsync storing {} done", fn.getFileName() );
+            }
+        }
     }
 
     private Path filenameFor( T object, long version ) {

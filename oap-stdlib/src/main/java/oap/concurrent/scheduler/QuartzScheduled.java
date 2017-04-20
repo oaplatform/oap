@@ -46,9 +46,7 @@ public class QuartzScheduled extends Scheduled {
 
             while( --i >= 0 && Scheduler.scheduler.getCurrentlyExecutingJobs()
                 .stream()
-                .filter( j -> j.getJobDetail().getKey().equals( job.getKey() ) )
-                .findAny()
-                .isPresent() ) {
+                .anyMatch( j -> j.getJobDetail().getKey().equals( job.getKey() ) ) ) {
 
                 try {
                     Scheduler.scheduler.getCurrentlyExecutingJobs()
@@ -62,11 +60,7 @@ public class QuartzScheduled extends Scheduled {
                     e.printStackTrace();
                 }
 
-                try {
-                    Thread.sleep( 1000 );
-                } catch( InterruptedException e ) {
-                    Threads.sleepSafely( 1000 );
-                }
+                Threads.sleepSafely( 1000 );
             }
         } catch( org.quartz.SchedulerException e ) {
             throw new SchedulerException( e );
