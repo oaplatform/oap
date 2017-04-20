@@ -24,7 +24,6 @@
 
 package oap.util;
 
-import javax.annotation.CheckReturnValue;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
@@ -41,7 +40,6 @@ public final class Throwables {
         throw new WrappingRuntimeException( throwable );
     }
 
-    @CheckReturnValue
     public static Throwable getRootCause( Throwable throwable ) {
         return com.google.common.base.Throwables.getRootCause( throwable );
     }

@@ -23,7 +23,6 @@
  */
 package oap.application;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,7 +37,6 @@ public class Application {
     private static final Set<String> profiles = new HashSet<>();
 
     @SuppressWarnings( "unchecked" )
-    @Nullable
     public static <T> T service( String name ) {
         return ( T ) services.get( name );
     }

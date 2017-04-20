@@ -27,7 +27,6 @@ package oap.storage;
 import com.google.common.base.Preconditions;
 import oap.reflect.Reflect;
 
-import javax.annotation.Nonnull;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -54,12 +53,10 @@ public final class IdentifierBuilder<T> {
      * and suggestion is specified)
      *
      * @param idPath - path in object to look for existing identifier and generate it in case its null
-     * @param <T> - object type
-     *
+     * @param <T>    - object type
      * @return instance of the current builder
      */
-    @Nonnull
-    public static <T> IdentifierBuilder<T> identityPath( @Nonnull final String idPath ) {
+    public static <T> IdentifierBuilder<T> identityPath( final String idPath ) {
         final String path = Objects.requireNonNull( idPath, "path of id must not be null" );
 
         return new IdentifierBuilder<>( object -> Reflect.get( object, path ),
@@ -72,12 +69,10 @@ public final class IdentifierBuilder<T> {
      * see {@link #identityPath(String)})
      *
      * @param identity - existing identifier
-     * @param <T> - object type
-     *
+     * @param <T>      - object type
      * @return instance of the current builder
      */
-    @Nonnull
-    public static <T> IdentifierBuilder<T> identify( @Nonnull final Function<T, String> identity ) {
+    public static <T> IdentifierBuilder<T> identify( final Function<T, String> identity ) {
         return new IdentifierBuilder<>( Objects.requireNonNull(
             identity, "identity must not be null" ), null );
     }
@@ -87,11 +82,9 @@ public final class IdentifierBuilder<T> {
      * {@link #identityPath(String)} is used and there is a chance for identifier to be null)
      *
      * @param suggestion - base string for identifier generation
-     *
      * @return instance of the current builder
      */
-    @Nonnull
-    public IdentifierBuilder<T> suggestion( @Nonnull final Function<T, String> suggestion ) {
+    public IdentifierBuilder<T> suggestion( final Function<T, String> suggestion ) {
         this.suggestion = Objects.requireNonNull( suggestion, "suggestion must not be null" );
 
         return this;
@@ -101,10 +94,8 @@ public final class IdentifierBuilder<T> {
      * Sets the size of identifier to be generated
      *
      * @param size - desired identifier size
-     *
      * @return instance of the current builder
      */
-    @Nonnull
     public IdentifierBuilder<T> size( final int size ) {
         Preconditions.checkArgument( size > 0, "size needs to be bigger than 0" );
         this.size = size;
@@ -112,7 +103,6 @@ public final class IdentifierBuilder<T> {
         return this;
     }
 
-    @Nonnull
     public <T1 extends T> Identifier<T1> build() {
         return new DefaultIdentifier<>( this );
     }

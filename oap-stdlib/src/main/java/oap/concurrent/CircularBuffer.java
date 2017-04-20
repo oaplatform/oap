@@ -24,14 +24,12 @@
 
 package oap.concurrent;
 
-import javax.annotation.concurrent.ThreadSafe;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by anton on 8/22/16.
  */
-@ThreadSafe
 public class CircularBuffer<T> {
     private final T[] data;
     private final AtomicInteger index;

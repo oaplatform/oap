@@ -56,7 +56,7 @@ public final class Scheduler {
         try {
             final StdSchedulerFactory sf = new StdSchedulerFactory();
             Properties props = new Properties();
-            props.setProperty( StdSchedulerFactory.PROP_SCHED_SKIP_UPDATE_CHECK, "true" );
+//            props.setProperty( StdSchedulerFactory.PROP_SCHED_SKIP_UPDATE_CHECK, "true" );
             props.setProperty( StdSchedulerFactory.PROP_JOB_STORE_CLASS, "org.quartz.simpl.RAMJobStore" );
             props.setProperty( "org.quartz.threadPool.threadCount",
                 String.valueOf( Runtime.getRuntime().availableProcessors() ) );
