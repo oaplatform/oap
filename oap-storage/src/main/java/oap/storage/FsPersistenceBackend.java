@@ -50,6 +50,8 @@ import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static oap.io.IoStreams.DEFAULT_BUFFER;
+import static oap.io.IoStreams.Encoding.PLAIN;
 import static org.slf4j.LoggerFactory.getLogger;
 
 class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Storage.DataListener<T> {
@@ -117,7 +119,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
 
         Path name = fn.toVersion( migration.fromVersion() + 1 );
         JsonMetadata newV = migration.run( oldV );
-        try( OutputStream outputStream = IoStreams.out( name, IoStreams.Encoding.PLAIN, 8192, false, true ) ) {
+        try( OutputStream outputStream = IoStreams.out( name, PLAIN, DEFAULT_BUFFER, false, true ) ) {
             Binder.json.marshal( outputStream, newV.underlying );
         }
         Files.delete( path );
@@ -132,7 +134,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
             if( value.modified < last ) continue;
 
             final Path fn = filenameFor( value.object, version );
-            try( OutputStream outputStream = IoStreams.out( fn, IoStreams.Encoding.PLAIN, 8192, false, true ) ) {
+            try( OutputStream outputStream = IoStreams.out( fn, PLAIN, DEFAULT_BUFFER, false, true ) ) {
                 log.trace( "fsync storing {} with modification time {}", fn.getFileName(), value.modified );
                 Binder.json.marshal( outputStream, value );
                 log.trace( "fsync storing {} done", fn.getFileName() );
