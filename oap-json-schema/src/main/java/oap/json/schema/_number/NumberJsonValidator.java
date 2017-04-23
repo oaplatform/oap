@@ -37,19 +37,21 @@ public abstract class NumberJsonValidator<T extends Number> extends JsonSchemaVa
    public List<String> validate( JsonValidatorProperties properties, NumberSchemaAST schema, Object value ) {
       if( !valid( value ) ) return typeFailed( properties, schema, value );
 
-      Double doubleValue = ( ( Number ) value ).doubleValue();
-      List<String> errors = new ArrayList<>();
+      final Double doubleValue = ( ( Number ) value ).doubleValue();
+
+      final List<String> errors = new ArrayList<>();
+
       schema.minimum.filter( minimum -> doubleValue < minimum && !schema.exclusiveMinimum.orElse( false ) )
-         .ifPresent( minimum -> errors.add( "number is lower than the required minimum " + minimum ) );
+         .ifPresent( minimum -> errors.add( properties.error( "number " + doubleValue + " is lower than the required minimum " + minimum ) ) );
 
       schema.maximum.filter( maximum -> doubleValue > maximum && !schema.exclusiveMaximum.orElse( false ) )
-         .ifPresent( maximum -> errors.add( "number is greater than the required maximum " + maximum ) );
+         .ifPresent( maximum -> errors.add( properties.error( "number " + doubleValue + " is greater than the required maximum " + maximum ) ) );
 
       schema.minimum.filter( minimum -> doubleValue <= minimum && schema.exclusiveMinimum.orElse( false ) )
-         .ifPresent( minimum -> errors.add( "number is not strictly greater than the required minimum " + minimum ) );
+         .ifPresent( minimum -> errors.add( properties.error( "number " + doubleValue + " is not strictly greater than the required minimum " + minimum ) ) );
 
       schema.maximum.filter( maximum -> doubleValue >= maximum && schema.exclusiveMaximum.orElse( false ) )
-         .ifPresent( maximum -> errors.add( "number is not strictly lower than the required maximum " + maximum ) );
+         .ifPresent( maximum -> errors.add( properties.error( "number " + doubleValue + " is not strictly lower than the required maximum " + maximum ) ) );
 
       return errors;
    }

@@ -41,15 +41,15 @@ public class StringJsonValidator extends JsonSchemaValidator<StringSchemaAST> {
 
       schema.minLength
          .filter( minLength -> strValue.length() < minLength )
-         .ifPresent( minLength -> errors.add( "string is shorter than minLength " + minLength ) );
+         .ifPresent( minLength -> errors.add( properties.error( "string " + strValue + " is shorter than minLength " + minLength ) ) );
 
       schema.maxLength
          .filter( maxLength -> strValue.length() > maxLength )
-         .ifPresent( maxLength -> errors.add( "string is longer than maxLength " + maxLength ) );
+         .ifPresent( maxLength -> errors.add( properties.error( "string " + strValue + " is longer than maxLength " + maxLength ) ) );
 
       schema.pattern
          .filter( pattern -> !pattern.matcher( strValue ).matches() )
-         .ifPresent( pattern -> errors.add( "string does not match specified regex " + pattern ) );
+         .ifPresent( pattern -> errors.add( properties.error( "string " + strValue + " does not match specified regex " + pattern ) ) );
 
       return errors;
    }

@@ -49,6 +49,7 @@ import static oap.json.schema.SchemaPath.rightTrimItems;
  */
 @Slf4j
 public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchemaAST> {
+
     private Result<List<Dictionary>, List<String>> validate( JsonValidatorProperties properties, Optional<DictionarySchemaAST> schemaOpt, List<Dictionary> dictionaries ) {
         if( !schemaOpt.isPresent() ) return Result.success( dictionaries );
 
@@ -94,27 +95,31 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
 
     @Override
     public List<String> validate( JsonValidatorProperties properties, DictionarySchemaAST schema, Object value ) {
+        final List<Dictionary> dictionaries;
         try {
-            List<Dictionary> dictionaries = Lists.of( Dictionaries.getCachedDictionary( schema.name ) );
-
-            final Result<List<Dictionary>, List<String>> result = validate( properties, schema.parent, dictionaries );
-
-            if( !result.isSuccess() ) return result.failureValue;
-
-            if( !result.successValue.isEmpty() &&
-                !result.successValue.stream().filter( d -> d.containsValueWithId( String.valueOf( value ) ) ).findAny().isPresent() )
-                return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + printIds( result.successValue ) ) );
-
-            return Lists.empty();
-        } catch( DictionaryNotFoundError e ) {
-            return Lists.of( properties.error( "dictionary not found" ) );
+            dictionaries = Lists.of( Dictionaries.getCachedDictionary( schema.name ) );
+        } catch( final DictionaryNotFoundError e ) {
+            return Lists.of( properties.error( "dictionary " + schema.name + " not found" ) );
         }
+
+        final Result<List<Dictionary>, List<String>> result = validate( properties, schema.parent, dictionaries );
+
+        if( !result.isSuccess() ) return result.failureValue;
+
+        if( !result.successValue.isEmpty() &&
+            result.successValue.stream().noneMatch( d -> d.containsValueWithId( String.valueOf( value ) ) ) ) {
+
+            return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + printIds( result.successValue ) ) );
+        }
+
+        return Lists.empty();
+
     }
 
-    private String printIds( List<Dictionary> dictionaries ) {
+    private static String printIds( final List<Dictionary> dictionaries ) {
         return dictionaries
             .stream()
-            .flatMap( d -> d.ids().stream() )
+            .flatMap( dictionary -> dictionary.ids().stream() )
             .distinct()
             .collect( toList() )
             .toString();
