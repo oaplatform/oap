@@ -62,21 +62,21 @@ public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyLi
     }
 
     public synchronized void stop() {
+        stopped = true;
+        thread.interrupt();
         try {
-            stopped = true;
-            thread.interrupt();
-            thread.join();
+            thread.join( 60000 );
         } catch( InterruptedException e ) {
-            throw new ThreadException( e );
+            thread.stop();
         }
-    }
-
-    public void setName( String name ) {
-        this.thread.setName( name );
     }
 
     public String getName() {
         return this.thread.getName();
+    }
+
+    public void setName( String name ) {
+        this.thread.setName( name );
     }
 
     public boolean isRunning() {
