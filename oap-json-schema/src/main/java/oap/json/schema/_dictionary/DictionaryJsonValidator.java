@@ -102,18 +102,20 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
             return Lists.of( properties.error( "dictionary " + schema.name + " not found" ) );
         }
 
-        final Result<List<Dictionary>, List<String>> result = validate( properties, schema.parent, dictionaries );
+        final List<String> errors = new ArrayList<>();
 
-        if( !result.isSuccess() ) return result.failureValue;
+        validate( properties, schema.parent, dictionaries )
+            .ifFailure( errors::addAll )
+            .ifSuccess( successes -> {
+                if ( !successes.isEmpty() &&
+                    successes.stream().noneMatch( d -> d.containsValueWithId( String.valueOf( value ) ) ) ) {
 
-        if( !result.successValue.isEmpty() &&
-            result.successValue.stream().noneMatch( d -> d.containsValueWithId( String.valueOf( value ) ) ) ) {
+                    errors.addAll( Lists.of( properties.error( "instance does not match any member resolve " +
+                        "the enumeration " + printIds( successes ) ) ) );
+                }
+            } );
 
-            return Lists.of( properties.error( "instance does not match any member resolve the enumeration " + printIds( result.successValue ) ) );
-        }
-
-        return Lists.empty();
-
+        return errors;
     }
 
     private static String printIds( final List<Dictionary> dictionaries ) {
