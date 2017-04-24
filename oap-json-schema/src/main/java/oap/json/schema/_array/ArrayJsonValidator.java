@@ -40,10 +40,10 @@ public class ArrayJsonValidator extends JsonSchemaValidator<ArraySchemaAST> {
       List<String> errors = new ArrayList<>();
 
       schema.minItems.filter( minItems -> arrayValue.size() < minItems )
-         .ifPresent( minItems -> errors.add( properties.error( "array has less than minItems elements " + minItems ) ) );
+         .ifPresent( minItems -> errors.add( properties.error( "array " + arrayValue + " has less than minItems elements " + minItems ) ) );
 
       schema.maxItems.filter( maxItems -> arrayValue.size() > maxItems )
-         .ifPresent( maxItems -> errors.add( properties.error( "array has more than maxItems elements " + maxItems ) ) );
+         .ifPresent( maxItems -> errors.add( properties.error( "array " + arrayValue + " has more than maxItems elements " + maxItems ) ) );
 
       for( int i = 0; i < arrayValue.size(); i++ )
          errors.addAll( properties.validator.apply( properties.withAdditionalProperties( schema.additionalProperties ).withPath( String.valueOf( i ) ),

@@ -44,7 +44,7 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
    public void testUnknownDictionary() {
       String schema = "{type: dictionary, name: unknown}";
 
-      assertFailure( schema, "'test4'", "dictionary not found" );
+      assertFailure( schema, "'test4'", "dictionary unknown not found" );
    }
 
    @Test

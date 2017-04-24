@@ -24,8 +24,8 @@
 
 package oap.ws.validate;
 
+import com.google.common.base.Preconditions;
 import lombok.SneakyThrows;
-import lombok.val;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.json.schema.JsonValidatorFactory;
@@ -33,6 +33,8 @@ import oap.json.schema.ResourceSchemaStorage;
 import oap.reflect.Reflection;
 import oap.ws.WsClientException;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -58,13 +60,7 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
     @SneakyThrows
     public ValidationErrors validate( Object value ) {
         try {
-            final String idName = validate.idParameterName();
-            final Object objectId = values.entrySet()
-                .stream()
-                .filter( p -> p.getKey().name().equals( idName ) )
-                .findFirst()
-                .get()
-                .getValue();
+            final Object objectId = getValue( validate.idParameterName() );
 
             final String id = objectId instanceof Optional ?
                 ( ( Optional ) objectId ).get().toString() : objectId.toString();
@@ -73,14 +69,64 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
                 validate.root().isInstance( instance )
                     ? instance : validate.root().newInstance() ) ).get( id ).orElse( null );
 
-            if( root == null ) return ValidationErrors.empty();
+            if( root == null ) {
+                return ValidationErrors.empty();
+            }
 
-            final Object rootMap = Binder.json.unmarshal( Map.class, Binder.json.marshal( root ) );
+            final Map rootMap = Binder.json.unmarshal( Map.class, Binder.json.marshal( Binder.json.clone( root ) ) );
+            final Map partialValue = Binder.json.unmarshal( Map.class, ( String ) value );
 
-            val partialValue = Binder.json.unmarshal( Map.class, ( String ) value );
-            return ValidationErrors.errors( factory.partialValidate( rootMap, partialValue, validate.path(), validate.ignoreRequired() ) );
+            Map child = rootMap;
+            for( String pathElement : validate.path().split( "(?<=})\\." ) ) {
+
+                if( pathElement.contains( "$" ) ) {
+                    final String[] split = pathElement.split( "\\." );
+
+                    final Object next = child.get( split[0] );
+
+                    Preconditions.checkState( next != null, "schema has no elements for value " + split[0] );
+                    Preconditions.checkState( next instanceof List, split[0] + " should be of type list" );
+
+                    final Object idValue = ( ( Optional ) getValue( split[1].replaceAll( "\\$|\\{|\\}", "" ) ) ).get();
+
+                    final Optional matchedChild = ( ( List ) next ).stream()
+                        .filter( o -> idValue.equals( ( ( Map ) o ).get( "id" ).toString() ) )
+                        .findFirst();
+
+                    child = ( Map ) matchedChild.get();
+
+                    continue;
+                }
+
+                final Object next = child.get( pathElement );
+                if( next == null ) {
+                    child.put( pathElement, Collections.singletonList( partialValue ) );
+
+                    break;
+                } else if( next instanceof List ) {
+                    final List childElements = ( List ) next;
+                    childElements.add( partialValue );
+
+                    child.put( pathElement, childElements );
+
+                    break;
+                } else {
+                    child = ( Map ) next;
+                }
+            }
+
+            return ValidationErrors.errors( factory.validate( rootMap, validate.ignoreRequired() ) );
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
         }
     }
+
+    private Object getValue( final String idName ) {
+        return values.entrySet().stream()
+            .filter( p -> p.getKey().name().equals( idName ) )
+            .findFirst()
+            .get()
+            .getValue();
+    }
+
 }

@@ -55,8 +55,8 @@ public class ArraySchemaTest extends AbstractSchemaTest {
 
         assertOk( schema, "{'a':[true, false, false]}" );
         assertOk( schema, "{'a':[true, false]}" );
-        assertFailure( schema, "{'a':[true]}", "/a: array has less than minItems elements 2" );
-        assertFailure( schema, "{'a':[]}", "/a: array has less than minItems elements 2" );
+        assertFailure( schema, "{'a':[true]}", "/a: array [true] has less than minItems elements 2" );
+        assertFailure( schema, "{'a':[]}", "/a: array [] has less than minItems elements 2" );
     }
 
     @Test
@@ -74,7 +74,7 @@ public class ArraySchemaTest extends AbstractSchemaTest {
 
         assertOk( schema, "{'a':[]}" );
         assertOk( schema, "{'a':[true, false]}" );
-        assertFailure( schema, "{'a':[true, true, true]}", "/a: array has more than maxItems elements 2" );
+        assertFailure( schema, "{'a':[true, true, true]}", "/a: array [true, true, true] has more than maxItems elements 2" );
     }
 
     @Test

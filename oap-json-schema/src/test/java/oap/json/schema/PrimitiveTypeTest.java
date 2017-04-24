@@ -58,7 +58,7 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
         String schema = "{\"type\": \"string\", \"minLength\": 2}";
 
         assertOk( schema, "\"te\"" );
-        assertFailure( schema, "\"t\"", "string is shorter than minLength 2" );
+        assertFailure( schema, "\"t\"", "string t is shorter than minLength 2" );
     }
 
     @Test
@@ -66,7 +66,7 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
         String schema = "{\"type\": \"string\", \"maxLength\": 2}";
 
         assertOk( schema, "\"te\"" );
-        assertFailure( schema, "\"tes\"", "string is longer than maxLength 2" );
+        assertFailure( schema, "\"tes\"", "string tes is longer than maxLength 2" );
     }
 
     @Test
@@ -74,9 +74,9 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
         String schema = "{\"type\": \"string\", \"pattern\": \"a+\"}";
 
         assertOk( schema, "\"aa\"" );
-        assertFailure( schema, "\"b\"", "string does not match specified regex a+" );
-        assertFailure( schema, "\"aab\"", "string does not match specified regex a+" );
-        assertFailure( schema, "\"bbaaabb\"", "string does not match specified regex a+" );
+        assertFailure( schema, "\"b\"", "string b does not match specified regex a+" );
+        assertFailure( schema, "\"aab\"", "string aab does not match specified regex a+" );
+        assertFailure( schema, "\"bbaaabb\"", "string bbaaabb does not match specified regex a+" );
     }
 
     @Test

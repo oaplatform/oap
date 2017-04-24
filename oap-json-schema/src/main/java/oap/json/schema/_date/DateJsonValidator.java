@@ -29,10 +29,8 @@ import oap.json.schema.JsonSchemaParserContext;
 import oap.json.schema.JsonSchemaValidator;
 import oap.json.schema.JsonValidatorProperties;
 import oap.util.Dates;
-import oap.util.Lists;
-import oap.util.Result;
-import org.joda.time.DateTime;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class DateJsonValidator extends JsonSchemaValidator<DefaultSchemaAST> {
@@ -41,9 +39,14 @@ public class DateJsonValidator extends JsonSchemaValidator<DefaultSchemaAST> {
    public List<String> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
       if( !( value instanceof String ) ) return typeFailed( properties, schema, value );
 
-      Result<DateTime, List<String>> result = Dates.parseDateWithTimeZone( ( String ) value )
-         .mapFailure( e -> Lists.of( e.getMessage() ) );
-      return result.isSuccess() ? Lists.empty() : result.failureValue;
+      final String dateValue = ( String ) value;
+
+      final List<String> errors = new ArrayList<>();
+
+      Dates.parseDateWithTimeZone( dateValue )
+          .ifFailure( e -> errors.add( properties.error( e.getMessage() ) ) );
+
+      return errors;
    }
 
    @Override

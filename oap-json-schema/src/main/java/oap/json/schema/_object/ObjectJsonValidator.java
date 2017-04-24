@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
+
     @Override
     public List<String> validate( JsonValidatorProperties properties, ObjectSchemaAST schema, Object value ) {
         if( !( value instanceof Map<?, ?> ) ) return typeFailed( properties, schema, value );
@@ -68,10 +69,12 @@ public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
             .toList();
 
         if( !schema.additionalProperties.orElse( properties.additionalProperties.orElse( true ) )
-            && !additionalProperties.isEmpty() )
-            errors.add( properties.error( "additional properties are not permitted " + additionalProperties ) );
-        return errors;
+            && !additionalProperties.isEmpty() ) {
 
+            errors.add( properties.error( "additional properties are not permitted " + additionalProperties ) );
+        }
+
+        return errors;
     }
 
     @Override
@@ -89,4 +92,5 @@ public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
 
         return wrapper;
     }
+
 }
