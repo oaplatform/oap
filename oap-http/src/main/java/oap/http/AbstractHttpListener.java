@@ -29,13 +29,15 @@ public abstract class AbstractHttpListener extends SynchronizedRunnable implemen
     @Override
     public void run() {
         try {
-            while( !Thread.interrupted() && ( serverSocket = createSocket() ) == null ) {
-                once( () -> log.warn( "Server socket cannot be opened; waiting for it ..." ) );
-                Threads.sleepSafely( sleep );
+            try {
+                while( !Thread.interrupted() && ( serverSocket = createSocket() ) == null ) {
+                    once( () -> log.warn( "Server socket cannot be opened; waiting for it ..." ) );
+                    Threads.sleepSafely( sleep );
+                }
+                log.debug( "ready to rock [{}]", serverSocket );
+            } finally {
+                this.notifyReady();
             }
-            log.debug( "ready to rock [{}]", serverSocket );
-
-            this.notifyReady();
 
             while( !Thread.interrupted() && !serverSocket.isClosed() )
                 try {
