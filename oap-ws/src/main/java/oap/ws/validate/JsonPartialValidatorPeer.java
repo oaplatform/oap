@@ -26,6 +26,7 @@ package oap.ws.validate;
 
 import com.google.common.base.Preconditions;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.json.schema.JsonValidatorFactory;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 public class JsonPartialValidatorPeer implements ValidatorPeer {
     private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
     private final JsonValidatorFactory factory;
@@ -73,7 +75,11 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
                 return ValidationErrors.empty();
             }
 
-            final Map rootMap = Binder.json.unmarshal( Map.class, Binder.json.marshal( Binder.json.clone( root ) ) );
+            final String fetchedRoot = Binder.json.marshal( Binder.json.clone( root ) );
+
+            log.trace( "Retrieved object [{}] with id [{}]", fetchedRoot, id );
+
+            final Map rootMap = Binder.json.unmarshal( Map.class, fetchedRoot );
             final Map partialValue = Binder.json.unmarshal( Map.class, ( String ) value );
 
             Map child = rootMap;
@@ -127,6 +133,10 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
             .findFirst()
             .get()
             .getValue();
+    }
+
+    public static void main( String[] args ) {
+        System.out.println(Binder.json.marshal( Binder.json.clone( null ) ));
     }
 
 }
