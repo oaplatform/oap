@@ -23,6 +23,8 @@
  */
 package oap.testng;
 
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.io.Files;
 import org.joda.time.DateTimeUtils;
 import org.mockito.MockitoAnnotations;
@@ -40,12 +42,39 @@ import java.util.Iterator;
 import static org.apache.commons.io.FileUtils.iterateFiles;
 import static org.apache.commons.io.filefilter.FileFilterUtils.trueFileFilter;
 
+@Slf4j
 public abstract class AbstractTest {
+    private static final long FIVE_MINUTES = 1000 * 60 * 60 * 5;
+
     protected boolean cleanupTemp = true;
 
     @AfterSuite
     public void afterSuite() throws Exception {
-        if( cleanupTemp ) deleteDirectory( Env.tmp );
+        if( cleanupTemp ) {
+            final long now = System.currentTimeMillis();
+            boolean empty = true;
+            try( val stream = java.nio.file.Files.newDirectoryStream( Env.tmp ) ) {
+                val iterator = stream.iterator();
+                while( iterator.hasNext() ) {
+                    val build = iterator.next();
+
+                    final boolean self = Env.tmpRoot.equals( build );
+                    final long lastModified = java.nio.file.Files.getLastModifiedTime( build ).toMillis();
+                    final long diff = now - lastModified;
+                    if( self || diff > FIVE_MINUTES ) {
+                        log.info( "delete {}", build );
+                        deleteDirectory( build );
+                    } else {
+                        log.info( "skip {}, self = {}, diff = {}", build, self, diff );
+                        log.trace( "build={}, env={}", build );
+                        log.trace( "now={}, lastModified={}", now, lastModified );
+                        empty = false;
+                    }
+                }
+            }
+
+            if( empty ) deleteDirectory( Env.tmp );
+        }
     }
 
     @AfterClass

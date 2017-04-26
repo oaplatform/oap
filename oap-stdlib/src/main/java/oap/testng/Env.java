@@ -25,6 +25,7 @@ package oap.testng;
 
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
+import lombok.val;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Throwables;
@@ -39,14 +40,13 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Log
 public class Env {
     public static final String LOCALHOST;
-    static final Path tmp = Paths.get( "/tmp/test" + teamcityBuildPrefix() );
-    public static final Path tmpRoot = tmp.resolve( "temp-" + System.currentTimeMillis() );
+    static final Path tmp = Paths.get( "/tmp/test" );
+    public static final Path tmpRoot = tmp.resolve( "temp" + teamcityBuildPrefix() );
     private static Map<String, Integer> ports = new ConcurrentHashMap<>();
 
     static {
@@ -58,7 +58,17 @@ public class Env {
     }
 
     private static String teamcityBuildPrefix() {
-        return Optional.ofNullable( System.getenv( "TEAMCITY_BUILDCONF_NAME" ) ).map( v -> "_" + v ).orElse( "" );
+        String prefix = "";
+
+        val teamcity_buildconf_name = System.getenv( "TEAMCITY_BUILDCONF_NAME" );
+        prefix += "_";
+        if( teamcity_buildconf_name != null ) prefix += teamcity_buildconf_name;
+
+        val build_number = System.getenv( "BUILD_NUMBER" );
+        prefix += "_";
+        if( build_number != null ) prefix += build_number;
+
+        return prefix;
     }
 
     public static String tmp( String name ) {
