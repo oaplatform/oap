@@ -44,7 +44,7 @@ import static org.apache.commons.io.filefilter.FileFilterUtils.trueFileFilter;
 
 @Slf4j
 public abstract class AbstractTest {
-    private static final long FIVE_MINUTES = 1000 * 60 * 60 * 5;
+    private static final long TEN_HOURS = 1000 * 60 * 60 * 10;
 
     protected boolean cleanupTemp = true;
 
@@ -61,7 +61,7 @@ public abstract class AbstractTest {
                     final boolean self = Env.tmpRoot.equals( build );
                     final long lastModified = java.nio.file.Files.getLastModifiedTime( build ).toMillis();
                     final long diff = now - lastModified;
-                    if( self || diff > FIVE_MINUTES ) {
+                    if( self || diff > TEN_HOURS ) {
                         log.info( "delete {}", build );
                         deleteDirectory( build );
                     } else {
