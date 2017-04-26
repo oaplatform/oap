@@ -31,7 +31,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class Validators {
+public final class Validators {
+
+    private Validators() {
+    }
 
     public static Validator forParameter( Map<Reflection.Parameter, Object> values,
                                           Reflection.Method method, Reflection.Parameter parameter,
