@@ -137,16 +137,16 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                     for( int i = 0; i < parameters.size(); i++ ) {
                         Reflection.Parameter parameter = parameters.get( i );
                         paramErrors.merge( Validators
-                            .forParameter( values, method, parameter, instance, false )
-                            .validate( args[i] ) );
+                            .forParameter( method, parameter, instance, false )
+                            .validate( args[i], values ) );
                     }
                     if( paramErrors.isFailed() ) {
                         runAsserts( paramErrors );
                         return null;
                     } else {
                         ValidationErrors methodErrors = Validators
-                            .forMethod( values, method, instance, false )
-                            .validate( args );
+                            .forMethod( method, instance, false )
+                            .validate( args, values );
                         runAsserts( methodErrors );
                         if( methodErrors.isFailed() ) return null;
                     }

@@ -23,7 +23,6 @@
  */
 package oap.ws.validate;
 
-import lombok.val;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.json.schema.JsonValidatorFactory;
@@ -31,6 +30,7 @@ import oap.json.schema.ResourceSchemaStorage;
 import oap.reflect.Reflection;
 import oap.ws.WsClientException;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class JsonValidatorPeer implements ValidatorPeer {
@@ -39,17 +39,17 @@ public class JsonValidatorPeer implements ValidatorPeer {
     private final WsValidateJson validate;
 
     public JsonValidatorPeer( WsValidateJson validate,
-                              Map<Reflection.Parameter, Object> values,
                               Reflection.Method targetMethod, Object instance, Type type ) {
-        factory = JsonValidatorFactory.schema( validate.schema(), storage );
+        this.factory = JsonValidatorFactory.schema( validate.schema(), storage );
         this.validate = validate;
     }
 
     @Override
-    public ValidationErrors validate( Object value ) {
+    public ValidationErrors validate( Object value, LinkedHashMap<Reflection.Parameter, Object> originalValues ) {
         try {
-            val unmarshal = Binder.json.unmarshal( Map.class, ( String ) value );
-            return ValidationErrors.errors( factory.validate( unmarshal, validate.ignoreRequired() ) );
+            final Map mapValue = Binder.json.unmarshal( Map.class, ( String ) value );
+
+            return ValidationErrors.errors( factory.validate( mapValue, validate.ignoreRequired() ) );
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
         }

@@ -219,15 +219,15 @@ public class WsService implements Handler {
                 originalValues.forEach( ( parameter, value ) ->
                     paramValidation.merge(
                         Validators
-                            .forParameter( originalValues, method, parameter, impl, true )
-                            .validate( value )
+                            .forParameter( method, parameter, impl, true )
+                            .validate( value, originalValues )
                     )
                 );
 
                 paramValidation.throwIfInvalid();
 
-                Validators.forMethod( originalValues, method, impl, true )
-                    .validate( originalValues.values().toArray( new Object[originalValues.size()] ) )
+                Validators.forMethod( method, impl, true )
+                    .validate( originalValues.values().toArray( new Object[originalValues.size()] ), originalValues )
                     .throwIfInvalid();
 
                 final LinkedHashMap<Reflection.Parameter, Object> values = getValues( originalValues );
@@ -236,14 +236,14 @@ public class WsService implements Handler {
                 values.forEach( ( parameter, value ) ->
                     paramValidation.merge(
                         Validators
-                            .forParameter( values, method, parameter, impl, false )
-                            .validate( value )
+                            .forParameter( method, parameter, impl, false )
+                            .validate( value, values )
                     ) );
 
                 paramValidation.throwIfInvalid();
 
-                Validators.forMethod( values, method, impl, false )
-                    .validate( paramValues )
+                Validators.forMethod( method, impl, false )
+                    .validate( paramValues, values )
                     .throwIfInvalid();
 
                 Object result = method.invoke( impl, paramValues );

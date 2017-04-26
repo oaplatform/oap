@@ -35,6 +35,7 @@ import oap.reflect.Reflection;
 import oap.ws.WsClientException;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,25 +45,20 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
     private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
     private final JsonValidatorFactory factory;
     private final WsPartialValidateJson validate;
-    private final Map<Reflection.Parameter, Object> values;
-    private final Reflection.Method targetMethod;
     private final Object instance;
 
     public JsonPartialValidatorPeer( WsPartialValidateJson validate,
-                                     Map<Reflection.Parameter, Object> values,
                                      Reflection.Method targetMethod, Object instance, Type type ) {
         factory = JsonValidatorFactory.schema( validate.schema(), storage );
         this.validate = validate;
-        this.values = values;
-        this.targetMethod = targetMethod;
         this.instance = instance;
     }
 
     @Override
     @SneakyThrows
-    public ValidationErrors validate( Object value ) {
+    public ValidationErrors validate( Object value, LinkedHashMap<Reflection.Parameter, Object> originalValues ) {
         try {
-            final Object objectId = getValue( validate.idParameterName() );
+            final Object objectId = getValue( originalValues, validate.idParameterName() );
 
             final String id = objectId instanceof Optional ?
                 ( ( Optional ) objectId ).get().toString() : objectId.toString();
@@ -93,7 +89,8 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
                     Preconditions.checkState( next != null, "schema has no elements for value " + split[0] );
                     Preconditions.checkState( next instanceof List, split[0] + " should be of type list" );
 
-                    final Object idValue = ( ( Optional ) getValue( split[1].replaceAll( "\\$|\\{|\\}", "" ) ) ).get();
+                    final Object idValue = ( ( Optional ) getValue( originalValues,
+                        split[1].replaceAll( "\\$|\\{|\\}", "" ) ) ).get();
 
                     final Optional matchedChild = ( ( List ) next ).stream()
                         .filter( o -> idValue.equals( ( ( Map ) o ).get( "id" ).toString() ) )
@@ -127,8 +124,9 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
         }
     }
 
-    private Object getValue( final String idName ) {
-        return values.entrySet().stream()
+    private static Object getValue( final LinkedHashMap<Reflection.Parameter, Object> originalValues,
+                                    final String idName ) {
+        return originalValues.entrySet().stream()
             .filter( p -> p.getKey().name().equals( idName ) )
             .findFirst()
             .get()

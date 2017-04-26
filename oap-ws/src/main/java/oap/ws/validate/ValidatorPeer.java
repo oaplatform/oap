@@ -23,8 +23,12 @@
  */
 package oap.ws.validate;
 
+import oap.reflect.Reflection;
+
+import java.util.LinkedHashMap;
+
 public interface ValidatorPeer {
-    ValidationErrors validate( Object value );
+    ValidationErrors validate( Object value, LinkedHashMap<Reflection.Parameter, Object> originalValues );
 
     enum Type {
         METHOD, PARAMETER
