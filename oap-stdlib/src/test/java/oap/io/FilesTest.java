@@ -76,33 +76,42 @@ public class FilesTest extends AbstractTest {
         Files.writeString( Env.tmpPath( "src/a/1.txt" ), "1" );
         Files.writeString( Env.tmpPath( "src/a/2.txt" ), "1" );
         Files.writeString( Env.tmpPath( "src/2.txt" ), "${x}" );
-        Files.setPosixPermissions( Env.tmpPath( "src/2.txt" ), OWNER_EXECUTE, OWNER_READ, OWNER_WRITE );
+        if( !Resources.IS_WINDOWS )
+            Files.setPosixPermissions( Env.tmpPath( "src/2.txt" ), OWNER_EXECUTE, OWNER_READ, OWNER_WRITE );
 
         Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "all" ) );
         assertFile( Env.tmpPath( "all/a/1.txt" ) ).hasContent( "1" );
         assertFile( Env.tmpPath( "all/a/2.txt" ) ).hasContent( "1" );
         assertFile( Env.tmpPath( "all/2.txt" ) ).hasContent( "${x}" );
-        assertEquals( Files.getPosixPermissions( Env.tmpPath( "all/2.txt" ) ),
-            Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
+
+        if( !Resources.IS_WINDOWS )
+            assertEquals( Files.getPosixPermissions( Env.tmpPath( "all/2.txt" ) ),
+                Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
 
         Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "selected" ), Lists.of( "**/2.txt" ), Lists.of() );
         assertFile( Env.tmpPath( "selected/a/2.txt" ) ).hasContent( "1" );
         assertFile( Env.tmpPath( "selected/2.txt" ) ).hasContent( "${x}" );
-        assertEquals( Files.getPosixPermissions( Env.tmpPath( "selected/2.txt" ) ),
-            Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
+
+        if( !Resources.IS_WINDOWS )
+            assertEquals( Files.getPosixPermissions( Env.tmpPath( "selected/2.txt" ) ),
+                Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
 
         Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "selected" ), Lists.of(), Lists.of( "**/1.txt" ) );
         assertFile( Env.tmpPath( "selected/a/2.txt" ) ).hasContent( "1" );
         assertFile( Env.tmpPath( "selected/2.txt" ) ).hasContent( "${x}" );
-        assertEquals( Files.getPosixPermissions( Env.tmpPath( "selected/2.txt" ) ),
-            Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
+
+        if( !Resources.IS_WINDOWS )
+            assertEquals( Files.getPosixPermissions( Env.tmpPath( "selected/2.txt" ) ),
+                Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
 
         Files.copyContent( Env.tmpPath( "src" ), Env.tmpPath( "filtered" ), Lists.of( "**/2.txt" ), Lists.of(), true,
             macro -> "x".equals( macro ) ? "y" : macro );
         assertFile( Env.tmpPath( "filtered/a/2.txt" ) ).hasContent( "1" );
         assertFile( Env.tmpPath( "filtered/2.txt" ) ).hasContent( "y" );
-        assertEquals( Files.getPosixPermissions( Env.tmpPath( "filtered/2.txt" ) ),
-            Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
+
+        if( !Resources.IS_WINDOWS )
+            assertEquals( Files.getPosixPermissions( Env.tmpPath( "filtered/2.txt" ) ),
+                Sets.of( OWNER_EXECUTE, OWNER_READ, OWNER_WRITE ) );
     }
 
     @Test

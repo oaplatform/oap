@@ -53,6 +53,8 @@ public abstract class AbstractTest {
         if( cleanupTemp ) {
             final long now = System.currentTimeMillis();
             boolean empty = true;
+            if( !java.nio.file.Files.exists( Env.tmp ) ) return;
+
             try( val stream = java.nio.file.Files.newDirectoryStream( Env.tmp ) ) {
                 val iterator = stream.iterator();
                 while( iterator.hasNext() ) {

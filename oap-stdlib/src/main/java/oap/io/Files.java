@@ -26,6 +26,7 @@ package oap.io;
 import com.google.common.hash.Hashing;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.archive.Archiver;
 import oap.io.IoStreams.Encoding;
 import oap.util.Lists;
 import oap.util.Sets;
@@ -39,6 +40,8 @@ import org.joda.time.DateTime;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -277,7 +280,9 @@ public final class Files {
             Path dst = destPath.resolve( included );
             if( filtering ) Files.writeString( dst, Strings.substitute( Files.readString( src ), mapper ) );
             else copy( src, Encoding.PLAIN, dst, Encoding.PLAIN );
-            setPosixPermissions( dst, getPosixPermissions( src ) );
+
+            if( !Resources.IS_WINDOWS )
+                setPosixPermissions( dst, getPosixPermissions( src ) );
         }
     }
 

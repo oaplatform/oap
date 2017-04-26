@@ -210,16 +210,28 @@ public class IoStreams {
     private static InputStream getInputStream( InputStream stream, Encoding encoding ) {
         switch( encoding ) {
             case GZIP:
-                return Archiver.gzip( stream );
+                try {
+                    return Archiver.gzip( stream );
+                } catch( Exception e ) {
+                    stream.close();
+                }
             case ZIP:
-                ZipInputStream zip = new ZipInputStream( stream );
-                if( zip.getNextEntry() == null )
-                    throw new IllegalArgumentException( "zip stream contains no entries" );
-                return zip;
+                try {
+                    ZipInputStream zip = new ZipInputStream( stream );
+                    if( zip.getNextEntry() == null )
+                        throw new IllegalArgumentException( "zip stream contains no entries" );
+                    return zip;
+                } catch( Exception e ) {
+                    stream.close();
+                }
             case PLAIN:
                 return stream;
             case LZ4:
-                return new KafkaLZ4BlockInputStream( stream );
+                try {
+                    return new KafkaLZ4BlockInputStream( stream );
+                } catch( Exception e ) {
+                    stream.close();
+                }
             default:
                 throw new IllegalArgumentException( "Unknown encoding " + encoding );
         }
