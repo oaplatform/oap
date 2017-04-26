@@ -92,12 +92,12 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
             .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"id\":1},{\"id\":2,\"b\":[{\"element\":\"some text\"}]}],\"id\":\"id1\"}" );
     }
 
-    public static class TestWS implements WsPartialValidateJson.PartialValidateJsonRootLoader<TestBean> {
+    public static class TestWS {
         @WsMethod( path = "/run/validation/1/{id}", method = POST )
         public TestBean validation1(
             @WsParam( from = PATH ) String id,
             @WsPartialValidateJson(
-                root = TestWS.class,
+                rootFinderMethod = "findBean",
                 idParameterName = "id",
                 path = "a",
                 schema = "/oap/ws/validate/WsValidateJsonTest/partial-schema.conf" )
@@ -112,7 +112,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
         public TestBean validation2(
             @WsParam( from = PATH ) String id,
             @WsPartialValidateJson(
-                root = TestWS.class,
+                rootFinderMethod = "findBean",
                 idParameterName = "id",
                 path = "a",
                 schema = "/oap/ws/validate/WsValidateJsonTest/partial-schema.conf",
@@ -129,7 +129,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
             @WsParam( from = PATH ) String id,
             @WsParam( from = PATH ) Integer bId,
             @WsPartialValidateJson(
-                root = TestWS.class,
+                rootFinderMethod = "findBean",
                 idParameterName = "id",
                 path = "a.${bId}.b",
                 schema = "/oap/ws/validate/WsValidateJsonTest/partial-schema.conf",
@@ -145,9 +145,9 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
             return testBean;
         }
 
-        @Override
-        public Optional<TestBean> get( String id ) {
-            return testBean.id.equals( id ) ? Optional.of( testBean ) : Optional.empty();
+        @SuppressWarnings( "unused" )
+        public TestBean findBean( String id ) {
+            return testBean.id.equals( id ) ? testBean : null;
         }
     }
 

@@ -31,8 +31,10 @@ import oap.json.Binder;
 import oap.json.JsonException;
 import oap.json.schema.JsonValidatorFactory;
 import oap.json.schema.ResourceSchemaStorage;
+import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.ws.WsClientException;
+import oap.ws.WsException;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -63,9 +65,11 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
             final String id = objectId instanceof Optional ?
                 ( ( Optional ) objectId ).get().toString() : objectId.toString();
 
-            final Object root = ( ( WsPartialValidateJson.PartialValidateJsonRootLoader<?> ) (
-                validate.root().isInstance( instance )
-                    ? instance : validate.root().newInstance() ) ).get( id ).orElse( null );
+            final Reflection.Method method = Reflect.reflect( instance.getClass() )
+                .method( validate.rootFinderMethod() )
+                .orElseThrow( () -> new WsException( "no such method " + validate.rootFinderMethod() ) );
+
+            final Object root = method.invoke( instance, id );
 
             if( root == null ) {
                 return ValidationErrors.empty();
