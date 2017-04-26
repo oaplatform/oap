@@ -23,10 +23,6 @@
  */
 package oap.ws.validate;
 
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import lombok.val;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 
@@ -34,21 +30,24 @@ import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-public class Validators {
-    private static ConcurrentHashMap<Key<Reflection.Parameter>, Validator> forParams = new ConcurrentHashMap<>();
-    private static ConcurrentHashMap<Key<Reflection.Method>, Validator> forMethods = new ConcurrentHashMap<>();
+public final class Validators {
 
-    public static Validator forParameter(
-        Map<Reflection.Parameter, Object> values,
-        Reflection.Method method,
-        Reflection.Parameter parameter,
-        Object instance,
-        boolean originalParameters ) {
-        return forParams.computeIfAbsent( new Key<>( parameter, instance, originalParameters ),
-            p -> getValidator( values, method, instance, parameter.annotations(),
-                ValidatorPeer.Type.PARAMETER, originalParameters ) );
+    private Validators() {
+    }
+
+    public static Validator forParameter( Map<Reflection.Parameter, Object> values,
+                                          Reflection.Method method, Reflection.Parameter parameter,
+                                          Object instance, boolean originalParameters ) {
+        return getValidator( values, method, instance, parameter.annotations(),
+                ValidatorPeer.Type.PARAMETER, originalParameters );
+     }
+
+    public static Validator forMethod( Map<Reflection.Parameter, Object> values,
+                                       Reflection.Method method, Object instance,
+                                       boolean originalParameters ) {
+        return getValidator( values, method, instance, method.annotations(),
+                ValidatorPeer.Type.METHOD, originalParameters );
     }
 
     private static Validator getValidator( Map<Reflection.Parameter, Object> values,
@@ -57,29 +56,14 @@ public class Validators {
                                            ValidatorPeer.Type type,
                                            boolean originalParameters ) {
         final Validator validator = new Validator();
-        for( val a : annotations )
-            Reflect.reflect( a.annotationType() ).findAnnotation( Peer.class )
-                .filter( va -> va.originalParameters() == originalParameters )
-                .ifPresent( va -> validator.peers.add( Reflect.newInstance( va.value(), a, values, method, instance, type ) ) );
+        for( final Annotation annotation : annotations )
+            Reflect.reflect( annotation.annotationType() ).findAnnotation( Peer.class )
+                .filter( peer -> peer.originalParameters() == originalParameters )
+                .ifPresent( peer -> validator.peers.add(
+                    Reflect.newInstance( peer.value(), annotation, values, method, instance, type ) )
+                );
+
         return validator;
-    }
-
-    public static Validator forMethod( Map<Reflection.Parameter, Object> values,
-                                       Reflection.Method method, Object instance,
-                                       boolean originalParameters ) {
-        return forMethods.computeIfAbsent( new Key<>( method, instance, originalParameters ),
-            p -> getValidator( values, method, instance, method.annotations(),
-                ValidatorPeer.Type.METHOD, originalParameters ) );
-
-    }
-
-    @ToString
-    @EqualsAndHashCode
-    @AllArgsConstructor
-    private static class Key<T> {
-        public final T parameter;
-        public final Object instance;
-        public final boolean originalParameters;
     }
 
     public static class Validator {

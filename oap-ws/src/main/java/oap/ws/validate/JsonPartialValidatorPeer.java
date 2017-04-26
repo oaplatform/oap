@@ -135,8 +135,4 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
             .getValue();
     }
 
-    public static void main( String[] args ) {
-        System.out.println(Binder.json.marshal( Binder.json.clone( null ) ));
-    }
-
 }
