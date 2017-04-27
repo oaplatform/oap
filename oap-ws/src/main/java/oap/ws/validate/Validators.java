@@ -23,56 +23,68 @@
  */
 package oap.ws.validate;
 
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public final class Validators {
+public class Validators {
+    private static ConcurrentHashMap<Key<Reflection.Parameter>, Validator> forParams = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<Key<Reflection.Method>, Validator> forMethods = new ConcurrentHashMap<>();
 
-    private Validators() {
+    public static Validator forParameter( Reflection.Method method,
+                                          Reflection.Parameter parameter,
+                                          Object instance,
+                                          boolean originalParameters ) {
+        return forParams.computeIfAbsent( new Key<>( parameter, instance, originalParameters ),
+            p -> getValidator( method, instance, parameter.annotations(),
+                ValidatorPeer.Type.PARAMETER, originalParameters ) );
     }
 
-    public static Validator forParameter( Map<Reflection.Parameter, Object> values,
-                                          Reflection.Method method, Reflection.Parameter parameter,
-                                          Object instance, boolean originalParameters ) {
-        return getValidator( values, method, instance, parameter.annotations(),
-                ValidatorPeer.Type.PARAMETER, originalParameters );
-     }
-
-    public static Validator forMethod( Map<Reflection.Parameter, Object> values,
-                                       Reflection.Method method, Object instance,
+    public static Validator forMethod( Reflection.Method method,
+                                       Object instance,
                                        boolean originalParameters ) {
-        return getValidator( values, method, instance, method.annotations(),
-                ValidatorPeer.Type.METHOD, originalParameters );
+        return forMethods.computeIfAbsent( new Key<>( method, instance, originalParameters ),
+            p -> getValidator( method, instance, method.annotations(),
+                ValidatorPeer.Type.METHOD, originalParameters ) );
+
     }
 
-    private static Validator getValidator( Map<Reflection.Parameter, Object> values,
-                                           Reflection.Method method,
+    private static Validator getValidator( Reflection.Method method,
                                            Object instance, List<Annotation> annotations,
                                            ValidatorPeer.Type type,
                                            boolean originalParameters ) {
         final Validator validator = new Validator();
-        for( final Annotation annotation : annotations )
+        for( Annotation annotation : annotations )
             Reflect.reflect( annotation.annotationType() ).findAnnotation( Peer.class )
-                .filter( peer -> peer.originalParameters() == originalParameters )
-                .ifPresent( peer -> validator.peers.add(
-                    Reflect.newInstance( peer.value(), annotation, values, method, instance, type ) )
-                );
-
+                .filter( va -> va.originalParameters() == originalParameters )
+                .ifPresent( va -> validator.peers.add( Reflect.newInstance( va.value(), annotation, method, instance, type ) ) );
         return validator;
+    }
+
+    @ToString
+    @EqualsAndHashCode
+    @AllArgsConstructor
+    private static class Key<T> {
+        public final T parameter;
+        public final Object instance;
+        public final boolean originalParameters;
     }
 
     public static class Validator {
         private final List<ValidatorPeer> peers = new ArrayList<>();
 
-        public ValidationErrors validate( Object value ) {
+        public ValidationErrors validate( Object value, LinkedHashMap<Reflection.Parameter, Object> originalValues ) {
             ValidationErrors total = ValidationErrors.empty();
             for( ValidatorPeer peer : peers ) {
-                ValidationErrors result = peer.validate( value );
+                ValidationErrors result = peer.validate( value, originalValues );
                 if( result.isFailed() && !result.hasDefaultCode() ) return result;
                 total.merge( result );
             }

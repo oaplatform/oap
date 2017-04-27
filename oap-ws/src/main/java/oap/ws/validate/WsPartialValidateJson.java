@@ -28,7 +28,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.Optional;
 
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.PARAMETER )
@@ -36,15 +35,11 @@ import java.util.Optional;
 public @interface WsPartialValidateJson {
     String schema();
 
-    Class<? extends PartialValidateJsonRootLoader<?>> root();
+    String methodName();
 
     String idParameterName();
 
     String path();
 
     boolean ignoreRequired() default false;
-
-    interface PartialValidateJsonRootLoader<T> {
-        Optional<T> get( String id );
-    }
 }

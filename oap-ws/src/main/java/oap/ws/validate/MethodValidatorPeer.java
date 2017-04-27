@@ -31,6 +31,7 @@ import oap.util.Stream;
 import oap.ws.WsException;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,7 +42,6 @@ public class MethodValidatorPeer implements ValidatorPeer {
     private final List<Validator> validators;
 
     public MethodValidatorPeer( WsValidate validate,
-                                Map<Reflection.Parameter, Object> values,
                                 Reflection.Method targetMethod, Object instance, Type type ) {
         if( type == Type.PARAMETER )
             this.validators = Stream.of( validate.value() )
@@ -54,7 +54,7 @@ public class MethodValidatorPeer implements ValidatorPeer {
     }
 
     @Override
-    public ValidationErrors validate( Object value ) {
+    public ValidationErrors validate( Object value, LinkedHashMap<Reflection.Parameter, Object> originalValues ) {
         return Stream.of( validators )
             .foldLeft( ValidationErrors.empty(),
                 ( e, v ) -> e.merge( v.validate( value ) ) );
