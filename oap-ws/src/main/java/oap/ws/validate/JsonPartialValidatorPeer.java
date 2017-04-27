@@ -47,6 +47,7 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
     private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
     private final JsonValidatorFactory factory;
     private final WsPartialValidateJson validate;
+    private final Reflection.Method method;
     private final Object instance;
 
     public JsonPartialValidatorPeer( WsPartialValidateJson validate,
@@ -54,6 +55,9 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
         factory = JsonValidatorFactory.schema( validate.schema(), storage );
         this.validate = validate;
         this.instance = instance;
+        this.method = Reflect.reflect( instance.getClass() )
+            .method( validate.methodName() )
+            .orElseThrow( () -> new WsException( "No such method " + validate.methodName() ) );
     }
 
     @Override
@@ -64,10 +68,6 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
 
             final String id = objectId instanceof Optional ?
                 ( ( Optional ) objectId ).get().toString() : objectId.toString();
-
-            final Reflection.Method method = Reflect.reflect( instance.getClass() )
-                .method( validate.methodName() )
-                .orElseThrow( () -> new WsException( "No such method " + validate.methodName() ) );
 
             final Object root = method.invoke( instance, id );
 
