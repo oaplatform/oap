@@ -97,7 +97,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
         public TestBean validation1(
             @WsParam( from = PATH ) String id,
             @WsPartialValidateJson(
-                rootFinderMethod = "findBean",
+                methodName = "findBean",
                 idParameterName = "id",
                 path = "a",
                 schema = "/oap/ws/validate/WsValidateJsonTest/partial-schema.conf" )
@@ -112,7 +112,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
         public TestBean validation2(
             @WsParam( from = PATH ) String id,
             @WsPartialValidateJson(
-                rootFinderMethod = "findBean",
+                methodName = "findBean",
                 idParameterName = "id",
                 path = "a",
                 schema = "/oap/ws/validate/WsValidateJsonTest/partial-schema.conf",
@@ -129,7 +129,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
             @WsParam( from = PATH ) String id,
             @WsParam( from = PATH ) Integer bId,
             @WsPartialValidateJson(
-                rootFinderMethod = "findBean",
+                methodName = "findBean",
                 idParameterName = "id",
                 path = "a.${bId}.b",
                 schema = "/oap/ws/validate/WsValidateJsonTest/partial-schema.conf",

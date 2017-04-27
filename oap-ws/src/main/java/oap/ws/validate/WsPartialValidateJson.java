@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
 public @interface WsPartialValidateJson {
     String schema();
 
-    String rootFinderMethod();
+    String methodName();
 
     String idParameterName();
 

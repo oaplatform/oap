@@ -66,8 +66,8 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
                 ( ( Optional ) objectId ).get().toString() : objectId.toString();
 
             final Reflection.Method method = Reflect.reflect( instance.getClass() )
-                .method( validate.rootFinderMethod() )
-                .orElseThrow( () -> new WsException( "no such method " + validate.rootFinderMethod() ) );
+                .method( validate.methodName() )
+                .orElseThrow( () -> new WsException( "No such method " + validate.methodName() ) );
 
             final Object root = method.invoke( instance, id );
 
