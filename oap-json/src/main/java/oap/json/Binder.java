@@ -50,11 +50,11 @@ import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.util.Dates;
-import oap.util.Strings;
 import oap.util.Try;
 import org.joda.time.ReadableInstant;
 
@@ -191,11 +191,19 @@ public class Binder {
     }
 
     public <T> T unmarshal( Class<T> clazz, Path path ) throws JsonException {
-        return unmarshal( clazz, Files.readString( path ) );
+        try( val in = IoStreams.in( path ) ) {
+            return unmarshal( clazz, in );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
     }
 
     public <T> T unmarshal( Class<T> clazz, URL url ) throws JsonException {
-        return unmarshal( clazz, Strings.readString( url ) );
+        try( val in = url.openStream() ) {
+            return unmarshal( clazz, in );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -217,11 +225,19 @@ public class Binder {
     }
 
     public <T> T unmarshal( TypeReference<T> ref, Path path ) throws JsonException {
-        return unmarshal( ref, Files.readString( path ) );
+        try( val in = IoStreams.in( path ) ) {
+            return unmarshal( ref, in );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
     }
 
     public <T> T unmarshal( TypeReference<T> ref, URL url ) {
-        return unmarshal( ref, Strings.readString( url ) );
+        try( val in = url.openStream() ) {
+            return unmarshal( ref, in );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -274,15 +290,18 @@ public class Binder {
 
     public <T> T unmarshalResource( Class<?> context, Class<T> clazz,
                                     String resourceJsonPath ) throws JsonException {
-        return Resources.readString( context, resourceJsonPath )
-            .map( json -> this.<T>unmarshal( clazz, json ) )
-            .orElseThrow( () -> new JsonException( "not found " + resourceJsonPath ) );
+        try( InputStream is = context.getResourceAsStream( resourceJsonPath ) ) {
+            if( is == null ) throw new JsonException( "not found " + resourceJsonPath );
+            return this.unmarshal( clazz, is );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
 
     }
 
     @SuppressWarnings( "unchecked" )
     public <T> T clone( T object ) throws JsonException {
-        return unmarshal( ( Class<T> ) object.getClass(), marshal( object ) );
+        return unmarshal( object.getClass(), marshal( object ) );
     }
 
     public void update( Object obj, Map<String, Object> values ) throws JsonException {
