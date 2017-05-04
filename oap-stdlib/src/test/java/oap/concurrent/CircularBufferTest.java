@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -39,19 +40,14 @@ import static org.testng.Assert.assertTrue;
 public class CircularBufferTest {
 
     @Test
-    public void testOldElementsAreRemoved() {
-        CircularBuffer<Integer> cb = new CircularBuffer<>( 3 );
-        cb.add( 0 );
-        cb.add( 1 );
-        cb.add( 2 );
-        cb.add( 3 );
-
-        List<Integer> elements = Arrays.asList( cb.getElements() );
-        assertEquals( 3, elements.size() );
-        assertTrue( elements.contains( 3 ) );
-        assertTrue( elements.contains( 2 ) );
-        assertTrue( elements.contains( 1 ) );
-        assertFalse( elements.contains( 0 ) );
+    public void cycle() {
+        CircularBuffer<Integer> buffer = new CircularBuffer<>( 3 );
+        buffer.add( 1 );
+        buffer.add( 2 );
+        assertThat( buffer.getElements() ).containsExactly( 1, 2 );
+        buffer.add( 3 );
+        buffer.add( 4 );
+        assertThat( buffer.getElements() ).containsExactly( 2, 3, 4 );
     }
 
 }

@@ -25,29 +25,33 @@
 package oap.concurrent;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by anton on 8/22/16.
  */
 public class CircularBuffer<T> {
     private final T[] data;
-    private final AtomicInteger index;
-    private final int size;
+    private int index = 0;
+    private boolean cycled = false;
 
     @SuppressWarnings( "unchecked" )
     public CircularBuffer( int size ) {
-        this.size = size;
-        index = new AtomicInteger();
-        data = ( T[] ) new Object[size];
+        this.data = ( T[] ) new Object[size];
     }
 
-    public void add( T element ) {
-        final int idx = index.updateAndGet( ( i ) -> i + 1 >= size ? 0 : i + 1 );
-        data[idx] = element;
+    public synchronized void add( T element ) {
+        if( !cycled && index == data.length ) cycled = true;
+        this.data[index == data.length ? index = 0 : index] = element;
+        index++;
     }
 
-    public T[] getElements() {
-        return Arrays.copyOf( data, size );
+    @SuppressWarnings( "unchecked" )
+    public synchronized T[] getElements() {
+        if( cycled ) {
+            T[] result = ( T[] ) new Object[data.length];
+            System.arraycopy( data, index, result, 0, data.length - index );
+            System.arraycopy( data, 0, result, data.length - index, index );
+            return result;
+        } else return Arrays.copyOf( data, index );
     }
 }
