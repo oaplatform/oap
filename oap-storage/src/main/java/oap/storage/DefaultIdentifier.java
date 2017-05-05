@@ -73,9 +73,12 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
             if( id.length() > size ) {
                 id = id.substring( 0, size );
             } else {
-                for( int i = id.length(); i <= size; i++ ) {
-                    id += "X";
+                final StringBuilder idBuilder = new StringBuilder( id );
+                for( int i = idBuilder.length(); i <= size; i++ ) {
+                    idBuilder.append( "X" );
                 }
+
+                id = idBuilder.toString();
             }
 
             id = resolveConflicts( id, storage );
