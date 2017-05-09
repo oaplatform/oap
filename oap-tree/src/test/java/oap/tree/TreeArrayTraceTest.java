@@ -39,7 +39,7 @@ public class TreeArrayTraceTest {
     @Test
     public void testArrayTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", false ) )
+            .<String>tree( ARRAY_LONG( "d1" ) )
             .load( l(
                 v( "1", l( a( true, 1L, 2L ) ) ),
                 v( "2", l( a( true, 1L, 2L ) ) ),
@@ -67,7 +67,7 @@ public class TreeArrayTraceTest {
     @Test
     public void testArrayExcludeTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", false ) )
+            .<String>tree( ARRAY_LONG( "d1" ) )
             .load( l(
                 v( "1", l( a( false, 1L, 2L ) ) ),
                 v( "2", l( a( false, 2L ) ) ),
@@ -96,7 +96,7 @@ public class TreeArrayTraceTest {
     @Test
     public void testRequired() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", true ) )
+            .<String>tree( ARRAY_LONG( "d1" ) )
             .load( l(
                 v( "1", l( a( true, 1L, 2L ) ) ),
                 v( "2", l( a( true, 1L, 2L ) ) ),
@@ -104,7 +104,7 @@ public class TreeArrayTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l(l() ) ) ).isEqualTo( "query = [d1:<NULL>]\n" +
+        assertThat( tree.trace( l(l() ) ) ).isEqualTo( "query = [d1:UNKNOWN]\n" +
             "Expecting:\n" +
             "1: \n" +
             "    d1/0: [1,2] CONTAINS []\n" +

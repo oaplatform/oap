@@ -27,6 +27,7 @@ package oap.tree;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
+import static oap.testng.Asserts.assertString;
 import static oap.tree.Dimension.ENUM;
 import static oap.tree.Dimension.LONG;
 import static oap.tree.Dimension.OperationType.CONTAINS;
@@ -49,7 +50,7 @@ public class TreeTraceTest {
     @Test
     public void testTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, false ), ENUM( "d2", TestEnum.class, CONTAINS, false ) )
+            .<String>tree( LONG( "d1", CONTAINS ), ENUM( "d2", TestEnum.class, CONTAINS ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L, Test1 ), v( "2", 2L, Test2 ), v( "3", 1L, Test3 ), v( "33", 1L, Test3 ) ) );
 
@@ -106,7 +107,7 @@ public class TreeTraceTest {
     @Test
     public void testTraceHash() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, false ), ENUM( "d2", TestEnum.class, CONTAINS, false ) )
+            .<String>tree( LONG( "d1", CONTAINS ), ENUM( "d2", TestEnum.class, CONTAINS ) )
             .withHashFillFactor( 0 )
             .load( l( v( "1", 1L, Test1 ), v( "2", 2L, Test2 ), v( "3", 1L, Test3 ), v( "33", 1L, Test3 ) ) );
 
@@ -163,26 +164,26 @@ public class TreeTraceTest {
     @Test
     public void testTraceUNKNOWN() {
         final Tree<String> tree = Tree
-            .<String>tree( STRING( "d1", CONTAINS, false ) )
+            .<String>tree( STRING( "d1", CONTAINS ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", "str" ) ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( "tt" ) ) ).isEqualTo( "query = [d1:tt]\n" +
+        assertString( tree.trace( l( "tt" ) ) ).isEqualTo( "query = [d1:tt]\n" +
             "Expecting:\n" +
             "1: \n" +
             "    d1/0: [str] CONTAINS tt" );
-        assertThat( tree.trace( l( l( "tt", "bb" ) ) ) ).isEqualTo( "query = [d1:[tt, bb]]\n" +
+        assertString( tree.trace( l( l( "tt", "bb" ) ) ) ).isEqualTo( "query = [d1:[tt, bb]]\n" +
             "Expecting:\n" +
             "1: \n" +
-            "    d1/0: [str] CONTAINS [tt, bb]" );
+            "    d1/0: [str] CONTAINS [tt,bb]" );
     }
 
     @Test
     public void testTraceOrQuery() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, false ) )
+            .<String>tree( LONG( "d1", CONTAINS ) )
             .load( l( v( "1", 1L ) ) );
 
         System.out.println( tree.toString() );
@@ -194,7 +195,7 @@ public class TreeTraceTest {
     @Test
     public void testTraceExclude() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", NOT_CONTAINS, false ) )
+            .<String>tree( LONG( "d1", NOT_CONTAINS ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
 
@@ -219,56 +220,58 @@ public class TreeTraceTest {
     }
 
     @Test
-    public void testTraceAny() {
+    public void testTraceEmpty() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, false ), LONG( "d2", CONTAINS, false ) )
+            .<String>tree( LONG( "d1", CONTAINS ), LONG( "d2", CONTAINS ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", null, 99L ) ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "query = [d1:<ANY>,d2:1]\n" +
+        assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "query = [d1:UNKNOWN,d2:1]\n" +
             "Expecting:\n" +
             "1: \n" +
             "    d2/1: [99] CONTAINS 1" );
     }
 
     @Test
-    public void testTraceQueryAnyAndQueryRequired() {
+    public void testTraceQueryEmpty() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, true ) )
+            .<String>tree( LONG( "d1", CONTAINS ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L ) ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( ( Long ) null ) ) ).isEqualTo( "query = [d1:<NULL>]\n" +
+        assertThat( tree.trace( l( ( Long ) null ) ) ).isEqualTo( "query = [d1:UNKNOWN]\n" +
             "Expecting:\n" +
             "1: \n" +
-            "    d1/0: [1] CONTAINS null" );
+            "    d1/0: [1] CONTAINS UNKNOWN" );
     }
 
     @Test
     public void testTraceEmptyQuery() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, false ), LONG( "d2", CONTAINS, false ) )
+            .<String>tree( LONG( "d1", CONTAINS ), LONG( "d2", CONTAINS ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L, 2L ), v( "2", 2L, 2L ) ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( l(), l( 3L ) ) ) ).isEqualTo( "query = [d1:<ANY>,d2:[3]]\n" +
+        assertThat( tree.trace( l( l(), l( 3L ) ) ) ).isEqualTo( "query = [d1:UNKNOWN,d2:[3]]\n" +
             "Expecting:\n" +
             "1: \n" +
+            "    d1/0: [1] CONTAINS []\n" +
             "    d2/1: [2] CONTAINS [3]\n" +
             "2: \n" +
+            "    d1/0: [2] CONTAINS []\n" +
             "    d2/1: [2] CONTAINS [3]" );
     }
 
     @Test
     public void testGREATER_THEN_OR_EQUAL_TO() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", GREATER_THEN_OR_EQUAL_TO, false ) )
+            .<String>tree( LONG( "d1", GREATER_THEN_OR_EQUAL_TO ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L ), v( "5", 5L ) ) );
 
@@ -290,7 +293,7 @@ public class TreeTraceTest {
     @Test
     public void testTraceStatistics() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, false ), ENUM( "d2", TestEnum.class, CONTAINS, false ) )
+            .<String>tree( LONG( "d1", CONTAINS ), ENUM( "d2", TestEnum.class, CONTAINS ) )
             .withHashFillFactor( 1 )
             .load( l(
                 v( "1", 1L, Test1 ),

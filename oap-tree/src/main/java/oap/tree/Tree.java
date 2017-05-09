@@ -28,9 +28,11 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.val;
 import oap.tree.Dimension.OperationType;
+import oap.util.Lists;
 import oap.util.MemoryMeter;
 import oap.util.Pair;
 import oap.util.Stream;
+import oap.util.Strings;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.ArrayList;
@@ -65,7 +67,9 @@ import static oap.util.Pair.__;
  */
 public class Tree<T> {
     public static final long ANY = Long.MIN_VALUE;
+    public static final long UNKNOWN_VALUE = Long.MAX_VALUE;
     public static final long[] ANY_AS_ARRAY = new long[0];
+    public static final long[] UNKNOWN_AS_ARRAY = new long[] { UNKNOWN_VALUE };
 
     TreeNode<T> root = new Leaf<>( emptyList() );
     private List<Dimension> dimensions;
@@ -202,7 +206,7 @@ public class Tree<T> {
         for( int i = 0; i < dimensions.size(); i++ ) {
             final Object value = query.get( i );
             final Dimension dimension = dimensions.get( i );
-            longData[i] = dimension.getOrDefault( value );
+            longData[i] = dimension.getOrDefault( value, UNKNOWN_AS_ARRAY );
         }
 
         return longData;
@@ -245,7 +249,7 @@ public class Tree<T> {
 
             final Map<Integer, List<ValueData<T>>> map = splitDimension.hash
                 .stream()
-                .collect( groupingBy( d -> ( int ) dimension.getOrDefault( d.data.get( splitDimension.dimension ) )[0] ) );
+                .collect( groupingBy( d -> ( int ) dimension.getOrDefault( d.data.get( splitDimension.dimension ), ANY_AS_ARRAY )[0] ) );
 
             final int max = map.keySet().stream().mapToInt( l -> l ).max().getAsInt();
 
@@ -294,7 +298,7 @@ public class Tree<T> {
                     final Array array = ( Array ) value;
                     if( !array.isEmpty() ) uniqueArray.add( array );
                 } else {
-                    final long[] longValue = dimension.getOrDefault( value );
+                    final long[] longValue = dimension.getOrDefault( value, ANY_AS_ARRAY );
                     if( longValue != ANY_AS_ARRAY ) unique.add( longValue[0] );
                 }
 
@@ -326,13 +330,13 @@ public class Tree<T> {
             return new SplitDimension( finalSplitDimension, ANY, emptyList(), emptyList(), emptyList(), any, sets, emptyList() );
         } else {
 
-            val partition_any_other = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) ) == ANY_AS_ARRAY );
+            val partition_any_other = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY ) == ANY_AS_ARRAY );
 
             final List<ValueData<T>> sorted = partition_any_other._2
-                .sorted( Comparator.comparingLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) )[0] ) )
+                .sorted( Comparator.comparingLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] ) )
                 .collect( toList() );
 
-            final long[] unique = sorted.stream().mapToLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) )[0] ).distinct().toArray();
+            final long[] unique = sorted.stream().mapToLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] ).distinct().toArray();
 
             if( dimension.operationType == CONTAINS && ( double ) unique.length / uniqueCount[finalSplitDimension] > hashFillFactor ) {
                 final List<ValueData<T>> any = Stream.of( partition_any_other._1 ).collect( toList() );
@@ -342,8 +346,10 @@ public class Tree<T> {
 
                 final long splitValue = unique[unique.length / 2];
 
-                val partition_left_eq_right = Stream.of( sorted ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) )[0] < splitValue );
-                val partition_eq_right = partition_left_eq_right._2.partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ) )[0] == splitValue );
+                val partition_left_eq_right = Stream.of( sorted )
+                    .partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] < splitValue );
+                val partition_eq_right = partition_left_eq_right._2
+                    .partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] == splitValue );
 
                 final List<ValueData<T>> left = partition_left_eq_right._1.collect( toList() );
                 final List<ValueData<T>> right = partition_eq_right._2.collect( toList() );
@@ -375,17 +381,9 @@ public class Tree<T> {
 
             final Dimension dimension = dimensions.get( n.dimension );
 
-            if( qValue == ANY_AS_ARRAY ) {
-                if( dimension.queryRequired ) return;
+            if( qValue == ANY_AS_ARRAY ) return;
 
-                find( n.equal, query, result );
-                find( n.right, query, result );
-                find( n.left, query, result );
-
-                for( ArrayBitSet set : n.sets ) {
-                    find( set.equal, query, result );
-                }
-            } else if( !n.sets.isEmpty() ) {
+            if( !n.sets.isEmpty() ) {
                 for( ArrayBitSet set : n.sets ) {
                     if( set.find( qValue ) ) {
                         find( set.equal, query, result );
@@ -409,18 +407,12 @@ public class Tree<T> {
             final Dimension dimension = dimensions.get( n.dimension );
 
             final TreeNode<T>[] hash = n.hash;
-            if( qValue == ANY_AS_ARRAY ) {
-                if( dimension.queryRequired ) return;
+            if( qValue == ANY_AS_ARRAY ) return;
 
-                for( int i = 0; i < hash.length; i++ ) {
-                    find( hash[i], query, result );
-                }
-            } else {
-                for( long aQValue : qValue ) {
-                    final int index = ( int ) aQValue;
-                    if( index < hash.length ) {
-                        find( hash[index], query, result );
-                    }
+            for( long aQValue : qValue ) {
+                final int index = ( int ) aQValue;
+                if( index < hash.length ) {
+                    find( hash[index], query, result );
                 }
             }
         }
@@ -453,8 +445,7 @@ public class Tree<T> {
             || ( o instanceof Optional<?> && !( ( Optional<?> ) o ).isPresent() )
             || ( o instanceof List<?> && ( ( List<?> ) o ).isEmpty() )
             ) {
-            if( dimension.queryRequired ) return "<NULL>";
-            else return "<ANY>";
+            return Strings.UNKNOWN;
         }
         return o.toString();
     }
@@ -496,7 +487,17 @@ public class Tree<T> {
     }
 
     private String queryToString( List<?> query, int key ) {
-        return String.valueOf( query.get( key ) );
+        final Object value = query.get( key );
+        if( value instanceof List<?> ) {
+            return ( ( List<?> ) value ).stream().map( v -> v == null ? Strings.UNKNOWN
+                : String.valueOf( v ) ).collect( joining( ",", "[", "]" ) );
+        } else {
+            return queryValueToString( value );
+        }
+    }
+
+    private String queryValueToString( Object value ) {
+        return value == null ? Strings.UNKNOWN : String.valueOf( value );
     }
 
     private void trace( TreeNode<T> node, long[][] query,
@@ -529,14 +530,14 @@ public class Tree<T> {
             final Dimension dimension = dimensions.get( n.dimension );
 
             if( qValue == ANY_AS_ARRAY ) {
-                trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, !dimension.queryRequired ), success && !dimension.queryRequired );
-                trace( n.right, query, result, buffer.clone(), success && !dimension.queryRequired );
-                trace( n.left, query, result, buffer.clone(), success && !dimension.queryRequired );
+                trace( n.equal, query, result, buffer.cloneWith( n.dimension, n.eqValue, dimension.operationType, false ), false );
+                trace( n.right, query, result, buffer.clone(), false );
+                trace( n.left, query, result, buffer.clone(), false );
 
                 for( ArrayBitSet set : n.sets ) {
                     trace( set.equal, query, result,
-                        buffer.cloneWith( n.dimension, set.bitSet.stream(), set.include ? CONTAINS : NOT_CONTAINS, !dimension.queryRequired ),
-                        success && !dimension.queryRequired );
+                        buffer.cloneWith( n.dimension, set.bitSet.stream(),
+                            set.include ? CONTAINS : NOT_CONTAINS, false ), false );
                 }
             } else if( !n.sets.isEmpty() ) {
                 for( ArrayBitSet set : n.sets ) {
@@ -566,7 +567,7 @@ public class Tree<T> {
 
             if( qValue == ANY_AS_ARRAY ) {
                 for( TreeNode<T> s : n.hash ) {
-                    trace( s, query, result, buffer.clone(), success && !dimension.queryRequired );
+                    trace( s, query, result, buffer.clone(), false );
                 }
             } else {
                 for( int i = 0; i < n.hash.length; i++ ) {
@@ -632,8 +633,7 @@ public class Tree<T> {
             node.print( out );
             out.append( "\n" );
 
-            final List<Pair<String, TreeNode<T>>> children =
-                node.children().stream().filter( p -> p._2 != null ).collect( toList() );
+            val children = Lists.filter( node.children(), p -> p._2 != null );
 
             for( int i = 0; i < children.size(); i++ ) {
                 final Pair<String, TreeNode<T>> child = children.get( i );
@@ -786,14 +786,14 @@ public class Tree<T> {
         public final boolean find( long[] qValue ) {
             if( include ) {
                 for( long value : qValue ) {
-                    if( bitSet.get( ( int ) value ) ) return true;
+                    if( value != Tree.UNKNOWN_VALUE && bitSet.get( ( int ) value ) ) return true;
                 }
 
                 return false;
             }
 
             for( long value : qValue ) {
-                if( bitSet.get( ( int ) value ) ) return false;
+                if( value == Tree.UNKNOWN_VALUE || bitSet.get( ( int ) value ) ) return false;
             }
 
             return true;

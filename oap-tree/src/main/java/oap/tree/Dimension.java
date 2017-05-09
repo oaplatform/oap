@@ -26,7 +26,6 @@ package oap.tree;
 
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import lombok.ToString;
 import oap.util.StringBits;
 
 import java.util.Arrays;
@@ -36,8 +35,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-
-import static oap.tree.Tree.ANY_AS_ARRAY;
 
 /**
  * Created by igor.petrenko on 27.12.2016.
@@ -50,25 +47,23 @@ public abstract class Dimension {
 
     public final String name;
     public final int priority;
-    public boolean queryRequired;
     public OperationType operationType;
 
-    public Dimension( @NonNull String name, OperationType operationType, boolean queryRequired, int priority ) {
+    public Dimension( @NonNull String name, OperationType operationType, int priority ) {
         this.name = name;
         this.operationType = operationType;
-        this.queryRequired = queryRequired;
         this.priority = priority;
     }
 
-    public static Dimension ARRAY_ENUM( String name, Class<? extends Enum> clazz, boolean queryRequired ) {
-        return ENUM( name, clazz, null, queryRequired );
+    public static Dimension ARRAY_ENUM( String name, Class<? extends Enum> clazz ) {
+        return ENUM( name, clazz, null );
     }
 
-    public static Dimension ENUM( String name, Class<? extends Enum> clazz, OperationType operationType, boolean queryRequired ) {
-        return ENUM( name, clazz, operationType, queryRequired, PRIORITY_DEFAULT );
+    public static Dimension ENUM( String name, Class<? extends Enum> clazz, OperationType operationType ) {
+        return ENUM( name, clazz, operationType, PRIORITY_DEFAULT );
     }
 
-    public static Dimension ENUM( String name, Class<? extends Enum> clazz, OperationType operationType, boolean queryRequired, int priority ) {
+    public static Dimension ENUM( String name, Class<? extends Enum> clazz, OperationType operationType, int priority ) {
         final Enum[] enumConstantsSortedByName = clazz.getEnumConstants();
         Arrays.sort( enumConstantsSortedByName, Comparator.comparing( Enum::name ) );
 
@@ -80,7 +75,7 @@ public abstract class Dimension {
             ordinalToSorted[enumConstantsSortedByName[i].ordinal()] = i;
         }
 
-        return new Dimension( name, operationType, queryRequired, priority ) {
+        return new Dimension( name, operationType, priority ) {
             @Override
             public String toString( long value ) {
                 return sortedToName[( int ) value];
@@ -99,19 +94,19 @@ public abstract class Dimension {
         };
     }
 
-    public static Dimension ARRAY_STRING( String name, boolean queryRequired ) {
-        return STRING( name, null, queryRequired );
+    public static Dimension ARRAY_STRING( String name ) {
+        return STRING( name, null );
     }
 
-    public static Dimension STRING( String name, OperationType operationType, boolean queryRequired ) {
-        return STRING( name, operationType, queryRequired, PRIORITY_DEFAULT );
+    public static Dimension STRING( String name, OperationType operationType ) {
+        return STRING( name, operationType, PRIORITY_DEFAULT );
 
     }
 
-    public static Dimension STRING( String name, OperationType operationType, boolean queryRequired, int priority ) {
+    public static Dimension STRING( String name, OperationType operationType, int priority ) {
         final StringBits bits = new StringBits();
 
-        return new Dimension( name, operationType, queryRequired, priority ) {
+        return new Dimension( name, operationType, priority ) {
             @Override
             public String toString( long value ) {
                 return bits.valueOf( value );
@@ -131,16 +126,16 @@ public abstract class Dimension {
         };
     }
 
-    public static Dimension ARRAY_LONG( String name, boolean queryRequired ) {
-        return LONG( name, null, queryRequired );
+    public static Dimension ARRAY_LONG( String name ) {
+        return LONG( name, null );
     }
 
-    public static Dimension LONG( String name, OperationType operationType, boolean queryRequired ) {
-        return LONG( name, operationType, queryRequired, PRIORITY_DEFAULT );
+    public static Dimension LONG( String name, OperationType operationType ) {
+        return LONG( name, operationType, PRIORITY_DEFAULT );
     }
 
-    public static Dimension LONG( String name, OperationType operationType, boolean queryRequired, int priority ) {
-        return new Dimension( name, operationType, queryRequired, priority ) {
+    public static Dimension LONG( String name, OperationType operationType, int priority ) {
+        return new Dimension( name, operationType, priority ) {
             @Override
             public String toString( long value ) {
                 return String.valueOf( value );
@@ -159,16 +154,16 @@ public abstract class Dimension {
         };
     }
 
-    public static Dimension ARRAY_BOOLEAN( String name, boolean queryRequired ) {
-        return BOOLEAN( name, null, queryRequired );
+    public static Dimension ARRAY_BOOLEAN( String name ) {
+        return BOOLEAN( name, null );
     }
 
-    public static Dimension BOOLEAN( String name, OperationType operationType, boolean queryRequired ) {
-        return BOOLEAN( name, operationType, queryRequired, PRIORITY_DEFAULT );
+    public static Dimension BOOLEAN( String name, OperationType operationType ) {
+        return BOOLEAN( name, operationType, PRIORITY_DEFAULT );
     }
 
-    public static Dimension BOOLEAN( String name, OperationType operationType, boolean queryRequired, int priority ) {
-        return new Dimension( name, operationType, queryRequired, priority ) {
+    public static Dimension BOOLEAN( String name, OperationType operationType, int priority ) {
+        return new Dimension( name, operationType, priority ) {
             @Override
             public String toString( long value ) {
                 return value == 0 ? "false" : "true";
@@ -197,17 +192,17 @@ public abstract class Dimension {
 
     protected abstract void _init( Stream<Object> value );
 
-    public final long[] getOrDefault( Object value ) {
-        if( value == null ) return ANY_AS_ARRAY;
+    public final long[] getOrDefault( Object value, long[] emptyValue ) {
+        if( value == null ) return emptyValue;
 
         if( value instanceof Optional<?> ) {
             Optional<?> optValue = ( Optional<?> ) value;
-            return optValue.map( this::getOrDefault ).orElse( ANY_AS_ARRAY );
+            return optValue.map( v -> getOrDefault( v, emptyValue ) ).orElse( emptyValue );
         }
 
         if( value instanceof Collection ) {
             final Collection<?> list = ( Collection<?> ) value;
-            return list.isEmpty() ? ANY_AS_ARRAY : list.stream().mapToLong( this::_getOrDefault ).sorted().toArray();
+            return list.isEmpty() ? emptyValue : list.stream().mapToLong( this::_getOrDefault ).sorted().toArray();
         } else {
             return new long[] { _getOrDefault( value ) };
         }
