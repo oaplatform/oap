@@ -64,6 +64,8 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
     public void testValidation1() {
         assertPost( HTTP_PREFIX + "/test/run/validation/1/id1", "{\"id\":1}", APPLICATION_JSON )
             .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"id\":1}],\"id\":\"id1\"}" );
+        assertPost( HTTP_PREFIX + "/test/run/validation/1/id1", "{\"b\":[{\"element\":\"test\"}],\"id\":1}", APPLICATION_JSON )
+            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"id\":1,\"b\":[{\"element\":\"test\"}]}],\"id\":\"id1\"}" );
         assertPost( HTTP_PREFIX + "/test/run/validation/1/id1", "{}", APPLICATION_JSON )
             .responded( 400, "/a/1/id: required property is missing", TEXT_PLAIN, "/a/1/id: required property is missing" );
     }
