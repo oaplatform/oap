@@ -26,10 +26,15 @@ package oap.tree;
 
 import org.testng.annotations.Test;
 
+import java.util.Optional;
+
+import static oap.tree.Dimension.ARRAY_ENUM;
 import static oap.tree.Dimension.ARRAY_LONG;
 import static oap.tree.Tree.a;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
+import static oap.tree.TreeTest.TestEnum.Test1;
+import static oap.tree.TreeTest.TestEnum.Test2;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -104,7 +109,7 @@ public class TreeArrayTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l(l() ) ) ).isEqualTo( "query = [d1:UNKNOWN]\n" +
+        assertThat( tree.trace( l( l() ) ) ).isEqualTo( "query = [d1:UNKNOWN]\n" +
             "Expecting:\n" +
             "1: \n" +
             "    d1/0: [1,2] CONTAINS []\n" +
@@ -112,5 +117,25 @@ public class TreeArrayTraceTest {
             "    d1/0: [1,2] CONTAINS []\n" +
             "3: \n" +
             "    d1/0: [1,2,3] CONTAINS []" );
+    }
+
+    @Test
+    public void testTraceEmptyQueryEnum() {
+        final Tree<String> tree = Tree
+            .<String>tree( ARRAY_ENUM( "d1", TreeTraceTest.TestEnum.class, TreeTraceTest.TestEnum.UNKNOWN ) )
+            .withHashFillFactor( 1 )
+            .load( l( v( "1", l( a( true, Test1, Test2 ) ) ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.trace( l( l() ) ) ).isEqualTo( "query = [d1:UNKNOWN]\n" +
+            "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [Test1,Test2] CONTAINS []" );
+
+        assertThat( tree.trace( l( Optional.empty() ) ) ).isEqualTo( "query = [d1:UNKNOWN]\n" +
+            "Expecting:\n" +
+            "1: \n" +
+            "    d1/0: [Test1,Test2] CONTAINS UNKNOWN" );
     }
 }

@@ -495,7 +495,7 @@ public class Tree<T> {
     }
 
     private String queryValueToString( Object value ) {
-        return value == null ? Strings.UNKNOWN : String.valueOf( value );
+        return value == null || value == Optional.empty() ? Strings.UNKNOWN : String.valueOf( value );
     }
 
     private void trace( TreeNode<T> node, long[][] query,
