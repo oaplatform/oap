@@ -47,23 +47,25 @@ public abstract class Dimension {
 
     public final String name;
     public final int priority;
+    public final long[] nullAsLong;
     public OperationType operationType;
 
-    public Dimension( @NonNull String name, OperationType operationType, int priority ) {
+    public Dimension( @NonNull String name, OperationType operationType, int priority, long nullAsLong ) {
         this.name = name;
         this.operationType = operationType;
         this.priority = priority;
+        this.nullAsLong = new long[] { nullAsLong };
     }
 
-    public static Dimension ARRAY_ENUM( String name, Class<? extends Enum> clazz ) {
-        return ENUM( name, clazz, null );
+    public static <T extends Enum> Dimension ARRAY_ENUM( String name, Class<T> clazz, T nullValue ) {
+        return ENUM( name, clazz, null, nullValue );
     }
 
-    public static Dimension ENUM( String name, Class<? extends Enum> clazz, OperationType operationType ) {
-        return ENUM( name, clazz, operationType, PRIORITY_DEFAULT );
+    public static <T extends Enum> Dimension ENUM( String name, Class<T> clazz, OperationType operationType, T nullValue ) {
+        return ENUM( name, clazz, operationType, PRIORITY_DEFAULT, nullValue );
     }
 
-    public static Dimension ENUM( String name, Class<? extends Enum> clazz, OperationType operationType, int priority ) {
+    public static <T extends Enum> Dimension ENUM( String name, Class<T> clazz, OperationType operationType, int priority, T nullValue ) {
         final Enum[] enumConstantsSortedByName = clazz.getEnumConstants();
         Arrays.sort( enumConstantsSortedByName, Comparator.comparing( Enum::name ) );
 
@@ -75,7 +77,7 @@ public abstract class Dimension {
             ordinalToSorted[enumConstantsSortedByName[i].ordinal()] = i;
         }
 
-        return new Dimension( name, operationType, priority ) {
+        return new Dimension( name, operationType, priority, ordinalToSorted[nullValue.ordinal()] ) {
             @Override
             public String toString( long value ) {
                 return sortedToName[( int ) value];
@@ -106,7 +108,7 @@ public abstract class Dimension {
     public static Dimension STRING( String name, OperationType operationType, int priority ) {
         final StringBits bits = new StringBits();
 
-        return new Dimension( name, operationType, priority ) {
+        return new Dimension( name, operationType, priority, StringBits.UNKNOWN ) {
             @Override
             public String toString( long value ) {
                 return bits.valueOf( value );
@@ -126,16 +128,16 @@ public abstract class Dimension {
         };
     }
 
-    public static Dimension ARRAY_LONG( String name ) {
-        return LONG( name, null );
+    public static Dimension ARRAY_LONG( String name, long nullValue ) {
+        return LONG( name, null, nullValue );
     }
 
-    public static Dimension LONG( String name, OperationType operationType ) {
-        return LONG( name, operationType, PRIORITY_DEFAULT );
+    public static Dimension LONG( String name, OperationType operationType, long nullValue ) {
+        return LONG( name, operationType, PRIORITY_DEFAULT, nullValue );
     }
 
-    public static Dimension LONG( String name, OperationType operationType, int priority ) {
-        return new Dimension( name, operationType, priority ) {
+    public static Dimension LONG( String name, OperationType operationType, int priority, long nullValue ) {
+        return new Dimension( name, operationType, priority, nullValue ) {
             @Override
             public String toString( long value ) {
                 return String.valueOf( value );
@@ -154,16 +156,18 @@ public abstract class Dimension {
         };
     }
 
-    public static Dimension ARRAY_BOOLEAN( String name ) {
-        return BOOLEAN( name, null );
+    public static Dimension ARRAY_BOOLEAN( String name, boolean nullValue ) {
+        return BOOLEAN( name, null, nullValue );
     }
 
-    public static Dimension BOOLEAN( String name, OperationType operationType ) {
-        return BOOLEAN( name, operationType, PRIORITY_DEFAULT );
+    public static Dimension BOOLEAN( String name, OperationType operationType, boolean nullValue ) {
+        return BOOLEAN( name, operationType, PRIORITY_DEFAULT, nullValue );
     }
 
-    public static Dimension BOOLEAN( String name, OperationType operationType, int priority ) {
-        return new Dimension( name, operationType, priority ) {
+    public static Dimension BOOLEAN( String name, OperationType operationType, int priority, boolean nullValue ) {
+        final long nullAsLong = nullValue ? 1 : 0;
+
+        return new Dimension( name, operationType, priority, nullAsLong ) {
             @Override
             public String toString( long value ) {
                 return value == 0 ? "false" : "true";
@@ -191,6 +195,10 @@ public abstract class Dimension {
     }
 
     protected abstract void _init( Stream<Object> value );
+
+    public final long[] getOrNullValue( Object value ) {
+        return getOrDefault( value, nullAsLong );
+    }
 
     public final long[] getOrDefault( Object value, long[] emptyValue ) {
         if( value == null ) return emptyValue;

@@ -47,6 +47,7 @@ import static oap.tree.TreeTest.TestEnum.Test1;
 import static oap.tree.TreeTest.TestEnum.Test2;
 import static oap.tree.TreeTest.TestEnum.Test3;
 import static oap.tree.TreeTest.TestEnum.Test4;
+import static oap.tree.TreeTest.TestEnum.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -60,7 +61,7 @@ public class TreeTest {
     @Test
     public void testCONTAINS() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
 
@@ -80,7 +81,7 @@ public class TreeTest {
     @Test
     public void testEmpty() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ) )
             .withHashFillFactor( 1 )
             .load( l() );
 
@@ -94,7 +95,7 @@ public class TreeTest {
     @Test
     public void testGREATER_THEN_OR_EQUAL_TO() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", GREATER_THEN_OR_EQUAL_TO ) )
+            .<String>tree( LONG( "d1", GREATER_THEN_OR_EQUAL_TO, 0 ) )
             .load( l( v( "1", 1L ), v( "5", 5L ) ) );
 
         System.out.println( tree.toString() );
@@ -112,7 +113,7 @@ public class TreeTest {
     @Test
     public void testGREATER_THEN() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", GREATER_THEN ) )
+            .<String>tree( LONG( "d1", GREATER_THEN, 0 ) )
             .load( l( v( "1", 1L ), v( "5", 5L ) ) );
 
         System.out.println( tree.toString() );
@@ -130,7 +131,7 @@ public class TreeTest {
     @Test
     public void testLESS_THEN_OR_EQUAL_TO() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", LESS_THEN_OR_EQUAL_TO ) )
+            .<String>tree( LONG( "d1", LESS_THEN_OR_EQUAL_TO, 0 ) )
             .load( l( v( "1", 1L ), v( "5", 5L ) ) );
 
         System.out.println( tree.toString() );
@@ -148,7 +149,7 @@ public class TreeTest {
     @Test
     public void testLESS_THEN() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", LESS_THEN ) )
+            .<String>tree( LONG( "d1", LESS_THEN, 0 ) )
             .load( l( v( "1", 1L ), v( "5", 5L ) ) );
 
         System.out.println( tree.toString() );
@@ -166,7 +167,7 @@ public class TreeTest {
     @Test
     public void testBETWEEN_INCLUSIVE() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", BETWEEN_INCLUSIVE ) )
+            .<String>tree( LONG( "d1", BETWEEN_INCLUSIVE, 0 ) )
             .load( l( v( "3", 3L ), v( "7", 7L ) ) );
 
         System.out.println( tree.toString() );
@@ -187,7 +188,7 @@ public class TreeTest {
     @Test
     public void testExclude() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", NOT_CONTAINS ) )
+            .<String>tree( LONG( "d1", NOT_CONTAINS, 0 ) )
             .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
 
         System.out.println( tree.toString() );
@@ -204,7 +205,7 @@ public class TreeTest {
     @Test
     public void testEnum() {
         final Tree<String> tree = Tree
-            .<String>tree( ENUM( "d1", TestEnum.class, CONTAINS ) )
+            .<String>tree( ENUM( "d1", TestEnum.class, CONTAINS, 0, UNKNOWN ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", Test1 ), v( "2", Test2 ), v( "3", Test3 ), v( "33", Test3 ) ) );
 
@@ -240,7 +241,7 @@ public class TreeTest {
     @Test
     public void testFindTwoDimension() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ), LONG( "d2", CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ), LONG( "d2", CONTAINS, 0 ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L, 1L ), v( "2", 2L, 2L ), v( "3", 1L, 3L ), v( "33", 1L, 3L ) ) );
 
@@ -259,7 +260,7 @@ public class TreeTest {
     @Test
     public void testFindTwoDimensionHash() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ), LONG( "d2", CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ), LONG( "d2", CONTAINS, 0 ) )
             .withHashFillFactor( 0.75 )
             .load( l( v( "1", 1L, 1L ), v( "2", 2L, 2L ), v( "3", 1L, 3L ), v( "33", 1L, 3L ) ) );
 
@@ -278,7 +279,7 @@ public class TreeTest {
     @Test
     public void testFindAny() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, -1 ), LONG( "d2", CONTAINS ), LONG( "d3", CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, -1, 0 ), LONG( "d2", CONTAINS, 0 ), LONG( "d3", CONTAINS, 0 ) )
             .withHashFillFactor( 1 )
             .load( l(
                 v( "1", 1L, null, 1L ),
@@ -303,7 +304,7 @@ public class TreeTest {
     @Test
     public void testFindOrDimension() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ) )
             .withHashFillFactor( 1 )
             .load( l(
                 v( "1", 1L ),
@@ -367,7 +368,7 @@ public class TreeTest {
     @Test
     public void testSet() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L ) ) );
 
@@ -380,6 +381,6 @@ public class TreeTest {
     }
 
     public enum TestEnum {
-        Test1, Test2, Test3, Test4
+        Test1, Test2, Test3, Test4, UNKNOWN
     }
 }

@@ -40,6 +40,7 @@ import static oap.tree.TreeTest.TestEnum.Test1;
 import static oap.tree.TreeTest.TestEnum.Test2;
 import static oap.tree.TreeTest.TestEnum.Test3;
 import static oap.tree.TreeTest.TestEnum.Test4;
+import static oap.tree.TreeTraceTest.TestEnum.UNKNOWN;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,7 +51,7 @@ public class TreeTraceTest {
     @Test
     public void testTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ), ENUM( "d2", TestEnum.class, CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ), ENUM( "d2", TestEnum.class, CONTAINS, UNKNOWN ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L, Test1 ), v( "2", 2L, Test2 ), v( "3", 1L, Test3 ), v( "33", 1L, Test3 ) ) );
 
@@ -107,7 +108,7 @@ public class TreeTraceTest {
     @Test
     public void testTraceHash() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ), ENUM( "d2", TestEnum.class, CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ), ENUM( "d2", TestEnum.class, CONTAINS, 0, UNKNOWN ) )
             .withHashFillFactor( 0 )
             .load( l( v( "1", 1L, Test1 ), v( "2", 2L, Test2 ), v( "3", 1L, Test3 ), v( "33", 1L, Test3 ) ) );
 
@@ -183,7 +184,7 @@ public class TreeTraceTest {
     @Test
     public void testTraceOrQuery() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ) )
             .load( l( v( "1", 1L ) ) );
 
         System.out.println( tree.toString() );
@@ -195,7 +196,7 @@ public class TreeTraceTest {
     @Test
     public void testTraceExclude() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", NOT_CONTAINS ) )
+            .<String>tree( LONG( "d1", NOT_CONTAINS, 0 ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L ), v( "2", 2L ), v( "3", 3L ), v( "33", 3L ) ) );
 
@@ -222,7 +223,7 @@ public class TreeTraceTest {
     @Test
     public void testTraceEmpty() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ), LONG( "d2", CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ), LONG( "d2", CONTAINS, 0 ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", null, 99L ) ) );
 
@@ -237,7 +238,7 @@ public class TreeTraceTest {
     @Test
     public void testTraceQueryEmpty() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L ) ) );
 
@@ -252,7 +253,7 @@ public class TreeTraceTest {
     @Test
     public void testTraceEmptyQuery() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ), LONG( "d2", CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ), LONG( "d2", CONTAINS, 0 ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L, 2L ), v( "2", 2L, 2L ) ) );
 
@@ -271,7 +272,7 @@ public class TreeTraceTest {
     @Test
     public void testGREATER_THEN_OR_EQUAL_TO() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", GREATER_THEN_OR_EQUAL_TO ) )
+            .<String>tree( LONG( "d1", GREATER_THEN_OR_EQUAL_TO, 0 ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", 1L ), v( "5", 5L ) ) );
 
@@ -293,7 +294,7 @@ public class TreeTraceTest {
     @Test
     public void testTraceStatistics() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS ), ENUM( "d2", TestEnum.class, CONTAINS ) )
+            .<String>tree( LONG( "d1", CONTAINS, 0 ), ENUM( "d2", TestEnum.class, CONTAINS, UNKNOWN ) )
             .withHashFillFactor( 1 )
             .load( l(
                 v( "1", 1L, Test1 ),
@@ -314,6 +315,6 @@ public class TreeTraceTest {
     }
 
     public enum TestEnum {
-        Test1, Test2, Test3, Test4
+        Test1, Test2, Test3, Test4, UNKNOWN
     }
 }

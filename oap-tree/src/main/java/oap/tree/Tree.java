@@ -67,9 +67,7 @@ import static oap.util.Pair.__;
  */
 public class Tree<T> {
     public static final long ANY = Long.MIN_VALUE;
-    public static final long UNKNOWN_VALUE = Long.MAX_VALUE;
     public static final long[] ANY_AS_ARRAY = new long[0];
-    public static final long[] UNKNOWN_AS_ARRAY = new long[] { UNKNOWN_VALUE };
 
     TreeNode<T> root = new Leaf<>( emptyList() );
     private List<Dimension> dimensions;
@@ -206,7 +204,7 @@ public class Tree<T> {
         for( int i = 0; i < dimensions.size(); i++ ) {
             final Object value = query.get( i );
             final Dimension dimension = dimensions.get( i );
-            longData[i] = dimension.getOrDefault( value, UNKNOWN_AS_ARRAY );
+            longData[i] = dimension.getOrNullValue( value );
         }
 
         return longData;
@@ -786,14 +784,14 @@ public class Tree<T> {
         public final boolean find( long[] qValue ) {
             if( include ) {
                 for( long value : qValue ) {
-                    if( value != Tree.UNKNOWN_VALUE && bitSet.get( ( int ) value ) ) return true;
+                    if( bitSet.get( ( int ) value ) ) return true;
                 }
 
                 return false;
             }
 
             for( long value : qValue ) {
-                if( value == Tree.UNKNOWN_VALUE || bitSet.get( ( int ) value ) ) return false;
+                if( bitSet.get( ( int ) value ) ) return false;
             }
 
             return true;
