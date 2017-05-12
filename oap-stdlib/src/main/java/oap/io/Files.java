@@ -26,12 +26,12 @@ package oap.io;
 import com.google.common.hash.Hashing;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.archive.Archiver;
 import oap.io.IoStreams.Encoding;
 import oap.util.Lists;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
+import oap.util.Try;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullOutputStream;
@@ -40,8 +40,6 @@ import org.joda.time.DateTime;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -208,7 +206,15 @@ public final class Files {
 
     public static Stream<String> lines( Path path ) {
         log.trace( "reading {}...", path );
-        return Stream.of( new BufferedReader( new InputStreamReader( IoStreams.in( path ) ) ).lines() );
+        final InputStream in = IoStreams.in( path );
+        try {
+            final BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( in ) );
+            final java.util.stream.Stream<String> lines = bufferedReader.lines().onClose( Try.run( bufferedReader::close ) );
+            return Stream.of( lines );
+        } catch( Exception e ) {
+            IOUtils.closeQuietly( in );
+            throw e;
+        }
     }
 
     @SneakyThrows
