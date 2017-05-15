@@ -227,11 +227,11 @@ class InfluxDBReporter extends ScheduledReporter {
             ( b, e ) -> b.addField( e.getKey() + "_min", convertDuration( e.getValue().getSnapshot().getMin() ) ),
             ( b, e ) -> b.addField( e.getKey() + "_median", convertDuration( e.getValue().getSnapshot().getMedian() ) ),
             ( b, e ) -> b.addField( e.getKey() + "_stddev", convertDuration( e.getValue().getSnapshot().getStdDev() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_count", convertDuration( e.getValue().getCount() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_oneMinuteRate", convertDuration( e.getValue().getOneMinuteRate() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_fiveMinuteRate", convertDuration( e.getValue().getFiveMinuteRate() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_fifteenMinuteRate", convertDuration( e.getValue().getFifteenMinuteRate() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_meanRate", convertDuration( e.getValue().getMeanRate() ) )
+            ( b, e ) -> b.addField( e.getKey() + "_count", e.getValue().getCount() ),
+            ( b, e ) -> b.addField( e.getKey() + "_oneMinuteRate", convertRate( e.getValue().getOneMinuteRate() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_fiveMinuteRate", convertRate( e.getValue().getFiveMinuteRate() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_fifteenMinuteRate", convertRate( e.getValue().getFifteenMinuteRate() ) ),
+            ( b, e ) -> b.addField( e.getKey() + "_meanRate", convertRate( e.getValue().getMeanRate() ) )
         );
 
         if( resetTimersAfterReport ) {
@@ -266,7 +266,7 @@ class InfluxDBReporter extends ScheduledReporter {
             ( b, e ) -> b.addField( e.getKey() + "_min", convertDuration( e.getValue().getSnapshot().getMin() ) ),
             ( b, e ) -> b.addField( e.getKey() + "_median", convertDuration( e.getValue().getSnapshot().getMedian() ) ),
             ( b, e ) -> b.addField( e.getKey() + "_stddev", convertDuration( e.getValue().getSnapshot().getStdDev() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_count", convertDuration( e.getValue().getCount() ) )
+            ( b, e ) -> b.addField( e.getKey() + "_count", e.getValue().getCount() )
         );
     }
 
