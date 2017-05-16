@@ -228,7 +228,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     public <T> Stream<Result<T, ? extends Throwable>> mapThrowableToResult( Function<? super E, ? extends T> mapper ) {
-        return map( (f) -> {
+        return map( ( f ) -> {
             try {
                 return Result.success( mapper.apply( f ) );
             } catch( Throwable t ) {
@@ -404,6 +404,10 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     @Override
     public long count() {
         return underlying.count();
+    }
+
+    public long count( Predicate<? super E> predicate ) {
+        return underlying.filter( predicate ).count();
     }
 
     @Override
