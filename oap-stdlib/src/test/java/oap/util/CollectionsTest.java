@@ -27,26 +27,37 @@ package oap.util;
 import lombok.val;
 import org.testng.annotations.Test;
 
-import java.util.List;
-
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ListsTest {
+/**
+ * Created by Admin on 16.05.2017.
+ */
+public class CollectionsTest {
     @Test
-    public void concat() {
-        List<String> strings = Lists.of( "a", "b" );
-        List<Integer> ints = Lists.of( 1, 2 );
-        assertThat( Lists.concat( strings, ints ) )
-            .containsExactly( "a", "b", 1, 2 );
+    public void testCount() {
+        assertThat( Collections.count( asList( "a", "b", "ab" ), ( str ) -> str.startsWith( "a" ) ) ).isEqualTo( 2 );
     }
 
     @Test
-    public void testFilter() {
+    public void testFind() {
+        val list = asList( "a", "b", "ab" );
+        assertThat( Collections.find( list, ( str ) -> str.startsWith( "a" ) ) ).contains( "a" );
+        assertThat( Collections.find( list, ( str ) -> str.startsWith( "z" ) ) ).isEmpty();
+    }
+
+    @Test
+    public void testFind2() {
+        val list = asList( "a", "b", "ab" );
+        assertThat( Collections.find2( list, ( str ) -> str.startsWith( "a" ) ) ).isEqualTo( "a" );
+        assertThat( Collections.find2( list, ( str ) -> str.startsWith( "z" ) ) ).isNull();
+    }
+
+    @Test
+    public void testAllMatch() {
         val list = asList( 1, 2, 4, 5 );
 
-        assertThat( Lists.filter( list, i -> i > 2 ) ).containsExactly( 4, 5 );
-        assertThat( Lists.filter( list, i -> i > 5 ) ).isEmpty();
-        assertThat( Lists.filter( list, i -> i == 2 ) ).containsExactly( 2 );
+        assertThat( Collections.allMatch( list, i -> i <= 5 ) ).isTrue();
+        assertThat( Collections.allMatch( list, i -> i >= 5 ) ).isFalse();
     }
 }

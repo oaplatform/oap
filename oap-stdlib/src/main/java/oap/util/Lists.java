@@ -43,7 +43,7 @@ import java.util.stream.Collector;
 
 import static oap.util.Pair.__;
 
-public class Lists {
+public class Lists extends oap.util.Collections {
 
     private static Random random = new Random();
 
@@ -92,16 +92,6 @@ public class Lists {
         return __( left, right );
     }
 
-    public static <E> Optional<E> find( List<E> list, Predicate<E> predicate ) {
-        for( E e : list ) if( predicate.test( e ) ) return Optional.ofNullable( e );
-        return Optional.empty();
-    }
-
-    public static <E> E find2( List<E> list, Predicate<E> predicate ) {
-        for( E e : list ) if( predicate.test( e ) ) return e;
-        return null;
-    }
-
     public static <E, R> List<R> map( List<? extends E> list, Function<? super E, R> mapper ) {
         final ArrayList<R> result = new ArrayList<>( list.size() );
         for( val e : list ) {
@@ -122,13 +112,6 @@ public class Lists {
         }
 
         return result;
-    }
-
-    public static <E> boolean allMatch( List<E> list, Predicate<E> predicate ) {
-        for( val e : list ) {
-            if( !predicate.test( e ) ) return false;
-        }
-        return true;
     }
 
     public static <E, R> List<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {

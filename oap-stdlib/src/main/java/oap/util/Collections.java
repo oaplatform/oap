@@ -25,28 +25,39 @@
 package oap.util;
 
 import lombok.val;
-import org.testng.annotations.Test;
 
-import java.util.List;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.function.Predicate;
 
-import static java.util.Arrays.asList;
-import static org.assertj.core.api.Assertions.assertThat;
+/**
+ * Created by igor.petrenko on 16.05.2017.
+ */
+public class Collections {
+    public static <T, L extends Collection<T>> long count( L collection, Predicate<T> predicate ) {
+        long count = 0;
 
-public class ListsTest {
-    @Test
-    public void concat() {
-        List<String> strings = Lists.of( "a", "b" );
-        List<Integer> ints = Lists.of( 1, 2 );
-        assertThat( Lists.concat( strings, ints ) )
-            .containsExactly( "a", "b", 1, 2 );
+        for( val item : collection ) {
+            if( predicate.test( item ) ) count++;
+        }
+
+        return count;
     }
 
-    @Test
-    public void testFilter() {
-        val list = asList( 1, 2, 4, 5 );
+    public static <E, L extends Collection<E>> Optional<E> find( L list, Predicate<E> predicate ) {
+        for( E e : list ) if( predicate.test( e ) ) return Optional.ofNullable( e );
+        return Optional.empty();
+    }
 
-        assertThat( Lists.filter( list, i -> i > 2 ) ).containsExactly( 4, 5 );
-        assertThat( Lists.filter( list, i -> i > 5 ) ).isEmpty();
-        assertThat( Lists.filter( list, i -> i == 2 ) ).containsExactly( 2 );
+    public static <E, L extends Collection<E>> E find2( L list, Predicate<E> predicate ) {
+        for( E e : list ) if( predicate.test( e ) ) return e;
+        return null;
+    }
+
+    public static <E, L extends Collection<E>> boolean allMatch( L list, Predicate<E> predicate ) {
+        for( val e : list ) {
+            if( !predicate.test( e ) ) return false;
+        }
+        return true;
     }
 }
