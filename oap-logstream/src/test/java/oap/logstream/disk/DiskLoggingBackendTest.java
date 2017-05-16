@@ -34,7 +34,7 @@ import static org.testng.Assert.assertTrue;
 public class DiskLoggingBackendTest extends AbstractTest {
     @Test
     public void spaceAvailable() {
-        DiskLoggingBackend backend = new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", 4000, 12 );
+        DiskLoggingBackend backend = new DiskLoggingBackend( Env.tmpPath( "logs" ), "log", 4000 );
         assertTrue( backend.isLoggingAvailable() );
         backend.requiredFreeSpace *= 1000;
         assertFalse( backend.isLoggingAvailable() );

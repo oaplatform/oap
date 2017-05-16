@@ -55,7 +55,7 @@ public class WriterTest extends AbstractTest {
             logs.resolve( "test/2015-10/10/file-2015-10-10-01-00.log.gz" ),
             PLAIN, "corrupted file" );
         String ext = ".log" + encoding.extension;
-        Writer writer = new Writer( logs, "test/file", ext, 10, 12 );
+        Writer writer = new Writer( logs, "test/file", ext, 10 );
 
         writer.write( bytes );
 
@@ -67,7 +67,7 @@ public class WriterTest extends AbstractTest {
 
         writer.close();
 
-        writer = new Writer( logs, "test/file", ext, 10, 12 );
+        writer = new Writer( logs, "test/file", ext, 10 );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
         writer.write( bytes );

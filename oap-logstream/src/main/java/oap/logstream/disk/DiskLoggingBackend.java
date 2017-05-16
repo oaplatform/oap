@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 
 import static oap.logstream.AvailabilityReport.State.FAILED;
 import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
+import static oap.logstream.Consts.BUCKETS_PER_HOUR;
 
 @Slf4j
 public class DiskLoggingBackend implements LoggingBackend {
@@ -54,24 +55,22 @@ public class DiskLoggingBackend implements LoggingBackend {
     private final String ext;
     private final int bufferSize;
     private final LoadingCache<String, Writer> writers;
-    private final int bucketsPerHour;
     private final Name writersMetric;
-    private boolean closed;
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
     public boolean useClientHostPrefix = true;
+    private boolean closed;
 
-    public DiskLoggingBackend( Path logDirectory, String ext, int bufferSize, int bucketsPerHour ) {
+    public DiskLoggingBackend( Path logDirectory, String ext, int bufferSize ) {
         this.logDirectory = logDirectory;
         this.ext = ext;
         this.bufferSize = bufferSize;
-        this.bucketsPerHour = bucketsPerHour;
         this.writers = CacheBuilder.newBuilder()
-            .expireAfterAccess( 60 / bucketsPerHour * 3, TimeUnit.MINUTES )
+            .expireAfterAccess( 60 / BUCKETS_PER_HOUR * 3, TimeUnit.MINUTES )
             .removalListener( notification -> Closeables.close( ( Writer ) notification.getValue() ) )
             .build( new CacheLoader<String, Writer>() {
                 @Override
                 public Writer load( String fullFileName ) throws Exception {
-                    return new Writer( logDirectory, fullFileName, ext, bufferSize, bucketsPerHour );
+                    return new Writer( logDirectory, fullFileName, ext, bufferSize );
                 }
             } );
         this.writersMetric = Metrics.measureGauge(
@@ -114,7 +113,7 @@ public class DiskLoggingBackend implements LoggingBackend {
             .add( "path", logDirectory )
             .add( "ext", ext )
             .add( "buffer", bufferSize )
-            .add( "bucketsPerHour", bucketsPerHour )
+            .add( "bucketsPerHour", BUCKETS_PER_HOUR )
             .add( "hostPrefix", useClientHostPrefix )
             .add( "writers", writers.size() )
             .toString();

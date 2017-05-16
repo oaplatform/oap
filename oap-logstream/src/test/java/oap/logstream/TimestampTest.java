@@ -27,7 +27,6 @@ package oap.logstream;
 import oap.testng.AbstractTest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
 import java.nio.file.Paths;
@@ -39,7 +38,7 @@ public class TimestampTest extends AbstractTest {
 
     @Test
     public void format() throws Exception {
-        assertThat( Timestamp.format( new DateTime( 2015, 12, 3, 11, 28, 30, UTC ), 12 ) ).isEqualTo( "2015-12-03-11-05" );
+        assertThat( Timestamp.format( new DateTime( 2015, 12, 3, 11, 28, 30, UTC ) ) ).isEqualTo( "2015-12-03-11-05" );
     }
 
     @Test
@@ -55,8 +54,8 @@ public class TimestampTest extends AbstractTest {
     @Test
     public void path() {
         DateTime date = new DateTime( 2015, 12, 3, 11, 28, 30, UTC );
-        String timestamp = Timestamp.format( date, 12 );
-        assertThat( Timestamp.path( "log", date, "dir/dir/file", "log.gz", 12 ) )
+        String timestamp = Timestamp.format( date );
+        assertThat( Timestamp.path( "log", date, "dir/dir/file", "log.gz" ) )
             .isEqualTo( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" );
         assertThat( Timestamp.path( "log", timestamp, "dir/dir/file", "log.gz" ) )
             .isEqualTo( "log/dir/dir/2015-12/03/file-2015-12-03-11-05.log.gz" );
@@ -68,7 +67,7 @@ public class TimestampTest extends AbstractTest {
 
     @Test
     public void timestamps() {
-        assertThat( Timestamp.timestampsBefore( new DateTime( 2016, 2, 1, 1, 1, 1, UTC ), 10, 12 ) )
+        assertThat( Timestamp.timestampsBefore( new DateTime( 2016, 2, 1, 1, 1, 1, UTC ), 10 ) )
             .containsExactly(
                 "2016-02-01-00-03",
                 "2016-02-01-00-04",
@@ -81,7 +80,7 @@ public class TimestampTest extends AbstractTest {
                 "2016-02-01-00-11",
                 "2016-02-01-01-00"
             );
-        assertThat( Timestamp.timestampsBefore( new DateTime( 2016, 2, 1, 1, 1, 1, UTC ), 10, 12 ) )
+        assertThat( Timestamp.timestampsBefore( new DateTime( 2016, 2, 1, 1, 1, 1, UTC ), 10 ) )
             .containsExactly(
                 "2016-02-01-00-03",
                 "2016-02-01-00-04",
@@ -94,7 +93,7 @@ public class TimestampTest extends AbstractTest {
                 "2016-02-01-00-11",
                 "2016-02-01-01-00"
             );
-        assertThat( Timestamp.timestampsAfter( new DateTime( 2016, 2, 1, 1, 1, 1, UTC ), 10, 12 ) )
+        assertThat( Timestamp.timestampsAfter( new DateTime( 2016, 2, 1, 1, 1, 1, UTC ), 10 ) )
             .containsExactly(
                 "2016-02-01-01-00",
                 "2016-02-01-01-01",
@@ -110,7 +109,7 @@ public class TimestampTest extends AbstractTest {
 
         DateTimeUtils.setCurrentMillisFixed( new DateTime( 2016, 4, 21, 1, 0, UTC ).getMillis() );
 
-        assertThat( Timestamp.timestampsBeforeNow( new DateTime( 2016, 4, 21, 0, 1, UTC ), 12 ) )
+        assertThat( Timestamp.timestampsBeforeNow( new DateTime( 2016, 4, 21, 0, 1, UTC ) ) )
             .containsExactly(
                 "2016-04-21-00-00",
                 "2016-04-21-00-01",
@@ -136,12 +135,12 @@ public class TimestampTest extends AbstractTest {
             new DateTime( 2016, 2, 1, 1, 15, UTC )
         };
         for( DateTime time : times )
-            assertThat( Timestamp.parse( Timestamp.format( time, 12 ), 12 ) ).isEqualTo( time );
+            assertThat( Timestamp.parse( Timestamp.format( time ) ) ).isEqualTo( time );
     }
 
     @Test
     public void parsePath() {
-        assertThat( Timestamp.parse( Paths.get( "/tmp/test/2016-02/01/tes-t1-2016-02-01-01-00.tsv.gz" ), 12 ) )
+        assertThat( Timestamp.parse( Paths.get( "/tmp/test/2016-02/01/tes-t1-2016-02-01-01-00.tsv.gz" ) ) )
             .contains( new DateTime( 2016, 2, 1, 1, 0, UTC ) );
     }
 }

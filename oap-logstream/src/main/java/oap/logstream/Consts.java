@@ -29,4 +29,5 @@ package oap.logstream;
  */
 public class Consts {
     public static final int MINUTES_PER_BUCKET = 5;
+    public static final int BUCKETS_PER_HOUR = 60 / MINUTES_PER_BUCKET;
 }

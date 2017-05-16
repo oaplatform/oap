@@ -63,7 +63,7 @@ public class LoggerTest extends AbstractTest {
 
         String host = useClientHostPrefix ? HOSTNAME + "/" : "";
         String content = "12345678";
-        try( DiskLoggingBackend backend = new DiskLoggingBackend( tmpPath( "logs" ), ext, DEFAULT_BUFFER, 12 ) ) {
+        try( DiskLoggingBackend backend = new DiskLoggingBackend( tmpPath( "logs" ), ext, DEFAULT_BUFFER ) ) {
             backend.useClientHostPrefix = useClientHostPrefix;
             Logger logger = new Logger( backend );
             logger.log( "a", content );
@@ -86,7 +86,7 @@ public class LoggerTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "12345678";
 
-        try( DiskLoggingBackend serverBackend = new DiskLoggingBackend( tmpPath( "logs" ), ".log", DEFAULT_BUFFER, 12 ) ) {
+        try( DiskLoggingBackend serverBackend = new DiskLoggingBackend( tmpPath( "logs" ), ".log", DEFAULT_BUFFER ) ) {
             SocketLoggingServer server = new SocketLoggingServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
             try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", Env.port( "net" ), tmpPath( "buffers" ), 50 ) ) {
                 serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 1000L;

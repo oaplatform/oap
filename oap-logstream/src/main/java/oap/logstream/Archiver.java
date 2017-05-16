@@ -41,35 +41,32 @@ public class Archiver implements Runnable {
     public final long safeInterval;
     public final Encoding encoding;
     public final String mask;
-    public final int bucketsPerHour;
     public final Path corruptedDirectory;
     private int bufferSize = 1024 * 256 * 4 * 4;
 
 
-    public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask,
-                     Encoding encoding, int bucketsPerHour ) {
+    public Archiver( Path sourceDirectory, Path destinationDirectory, long safeInterval, String mask, Encoding encoding ) {
         this.sourceDirectory = sourceDirectory;
         this.destinationDirectory = destinationDirectory;
         this.safeInterval = safeInterval;
         this.mask = mask;
         this.encoding = encoding;
-        this.bucketsPerHour = bucketsPerHour;
         this.corruptedDirectory = sourceDirectory.resolve( CORRUPTED_DIRECTORY );
     }
 
     @Override
     public void run() {
         log.debug( "let's start packing of {} in {} into {}", mask, sourceDirectory, destinationDirectory );
-        String timestamp = Timestamp.format( DateTime.now(), bucketsPerHour );
+        String timestamp = Timestamp.format( DateTime.now() );
 
         log.debug( "current timestamp is {}", timestamp );
-        final long bucketStartTime = Timestamp.currentBucketStartMillis( bucketsPerHour );
+        final long bucketStartTime = Timestamp.currentBucketStartMillis();
         long elapsed = DateTimeUtils.currentTimeMillis() - bucketStartTime;
         if( elapsed < safeInterval )
             log.debug( "not safe to process yet ({}ms), some of the files could still be open, waiting...", elapsed );
         else for( Path path : Files.wildcard( sourceDirectory, mask ) ) {
             if( path.startsWith( corruptedDirectory ) ) continue;
-            Optionals.fork( Timestamp.parse( path, bucketsPerHour ) )
+            Optionals.fork( Timestamp.parse( path ) )
                 .ifAbsent( () -> log.error( "what a hell is that {}", path ) )
                 .ifPresent( dt -> {
                     if( dt.isBefore( bucketStartTime ) ) archive( path );
