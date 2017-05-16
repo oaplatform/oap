@@ -115,7 +115,7 @@
                 <version>2.19.1</version>
                 <configuration>
                     <argLine>
-                        -ea -Xmx1000m -XX:+UseConcMarkSweepGC -XX:+CMSParallelRemarkEnabled
+                        -ea
                         -Dlogback.configurationFile=${session.executionRootDirectory}/oap-stdlib/src/test/resources/logback-test.xml
                     </argLine>
                     <trimStackTrace>false</trimStackTrace>
