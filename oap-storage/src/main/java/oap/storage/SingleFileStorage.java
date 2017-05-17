@@ -122,6 +122,10 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
         fsync( scheduled.lastExecuted() );
     }
 
+    public final Path getPath() {
+        return path;
+    }
+
     private class SFSDataListener<T> implements DataListener<T> {
         @Override
         public void updated( T object, boolean isNew ) {
