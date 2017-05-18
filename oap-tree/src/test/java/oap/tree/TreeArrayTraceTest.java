@@ -44,7 +44,7 @@ public class TreeArrayTraceTest {
     @Test
     public void testArrayTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", 0 ) )
+            .<String>tree( ARRAY_LONG( "d1", null ) )
             .load( l(
                 v( "1", l( a( true, 1L, 2L ) ) ),
                 v( "2", l( a( true, 1L, 2L ) ) ),
@@ -72,7 +72,7 @@ public class TreeArrayTraceTest {
     @Test
     public void testArrayExcludeTrace() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", 0 ) )
+            .<String>tree( ARRAY_LONG( "d1", null ) )
             .load( l(
                 v( "1", l( a( false, 1L, 2L ) ) ),
                 v( "2", l( a( false, 2L ) ) ),
@@ -101,7 +101,7 @@ public class TreeArrayTraceTest {
     @Test
     public void testRequired() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", 0 ) )
+            .<String>tree( ARRAY_LONG( "d1", null ) )
             .load( l(
                 v( "1", l( a( true, 1L, 2L ) ) ),
                 v( "2", l( a( true, 1L, 2L ) ) ),

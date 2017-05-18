@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import static oap.tree.Consts.ANY_AS_ARRAY;
+
 /**
  * Created by igor.petrenko on 27.12.2016.
  */
@@ -50,11 +52,11 @@ public abstract class Dimension {
     public final long[] nullAsLong;
     public OperationType operationType;
 
-    public Dimension( @NonNull String name, OperationType operationType, int priority, long nullAsLong ) {
+    public Dimension( @NonNull String name, OperationType operationType, int priority, long[] nullAsLong ) {
         this.name = name;
         this.operationType = operationType;
         this.priority = priority;
-        this.nullAsLong = new long[] { nullAsLong };
+        this.nullAsLong = nullAsLong;
     }
 
     public static <T extends Enum> Dimension ARRAY_ENUM( String name, Class<T> clazz, T nullValue ) {
@@ -77,7 +79,8 @@ public abstract class Dimension {
             ordinalToSorted[enumConstantsSortedByName[i].ordinal()] = i;
         }
 
-        return new Dimension( name, operationType, priority, ordinalToSorted[nullValue.ordinal()] ) {
+        return new Dimension( name, operationType, priority,
+            nullValue == null ? ANY_AS_ARRAY : new long[] { ordinalToSorted[nullValue.ordinal()] } ) {
             @Override
             public String toString( long value ) {
                 return sortedToName[( int ) value];
@@ -108,7 +111,7 @@ public abstract class Dimension {
     public static Dimension STRING( String name, OperationType operationType, int priority ) {
         final StringBits bits = new StringBits();
 
-        return new Dimension( name, operationType, priority, StringBits.UNKNOWN ) {
+        return new Dimension( name, operationType, priority, new long[] { StringBits.UNKNOWN } ) {
             @Override
             public String toString( long value ) {
                 return bits.valueOf( value );
@@ -128,16 +131,17 @@ public abstract class Dimension {
         };
     }
 
-    public static Dimension ARRAY_LONG( String name, long nullValue ) {
+    public static Dimension ARRAY_LONG( String name, Long nullValue ) {
         return LONG( name, null, nullValue );
     }
 
-    public static Dimension LONG( String name, OperationType operationType, long nullValue ) {
+    public static Dimension LONG( String name, OperationType operationType, Long nullValue ) {
         return LONG( name, operationType, PRIORITY_DEFAULT, nullValue );
     }
 
-    public static Dimension LONG( String name, OperationType operationType, int priority, long nullValue ) {
-        return new Dimension( name, operationType, priority, nullValue ) {
+    public static Dimension LONG( String name, OperationType operationType, int priority, Long nullValue ) {
+        return new Dimension( name, operationType, priority,
+            nullValue == null ? ANY_AS_ARRAY : new long[] { nullValue } ) {
             @Override
             public String toString( long value ) {
                 return String.valueOf( value );
@@ -156,16 +160,16 @@ public abstract class Dimension {
         };
     }
 
-    public static Dimension ARRAY_BOOLEAN( String name, boolean nullValue ) {
+    public static Dimension ARRAY_BOOLEAN( String name, Boolean nullValue ) {
         return BOOLEAN( name, null, nullValue );
     }
 
-    public static Dimension BOOLEAN( String name, OperationType operationType, boolean nullValue ) {
+    public static Dimension BOOLEAN( String name, OperationType operationType, Boolean nullValue ) {
         return BOOLEAN( name, operationType, PRIORITY_DEFAULT, nullValue );
     }
 
-    public static Dimension BOOLEAN( String name, OperationType operationType, int priority, boolean nullValue ) {
-        final long nullAsLong = nullValue ? 1 : 0;
+    public static Dimension BOOLEAN( String name, OperationType operationType, int priority, Boolean nullValue ) {
+        final long[] nullAsLong = nullValue == null ? ANY_AS_ARRAY : new long[] { ( nullValue ? 1 : 0 ) };
 
         return new Dimension( name, operationType, priority, nullAsLong ) {
             @Override

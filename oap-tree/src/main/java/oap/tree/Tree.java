@@ -57,6 +57,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static oap.tree.Consts.ANY_AS_ARRAY;
 import static oap.tree.Dimension.Direction;
 import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
@@ -66,9 +67,6 @@ import static oap.util.Pair.__;
  * Created by igor.petrenko on 26.12.2016.
  */
 public class Tree<T> {
-    public static final long ANY = Long.MIN_VALUE;
-    public static final long[] ANY_AS_ARRAY = new long[0];
-
     TreeNode<T> root = new Leaf<>( emptyList() );
     private List<Dimension> dimensions;
     private double hashFillFactor;
@@ -325,7 +323,7 @@ public class Tree<T> {
             final List<ValueData<T>> any = Stream.of( partition_sets_empty._2 ).collect( toList() );
             final List<ValueData<T>> sets = partition_sets_empty._1.collect( toList() );
 
-            return new SplitDimension( finalSplitDimension, ANY, emptyList(), emptyList(), emptyList(), any, sets, emptyList() );
+            return new SplitDimension( finalSplitDimension, Consts.ANY, emptyList(), emptyList(), emptyList(), any, sets, emptyList() );
         } else {
 
             val partition_any_other = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY ) == ANY_AS_ARRAY );
@@ -339,7 +337,7 @@ public class Tree<T> {
             if( dimension.operationType == CONTAINS && ( double ) unique.length / uniqueCount[finalSplitDimension] > hashFillFactor ) {
                 final List<ValueData<T>> any = Stream.of( partition_any_other._1 ).collect( toList() );
 
-                return new SplitDimension( finalSplitDimension, ANY, emptyList(), emptyList(), emptyList(), any, emptyList(), sorted );
+                return new SplitDimension( finalSplitDimension, Consts.ANY, emptyList(), emptyList(), emptyList(), any, emptyList(), sorted );
             } else {
 
                 final long splitValue = unique[unique.length / 2];

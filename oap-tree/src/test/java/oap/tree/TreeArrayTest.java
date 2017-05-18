@@ -52,7 +52,7 @@ public class TreeArrayTest {
     @Test
     public void testArray() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", 0 ) )
+            .<String>tree( ARRAY_LONG( "d1", null ) )
             .load( l(
                 v( "1", l( a( true, 1L, 2L ) ) ),
                 v( "2", l( a( true, 2L ) ) ),
@@ -87,7 +87,7 @@ public class TreeArrayTest {
     @Test
     public void testArrayExclude() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", 0 ) )
+            .<String>tree( ARRAY_LONG( "d1", null ) )
             .load( l(
                 v( "1", l( a( false, 1L, 2L ) ) ),
                 v( "2", l( a( false, 2L ) ) ),
@@ -107,7 +107,7 @@ public class TreeArrayTest {
     @Test
     public void testArrayQueryForArrayExclude() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", 0 ) )
+            .<String>tree( ARRAY_LONG( "d1", null ) )
             .load( l(
                 v( "1", l( a( false, 1L, 2L ) ) ),
                 v( "2", l( a( false, 2L ) ) )
@@ -124,7 +124,7 @@ public class TreeArrayTest {
     @Test
     public void testArrayOptimize() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", 0 ), ARRAY_STRING( "d2" ) )
+            .<String>tree( ARRAY_LONG( "d1", null ), ARRAY_STRING( "d2" ) )
             .load( l(
                 v( "1", l( a( true, 1L, 2L ), a( true, "1", "2" ) ) ),
                 v( "2", l( a( true, 1L, 2L ), a( true, "1", "2" ) ) ),
@@ -146,7 +146,7 @@ public class TreeArrayTest {
     @Test
     public void testArrayAnyAny() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", 0 ) )
+            .<String>tree( ARRAY_LONG( "d1", null ) )
             .load( l( v( "1", l( a( false ) ) ) ) );
 
         System.out.println( tree.toString() );
@@ -173,7 +173,7 @@ public class TreeArrayTest {
     @Test
     public void testFindQueryAnyAndDimensionRequired() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", 0 ) )
+            .<String>tree( ARRAY_LONG( "d1", null ) )
             .load( l( v( "1", l( a( true ) ) ), v( "2", l( a( true, 2L ) ) ) ) );
 
         System.out.println( tree.toString() );
@@ -187,7 +187,7 @@ public class TreeArrayTest {
     @Test
     public void testSet() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", 0 ) )
+            .<String>tree( ARRAY_LONG( "d1", null ) )
             .load( l( v( "1", l( as( true, s( 1L, 2L ) ) ) ) ) );
 
         System.out.println( tree.toString() );
