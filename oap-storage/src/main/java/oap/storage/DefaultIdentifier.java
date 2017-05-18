@@ -33,9 +33,6 @@ import java.util.function.UnaryOperator;
 
 public final class DefaultIdentifier<T> implements Identifier<T> {
 
-    private static final UnaryOperator<String> REPLACE_SPECIAL = id -> id.replaceAll( "[^a-zA-Z0-9]+", "" );
-    private static final UnaryOperator<String> REPLACE_VOWELS = id -> id.replaceAll( "[AEIOUaeiou]", "" );
-
     private final Function<? super T, String> getId;
     private final BiConsumer<? super T, String> setId;
     private final Function<? super T, String> suggestion;
@@ -43,13 +40,9 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
 
     DefaultIdentifier( final IdentifierBuilder<? super T> identifierBuilder ) {
         this.size = identifierBuilder.getSize();
-
         this.getId = identifierBuilder.getIdentityFunction();
         this.setId = identifierBuilder.getSetIdFunction().orElse( null );
-
-        this.suggestion = identifierBuilder.getSuggestion()
-            .map( suggestion -> suggestion.andThen( REPLACE_SPECIAL ).andThen( REPLACE_VOWELS ) )
-            .orElse( null );
+        this.suggestion = identifierBuilder.getSuggestion().orElse( null );
     }
 
     @Override
