@@ -36,6 +36,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -46,6 +47,8 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static oap.util.Pair.__;
+import static oap.util.Strings.FriendlyIdOption.FILL;
+import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
 
 public final class Strings {
     public static final String UNDEFINED = "UNDEFINED";
@@ -302,13 +305,30 @@ public final class Strings {
         return result.toString();
     }
 
-    private static Pattern significantSymbols = Pattern.compile( "[^bcdfghjklmnpqrstvwxz0-9]+", CASE_INSENSITIVE );
+    private static Pattern significantSymbolsNoVowels = Pattern.compile( "[^bcdfghjklmnpqrstvwxz0-9]+", CASE_INSENSITIVE );
+    private static Pattern significantSymbols = Pattern.compile( "[^abcdefghijklmnopqrstuvwxyz0-9]+", CASE_INSENSITIVE );
 
-    public static String toUserFriendlyId( String source, int length, Predicate<String> conflict ) {
-        String id = significantSymbols.matcher( source ).replaceAll( "" ).toUpperCase();
+    public enum FriendlyIdOption {
+        NO_VOWELS,
+        FILL
+    }
 
-        char[] chars = ( id.length() > length ? id.substring( 0, length )
-            : id + fill( "X", length - id.length() + 1 ) ).toCharArray();
+    public static String toUserFriendlyId( String source, int length, Predicate<String> conflict, FriendlyIdOption... opts ) {
+        Objects.nonNull( source );
+
+        String id = ( Arrays.contains( NO_VOWELS, opts )
+            ? significantSymbolsNoVowels
+            : significantSymbols )
+            .matcher( source )
+            .replaceAll( "" )
+            .toUpperCase();
+
+        char[] chars = ( id.length() > length
+            ? id.substring( 0, length )
+            : Arrays.contains( FILL, opts )
+                ? id + fill( "X", length - id.length() + 1 )
+                : id
+        ).toCharArray();
 
 
         conflictResolution:

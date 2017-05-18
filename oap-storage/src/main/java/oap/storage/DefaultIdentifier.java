@@ -29,7 +29,9 @@ import oap.util.Strings;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
+
+import static oap.util.Strings.FriendlyIdOption.FILL;
+import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
 
 public final class DefaultIdentifier<T> implements Identifier<T> {
 
@@ -59,7 +61,7 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
             Objects.requireNonNull( setId, "Set of nullable identifier is not specified" );
 
             id = Strings.toUserFriendlyId( suggestion.apply( object ),
-                size, newId -> storage.get( newId ).isPresent() );
+                size, newId -> storage.get( newId ).isPresent(), NO_VOWELS, FILL );
 
             setId.accept( object, id );
         }
