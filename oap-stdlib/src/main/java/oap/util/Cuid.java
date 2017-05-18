@@ -23,8 +23,6 @@
  */
 package oap.util;
 
-import org.joda.time.DateTimeUtils;
-
 import java.net.Inet4Address;
 import java.net.NetworkInterface;
 import java.util.concurrent.atomic.AtomicLong;
@@ -88,11 +86,21 @@ public class Cuid {
     }
 
     public static class TimeSeedCounter implements Counter {
-        private AtomicLong value = new AtomicLong( DateTimeUtils.currentTimeMillis() << 16 );
-
+        volatile private long lastTime = System.currentTimeMillis();
+        private final AtomicLong value = new AtomicLong( lastTime << 16 );
 
         @Override
         public long next() {
+            final long ct = System.currentTimeMillis();
+            if( ct > lastTime ) {
+                synchronized( TimeSeedCounter.class ) {
+                    if( ct > lastTime ) {
+                        lastTime = ct;
+                        value.set( lastTime << 16 );
+                    }
+                }
+            }
+
             return value.incrementAndGet();
         }
     }
