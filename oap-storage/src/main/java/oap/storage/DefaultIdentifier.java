@@ -24,13 +24,12 @@
 
 package oap.storage;
 
-import com.google.common.base.Preconditions;
+import oap.util.Strings;
 
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-
-import static java.lang.String.format;
 
 public final class DefaultIdentifier<T> implements Identifier<T> {
 
@@ -63,67 +62,16 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
         String id = getId.apply( object );
 
         if( id == null ) {
-            Preconditions.checkState( suggestion != null, "Suggestion is not specified for " +
-                "nullable identifier" );
-            Preconditions.checkState( setId != null, "Set of nullable identifier is not " +
-                "specified" );
+            Objects.requireNonNull( suggestion, "Suggestion is not specified for nullable identifier" );
+            Objects.requireNonNull( setId, "Set of nullable identifier is not specified" );
 
-            id = suggestion.apply( object ).toUpperCase();
-
-            if( id.length() > size ) {
-                id = id.substring( 0, size );
-            } else {
-                final StringBuilder idBuilder = new StringBuilder( id );
-                for( int i = idBuilder.length(); i <= size; i++ ) {
-                    idBuilder.append( "X" );
-                }
-
-                id = idBuilder.toString();
-            }
-
-            id = resolveConflicts( id, storage );
+            id = Strings.toUserFriendlyId( suggestion.apply( object ),
+                size, newId -> storage.get( newId ).isPresent() );
 
             setId.accept( object, id );
         }
 
         return id;
-    }
-
-    private String resolveConflicts( final String newId, final Storage<T> storage ) {
-        String uniqueId = newId;
-
-        int currentIdChar = uniqueId.length() - 1;
-        while( identifierExists( storage, uniqueId ) ) {
-            if( currentIdChar != -1 ) {
-                for( char symbol = 48; symbol < 122; symbol++ ) {
-                    if( ( symbol > 57 && symbol < 65 ) || ( symbol > 91 && symbol < 97 ) ) {
-                        continue;
-                    }
-
-                    if( identifierExists( storage, uniqueId ) ) {
-                        final char[] chars = uniqueId.toCharArray();
-
-                        chars[currentIdChar] = symbol;
-
-                        uniqueId = new String( chars );
-                    } else {
-                        break;
-                    }
-                }
-
-                currentIdChar--;
-            } else {
-                throw new RuntimeException( format( "Couldn't generate non-duplicated id for following set up: " +
-                        "storage size - [%s]; required id size - [%s]; last id tried - [%s]", storage.size(),
-                    size, uniqueId ) );
-            }
-        }
-
-        return uniqueId;
-    }
-
-    private boolean identifierExists( final Storage<T> storage, final String identifier ) {
-        return storage.get( identifier ).isPresent();
     }
 
 }

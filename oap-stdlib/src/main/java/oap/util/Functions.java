@@ -56,6 +56,7 @@ public class Functions {
 
         private static final BiConsumer<?, ?> BI_CONSUMER = ( v, u ) -> {};
         private static final Predicate<?> acceptAll = x -> true;
+        private static final Predicate<?> rejectAll = x -> false;
 
         public static Runnable run = () -> {};
 
@@ -73,6 +74,10 @@ public class Functions {
 
         public static <T> Predicate<T> accept() {
             return ( Predicate<T> ) acceptAll;
+        }
+
+        public static <T> Predicate<T> reject() {
+            return ( Predicate<T> ) rejectAll;
         }
     }
 

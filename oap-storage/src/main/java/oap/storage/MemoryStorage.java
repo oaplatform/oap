@@ -23,7 +23,6 @@
  */
 package oap.storage;
 
-import lombok.val;
 import oap.util.Maps;
 import oap.util.Optionals;
 import oap.util.Stream;
@@ -38,6 +37,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+
+import static oap.concurrent.Threads.synchronizedOn;
 
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     protected final Identifier<T> identifier;
@@ -64,7 +65,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     @Override
     public void store( T object ) {
         String id = identifier.getOrInit( object, this );
-        lock( id, () -> {
+        synchronizedOn( id, () -> {
             Metadata<T> metadata = data.get( id );
             if( metadata != null ) metadata.update( object );
             else data.put( id, new Metadata<>( id, object ) );
@@ -74,12 +75,12 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public void store( Collection<T> objects ) {
-        val newObjects = new ArrayList<T>();
-        val updatedObjects = new ArrayList<T>();
+        ArrayList<T> newObjects = new ArrayList<>();
+        ArrayList<T> updatedObjects = new ArrayList<>();
 
         for( T object : objects ) {
             String id = identifier.getOrInit( object, this );
-            lock( id, () -> {
+            synchronizedOn( id, () -> {
                 Metadata<T> metadata = data.get( id );
                 if( metadata != null ) {
                     metadata.update( object );
@@ -109,7 +110,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     protected Optional<Metadata<T>> updateObject( String id, Consumer<T> update, Supplier<T> init ) {
-        return lock( id, () -> {
+        return synchronizedOn( id, () -> {
             Metadata<T> m = data.get( id );
             if( m == null ) {
                 if( init == null ) return Optional.empty();
@@ -155,7 +156,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     protected Optional<Metadata<T>> deleteObject( String id ) {
-        return lock( id, () -> {
+        return synchronizedOn( id, () -> {
             Optional<Metadata<T>> metadata = Maps.get( data, id );
             metadata.ifPresent( m -> data.remove( id ) );
             return metadata;
@@ -218,6 +219,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         return new ArrayList<>( data.keySet() );
     }
 
+
     public void clear() {
         List<String> keys = new ArrayList<>( data.keySet() );
         List<T> deleted = Stream.of( keys ).flatMapOptional( this::deleteObject ).map( m -> m.object ).toList();
@@ -230,18 +232,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public Iterator<T> iterator() {
-        val iterator = data.values().iterator();
-        return new Iterator<T>() {
-            @Override
-            public boolean hasNext() {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public T next() {
-                return iterator.next().object;
-            }
-        };
+        return select().iterator();
     }
 
     @Override

@@ -27,8 +27,12 @@ import oap.testng.AbstractTest;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
+import java.util.Set;
+
 import static oap.testng.Asserts.assertString;
+import static oap.util.Functions.empty.reject;
 import static oap.util.Pair.__;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -102,5 +106,39 @@ public class StringsTest extends AbstractTest {
         assertString( Strings.deepToString( new Object[] { "x", "y" } ) ).isEqualTo( "[x, y]" );
         assertString( Strings.deepToString( new int[] { 1, 2 } ) ).isEqualTo( "[1, 2]" );
         assertString( Strings.deepToString( "aaa" ) ).isEqualTo( "aaa" );
+        assertString( Strings.deepToString( new Object[] { new Object[] { "x" }, "y" } ) ).isEqualTo( "[[x], y]" );
+    }
+
+    @Test
+    public void toUserFriendlyId() {
+        assertString( Strings.toUserFriendlyId( "some text", 7, reject() ) )
+            .isEqualTo( "SMTXTXXX" );
+        assertString( Strings.toUserFriendlyId( "another text", 7, reject() ) )
+            .isEqualTo( "NTHRTXTX" );
+
+        Set<String> items = Sets.empty();
+        for( int i = 0; i < 18; i++ )
+            items.add( Strings.toUserFriendlyId( "some text", 7, items::contains ) );
+
+        assertThat( items ).containsExactly(
+            "SMTXTXXX",
+            "SMTXTXX0",
+            "SMTXTXX1",
+            "SMTXTXX2",
+            "SMTXTXX3",
+            "SMTXTXX4",
+            "SMTXTXX5",
+            "SMTXTXX6",
+            "SMTXTXX7",
+            "SMTXTXX8",
+            "SMTXTXX9",
+            "SMTXTXXA",
+            "SMTXTXXB",
+            "SMTXTXXC",
+            "SMTXTXXD",
+            "SMTXTXXE",
+            "SMTXTXXF",
+            "SMTXTXXG"
+        );
     }
 }

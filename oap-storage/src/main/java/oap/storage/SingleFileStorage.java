@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
+import static oap.concurrent.Threads.synchronizedOn;
 import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.util.Maps.Collectors.toConcurrentMap;
 import static oap.util.Pair.__;
@@ -51,9 +52,9 @@ import static oap.util.Pair.__;
  */
 @Slf4j
 public class SingleFileStorage<T> extends MemoryStorage<T> {
-    private final static byte[] BEGIN_ARRAY = "[".getBytes();
-    private final static byte[] END_ARRAY = "]".getBytes();
-    private final static byte[] ITEM_SEP = ",".getBytes();
+    private static final byte[] BEGIN_ARRAY = "[".getBytes();
+    private static final byte[] END_ARRAY = "]".getBytes();
+    private static final byte[] ITEM_SEP = ",".getBytes();
     private final PeriodicScheduled scheduled;
     private Path path;
     private AtomicBoolean modified = new AtomicBoolean( false );
@@ -102,12 +103,8 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
             Iterator<Metadata<T>> it = data.values().iterator();
             while( it.hasNext() ) {
                 Metadata<T> metadata = it.next();
-                lock( metadata.id, () -> {
-                    Binder.json.marshal( out, metadata );
-                } );
-                if( it.hasNext() ) {
-                    out.write( ITEM_SEP );
-                }
+                synchronizedOn( metadata.id, () -> Binder.json.marshal( out, metadata ) );
+                if( it.hasNext() ) out.write( ITEM_SEP );
             }
             out.write( END_ARRAY );
 
@@ -128,12 +125,12 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
 
     private class SFSDataListener<T> implements DataListener<T> {
         @Override
-        public void updated( T object, boolean isNew ) {
+        public void updated( T object, boolean added ) {
             modified.set( true );
         }
 
         @Override
-        public void updated( Collection<T> objects, boolean isNew ) {
+        public void updated( Collection<T> objects, boolean added ) {
             modified.set( true );
         }
 
