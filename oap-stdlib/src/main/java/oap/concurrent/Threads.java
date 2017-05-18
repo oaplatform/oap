@@ -26,6 +26,8 @@ package oap.concurrent;
 
 import lombok.SneakyThrows;
 
+import java.util.function.Supplier;
+
 public class Threads {
     public static void interruptAndJoin( Thread thread ) {
         if( thread != null ) {
@@ -54,6 +56,18 @@ public class Threads {
     public static void notifyAllFor( Object monitor ) {
         synchronized( monitor ) {
             monitor.notifyAll();
+        }
+    }
+
+    public static void synchronizedOn( String id, Runnable run ) {
+        synchronized( id.intern() ) {
+            run.run();
+        }
+    }
+
+    public static <R> R synchronizedOn( String id, Supplier<R> run ) {
+        synchronized( id.intern() ) {
+            return run.get();
         }
     }
 

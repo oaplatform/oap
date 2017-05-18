@@ -38,10 +38,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static oap.util.Pair.__;
 
 public final class Strings {
@@ -299,4 +302,29 @@ public final class Strings {
         return result.toString();
     }
 
+    private static Pattern significantSymbols = Pattern.compile( "[^bcdfghjklmnpqrstvwxz0-9]+", CASE_INSENSITIVE );
+
+    public static String toUserFriendlyId( String source, int length, Predicate<String> conflict ) {
+        String id = significantSymbols.matcher( source ).replaceAll( "" ).toUpperCase();
+
+        char[] chars = ( id.length() > length ? id.substring( 0, length )
+            : id + fill( "X", length - id.length() + 1 ) ).toCharArray();
+
+
+        conflictResolution:
+        for( int position = chars.length - 1; position >= 0; position-- )
+            for( char symbol = 48; symbol < 122; symbol++ ) {
+                if( ( symbol > 57 && symbol < 65 ) || ( symbol > 91 && symbol < 97 ) ) continue;
+
+                if( conflict.test( new String( chars ) ) ) chars[position] = symbol;
+                else break conflictResolution;
+            }
+
+        id = new String( chars );
+
+        if( conflict.test( id ) )
+            throw new IllegalArgumentException( format( "cannot resolve conflict for source '%s' with max id length %s", id, length ) );
+
+        return id;
+    }
 }

@@ -159,8 +159,8 @@ public class SocketLoggingServer implements Runnable {
                     String selector = in.readUTF();
                     if( size > bufferSize ) {
                         out.writeInt( SocketError.BUFFER_OVERFLOW.code );
-                        throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " +
-                            bufferSize + " from " + hostName + "/" + clientId + " with " + selector );
+                        throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is "
+                            + bufferSize + " from " + hostName + "/" + clientId + " with " + selector );
                     }
                     in.readFully( buffer, 0, size );
                     if( !backend.isLoggingAvailable() ) {

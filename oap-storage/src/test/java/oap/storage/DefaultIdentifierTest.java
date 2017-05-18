@@ -24,108 +24,74 @@
 
 package oap.storage;
 
-import oap.json.TypeIdFactory;
-import oap.testng.AbstractTest;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static oap.testng.Env.tmpPath;
+import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DefaultIdentifierTest extends AbstractTest {
+public class DefaultIdentifierTest {
 
-    @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-        TypeIdFactory.register( Bean.class, Bean.class.getName() );
+    @Test
+    public void idFromPath() {
+        MemoryStorage<Bean> storage = new MemoryStorage<>( IdentifierBuilder.identityPath( "s" ).build() );
+        storage.store( new Bean( "1", "aaaa" ) );
+        storage.store( new Bean( "2", "bbbb" ) );
+        assertThat( storage.get( "aaaa" ) )
+            .isPresent()
+            .hasValue( new Bean( "1", "aaaa" ) );
+        assertThat( storage.get( "bbbb" ) )
+            .isPresent()
+            .hasValue( new Bean( "2", "bbbb" ) );
     }
 
     @Test
-    public void testShouldStoreObjectsWithIdFromPath() {
-        try( FileStorage<Bean> storage = new FileStorage<>( tmpPath( "data" ),
-            IdentifierBuilder.identityPath( "s" ).build(), 50 )
-        ) {
-            storage.store( new Bean( "1", "aaaa" ) );
-            storage.store( new Bean( "2", "bbbb") );
-        }
+    public void idAndSizeGeneration() {
+        Identifier<Bean> identifier = IdentifierBuilder.<Bean>identityPath( "id" )
+            .suggestion( bean -> bean.s )
+            .size( 7 )
+            .build();
+        MemoryStorage<Bean> storage = new MemoryStorage<>( identifier );
+        Bean a = new Bean( null, "some text" );
+        Bean b = new Bean( null, "another text" );
 
-        try( FileStorage<Bean> storage2 = new FileStorage<>( tmpPath( "data" ),
-            IdentifierBuilder.identityPath( "s" ).build() )
-        ) {
-            assertThat( storage2.select() )
-                .containsExactly( new Bean( "1", "aaaa" ), new Bean( "2", "bbbb" ) );
-        }
+        storage.store( a );
+        storage.store( b );
+
+        assertString( a.id ).isEqualTo( "SMTXTXXX" );
+        assertString( b.id ).isEqualTo( "NTHRTXTX" );
+
     }
 
     @Test
-    public void testShouldStoreObjectsWithIdAndSizeGeneration() {
-        try( FileStorage<Bean> storage = new FileStorage<>( tmpPath( "data" ),
-            IdentifierBuilder.<Bean>identityPath( "id" ).suggestion( bean -> bean.s ).size( 7 ).build(), 50 )
-        ) {
-            final Bean beanA = new Bean( null, "some text" );
-            final Bean beanB = new Bean( null, "another text" );
+    public void conflictResolution() {
+        Identifier<Bean> identifier = IdentifierBuilder.<Bean>identityPath( "id" )
+            .suggestion( bean -> bean.s )
+            .size( 7 )
+            .build();
+        MemoryStorage<Bean> storage = new MemoryStorage<>( identifier );
+        Bean a = new Bean( null, "some text" );
+        Bean b = new Bean( null, "some text" );
+        Bean c = new Bean( null, "some text" );
+        Bean d = new Bean( null, "some text" );
+        Bean e = new Bean( null, "some text" );
+        Bean f = new Bean( null, "some text" );
+        Bean g = new Bean( null, "some text" );
 
-            storage.store( beanA );
-            storage.store( beanB );
+        storage.store( a );
+        storage.store( b );
+        storage.store( c );
+        storage.store( d );
+        storage.store( e );
+        storage.store( f );
+        storage.store( g );
 
-            assertThat( beanA ).extracting( "id" ).hasSize( 1 ).contains( "SMTXTXXX" );
-            assertThat( beanB ).extracting( "id" ).hasSize( 1 ).contains( "NTHRTXTX" );
-        }
-
-        try( FileStorage<Bean> storage2 = new FileStorage<>( tmpPath( "data" ),
-            IdentifierBuilder.<Bean>identityPath( "id" ).suggestion( bean -> bean.s ).size( 7 ).build() )
-        ) {
-            assertThat( storage2.select() )
-                .containsExactly( new Bean( "NTHRTXTX", "another text" ), new Bean( "SMTXTXXX", "some text" ) );
-        }
-    }
-
-    @Test
-    public void testShouldStoreObjectsWithIdConflictResolutionWhileGenerating() {
-        try( FileStorage<Bean> storage = new FileStorage<>( tmpPath( "data" ),
-            IdentifierBuilder.<Bean>identityPath( "id" ).suggestion( bean -> bean.s ).size( 7 ).build(), 50 )
-        ) {
-            final Bean beanA = new Bean( null, "some text" );
-            final Bean beanB = new Bean( null, "some text" );
-            final Bean beanC = new Bean( null, "some text" );
-            final Bean beanD = new Bean( null, "some text" );
-            final Bean beanE = new Bean( null, "some text" );
-            final Bean beanF = new Bean( null, "some text" );
-            final Bean beanG = new Bean( null, "some text" );
-
-            storage.store( beanA );
-            storage.store( beanB );
-            storage.store( beanC );
-            storage.store( beanD );
-            storage.store( beanE );
-            storage.store( beanF );
-            storage.store( beanG );
-
-            assertThat( beanA ).extracting( "id" ).containsExactly( "SMTXTXXX" );
-            assertThat( beanB ).extracting( "id" ).containsExactly( "SMTXTXX0" );
-            assertThat( beanC ).extracting( "id" ).containsExactly( "SMTXTXX1" );
-            assertThat( beanD ).extracting( "id" ).containsExactly( "SMTXTXX2" );
-            assertThat( beanE ).extracting( "id" ).containsExactly( "SMTXTXX3" );
-            assertThat( beanF ).extracting( "id" ).containsExactly( "SMTXTXX4" );
-            assertThat( beanG ).extracting( "id" ).containsExactly( "SMTXTXX5" );
-        }
-
-        try( FileStorage<Bean> storage2 = new FileStorage<>( tmpPath( "data" ),
-            IdentifierBuilder.<Bean>identityPath( "id" ).suggestion( bean -> bean.s ).size( 7 ).build() )
-        ) {
-            storage2.select().forEach( System.out::println );
-            assertThat( storage2.select() )
-                .containsExactly(
-                    new Bean( "SMTXTXX0", "some text" ),
-                    new Bean( "SMTXTXX1", "some text" ),
-                    new Bean( "SMTXTXX2", "some text" ),
-                    new Bean( "SMTXTXX3", "some text" ),
-                    new Bean( "SMTXTXX4", "some text" ),
-                    new Bean( "SMTXTXX5", "some text" ),
-                    new Bean( "SMTXTXXX", "some text" )
-                );
-        }
+        assertString( a.id ).isEqualTo( "SMTXTXXX" );
+        assertString( b.id ).isEqualTo( "SMTXTXX0" );
+        assertString( c.id ).isEqualTo( "SMTXTXX1" );
+        assertString( d.id ).isEqualTo( "SMTXTXX2" );
+        assertString( e.id ).isEqualTo( "SMTXTXX3" );
+        assertString( f.id ).isEqualTo( "SMTXTXX4" );
+        assertString( g.id ).isEqualTo( "SMTXTXX5" );
     }
 
 }

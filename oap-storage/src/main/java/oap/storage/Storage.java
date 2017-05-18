@@ -34,18 +34,6 @@ import java.util.function.Supplier;
 public interface Storage<T> extends Closeable, Iterable<T> {
     Stream<T> select();
 
-    default <R> R lock( String id, Supplier<R> run ) {
-        synchronized( id.intern() ) {
-            return run.get();
-        }
-    }
-
-    default void lock( String id, Runnable run ) {
-        synchronized( id.intern() ) {
-            run.run();
-        }
-    }
-
     void store( T object );
 
     void store( Collection<T> objects );
@@ -78,7 +66,7 @@ public interface Storage<T> extends Closeable, Iterable<T> {
         default void updated( T object ) {
         }
 
-        default void updated( T object, boolean isNew ) {
+        default void updated( T object, boolean added ) {
             updated( object );
         }
 
@@ -90,10 +78,10 @@ public interface Storage<T> extends Closeable, Iterable<T> {
         default void updated( Collection<T> objects ) {
         }
 
-        default void updated( Collection<T> objects, boolean isNew ) {
+        default void updated( Collection<T> objects, boolean added ) {
             updated( objects );
 
-            objects.forEach( obj -> updated( obj, isNew ) );
+            objects.forEach( obj -> updated( obj, added ) );
         }
 
 

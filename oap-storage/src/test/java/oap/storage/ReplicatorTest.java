@@ -53,8 +53,8 @@ public class ReplicatorTest extends AbstractTest {
             val creates = new AtomicInteger();
             val deletes = new AtomicInteger();
             slave.addDataListener( new FileStorage.DataListener<Bean>() {
-                public void updated( Collection<Bean> objects, boolean isNew ) {
-                    ( isNew ? creates : updates ).set( objects.size() );
+                public void updated( Collection<Bean> objects, boolean added ) {
+                    ( added ? creates : updates ).set( objects.size() );
                 }
 
                 @Override
