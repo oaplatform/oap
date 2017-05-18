@@ -37,5 +37,7 @@ public interface Connection extends Closeable {
 
     void write( byte[] buffer, int off, int length );
 
+    void write( byte b );
+
     int read();
 }

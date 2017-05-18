@@ -25,6 +25,7 @@ package oap.logstream.net;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.concurrent.SynchronizedThread;
 import oap.concurrent.ThreadPoolExecutor;
 import oap.io.Closeables;
@@ -45,10 +46,10 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static oap.concurrent.Threads.isInterrupted;
 
@@ -67,7 +68,7 @@ public class SocketLoggingServer implements Runnable {
     private LoggingBackend backend;
     private Path controlStatePath;
     private ServerSocket serverSocket;
-    private Map<String, Long> control = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, AtomicLong> control = new ConcurrentHashMap<>();
 
     public SocketLoggingServer( int port, int bufferSize, LoggingBackend backend, Path controlStatePath ) {
         this.port = port;
@@ -85,7 +86,7 @@ public class SocketLoggingServer implements Runnable {
             while( thread.isRunning() && !serverSocket.isClosed() ) try {
                 Socket socket = serverSocket.accept();
                 log.debug( "accepted connection {}", socket );
-                executor.submit( new Worker( socket ) );
+                executor.execute( new Worker( socket ) );
             } catch( SocketTimeoutException ignore ) {
             } catch( IOException e ) {
                 if( !"Socket closed".equals( e.getMessage() ) )
@@ -135,43 +136,53 @@ public class SocketLoggingServer implements Runnable {
         @Override
         public void run() {
             String hostName = null;
+            byte clientId = -1;
+
             try {
-                DataOutputStream out = new DataOutputStream( socket.getOutputStream() );
-                DataInputStream in = new DataInputStream( socket.getInputStream() );
+                val out = new DataOutputStream( socket.getOutputStream() );
+                val in = new DataInputStream( socket.getInputStream() );
                 socket.setSoTimeout( soTimeout );
                 socket.setKeepAlive( true );
                 socket.setTcpNoDelay( true );
+
                 hostName = socket.getInetAddress().getCanonicalHostName();
-                log.debug( "[{}] start logging... ", hostName );
+                clientId = in.readByte();
+                val digestKey = hostName + clientId;
+
+                log.info( "client = {}/{}", hostName, clientId );
+
+                log.debug( "[{}] start logging... ", hostName, clientId );
                 while( !closed && !isInterrupted() ) {
                     long digestionId = in.readLong();
-                    long lastId = control.computeIfAbsent( hostName, h -> 0L );
+                    val lastId = control.computeIfAbsent( digestKey, h -> new AtomicLong( 0L ) );
                     int size = in.readInt();
                     String selector = in.readUTF();
                     if( size > bufferSize ) {
                         out.writeInt( SocketError.BUFFER_OVERFLOW.code );
-                        throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " + bufferSize + " from " + hostName + " with " + selector );
+                        throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is " +
+                            bufferSize + " from " + hostName + "/" + clientId + " with " + selector );
                     }
                     in.readFully( buffer, 0, size );
                     if( !backend.isLoggingAvailable() ) {
                         out.writeInt( SocketError.BACKEND_UNAVAILABLE.code );
-                        throw new IOException( "backend logging is not available" );
+                        throw new IOException( "[" + hostName + "/" + clientId + "] backend logging is not available" );
                     }
-                    if( lastId < digestionId ) {
-                        log.trace( "[{}] logging ({}, {}, {})", hostName, digestionId, selector, size );
+                    if( lastId.get() < digestionId ) {
+                        log.trace( "[{}/{}] logging ({}, {}, {})", hostName, clientId, digestionId, selector, size );
                         backend.log( hostName, selector, buffer, 0, size );
-                        control.put( hostName, digestionId );
+                        lastId.set( digestionId );
                     } else
-                        log.warn( "[{}] buffer ({}, {}, {}) already written. Last written buffer is ({})", hostName, digestionId, selector, size, lastId );
+                        log.warn( "[{}/{}] buffer ({}, {}, {}) already written. Last written buffer is ({})",
+                            hostName, clientId, digestionId, selector, size, lastId );
                     out.writeInt( size );
                 }
             } catch( EOFException e ) {
-                log.debug( "[{}] {} ended, closed", hostName, socket );
+                log.debug( "[{}/{}] {} ended, closed", hostName, clientId, socket );
             } catch( SocketTimeoutException e ) {
-                log.info( "[{}] no activity on socket for {}ms, timeout, closing...", hostName, soTimeout );
-                log.trace( "[" + hostName + "] " + e.getMessage(), e );
+                log.info( "[{}/{}] no activity on socket for {}ms, timeout, closing...", hostName, clientId, soTimeout );
+                log.trace( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );
             } catch( Exception e ) {
-                log.error( "[" + hostName + "] " + e.getMessage(), e );
+                log.error( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );
             } finally {
                 Sockets.close( socket );
             }

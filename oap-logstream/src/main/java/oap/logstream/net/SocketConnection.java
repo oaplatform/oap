@@ -79,6 +79,15 @@ public class SocketConnection implements Connection {
     }
 
     @Override
+    public void write( byte b ) {
+        try {
+            out.write( b );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Override
     public int read() {
         try {
             return in.readInt();

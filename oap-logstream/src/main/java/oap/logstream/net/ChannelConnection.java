@@ -83,6 +83,11 @@ public class ChannelConnection implements Connection {
     }
 
     @Override
+    public void write( byte b ) {
+        write( new byte[] { b }, 0, 1 );
+    }
+
+    @Override
     public int read() {
         throw new NotImplementedException( "read" );
     }

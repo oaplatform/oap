@@ -24,6 +24,7 @@
 
 package oap.logstream;
 
+import lombok.val;
 import oap.io.IoStreams.Encoding;
 import oap.logstream.disk.DiskLoggingBackend;
 import oap.logstream.net.SocketLoggingBackend;
@@ -33,6 +34,8 @@ import oap.testng.Env;
 import oap.util.Dates;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import java.nio.file.Files;
 
 import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_BUFFER;
 import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_FREE_SPACE_REQUIRED;
@@ -86,12 +89,14 @@ public class LoggerTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "12345678";
 
-        try( DiskLoggingBackend serverBackend = new DiskLoggingBackend( tmpPath( "logs" ), ".log", DEFAULT_BUFFER ) ) {
+        try( val serverBackend = new DiskLoggingBackend( tmpPath( "logs" ), ".log", DEFAULT_BUFFER ) ) {
             SocketLoggingServer server = new SocketLoggingServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
-            try( SocketLoggingBackend clientBackend = new SocketLoggingBackend( "localhost", Env.port( "net" ), tmpPath( "buffers" ), 50 ) ) {
+            try( val clientBackend = new SocketLoggingBackend( ( byte ) 1, "localhost", Env.port( "net" ),
+                tmpPath( "buffers" ), 50 ) ) {
+
                 serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 1000L;
                 assertFalse( serverBackend.isLoggingAvailable() );
-                Logger logger = new Logger( clientBackend );
+                val logger = new Logger( clientBackend );
                 logger.log( "a", content );
                 clientBackend.send();
                 assertFalse( logger.isLoggingAvailable() );
@@ -111,12 +116,17 @@ public class LoggerTest extends AbstractTest {
             }
         }
 
-        assertFile( tmpPath( "logs/localhost/2015-10/10/a-2015-10-10-01-00.log" ) )
+        String localhost = "localhost";
+        if( !Files.exists( tmpPath( "logs/localhost/2015-10/10/a-2015-10-10-01-00.log" ) ) ) {
+            localhost = "127.0.0.1";
+        }
+
+        assertFile( tmpPath( "logs/" + localhost + "/2015-10/10/a-2015-10-10-01-00.log" ) )
             .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n"
                 + formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-        assertFile( tmpPath( "logs/localhost/2015-10/10/b-2015-10-10-01-00.log" ) )
+        assertFile( tmpPath( "logs/" + localhost + "/2015-10/10/b-2015-10-10-01-00.log" ) )
             .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-        assertFile( tmpPath( "logs/localhost/2015-10/10/d-2015-10-10-01-00.log" ) )
+        assertFile( tmpPath( "logs/" + localhost + "/2015-10/10/d-2015-10-10-01-00.log" ) )
             .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n" );
     }
 }

@@ -43,6 +43,7 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 @ToString( of = { "host" } )
 public class SocketLoggingBackend implements LoggingBackend {
 
+    private final byte clientId;
     private final String host;
     private final int port;
     private final Scheduled scheduled;
@@ -54,11 +55,12 @@ public class SocketLoggingBackend implements LoggingBackend {
     private boolean loggingAvailable = true;
     private boolean closed = false;
 
-    public SocketLoggingBackend( String host, int port, Path location, int bufferSize, long flushInterval ) {
-        this( host, port, location, BufferConfigurationMap.DEFAULT( bufferSize ), flushInterval );
+    public SocketLoggingBackend( byte clientId, String host, int port, Path location, int bufferSize, long flushInterval ) {
+        this( clientId, host, port, location, BufferConfigurationMap.DEFAULT( bufferSize ), flushInterval );
     }
 
-    public SocketLoggingBackend( String host, int port, Path location, BufferConfigurationMap configurations, long flushInterval ) {
+    public SocketLoggingBackend( byte clientId, String host, int port, Path location, BufferConfigurationMap configurations, long flushInterval ) {
+        this.clientId = clientId;
         this.host = host;
         this.port = port;
         this.buffers = new Buffers( location, configurations );
@@ -72,12 +74,12 @@ public class SocketLoggingBackend implements LoggingBackend {
         ) );
     }
 
-    public SocketLoggingBackend( String host, int port, Path location, int bufferSize ) {
-        this( host, port, location, BufferConfigurationMap.DEFAULT( bufferSize ) );
+    public SocketLoggingBackend( byte clientId, String host, int port, Path location, int bufferSize ) {
+        this( clientId, host, port, location, BufferConfigurationMap.DEFAULT( bufferSize ) );
     }
 
-    public SocketLoggingBackend( String host, int port, Path location, BufferConfigurationMap configurations ) {
-        this( host, port, location, configurations, 5000 );
+    public SocketLoggingBackend( byte clientId, String host, int port, Path location, BufferConfigurationMap configurations ) {
+        this( clientId, host, port, location, configurations, 5000 );
     }
 
     public synchronized void send() {
@@ -115,6 +117,7 @@ public class SocketLoggingBackend implements LoggingBackend {
             log.debug( "opening connection..." );
             this.connection =
                 blocking ? new SocketConnection( host, port, timeout ) : new ChannelConnection( host, port, timeout );
+            connection.write( clientId );
             log.debug( "connected!" );
         }
     }
