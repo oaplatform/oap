@@ -27,10 +27,8 @@ package oap.util;
 import oap.concurrent.Threads;
 import org.testng.annotations.Test;
 
-import java.util.List;
 import java.util.Set;
 
-import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CuidTest {
@@ -51,21 +49,18 @@ public class CuidTest {
     @Test
     public void hiResBug() {
         Set<String> ids = Sets.empty();
-        List<String> idl = Lists.empty();
 
         int count = 1000000;
         for( int i = 0; i < count; i++ ) {
             String next = Cuid.next();
             ids.add( next );
-            idl.add( next );
         }
+
         Cuid.resetToDefaults();
         for( int i = 0; i < count; i++ ) {
             String next = Cuid.next();
             ids.add( next );
-            idl.add( next );
         }
-        assertString( String.join( "\n", ids ) ).isEqualTo( Strings.join( "\n", idl ) );
         assertThat( ids.size() ).isEqualTo( count * 2 );
     }
 
