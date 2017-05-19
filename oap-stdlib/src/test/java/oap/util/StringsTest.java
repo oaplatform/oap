@@ -32,6 +32,8 @@ import java.util.Set;
 import static oap.testng.Asserts.assertString;
 import static oap.util.Functions.empty.reject;
 import static oap.util.Pair.__;
+import static oap.util.Strings.FriendlyIdOption.FILL;
+import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -111,14 +113,22 @@ public class StringsTest extends AbstractTest {
 
     @Test
     public void toUserFriendlyId() {
-        assertString( Strings.toUserFriendlyId( "some text", 7, reject() ) )
+        assertString( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS, FILL ) )
             .isEqualTo( "SMTXTXXX" );
-        assertString( Strings.toUserFriendlyId( "another text", 7, reject() ) )
+        assertString( Strings.toUserFriendlyId( "another text", 7, reject(), NO_VOWELS, FILL ) )
             .isEqualTo( "NTHRTXTX" );
+
+        assertString( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS ) )
+            .isEqualTo( "SMTXT" );
+
+        assertString( Strings.toUserFriendlyId( "some text", 7, reject() ) )
+            .isEqualTo( "SOMETEX" );
+        assertString( Strings.toUserFriendlyId( "another text", 7, reject() ) )
+            .isEqualTo( "ANOTHER" );
 
         Set<String> items = Sets.empty();
         for( int i = 0; i < 18; i++ )
-            items.add( Strings.toUserFriendlyId( "some text", 7, items::contains ) );
+            items.add( Strings.toUserFriendlyId( "some text", 7, items::contains, NO_VOWELS, FILL ) );
 
         assertThat( items ).containsExactly(
             "SMTXTXXX",
