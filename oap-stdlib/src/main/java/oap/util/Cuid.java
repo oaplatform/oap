@@ -40,13 +40,8 @@ public class Cuid {
     }
 
     public static void reset( String suffix, long seed ) {
-        Cuid.suffix = ipSuffix();
+        Cuid.suffix = suffix;
         counter = new SeedCounter( seed );
-    }
-
-    public static void resetToDefaults() {
-        Cuid.suffix = ipSuffix();
-        counter.resetToDefaults();
     }
 
     private static String ipSuffix() {
@@ -67,8 +62,6 @@ public class Cuid {
 
     public interface Counter {
         long next();
-
-        void resetToDefaults();
     }
 
     public static class SeedCounter implements Counter {
@@ -81,11 +74,6 @@ public class Cuid {
         @Override
         public long next() {
             return value.incrementAndGet();
-        }
-
-        @Override
-        public void resetToDefaults() {
-            value.set( 0 );
         }
     }
 
@@ -106,18 +94,6 @@ public class Cuid {
             }
 
             return value.incrementAndGet();
-        }
-
-        @Override
-        public void resetToDefaults() {
-            synchronized( TimeSeedCounter.class ) {
-                final long ct = System.currentTimeMillis();
-                if( ct < lastTime ) lastTime = ct;
-                else lastTime += 1;
-
-                value.set( ct << 16 );
-                value.incrementAndGet();
-            }
         }
     }
 }

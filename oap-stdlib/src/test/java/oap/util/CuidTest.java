@@ -50,17 +50,12 @@ public class CuidTest {
     public void hiResBug() {
         Set<String> ids = Sets.empty();
 
-        int count = 1000000;
+        int count = 2000000;
         for( int i = 0; i < count; i++ ) {
             String next = Cuid.next();
             ids.add( next );
         }
 
-        Cuid.resetToDefaults();
-        for( int i = 0; i < count; i++ ) {
-            String next = Cuid.next();
-            ids.add( next );
-        }
         assertThat( ids.size() ).isEqualTo( count * 2 );
     }
 
