@@ -56,7 +56,7 @@ public class CuidTest {
             ids.add( next );
         }
 
-        assertThat( ids.size() ).isEqualTo( count * 2 );
+        assertThat( ids.size() ).isEqualTo( count );
     }
 
 }
