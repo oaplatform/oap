@@ -114,9 +114,9 @@ public class StringsTest extends AbstractTest {
     @Test
     public void toUserFriendlyId() {
         assertString( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS, FILL ) )
-            .isEqualTo( "SMTXTXXX" );
+            .isEqualTo( "SMTXTXX" );
         assertString( Strings.toUserFriendlyId( "another text", 7, reject(), NO_VOWELS, FILL ) )
-            .isEqualTo( "NTHRTXTX" );
+            .isEqualTo( "NTHRTXT" );
 
         assertString( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS ) )
             .isEqualTo( "SMTXT" );
@@ -131,24 +131,24 @@ public class StringsTest extends AbstractTest {
             items.add( Strings.toUserFriendlyId( "some text", 7, items::contains, NO_VOWELS, FILL ) );
 
         assertThat( items ).containsExactly(
-            "SMTXTXXX",
-            "SMTXTXX0",
-            "SMTXTXX1",
-            "SMTXTXX2",
-            "SMTXTXX3",
-            "SMTXTXX4",
-            "SMTXTXX5",
-            "SMTXTXX6",
-            "SMTXTXX7",
-            "SMTXTXX8",
-            "SMTXTXX9",
-            "SMTXTXXA",
-            "SMTXTXXB",
-            "SMTXTXXC",
-            "SMTXTXXD",
-            "SMTXTXXE",
-            "SMTXTXXF",
-            "SMTXTXXG"
+            "SMTXTXX",
+            "SMTXTX0",
+            "SMTXTX1",
+            "SMTXTX2",
+            "SMTXTX3",
+            "SMTXTX4",
+            "SMTXTX5",
+            "SMTXTX6",
+            "SMTXTX7",
+            "SMTXTX8",
+            "SMTXTX9",
+            "SMTXTXA",
+            "SMTXTXB",
+            "SMTXTXC",
+            "SMTXTXD",
+            "SMTXTXE",
+            "SMTXTXF",
+            "SMTXTXG"
         );
     }
 }

@@ -326,7 +326,7 @@ public final class Strings {
         char[] chars = ( id.length() > length
             ? id.substring( 0, length )
             : Arrays.contains( FILL, opts )
-                ? id + fill( "X", length - id.length() + 1 )
+                ? id + fill( "X", length - id.length() )
                 : id
         ).toCharArray();
 

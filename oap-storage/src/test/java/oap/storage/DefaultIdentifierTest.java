@@ -57,8 +57,8 @@ public class DefaultIdentifierTest {
         storage.store( a );
         storage.store( b );
 
-        assertString( a.id ).isEqualTo( "SMTXTXXX" );
-        assertString( b.id ).isEqualTo( "NTHRTXTX" );
+        assertString( a.id ).isEqualTo( "SMTXTXX" );
+        assertString( b.id ).isEqualTo( "NTHRTXT" );
 
     }
 
@@ -85,13 +85,13 @@ public class DefaultIdentifierTest {
         storage.store( f );
         storage.store( g );
 
-        assertString( a.id ).isEqualTo( "SMTXTXXX" );
-        assertString( b.id ).isEqualTo( "SMTXTXX0" );
-        assertString( c.id ).isEqualTo( "SMTXTXX1" );
-        assertString( d.id ).isEqualTo( "SMTXTXX2" );
-        assertString( e.id ).isEqualTo( "SMTXTXX3" );
-        assertString( f.id ).isEqualTo( "SMTXTXX4" );
-        assertString( g.id ).isEqualTo( "SMTXTXX5" );
+        assertString( a.id ).isEqualTo( "SMTXTXX" );
+        assertString( b.id ).isEqualTo( "SMTXTX0" );
+        assertString( c.id ).isEqualTo( "SMTXTX1" );
+        assertString( d.id ).isEqualTo( "SMTXTX2" );
+        assertString( e.id ).isEqualTo( "SMTXTX3" );
+        assertString( f.id ).isEqualTo( "SMTXTX4" );
+        assertString( g.id ).isEqualTo( "SMTXTX5" );
     }
 
 }
