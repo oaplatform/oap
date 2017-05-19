@@ -104,8 +104,6 @@ public class WsFileUploaderTest extends AbstractTest {
         reset();
 
         Application.unregisterServices();
-
-        Cuid.resetToDefaults();
     }
 
     @Test
