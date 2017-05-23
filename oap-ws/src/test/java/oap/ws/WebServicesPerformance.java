@@ -45,7 +45,7 @@ public class WebServicesPerformance extends AbstractPerformance {
 
     @Test
     public void blocking_threads() {
-        Server server = new Server( 100 );
+        Server server = new Server( 5000 );
         SynchronizedThread listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
         listener.start();
         try {

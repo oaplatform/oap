@@ -56,7 +56,7 @@ public class FilesPerformance extends AbstractPerformance {
         Files.writeString( path2, RandomStringUtils.random( 10 ) );
     }
 
-    @Test
+    @Test( enabled = false )
     public void testLastModificationTime() {
         final long[] size = { 0 };
 
@@ -76,7 +76,7 @@ public class FilesPerformance extends AbstractPerformance {
         } );
     }
 
-    @Test
+    @Test( enabled = false )
     public void testExists() {
         benchmark( builder( "java.nio.file.Files.exists()" ).samples( SAMPLES ).build(), ( x ) -> {
             java.nio.file.Files.exists( path );
