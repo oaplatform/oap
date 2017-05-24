@@ -26,8 +26,13 @@ package oap.util;
 
 import lombok.val;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
@@ -59,5 +64,34 @@ public class Collections {
             if( !predicate.test( e ) ) return false;
         }
         return true;
+    }
+
+    public static <G, E> Map<G, List<E>> groupBy( Collection<E> list, Function<E, G> classifier ) {
+        final HashMap<G, List<E>> result = new HashMap<>();
+
+        for( val e : list ) {
+            final G key = classifier.apply( e );
+            result.computeIfAbsent( key, ( k ) -> new ArrayList<>() ).add( e );
+        }
+
+        return result;
+    }
+
+    public static <E> void partition( Collection<E> list, List<E> left, List<E> right, Predicate<E> predicate ) {
+        for( val v : list ) {
+            if( predicate.test( v ) ) right.add( v );
+            else left.add( v );
+        }
+    }
+
+    public static int max( Collection<Integer> ints ) {
+        assert !ints.isEmpty();
+
+        int max = Integer.MIN_VALUE;
+        for( val i : ints ) {
+            if( max < i ) max = i;
+        }
+
+        return max;
     }
 }

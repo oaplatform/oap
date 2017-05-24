@@ -61,6 +61,7 @@ public class TreePerformance extends AbstractPerformance {
     public static final Pattern ARRAY_ENUM_PATTERN = Pattern.compile( "^arrayEnum(\\d+)-([^\\-]+)-\\d+$" );
     public static final Pattern ENUM_PATTERN = Pattern.compile( "^enum-([^\\-]+)-\\d+$" );
     private static final AtomicInteger dimensionId = new AtomicInteger( 0 );
+    public static final int SAMPLES = 100000;
 
     private static <T> Set<T> s( T... data ) {
         return new HashSet<>( asList( data ) );
@@ -68,11 +69,11 @@ public class TreePerformance extends AbstractPerformance {
 
     @Test
     public void tree() {
-        run( 1, 20000 );
-        run( 0.75, 20000 );
+        run( 1, Integer.MIN_VALUE, 1000 );
+        run( 0.75, Integer.MIN_VALUE,1000 );
     }
 
-    public void run( double fillFactor, int dataCount ) {
+    public void run( double fillFactor, int arrayToTree, int dataCount ) {
         val bids = new ArrayList<ArrayList<Object>>();
 
         val dimensions = new ArrayList<Dimension>();
@@ -101,10 +102,11 @@ public class TreePerformance extends AbstractPerformance {
         final Tree<String> tree = Tree
             .<String>tree( dimensions )
             .withHashFillFactor( fillFactor )
+            .withArrayToTree( arrayToTree )
             .load( data );
 
 
-        benchmark( builder( "tree-" + fillFactor + "-" + dataCount ).samples( 100000 ).build(), ( i ) -> {
+        benchmark( builder( "tree-" + fillFactor + "-" + dataCount ).samples( SAMPLES ).build(), ( i ) -> {
             Assertions.assertThat( tree.find( bids.get( i % bids.size() ) ) ).isNotEmpty();
         } );
 

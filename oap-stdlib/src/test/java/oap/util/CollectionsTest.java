@@ -27,8 +27,11 @@ package oap.util;
 import lombok.val;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 
 /**
  * Created by Admin on 16.05.2017.
@@ -59,5 +62,34 @@ public class CollectionsTest {
 
         assertThat( Collections.allMatch( list, i -> i <= 5 ) ).isTrue();
         assertThat( Collections.allMatch( list, i -> i >= 5 ) ).isFalse();
+    }
+
+    @Test
+    public void testGroupBy() {
+        val list = asList( 1, 2, 1, 4 );
+
+        assertThat( Collections.groupBy( list, ( i ) -> i + 1 ) )
+            .containsOnly( entry( 2, asList( 1, 1 ) ), entry( 3, asList( 2 ) ), entry( 5, asList( 4 ) ) );
+
+    }
+
+    @Test
+    public void testPartition() {
+        val list = asList( 1, 2, 1, 4 );
+
+        val left = new ArrayList<Integer>();
+        val right = new ArrayList<Integer>();
+
+        Collections.partition( list, left, right, ( v ) -> v > 2 );
+
+        assertThat( left ).containsExactly( 4 );
+        assertThat( right ).containsExactly( 1, 2, 1 );
+    }
+
+    @Test
+    public void testMax() {
+        val list = asList( 1, 2, 1, 4 );
+
+        assertThat( Collections.max( list ) ).isEqualTo( 4 );
     }
 }

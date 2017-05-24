@@ -24,6 +24,7 @@
 
 package oap.tree;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,6 +33,7 @@ import java.util.List;
 public class TreeBuilder<T> {
     private List<Dimension> dimensions;
     private double hashFillFactor = 0.25;
+    private int arrayToTree = Integer.MIN_VALUE;
 
     public TreeBuilder( List<Dimension> dimensions ) {
         this.dimensions = dimensions;
@@ -43,8 +45,14 @@ public class TreeBuilder<T> {
         return this;
     }
 
-    public final Tree<T> load( List<Tree.ValueData<T>> data ) {
-        final Tree<T> tree = new Tree<>( dimensions, hashFillFactor );
+    public TreeBuilder<T> withArrayToTree( int arrayToTree ) {
+        this.arrayToTree = arrayToTree;
+
+        return this;
+    }
+
+    public final Tree<T> load( ArrayList<Tree.ValueData<T>> data ) {
+        final Tree<T> tree = new Tree<>( dimensions, hashFillFactor, arrayToTree );
         tree.load( data );
 
         return tree;

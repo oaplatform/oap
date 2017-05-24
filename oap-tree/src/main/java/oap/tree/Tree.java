@@ -53,7 +53,6 @@ import java.util.stream.LongStream;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -67,6 +66,7 @@ import static oap.util.Pair.__;
  * Created by igor.petrenko on 26.12.2016.
  */
 public class Tree<T> {
+    private final int arrayToTree;
     TreeNode<T> root = new Leaf<>( emptyList() );
     private List<Dimension> dimensions;
     private double hashFillFactor;
@@ -75,20 +75,21 @@ public class Tree<T> {
     private long leafCount = 0;
 
     Tree( List<Dimension> dimensions ) {
-        this( dimensions, 0.25 );
+        this( dimensions, 0.25, Integer.MAX_VALUE );
     }
 
-    Tree( List<Dimension> dimensions, double hashFillFactor ) {
+    Tree( List<Dimension> dimensions, double hashFillFactor, int arrayToTree ) {
         this.dimensions = dimensions;
         this.hashFillFactor = hashFillFactor;
+        this.arrayToTree = arrayToTree;
     }
 
     public static <T> ValueData<T> v( T selection, List<?> data ) {
         return new ValueData<>( data, selection );
     }
 
-    public static <T> List<T> l( T... data ) {
-        return asList( data );
+    public static <T> ArrayList<T> l( T... data ) {
+        return Lists.of( data );
     }
 
     public static <T> ValueData<T> v( T selection, Object... data ) {
@@ -133,7 +134,7 @@ public class Tree<T> {
         if( root instanceof Tree.Node ) {
             final List<ArrayBitSet> sets = ( ( Node ) root ).sets;
 
-            final long includeCount = sets.stream().filter( s -> s.include ).count();
+            final long includeCount = Lists.count( sets, s -> s.include );
             final long excludeCount = sets.size() - includeCount;
 
             tas.update( includeCount, excludeCount );
@@ -148,7 +149,9 @@ public class Tree<T> {
         }
     }
 
-    public void load( List<ValueData<T>> data ) {
+    public void load( ArrayList<ValueData<T>> data ) {
+        expand( data );
+
         init( data );
         final long[] uniqueCount = getUniqueCount( data );
         root = toNode( data, uniqueCount, new BitSet( dimensions.size() ) );
@@ -156,6 +159,41 @@ public class Tree<T> {
         updateCount( root );
 
         memory = MemoryMeter.get().measureDeep( this );
+    }
+
+    private void expand( ArrayList<ValueData<T>> data ) {
+        for( int i = 0; i < dimensions.size(); i++ ) {
+            val dimension = dimensions.get( i );
+            if( dimension.operationType != null ) continue;
+
+            int maxSize = Integer.MIN_VALUE;
+            HashSet<Boolean> contains = new HashSet<>();
+
+            for( val vd : data ) {
+                val list = ( Array ) vd.data.get( i );
+                if( list.size() > maxSize ) maxSize = list.size();
+                contains.add( list.include );
+            }
+
+            if( maxSize > arrayToTree ) continue;
+            if( contains.size() > 1 ) continue;
+
+            dimension.operationType = contains.contains( true ) ? CONTAINS : NOT_CONTAINS;
+
+            final int size = data.size();
+            for( int d = 0; d < size; d++ ) {
+                final ValueData<T> vd = data.get( d );
+
+                val list = ( List<?> ) vd.data.get( i );
+
+                for( int x = 0; x < list.size(); x++ ) {
+                    final Object item = list.get( x );
+                    val clone = vd.cloneWith( i, item );
+                    if( x == 0 ) data.set( d, clone );
+                    else data.add( clone );
+                }
+            }
+        }
     }
 
     private long[] getUniqueCount( List<ValueData<T>> data ) {
@@ -197,9 +235,10 @@ public class Tree<T> {
     }
 
     private long[][] convertQueryToLong( List<?> query ) {
-        final long[][] longData = new long[dimensions.size()][];
+        final int size = dimensions.size();
+        final long[][] longData = new long[size][];
 
-        for( int i = 0; i < dimensions.size(); i++ ) {
+        for( int i = 0; i < size; i++ ) {
             final Object value = query.get( i );
             final Dimension dimension = dimensions.get( i );
             longData[i] = dimension.getOrNullValue( value );
@@ -213,22 +252,19 @@ public class Tree<T> {
 
         final SplitDimension splitDimension = findSplitDimension( data, uniqueCount, eq );
 
-        if( splitDimension == null ) return new Leaf<>( data.stream().map( sd -> sd.value ).collect( toList() ) );
+        if( splitDimension == null ) return new Leaf<>( Lists.map( data, sd -> sd.value ) );
 
         final BitSet bitSetWithDimension = withSet( eq, splitDimension.dimension );
 
         final Dimension dimension = dimensions.get( splitDimension.dimension );
 
-        final List<ArrayBitSet> sets = splitDimension.sets
-            .stream()
-            .collect( groupingBy( s -> s.data.get( splitDimension.dimension ) ) )
-            .entrySet()
-            .stream()
-            .map( es -> {
-                final Array key = ( Array ) es.getKey();
-                return new ArrayBitSet( dimension.toBitSet( key ), key.include, toNode( es.getValue(), uniqueCount, bitSetWithDimension ) );
-            } )
-            .collect( toList() );
+        final List<ArrayBitSet> sets = Lists.map( Lists.groupBy(
+            splitDimension.sets,
+            s -> s.data.get( splitDimension.dimension )
+        ).entrySet(), es -> {
+            final Array key = ( Array ) es.getKey();
+            return new ArrayBitSet( dimension.toBitSet( key ), key.include, toNode( es.getValue(), uniqueCount, bitSetWithDimension ) );
+        } );
 
         if( splitDimension.hash.isEmpty() ) {
 
@@ -243,11 +279,10 @@ public class Tree<T> {
             );
         } else {
 
-            final Map<Integer, List<ValueData<T>>> map = splitDimension.hash
-                .stream()
-                .collect( groupingBy( d -> ( int ) dimension.getOrDefault( d.data.get( splitDimension.dimension ), ANY_AS_ARRAY )[0] ) );
+            final Map<Integer, List<ValueData<T>>> map = Lists.groupBy( splitDimension.hash,
+                d -> ( int ) dimension.getOrDefault( d.data.get( splitDimension.dimension ), ANY_AS_ARRAY )[0] );
 
-            final int max = map.keySet().stream().mapToInt( l -> l ).max().getAsInt();
+            final int max = Collections.max( map.keySet() );
 
             final TreeNode<T>[] array = new TreeNode[max + 1];
             Arrays.fill( array, null );
@@ -318,10 +353,10 @@ public class Tree<T> {
         final Dimension dimension = dimensions.get( finalSplitDimension );
 
         if( dimension.operationType == null ) { //array
-            val partition_sets_empty = Stream.of( data ).partition( vd -> !( ( Array ) vd.data.get( finalSplitDimension ) ).isEmpty() );
+            val any = new ArrayList<ValueData<T>>();
+            val sets = new ArrayList<ValueData<T>>();
 
-            final List<ValueData<T>> any = Stream.of( partition_sets_empty._2 ).collect( toList() );
-            final List<ValueData<T>> sets = partition_sets_empty._1.collect( toList() );
+            oap.util.Collections.partition( data, any, sets, vd -> !( ( Array ) vd.data.get( finalSplitDimension ) ).isEmpty() );
 
             return new SplitDimension( finalSplitDimension, Consts.ANY, emptyList(), emptyList(), emptyList(), any, sets, emptyList() );
         } else {
@@ -335,7 +370,7 @@ public class Tree<T> {
             final long[] unique = sorted.stream().mapToLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] ).distinct().toArray();
 
             if( dimension.operationType == CONTAINS && ( double ) unique.length / uniqueCount[finalSplitDimension] > hashFillFactor ) {
-                final List<ValueData<T>> any = Stream.of( partition_any_other._1 ).collect( toList() );
+                final List<ValueData<T>> any = partition_any_other._1.collect( toList() );
 
                 return new SplitDimension( finalSplitDimension, Consts.ANY, emptyList(), emptyList(), emptyList(), any, emptyList(), sorted );
             } else {
@@ -399,8 +434,6 @@ public class Tree<T> {
             find( n.any, query, result );
 
             final long[] qValue = query[n.dimension];
-
-            final Dimension dimension = dimensions.get( n.dimension );
 
             final TreeNode<T>[] hash = n.hash;
             if( qValue == ANY_AS_ARRAY ) return;
@@ -667,6 +700,12 @@ public class Tree<T> {
         public ValueData( List<?> data, T value ) {
             this.data = data;
             this.value = value;
+        }
+
+        public ValueData<T> cloneWith( int index, Object item ) {
+            val data = new ArrayList<Object>( this.data );
+            data.set( index, item );
+            return new ValueData<>( data, value );
         }
     }
 

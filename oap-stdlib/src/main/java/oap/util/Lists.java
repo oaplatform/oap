@@ -28,12 +28,11 @@ import it.unimi.dsi.fastutil.ints.IntArrayList;
 import lombok.val;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Random;
@@ -92,7 +91,7 @@ public class Lists extends oap.util.Collections {
         return __( left, right );
     }
 
-    public static <E, R> List<R> map( List<? extends E> list, Function<? super E, R> mapper ) {
+    public static <E, R> List<R> map( Collection<? extends E> list, Function<? super E, R> mapper ) {
         final ArrayList<R> result = new ArrayList<>( list.size() );
         for( val e : list ) {
             result.add( mapper.apply( e ) );
@@ -119,17 +118,6 @@ public class Lists extends oap.util.Collections {
         while( enumeration.hasMoreElements() ) {
             result.add( mapper.apply( enumeration.nextElement() ) );
         }
-        return result;
-    }
-
-    public static <G, E> Map<G, List<E>> groupBy( List<E> list, Function<E, G> classifier ) {
-        final HashMap<G, List<E>> result = new HashMap<>();
-
-        for( val e : list ) {
-            final G key = classifier.apply( e );
-            result.computeIfAbsent( key, ( k ) -> new ArrayList<>() ).add( e );
-        }
-
         return result;
     }
 

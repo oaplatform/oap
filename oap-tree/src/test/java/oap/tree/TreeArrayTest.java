@@ -73,6 +73,31 @@ public class TreeArrayTest {
     }
 
     @Test
+    public void testArrayExpand() {
+        final Tree<String> tree = Tree
+            .<String>tree( ARRAY_LONG( "d1", null ) )
+            .withArrayToTree( 4 )
+            .withHashFillFactor( 1 )
+            .load( l(
+                v( "1", l( a( true, 1L, 2L ) ) ),
+                v( "2", l( a( true, 2L ) ) ),
+                v( "3", l( a( true, 1L, 2L, 3L ) ) )
+            ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( 1L ) ) ).containsOnly( "1", "3" );
+        assertThat( tree.find( l( l( 5L, 1L ) ) ) ).containsOnly( "1", "3" );
+        assertThat( tree.find( l( 2L ) ) ).containsOnly( "1", "2", "3" );
+        assertThat( tree.find( l( 3L ) ) ).containsOnly( "3" );
+
+        assertThat( tree.find( l( 5L ) ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
+        assertThat( ( ( Tree.Node ) tree.root ).sets ).isEmpty();
+    }
+
+    @Test
     public void testArrayString() {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_STRING( "d1" ) )
