@@ -24,10 +24,10 @@
 
 package oap.http.file;
 
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
 import oap.io.FileSync;
+import oap.util.Try;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,14 +42,10 @@ public class HttpFileSync extends FileSync {
         super( "http", "https" );
     }
 
-    @SneakyThrows
     protected Optional<Path> download() {
-        Optional<Long> modificationTime = Optional.empty();
-        if( localFile.isPresent() ) {
-
-            if( Files.exists( localFile.get() ) )
-                modificationTime = Optional.of( Files.getLastModifiedTime( localFile.get() ).toMillis() );
-        }
+        final Optional<Long> modificationTime = localFile
+            .filter( lf -> Files.exists( lf ) )
+            .map( Try.map( lf -> Files.getLastModifiedTime( lf ).toMillis() ) );
         return Client.DEFAULT.download( uri.toString(), modificationTime, localFile, ( i ) -> {} );
     }
 }
