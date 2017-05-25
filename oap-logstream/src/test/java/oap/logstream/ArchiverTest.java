@@ -30,6 +30,7 @@ import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -41,6 +42,7 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
+import static org.joda.time.DateTimeZone.UTC;
 
 public class ArchiverTest extends AbstractTest {
 
@@ -56,7 +58,7 @@ public class ArchiverTest extends AbstractTest {
 
     @Test( dataProvider = "encoding" )
     public void archive( IoStreams.Encoding srcEncoding, IoStreams.Encoding destEncoding ) throws IOException {
-        DateTime now = new DateTime( 2015, 10, 10, 12, 0, 0 );
+        DateTime now = new DateTime( 2015, 10, 10, 12, 0, 0, UTC );
         DateTimeUtils.setCurrentMillisFixed( now.getMillis() );
         Path logs = Env.tmpPath( "logs" );
         Path archives = Env.tmpPath( "archives" );
@@ -72,7 +74,10 @@ public class ArchiverTest extends AbstractTest {
             "b/c/b-2015-10-10-11-11.log" + srcEncoding.extension
         };
 
-        for( String file : files ) Files.writeString( logs.resolve( file ), srcEncoding, "data" );
+        for( String file : files ) {
+            Files.writeString( logs.resolve( file ), srcEncoding, "data" );
+            Files.setLastModifiedTime( logs.resolve( file ), now );
+        }
 
         String corrupted = "a/corrupted-2015-10-10-11-10.txt.gz";
         Files.writeString( logs.resolve( corrupted ), PLAIN, "data" );

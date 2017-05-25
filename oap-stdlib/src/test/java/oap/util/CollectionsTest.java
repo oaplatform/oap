@@ -82,8 +82,8 @@ public class CollectionsTest {
 
         Collections.partition( list, left, right, ( v ) -> v > 2 );
 
-        assertThat( left ).containsExactly( 4 );
-        assertThat( right ).containsExactly( 1, 2, 1 );
+        assertThat( right ).containsExactly( 4 );
+        assertThat( left ).containsExactly( 1, 2, 1 );
     }
 
     @Test
