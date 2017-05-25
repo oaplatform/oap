@@ -46,7 +46,7 @@ import static org.mockserver.model.HttpResponse.response;
 
 @Slf4j
 public class ClientTest extends AbstractTest {
-    public static final int PORT = 1080;
+    private static final int PORT = Env.port( ClientTest.class.toString() );
     private ClientAndServer mockServer;
 
     @BeforeMethod

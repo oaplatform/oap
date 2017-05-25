@@ -338,10 +338,10 @@ public class Client implements Closeable {
     @SneakyThrows
     public Optional<Path> download( String url, Optional<Long> modification, Optional<Path> file, Consumer<Integer> progress ) {
         try {
-            final Optional<HttpResponse> responseOpt = resolve( url, modification );
-            if( !responseOpt.isPresent() ) return Optional.empty();
+            val response = resolve( url, modification ).orElse( null );
+            if( response == null ) return Optional.empty();
 
-            HttpEntity entity = responseOpt.get().getEntity();
+            val entity = response.getEntity();
 
             final Path path = file.orElseGet( Try.supply( () -> {
                 final IoStreams.Encoding encoding = IoStreams.Encoding.from( url );
@@ -352,10 +352,10 @@ public class Client implements Closeable {
             } ) );
 
             try( InputStream in = new BufferedInputStream( entity.getContent() ) ) {
-                IoStreams.write( path, PLAIN, in, progress( entity.getContentLength(), progress ) );
+                IoStreams.write( path, PLAIN, in, false, file.isPresent(), progress( entity.getContentLength(), progress ) );
             }
 
-            final Header lastModified = responseOpt.get().getLastHeader( "Last-Modified" );
+            final Header lastModified = response.getLastHeader( "Last-Modified" );
             if( lastModified != null ) {
                 final Date date = DateUtils.parseDate( lastModified.getValue() );
 
@@ -365,10 +365,7 @@ public class Client implements Closeable {
             builder.onSuccess.accept( this );
 
             return Optional.of( path );
-        } catch( ExecutionException e ) {
-            builder.onError.accept( this, e );
-            throw e;
-        } catch( IOException e ) {
+        } catch( ExecutionException | IOException e ) {
             builder.onError.accept( this, e );
             throw e;
         } catch( InterruptedException e ) {

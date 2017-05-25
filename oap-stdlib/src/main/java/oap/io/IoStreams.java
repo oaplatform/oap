@@ -111,19 +111,31 @@ public class IoStreams {
     }
 
     public static void write( Path path, Encoding encoding, InputStream in, Progress progress ) {
-        write( path, encoding, in, false, progress );
+        write( path, encoding, in, false, false, progress );
+    }
+
+    public static void write( Path path, Encoding encoding, InputStream in, Progress progress, boolean append ) {
+        write( path, encoding, in, append, false, progress );
     }
 
     public static void write( Path path, Encoding encoding, String value, boolean append ) {
-        write( path, encoding, new ByteArrayInputStream( Strings.toByteArray( value ) ), append, Progress.EMPTY );
+        write( path, encoding, new ByteArrayInputStream( Strings.toByteArray( value ) ), append, false, Progress.EMPTY );
 
     }
 
     @SneakyThrows
-    public static void write( Path path, Encoding encoding, InputStream in, boolean append, Progress progress ) {
+    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe, Progress progress ) {
         Files.ensureFile( path );
-        try( OutputStream out = out( path, encoding, append ) ) {
+        try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, append, safe ) ) {
             ByteStreams.copy( new ProgressInputStream( in, progress ), out );
+        }
+    }
+
+    @SneakyThrows
+    public static void write( Path path, Encoding encoding, InputStream in, boolean append, boolean safe ) {
+        Files.ensureFile( path );
+        try( OutputStream out = out( path, encoding, DEFAULT_BUFFER, append, safe ) ) {
+            ByteStreams.copy( in, out );
         }
     }
 
