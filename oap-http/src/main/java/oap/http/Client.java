@@ -336,9 +336,9 @@ public class Client implements Closeable {
     }
 
     @SneakyThrows
-    public Optional<Path> download( String url, Optional<Long> modification, Optional<Path> file, Consumer<Integer> progress ) {
+    public Optional<Path> download( String url, Optional<Long> modificationTime, Optional<Path> file, Consumer<Integer> progress ) {
         try {
-            val response = resolve( url, modification ).orElse( null );
+            val response = resolve( url, modificationTime ).orElse( null );
             if( response == null ) return Optional.empty();
 
             val entity = response.getEntity();
