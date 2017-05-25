@@ -31,13 +31,14 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 
+import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
 
 public class SafeFileOutputStreamTest extends AbstractTest {
     @Test
     public void rename() throws IOException {
         Path path = Env.tmpPath( "1" );
-        SafeFileOutputStream stream = new SafeFileOutputStream( path, false );
+        SafeFileOutputStream stream = new SafeFileOutputStream( path, false, PLAIN );
         stream.write( "111".getBytes() );
         stream.flush();
         assertFile( path ).doesNotExist();
@@ -48,10 +49,20 @@ public class SafeFileOutputStreamTest extends AbstractTest {
     @Test
     public void removeIfEmpty() throws IOException {
         Path path = Env.tmpPath( "1" );
-        SafeFileOutputStream stream = new SafeFileOutputStream( path, false );
+        SafeFileOutputStream stream = new SafeFileOutputStream( path, false, PLAIN );
         stream.flush();
         stream.close();
         assertFile( path ).doesNotExist();
 
+    }
+
+    @Test
+    public void testAppend() throws IOException {
+        Path path = Env.tmpPath( "1" );
+        Files.writeString( path, "test" );
+        try( SafeFileOutputStream stream = new SafeFileOutputStream( path, true, PLAIN ) ) {
+            stream.write( "2".getBytes() );
+        }
+        assertFile( path ).hasContent( "test2" );
     }
 }

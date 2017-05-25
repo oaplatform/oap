@@ -165,7 +165,7 @@ public class IoStreams {
         Files.ensureFile( path );
         if( append ) Files.ensureFileEncodingValid( path );
         final OutputStream outputStream = safe
-            ? new SafeFileOutputStream( path, append )
+            ? new SafeFileOutputStream( path, append, encoding )
             : new FileOutputStream( path.toFile(), append );
         final OutputStream fos = bufferSize > 0 ? new BufferedOutputStream( outputStream, bufferSize ) : outputStream;
         switch( encoding ) {

@@ -23,18 +23,29 @@
  */
 package oap.io;
 
-import java.io.FileNotFoundException;
+import lombok.val;
+
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class SafeFileOutputStream extends FileOutputStream {
     private final Path path;
 
-    public SafeFileOutputStream( Path path, boolean append ) throws FileNotFoundException {
+    public SafeFileOutputStream( Path path, boolean append, IoStreams.Encoding encoding ) throws IOException {
         super( path + ".unsafe", append );
         this.path = path;
+
+        if( append && java.nio.file.Files.exists( path ) ) {
+            val sourceEncoding = IoStreams.Encoding.from( path );
+            try( InputStream is = IoStreams.in( path,
+                sourceEncoding == encoding ? IoStreams.Encoding.PLAIN : encoding ) ) {
+                IoStreams.write( Paths.get( path + ".unsafe" ),
+                    sourceEncoding == encoding ? IoStreams.Encoding.PLAIN : encoding, is );
+            }
+        }
     }
 
     @Override
