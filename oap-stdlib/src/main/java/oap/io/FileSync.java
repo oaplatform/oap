@@ -32,7 +32,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -62,9 +61,7 @@ public abstract class FileSync implements Runnable {
         val protocol = uri.getScheme();
 
         final ServiceLoader<FileSync> load = ServiceLoader.load( FileSync.class );
-        final Iterator<FileSync> iterator = load.iterator();
-        if( iterator.hasNext() ) {
-            final FileSync fs = iterator.next();
+        for( FileSync fs : load ) {
             if( fs.accept( protocol ) ) {
                 fs.init( uri, localFile );
                 return fs;
