@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.concurrent.LongAdder;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Dates;
@@ -131,6 +132,11 @@ public class BinderTest extends AbstractTest {
     @Test
     public void bindObject() {
         assertBind( Bean.class, new Bean( "x", 10, new Bean2( "y", 15, Lists.of( 1, 2, 3 ) ) ) );
+    }
+
+    @Test
+    public void bindLongAdder() {
+        assertBind( LongAdderBean.class, new LongAdderBean().add( 10 ) );
     }
 
     @Test
@@ -476,5 +482,16 @@ class DateTimeBean {
     @JsonCreator
     public DateTimeBean( DateTime date ) {
         this.date = date;
+    }
+}
+
+@ToString
+@EqualsAndHashCode
+class LongAdderBean {
+    public final LongAdder la = new LongAdder();
+
+    public LongAdderBean add( long value ) {
+        la.add( value );
+        return this;
     }
 }

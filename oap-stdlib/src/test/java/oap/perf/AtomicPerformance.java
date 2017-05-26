@@ -29,13 +29,15 @@ import org.testng.annotations.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Created by igor.petrenko on 26.10.2016.
  */
-@Test( enabled = false )
+@Test
 public class AtomicPerformance extends AbstractPerformance {
     private final AtomicLong al = new AtomicLong( 0 );
+    private final LongAdder la = new LongAdder();
     private final AtomicInteger ai = new AtomicInteger( 0 );
     private volatile long l = 0;
     private volatile long l2 = 0;
@@ -47,6 +49,10 @@ public class AtomicPerformance extends AbstractPerformance {
 
         benchmark( builder( "atomic-long" ).samples( samples ).threads( threads ).build(), ( i ) -> {
             al.incrementAndGet();
+        } );
+
+        benchmark( builder( "long-adder" ).samples( samples ).threads( threads ).build(), ( i ) -> {
+            la.increment();
         } );
 
         benchmark( builder( "atomic-integer" ).samples( samples ).threads( threads ).build(), ( i ) -> {

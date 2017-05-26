@@ -38,47 +38,50 @@ import oap.util.Numbers;
 import java.io.IOException;
 
 public class OapJsonModule extends Module {
-   public final static Version VERSION = VersionUtil.parseVersion(
-      "1.0.0", "oap", "json" );
+    public final static Version VERSION = VersionUtil.parseVersion(
+        "1.0.0", "oap", "json" );
 
-   @Override
-   public String getModuleName() {
-      return "OapJson";
-   }
+    @Override
+    public String getModuleName() {
+        return "OapJson";
+    }
 
-   @Override
-   public Version version() {
-      return VERSION;
-   }
+    @Override
+    public Version version() {
+        return VERSION;
+    }
 
-   @Override
-   public void setupModule( SetupContext context ) {
-      context.addSerializers( new PathModule.PathSerializers() );
-      context.addDeserializers( new PathModule.PathDeserializers() );
+    @Override
+    public void setupModule( SetupContext context ) {
+        context.addSerializers( new PathModule.PathSerializers() );
+        context.addDeserializers( new PathModule.PathDeserializers() );
 
-      context.addSerializers( new MutableObjectModule.MutableObjectSerializers() );
-      context.addDeserializers( new MutableObjectModule.MutableObjectDeserializers() );
+        context.addSerializers( new MutableObjectModule.MutableObjectSerializers() );
+        context.addDeserializers( new MutableObjectModule.MutableObjectDeserializers() );
 
-      SimpleDeserializers deserializers = new SimpleDeserializers();
-      deserializers.addDeserializer( Long.TYPE, new LongDeserializer( Long.TYPE, 0L ) );
-      deserializers.addDeserializer( Long.class, new LongDeserializer( Long.class, null ) );
-      context.addDeserializers( deserializers );
-   }
+        context.addSerializers( new LongAdderModule.LongAdderSerializers() );
+        context.addDeserializers( new LongAdderModule.LongAdderDeserializers() );
 
-   static class LongDeserializer extends StdScalarDeserializer<Long> {
+        SimpleDeserializers deserializers = new SimpleDeserializers();
+        deserializers.addDeserializer( Long.TYPE, new LongDeserializer( Long.TYPE, 0L ) );
+        deserializers.addDeserializer( Long.class, new LongDeserializer( Long.class, null ) );
+        context.addDeserializers( deserializers );
+    }
 
-      private NumberDeserializers.LongDeserializer deserializer;
+    static class LongDeserializer extends StdScalarDeserializer<Long> {
 
-      public LongDeserializer( Class<Long> cls, Long nullValue ) {
-         super( cls );
-         deserializer = new NumberDeserializers.LongDeserializer( cls, nullValue );
-      }
+        private NumberDeserializers.LongDeserializer deserializer;
 
-      @Override
-      public Long deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-         return p.hasToken( JsonToken.VALUE_STRING ) ?
-            Numbers.parseLongWithUnits( p.getText().trim() )
-            : deserializer.deserialize( p, ctxt );
-      }
-   }
+        public LongDeserializer( Class<Long> cls, Long nullValue ) {
+            super( cls );
+            deserializer = new NumberDeserializers.LongDeserializer( cls, nullValue );
+        }
+
+        @Override
+        public Long deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
+            return p.hasToken( JsonToken.VALUE_STRING ) ?
+                Numbers.parseLongWithUnits( p.getText().trim() )
+                : deserializer.deserialize( p, ctxt );
+        }
+    }
 }
