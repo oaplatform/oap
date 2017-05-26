@@ -30,7 +30,6 @@ import oap.testng.Env;
 import org.testng.annotations.Test;
 
 import java.nio.file.Paths;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,7 +48,7 @@ public class FileSystemFileSyncTest extends AbstractTest {
 
         Files.setLastModifiedTime( Paths.get( remoteFile ), 10 );
 
-        final FileSync fileSync = FileSync.create( remoteFile, Optional.of( localFile ) );
+        final FileSync fileSync = FileSync.create( remoteFile, localFile );
         fileSync.addListener( path -> b.append( "f" ) );
         fileSync.run();
 

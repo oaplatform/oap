@@ -27,9 +27,7 @@ package oap.io;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import oap.util.Try;
 
-import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,11 +47,7 @@ public class FileSystemFileSync extends FileSync {
     @SneakyThrows
     protected Optional<Path> download() {
         val remoteFile = Paths.get( uri );
-        val localFile = this.localFile.map( Path::toAbsolutePath ).orElseGet( Try.supply( () -> {
-            final File tempFile = File.createTempFile( "fsfd", "fsfd" );
-            tempFile.deleteOnExit();
-            return tempFile.toPath();
-        } ) );
+        val localFile = this.localFile.toAbsolutePath();
 
         val remoteFileLastModifiedTime = java.nio.file.Files.getLastModifiedTime( remoteFile ).toMillis();
         val localFileLastModifiedTime = Files.exists( localFile )
@@ -62,7 +56,7 @@ public class FileSystemFileSync extends FileSync {
 
         if( remoteFileLastModifiedTime > localFileLastModifiedTime ) {
             try( InputStream in = IoStreams.in( uri.toURL().openStream(), IoStreams.Encoding.PLAIN ) ) {
-                IoStreams.write( localFile, IoStreams.Encoding.PLAIN, in, false, this.localFile.isPresent() );
+                IoStreams.write( localFile, IoStreams.Encoding.PLAIN, in, false, true );
             }
 
             oap.io.Files.setLastModifiedTime( localFile, remoteFileLastModifiedTime );

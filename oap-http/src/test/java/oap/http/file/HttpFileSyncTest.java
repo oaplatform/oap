@@ -37,7 +37,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Date;
-import java.util.Optional;
 
 import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -81,7 +80,7 @@ public class HttpFileSyncTest extends AbstractTest {
 
         val localFile = Env.tmpPath( "ltest.file" );
 
-        val fileSync = FileSync.create( "http://localhost:" + PORT + "/file", Optional.of( localFile ) );
+        val fileSync = FileSync.create( "http://localhost:" + PORT + "/file", localFile );
         fileSync.addListener( path -> b.append( "f" ) );
 
         mockServer
