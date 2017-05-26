@@ -46,19 +46,19 @@ public abstract class FileSync implements Runnable {
     private final HashSet<String> protocols;
     private final ArrayList<FileDownloaderListener> listeners = new ArrayList<>();
     protected URI uri;
-    protected Optional<Path> localFile;
+    protected Path localFile;
 
     protected FileSync( String... protocols ) {
         this.protocols = new HashSet<>( asList( protocols ) );
     }
 
     @SneakyThrows
-    public static FileSync create( String url, Optional<Path> localFile ) {
+    public static FileSync create( String url, Path localFile ) {
         return create( new URI( url ), localFile );
     }
 
     @SneakyThrows
-    public static FileSync create( URI uri, Optional<Path> localFile ) {
+    public static FileSync create( URI uri, Path localFile ) {
         val protocol = uri.getScheme();
 
         final ServiceLoader<FileSync> load = ServiceLoader.load( FileSync.class );
@@ -82,7 +82,7 @@ public abstract class FileSync implements Runnable {
         return protocols.contains( protocol );
     }
 
-    void init( URI uri, Optional<Path> localFile ) {
+    void init( URI uri, Path localFile ) {
         this.uri = uri;
         this.localFile = localFile;
     }
@@ -91,7 +91,7 @@ public abstract class FileSync implements Runnable {
         return uri;
     }
 
-    public Optional<Path> getLocalFile() {
+    public Path getLocalFile() {
         return localFile;
     }
 

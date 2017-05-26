@@ -55,7 +55,7 @@ public class Lists extends oap.util.Collections {
     }
 
     @SafeVarargs
-    public static <E> List<E> concat( List<? extends E>... lists ) {
+    public static <E> ArrayList<E> concat( List<? extends E>... lists ) {
         final ArrayList<E> concatenated = new ArrayList<>();
 
         for( List<? extends E> list : lists ) {
@@ -91,7 +91,7 @@ public class Lists extends oap.util.Collections {
         return __( left, right );
     }
 
-    public static <E, R> List<R> map( Collection<? extends E> list, Function<? super E, R> mapper ) {
+    public static <E, R> ArrayList<R> map( Collection<? extends E> list, Function<? super E, R> mapper ) {
         final ArrayList<R> result = new ArrayList<>( list.size() );
         for( val e : list ) {
             result.add( mapper.apply( e ) );
@@ -99,11 +99,11 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
-    public static <E, R> List<R> map( E[] array, Function<? super E, R> mapper ) {
+    public static <E, R> ArrayList<R> map( E[] array, Function<? super E, R> mapper ) {
         return map( of( array ), mapper );
     }
 
-    public static <E> List<E> filter( List<E> list, Predicate<E> predicate ) {
+    public static <E> ArrayList<E> filter( List<E> list, Predicate<E> predicate ) {
         final ArrayList<E> result = new ArrayList<>();
 
         for( val e : list ) {
@@ -113,7 +113,7 @@ public class Lists extends oap.util.Collections {
         return result;
     }
 
-    public static <E, R> List<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
+    public static <E, R> ArrayList<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
         final ArrayList<R> result = new ArrayList<>();
         while( enumeration.hasMoreElements() ) {
             result.add( mapper.apply( enumeration.nextElement() ) );
@@ -135,8 +135,8 @@ public class Lists extends oap.util.Collections {
         return shuffle( list ).subList( 0, sublistSize );
     }
 
-    public static <E> List<E> shuffle( List<E> list ) {
-        List<E> localCopy = new ArrayList<>( list );
+    public static <E> ArrayList<E> shuffle( List<E> list ) {
+        val localCopy = new ArrayList<E>( list );
         Collections.shuffle( localCopy );
         return localCopy;
     }
