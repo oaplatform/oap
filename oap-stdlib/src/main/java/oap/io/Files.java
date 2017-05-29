@@ -35,6 +35,7 @@ import oap.util.Try;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullOutputStream;
+import org.apache.commons.lang3.StringUtils;
 import org.codehaus.plexus.util.DirectoryScanner;
 import org.joda.time.DateTime;
 
@@ -426,4 +427,20 @@ public final class Files {
             return false;
         }
     }
+
+    public static boolean fileNotEmpty( final Path path ) {
+        try( InputStream inputStream = IoStreams.in( path );
+             InputStreamReader inputStreamReader = new InputStreamReader( inputStream );
+             BufferedReader reader = new BufferedReader( inputStreamReader ) ) {
+
+            if( StringUtils.isNotEmpty( reader.readLine() ) ) {
+                return true;
+            }
+        } catch( final IOException e ) {
+            throw new RuntimeException( e );
+        }
+
+        return false;
+    }
+
 }
