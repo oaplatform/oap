@@ -433,14 +433,10 @@ public final class Files {
              InputStreamReader inputStreamReader = new InputStreamReader( inputStream );
              BufferedReader reader = new BufferedReader( inputStreamReader ) ) {
 
-            if( StringUtils.isNotEmpty( reader.readLine() ) ) {
-                return true;
-            }
+            return StringUtils.isNotEmpty( reader.readLine() );
         } catch( final IOException e ) {
             throw new RuntimeException( e );
         }
-
-        return false;
     }
 
 }
