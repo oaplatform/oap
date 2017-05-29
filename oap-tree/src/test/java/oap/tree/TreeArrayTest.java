@@ -32,6 +32,8 @@ import java.util.Set;
 import static java.util.Arrays.asList;
 import static oap.tree.Dimension.ARRAY_LONG;
 import static oap.tree.Dimension.ARRAY_STRING;
+import static oap.tree.Dimension.LONG;
+import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Tree.a;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
@@ -72,7 +74,7 @@ public class TreeArrayTest {
         assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 3 );
     }
 
-    @Test
+    @Test( enabled = false )
     public void testArrayExpand() {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_LONG( "d1", null ) )
@@ -112,21 +114,23 @@ public class TreeArrayTest {
     @Test
     public void testArrayExclude() {
         final Tree<String> tree = Tree
-            .<String>tree( ARRAY_LONG( "d1", null ) )
+            .<String>tree( ARRAY_LONG( "d1", null ), LONG( "sv1", CONTAINS, null ) )
+            .withHashFillFactor( 1 )
             .load( l(
-                v( "1", l( a( false, 1L, 2L ) ) ),
-                v( "2", l( a( false, 2L ) ) ),
-                v( "3", l( a( false, 1L, 2L, 3L ) ) ) ) );
+                v( "1", l( a( false, 1L, 2L ), 1 ) ),
+                v( "2", l( a( false, 2L ), 1 ) ),
+                v( "3", l( a( false, 1L, 2L, 3L ), 1 ) )
+            ) );
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.find( l( 2L ) ) ).isEmpty();
-        assertThat( tree.find( l( 1L ) ) ).containsOnly( "2" );
+        assertThat( tree.find( l( 2L, 1L ) ) ).isEmpty();
+        assertThat( tree.find( l( 1L, 1L ) ) ).containsOnly( "2" );
+        assertThat( tree.find( l( 1L, 2L ) ) ).isEmpty();
 
-        assertThat( tree.find( l( 5L ) ) ).containsOnly( "1", "2", "3" );
+        assertThat( tree.find( l( 5L, 1L ) ) ).containsOnly( "1", "2", "3" );
 
-        assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
-        assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 3 );
+        assertThat( tree.getMaxDepth() ).isEqualTo( 3 );
     }
 
     @Test

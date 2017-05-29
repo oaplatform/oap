@@ -150,8 +150,6 @@ public class Tree<T> {
     }
 
     public void load( ArrayList<ValueData<T>> data ) {
-        expand( data );
-
         init( data );
         final long[] uniqueCount = getUniqueCount( data );
         root = toNode( data, uniqueCount, new BitSet( dimensions.size() ) );
@@ -159,41 +157,6 @@ public class Tree<T> {
         updateCount( root );
 
         memory = MemoryMeter.get().measureDeep( this );
-    }
-
-    private void expand( ArrayList<ValueData<T>> data ) {
-        for( int i = 0; i < dimensions.size(); i++ ) {
-            val dimension = dimensions.get( i );
-            if( dimension.operationType != null ) continue;
-
-            int maxSize = Integer.MIN_VALUE;
-            HashSet<Boolean> contains = new HashSet<>();
-
-            for( val vd : data ) {
-                val list = ( Array ) vd.data.get( i );
-                if( list.size() > maxSize ) maxSize = list.size();
-                contains.add( list.include );
-            }
-
-            if( maxSize > arrayToTree ) continue;
-            if( contains.size() > 1 ) continue;
-
-            dimension.operationType = contains.contains( true ) ? CONTAINS : NOT_CONTAINS;
-
-            final int size = data.size();
-            for( int d = 0; d < size; d++ ) {
-                final ValueData<T> vd = data.get( d );
-
-                val list = ( List<?> ) vd.data.get( i );
-
-                for( int x = 0; x < list.size(); x++ ) {
-                    final Object item = list.get( x );
-                    val clone = vd.cloneWith( i, item );
-                    if( x == 0 ) data.set( d, clone );
-                    else data.add( clone );
-                }
-            }
-        }
     }
 
     private long[] getUniqueCount( List<ValueData<T>> data ) {
