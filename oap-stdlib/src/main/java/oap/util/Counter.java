@@ -44,7 +44,7 @@ public abstract class Counter implements Serializable {
     private Counter() {
     }
 
-    public abstract long currentTick();
+    protected abstract long _currentTick();
 
     public final void inc() {
         inc( 1 );
@@ -55,7 +55,7 @@ public abstract class Counter implements Serializable {
     }
 
     public final void inc( long value ) {
-        val currentTick = currentTick();
+        val currentTick = _currentTick();
         if( this.tick != currentTick ) {
             this.value = value;
             this.tick = currentTick;
@@ -73,9 +73,13 @@ public abstract class Counter implements Serializable {
     public static final class HourlyCounter extends Counter {
         private static final long serialVersionUID = -6350858231677830610L;
 
-        @Override
-        public final long currentTick() {
+        public static long currentTick() {
             return DateTimeUtils.currentTimeMillis() / 1000L / 60L / 60L;
+        }
+
+        @Override
+        protected final long _currentTick() {
+            return currentTick();
         }
     }
 
@@ -84,9 +88,13 @@ public abstract class Counter implements Serializable {
     public static final class DailyCounter extends Counter {
         private static final long serialVersionUID = -4287987989875991573L;
 
-        @Override
-        public final long currentTick() {
+        public static long currentTick() {
             return DateTimeUtils.currentTimeMillis() / 1000L / 60L / 60L / 24L;
+        }
+
+        @Override
+        protected final long _currentTick() {
+            return currentTick();
         }
     }
 
@@ -95,9 +103,13 @@ public abstract class Counter implements Serializable {
     public static final class MonthlyCounter extends Counter {
         private static final long serialVersionUID = 4419536959429173372L;
 
-        @Override
-        public final long currentTick() {
+        public static long currentTick() {
             return new DateTime().getMonthOfYear();
+        }
+
+        @Override
+        protected final long _currentTick() {
+            return currentTick();
         }
     }
 }
