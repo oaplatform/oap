@@ -50,6 +50,10 @@ public abstract class Counter implements Serializable {
         inc( 1 );
     }
 
+    public final long get( long tick ) {
+        return this.tick == tick ? value : 0;
+    }
+
     public final void inc( long value ) {
         val currentTick = currentTick();
         if( this.tick != currentTick ) {
