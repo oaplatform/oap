@@ -24,52 +24,37 @@
 
 package oap.util;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.val;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
-import java.util.function.LongSupplier;
+import java.io.Serializable;
 
 /**
  * Created by igor.petrenko on 02.06.2017.
  */
-public class Counter {
-    private final LongSupplier func;
+@EqualsAndHashCode
+@ToString
+public abstract class Counter implements Serializable {
     public long tick = -1;
     public long value = 0;
 
-    private Counter( LongSupplier func ) {
-        this.func = func;
+    private Counter() {
     }
 
-    public static Counter get( CounterType counterType ) {
-        final LongSupplier func;
-
-        switch( counterType ) {
-            case DAILY:
-                func = () -> DateTimeUtils.currentTimeMillis() / 1000L / 60L / 60L / 24L;
-                break;
-            case MONTHLY:
-                func = () -> new DateTime().getMonthOfYear();
-                break;
-            case HOURLY:
-                func = () -> DateTimeUtils.currentTimeMillis() / 1000L / 60L / 60L;
-                break;
-            default:
-                throw new IllegalArgumentException( "Unknown type " + counterType );
-        }
-
-        return new Counter( func );
-    }
+    public abstract long currentTick();
 
     public final void inc() {
         inc( 1 );
     }
 
     public final void inc( long value ) {
-        long currentDay = func.getAsLong();
-        if( this.tick != currentDay ) {
+        val currentTick = currentTick();
+        if( this.tick != currentTick ) {
             this.value = value;
-            this.tick = currentDay;
+            this.tick = currentTick;
         } else
             this.value += value;
     }
@@ -79,7 +64,36 @@ public class Counter {
         value = 0;
     }
 
-    public enum CounterType {
-        DAILY, HOURLY, MONTHLY
+    @ToString( callSuper = true )
+    @EqualsAndHashCode( callSuper = true )
+    public static final class HourlyCounter extends Counter {
+        private static final long serialVersionUID = -6350858231677830610L;
+
+        @Override
+        public final long currentTick() {
+            return DateTimeUtils.currentTimeMillis() / 1000L / 60L / 60L;
+        }
+    }
+
+    @ToString( callSuper = true )
+    @EqualsAndHashCode( callSuper = true )
+    public static final class DailyCounter extends Counter {
+        private static final long serialVersionUID = -4287987989875991573L;
+
+        @Override
+        public final long currentTick() {
+            return DateTimeUtils.currentTimeMillis() / 1000L / 60L / 60L / 24L;
+        }
+    }
+
+    @ToString( callSuper = true )
+    @EqualsAndHashCode( callSuper = true )
+    public static final class MonthlyCounter extends Counter {
+        private static final long serialVersionUID = 4419536959429173372L;
+
+        @Override
+        public final long currentTick() {
+            return new DateTime().getMonthOfYear();
+        }
     }
 }

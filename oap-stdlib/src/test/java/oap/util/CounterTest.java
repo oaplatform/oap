@@ -27,9 +27,6 @@ package oap.util;
 import lombok.val;
 import org.testng.annotations.Test;
 
-import static oap.util.Counter.CounterType.DAILY;
-import static oap.util.Counter.CounterType.HOURLY;
-import static oap.util.Counter.CounterType.MONTHLY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -40,7 +37,7 @@ public class CounterTest {
     public void testHourly() throws Exception {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
-        val counter = Counter.get( HOURLY );
+        val counter = new Counter.HourlyCounter();
 
         counter.inc();
         counter.inc( 2 );
@@ -55,7 +52,7 @@ public class CounterTest {
     public void testDaily() throws Exception {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
-        val counter = Counter.get( DAILY );
+        val counter = new Counter.DailyCounter();
 
         counter.inc();
         counter.inc( 2 );
@@ -70,7 +67,7 @@ public class CounterTest {
     public void testMonthly() throws Exception {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
-        val counter = Counter.get( MONTHLY );
+        val counter = new Counter.MonthlyCounter();
 
         counter.inc();
         counter.inc( 2 );
