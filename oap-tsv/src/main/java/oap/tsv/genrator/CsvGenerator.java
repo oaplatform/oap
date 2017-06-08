@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static java.util.Collections.emptyList;
@@ -61,12 +62,12 @@ import static oap.util.Pair.__;
 public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
     public static final Path TMP_FILE_CACHE = Paths.get( "/tmp/file-cache" );
     private static final String math = "/*+-%";
-    private static final HashMap<String, Function<?, String>> cache = new HashMap<>();
+    private static final HashMap<String, BiFunction<?, Accumulator, ?>> cache = new HashMap<>();
     public static String UNIQUE_ID = "{unique_id}";
     private static AtomicInteger counter = new AtomicInteger();
     private static CsvGenerator<Object, Line> EMPTY = new CsvGenerator<>(
         Object.class, emptyList(), ' ', CsvGeneratorStrategy.DEFAULT );
-    private Function<T, String> func;
+    private BiFunction<T, Accumulator, ?> func;
     private CsvGeneratorStrategy<TLine> map;
 
     @SneakyThrows
@@ -86,13 +87,12 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
                 + "import oap.util.Strings;\n"
                 + "\n"
                 + "import java.util.*;\n"
-                + "import java.util.function.Function;\n"
+                + "import java.util.function.BiFunction;\n"
                 + "import com.google.common.base.CharMatcher;\n"
                 + "\n"
-                + "public  class " ).append( getClass().getSimpleName() ).append( UNIQUE_ID ).append( " implements Function<" ).append( className ).append( ", String> {\n"
+                + "public  class " ).append( getClass().getSimpleName() ).append( UNIQUE_ID ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
                 + "   @Override\n"
-                + "   public String apply( " ).append( className ).append( " s ) {\n"
-                + "      StringBuilder sb = new StringBuilder();\n"
+                + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
                 + "\n" );
 
             int size = pathAndDefault.size();
@@ -102,7 +102,7 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
 
 
             c.append( "\n"
-                + "     return sb.toString();\n"
+                + "     return acc.build();\n"
                 + "   }\n"
                 + "}" );
 
@@ -114,13 +114,13 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
             );
 
             synchronized( cache ) {
-                Function<?, String> s = cache.get( c.toString() );
+                BiFunction<?, Accumulator, ?> s = cache.get( c.toString() );
 
-                if( s != null ) func = ( Function<T, String> ) s;
+                if( s != null ) func = ( BiFunction<T, Accumulator, ?> ) s;
                 else {
                     int i = counter.incrementAndGet();
                     MemoryClassLoader mcl = new MemoryClassLoader( getClass().getName() + i, c.toString().replace( UNIQUE_ID, String.valueOf( i ) ), TMP_FILE_CACHE );
-                    func = ( Function<T, String> ) mcl.loadClass( getClass().getName() + i ).newInstance();
+                    func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( getClass().getName() + i ).newInstance();
                     cache.put( c.toString(), func );
                 }
             }
@@ -153,7 +153,7 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
     }
 
     private void printDelimiter( char delimiter, StringBuilder c, boolean last, AtomicInteger tab ) {
-        if( map.printDelimiter() && !last ) tab( c, tab ).append( "sb.append('" ).append( delimiter ).append( "');\n" );
+        if( map.printDelimiter() && !last ) tab( c, tab ).append( "acc.accept('" ).append( delimiter ).append( "');\n" );
     }
 
     private void addPathOr( Class<T> clazz, char delimiter, StringBuilder c, AtomicInteger num,
@@ -229,7 +229,7 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
             cField = cFields[i];
 
             if( cField.startsWith( "\"" ) )
-                tab( c.append( ";\n" ), tab ).append( "sb.append( " ).append( cField ).append( " );\n" );
+                tab( c.append( ";\n" ), tab ).append( "acc.accept( " ).append( cField ).append( " );\n" );
             else {
                 if( isOptionalParent ) {
                     newPath = in > 0 ? optField + "." + cField : cField;
@@ -369,7 +369,7 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
 
     private void printDefaultValue( StringBuilder c, Object pfield ) {
         if( !map.ignoreDefaultValue() ) {
-            c.append( "sb.append( " );
+            c.append( "acc.accept( " );
             if( ClassUtils.isPrimitiveOrWrapper( pfield.getClass() ) ) c.append( pfield );
             else c.append( "\"" ).append( pfield ).append( "\"" );
             c.append( " );\n" );
@@ -381,8 +381,12 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
             && ( ( ParameterizedType ) type ).getRawType().equals( Optional.class );
     }
 
+    public <R> R process( T source, Accumulator<R> accumulator ) {
+        return (R) func.apply( source, accumulator );
+    }
+
     public String process( T source ) {
-        return func.apply( source );
+        return process( source, new StringAccumulator() );
     }
 
     public static class Line {

@@ -47,7 +47,7 @@ public interface CsvGeneratorStrategy<TLine extends CsvGenerator.Line> {
       else if( isInstance( Collection.class, cc ) ) {
          mapCollection( c, cc, line, field );
       } else if( !cc.equals( String.class ) ) {
-         c.append( "sb.append( " );
+         c.append( "acc.accept( " );
          escape( c, () -> c.append( " String.valueOf( " ).append( field ).append( " )" ) );
          c.append( " );" );
       } else {
@@ -56,23 +56,23 @@ public interface CsvGeneratorStrategy<TLine extends CsvGenerator.Line> {
    }
 
    default void mapPrimitive( StringBuilder c, Type cc, TLine line, String field ) {
-      c.append( "sb.append( " ).append( field ).append( " );" );
+      c.append( "acc.accept( " ).append( field ).append( " );" );
    }
 
    default void mapString( StringBuilder c, Type cc, TLine line, String field ) {
-      c.append( "sb.append( " );
+      c.append( "acc.accept( " );
       escape( c, () -> c.append( field ) );
       c.append( " );" );
    }
 
    default void mapCollection( StringBuilder c, Type cc, TLine line, String field ) {
-      c.append( "{sb.append( '[' ).append( " );
+      c.append( "{acc.accept( '[' ).accept( " );
       escape( c, () -> c.append( " Strings.join( " ).append( field ).append( " )" ) );
-      c.append( ").append( ']' );}" );
+      c.append( ").accept( ']' );}" );
    }
 
    default void mapEnum( StringBuilder c, Type cc, TLine line, String field ) {
-      c.append( "sb.append( " ).append( field ).append( " );" );
+      c.append( "acc.accept( " ).append( field ).append( " );" );
    }
 
    default boolean ignoreDefaultValue() {
@@ -86,7 +86,7 @@ public interface CsvGeneratorStrategy<TLine extends CsvGenerator.Line> {
    }
 
    default StringBuilder mapBoolean( StringBuilder c, Type cc, TLine line, String field ) {
-      c.append( "sb.append( " ).append( field ).append( " );" );
+      c.append( "acc.accept( " ).append( field ).append( " );" );
       return c;
    }
 
