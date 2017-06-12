@@ -314,7 +314,7 @@ public final class Strings {
     }
 
     public static String toUserFriendlyId( String source, int length, Predicate<String> conflict, FriendlyIdOption... opts ) {
-        Objects.nonNull( source );
+        Objects.requireNonNull( source );
 
         String id = ( Arrays.contains( NO_VOWELS, opts )
             ? significantSymbolsNoVowels

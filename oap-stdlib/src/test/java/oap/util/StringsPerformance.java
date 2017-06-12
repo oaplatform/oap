@@ -70,22 +70,17 @@ public class StringsPerformance extends AbstractPerformance {
     private static String removeBitwise( String str, char... characters ) {
         if( StringUtils.indexOfAny( str, characters ) < 0 ) return str;
 
-        long bitwise_0 = 0;
-        long bitwise_1 = 0;
-        long bitwise_2 = 0;
-        long bitwise_3 = 0;
+        long bitwise0 = 0;
+        long bitwise1 = 0;
+        long bitwise2 = 0;
+        long bitwise3 = 0;
 
         for( char ch : characters ) {
             long shift = ( 1 << ( ch - 1 ) );
-            if( ch < 64 ) {
-                bitwise_0 |= shift;
-            } else if( ch < 128 ) {
-                bitwise_1 |= shift;
-            } else if( ch < 192 ) {
-                bitwise_2 |= shift;
-            } else {
-                bitwise_3 |= shift;
-            }
+            if( ch < 64 ) bitwise0 |= shift;
+            else if( ch < 128 ) bitwise1 |= shift;
+            else if( ch < 192 ) bitwise2 |= shift;
+            else bitwise3 |= shift;
         }
 
         char[] output = new char[str.length()];
@@ -94,16 +89,16 @@ public class StringsPerformance extends AbstractPerformance {
         for( char ch : str.toCharArray() ) {
             long shift = ( 1 << ( ch - 1 ) );
             if( ch < 64 ) {
-                if( ( bitwise_0 & shift ) == 0 )
+                if( ( bitwise0 & shift ) == 0 )
                     output[i++] = ch;
             } else if( ch < 128 ) {
-                if( ( bitwise_1 & shift ) == 0 )
+                if( ( bitwise1 & shift ) == 0 )
                     output[i++] = ch;
             } else if( ch < 192 ) {
-                if( ( bitwise_2 & shift ) == 0 )
+                if( ( bitwise2 & shift ) == 0 )
                     output[i++] = ch;
             } else {
-                if( ( bitwise_3 & shift ) == 0 )
+                if( ( bitwise3 & shift ) == 0 )
                     output[i++] = ch;
             }
         }
@@ -112,7 +107,7 @@ public class StringsPerformance extends AbstractPerformance {
     }
 
     @Test
-    public void testRemove() {
+    public void remove() {
         final int samples = 10000000;
 
         benchmark( builder( "remove-bidwise" ).samples( samples ).build(), ( i ) -> {

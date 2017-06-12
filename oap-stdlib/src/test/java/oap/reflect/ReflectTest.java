@@ -25,6 +25,7 @@ package oap.reflect;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.benchmark.Benchmark;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -39,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static oap.benchmark.Benchmark.benchmark;
 import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;

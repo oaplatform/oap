@@ -89,8 +89,7 @@ public class Reflect {
             if( field.startsWith( "[" ) && next instanceof Map<?, ?> ) {
                 Map<?, ?> map = ( Map<?, ?> ) next;
                 String key = field.substring( 1, field.length() - 1 );
-                if( !map.containsKey( key ) ) next = null;
-                else next = map.get( key );
+                next = map.getOrDefault( key, null );
             } else {
                 Object instance = next;
                 next = reflect( next.getClass() )

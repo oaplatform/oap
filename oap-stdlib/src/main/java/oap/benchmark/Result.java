@@ -22,20 +22,32 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.benchmark;
 
-import oap.benchmark.Benchmark;
-import oap.testng.AbstractPerformance;
-import org.testng.annotations.Test;
+import java.util.List;
 
-public class CuidPerformance extends AbstractPerformance {
-    @Test
-    public void test() {
-        Cuid.next();
+/**
+ * Created by razer on 6/9/17.
+ */
+class Result {
+    public long rate;
+    public long time;
 
-        Benchmark.benchmark( "cuid", 20000000, Cuid::next )
-            .inThreads( 100 )
-            .run();
+    public Result( long time, long rate ) {
+        this.time = time;
+        this.rate = rate;
+    }
+
+    public static Result average( List<Result> results, int experiments ) {
+        return new Result(
+            results.stream()
+                .skip( experiments > 1 ? 1 : 0 )
+                .mapToLong( r -> r.time )
+                .sum() / ( experiments > 1 ? experiments - 1 : experiments ),
+            results.stream()
+                .skip( experiments > 1 ? 1 : 0 )
+                .mapToLong( r1 -> r1.rate )
+                .sum() / ( experiments > 1 ? experiments - 1 : experiments )
+        );
     }
 }
-

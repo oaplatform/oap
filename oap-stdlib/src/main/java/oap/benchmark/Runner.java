@@ -22,20 +22,14 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.benchmark;
 
-import oap.benchmark.Benchmark;
-import oap.testng.AbstractPerformance;
-import org.testng.annotations.Test;
+import org.joda.time.Period;
 
-public class CuidPerformance extends AbstractPerformance {
-    @Test
-    public void test() {
-        Cuid.next();
+/**
+ * Created by razer on 6/9/17.
+ */
+abstract class Runner {
+    public abstract Result run( Benchmark benchmark );
 
-        Benchmark.benchmark( "cuid", 20000000, Cuid::next )
-            .inThreads( 100 )
-            .run();
-    }
 }
-

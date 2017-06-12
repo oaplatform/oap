@@ -50,12 +50,12 @@ public abstract class AbstractPerformance extends AbstractTest {
 
     public static final int WARMING = 1000;
 
-    protected static final Consumer<Integer> none = Functions.empty.consume();
-
+    @Deprecated
     public static BenchmarkConfiguration.BenchmarkConfigurationBuilder builder( String name ) {
         return BenchmarkConfiguration.builder().name( name );
     }
 
+    @Deprecated
     private static BenchmarkResult benchmarkCallThread( BenchmarkConfiguration configuration, Try.ThrowingConsumer<Integer> code ) {
         return Teamcity.progress( configuration.name + "...", () -> {
             List<BenchmarkResult> results = IntStream.range( 0, configuration.experiments )
@@ -104,6 +104,10 @@ public abstract class AbstractPerformance extends AbstractTest {
         return configuration.rateToString.apply( avgRate ).replace( "${PERIOD}", configuration.getPeriod() );
     }
 
+    /**
+     * @see oap.benchmark.Benchmark
+     */
+    @Deprecated
     public static BenchmarkResult benchmark( BenchmarkConfiguration configuration, Try.ThrowingConsumer<Integer> code ) {
         if( configuration.threads <= 1 ) return benchmarkCallThread( configuration, code );
 
@@ -172,7 +176,7 @@ public abstract class AbstractPerformance extends AbstractTest {
     }
 
     public static long getRate( BenchmarkConfiguration configuration, long total ) {
-        return ( long ) (configuration.samples / (total / configuration.period.toStandardDuration().getMillis() / 1000000f));
+        return ( long ) ( configuration.samples / ( total / configuration.period.toStandardDuration().getMillis() / 1000000f ) );
     }
 
     public static <T> T time( String name, Supplier<T> code ) {
