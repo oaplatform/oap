@@ -48,6 +48,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
@@ -411,6 +412,10 @@ public class Tree<T> {
     }
 
     public String trace( List<?> query ) {
+        return trace( query, ( key ) -> true );
+    }
+
+    public String trace( List<?> query, Predicate<T> filter ) {
         final HashMap<T, HashMap<Integer, TraceOperationTypeValues>> result = new HashMap<>();
         final long[][] longQuery = convertQueryToLong( query );
         trace( root, longQuery, result, new TraceBuffer(), true );
@@ -418,21 +423,25 @@ public class Tree<T> {
 
         final String queryStr = "query = " + Stream.of( query )
             .zipWithIndex()
-            .map( p -> dimensions.get( p._2 ).name + ":" + printValue( dimensions.get( p._2 ), p._1 ) )
+            .map( p -> dimensions.get( p._2 ).name + ":" + printValue( p._1 ) )
             .collect( joining( ",", "[", "]" ) ) + "\n";
 
-        final String out = result.entrySet().stream().map( e -> e.getKey().toString() + ": \n" +
-            e.getValue().entrySet().stream().map( dv -> {
-                    final Dimension dimension = dimensions.get( dv.getKey() );
-                    return "    " + dimension.name + "/" + dv.getKey() + ": "
-                        + dv.getValue().toString( dimension ) + " " + queryToString( query, dv.getKey() );
-                }
-            ).collect( joining( "\n" ) )
-        ).collect( joining( "\n" ) );
+        final String out = result
+            .entrySet()
+            .stream()
+            .filter( e -> filter.test( e.getKey() ) )
+            .map( e -> e.getKey().toString() + ": \n" +
+                e.getValue().entrySet().stream().map( dv -> {
+                        final Dimension dimension = dimensions.get( dv.getKey() );
+                        return "    " + dimension.name + "/" + dv.getKey() + ": "
+                            + dv.getValue().toString( dimension ) + " " + queryToString( query, dv.getKey() );
+                    }
+                ).collect( joining( "\n" ) )
+            ).collect( joining( "\n" ) );
         return queryStr + ( out.length() > 0 ? "Expecting:\n" + out : "ALL OK" );
     }
 
-    private String printValue( Dimension dimension, Object o ) {
+    private String printValue( Object o ) {
         if( o == null
             || ( o instanceof Optional<?> && !( ( Optional<?> ) o ).isPresent() )
             || ( o instanceof List<?> && ( ( List<?> ) o ).isEmpty() )
@@ -598,7 +607,6 @@ public class Tree<T> {
 
         if( node instanceof Leaf ) {
             if( currentDepth > maxDepth.get() ) maxDepth.set( currentDepth );
-            return;
         } else if( node instanceof Tree.Node ) {
             final Node n = ( Node ) node;
             findMaxDepth( n.left, maxDepth, currentDepth + 1 );
