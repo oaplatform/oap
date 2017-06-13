@@ -299,11 +299,11 @@ public class Tree<T> {
 
             }
 
-            if( !isArray && unique.size() > 0 && ( unique.size() > uniqueSize || dimension.priority >= priority ) ) {
+            if( !isArray && unique.size() > 0 && ( unique.size() > uniqueSize || dimension.priority > priority ) ) {
                 uniqueSize = unique.size();
                 splitDimension = i;
                 priority = dimension.priority;
-            } else if( isArray && uniqueArray.size() > 0 && ( uniqueArray.size() < uniqueArraySize || dimension.priority >= priorityArray ) ) {
+            } else if( isArray && uniqueArray.size() > 0 && ( uniqueArray.size() < uniqueArraySize || dimension.priority > priorityArray ) ) {
                 uniqueArraySize = uniqueArray.size();
                 splitArrayDimension = i;
                 priorityArray = dimension.priority;
