@@ -69,6 +69,8 @@ public class TreePerformance extends AbstractPerformance {
 
     @Test
     public void tree() {
+        run( 0.25, Integer.MIN_VALUE,1000 );
+        run( 0.5, Integer.MIN_VALUE,1000 );
         run( 1, Integer.MIN_VALUE, 1000 );
         run( 0.75, Integer.MIN_VALUE,1000 );
     }

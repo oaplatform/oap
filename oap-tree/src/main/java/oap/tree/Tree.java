@@ -331,9 +331,13 @@ public class Tree<T> {
                 .sorted( Comparator.comparingLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] ) )
                 .collect( toList() );
 
-            final long[] unique = sorted.stream().mapToLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] ).distinct().toArray();
+            final long[] unique = sorted
+                .stream()
+                .mapToLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] ).distinct().toArray();
 
-            if( dimension.operationType == CONTAINS && ( double ) unique.length / uniqueCount[finalSplitDimension] > hashFillFactor ) {
+            if( dimension.operationType == CONTAINS
+                && unique.length > 1
+                && ( double ) unique.length / uniqueCount[finalSplitDimension] > hashFillFactor ) {
                 final List<ValueData<T>> any = partition_any_other._1.collect( toList() );
 
                 return new SplitDimension( finalSplitDimension, Consts.ANY, emptyList(), emptyList(), emptyList(), any, emptyList(), sorted );
