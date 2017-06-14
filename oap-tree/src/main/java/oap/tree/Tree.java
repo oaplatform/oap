@@ -343,7 +343,8 @@ public class Tree<T> {
                 return new SplitDimension( finalSplitDimension, Consts.ANY, emptyList(), emptyList(), emptyList(), any, emptyList(), sorted );
             } else {
 
-                final long splitValue = unique[unique.length / 2];
+                final long splitValue = dimension.getOrDefault( sorted.get( sorted.size() / 2).data.get( finalSplitDimension ), ANY_AS_ARRAY )[0];
+//                final long splitValue = unique[unique.length / 2];
 
                 val partition_left_eq_right = Stream.of( sorted )
                     .partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] < splitValue );
