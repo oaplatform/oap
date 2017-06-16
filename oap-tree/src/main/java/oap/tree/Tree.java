@@ -383,14 +383,15 @@ public class Tree<T> {
 
             if( qValue == ANY_AS_ARRAY ) return;
 
-            if( !n.sets.isEmpty() ) {
-                for( ArrayBitSet set : n.sets ) {
+            val sets = n.sets;
+            if( !sets.isEmpty() ) {
+                for( ArrayBitSet set : sets ) {
                     if( set.find( qValue ) ) {
                         find( set.equal, query, result );
                     }
                 }
             } else {
-                final int direction = dimension.direction( qValue, n.eqValue );
+                val direction = dimension.direction( qValue, n.eqValue );
                 if( ( direction & Direction.LEFT ) > 0 )
                     find( n.left, query, result );
                 if( ( direction & Direction.EQUAL ) > 0 )

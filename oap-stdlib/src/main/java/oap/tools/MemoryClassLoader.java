@@ -63,15 +63,19 @@ public class MemoryClassLoader extends ClassLoader {
         for( Map.Entry<String, String> entry : map.entrySet() ) {
             final String name = entry.getKey();
 
-            final Path sourceFile = diskCache.resolve( name + ".java" );
-            final Path classFile = diskCache.resolve( name + ".class" );
-            if(
-                Files.exists( sourceFile )
-                    && entry.getValue().equals( oap.io.Files.readString( sourceFile ) )
-                    && Files.exists( classFile ) ) {
+            if( diskCache != null ) {
+                final Path sourceFile = diskCache.resolve( name + ".java" );
+                final Path classFile = diskCache.resolve( name + ".class" );
+                if(
+                    Files.exists( sourceFile )
+                        && entry.getValue().equals( oap.io.Files.readString( sourceFile ) )
+                        && Files.exists( classFile ) ) {
 
-                final byte[] bytes = oap.io.Files.read( classFile );
-                this.manager.map.put( name, new Output( name, JavaFileObject.Kind.CLASS, bytes ) );
+                    final byte[] bytes = oap.io.Files.read( classFile );
+                    this.manager.map.put( name, new Output( name, JavaFileObject.Kind.CLASS, bytes ) );
+                } else {
+                    list.add( new Source( name, JavaFileObject.Kind.SOURCE, entry.getValue() ) );
+                }
             } else {
                 list.add( new Source( name, JavaFileObject.Kind.SOURCE, entry.getValue() ) );
             }
@@ -79,12 +83,12 @@ public class MemoryClassLoader extends ClassLoader {
         if( !list.isEmpty() ) {
             this.compiler.getTask( null, this.manager, null, null, null, list ).call();
 
-            oap.io.Files.ensureDirectory( diskCache );
-
-            for( Source source : list ) {
-                oap.io.Files.writeString( diskCache.resolve( source.originalName + ".java" ), source.content );
-                final byte[] bytes = manager.map.get( source.originalName ).toByteArray();
-                oap.io.Files.write( diskCache.resolve( source.originalName + ".class" ), bytes );
+            if( diskCache != null ) {
+                for( Source source : list ) {
+                    oap.io.Files.writeString( diskCache.resolve( source.originalName + ".java" ), source.content );
+                    final byte[] bytes = manager.map.get( source.originalName ).toByteArray();
+                    oap.io.Files.write( diskCache.resolve( source.originalName + ".class" ), bytes );
+                }
             }
         }
     }
