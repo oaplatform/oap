@@ -26,6 +26,7 @@ package oap.logstream.sharding;
 
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LoggingBackend;
+import oap.logstream.exceptions.NoLoggerConfiguredForShardsException;
 import oap.util.Stream;
 import org.testng.annotations.Test;
 
@@ -71,7 +72,7 @@ public class ShardedLoggingBackendTest {
         verify( log2 ).log( "localhost", "142/345/file1", "line2\n".getBytes(), 0, "line2\n".getBytes().length );
     }
 
-    @Test( expectedExceptions = IllegalArgumentException.class )
+    @Test( expectedExceptions = NoLoggerConfiguredForShardsException.class )
     public void testUnconfiguredShards() {
         LoggingBackend log1 = mock( LoggingBackend.class );
 

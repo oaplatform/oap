@@ -45,7 +45,7 @@ public class ShardedLoggingBackend extends LoggingBackend {
     public final LoggingBackend[] loggers;
     public final ShardMapper shardMapper;
 
-    public ShardedLoggingBackend( List<LoggerShardRange> shards, ShardMapper shardMapper ) {
+    public ShardedLoggingBackend( List<LoggerShardRange> shards, ShardMapper shardMapper ) throws NoLoggerConfiguredForShardsException {
 
         Preconditions.checkNotNull( shards );
         Preconditions.checkArgument( !shards.isEmpty() );
