@@ -37,7 +37,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Created by igor.petrenko on 19.12.2016.
  */
-public class MemoryLoggingBackend implements LoggingBackend {
+public class MemoryLoggingBackend extends LoggingBackend {
     private final HashMap<String, HashMap<String, ByteArrayOutputStream>> outputs = new HashMap<>();
 
     @Override

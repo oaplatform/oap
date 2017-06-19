@@ -21,31 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.logstream;
 
-import java.io.Closeable;
+import oap.logstream.exceptions.LoggerException;
 
-public abstract class LoggingBackend extends LoggingEvent implements Closeable {
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-    public void log( String hostName, String fileName, String line ) {
-        log( hostName, fileName, ( line + "\n" ).getBytes() );
+/**
+ * Created by igor.petrenko on 19.06.2017.
+ */
+public class LoggingEvent {
+    protected final ConcurrentLinkedQueue<LoggerListener> listeners = new ConcurrentLinkedQueue<>();
+
+    public void addListener( LoggerListener listener ) {
+        listeners.add( listener );
     }
 
-    public void log( String hostName, String fileName, byte[] buffer ) {
-        log( hostName, fileName, buffer, 0, buffer.length );
+    public void removeListener( LoggerListener listener ) {
+        listeners.remove( listener );
     }
 
-    public abstract void log( String hostName, String fileName, byte[] buffer, int offset, int length );
-
-    public abstract void close();
-
-    public abstract AvailabilityReport availabilityReport();
-
-    public boolean isLoggingAvailable() {
-        return availabilityReport().state == AvailabilityReport.State.OPERATIONAL;
+    protected void fireError( String msg ) {
+        listeners.forEach( listener -> listener.error( msg ) );
     }
 
-    public boolean isLoggingAvailable( String hostName, String fileName ) {
-        return isLoggingAvailable();
+    protected void fireError( LoggerException exception ) {
+        fireError( exception.getMessage() );
     }
 }

@@ -32,6 +32,10 @@ import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.Sockets;
 import oap.logstream.LoggingBackend;
+import oap.logstream.LoggingEvent;
+import oap.logstream.exceptions.BackendLoggingIsNotAvailableException;
+import oap.logstream.exceptions.BufferOverflowException;
+import oap.logstream.exceptions.LoggerException;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
 
@@ -54,14 +58,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import static oap.concurrent.Threads.isInterrupted;
 
 @Slf4j
-public class SocketLoggingServer implements Runnable {
+public class SocketLoggingServer extends LoggingEvent implements Runnable {
 
     private final ThreadPoolExecutor executor =
         new ThreadPoolExecutor( 0, 1024, 100, TimeUnit.SECONDS, new SynchronousQueue<>(),
             new ThreadFactoryBuilder().setNameFormat( "socket-logging-worker-%d" ).build() );
-
     private final SynchronizedThread thread = new SynchronizedThread( this );
     private final Name workersMetric;
+
     protected int soTimeout = 60000;
     private int port;
     private int bufferSize;
@@ -159,13 +163,16 @@ public class SocketLoggingServer implements Runnable {
                     String selector = in.readUTF();
                     if( size > bufferSize ) {
                         out.writeInt( SocketError.BUFFER_OVERFLOW.code );
-                        throw new IOException( "buffer overflow: chunk size is " + size + " when buffer size is "
-                            + bufferSize + " from " + hostName + "/" + clientId + " with " + selector );
+                        val exception = new BufferOverflowException( hostName, clientId, selector, bufferSize, size );
+                        fireError( exception );
+                        throw exception;
                     }
                     in.readFully( buffer, 0, size );
                     if( !backend.isLoggingAvailable() ) {
                         out.writeInt( SocketError.BACKEND_UNAVAILABLE.code );
-                        throw new IOException( "[" + hostName + "/" + clientId + "] backend logging is not available" );
+                        val exception = new BackendLoggingIsNotAvailableException( hostName, clientId );
+                        fireError( exception );
+                        throw exception;
                     }
                     if( lastId.get() < digestionId ) {
                         log.trace( "[{}/{}] logging ({}, {}, {})", hostName, clientId, digestionId, selector, size );
@@ -177,11 +184,16 @@ public class SocketLoggingServer implements Runnable {
                     out.writeInt( size );
                 }
             } catch( EOFException e ) {
+                fireError( "[" + hostName + "/" + clientId + "] " + socket + " ended, closed" );
                 log.debug( "[{}/{}] {} ended, closed", hostName, clientId, socket );
             } catch( SocketTimeoutException e ) {
+                fireError( "[" + hostName + "/" + clientId + "] no activity on socket for " + soTimeout + "ms, timeout, closing..." );
                 log.info( "[{}/{}] no activity on socket for {}ms, timeout, closing...", hostName, clientId, soTimeout );
                 log.trace( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );
+            } catch( LoggerException e ) {
+                log.error( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );
             } catch( Exception e ) {
+                fireError( "[" + hostName + "/" + clientId + "] " );
                 log.error( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );
             } finally {
                 Sockets.close( socket );

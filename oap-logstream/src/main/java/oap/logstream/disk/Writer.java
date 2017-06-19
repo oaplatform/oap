@@ -33,15 +33,16 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.IoStreams.Encoding;
 import oap.logstream.Timestamp;
+import oap.logstream.exceptions.LoggerException;
 import oap.metrics.Metrics;
 import org.joda.time.DateTime;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -74,7 +75,7 @@ public class Writer implements Closeable {
         closeOutput();
     }
 
-    private void closeOutput() {
+    private void closeOutput() throws LoggerException {
         if( out != null ) try {
             log.trace( "closing output {} ({} bytes)", this, out.getCount() );
             stopwatch.measure( out::flush );
@@ -83,15 +84,15 @@ public class Writer implements Closeable {
             Metrics.measureHistogram( "logging.server_bucket_time", stopwatch.elapsed() / 1000000L );
             out = null;
         } catch( IOException e ) {
-            throw new UncheckedIOException( e );
+            throw new LoggerException( e );
         }
     }
 
-    public synchronized void write( byte[] buffer ) {
-        write( buffer, 0, buffer.length );
+    public synchronized void write( byte[] buffer, Consumer<String> error ) throws LoggerException {
+        write( buffer, 0, buffer.length, error );
     }
 
-    public synchronized void write( byte[] buffer, int offset, int length ) {
+    public synchronized void write( byte[] buffer, int offset, int length, Consumer<String> error ) throws LoggerException {
         try {
             refresh();
             Path filename = filename();
@@ -99,6 +100,7 @@ public class Writer implements Closeable {
                 if( Files.isFileEncodingValid( filename ) )
                     out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( ext ), bufferSize, true ) );
                 else {
+                    error.accept( "corrupted file, cannot append " + filename );
                     log.error( "corrupted file, cannot append {}", filename );
                     Files.rename( filename, logDirectory.resolve( ".corrupted" )
                         .resolve( logDirectory.relativize( filename ) ) );
@@ -114,7 +116,7 @@ public class Writer implements Closeable {
             } finally {
                 out = null;
             }
-            throw new UncheckedIOException( e );
+            throw new LoggerException( e );
         }
     }
 

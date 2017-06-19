@@ -21,31 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.logstream;
 
-import java.io.Closeable;
-
-public abstract class LoggingBackend extends LoggingEvent implements Closeable {
-
-    public void log( String hostName, String fileName, String line ) {
-        log( hostName, fileName, ( line + "\n" ).getBytes() );
-    }
-
-    public void log( String hostName, String fileName, byte[] buffer ) {
-        log( hostName, fileName, buffer, 0, buffer.length );
-    }
-
-    public abstract void log( String hostName, String fileName, byte[] buffer, int offset, int length );
-
-    public abstract void close();
-
-    public abstract AvailabilityReport availabilityReport();
-
-    public boolean isLoggingAvailable() {
-        return availabilityReport().state == AvailabilityReport.State.OPERATIONAL;
-    }
-
-    public boolean isLoggingAvailable( String hostName, String fileName ) {
-        return isLoggingAvailable();
-    }
+/**
+ * Created by igor.petrenko on 16.06.2017.
+ */
+public interface LoggerListener {
+    default void error( String message ) {}
 }

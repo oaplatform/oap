@@ -25,8 +25,10 @@
 package oap.logstream.sharding;
 
 import com.google.common.base.Preconditions;
+import lombok.val;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LoggingBackend;
+import oap.logstream.exceptions.NoLoggerConfiguredForShardsException;
 import oap.util.Stream;
 
 import java.util.List;
@@ -39,7 +41,7 @@ import static oap.util.Pair.__;
 /**
  * Created by anton on 11/2/16.
  */
-public class ShardedLoggingBackend implements LoggingBackend {
+public class ShardedLoggingBackend extends LoggingBackend {
     public final LoggingBackend[] loggers;
     public final ShardMapper shardMapper;
 
@@ -69,7 +71,9 @@ public class ShardedLoggingBackend implements LoggingBackend {
             .collect( Collectors.toList() );
 
         if( !notConfiguredShards.isEmpty() ) {
-            throw new IllegalArgumentException( "No logger configured for shards:" + notConfiguredShards );
+            val exception = new NoLoggerConfiguredForShardsException( notConfiguredShards );
+            fireError( exception );
+            throw exception;
         }
     }
 

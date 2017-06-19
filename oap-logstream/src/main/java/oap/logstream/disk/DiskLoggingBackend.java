@@ -30,14 +30,15 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LoggingBackend;
+import oap.logstream.exceptions.LoggerException;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
@@ -46,7 +47,7 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 import static oap.logstream.Consts.BUCKETS_PER_HOUR;
 
 @Slf4j
-public class DiskLoggingBackend implements LoggingBackend {
+public class DiskLoggingBackend extends LoggingBackend {
     public static final int DEFAULT_BUFFER = 1024 * 100;
     public static final String METRICS_LOGGING_DISK = "logging.disk";
     public static final String METRICS_LOGGING_DISK_BUFFERS = "logging.disk.buffers";
@@ -82,14 +83,18 @@ public class DiskLoggingBackend implements LoggingBackend {
     @Override
     @SneakyThrows
     public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
-        if( closed ) throw new IOException( "already closed!" );
+        if( closed ) {
+            val exception = new LoggerException( "already closed!" );
+            fireError( exception );
+            throw exception;
+        }
 
         Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_DISK ).tag( "from", hostName ) );
         Metrics.measureHistogram( Metrics.name( METRICS_LOGGING_DISK_BUFFERS ).tag( "from", hostName ), length );
         String fullFileName = useClientHostPrefix ? hostName + "/" + fileName : fileName;
         Writer writer = writers.get( fullFileName );
         log.trace( "logging {} bytes to {}", length, writer );
-        writer.write( buffer, offset, length );
+        writer.write( buffer, offset, length, this::fireError );
     }
 
     @Override

@@ -31,6 +31,7 @@ import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LoggingBackend;
+import oap.logstream.exceptions.LoggerException;
 import oap.metrics.Metrics;
 
 import java.nio.file.Path;
@@ -41,7 +42,7 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 
 @Slf4j
 @ToString( of = { "host" } )
-public class SocketLoggingBackend implements LoggingBackend {
+public class SocketLoggingBackend extends LoggingBackend {
 
     private final byte clientId;
     private final String host;
@@ -102,6 +103,7 @@ public class SocketLoggingBackend implements LoggingBackend {
             log.debug( "sending done" );
         } catch( Exception e ) {
             loggingAvailable = false;
+            fireError( new LoggerException( e ) );
             log.warn( e.getMessage() );
             log.trace( e.getMessage(), e );
             Closeables.close( connection );
@@ -130,6 +132,7 @@ public class SocketLoggingBackend implements LoggingBackend {
                 int size = connection.read();
                 if( size <= 0 ) {
                     loggingAvailable = false;
+                    fireError( "Error completing remote write: " + SocketError.fromCode( size ) );
                     log.error( "Error completing remote write: {}", SocketError.fromCode( size ) );
                     return false;
                 }
@@ -140,6 +143,7 @@ public class SocketLoggingBackend implements LoggingBackend {
                 loggingAvailable = false;
                 log.warn( e.getMessage() );
                 log.trace( e.getMessage(), e );
+                fireError( new LoggerException( e ) );
                 Closeables.close( connection );
                 return false;
             }

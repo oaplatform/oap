@@ -57,23 +57,23 @@ public class WriterTest extends AbstractTest {
         String ext = ".log" + encoding.extension;
         Writer writer = new Writer( logs, "test/file", ext, 10 );
 
-        writer.write( bytes );
+        writer.write( bytes, ( msg ) -> {} );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 5 );
-        writer.write( bytes );
+        writer.write( bytes, ( msg ) -> {} );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 10 );
-        writer.write( bytes );
+        writer.write( bytes, ( msg ) -> {} );
 
         writer.close();
 
         writer = new Writer( logs, "test/file", ext, 10 );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
-        writer.write( bytes );
+        writer.write( bytes, ( msg ) -> {} );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 59 );
-        writer.write( bytes );
+        writer.write( bytes, ( msg ) -> {} );
         writer.close();
         assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-01" + ext ) )
             .hasContent( content, encoding );
