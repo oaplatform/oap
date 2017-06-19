@@ -22,14 +22,18 @@
  * SOFTWARE.
  */
 
-package oap.tsv.genrator;
+package oap.template;
 
+import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.tools.MemoryClassLoader;
 import oap.util.Pair;
 import oap.util.Try;
 import org.apache.commons.lang3.ClassUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -38,7 +42,6 @@ import java.io.StringReader;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,20 +62,16 @@ import static oap.util.Pair.__;
  * Created by igor.petrenko on 01.09.2016.
  */
 @Slf4j
-public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
-    public static final Path TMP_FILE_CACHE = Paths.get( "/tmp/file-cache" );
+public class Template<T, TLine extends Template.Line> {
     private static final String math = "/*+-%";
     private static final HashMap<String, BiFunction<?, Accumulator, ?>> cache = new HashMap<>();
-    public static String UNIQUE_ID = "{unique_id}";
-    private static AtomicInteger counter = new AtomicInteger();
-    private static CsvGenerator<Object, Line> EMPTY = new CsvGenerator<>(
-        Object.class, emptyList(), ' ', CsvGeneratorStrategy.DEFAULT );
+    private static Template<Object, Line> EMPTY = new Template<>( "EMPTY", Object.class, emptyList(), null, TemplateStrategy.DEFAULT, null );
     private BiFunction<T, Accumulator, ?> func;
-    private CsvGeneratorStrategy<TLine> map;
+    private TemplateStrategy<TLine> map;
 
     @SneakyThrows
     @SuppressWarnings( "unchecked" )
-    public CsvGenerator( Class<T> clazz, List<TLine> pathAndDefault, char delimiter, CsvGeneratorStrategy<TLine> map ) {
+    Template( String name, Class<T> clazz, List<TLine> pathAndDefault, String delimiter, TemplateStrategy<TLine> map, Path cacheFile ) {
         this.map = map;
         StringBuilder c = new StringBuilder();
 
@@ -82,6 +81,8 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
 
             String className = clazz.getName().replace( '$', '.' );
 
+            val templateClassName = getClass().getSimpleName() + StringUtils.capitalize( name );
+
             c.append( "package " ).append( getClass().getPackage().getName() ).append( ";\n"
                 + "\n"
                 + "import oap.util.Strings;\n"
@@ -90,7 +91,7 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
                 + "import java.util.function.BiFunction;\n"
                 + "import com.google.common.base.CharMatcher;\n"
                 + "\n"
-                + "public  class " ).append( getClass().getSimpleName() ).append( UNIQUE_ID ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
+                + "public  class " ).append( templateClassName ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
                 + "   @Override\n"
                 + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
                 + "\n" );
@@ -118,9 +119,9 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
 
                 if( s != null ) func = ( BiFunction<T, Accumulator, ?> ) s;
                 else {
-                    int i = counter.incrementAndGet();
-                    MemoryClassLoader mcl = new MemoryClassLoader( getClass().getName() + i, c.toString().replace( UNIQUE_ID, String.valueOf( i ) ), TMP_FILE_CACHE );
-                    func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( getClass().getName() + i ).newInstance();
+                    val fullTemplateName = getClass().getName() + StringUtils.capitalize( name );
+                    MemoryClassLoader mcl = new MemoryClassLoader( fullTemplateName, c.toString(), cacheFile );
+                    func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( fullTemplateName ).newInstance();
                     cache.put( c.toString(), func );
                 }
             }
@@ -132,31 +133,37 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
     }
 
     @SuppressWarnings( "unchecked" )
-    public static <T> CsvGenerator<T, Line> empty() {
-        return ( CsvGenerator<T, Line> ) EMPTY;
+    public static <T> Template<T, Line> empty() {
+        return ( Template<T, Line> ) EMPTY;
     }
 
-    private void addPath( Class<T> clazz, TLine line, char delimiter, StringBuilder c,
+    private void addPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c,
                           AtomicInteger num, FieldStack fields,
                           boolean last ) throws NoSuchMethodException, NoSuchFieldException {
         AtomicInteger tab = new AtomicInteger( 5 );
 
         c.append( "\n" );
-        tab( c, tab ).append( "// " ).append( line.path ).append( "\n" );
+        tab( c, tab ).append( "// " ).append(
+            line.path != null ? line.path : "\"" + line.defaultValue + "\"" ).append( "\n" );
 
-        String[] orPath = StringUtils.split( line.path, '|' );
-        int orIndex = 0;
+        if( line.path == null ) {
+            tab( c, tab ).append( "acc.accept( \"" ).append( StringEscapeUtils.escapeJava( line.defaultValue.toString() ) ).append( "\" );\n" );
+        } else {
+            String[] orPath = StringUtils.split( line.path, '|' );
+            int orIndex = 0;
 
-        map.beforeLine( c, line, delimiter );
-        addPathOr( clazz, delimiter, c, num, fields, last, tab, orPath, orIndex, line );
-        map.afterLine( c, line, delimiter );
+            map.beforeLine( c, line, delimiter );
+            addPathOr( clazz, delimiter, c, num, fields, last, tab, orPath, orIndex, line );
+            map.afterLine( c, line, delimiter );
+        }
     }
 
-    private void printDelimiter( char delimiter, StringBuilder c, boolean last, AtomicInteger tab ) {
-        if( map.printDelimiter() && !last ) tab( c, tab ).append( "acc.accept('" ).append( delimiter ).append( "');\n" );
+    private void printDelimiter( String delimiter, StringBuilder c, boolean last, AtomicInteger tab ) {
+        if( map.printDelimiter() && !last && StringUtils.isNotEmpty( delimiter ) )
+            tab( c, tab ).append( "acc.accept('" ).append( delimiter ).append( "');\n" );
     }
 
-    private void addPathOr( Class<T> clazz, char delimiter, StringBuilder c, AtomicInteger num,
+    private void addPathOr( Class<T> clazz, String delimiter, StringBuilder c, AtomicInteger num,
                             FieldStack fields, boolean last, AtomicInteger tab,
                             String[] orPath, int orIndex, TLine line ) {
         int sp = 0;
@@ -169,8 +176,8 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
 
             if( sp > 0 ) {
                 Pair<Type, String> pnp = fields.computeIfAbsent( orPath[orIndex].substring( 0, sp ), Try.map( ( key ) -> {
-                    String prefix = psp.get() > 1 ? key.substring( 0, psp.get() - 1 ) : "";
-                    String suffix = key.substring( psp.get() );
+                    String prefix = StringUtils.trim( psp.get() > 1 ? key.substring( 0, psp.get() - 1 ) : "" );
+                    String suffix = StringUtils.trim( key.substring( psp.get() ) );
 
                     boolean optional = isOptional( lc.getValue() );
                     Type declaredFieldType = getDeclaredFieldOrFunctionType(
@@ -226,11 +233,14 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
         }
 
         for( int i = 0; i < cFields.length; i++ ) {
-            cField = cFields[i];
+            cField = StringUtils.trim( cFields[i] );
 
-            if( cField.startsWith( "\"" ) )
-                tab( c.append( ";\n" ), tab ).append( "acc.accept( " ).append( cField ).append( " );\n" );
-            else {
+            if( cField.startsWith( "\"" ) ) {
+                tab( c.append( ";\n" ), tab ).append( "acc.accept( " );
+                val finalCField = cField;
+                map.function( c, line.function, () -> c.append( finalCField ) );
+                c.append( " );\n" );
+            } else {
                 if( isOptionalParent ) {
                     newPath = in > 0 ? optField + "." + cField : cField;
                 } else {
@@ -310,7 +320,7 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
 
     private void add( StringBuilder c, AtomicInteger num, String newPath, Type cc, Type parentType,
                       boolean nullable, AtomicInteger tab,
-                      String[] orPath, int orIndex, Class<T> clazz, char delimiter,
+                      String[] orPath, int orIndex, Class<T> clazz, String delimiter,
                       FieldStack fields, boolean last, TLine line, Optional<Join> join ) {
         String pfield = newPath;
         boolean primitive = isPrimitive( cc );
@@ -381,27 +391,51 @@ public class CsvGenerator<T, TLine extends CsvGenerator.Line> {
             && ( ( ParameterizedType ) type ).getRawType().equals( Optional.class );
     }
 
-    public <R> R process( T source, Accumulator<R> accumulator ) {
-        return (R) func.apply( source, accumulator );
+    public <R> R render( T source, Accumulator<R> accumulator ) {
+        return ( R ) func.apply( source, accumulator );
     }
 
-    public String process( T source ) {
-        return process( source, new StringAccumulator() );
+    public String renderString( T source ) {
+        return render( source, new StringAccumulator() );
     }
 
+    @ToString
+    @EqualsAndHashCode
     public static class Line {
-        public String name;
-        public String path;
-        public Object defaultValue;
+        public final String name;
+        public final String path;
+        public final Object defaultValue;
+        public final Function function;
 
         public Line( String name, String path, Object defaultValue ) {
+            this( name, path, defaultValue, null );
+        }
+
+        public Line( String name, String path, Object defaultValue, Function function ) {
             this.name = name;
             this.path = path;
             this.defaultValue = defaultValue;
+            this.function = function;
         }
 
         public static Line line( String name, String path, Object defaultValue ) {
             return new Line( name, path, defaultValue );
+        }
+
+        public static Line line( String name, String path, Object defaultValue, Function function ) {
+            return new Line( name, path, defaultValue, function );
+        }
+
+        @ToString
+        @EqualsAndHashCode
+        public static class Function {
+            public final String name;
+            public final String parameters;
+
+            public Function( String name, String parameters ) {
+                this.name = name;
+                this.parameters = parameters;
+            }
         }
     }
 

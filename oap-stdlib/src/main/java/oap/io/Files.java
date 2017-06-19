@@ -224,6 +224,11 @@ public final class Files {
     }
 
     @SneakyThrows
+    public static void cleanDirectory( Path path ) {
+        FileUtils.cleanDirectory( path.toFile() );
+    }
+
+    @SneakyThrows
     public static void delete( Path path ) {
         if( java.nio.file.Files.exists( path ) )
             java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<Path>() {

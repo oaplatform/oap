@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ The MIT License (MIT)
   ~
@@ -23,25 +22,18 @@
   ~ SOFTWARE.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
 
-    <artifactId>oap-pls</artifactId>
-    <parent>
-        <artifactId>oap</artifactId>
-        <groupId>oap</groupId>
-        <version>1.37.3</version>
-    </parent>
+    <logger name="org.quartz" additivity="false">
+        <level value="TRACE"/>
+    </logger>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
-
-</project>
+    <root level="TRACE">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>
