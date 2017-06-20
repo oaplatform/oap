@@ -24,6 +24,7 @@
 package oap.reflect;
 
 import com.google.common.reflect.TypeToken;
+import lombok.val;
 import oap.util.Arrays;
 import oap.util.Pair;
 import oap.util.Try;
@@ -92,11 +93,15 @@ public class Reflect {
                 next = map.getOrDefault( key, null );
             } else {
                 Object instance = next;
-                next = reflect( next.getClass() )
-                    .field( field )
-                    .map( f -> f.get( instance ) )
-                    .map( v -> v instanceof Optional ? ( ( Optional ) v ).orElse( null ) : v )
-                    .orElse( null );
+                val f = reflect( next.getClass() ).field( field );
+                if( f == null ) {
+                    next = null;
+                    continue;
+                }
+                ;
+                next = f.get( instance );
+                if( next == null ) continue;
+                if( next instanceof Optional ) next = ( ( Optional ) next ).orElse( null );
             }
         }
         return ( T ) next;
@@ -113,12 +118,13 @@ public class Reflect {
             Map<Object, Object> map = ( Map<Object, Object> ) next;
             String key = field.substring( 1, field.length() - 1 );
             map.put( key, value );
-        } else
-            reflect( next.getClass() )
-                .field( field )
-                .ifPresent( f -> f.set( next,
-                    f.type().isOptional() ? Optional.ofNullable( value ) : value )
-                );
+        } else {
+            val f = reflect( next.getClass() ).field( field );
+            if( f != null ) {
+                f.set( next, f.type().isOptional() ? Optional.ofNullable( value ) : value );
+            }
+        }
+
     }
 
 //    unapply - check possibility to parameterize with Function to pass parameters from class.
