@@ -101,6 +101,7 @@ public class Module {
                 + " timeout, serialization are deprecated. Use remote { "
                 + Reflect.reflect( RemoteLocation.class )
                 .fields
+                .values()
                 .stream()
                 .filter( f -> !f.isStatic() )
                 .map( Reflection.Field::name )
