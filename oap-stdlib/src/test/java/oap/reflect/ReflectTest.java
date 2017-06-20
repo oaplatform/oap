@@ -25,7 +25,6 @@ package oap.reflect;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.benchmark.Benchmark;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -40,11 +39,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static oap.benchmark.Benchmark.benchmark;
 import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
+interface I {
+    void m( String a );
+}
+
+@Target( ElementType.FIELD )
+@Retention( RetentionPolicy.RUNTIME )
+@interface Ann {
+    int a() default 1;
+}
 
 public class ReflectTest extends AbstractTest {
     @Test
@@ -76,7 +84,7 @@ public class ReflectTest extends AbstractTest {
     @Test
     public void fields() {
         Bean bean = new Bean( 10 );
-        assertThat( Reflect.reflect( bean.getClass() ).fields.stream().<Object>map( f -> f.get( bean ) ) )
+        assertThat( Reflect.reflect( bean.getClass() ).fields.values().stream().map( f -> f.get( bean ) ) )
             .containsExactly( 10, 1, "aaa", null, Optional.empty() );
     }
 
@@ -90,7 +98,6 @@ public class ReflectTest extends AbstractTest {
     public void assignableFrom() {
         assertThat( Reflect.reflect( Bean.class )
             .field( "l" )
-            .get()
             .type()
             .assignableFrom( List.class ) ).isTrue();
     }
@@ -100,14 +107,11 @@ public class ReflectTest extends AbstractTest {
     public void annotation() {
         assertThat( Reflect
             .reflect( Bean.class )
-            .field( "x" )
-            .map( f -> f.isAnnotatedWith( Ann.class ) )
-            .orElse( false ) ).isTrue();
+            .field( "x" ).isAnnotatedWith( Ann.class ) ).isTrue();
         assertThat( Reflect
             .reflect( Bean.class )
             .field( "x" )
-            .map( f -> f.annotationOf( Ann.class ).get( 0 ) )
-            .get()
+            .annotationOf( Ann.class ).get( 0 )
             .a() ).isEqualTo( 10 );
     }
 
@@ -179,21 +183,10 @@ public class ReflectTest extends AbstractTest {
     }
 }
 
-interface I {
-    void m( String a );
-}
-
-
 class C implements I {
     public void m( String a ) {
 
     }
-}
-
-@Target( ElementType.FIELD )
-@Retention( RetentionPolicy.RUNTIME )
-@interface Ann {
-    int a() default 1;
 }
 
 @EqualsAndHashCode

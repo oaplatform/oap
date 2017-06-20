@@ -24,6 +24,7 @@
 package oap.reflect;
 
 import com.google.common.reflect.TypeToken;
+import lombok.val;
 import oap.util.Arrays;
 import oap.util.BiStream;
 import oap.util.Functions;
@@ -38,6 +39,8 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -50,7 +53,7 @@ import static java.util.stream.Collectors.toList;
 
 public class Reflection extends Annotated<Class<?>> {
     public final Class<?> underlying;
-    public final List<Field> fields;
+    public final LinkedHashMap<String, Field> fields = new LinkedHashMap<>();
     public final List<Method> methods;
     public final List<Reflection> typeParameters;
     //    @todo constructors (PERFORMANCE)
@@ -68,8 +71,11 @@ public class Reflection extends Annotated<Class<?>> {
         this.methods =
             Lists.map( ReflectUtils.declared( typeToken.getRawType(), Class::getDeclaredMethods ), Method::new
             );
-        this.fields = Lists.map( ReflectUtils.declared( typeToken.getRawType(), Class::getDeclaredFields ), Field::new
-        );
+
+        for( val field : ReflectUtils.declared( typeToken.getRawType(), Class::getDeclaredFields ) ) {
+            fields.put( field.getName(), new Field( field ) );
+        }
+
         this.underlying = typeToken.getRawType();
         this.typeParameters = Lists.map( typeToken.getRawType().getTypeParameters(), this::resolve );
     }
@@ -123,14 +129,18 @@ public class Reflection extends Annotated<Class<?>> {
                     .collect( toList() )
                     .toArray();
                 T instance = ( T ) constructor.newInstance( cArgs );
-                args.keySet()
-                    .stream()
-                    .filter( ( ( Predicate<Object> ) paramNames::contains ).negate() )
-                    .forEach( key -> field( key ).ifPresent( f -> {
-                            final Object arg = coercions.cast( f.type(), args.get( key ) );
-                            f.set( instance, arg );
-                        }
-                    ) );
+
+                for( val key : args.keySet() ) {
+                    if( paramNames.contains( key ) ) continue;
+
+                    val f = field( key );
+                    if( f == null ) continue;
+
+                    val arg = coercions.cast( f.type(), args.get( key ) );
+                    f.set( instance, arg );
+
+                }
+
                 return instance;
             } catch( Exception e ) {
                 throw new ReflectException( constructorToString( constructor ) + ":" + argsToString( args ), e );
@@ -183,8 +193,8 @@ public class Reflection extends Annotated<Class<?>> {
     }
 
 
-    public Optional<Field> field( String name ) {
-        return Lists.find( fields, f -> f.name().equals( name ) );
+    public Field field( String name ) {
+        return fields.get( name );
     }
 
     public Optional<Method> method( Predicate<Method> matcher ) {
