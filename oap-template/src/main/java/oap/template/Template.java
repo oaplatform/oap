@@ -232,11 +232,16 @@ public class Template<T, TLine extends Template.Line> {
             tab( c, tab ).append( " " ).append( toJavaType( parentClass ) ).append( " " ).append( optField ).append( " = " ).append( pField ).append( ".get();\n" );
         }
 
+        if ( isJoin ){
+            tab( c, tab );
+            c.append( "StringBuilder jb = new StringBuilder();\n" );
+        }
+
         for( int i = 0; i < cFields.length; i++ ) {
             cField = StringUtils.trim( cFields[i] );
 
             if( cField.startsWith( "\"" ) ) {
-                tab( c.append( ";\n" ), tab ).append( "acc.accept( " );
+                tab( c.append( ";\n" ), tab ).append( "jb.append( " );
                 val finalCField = cField;
                 map.function( c, line.function, () -> c.append( finalCField ) );
                 c.append( " );\n" );
@@ -257,7 +262,7 @@ public class Template<T, TLine extends Template.Line> {
         }
 
 
-        c.append( ";\n" );
+        c.append( "\n" );
 
         for( int i = 0; i < opts.get(); i++ ) {
             fields.down();

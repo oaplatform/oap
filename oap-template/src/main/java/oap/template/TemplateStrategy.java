@@ -41,9 +41,9 @@ public interface TemplateStrategy<TLine extends Template.Line> {
         if( isInstance( Boolean.class, cc ) || isInstance( boolean.class, cc ) ) {
             mapBoolean( c, cc, line, field );
         } else if( isPrimitive( cc ) ) {
-            mapPrimitive( c, cc, line, field );
+            mapPrimitive( c, cc, line, field, join.isPresent() );
         } else if( isInstance( Enum.class, cc ) )
-            mapEnum( c, cc, line, field );
+            mapEnum( c, cc, line, field, join.isPresent() );
         else if( isInstance( Collection.class, cc ) ) {
             mapCollection( c, cc, line, field );
         } else if( !cc.equals( String.class ) ) {
@@ -51,18 +51,33 @@ public interface TemplateStrategy<TLine extends Template.Line> {
             function( c, line.function, () -> escape( c, () -> c.append( " String.valueOf( " ).append( field ).append( " )" ) ) );
             c.append( " );" );
         } else {
-            mapString( c, cc, line, field );
+            mapString( c, cc, line, field, join.isPresent() );
+        }
+
+        if ( join.map( Join::isLast ).orElse( false ) ){
+            c.append( "\nacc.accept( " );
+            function( c, line.function, () -> escape( c, () -> c.append( " jb.toString()" ) ) );
+            c.append( " );" );
+
         }
     }
 
-    default void mapPrimitive( StringBuilder c, Type cc, TLine line, String field ) {
-        c.append( "acc.accept( " );
+    default void mapPrimitive( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
+        if ( !isJoin ){
+            c.append( "acc.accept( " );
+        } else {
+            c.append( "jb.append( " );
+        }
         function( c, line.function, () -> c.append( field ) );
         c.append( " );" );
     }
 
-    default void mapString( StringBuilder c, Type cc, TLine line, String field ) {
-        c.append( "acc.accept( " );
+    default void mapString( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
+        if ( !isJoin ){
+            c.append( "acc.accept( " );
+        } else {
+            c.append( "jb.append( " );
+        }
         function( c, line.function, () -> escape( c, () -> c.append( field ) ) );
         c.append( " );" );
     }
@@ -73,8 +88,13 @@ public interface TemplateStrategy<TLine extends Template.Line> {
         c.append( ").accept( ']' );}" );
     }
 
-    default void mapEnum( StringBuilder c, Type cc, TLine line, String field ) {
-        c.append( "acc.accept( " );
+    default void mapEnum( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
+        if ( !isJoin ) {
+            c.append( "acc.accept( " );
+
+        } else {
+            c.append( "jb.append( " );
+        }
         function( c, line.function, () -> c.append( field ) );
         c.append( " );" );
     }

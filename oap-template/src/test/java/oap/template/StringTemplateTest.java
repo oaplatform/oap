@@ -25,12 +25,16 @@
 package oap.template;
 
 import lombok.AllArgsConstructor;
+import lombok.val;
 import oap.io.Files;
 import oap.template.StringTemplateTest.Tst.Test1;
 import oap.template.StringTemplateTest.Tst.Test2;
 import oap.template.StringTemplateTest.Tst.Test3;
+import oap.template.StringTemplateTest.Tst.Test4;
+
 import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.util.Lists;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -71,6 +75,43 @@ public class StringTemplateTest extends AbstractTest {
             .renderString( new Container( test ) ) ).isEqualTo( "id=a+i%2Fd" );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencode(2)}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=a%2Bi%252Fd" );
+    }
+
+    private static class InvocationAccumulator extends StringAccumulator {
+        int invs = 0;
+
+        @Override
+        public Accumulator accept( String o ) {
+            invs++;
+            return super.accept( o );
+        }
+
+        @Override
+        public Accumulator accept( int o ) {
+            invs++;
+            return super.accept( o );
+        }
+
+        public int get(){
+            return invs;
+        }
+    }
+
+    @Test
+    public void testJoin(){
+        Tst test = new Tst();
+        Test4 test4 = new Test4( 320, 50 );
+        test.test4 = Optional.of( test4 );
+
+        val template = engine.getTemplate( "tmp", Container.class,
+            Lists.of( new Template.Line("WaH", "tst.test4.{a,\"x\",b}", "") ), "œ" );
+
+        InvocationAccumulator invAccumulator = new InvocationAccumulator();
+
+        template.render( new Container( test ), invAccumulator );
+        assertThat( invAccumulator.get() ).isEqualTo( 1 );
+        assertThat( invAccumulator.build() ).isEqualTo( "320x50" );
+
     }
 
     @Test
@@ -129,6 +170,7 @@ public class StringTemplateTest extends AbstractTest {
         public Optional<Test1> test1 = Optional.empty();
         public Optional<Test2> test2 = Optional.empty();
         public Optional<Test3> test3 = Optional.empty();
+        public Optional<Test4> test4 = Optional.empty();
 
         @AllArgsConstructor
         public static class Test1 {
@@ -143,6 +185,12 @@ public class StringTemplateTest extends AbstractTest {
         @AllArgsConstructor
         public static class Test3 {
             public double dval;
+        }
+
+        @AllArgsConstructor
+        public static class Test4 {
+            public int a;
+            public int b;
         }
     }
 }
