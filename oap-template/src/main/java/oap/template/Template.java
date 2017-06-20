@@ -94,6 +94,7 @@ public class Template<T, TLine extends Template.Line> {
                 + "public  class " ).append( templateClassName ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
                 + "   @Override\n"
                 + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
+                + "     StringBuilder jb = new StringBuilder();\n"
                 + "\n" );
 
             int size = pathAndDefault.size();
@@ -234,7 +235,7 @@ public class Template<T, TLine extends Template.Line> {
 
         if ( isJoin ){
             tab( c, tab );
-            c.append( "StringBuilder jb = new StringBuilder();\n" );
+            c.append( "jb = new StringBuilder();\n" );
         }
 
         for( int i = 0; i < cFields.length; i++ ) {

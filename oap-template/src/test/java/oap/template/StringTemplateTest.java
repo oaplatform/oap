@@ -104,13 +104,13 @@ public class StringTemplateTest extends AbstractTest {
         test.test4 = Optional.of( test4 );
 
         val template = engine.getTemplate( "tmp", Container.class,
-            Lists.of( new Template.Line("WaH", "tst.test4.{a,\"x\",b}", "") ), "œ" );
+            Lists.of( new Template.Line("WaH", "tst.test4.{a,\"xx\",b}", "") ), "œ" );
 
         InvocationAccumulator invAccumulator = new InvocationAccumulator();
 
         template.render( new Container( test ), invAccumulator );
         assertThat( invAccumulator.get() ).isEqualTo( 1 );
-        assertThat( invAccumulator.build() ).isEqualTo( "320x50" );
+        assertThat( invAccumulator.build() ).isEqualTo( "320xx50" );
 
     }
 
