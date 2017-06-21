@@ -66,6 +66,13 @@ public class Collections {
         return true;
     }
 
+    public static <E, L extends Collection<E>> boolean anyMatch( L list, Predicate<E> predicate ) {
+        for( val e : list ) {
+            if( predicate.test( e ) ) return true;
+        }
+        return false;
+    }
+
     public static <G, E> Map<G, List<E>> groupBy( Collection<E> list, Function<E, G> classifier ) {
         final HashMap<G, List<E>> result = new HashMap<>();
 

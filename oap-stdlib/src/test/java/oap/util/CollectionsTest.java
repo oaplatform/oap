@@ -65,6 +65,14 @@ public class CollectionsTest {
     }
 
     @Test
+    public void testAnyMatch() {
+        val list = asList( 1, 2, 4, 5 );
+
+        assertThat( Collections.anyMatch( list, i -> i == 1 ) ).isTrue();
+        assertThat( Collections.anyMatch( list, i -> i == 6 ) ).isFalse();
+    }
+
+    @Test
     public void testGroupBy() {
         val list = asList( 1, 2, 1, 4 );
 
