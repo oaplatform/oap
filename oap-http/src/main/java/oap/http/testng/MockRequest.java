@@ -27,6 +27,7 @@ package oap.http.testng;
 import lombok.SneakyThrows;
 import oap.http.Context;
 import oap.http.Request;
+import org.apache.http.HttpRequest;
 import org.apache.http.client.methods.HttpGet;
 
 import java.net.InetAddress;
@@ -35,8 +36,12 @@ import java.net.InetAddress;
  * Created by igor.petrenko on 21.06.2017.
  */
 public class MockRequest extends Request {
+    public MockRequest( HttpRequest req ) {
+        super( req, new Context( "", getLocalHost(), "http" ) );
+    }
+
     public MockRequest() {
-        super( new HttpGet(), new Context( "", getLocalHost(), "http" ) );
+        this( new HttpGet() );
     }
 
     @SneakyThrows
