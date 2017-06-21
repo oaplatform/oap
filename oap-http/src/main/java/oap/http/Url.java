@@ -24,6 +24,7 @@
 
 package oap.http;
 
+import com.google.api.client.util.escape.CharEscapers;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import oap.util.Pair;
@@ -31,10 +32,6 @@ import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,11 +41,7 @@ import static oap.util.Pair.__;
 
 public class Url {
     public static String decode( String s ) {
-        try {
-            return URLDecoder.decode( s, StandardCharsets.UTF_8.name() );
-        } catch( UnsupportedEncodingException e ) {
-            throw new IllegalArgumentException( e );
-        }
+        return CharEscapers.decodeUri( s );
     }
 
     public static ListMultimap<String, String> parseQuery( String params ) {
@@ -61,11 +54,7 @@ public class Url {
     }
 
     public static String encode( String value ) {
-        try {
-            return URLEncoder.encode( value, StandardCharsets.UTF_8.name() );
-        } catch( UnsupportedEncodingException e ) {
-            throw new IllegalArgumentException( e );
-        }
+        return CharEscapers.escapeUri( value );
     }
 
     public static List<String> subdomains( String domain ) {

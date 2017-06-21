@@ -27,7 +27,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.Builder;
-import oap.util.Functions;
+import oap.benchmark.Benchmark;
 import oap.util.Try;
 import org.joda.time.Period;
 import org.slf4j.LoggerFactory;
@@ -49,6 +49,10 @@ import static oap.util.Functions.empty.consume;
 public abstract class AbstractPerformance extends AbstractTest {
 
     public static final int WARMING = 1000;
+
+    public static Benchmark benchmark( String name, int samples, Try.ThrowingRunnable code ) {
+        return Benchmark.benchmark( name, samples, code );
+    }
 
     @Deprecated
     public static BenchmarkConfiguration.BenchmarkConfigurationBuilder builder( String name ) {
