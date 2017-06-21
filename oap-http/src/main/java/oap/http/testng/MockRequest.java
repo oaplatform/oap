@@ -35,8 +35,12 @@ import java.net.InetAddress;
  * Created by igor.petrenko on 21.06.2017.
  */
 public class MockRequest extends Request {
-    @SneakyThrows
     public MockRequest() {
-        super( new HttpGet(), new Context( "", InetAddress.getLocalHost(), "http" ) );
+        super( new HttpGet(), new Context( "", getLocalHost(), "http" ) );
+    }
+
+    @SneakyThrows
+    private static InetAddress getLocalHost() {
+        return InetAddress.getLocalHost();
     }
 }
