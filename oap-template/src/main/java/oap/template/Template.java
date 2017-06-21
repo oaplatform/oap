@@ -233,19 +233,14 @@ public class Template<T, TLine extends Template.Line> {
             tab( c, tab ).append( " " ).append( toJavaType( parentClass ) ).append( " " ).append( optField ).append( " = " ).append( pField ).append( ".get();\n" );
         }
 
-        if ( isJoin ){
-            tab( c, tab );
-            c.append( "jb = new StringBuilder();\n" );
-        }
-
         for( int i = 0; i < cFields.length; i++ ) {
             cField = StringUtils.trim( cFields[i] );
 
+            Optional<Join> join = isJoin ? Optional.of( new Join( i, cFields.length ) ) : Optional.empty();
+
             if( cField.startsWith( "\"" ) ) {
-                tab( c.append( ";\n" ), tab ).append( "jb.append( " );
-                val finalCField = cField;
-                map.function( c, line.function, () -> c.append( finalCField ) );
-                c.append( " );\n" );
+                tab( c.append( "\n" ), tab );
+                map.map( c, String.class, line, cField, delimiter, join );
             } else {
                 if( isOptionalParent ) {
                     newPath = in > 0 ? optField + "." + cField : cField;
@@ -255,13 +250,11 @@ public class Template<T, TLine extends Template.Line> {
 
                 Type cc = in > 0 ? getDeclaredFieldOrFunctionType( parentClass, cField ) : parentClass;
 
-                Optional<Join> join = isJoin ? Optional.of( new Join( i, cFields.length ) ) : Optional.empty();
 
                 add( c, num, newPath, cc, parentClass, true, tab, orPath, orIndex,
                     clazz, delimiter, fields, last || ( i < cFields.length - 1 ), line, join );
             }
         }
-
 
         c.append( "\n" );
 

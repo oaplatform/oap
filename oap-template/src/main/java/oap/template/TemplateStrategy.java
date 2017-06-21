@@ -24,6 +24,7 @@
 
 package oap.template;
 
+
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Optional;
@@ -38,8 +39,14 @@ public interface TemplateStrategy<TLine extends Template.Line> {
     TemplateStrategy<Template.Line> DEFAULT = new TemplateStrategy<Template.Line>() {};
 
     default void map( StringBuilder c, Type cc, TLine line, String field, String delimiter, Optional<Join> join ) {
-        if( isInstance( Boolean.class, cc ) || isInstance( boolean.class, cc ) ) {
-            mapBoolean( c, cc, line, field );
+        if ( join.map( Join::isFirst ).orElse( false ) ){
+            mapFirstJoin( c, line );
+        }
+
+        if ( join.isPresent() && field.startsWith( "\"" ) ){
+            mapInterJoin( c, cc, line, field );
+        } else if( isInstance( Boolean.class, cc ) || isInstance( boolean.class, cc ) ) {
+            mapBoolean( c, cc, line, field, join.isPresent() );
         } else if( isPrimitive( cc ) ) {
             mapPrimitive( c, cc, line, field, join.isPresent() );
         } else if( isInstance( Enum.class, cc ) )
@@ -47,37 +54,41 @@ public interface TemplateStrategy<TLine extends Template.Line> {
         else if( isInstance( Collection.class, cc ) ) {
             mapCollection( c, cc, line, field );
         } else if( !cc.equals( String.class ) ) {
-            c.append( "acc.accept( " );
-            function( c, line.function, () -> escape( c, () -> c.append( " String.valueOf( " ).append( field ).append( " )" ) ) );
-            c.append( " );" );
+            mapObject( c, cc, line, field, join.isPresent() );
         } else {
             mapString( c, cc, line, field, join.isPresent() );
         }
 
         if ( join.map( Join::isLast ).orElse( false ) ){
-            c.append( "\nacc.accept( " );
-            function( c, line.function, () -> escape( c, () -> c.append( " jb.toString()" ) ) );
-            c.append( " );" );
+            mapLastJoin( c, line );
 
         }
     }
 
+    default void mapFirstJoin( StringBuilder c, TLine line ){}
+
+    default void mapLastJoin( StringBuilder c, TLine line ){}
+
+    default void mapObject( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ){
+        c.append( "acc.accept( " );
+        function( c, line.function, () -> escape( c, () -> c.append( " String.valueOf( " ).append( field ).append( " )" ) ) );
+        c.append( " );" );
+    }
+
+    default void mapInterJoin( StringBuilder c, Type cc, TLine line, String field ){
+        c.append( "acc.accept( " );
+        function( c, line.function, () -> c.append( field ) );
+        c.append( " );\n" );
+    }
+
     default void mapPrimitive( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
-        if ( !isJoin ){
-            c.append( "acc.accept( " );
-        } else {
-            c.append( "jb.append( " );
-        }
+        c.append( "acc.accept( " );
         function( c, line.function, () -> c.append( field ) );
         c.append( " );" );
     }
 
     default void mapString( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
-        if ( !isJoin ){
-            c.append( "acc.accept( " );
-        } else {
-            c.append( "jb.append( " );
-        }
+        c.append( "acc.accept( " );
         function( c, line.function, () -> escape( c, () -> c.append( field ) ) );
         c.append( " );" );
     }
@@ -89,12 +100,7 @@ public interface TemplateStrategy<TLine extends Template.Line> {
     }
 
     default void mapEnum( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
-        if ( !isJoin ) {
-            c.append( "acc.accept( " );
-
-        } else {
-            c.append( "jb.append( " );
-        }
+        c.append( "acc.accept( " );
         function( c, line.function, () -> c.append( field ) );
         c.append( " );" );
     }
@@ -123,7 +129,7 @@ public interface TemplateStrategy<TLine extends Template.Line> {
         c.append( " )" );
     }
 
-    default StringBuilder mapBoolean( StringBuilder c, Type cc, TLine line, String field ) {
+    default StringBuilder mapBoolean( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
         c.append( "acc.accept( " );
         function( c, line.function, () -> c.append( field ) );
         c.append( " );" );
