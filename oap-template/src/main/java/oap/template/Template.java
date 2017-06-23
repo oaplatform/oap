@@ -50,8 +50,10 @@ import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.joining;
 import static oap.reflect.Types.getOptionalArgumentType;
 import static oap.reflect.Types.isPrimitive;
@@ -65,14 +67,22 @@ import static oap.util.Pair.__;
 public class Template<T, TLine extends Template.Line> {
     private static final String math = "/*+-%";
     private static final HashMap<String, BiFunction<?, Accumulator, ?>> cache = new HashMap<>();
-    private static Template<Object, Line> EMPTY = new Template<>( "EMPTY", Object.class, emptyList(), null, TemplateStrategy.DEFAULT, null );
+    private static Template<Object, Line> EMPTY = new Template<>( "EMPTY", Object.class,
+        emptyList(), null, TemplateStrategy.DEFAULT,
+        emptyMap(), emptyMap(), null );
+    private final Map<String, String> overrides;
+    private final Map<String, Supplier<String>> mapper;
     private BiFunction<T, Accumulator, ?> func;
     private TemplateStrategy<TLine> map;
 
     @SneakyThrows
     @SuppressWarnings( "unchecked" )
-    Template( String name, Class<T> clazz, List<TLine> pathAndDefault, String delimiter, TemplateStrategy<TLine> map, Path cacheFile ) {
+    Template( String name, Class<T> clazz, List<TLine> pathAndDefault, String delimiter, TemplateStrategy<TLine> map,
+              Map<String, String> overrides, Map<String, Supplier<String>> mapper,
+              Path cacheFile ) {
         this.map = map;
+        this.overrides = overrides;
+        this.mapper = mapper;
         StringBuilder c = new StringBuilder();
 
         try {
@@ -153,6 +163,12 @@ public class Template<T, TLine extends Template.Line> {
             String[] orPath = StringUtils.split( line.path, '|' );
             int orIndex = 0;
 
+            for( int i = 0; i < orPath.length; i++ ) {
+                val path = orPath[i].trim();
+                val newPath = overrides.get( path );
+                orPath[i] = newPath != null ? newPath : path;
+            }
+
             map.beforeLine( c, line, delimiter );
             addPathOr( clazz, delimiter, c, num, fields, last, tab, orPath, orIndex, line );
             map.afterLine( c, line, delimiter );
@@ -167,120 +183,129 @@ public class Template<T, TLine extends Template.Line> {
     private void addPathOr( Class<T> clazz, String delimiter, StringBuilder c, AtomicInteger num,
                             FieldStack fields, boolean last, AtomicInteger tab,
                             String[] orPath, int orIndex, TLine line ) {
-        int sp = 0;
-        String newPath = "s.";
-        MutableObject<Type> lc = new MutableObject<>( clazz );
-        AtomicInteger psp = new AtomicInteger( 0 );
-        AtomicInteger opts = new AtomicInteger( 0 );
-        while( sp >= 0 ) {
-            sp = orPath[orIndex].indexOf( '.', sp + 1 );
+        val currentPath = orPath[orIndex].trim();
 
-            if( sp > 0 ) {
-                Pair<Type, String> pnp = fields.computeIfAbsent( orPath[orIndex].substring( 0, sp ), Try.map( ( key ) -> {
-                    String prefix = StringUtils.trim( psp.get() > 1 ? key.substring( 0, psp.get() - 1 ) : "" );
-                    String suffix = StringUtils.trim( key.substring( psp.get() ) );
+        val m = mapper.get( currentPath );
+        if( m != null ) {
+            printDefaultValue( tab( c, tab ), m.get(), line );
+        } else {
 
-                    boolean optional = isOptional( lc.getValue() );
-                    Type declaredFieldType = getDeclaredFieldOrFunctionType(
-                        optional ? getOptionalArgumentType( lc.getValue() ) : lc.getValue(), suffix );
+            int sp = 0;
+            StringBuilder newPath = new StringBuilder( "s." );
+            MutableObject<Type> lc = new MutableObject<>( clazz );
+            AtomicInteger psp = new AtomicInteger( 0 );
+            AtomicInteger opts = new AtomicInteger( 0 );
+            while( sp >= 0 ) {
+                sp = currentPath.indexOf( '.', sp + 1 );
 
-                    String classType = toJavaType( declaredFieldType );
+                if( sp > 0 ) {
+                    Pair<Type, String> pnp = fields.computeIfAbsent( currentPath.substring( 0, sp ), Try.map( ( key ) -> {
+                        String prefix = StringUtils.trim( psp.get() > 1 ? key.substring( 0, psp.get() - 1 ) : "" );
+                        String suffix = StringUtils.trim( key.substring( psp.get() ) );
 
-                    String field = "field" + num.incrementAndGet();
+                        boolean optional = isOptional( lc.getValue() );
+                        Type declaredFieldType = getDeclaredFieldOrFunctionType(
+                            optional ? getOptionalArgumentType( lc.getValue() ) : lc.getValue(), suffix );
 
-                    Optional<Pair<Type, String>> rfP = Optional.ofNullable( fields.get( prefix ) );
-                    String rf = rfP.map( p -> p._2 + ( optional ? ".get()" : "" ) + "." + suffix ).orElse( "s." + key );
+                        String classType = toJavaType( declaredFieldType );
 
-                    if( optional ) {
-                        tab( c, tab ).append( "if( " ).append( rfP.map( p -> p._2 ).orElse( "s" ) ).append( ".isPresent() ) {\n" );
-                        opts.incrementAndGet();
-                        tabInc( tab );
-                        fields.up();
+                        String field = "field" + num.incrementAndGet();
+
+                        Optional<Pair<Type, String>> rfP = Optional.ofNullable( fields.get( prefix ) );
+                        String rf = rfP.map( p -> p._2 + ( optional ? ".get()"
+                            : "" ) + "." + suffix ).orElse( "s." + key );
+
+                        if( optional ) {
+                            tab( c, tab ).append( "if( " ).append( rfP.map( p -> p._2 ).orElse( "s" ) ).append( ".isPresent() ) {\n" );
+                            opts.incrementAndGet();
+                            tabInc( tab );
+                            fields.up();
+                        }
+
+                        tab( c, tab ).append( " " ).append( classType ).append( " " ).append( field ).append( " = " ).append( rf ).append( ";\n" );
+
+                        lc.setValue( declaredFieldType );
+                        return __( lc.getValue(), field );
+                    } ) );
+                    newPath = new StringBuilder( pnp._2 + "." );
+                    lc.setValue( pnp._1 );
+                    psp.set( sp + 1 );
+                } else {
+                    newPath.append( currentPath.substring( psp.get() ) );
+                }
+            }
+
+            int in = newPath.toString().lastIndexOf( '.' );
+            String pField = in > 0 ? newPath.substring( 0, in ) : newPath.toString();
+            String cField = newPath.substring( in + 1 );
+
+            boolean isJoin = cField.startsWith( "{" );
+            String[] cFields = isJoin
+                ? StringUtils.split( cField.substring( 1, cField.length() - 1 ), ',' ) : new String[] { cField };
+
+            Type parentClass = lc.getValue();
+            boolean isOptionalParent = isOptional( parentClass ) && !cField.startsWith( "isPresent" );
+            String optField = null;
+            if( isOptionalParent ) {
+                opts.incrementAndGet();
+                tab( c, tab ).append( "if( " ).append( pField ).append( ".isPresent() ) {\n" );
+                fields.up();
+                tabInc( tab );
+
+                parentClass = getOptionalArgumentType( parentClass );
+                optField = "opt" + num.incrementAndGet();
+                tab( c, tab ).append( " " ).append( toJavaType( parentClass ) ).append( " " ).append( optField ).append( " = " ).append( pField ).append( ".get();\n" );
+            }
+
+            if( isJoin ) {
+                tab( c, tab );
+                c.append( "jb = new StringBuilder();\n" );
+            }
+
+            for( int i = 0; i < cFields.length; i++ ) {
+                cField = StringUtils.trim( cFields[i] );
+
+                if( cField.startsWith( "\"" ) ) {
+                    tab( c.append( ";\n" ), tab ).append( "jb.append( " );
+                    val finalCField = cField;
+                    map.function( c, line.function, () -> c.append( finalCField ) );
+                    c.append( " );\n" );
+                } else {
+                    if( isOptionalParent ) {
+                        newPath = new StringBuilder( in > 0 ? optField + "." + cField : cField );
+                    } else {
+                        newPath = new StringBuilder( in > 0 ? pField + "." + cField : "s." + cField );
                     }
 
-                    tab( c, tab ).append( " " ).append( classType ).append( " " ).append( field ).append( " = " ).append( rf ).append( ";\n" );
+                    Type cc = in > 0 ? getDeclaredFieldOrFunctionType( parentClass, cField ) : parentClass;
 
-                    lc.setValue( declaredFieldType );
-                    return __( lc.getValue(), field );
-                } ) );
-                newPath = pnp._2 + ".";
-                lc.setValue( pnp._1 );
-                psp.set( sp + 1 );
-            } else {
-                newPath += orPath[orIndex].substring( psp.get() );
-            }
-        }
+                    Optional<Join> join = isJoin ? Optional.of( new Join( i, cFields.length ) ) : Optional.empty();
 
-        int in = newPath.lastIndexOf( '.' );
-        String pField = in > 0 ? newPath.substring( 0, in ) : newPath;
-        String cField = newPath.substring( in + 1 );
-
-        boolean isJoin = cField.startsWith( "{" );
-        String[] cFields = isJoin
-            ? StringUtils.split( cField.substring( 1, cField.length() - 1 ), ',' ) : new String[] { cField };
-
-        Type parentClass = lc.getValue();
-        boolean isOptionalParent = isOptional( parentClass ) && !cField.startsWith( "isPresent" );
-        String optField = null;
-        if( isOptionalParent ) {
-            opts.incrementAndGet();
-            tab( c, tab ).append( "if( " ).append( pField ).append( ".isPresent() ) {\n" );
-            fields.up();
-            tabInc( tab );
-
-            parentClass = getOptionalArgumentType( parentClass );
-            optField = "opt" + num.incrementAndGet();
-            tab( c, tab ).append( " " ).append( toJavaType( parentClass ) ).append( " " ).append( optField ).append( " = " ).append( pField ).append( ".get();\n" );
-        }
-
-        if ( isJoin ){
-            tab( c, tab );
-            c.append( "jb = new StringBuilder();\n" );
-        }
-
-        for( int i = 0; i < cFields.length; i++ ) {
-            cField = StringUtils.trim( cFields[i] );
-
-            if( cField.startsWith( "\"" ) ) {
-                tab( c.append( ";\n" ), tab ).append( "jb.append( " );
-                val finalCField = cField;
-                map.function( c, line.function, () -> c.append( finalCField ) );
-                c.append( " );\n" );
-            } else {
-                if( isOptionalParent ) {
-                    newPath = in > 0 ? optField + "." + cField : cField;
-                } else {
-                    newPath = in > 0 ? pField + "." + cField : "s." + cField;
+                    add( c, num, newPath.toString(), cc, parentClass, true, tab, orPath, orIndex,
+                        clazz, delimiter, fields, last || ( i < cFields.length - 1 ), line, join );
                 }
-
-                Type cc = in > 0 ? getDeclaredFieldOrFunctionType( parentClass, cField ) : parentClass;
-
-                Optional<Join> join = isJoin ? Optional.of( new Join( i, cFields.length ) ) : Optional.empty();
-
-                add( c, num, newPath, cc, parentClass, true, tab, orPath, orIndex,
-                    clazz, delimiter, fields, last || ( i < cFields.length - 1 ), line, join );
             }
-        }
 
 
-        c.append( "\n" );
+            c.append( "\n" );
 
-        for( int i = 0; i < opts.get(); i++ ) {
-            fields.down();
-            tabDec( tab );
-            tab( c, tab ).append( "} else {\n" );
-            fields.up();
-            tabInc( tab );
+            for( int i = 0; i < opts.get(); i++ ) {
+                fields.down();
+                tabDec( tab );
+                tab( c, tab ).append( "} else {\n" );
+                fields.up();
+                tabInc( tab );
 
-            if( orIndex + 1 < orPath.length ) {
-                addPathOr( clazz, delimiter, c, num, fields, last, new AtomicInteger( tab.get() + 2 ), orPath, orIndex + 1, line );
-            } else {
-                printDefaultValue( c, line.defaultValue );
-                if( !map.ignoreDefaultValue() ) printDelimiter( delimiter, c, last, tab );
+                if( orIndex + 1 < orPath.length ) {
+                    addPathOr( clazz, delimiter, c, num, fields, last, new AtomicInteger( tab.get() + 2 ), orPath, orIndex + 1, line );
+                } else {
+                    printDefaultValue( c, line.defaultValue, line );
+                    if( !map.ignoreDefaultValue() ) printDelimiter( delimiter, c, last, tab );
+                }
+                tabDec( tab );
+                fields.down();
+                tab( c, tab ).append( "}\n" );
             }
-            tabDec( tab );
-            fields.down();
-            tab( c, tab ).append( "}\n" );
         }
     }
 
@@ -357,7 +382,7 @@ public class Template<T, TLine extends Template.Line> {
                     addPathOr( clazz, delimiter, c, num, fields, last, new AtomicInteger( tab.get() + 2 ), orPath, orIndex + 1, line );
                     fields.down();
                 } else {
-                    printDefaultValue( tab( c, tab ), line.defaultValue );
+                    printDefaultValue( tab( c, tab ), line.defaultValue, line );
                     if( !map.ignoreDefaultValue() ) printDelimiter( delimiter, c, last, tab );
                 }
                 tab( c, tab ).append( "}\n" );
@@ -371,7 +396,7 @@ public class Template<T, TLine extends Template.Line> {
 
                 if( nullable ) {
                     c.append( "} else {" );
-                    printDefaultValue( c, line.defaultValue );
+                    printDefaultValue( c, line.defaultValue, line );
                     if( !map.ignoreDefaultValue() ) printDelimiter( delimiter, c, last, tab );
                     tab( c, tab ).append( "}\n" );
                 }
@@ -383,11 +408,11 @@ public class Template<T, TLine extends Template.Line> {
         }
     }
 
-    private void printDefaultValue( StringBuilder c, Object pfield ) {
+    private void printDefaultValue( StringBuilder c, Object pfield, TLine line ) {
         if( !map.ignoreDefaultValue() ) {
             c.append( "acc.accept( " );
             if( ClassUtils.isPrimitiveOrWrapper( pfield.getClass() ) ) c.append( pfield );
-            else c.append( "\"" ).append( pfield ).append( "\"" );
+            else map.function( c, line.function, () -> c.append( "\"" ).append( pfield ).append( "\"" ) );
             c.append( " );\n" );
         } else c.append( "{}\n" );
     }

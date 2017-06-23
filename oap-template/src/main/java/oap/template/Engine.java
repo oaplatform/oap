@@ -33,7 +33,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
+import static java.util.Collections.emptyMap;
 import static oap.template.Template.Line.line;
 import static oap.template.TemplateStrategy.DEFAULT;
 
@@ -54,15 +57,17 @@ public class Engine {
     public Engine( Path tmpPath, boolean cleanTmpBeforeRun ) {
         this.tmpPath = tmpPath;
         this.cleanTmpBeforeRun = cleanTmpBeforeRun;
+
+        start();
     }
 
-    public void start() {
+    private void start() {
         if( cleanTmpBeforeRun ) Files.cleanDirectory( tmpPath );
     }
 
     public <T, TLine extends Template.Line> Template<T, TLine> getTemplate( String name, Class<T> clazz, List<TLine> pathAndDefault, String delimiter,
                                                                             TemplateStrategy<TLine> map ) {
-        return new Template<>( name, clazz, pathAndDefault, delimiter, map, tmpPath );
+        return new Template<>( name, clazz, pathAndDefault, delimiter, map, emptyMap(), emptyMap(), tmpPath );
     }
 
     public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, List<Template.Line> pathAndDefault, String delimiter ) {
@@ -70,6 +75,11 @@ public class Engine {
     }
 
     public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, String template ) {
+        return getTemplate( name, clazz, template, emptyMap(), emptyMap() );
+    }
+
+    public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, String template,
+                                                       Map<String, String> overrides, Map<String, Supplier<String>> mapper ) {
         boolean variable = false;
         StringBuilder function = null;
 
@@ -114,7 +124,7 @@ public class Engine {
 
         endVariable( lines, text, function, false );
 
-        return new Template<>( name, clazz, lines, null, DEFAULT, tmpPath );
+        return new Template<>( name, clazz, lines, null, DEFAULT, overrides, mapper, tmpPath );
     }
 
     private void add( StringBuilder text, char ch, StringBuilder function ) {

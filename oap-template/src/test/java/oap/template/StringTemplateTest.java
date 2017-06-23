@@ -31,7 +31,6 @@ import oap.template.StringTemplateTest.Tst.Test1;
 import oap.template.StringTemplateTest.Tst.Test2;
 import oap.template.StringTemplateTest.Tst.Test3;
 import oap.template.StringTemplateTest.Tst.Test4;
-
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
@@ -39,8 +38,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Optional;
+import java.util.function.Supplier;
 
+import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -77,34 +79,14 @@ public class StringTemplateTest extends AbstractTest {
             .renderString( new Container( test ) ) ).isEqualTo( "id=a%2Bi%252Fd" );
     }
 
-    private static class InvocationAccumulator extends StringAccumulator {
-        int invs = 0;
-
-        @Override
-        public Accumulator accept( String o ) {
-            invs++;
-            return super.accept( o );
-        }
-
-        @Override
-        public Accumulator accept( int o ) {
-            invs++;
-            return super.accept( o );
-        }
-
-        public int get(){
-            return invs;
-        }
-    }
-
     @Test
-    public void testJoin(){
+    public void testJoin() {
         Tst test = new Tst();
         Test4 test4 = new Test4( 320, 50 );
         test.test4 = Optional.of( test4 );
 
         val template = engine.getTemplate( "tmp", Container.class,
-            Lists.of( new Template.Line("WaH", "tst.test4.{a,\"xx\",b}", "") ), "œ" );
+            Lists.of( new Template.Line( "WaH", "tst.test4.{a,\"xx\",b}", "" ) ), "œ" );
 
         InvocationAccumulator invAccumulator = new InvocationAccumulator();
 
@@ -138,6 +120,45 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
+    public void testOverride() {
+        Tst test = new Tst();
+        Test1 test1 = new Test1( "id1" );
+        test.test1 = Optional.of( test1 );
+
+        val override = new HashMap<String, String>();
+        override.put( "tst.test2.id", "tst.test1.id" );
+
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}", override, emptyMap() )
+            .renderString( new Container( test ) ) ).isEqualTo( "id=id1" );
+    }
+
+    @Test
+    public void testMapper() {
+        Tst test = new Tst();
+        Test1 test1 = new Test1( "id1" );
+        test.test1 = Optional.of( test1 );
+
+        val mapper = new HashMap<String, Supplier<String>>();
+        mapper.put( "tst.test2.id", () -> "new value" );
+
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}", emptyMap(), mapper )
+            .renderString( new Container( test ) ) ).isEqualTo( "id=new value" );
+    }
+
+    @Test
+    public void testMapperWithUrlEncode() {
+        Tst test = new Tst();
+        Test1 test1 = new Test1( "id1" );
+        test.test1 = Optional.of( test1 );
+
+        val mapper = new HashMap<String, Supplier<String>>();
+        mapper.put( "tst.test2.id", () -> "new value" );
+
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id ; urlencode(1)}", emptyMap(), mapper )
+            .renderString( new Container( test ) ) ).isEqualTo( "id=new+value" );
+    }
+
+    @Test
     public void testDoubleValue() {
         Tst test = new Tst();
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test3.dval}" )
@@ -159,6 +180,26 @@ public class StringTemplateTest extends AbstractTest {
 
         assertThat( engine.getTemplate( "tmp1", Container.class, "\"';\\n\\t\\r" )
             .renderString( new Container( test ) ) ).isEqualTo( "\"';\\n\\t\\r" );
+    }
+
+    private static class InvocationAccumulator extends StringAccumulator {
+        int invs = 0;
+
+        @Override
+        public Accumulator accept( String o ) {
+            invs++;
+            return super.accept( o );
+        }
+
+        @Override
+        public Accumulator accept( int o ) {
+            invs++;
+            return super.accept( o );
+        }
+
+        public int get() {
+            return invs;
+        }
     }
 
     @AllArgsConstructor
