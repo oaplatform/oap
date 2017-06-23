@@ -114,41 +114,60 @@ public class StringsTest extends AbstractTest {
     @Test
     public void toUserFriendlyId() {
         assertString( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS, FILL ) )
-            .isEqualTo( "SMTXTXX" );
+            .isEqualTo( "smtxtxx" );
         assertString( Strings.toUserFriendlyId( "another text", 7, reject(), NO_VOWELS, FILL ) )
-            .isEqualTo( "NTHRTXT" );
+            .isEqualTo( "nthrtxt" );
 
         assertString( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS ) )
-            .isEqualTo( "SMTXT" );
+            .isEqualTo( "smtxt" );
 
         assertString( Strings.toUserFriendlyId( "some text", 7, reject() ) )
-            .isEqualTo( "SOMETEX" );
+            .isEqualTo( "sometex" );
         assertString( Strings.toUserFriendlyId( "another text", 7, reject() ) )
-            .isEqualTo( "ANOTHER" );
+            .isEqualTo( "another" );
 
         Set<String> items = Sets.empty();
-        for( int i = 0; i < 18; i++ )
+        for( int i = 0; i < 37; i++ )
             items.add( Strings.toUserFriendlyId( "some text", 7, items::contains, NO_VOWELS, FILL ) );
 
         assertThat( items ).containsExactly(
-            "SMTXTXX",
-            "SMTXTX0",
-            "SMTXTX1",
-            "SMTXTX2",
-            "SMTXTX3",
-            "SMTXTX4",
-            "SMTXTX5",
-            "SMTXTX6",
-            "SMTXTX7",
-            "SMTXTX8",
-            "SMTXTX9",
-            "SMTXTXA",
-            "SMTXTXB",
-            "SMTXTXC",
-            "SMTXTXD",
-            "SMTXTXE",
-            "SMTXTXF",
-            "SMTXTXG"
+            "smtxtxx",
+            "smtxtx0",
+            "smtxtx1",
+            "smtxtx2",
+            "smtxtx3",
+            "smtxtx4",
+            "smtxtx5",
+            "smtxtx6",
+            "smtxtx7",
+            "smtxtx8",
+            "smtxtx9",
+            "smtxtxa",
+            "smtxtxb",
+            "smtxtxc",
+            "smtxtxd",
+            "smtxtxe",
+            "smtxtxf",
+            "smtxtxg",
+            "smtxtxh",
+            "smtxtxi",
+            "smtxtxj",
+            "smtxtxk",
+            "smtxtxl",
+            "smtxtxm",
+            "smtxtxn",
+            "smtxtxo",
+            "smtxtxp",
+            "smtxtxq",
+            "smtxtxr",
+            "smtxtxs",
+            "smtxtxt",
+            "smtxtxu",
+            "smtxtxv",
+            "smtxtxw",
+            "smtxtxy",
+            "smtxtxz",
+            "smtxt0z"
         );
     }
 }

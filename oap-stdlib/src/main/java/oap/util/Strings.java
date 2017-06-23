@@ -321,20 +321,20 @@ public final class Strings {
             : significantSymbols )
             .matcher( source )
             .replaceAll( "" )
-            .toUpperCase();
+            .toLowerCase();
 
         char[] chars = ( id.length() > length
             ? id.substring( 0, length )
             : Arrays.contains( FILL, opts )
-                ? id + fill( "X", length - id.length() )
+                ? id + fill( "x", length - id.length() )
                 : id
         ).toCharArray();
 
 
         conflictResolution:
         for( int position = chars.length - 1; position >= 0; position-- )
-            for( char symbol = 48; symbol < 122; symbol++ ) {
-                if( ( symbol > 57 && symbol < 65 ) || ( symbol > 91 && symbol < 97 ) ) continue;
+            for( char symbol = 48; symbol <= 122; symbol++ ) {
+                if (symbol > 57 && symbol < 97 ) continue;
 
                 if( conflict.test( new String( chars ) ) ) chars[position] = symbol;
                 else break conflictResolution;

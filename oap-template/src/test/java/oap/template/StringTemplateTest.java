@@ -80,13 +80,13 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testJoin() {
+    public void testOtherJoinStrategy() {
         Tst test = new Tst();
         Test4 test4 = new Test4( 320, 50 );
         test.test4 = Optional.of( test4 );
 
         val template = engine.getTemplate( "tmp", Container.class,
-            Lists.of( new Template.Line( "WaH", "tst.test4.{a,\"xx\",b}", "" ) ), "œ" );
+            Lists.of( new Template.Line( "WaH", "tst.test4.{a,\"xx\",b}", "" ) ), "œ", new JoinAsSingleTemplateStrategy() );
 
         InvocationAccumulator invAccumulator = new InvocationAccumulator();
 
