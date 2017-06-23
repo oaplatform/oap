@@ -62,7 +62,7 @@ public class Engine {
     }
 
     private void start() {
-        if( cleanTmpBeforeRun ) Files.cleanDirectory( tmpPath );
+        if( cleanTmpBeforeRun && tmpPath != null ) Files.cleanDirectory( tmpPath );
     }
 
     public <T, TLine extends Template.Line> Template<T, TLine> getTemplate( String name, Class<T> clazz, List<TLine> pathAndDefault, String delimiter,

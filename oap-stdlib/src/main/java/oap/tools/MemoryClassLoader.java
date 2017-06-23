@@ -50,15 +50,12 @@ import static java.util.Collections.singletonMap;
 public class MemoryClassLoader extends ClassLoader {
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     private final MemoryFileManager manager = new MemoryFileManager( this.compiler );
-    private Path diskCache;
 
     public MemoryClassLoader( String classname, String filecontent, Path diskCache ) {
         this( singletonMap( classname, filecontent ), diskCache );
     }
 
     private MemoryClassLoader( Map<String, String> map, Path diskCache ) {
-        this.diskCache = diskCache;
-
         List<Source> list = new ArrayList<>();
         for( Map.Entry<String, String> entry : map.entrySet() ) {
             final String name = entry.getKey();
