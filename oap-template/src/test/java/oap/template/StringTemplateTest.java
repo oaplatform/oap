@@ -62,6 +62,14 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
+    public void testProcessWithoutVariables() throws Exception {
+        assertThat( engine.getTemplate( "test", Container.class, "d" ) )
+            .isExactlyInstanceOf( ConstTemplate.class );
+        assertThat( engine.getTemplate( "test", Container.class, "d" )
+            .renderString( new Container( new Tst() ) ) ).isEqualTo( "d" );
+    }
+
+    @Test
     public void testDepth() {
         Tst test = new Tst();
         Test1 test1 = new Test1( "a i/d" );
@@ -86,7 +94,7 @@ public class StringTemplateTest extends AbstractTest {
         test.test4 = Optional.of( test4 );
 
         val template = engine.getTemplate( "tmp", Container.class,
-            Lists.of( new Template.Line( "WaH", "tst.test4.{a,\"xx\",b}", "" ) ), "œ", new JoinAsSingleTemplateStrategy() );
+            Lists.of( new JavaCTemplate.Line( "WaH", "tst.test4.{a,\"xx\",b}", "" ) ), "œ", new JoinAsSingleTemplateStrategy() );
 
         InvocationAccumulator invAccumulator = new InvocationAccumulator();
 

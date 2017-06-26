@@ -35,8 +35,8 @@ import static oap.reflect.Types.isPrimitive;
 /**
  * Created by igor.petrenko on 01.09.2016.
  */
-public interface TemplateStrategy<TLine extends Template.Line> {
-    TemplateStrategy<Template.Line> DEFAULT = new TemplateStrategy<Template.Line>() {};
+public interface TemplateStrategy<TLine extends JavaCTemplate.Line> {
+    TemplateStrategy<JavaCTemplate.Line> DEFAULT = new TemplateStrategy<JavaCTemplate.Line>() {};
 
     default void map( StringBuilder c, Type cc, TLine line, String field, String delimiter, Optional<Join> join ) {
         if ( join.map( Join::isFirst ).orElse( false ) ){
@@ -109,7 +109,7 @@ public interface TemplateStrategy<TLine extends Template.Line> {
         return false;
     }
 
-    default StringBuilder function( StringBuilder c, Template.Line.Function function, Runnable run ) {
+    default StringBuilder function( StringBuilder c, JavaCTemplate.Line.Function function, Runnable run ) {
         if( function != null ) {
             c.append( function.name ).append( "( " );
         }

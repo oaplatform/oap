@@ -68,25 +68,29 @@ public class Engine {
         }
     }
 
-    public <T, TLine extends Template.Line> Template<T, TLine> getTemplate( String name, Class<T> clazz, List<TLine> pathAndDefault, String delimiter,
-                                                                            TemplateStrategy<TLine> map ) {
-        return new Template<>( name, clazz, pathAndDefault, delimiter, map, emptyMap(), emptyMap(), tmpPath );
+    public <T, TLine extends JavaCTemplate.Line> Template<T, TLine> getTemplate( String name, Class<T> clazz, List<TLine> pathAndDefault, String delimiter,
+                                                                                 TemplateStrategy<TLine> map ) {
+        if( pathAndDefault.size() == 1 && pathAndDefault.get( 0 ).path == null ) {
+            return new ConstTemplate<>( pathAndDefault.get( 0 ).defaultValue );
+        }
+
+        return new JavaCTemplate<>( name, clazz, pathAndDefault, delimiter, map, emptyMap(), emptyMap(), tmpPath );
     }
 
-    public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, List<Template.Line> pathAndDefault, String delimiter ) {
+    public <T> Template<T, JavaCTemplate.Line> getTemplate( String name, Class<T> clazz, List<JavaCTemplate.Line> pathAndDefault, String delimiter ) {
         return getTemplate( name, clazz, pathAndDefault, delimiter, DEFAULT );
     }
 
-    public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, String template ) {
+    public <T> Template<T, JavaCTemplate.Line> getTemplate( String name, Class<T> clazz, String template ) {
         return getTemplate( name, clazz, template, emptyMap(), emptyMap() );
     }
 
-    public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, String template,
-                                                       Map<String, String> overrides, Map<String, Supplier<String>> mapper ) {
+    public <T> Template<T, JavaCTemplate.Line> getTemplate( String name, Class<T> clazz, String template,
+                                                            Map<String, String> overrides, Map<String, Supplier<String>> mapper ) {
         boolean variable = false;
         StringBuilder function = null;
 
-        ArrayList<Template.Line> lines = new ArrayList<>();
+        ArrayList<JavaCTemplate.Line> lines = new ArrayList<>();
         StringBuilder text = new StringBuilder();
 
         for( int i = 0; i < template.length(); i++ ) {
@@ -127,7 +131,11 @@ public class Engine {
 
         endVariable( lines, text, function, false );
 
-        return new Template<>( name, clazz, lines, null, DEFAULT, overrides, mapper, tmpPath );
+        if( lines.size() == 1 && lines.get( 0 ).path == null ) {
+            return new ConstTemplate<>( lines.get( 0 ).defaultValue );
+        }
+
+        return new JavaCTemplate<>( name, clazz, lines, null, DEFAULT, overrides, mapper, tmpPath );
     }
 
     private void add( StringBuilder text, char ch, StringBuilder function ) {
@@ -136,7 +144,7 @@ public class Engine {
 
     }
 
-    private void endVariable( ArrayList<Template.Line> lines, StringBuilder text, StringBuilder function, boolean variable ) {
+    private void endVariable( ArrayList<JavaCTemplate.Line> lines, StringBuilder text, StringBuilder function, boolean variable ) {
         if( text.length() > 0 ) {
             lines.add( line( text.toString(),
                 variable ? text.toString() : null,
@@ -146,7 +154,7 @@ public class Engine {
         }
     }
 
-    private Template.Line.Function getFunction( CharSequence function ) {
+    private JavaCTemplate.Line.Function getFunction( CharSequence function ) {
         boolean args = false;
         val name = new StringBuilder();
         val arguments = new StringBuilder();
@@ -161,7 +169,7 @@ public class Engine {
                     String funcName = StringUtils.trim( name.toString() );
                     funcName = builtInFunction.getOrDefault( funcName, funcName );
 
-                    return new Template.Line.Function( funcName,
+                    return new JavaCTemplate.Line.Function( funcName,
                         StringUtils.isBlank( arguments ) ? null : arguments.toString() );
                 default:
                     ( args ? arguments : name ).append( ch );
@@ -174,9 +182,9 @@ public class Engine {
         throw new IllegalArgumentException( "syntax error: " + function );
     }
 
-    private void startVariable( ArrayList<Template.Line> lines, StringBuilder text ) {
+    private void startVariable( ArrayList<JavaCTemplate.Line> lines, StringBuilder text ) {
         if( text.length() > 0 ) {
-            lines.add( new Template.Line( "text", null, text.toString() ) );
+            lines.add( new JavaCTemplate.Line( "text", null, text.toString() ) );
             text.replace( 0, text.length(), "" );
         }
     }

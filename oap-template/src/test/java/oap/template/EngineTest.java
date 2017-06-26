@@ -71,6 +71,14 @@ public class EngineTest extends AbstractTest {
     }
 
     @Test
+    public void testProcessWithoutVariables() throws Exception {
+        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "testStr", null, "d" ) ), " " ) )
+            .isExactlyInstanceOf( ConstTemplate.class );
+        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "testStr", null, "d" ) ), " " )
+            .renderString( new Test1( "val" ) ) ).isEqualTo( "d" );
+    }
+
+    @Test
     public void testProcessEmptyPath() throws Exception {
         assertThat( engine.getTemplate( "test", Test1.class, asList( line( "testStr", null, "d" ) ), " " )
             .renderString( new Test1( "val" ) ) ).isEqualTo( "d" );
