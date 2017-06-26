@@ -112,6 +112,14 @@ public class StringsTest extends AbstractTest {
     }
 
     @Test
+    public void testReplace() {
+        assertString( Strings.replace( "test", "a", "b" ) ).isEqualTo( "test" );
+        assertString( Strings.replace( "test", "te", "b" ) ).isEqualTo( "bst" );
+        assertString( Strings.replace( "test", "st", "b" ) ).isEqualTo( "teb" );
+        assertString( Strings.replace( "test", "es", "b" ) ).isEqualTo( "tbt" );
+    }
+
+    @Test
     public void toUserFriendlyId() {
         assertString( Strings.toUserFriendlyId( "some text", 7, reject(), NO_VOWELS, FILL ) )
             .isEqualTo( "smtxtxx" );

@@ -30,7 +30,7 @@ import org.testng.annotations.Test;
 
 import java.util.HashSet;
 
-@Test( enabled = false )
+@Test
 public class StringsPerformance extends AbstractPerformance {
     private static String removeSet( String str, char... characters ) {
         if( StringUtils.indexOfAny( str, characters ) < 0 ) return str;
@@ -134,6 +134,16 @@ public class StringsPerformance extends AbstractPerformance {
             removeSet( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
         } );
 
+    }
+
+    @Test
+    public void testReplace() {
+        final int samples = 5000000;
+        final String text = "sdhfg dkuhsdorifue itfgorufgeryjsfgrhfgj hsdgj";
+
+        benchmark( "Strings::replace", samples, () -> Strings.replace( text, "fg", "obc" ) ).run();
+        benchmark( "String::replace", samples, () -> text.replace( "fg", "obc" ) ).run();
+        benchmark( "StringUtils::replace", samples, () -> StringUtils.replace( text, "fg", "obc" ) ).run();
     }
 
 }

@@ -54,6 +54,8 @@ public final class Strings {
     public static final String UNDEFINED = "UNDEFINED";
     public static final String UNKNOWN = "UNKNOWN";
     private static char[] hex = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+    private static Pattern significantSymbolsNoVowels = Pattern.compile( "[^bcdfghjklmnpqrstvwxz0-9]+", CASE_INSENSITIVE );
+    private static Pattern significantSymbols = Pattern.compile( "[^abcdefghijklmnopqrstuvwxyz0-9]+", CASE_INSENSITIVE );
 
     private Strings() {}
 
@@ -155,7 +157,6 @@ public final class Strings {
         return join( ",", list );
     }
 
-
     public static String join( String delimiter, Collection<?> items ) {
         return join( delimiter, items, "", "" );
     }
@@ -211,7 +212,6 @@ public final class Strings {
         }
         return sb.toString();
     }
-
 
     public static String regex( String s, String regex ) {
         Matcher matcher = Pattern.compile( regex, Pattern.MULTILINE ).matcher( s );
@@ -288,7 +288,6 @@ public final class Strings {
         return Strings.join( "\n", Lists.of( lines ) );
     }
 
-
     public static String toQuotedPrintable( String string ) {
         StringBuilder result = new StringBuilder();
         char[] chars = string.toCharArray();
@@ -303,14 +302,6 @@ public final class Strings {
         }
 
         return result.toString();
-    }
-
-    private static Pattern significantSymbolsNoVowels = Pattern.compile( "[^bcdfghjklmnpqrstvwxz0-9]+", CASE_INSENSITIVE );
-    private static Pattern significantSymbols = Pattern.compile( "[^abcdefghijklmnopqrstuvwxyz0-9]+", CASE_INSENSITIVE );
-
-    public enum FriendlyIdOption {
-        NO_VOWELS,
-        FILL
     }
 
     public static String toUserFriendlyId( String source, int length, Predicate<String> conflict, FriendlyIdOption... opts ) {
@@ -334,7 +325,7 @@ public final class Strings {
         conflictResolution:
         for( int position = chars.length - 1; position >= 0; position-- )
             for( char symbol = 48; symbol <= 122; symbol++ ) {
-                if (symbol > 57 && symbol < 97 ) continue;
+                if( symbol > 57 && symbol < 97 ) continue;
 
                 if( conflict.test( new String( chars ) ) ) chars[position] = symbol;
                 else break conflictResolution;
@@ -346,5 +337,35 @@ public final class Strings {
             throw new IllegalArgumentException( format( "cannot resolve conflict for source '%s' with max id length %s", id, length ) );
 
         return id;
+    }
+
+    public static String replace( String source, String os, String ns ) {
+        if( source == null ) {
+            return null;
+        }
+        int i = 0;
+        if( ( i = source.indexOf( os, i ) ) >= 0 ) {
+            char[] sourceArray = source.toCharArray();
+            char[] nsArray = ns.toCharArray();
+            int oLength = os.length();
+            StringBuilder buf = new StringBuilder( sourceArray.length );
+            buf.append( sourceArray, 0, i ).append( nsArray );
+            i += oLength;
+            int j = i;
+            while( ( i = source.indexOf( os, i ) ) > 0 ) {
+                buf.append( sourceArray, j, i - j ).append( nsArray );
+                i += oLength;
+                j = i;
+            }
+            buf.append( sourceArray, j, sourceArray.length - j );
+            source = buf.toString();
+            buf.setLength( 0 );
+        }
+        return source;
+    }
+
+    public enum FriendlyIdOption {
+        NO_VOWELS,
+        FILL
     }
 }
