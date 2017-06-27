@@ -39,11 +39,11 @@ public interface TemplateStrategy<TLine extends JavaCTemplate.Line> {
     TemplateStrategy<JavaCTemplate.Line> DEFAULT = new TemplateStrategy<JavaCTemplate.Line>() {};
 
     default void map( StringBuilder c, Type cc, TLine line, String field, String delimiter, Optional<Join> join ) {
-        if ( join.map( Join::isFirst ).orElse( false ) ){
+        if( join.map( Join::isFirst ).orElse( false ) ) {
             mapFirstJoin( c, line );
         }
 
-        if ( join.isPresent() && field.startsWith( "\"" ) ){
+        if( join.isPresent() && field.startsWith( "\"" ) ) {
             mapInterJoin( c, cc, line, field );
         } else if( isInstance( Boolean.class, cc ) || isInstance( boolean.class, cc ) ) {
             mapBoolean( c, cc, line, field, join.isPresent() );
@@ -59,23 +59,23 @@ public interface TemplateStrategy<TLine extends JavaCTemplate.Line> {
             mapString( c, cc, line, field, join.isPresent() );
         }
 
-        if ( join.map( Join::isLast ).orElse( false ) ){
+        if( join.map( Join::isLast ).orElse( false ) ) {
             mapLastJoin( c, line );
 
         }
     }
 
-    default void mapFirstJoin( StringBuilder c, TLine line ){}
+    default void mapFirstJoin( StringBuilder c, TLine line ) {}
 
-    default void mapLastJoin( StringBuilder c, TLine line ){}
+    default void mapLastJoin( StringBuilder c, TLine line ) {}
 
-    default void mapObject( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ){
+    default void mapObject( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
         c.append( "acc.accept( " );
         function( c, line.function, () -> escape( c, () -> c.append( " String.valueOf( " ).append( field ).append( " )" ) ) );
         c.append( " );" );
     }
 
-    default void mapInterJoin( StringBuilder c, Type cc, TLine line, String field ){
+    default void mapInterJoin( StringBuilder c, Type cc, TLine line, String field ) {
         c.append( "acc.accept( " );
         function( c, line.function, () -> c.append( field ) );
         c.append( " );\n" );
@@ -134,6 +134,10 @@ public interface TemplateStrategy<TLine extends JavaCTemplate.Line> {
         function( c, line.function, () -> c.append( field ) );
         c.append( " );" );
         return c;
+    }
+
+    default String pathNotFound( String path ) {
+        return "";
     }
 
     default boolean printDelimiter() {

@@ -50,8 +50,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.joining;
 import static oap.reflect.Types.getOptionalArgumentType;
 import static oap.reflect.Types.isPrimitive;
@@ -150,19 +148,45 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
         if( line.path == null ) {
             tab( c, tab ).append( "acc.accept( \"" ).append( StringEscapeUtils.escapeJava( line.defaultValue.toString() ) ).append( "\" );\n" );
         } else {
-            String[] orPath = StringUtils.split( line.path, '|' );
-            int orIndex = 0;
-
-            for( int i = 0; i < orPath.length; i++ ) {
-                val path = orPath[i].trim();
-                val newPath = overrides.get( path );
-                orPath[i] = newPath != null ? newPath : path;
+            if( pathExists( clazz, line ) ) {
+                buildPath( clazz, line, delimiter, c, num, fields, last, tab );
+            } else {
+                log.warn( "path {} not found", line );
+                map.pathNotFound( line.path );
             }
-
-            map.beforeLine( c, line, delimiter );
-            addPathOr( clazz, delimiter, c, num, fields, last, tab, orPath, orIndex, line );
-            map.afterLine( c, line, delimiter );
         }
+    }
+
+    private void buildPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c, AtomicInteger num, FieldStack fields, boolean last, AtomicInteger tab ) throws NoSuchFieldException, NoSuchMethodException {
+        val orPath = StringUtils.split( line.path, '|' );
+        int orIndex = 0;
+
+        for( int i = 0; i < orPath.length; i++ ) {
+            val path = orPath[i].trim();
+            val newPath = overrides.get( path );
+            orPath[i] = newPath != null ? newPath : path;
+        }
+
+        map.beforeLine( c, line, delimiter );
+        addPathOr( clazz, delimiter, c, num, fields, last, tab, orPath, orIndex, line );
+        map.afterLine( c, line, delimiter );
+    }
+
+    private boolean pathExists( Class<T> clazz, TLine line ) throws NoSuchFieldException, NoSuchMethodException {
+        try {
+            buildPath( clazz, line, "", new StringBuilder(), new AtomicInteger(), new FieldStack(), false, new AtomicInteger() );
+        } catch( Throwable e ) {
+            if( pathNotFound( e ) ) return false;
+            throw e;
+        }
+
+        return true;
+    }
+
+    private boolean pathNotFound( Throwable e ) {
+        if( e instanceof NoSuchFieldException || e instanceof NoSuchMethodException ) return true;
+        if( e.getCause() != null ) return pathNotFound( e.getCause() );
+        return false;
     }
 
     private void printDelimiter( String delimiter, StringBuilder c, boolean last, AtomicInteger tab ) {
@@ -172,7 +196,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
     private void addPathOr( Class<T> clazz, String delimiter, StringBuilder c, AtomicInteger num,
                             FieldStack fields, boolean last, AtomicInteger tab,
-                            String[] orPath, int orIndex, TLine line ) {
+                            String[] orPath, int orIndex, TLine line ) throws NoSuchFieldException, NoSuchMethodException {
         val currentPath = orPath[orIndex].trim();
 
         val m = mapper.get( currentPath );
@@ -307,9 +331,8 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
         return sb;
     }
 
-    @SneakyThrows
     @SuppressWarnings( "unchecked" )
-    private Type getDeclaredFieldOrFunctionType( Type type, String field ) {
+    private Type getDeclaredFieldOrFunctionType( Type type, String field ) throws NoSuchFieldException, NoSuchMethodException {
         if( type instanceof ParameterizedType )
             return getDeclaredFieldOrFunctionType( ( ( ParameterizedType ) type ).getRawType(), field );
 
@@ -336,7 +359,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
     private void add( StringBuilder c, AtomicInteger num, String newPath, Type cc, Type parentType,
                       boolean nullable, AtomicInteger tab,
                       String[] orPath, int orIndex, Class<T> clazz, String delimiter,
-                      FieldStack fields, boolean last, TLine line, Optional<Join> join ) {
+                      FieldStack fields, boolean last, TLine line, Optional<Join> join ) throws NoSuchFieldException, NoSuchMethodException {
         String pfield = newPath;
         boolean primitive = isPrimitive( cc );
         if( !primitive ) {

@@ -190,6 +190,22 @@ public class StringTemplateTest extends AbstractTest {
             .renderString( new Container( test ) ) ).isEqualTo( "\"';\\n\\t\\r" );
     }
 
+    @Test
+    public void testInvalidPath() {
+        Tst test = new Tst();
+        Test1 test1 = new Test1( "aid" );
+        test.test1 = Optional.of( test1 );
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tstNotFound}" )
+            .renderString( new Container( test ) ) ).isEqualTo( "id=" );
+
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2NotFound.id}" )
+            .renderString( new Container( test ) ) ).isEqualTo( "id=" );
+
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test1.idNotFound}" )
+            .renderString( new Container( test ) ) ).isEqualTo( "id=" );
+
+    }
+
     private static class InvocationAccumulator extends StringAccumulator {
         int invs = 0;
 
