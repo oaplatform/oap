@@ -31,6 +31,24 @@ import lombok.ToString;
  * Created by Admin on 26.06.2017.
  */
 public interface Template<T, TLine extends Template.Line> {
+    Template<Object, Line> EMPTY = new Template<Object, Line>() {
+        @Override
+        public Object render( Object source, Accumulator accumulator ) {
+            accumulator.accept( source );
+            return accumulator.build();
+        }
+
+        @Override
+        public String renderString( Object source ) {
+            return String.valueOf( source );
+        }
+    };
+
+    @SuppressWarnings( "unchecked" )
+    static <T> Template<T, Line> empty() {
+        return ( Template<T, Line> ) EMPTY;
+    }
+
     <R> R render( T source, Accumulator<R> accumulator );
 
     String renderString( T source );

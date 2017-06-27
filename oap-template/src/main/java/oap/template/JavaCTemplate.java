@@ -65,9 +65,6 @@ import static oap.util.Pair.__;
 public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T, TLine> {
     private static final String math = "/*+-%";
     private static final HashMap<String, BiFunction<?, Accumulator, ?>> cache = new HashMap<>();
-    private static JavaCTemplate<Object, Line> EMPTY = new JavaCTemplate<>( "EMPTY", Object.class,
-        emptyList(), null, TemplateStrategy.DEFAULT,
-        emptyMap(), emptyMap(), null );
     private final Map<String, String> overrides;
     private final Map<String, Supplier<String>> mapper;
     private BiFunction<T, Accumulator, ?> func;
@@ -139,11 +136,6 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
             log.error( c.toString() );
             throw e;
         }
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public static <T> JavaCTemplate<T, Line> empty() {
-        return ( JavaCTemplate<T, Line> ) EMPTY;
     }
 
     private void addPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c,
