@@ -24,8 +24,6 @@
 
 package oap.logstream;
 
-import oap.logstream.exceptions.LoggerException;
-
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -46,7 +44,11 @@ public class LoggingEvent {
         listeners.forEach( listener -> listener.error( msg ) );
     }
 
-    protected void fireError( LoggerException exception ) {
+    protected void fireWarning( String msg ) {
+        listeners.forEach( listener -> listener.warn( msg ) );
+    }
+
+    protected void fireError( Exception exception ) {
         fireError( exception.getMessage() );
     }
 }

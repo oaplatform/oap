@@ -26,6 +26,7 @@ package oap.logstream.net;
 
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
@@ -132,8 +133,9 @@ public class SocketLoggingBackend extends LoggingBackend {
                 int size = connection.read();
                 if( size <= 0 ) {
                     loggingAvailable = false;
-                    fireError( "Error completing remote write: " + SocketError.fromCode( size ) );
-                    log.error( "Error completing remote write: {}", SocketError.fromCode( size ) );
+                    val msg = "Error completing remote write: " + SocketError.fromCode( size );
+                    fireError( msg );
+                    log.error( msg );
                     return false;
                 }
                 Metrics.measureCounterIncrement( Metrics.name( "logging.socket" ).tag( "from_host", host ), buffer.length() );
@@ -143,7 +145,7 @@ public class SocketLoggingBackend extends LoggingBackend {
                 loggingAvailable = false;
                 log.warn( e.getMessage() );
                 log.trace( e.getMessage(), e );
-                fireError( new LoggerException( e ) );
+                fireError( e );
                 Closeables.close( connection );
                 return false;
             }

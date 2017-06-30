@@ -31,6 +31,7 @@ import oap.concurrent.ThreadPoolExecutor;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.Sockets;
+import oap.logstream.LoggerListener;
 import oap.logstream.LoggingBackend;
 import oap.logstream.LoggingEvent;
 import oap.logstream.exceptions.BackendLoggingIsNotAvailableException;
@@ -58,7 +59,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static oap.concurrent.Threads.isInterrupted;
 
 @Slf4j
-public class SocketLoggingServer extends LoggingEvent implements Runnable {
+public class SocketLoggingServer extends LoggingEvent implements Runnable, LoggerListener {
 
     private final ThreadPoolExecutor executor =
         new ThreadPoolExecutor( 0, 1024, 100, TimeUnit.SECONDS, new SynchronousQueue<>(),
@@ -82,6 +83,8 @@ public class SocketLoggingServer extends LoggingEvent implements Runnable {
         this.workersMetric = Metrics.measureGauge(
             Metrics.name( "logging.server." + port + ".workers" ),
             () -> executor.getTaskCount() - executor.getCompletedTaskCount() );
+
+        backend.addListener( this );
     }
 
     @Override
@@ -126,6 +129,16 @@ public class SocketLoggingServer extends LoggingEvent implements Runnable {
         Closeables.close( executor );
         Metrics.unregister( workersMetric );
         Files.writeObject( controlStatePath, control );
+    }
+
+    @Override
+    public void error( String message ) {
+        fireError( message );
+    }
+
+    @Override
+    public void warn( String message ) {
+        fireWarning( message );
     }
 
     public class Worker implements Runnable, Closeable {
@@ -178,22 +191,26 @@ public class SocketLoggingServer extends LoggingEvent implements Runnable {
                         log.trace( "[{}/{}] logging ({}, {}, {})", hostName, clientId, digestionId, selector, size );
                         backend.log( hostName, selector, buffer, 0, size );
                         lastId.set( digestionId );
-                    } else
-                        log.warn( "[{}/{}] buffer ({}, {}, {}) already written. Last written buffer is ({})",
-                            hostName, clientId, digestionId, selector, size, lastId );
+                    } else {
+                        val message = "[" + hostName + "/" + clientId + "] buffer (" + digestionId + ", " + selector + ", " + size + ") already written. Last written buffer is (" + lastId + ")";
+                        log.warn( message );
+                        fireWarning( message );
+                    }
                     out.writeInt( size );
                 }
             } catch( EOFException e ) {
-                fireError( "[" + hostName + "/" + clientId + "] " + socket + " ended, closed" );
-                log.debug( "[{}/{}] {} ended, closed", hostName, clientId, socket );
+                val msg = "[" + hostName + "/" + clientId + "] " + socket + " ended, closed";
+                fireWarning( msg );
+                log.debug( msg );
             } catch( SocketTimeoutException e ) {
-                fireError( "[" + hostName + "/" + clientId + "] no activity on socket for " + soTimeout + "ms, timeout, closing..." );
-                log.info( "[{}/{}] no activity on socket for {}ms, timeout, closing...", hostName, clientId, soTimeout );
+                val msg = "[" + hostName + "/" + clientId + "] no activity on socket for " + soTimeout + "ms, timeout, closing...";
+                fireWarning( msg );
+                log.info( msg );
                 log.trace( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );
             } catch( LoggerException e ) {
                 log.error( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );
             } catch( Exception e ) {
-                fireError( "[" + hostName + "/" + clientId + "] " );
+                fireWarning( "[" + hostName + "/" + clientId + "] " );
                 log.error( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );
             } finally {
                 Sockets.close( socket );
@@ -205,5 +222,4 @@ public class SocketLoggingServer extends LoggingEvent implements Runnable {
             this.closed = true;
         }
     }
-
 }

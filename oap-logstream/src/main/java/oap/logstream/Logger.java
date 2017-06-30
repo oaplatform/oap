@@ -27,27 +27,33 @@ import oap.net.Inet;
 import oap.util.Dates;
 import org.joda.time.DateTimeUtils;
 
-public class Logger {
-   private LoggingBackend backend;
+public class Logger extends LoggingEvent implements LoggerListener {
+    private LoggingBackend backend;
 
-   public Logger( LoggingBackend backend ) {
-      this.backend = backend;
-   }
+    public Logger( LoggingBackend backend ) {
+        this.backend = backend;
 
-   public void log( String selector, String line ) {
-      backend.log( Inet.HOSTNAME, selector, Dates.formatDateWithMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
-   }
+        backend.addListener( this );
+    }
 
-   public boolean isLoggingAvailable() {
-      return backend.isLoggingAvailable();
-   }
+    public void log( String selector, String line ) {
+        backend.log( Inet.HOSTNAME, selector, Dates.formatDateWithMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
+    }
 
-   public boolean isLoggingAvailable( String selector ) {
-      return backend.isLoggingAvailable( Inet.HOSTNAME, selector );
-   }
+    public boolean isLoggingAvailable() {
+        return backend.isLoggingAvailable();
+    }
 
-   public AvailabilityReport availabilityReport() {
-      return backend.availabilityReport();
-   }
+    public boolean isLoggingAvailable( String selector ) {
+        return backend.isLoggingAvailable( Inet.HOSTNAME, selector );
+    }
 
+    public AvailabilityReport availabilityReport() {
+        return backend.availabilityReport();
+    }
+
+    @Override
+    public void error( String message ) {
+        fireError( message );
+    }
 }

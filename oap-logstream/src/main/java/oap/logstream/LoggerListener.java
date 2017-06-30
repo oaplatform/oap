@@ -29,4 +29,6 @@ package oap.logstream;
  */
 public interface LoggerListener {
     default void error( String message ) {}
+
+    default void warn( String message ) {}
 }
