@@ -149,7 +149,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
             tab( c, tab ).append( "acc.accept( \"" ).append( StringEscapeUtils.escapeJava( line.defaultValue.toString() ) ).append( "\" );\n" );
         } else {
             if( pathExists( clazz, line ) ) {
-                buildPath( clazz, line, delimiter, c, num, fields, last, tab );
+                buildPath( clazz, line, delimiter, c, num, fields, last, tab, false );
             } else {
                 log.warn( "path {} not found", line );
                 map.pathNotFound( line.path );
@@ -157,7 +157,8 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
         }
     }
 
-    private void buildPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c, AtomicInteger num, FieldStack fields, boolean last, AtomicInteger tab ) throws NoSuchFieldException, NoSuchMethodException {
+    private void buildPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c,
+                            AtomicInteger num, FieldStack fields, boolean last, AtomicInteger tab, boolean validation ) throws NoSuchFieldException, NoSuchMethodException {
         val orPath = StringUtils.split( line.path, '|' );
         int orIndex = 0;
 
@@ -167,14 +168,14 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
             orPath[i] = newPath != null ? newPath : path;
         }
 
-        map.beforeLine( c, line, delimiter );
+        if( validation ) map.beforeLine( c, line, delimiter );
         addPathOr( clazz, delimiter, c, num, fields, last, tab, orPath, orIndex, line );
-        map.afterLine( c, line, delimiter );
+        if( validation ) map.afterLine( c, line, delimiter );
     }
 
     private boolean pathExists( Class<T> clazz, TLine line ) throws NoSuchFieldException, NoSuchMethodException {
         try {
-            buildPath( clazz, line, "", new StringBuilder(), new AtomicInteger(), new FieldStack(), false, new AtomicInteger() );
+            buildPath( clazz, line, "", new StringBuilder(), new AtomicInteger(), new FieldStack(), false, new AtomicInteger(), false );
         } catch( Throwable e ) {
             if( pathNotFound( e ) ) return false;
             throw e;
