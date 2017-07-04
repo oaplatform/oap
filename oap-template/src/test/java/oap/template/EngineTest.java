@@ -43,6 +43,7 @@ import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static oap.template.Template.Line.line;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -213,6 +214,17 @@ public class EngineTest extends AbstractTest {
     }
 
 
+    @Test
+    public void testMutableStrategy() {
+        val sample = new Test4( new Test3( ImmutableMap.of( "mapKey", "mapValue" ) ) );
+        val testStrategy = new TestTemplateStrategy();
+        final Template<Test4, Template.Line> template = engine.getTemplate( "test", Test4.class,
+            asList(
+                line( "f1", "test3.map.mapKey", "unknown" ),
+                line( "f1", "test3.map.mapKey", "unknown" ) ), " ", testStrategy );
+        assertThat( template.renderString( sample ) ).isEqualTo( "a0mapValue b0a1mapValueb1" );
+    }
+
     public static class Test1 {
         public String testStr;
         public Optional<String> optStr = Optional.empty();
@@ -317,6 +329,23 @@ public class EngineTest extends AbstractTest {
 
         public Test3( Map<?, Object> map ) {
             this.map = map;
+        }
+    }
+
+    public static class TestTemplateStrategy implements TemplateStrategy<Template.Line> {
+        private int mutable1;
+        private int mutable2;
+
+        @Override
+        public void beforeLine( StringBuilder c, Template.Line line, String delimiter ) {
+            c.append( "acc.accept( \"a\" + " ).append( mutable1 ).append( " );" );
+            mutable1++;
+        }
+
+        @Override
+        public void afterLine( StringBuilder c, Template.Line line, String delimiter ) {
+            c.append( "acc.accept( \"b\" + " ).append( mutable2 ).append( " );" );
+            mutable2++;
         }
     }
 }

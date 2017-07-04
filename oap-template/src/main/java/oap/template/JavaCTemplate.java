@@ -168,9 +168,9 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
             orPath[i] = newPath != null ? newPath : path;
         }
 
-        if( validation ) map.beforeLine( c, line, delimiter );
+        if( !validation ) map.beforeLine( c, line, delimiter );
         addPathOr( clazz, delimiter, c, num, fields, last, tab, orPath, orIndex, line );
-        if( validation ) map.afterLine( c, line, delimiter );
+        if( !validation ) map.afterLine( c, line, delimiter );
     }
 
     private boolean pathExists( Class<T> clazz, TLine line ) throws NoSuchFieldException, NoSuchMethodException {
