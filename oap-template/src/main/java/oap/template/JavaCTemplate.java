@@ -175,7 +175,8 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
     private boolean pathExists( Class<T> clazz, TLine line ) throws NoSuchFieldException, NoSuchMethodException {
         try {
-            buildPath( clazz, line, "", new StringBuilder(), new AtomicInteger(), new FieldStack(), false, new AtomicInteger(), false );
+            buildPath( clazz, line, "", new StringBuilder(), new AtomicInteger(),
+                new FieldStack(), false, new AtomicInteger(), true );
         } catch( Throwable e ) {
             if( pathNotFound( e ) ) return false;
             throw e;
