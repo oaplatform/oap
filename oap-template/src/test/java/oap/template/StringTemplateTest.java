@@ -135,9 +135,10 @@ public class StringTemplateTest extends AbstractTest {
 
         val override = new HashMap<String, String>();
         override.put( "tst.test2.id", "tst.test1.id" );
+        override.put( "PRICE", "1.2.3" );
 
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}", override, emptyMap() )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=id1" );
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}-${PRICE}", override, emptyMap() )
+            .renderString( new Container( test ) ) ).isEqualTo( "id=id1-1.2.3" );
     }
 
     @Test

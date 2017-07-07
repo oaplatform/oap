@@ -41,6 +41,16 @@ public class ArraySchemaTest extends AbstractSchemaTest {
     }
 
     @Test
+    public void testArrayItemRequired() {
+        String schema = "{\"type\": \"array\", \"items\": {\"type\": \"string\", \"required\": true}}";
+
+        assertOk( schema, "[\"1\"]" );
+        assertOk( schema, "[]" );
+        assertOk( schema, "null" );
+        assertFailure( schema, "[null, \"20\"]", "/0: required property is missing" );
+    }
+
+    @Test
     public void testArrayMinItems() {
         String schema = "{" +
             "type:object," +
