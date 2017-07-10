@@ -76,7 +76,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
     }
 
     @SneakyThrows
-    private void load() {
+    private synchronized void load() {
         Files.ensureDirectory( path );
         List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
         log.debug( "found {} files", paths.size() );
@@ -104,7 +104,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
     }
 
     @SneakyThrows
-    private Path migration( Path path ) {
+    private synchronized Path migration( Path path ) {
         JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {
         }, path ) );
 
@@ -142,26 +142,26 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
         }
     }
 
-    private Path filenameFor( T object, long version ) {
-        final String ver = this.version > 0 ? ".v" + version : "";
-        return fsResolve.apply( this.path, object )
-            .resolve( this.storage.identifier.get( object ) + ver + ".json" );
-    }
-
     public synchronized void delete( T id ) {
         Path path = filenameFor( id, version );
         Files.delete( path );
     }
 
     @Override
-    public String toString() {
-        return getClass().getSimpleName() + ":" + path;
-    }
-
-    @Override
     public synchronized void close() {
         Scheduled.cancel( scheduled );
         fsync( scheduled.lastExecuted() );
+    }
+
+    private Path filenameFor( T object, long version ) {
+        final String ver = this.version > 0 ? ".v" + version : "";
+        return fsResolve.apply( this.path, object )
+            .resolve( this.storage.identifier.get( object ) + ver + ".json" );
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + ":" + path;
     }
 
     @Override
