@@ -24,9 +24,11 @@
 package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.io.CountingOutputStream;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.val;
+import oap.concurrent.Threads;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
@@ -88,7 +90,8 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
                 file = migration( file );
             }
 
-            final Metadata<T> unmarshal = Binder.json.unmarshal( new TypeReference<Metadata<T>>() {}, file );
+            final Metadata<T> unmarshal = Binder.json.unmarshal( new TypeReference<Metadata<T>>() {
+            }, file );
 
             final Path newPath = filenameFor( unmarshal.object, this.version );
 
@@ -119,9 +122,21 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
 
         Path name = fn.toVersion( migration.fromVersion() + 1 );
         JsonMetadata newV = migration.run( oldV );
-        try( OutputStream outputStream = IoStreams.out( name, PLAIN, DEFAULT_BUFFER, false, true ) ) {
-            Binder.json.marshal( outputStream, newV.underlying );
+
+        long writeLen;
+        try( val out = new CountingOutputStream( IoStreams.out( name, PLAIN, DEFAULT_BUFFER, false, true ) ) ) {
+            Binder.json.marshal( out, newV.underlying );
+            writeLen = out.getCount();
         }
+
+        int retries = 0;
+        while( name.toFile().length() != writeLen ) {
+            if( retries > 1000 )
+                throw new RuntimeException( "Migrated file not fully written: " + name.toFile().getName() );
+            Threads.sleepSafely( 10 );
+            retries++;
+        }
+
         Files.delete( path );
         return name;
     }
