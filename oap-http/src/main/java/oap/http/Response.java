@@ -48,12 +48,25 @@ public class Response {
 
         resp.setStatusCode( response.code );
 
-        if( response.reasonPhrase != null )
+        if( response.reasonPhrase != null ) {
             resp.setReasonPhrase( response.reasonPhrase );
-        if( !response.headers.isEmpty() )
-            for( Pair<String, String> header : response.headers )
+        }
+
+        if( !response.headers.isEmpty() ) {
+            for( Pair<String, String> header : response.headers ) {
                 resp.setHeader( header._1, header._2 );
-        if( response.contentEntity != null ) resp.setEntity( response.contentEntity );
+            }
+        }
+
+        if( !response.cookies.isEmpty() ) {
+            for( Pair<String, String> cookie : response.cookies ) {
+                resp.addHeader( cookie._1, cookie._2 );
+            }
+        }
+
+        if( response.contentEntity != null ) {
+            resp.setEntity( response.contentEntity );
+        }
     }
 
 }

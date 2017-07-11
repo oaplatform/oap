@@ -138,7 +138,7 @@ public class StringTemplateTest extends AbstractTest {
         override.put( "PRICE", "1.2.3" );
 
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}-${PRICE}", override, emptyMap() )
-            .renderString( new Container( test ) ) ).isEqualTo( "id=id1-1.2.3" );
+            .renderString( new Container( test ) ) ).isEqualTo( "id=id1-" );
     }
 
     @Test
