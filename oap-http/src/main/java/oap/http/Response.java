@@ -60,7 +60,7 @@ public class Response {
 
         if( !response.cookies.isEmpty() ) {
             for( Pair<String, String> cookie : response.cookies ) {
-                resp.setHeader( cookie._1, cookie._2 );
+                resp.addHeader( cookie._1, cookie._2 );
             }
         }
 
