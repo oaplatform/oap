@@ -64,6 +64,7 @@ public class HttpResponse {
     );
     public String reasonPhrase;
     public List<Pair<String, String>> headers = new ArrayList<>();
+    public List<Pair<String, String>> cookies = new ArrayList<>();
     public int code;
     public HttpEntity contentEntity;
 
@@ -156,7 +157,7 @@ public class HttpResponse {
 
     public HttpResponse withCookie( String cookie ) {
         if( StringUtils.isNotBlank( cookie ) ) {
-            headers.add( __( "Set-Cookie", cookie ) );
+            cookies.add( __( "Set-Cookie", cookie ) );
         }
         return this;
     }

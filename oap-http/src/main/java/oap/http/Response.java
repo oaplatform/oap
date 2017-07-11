@@ -54,11 +54,13 @@ public class Response {
 
         if( !response.headers.isEmpty() ) {
             for( Pair<String, String> header : response.headers ) {
-                if ( header._1.equals( "Set-Cookie" ) ) {
-                    resp.addHeader( header._1, header._2 );
-                } else {
-                    resp.setHeader( header._1, header._2 );
-                }
+                resp.setHeader( header._1, header._2 );
+            }
+        }
+
+        if( !response.cookies.isEmpty() ) {
+            for( Pair<String, String> cookie : response.cookies ) {
+                resp.setHeader( cookie._1, cookie._2 );
             }
         }
 
