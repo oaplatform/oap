@@ -48,12 +48,23 @@ public class Response {
 
         resp.setStatusCode( response.code );
 
-        if( response.reasonPhrase != null )
+        if( response.reasonPhrase != null ) {
             resp.setReasonPhrase( response.reasonPhrase );
-        if( !response.headers.isEmpty() )
-            for( Pair<String, String> header : response.headers )
-                resp.setHeader( header._1, header._2 );
-        if( response.contentEntity != null ) resp.setEntity( response.contentEntity );
+        }
+
+        if( !response.headers.isEmpty() ) {
+            for( Pair<String, String> header : response.headers ) {
+                if ( header._1.equals( "Set-Cookie" ) ) {
+                    resp.addHeader( header._1, header._2 );
+                } else {
+                    resp.setHeader( header._1, header._2 );
+                }
+            }
+        }
+
+        if( response.contentEntity != null ) {
+            resp.setEntity( response.contentEntity );
+        }
     }
 
 }
