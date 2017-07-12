@@ -73,6 +73,10 @@ public class Archiver implements Runnable {
                     else log.debug( "skipping (current timestamp) {}", path );
                 } );
         }
+
+        Files.deleteEmptyDirectories( sourceDirectory );
+        Files.deleteEmptyDirectories( destinationDirectory );
+
         log.debug( "packing is done" );
     }
 
@@ -96,6 +100,5 @@ public class Archiver implements Runnable {
                 Files.rename( path, destination );
             }
         } );
-        Files.deleteEmptyDirectories( path.getParent() );
     }
 }
