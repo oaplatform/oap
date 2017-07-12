@@ -266,7 +266,9 @@ public final class Files {
                 public FileVisitResult postVisitDirectory( Path path, IOException exc ) throws IOException {
                     try {
                         java.nio.file.Files.delete( path );
+                        System.out.println("del = " + path);
                     } catch( DirectoryNotEmptyException ignore ) {
+                        System.out.println("del = " + path + " FAIL");
                     }
                     return FileVisitResult.CONTINUE;
                 }

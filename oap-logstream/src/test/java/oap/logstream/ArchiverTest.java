@@ -71,7 +71,8 @@ public class ArchiverTest extends AbstractTest {
             "b/c/a-2015-10-10-11-11.log" + srcEncoding.extension,
             "b/c/a-2015-10-10-12-00.log" + srcEncoding.extension,
             "b/c/a-2015-10-10-12-01.log" + srcEncoding.extension,
-            "b/c/b-2015-10-10-11-11.log" + srcEncoding.extension
+            "b/c/b-2015-10-10-11-11.log" + srcEncoding.extension,
+            "b/f/a-2015-10-10-11-09.log" + srcEncoding.extension,
         };
 
         for( String file : files ) {
@@ -97,12 +98,12 @@ public class ArchiverTest extends AbstractTest {
                 assertFile( path ).doesNotExist();
             else {
                 assertFile( logs.resolve( file ) ).doesNotExist();
-                assertFile( logs.resolve( file ).getParent() ).doesNotExist();
                 assertFile( path ).hasContent( "data", destEncoding );
             }
         }
         assertFile( archiver.corruptedDirectory.resolve( corrupted ) ).exists();
         assertFile( logs.resolve( corrupted ) ).doesNotExist();
         assertFile( archives.resolve( corrupted ) ).doesNotExist();
+        assertFile( logs.resolve( "b/f" ) ).doesNotExist();
     }
 }
