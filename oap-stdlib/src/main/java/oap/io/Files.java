@@ -50,6 +50,7 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URL;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -241,6 +242,32 @@ public final class Files {
                 @Override
                 public FileVisitResult postVisitDirectory( Path path, IOException exc ) throws IOException {
                     java.nio.file.Files.delete( path );
+                    return FileVisitResult.CONTINUE;
+                }
+
+            } );
+    }
+
+    @SneakyThrows
+    public static void deleteEmptyDirectories( Path path ) {
+        if( java.nio.file.Files.exists( path ) )
+            java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException {
+                    return super.preVisitDirectory( dir, attrs );
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory( Path path, IOException exc ) throws IOException {
+                    try {
+                        java.nio.file.Files.delete( path );
+                    } catch( DirectoryNotEmptyException ignore ) {
+                    }
                     return FileVisitResult.CONTINUE;
                 }
 

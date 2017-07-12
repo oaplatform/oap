@@ -23,6 +23,7 @@
  */
 package oap.io;
 
+import lombok.val;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
@@ -30,6 +31,7 @@ import oap.util.Sets;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -173,5 +175,24 @@ public class FilesTest extends AbstractTest {
         assertThat( path ).doesNotExist();
         assertThat( newPath ).exists();
         assertThat( newPath ).hasContent( "test" );
+    }
+
+    @Test
+    public void testDeleteEmptyDirectories() throws IOException {
+        Files.writeString( Env.tmp( "/dir1/1.txt" ), "1" );
+        Files.writeString( Env.tmp( "/dir1/dir2/1.txt" ), "1" );
+
+        val dir3 = Env.tmpPath( "/dir1/dir3" );
+        val dir4 = Env.tmpPath( "/dir1/dir3/dir4" );
+
+        java.nio.file.Files.createDirectories( dir3 );
+        java.nio.file.Files.createDirectories( dir4 );
+
+        Files.deleteEmptyDirectories( Env.tmpPath( "/" ) );
+
+        assertThat( dir4 ).doesNotExist();
+        assertThat( dir3 ).doesNotExist();
+        assertThat( Env.tmpPath( "/dir1/dir2" ) ).exists();
+        assertThat(Env.tmp( "/dir1/1.txt" )).contains( "1" );
     }
 }
