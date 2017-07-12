@@ -97,6 +97,7 @@ public class ArchiverTest extends AbstractTest {
                 assertFile( path ).doesNotExist();
             else {
                 assertFile( logs.resolve( file ) ).doesNotExist();
+                assertFile( logs.resolve( file ).getParent() ).doesNotExist();
                 assertFile( path ).hasContent( "data", destEncoding );
             }
         }

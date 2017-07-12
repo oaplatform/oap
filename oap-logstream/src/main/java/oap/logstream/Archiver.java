@@ -96,5 +96,6 @@ public class Archiver implements Runnable {
                 Files.rename( path, destination );
             }
         } );
+        Files.deleteEmptyDirectories( path.getParent() );
     }
 }
