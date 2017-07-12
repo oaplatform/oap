@@ -31,9 +31,13 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.UnableToInterruptJobException;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 @DisallowConcurrentExecution
 public class RunnableJob implements Job, InterruptableJob {
-    final Runnable runnable;
+    private final Runnable runnable;
+    private final AtomicReference<Thread> runningThread = new AtomicReference<>();
+
 
     public RunnableJob( Runnable runnable ) {
         this.runnable = runnable;
@@ -42,14 +46,20 @@ public class RunnableJob implements Job, InterruptableJob {
     @Override
     public void execute( JobExecutionContext context ) throws JobExecutionException {
         try {
-            runnable.run();
+            runningThread.set( Thread.currentThread() );
+            if( !Thread.interrupted() ) {
+                runnable.run();
+            }
         } catch( Exception e ) {
             throw new JobExecutionException( e );
+        } finally {
+            runningThread.set( null );
         }
     }
 
     @Override
     public void interrupt() throws UnableToInterruptJobException {
-        Thread.currentThread().interrupt();
+        Thread thread = runningThread.getAndSet( null );
+        if( thread != null ) thread.interrupt();
     }
 }

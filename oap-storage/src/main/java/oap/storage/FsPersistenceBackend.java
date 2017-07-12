@@ -28,7 +28,6 @@ import com.google.common.io.CountingOutputStream;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.val;
-import oap.concurrent.Threads;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
@@ -65,7 +64,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
     private MemoryStorage<T> storage;
     private PeriodicScheduled scheduled;
 
-    public FsPersistenceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync, int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
+    FsPersistenceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync, int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
         this.path = path;
         this.fsResolve = fsResolve;
         this.version = version;
@@ -123,18 +122,12 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
         Path name = fn.toVersion( migration.fromVersion() + 1 );
         JsonMetadata newV = migration.run( oldV );
 
-        long writeLen;
-        try( val out = new CountingOutputStream( IoStreams.out( name, PLAIN, DEFAULT_BUFFER, false, true ) ) ) {
-            Binder.json.marshal( out, newV.underlying );
-            writeLen = out.getCount();
-        }
-
-        int retries = 0;
-        while( name.toFile().length() != writeLen ) {
-            if( retries > 1000 )
-                throw new RuntimeException( "Migrated file not fully written: " + name.toFile().getName() + "( " + writeLen + " vs " + name.toFile().length() + " )" );
-            Threads.sleepSafely( 10 );
-            retries++;
+        long writeLen = -1;
+        while( name.toFile().length() != writeLen ){
+            try( val out = new CountingOutputStream( IoStreams.out( name, PLAIN, DEFAULT_BUFFER, false, true ) ) ) {
+                Binder.json.marshal( out, newV.underlying );
+                writeLen = out.getCount();
+            }
         }
 
         Files.delete( path );
@@ -210,8 +203,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
                 : new Persisted( path.getParent(), name.substring( 0, name.length() - ".json".length() ), 0L );
         }
 
-
-        public Path toVersion( long version ) {
+        Path toVersion( long version ) {
             return path.resolve( id + ".v" + version + ".json" );
         }
     }
