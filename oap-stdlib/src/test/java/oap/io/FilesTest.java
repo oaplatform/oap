@@ -188,11 +188,21 @@ public class FilesTest extends AbstractTest {
         java.nio.file.Files.createDirectories( dir3 );
         java.nio.file.Files.createDirectories( dir4 );
 
-        Files.deleteEmptyDirectories( Env.tmpPath( "/" ) );
+        Files.deleteEmptyDirectories( Env.tmpPath( "/" ), false );
 
         assertThat( dir4 ).doesNotExist();
         assertThat( dir3 ).doesNotExist();
         assertThat( Env.tmpPath( "/dir1/dir2" ) ).exists();
         assertThat(Env.tmp( "/dir1/1.txt" )).contains( "1" );
+
+        java.nio.file.Files.createDirectories( dir3 );
+        java.nio.file.Files.createDirectories( dir4 );
+
+        Files.deleteEmptyDirectories( dir3, false );
+        assertThat( dir4 ).doesNotExist();
+        assertThat( dir3 ).exists();
+
+        Files.deleteEmptyDirectories( dir3, true );
+        assertThat( dir3 ).doesNotExist();
     }
 }

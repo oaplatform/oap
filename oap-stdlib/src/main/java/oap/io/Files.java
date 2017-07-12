@@ -249,7 +249,7 @@ public final class Files {
     }
 
     @SneakyThrows
-    public static void deleteEmptyDirectories( Path path ) {
+    public static void deleteEmptyDirectories( Path path, boolean deleteRoot ) {
         if( java.nio.file.Files.exists( path ) )
             java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<Path>() {
                 @Override
@@ -263,12 +263,12 @@ public final class Files {
                 }
 
                 @Override
-                public FileVisitResult postVisitDirectory( Path path, IOException exc ) throws IOException {
+                public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException {
                     try {
-                        java.nio.file.Files.delete( path );
-                        System.out.println("del = " + path);
+                        if( !path.equals( dir ) || deleteRoot ) {
+                            java.nio.file.Files.delete( dir );
+                        }
                     } catch( DirectoryNotEmptyException ignore ) {
-                        System.out.println("del = " + path + " FAIL");
                     }
                     return FileVisitResult.CONTINUE;
                 }

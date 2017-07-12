@@ -74,8 +74,8 @@ public class Archiver implements Runnable {
                 } );
         }
 
-        Files.deleteEmptyDirectories( sourceDirectory );
-        Files.deleteEmptyDirectories( destinationDirectory );
+        Files.deleteEmptyDirectories( sourceDirectory, false );
+        Files.deleteEmptyDirectories( destinationDirectory, false );
 
         log.debug( "packing is done" );
     }
