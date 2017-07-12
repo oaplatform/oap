@@ -132,7 +132,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
         int retries = 0;
         while( name.toFile().length() != writeLen ) {
             if( retries > 1000 )
-                throw new RuntimeException( "Migrated file not fully written: " + name.toFile().getName() );
+                throw new RuntimeException( "Migrated file not fully written: " + name.toFile().getName() + "( " + writeLen + " vs " + name.toFile().length() + " )" );
             Threads.sleepSafely( 10 );
             retries++;
         }
