@@ -112,7 +112,9 @@ public class Env {
     public static int port( String key ) {
         return ports.computeIfAbsent( key, k -> {
             try( ServerSocket socket = new ServerSocket( 0 ) ) {
-                return socket.getLocalPort();
+                val localPort = socket.getLocalPort();
+                System.out.println( "ENV::key=" + key + "; port = " + localPort );
+                return localPort;
             } catch( IOException e ) {
                 throw new UncheckedIOException( e );
             }
