@@ -33,15 +33,23 @@ import oap.http.testng.HttpAsserts;
 import oap.testng.AbstractPerformance;
 import oap.testng.Env;
 import org.apache.http.entity.ContentType;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
 
-import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
+import static oap.http.testng.HttpAsserts.HTTP_URL;
 
 public class WebServicesPerformance extends AbstractPerformance {
     public static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
     private final int samples = 100000;
+
+    @BeforeMethod
+    @Override
+    public void beforeMethod() throws Exception {
+        Env.resetPorts();
+        super.beforeMethod();
+    }
 
     @Test
     public void blocking_threads() {
@@ -55,7 +63,7 @@ public class WebServicesPerformance extends AbstractPerformance {
 
             HttpAsserts.reset();
             benchmark( builder( "Server.invocations" ).samples( samples ).threads( 5000 ).build(),
-                number -> HttpAsserts.assertGet( HTTP_PREFIX + "/x/v/math/id?a=aaa" ).responded( 200, "OK",
+                number -> HttpAsserts.assertGet( HTTP_URL( "/x/v/math/id?a=aaa" ) ).responded( 200, "OK",
                     ContentType.APPLICATION_JSON, "\"aaa\"" ) );
 
             HttpAsserts.reset();
@@ -78,7 +86,7 @@ public class WebServicesPerformance extends AbstractPerformance {
             HttpAsserts.reset();
             benchmark( builder( "NioServer.invocations" ).samples( samples ).threads( 5000 ).build(), ( number ) -> {
                 try {
-                    HttpAsserts.assertGet( HTTP_PREFIX + "/x/v/math/id?a=aaa" )
+                    HttpAsserts.assertGet( HTTP_URL( "/x/v/math/id?a=aaa" ) )
                         .responded( 200, "OK", ContentType.APPLICATION_JSON, "\"aaa\"" );
                 } catch( Throwable e ) {
                     e.printStackTrace();

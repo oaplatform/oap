@@ -43,8 +43,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class HttpAsserts {
 
-    public static final String HTTP_PREFIX = "http://localhost:" + Env.port();
     private static Client client = Client.custom().build();
+
+    public static String HTTP_PREFIX() { return "http://localhost:" + Env.port(); }
+
+    public static String HTTP_URL( String suffix ) {
+        return "http://localhost:" + Env.port() + ( suffix.startsWith( "/" ) ? suffix : "/" + suffix );
+    }
 
     public static void reset() {
         client.reset();

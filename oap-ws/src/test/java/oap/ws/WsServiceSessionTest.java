@@ -60,6 +60,7 @@ public class WsServiceSessionTest {
 
     @BeforeClass
     public void startServer() {
+        Env.resetPorts();
         Metrics.resetAll();
         server.start();
         ws.bind( "test", GenericCorsPolicy.DEFAULT, new TestWS(), true, sessionManager, Collections.emptyList(), Protocol.HTTP );
@@ -88,9 +89,9 @@ public class WsServiceSessionTest {
 
         sessionManager.put( "123456", session );
 
-        assertGet( HttpAsserts.HTTP_PREFIX + "/test/", Maps.empty(), Maps.of( __( "Cookie", "Authorization=987654321; SID=123456" ) ) )
-                .hasCode( 200 )
-                .hasBody( Binder.json.marshal( map ) );
+        assertGet( HttpAsserts.HTTP_URL( "/test/" ), Maps.empty(), Maps.of( __( "Cookie", "Authorization=987654321; SID=123456" ) ) )
+            .hasCode( 200 )
+            .hasBody( Binder.json.marshal( map ) );
     }
 
 

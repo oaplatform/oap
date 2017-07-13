@@ -55,6 +55,7 @@ public abstract class AbstractWsValidateTest extends AbstractTest {
 
     @BeforeClass
     public void beforeClass() throws Exception {
+        Env.resetPorts();
         Metrics.resetAll();
         server.start();
         for( val wsInstance : getWsInstances() ) {

@@ -35,7 +35,7 @@ import org.testng.annotations.Test;
 
 import java.nio.charset.StandardCharsets;
 
-import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
+import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.http.testng.HttpAsserts.assertPost;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
@@ -57,52 +57,52 @@ public class WebServicesTest extends AbstractWebServicesTest {
 
     @Test
     public void invocations() {
-        assertGet( HTTP_PREFIX + "/x/v/math/x?i=1&s=2" )
+        assertGet( HTTP_URL( "/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
-        assertGet( HTTP_PREFIX + "/x/v/math/x?i=1&s=2" )
+        assertGet( HTTP_URL( "/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
-        assertGet( HTTP_PREFIX + "/x/v/math/id?a=aaa" )
+        assertGet( HTTP_URL( "/x/v/math/id?a=aaa" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"aaa\"" );
-        assertGet( HTTP_PREFIX + "/x/v/math/req" )
-            .responded( 200, "OK", APPLICATION_JSON, "\"" + HTTP_PREFIX + "/x/v/math\"" );
-        assertGet( HTTP_PREFIX + "/x/v/math/sumab?a=1&b=2" )
+        assertGet( HTTP_URL( "/x/v/math/req" ) )
+            .responded( 200, "OK", APPLICATION_JSON, "\"" + HTTP_URL( "/x/v/math\"" ) );
+        assertGet( HTTP_URL( "/x/v/math/sumab?a=1&b=2" ) )
             .responded( 200, "OK", APPLICATION_JSON, "3" );
-        assertGet( HTTP_PREFIX + "/x/v/math/sumabopt?a=1&b=2" )
+        assertGet( HTTP_URL( "/x/v/math/sumabopt?a=1&b=2" ) )
             .responded( 200, "OK", APPLICATION_JSON, "3" );
-        assertGet( HTTP_PREFIX + "/x/v/math/x?i=1&s=2" )
+        assertGet( HTTP_URL( "/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
-        assertGet( HTTP_PREFIX + "/x/v/math/sumabopt?a=1" )
+        assertGet( HTTP_URL( "/x/v/math/sumabopt?a=1" ) )
             .responded( 200, "OK", APPLICATION_JSON, "1" );
-        assertGet( HTTP_PREFIX + "/x/v/math/en?a=CLASS" )
+        assertGet( HTTP_URL( "/x/v/math/en?a=CLASS" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"CLASS\"" );
-        assertGet( HTTP_PREFIX + "/x/v/math/sum?a=1&b=2&b=3" )
+        assertGet( HTTP_URL( "/x/v/math/sum?a=1&b=2&b=3" ) )
             .responded( 200, "OK", APPLICATION_JSON, "6" );
-        assertGet( HTTP_PREFIX + "/x/v/math/bean?i=1&s=sss" )
+        assertGet( HTTP_URL( "/x/v/math/bean?i=1&s=sss" ) )
             .responded( 200, "OK", APPLICATION_JSON, "{\"i\":1,\"s\":\"sss\"}" );
-        assertPost( HTTP_PREFIX + "/x/v/math/bytes", "1234", APPLICATION_OCTET_STREAM )
+        assertPost( HTTP_URL( "/x/v/math/bytes" ), "1234", APPLICATION_OCTET_STREAM )
             .responded( 200, "OK", APPLICATION_JSON, "\"1234\"" );
-        assertPost( HTTP_PREFIX + "/x/v/math/string", "1234", APPLICATION_OCTET_STREAM )
+        assertPost( HTTP_URL( "/x/v/math/string" ), "1234", APPLICATION_OCTET_STREAM )
             .responded( 200, "OK", APPLICATION_JSON, "\"1234\"" );
-        assertPost( HTTP_PREFIX + "/x/v/math/json", "{\"i\":1,\"s\":\"sss\"}", APPLICATION_OCTET_STREAM )
+        assertPost( HTTP_URL( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}", APPLICATION_OCTET_STREAM )
             .responded( 200, "OK", APPLICATION_JSON, "{\"i\":1,\"s\":\"sss\"}" );
-        assertGet( HTTP_PREFIX + "/x/v/math/code?code=204" )
+        assertGet( HTTP_URL( "/x/v/math/code?code=204" ) )
             .hasCode( 204 );
         assertEquals(
             Metrics.snapshot( Metrics.name( "rest_timer" )
                 .tag( "service", MathWS.class.getSimpleName() )
                 .tag( "method", "bean" ) ).count,
             1 );
-        assertGet( HTTP_PREFIX + "/x/h/" ).hasCode( 204 );
-        assertGet( HTTP_PREFIX + "/hocon/x/v/math/x?i=1&s=2" )
+        assertGet( HTTP_URL( "/x/h/" ) ).hasCode( 204 );
+        assertGet( HTTP_URL( "/hocon/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
 
     }
 
     @Test
     public void testDefaultHeaders() {
-        assertGet( HTTP_PREFIX + "/x/h/" )
+        assertGet( HTTP_URL( "/x/h/" ) )
             .containsHeader( "Access-Control-Allow-Origin", "*" );
-        assertPost( HTTP_PREFIX + "/x/v/math/json", "{\"i\":1,\"s\":\"sss\"}",
+        assertPost( HTTP_URL( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}",
             APPLICATION_OCTET_STREAM ).containsHeader( "Access-Control-Allow-Origin", "*" );
     }
 

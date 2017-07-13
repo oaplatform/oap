@@ -50,6 +50,8 @@ public class AbstractWebServicesTest {
 
     @BeforeClass
     public void startServer() {
+        Env.resetPorts();
+
         server = new Server( 100 );
         ws = new WebServices( server, new SessionManager( 10, null, "/" ),
             GenericCorsPolicy.DEFAULT,

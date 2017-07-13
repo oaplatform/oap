@@ -36,6 +36,7 @@ public class SecureHttpListenerTest {
 
     @BeforeClass
     public void setUp() {
+        Env.resetPorts();
         server.bind( "test", GenericCorsPolicy.DEFAULT, ( request, response ) -> {
 
             System.out.println( "Base URL " + request.baseUrl );

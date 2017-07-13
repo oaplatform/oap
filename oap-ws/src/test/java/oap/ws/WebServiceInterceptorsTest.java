@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static oap.http.Request.HttpMethod.GET;
-import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
+import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertGet;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
@@ -59,12 +59,12 @@ public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
 
     @Test
     public void testShouldAllowRequestWhenEmptyInterceptor() {
-        assertGet( HTTP_PREFIX + "/test/text?value=empty" ).isOk().hasBody( "\"" + "ok" + "\"" );
+        assertGet( HTTP_URL( "/test/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
     }
 
     @Test
     public void testShouldNotAllowRequestWhenErrorInterceptor() {
-        assertGet( HTTP_PREFIX + "/test/text?value=error" )
+        assertGet( HTTP_URL( "/test/text?value=error" ) )
             .hasCode( 403 )
             .hasBody( "caused by interceptor" );
     }

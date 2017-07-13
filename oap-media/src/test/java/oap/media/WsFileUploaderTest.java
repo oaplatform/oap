@@ -50,7 +50,7 @@ import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Collections.singletonList;
-import static oap.http.testng.HttpAsserts.HTTP_PREFIX;
+import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertUploadFile;
 import static oap.http.testng.HttpAsserts.reset;
 import static oap.io.CommandLine.shell;
@@ -70,6 +70,7 @@ public class WsFileUploaderTest extends AbstractTest {
     @BeforeMethod
     @Override
     public void beforeMethod() throws Exception {
+        Env.resetPorts();
         super.beforeMethod();
 
         path = Env.tmpPath( "/tmp" );
@@ -114,7 +115,7 @@ public class WsFileUploaderTest extends AbstractTest {
 
         val resp = new AtomicReference<WsFileUploader.MediaResponse>();
 
-        assertUploadFile( HTTP_PREFIX + "/upload/", "test/test2", path )
+        assertUploadFile( HTTP_URL( "/upload/" ), "test/test2", path )
             .isOk()
             .is( r -> resp.set( r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get() ) );
 
@@ -138,7 +139,7 @@ public class WsFileUploaderTest extends AbstractTest {
 
         val resp = new AtomicReference<WsFileUploader.MediaResponse>();
 
-        assertUploadFile( HTTP_PREFIX + "/upload/", "test/test2", path )
+        assertUploadFile( HTTP_URL( "/upload/" ), "test/test2", path )
             .isOk()
             .is( r -> resp.set( r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get() ) );
 
