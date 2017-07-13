@@ -327,7 +327,7 @@ public class Client implements Closeable {
             builder.onError.accept( this, new ExecutionException( request.getURI().toString(), e.getCause() ) );
             throw e;
         } catch( IOException e ) {
-            builder.onError.accept( this, e );
+            builder.onError.accept( this, new ExecutionException( request.getURI().toString(), e.getCause() ) );
             throw e;
         } catch( InterruptedException | TimeoutException e ) {
             builder.onTimeout.accept( this );
