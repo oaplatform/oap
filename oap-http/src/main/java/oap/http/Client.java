@@ -324,11 +324,13 @@ public class Client implements Closeable {
             builder.onSuccess.accept( this );
             return Optional.of( result );
         } catch( ExecutionException e ) {
-            builder.onError.accept( this, new ExecutionException( request.getURI().toString(), e.getCause() ) );
-            throw e;
+            final ExecutionException newEx = new ExecutionException( request.getURI().toString(), e.getCause() );
+            builder.onError.accept( this, newEx );
+            throw newEx;
         } catch( IOException e ) {
-            builder.onError.accept( this, new ExecutionException( request.getURI().toString(), e.getCause() ) );
-            throw e;
+            final ExecutionException newEx = new ExecutionException( request.getURI().toString(), e );
+            builder.onError.accept( this, newEx );
+            throw newEx;
         } catch( InterruptedException | TimeoutException e ) {
             builder.onTimeout.accept( this );
             return Optional.empty();
