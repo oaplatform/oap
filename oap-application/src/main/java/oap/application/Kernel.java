@@ -24,6 +24,7 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.json.Binder;
@@ -202,7 +203,11 @@ public class Kernel {
     }
 
     public void start( Path appConfigPath, Map<Object, Object> properties ) {
-        start( ApplicationConfiguration.load( appConfigPath, new String[] { Binder.json.marshal( properties ) } ) );
+        val map = new HashMap<Object, Object>();
+        map.putAll( System.getProperties() );
+        map.putAll( properties );
+
+        start( ApplicationConfiguration.load( appConfigPath, new String[] { Binder.json.marshal( map ) } ) );
     }
 
     private void start( ApplicationConfiguration config ) {
