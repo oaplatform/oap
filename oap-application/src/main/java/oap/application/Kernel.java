@@ -24,8 +24,10 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
+import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
@@ -44,6 +46,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.collections4.CollectionUtils.subtract;
 
@@ -196,7 +199,15 @@ public class Kernel {
     }
 
     public void start( Path appConfigPath ) {
-        start( ApplicationConfiguration.load( appConfigPath ) );
+        start( appConfigPath, emptyMap() );
+    }
+
+    public void start( Path appConfigPath, Map<Object, Object> properties ) {
+        val map = new HashMap<Object, Object>();
+        map.putAll( System.getProperties() );
+        map.putAll( properties );
+
+        start( ApplicationConfiguration.load( appConfigPath, new String[] { Binder.json.marshal( map ) } ) );
     }
 
     private void start( ApplicationConfiguration config ) {
