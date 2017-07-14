@@ -25,6 +25,7 @@
 package oap.benchmark;
 
 import lombok.ToString;
+import oap.reflect.Reflect;
 import oap.util.Try;
 import org.joda.time.Period;
 
@@ -48,7 +49,7 @@ public class Benchmark {
     LongFunction<String> rateToString = rate -> rate + " action/${PERIOD}";
 
     public static Benchmark benchmark( String name, int samples, Try.ThrowingRunnable code ) {
-        return new Benchmark( name, samples, code );
+        return new Benchmark( Reflect.caller( 1 ).getSimpleName() + "#" + name, samples, code );
     }
 
     private Benchmark( String name, int samples, Try.ThrowingRunnable code ) {

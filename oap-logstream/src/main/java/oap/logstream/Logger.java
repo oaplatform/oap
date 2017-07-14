@@ -27,13 +27,11 @@ import oap.net.Inet;
 import oap.util.Dates;
 import org.joda.time.DateTimeUtils;
 
-public class Logger extends LoggingEvent implements LoggerListener {
-    private LoggingBackend backend;
+public class Logger {
+    private LoggerBackend backend;
 
-    public Logger( LoggingBackend backend ) {
+    public Logger( LoggerBackend backend ) {
         this.backend = backend;
-
-        backend.addListener( this );
     }
 
     public void log( String selector, String line ) {
@@ -50,10 +48,5 @@ public class Logger extends LoggingEvent implements LoggerListener {
 
     public AvailabilityReport availabilityReport() {
         return backend.availabilityReport();
-    }
-
-    @Override
-    public void error( String message ) {
-        fireError( message );
     }
 }

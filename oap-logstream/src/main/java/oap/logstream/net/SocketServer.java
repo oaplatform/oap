@@ -22,13 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.logstream.exceptions;
+package oap.logstream.net;
 
 /**
- * Created by igor.petrenko on 16.06.2017.
+ * Created by razer on 6/12/17.
  */
-public class BackendLoggingIsNotAvailableException extends LoggerException {
-    public BackendLoggingIsNotAvailableException( String hostName, byte clientId ) {
-        super( "[" + hostName + "/" + clientId + "] backend logging is not available" );
-    }
+public abstract class SocketServer implements Runnable {
 }

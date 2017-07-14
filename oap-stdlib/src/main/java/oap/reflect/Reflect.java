@@ -68,6 +68,23 @@ public class Reflect {
         return reflect( classes.computeIfAbsent( className, Try.map( Class::forName ) ), coercions );
     }
 
+    public static Class<?> caller() {
+        return caller( 0 );
+    }
+
+    public static Class<?> caller( int depth ) {
+        return securityManager.getClassContext()[2 + depth];
+    }
+
+    private static class SecurityManager extends java.lang.SecurityManager {
+        @Override
+        public Class[] getClassContext() {
+            return super.getClassContext();
+        }
+    }
+
+    private static SecurityManager securityManager = new SecurityManager();
+
     public static <T> T newInstance( Class<T> clazz, Object... args ) {
         return reflect( clazz ).newInstance( args );
     }

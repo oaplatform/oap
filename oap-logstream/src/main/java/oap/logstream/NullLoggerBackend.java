@@ -3,7 +3,7 @@
  */
 package oap.logstream;
 
-public class NullLoggingBackend extends LoggingBackend {
+public class NullLoggerBackend extends LoggerBackend {
     @Override
     public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
 

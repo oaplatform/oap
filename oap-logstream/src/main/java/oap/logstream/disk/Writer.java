@@ -32,8 +32,8 @@ import oap.concurrent.scheduler.Scheduler;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.IoStreams.Encoding;
+import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
-import oap.logstream.exceptions.LoggerException;
 import oap.metrics.Metrics;
 import org.joda.time.DateTime;
 

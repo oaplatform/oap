@@ -31,12 +31,10 @@ import oap.concurrent.ThreadPoolExecutor;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.Sockets;
-import oap.logstream.LoggerListener;
-import oap.logstream.LoggingBackend;
-import oap.logstream.LoggingEvent;
-import oap.logstream.exceptions.BackendLoggingIsNotAvailableException;
-import oap.logstream.exceptions.BufferOverflowException;
-import oap.logstream.exceptions.LoggerException;
+import oap.logstream.BackendLoggerNotAvailableException;
+import oap.logstream.BufferOverflowException;
+import oap.logstream.LoggerBackend;
+import oap.logstream.LoggerException;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
 
@@ -59,7 +57,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import static oap.concurrent.Threads.isInterrupted;
 
 @Slf4j
-public class SocketLoggingServer extends LoggingEvent implements Runnable, LoggerListener {
+public class SocketLoggerServer extends SocketServer {
 
     private final ThreadPoolExecutor executor =
         new ThreadPoolExecutor( 0, 1024, 100, TimeUnit.SECONDS, new SynchronousQueue<>(),
@@ -70,12 +68,12 @@ public class SocketLoggingServer extends LoggingEvent implements Runnable, Logge
     protected int soTimeout = 60000;
     private int port;
     private int bufferSize;
-    private LoggingBackend backend;
+    private LoggerBackend backend;
     private Path controlStatePath;
     private ServerSocket serverSocket;
     private ConcurrentHashMap<String, AtomicLong> control = new ConcurrentHashMap<>();
 
-    public SocketLoggingServer( int port, int bufferSize, LoggingBackend backend, Path controlStatePath ) {
+    public SocketLoggerServer( int port, int bufferSize, LoggerBackend backend, Path controlStatePath ) {
         this.port = port;
         this.bufferSize = bufferSize;
         this.backend = backend;
@@ -83,8 +81,6 @@ public class SocketLoggingServer extends LoggingEvent implements Runnable, Logge
         this.workersMetric = Metrics.measureGauge(
             Metrics.name( "logging.server." + port + ".workers" ),
             () -> executor.getTaskCount() - executor.getCompletedTaskCount() );
-
-        backend.addListener( this );
     }
 
     @Override
@@ -93,7 +89,7 @@ public class SocketLoggingServer extends LoggingEvent implements Runnable, Logge
             while( thread.isRunning() && !serverSocket.isClosed() ) try {
                 Socket socket = serverSocket.accept();
                 log.debug( "accepted connection {}", socket );
-                executor.execute( new Worker( socket ) );
+                executor.execute( new LogSocketHandler( socket ) );
             } catch( SocketTimeoutException ignore ) {
             } catch( IOException e ) {
                 if( !"Socket closed".equals( e.getMessage() ) )
@@ -131,22 +127,12 @@ public class SocketLoggingServer extends LoggingEvent implements Runnable, Logge
         Files.writeObject( controlStatePath, control );
     }
 
-    @Override
-    public void error( String message ) {
-        fireError( message );
-    }
-
-    @Override
-    public void warn( String message ) {
-        fireWarning( message );
-    }
-
-    public class Worker implements Runnable, Closeable {
+    public class LogSocketHandler implements Runnable, Closeable {
         private Socket socket;
         private byte[] buffer = new byte[bufferSize];
         private boolean closed;
 
-        public Worker( Socket socket ) {
+        public LogSocketHandler( Socket socket ) {
             this.socket = socket;
         }
 
@@ -177,14 +163,14 @@ public class SocketLoggingServer extends LoggingEvent implements Runnable, Logge
                     if( size > bufferSize ) {
                         out.writeInt( SocketError.BUFFER_OVERFLOW.code );
                         val exception = new BufferOverflowException( hostName, clientId, selector, bufferSize, size );
-                        fireError( exception );
+                        backend.listeners.fireError( exception );
                         throw exception;
                     }
                     in.readFully( buffer, 0, size );
                     if( !backend.isLoggingAvailable() ) {
                         out.writeInt( SocketError.BACKEND_UNAVAILABLE.code );
-                        val exception = new BackendLoggingIsNotAvailableException( hostName, clientId );
-                        fireError( exception );
+                        val exception = new BackendLoggerNotAvailableException( hostName, clientId );
+                        backend.listeners.fireError( exception );
                         throw exception;
                     }
                     if( lastId.get() < digestionId ) {
@@ -194,23 +180,23 @@ public class SocketLoggingServer extends LoggingEvent implements Runnable, Logge
                     } else {
                         val message = "[" + hostName + "/" + clientId + "] buffer (" + digestionId + ", " + selector + ", " + size + ") already written. Last written buffer is (" + lastId + ")";
                         log.warn( message );
-                        fireWarning( message );
+                        backend.listeners.fireWarning( message );
                     }
                     out.writeInt( size );
                 }
             } catch( EOFException e ) {
                 val msg = "[" + hostName + "/" + clientId + "] " + socket + " ended, closed";
-                fireWarning( msg );
+                backend.listeners.fireWarning( msg );
                 log.debug( msg );
             } catch( SocketTimeoutException e ) {
                 val msg = "[" + hostName + "/" + clientId + "] no activity on socket for " + soTimeout + "ms, timeout, closing...";
-                fireWarning( msg );
+                backend.listeners.fireWarning( msg );
                 log.info( msg );
                 log.trace( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );
             } catch( LoggerException e ) {
                 log.error( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );
             } catch( Exception e ) {
-                fireWarning( "[" + hostName + "/" + clientId + "] " );
+                backend.listeners.fireWarning( "[" + hostName + "/" + clientId + "] " );
                 log.error( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );
             } finally {
                 Sockets.close( socket );

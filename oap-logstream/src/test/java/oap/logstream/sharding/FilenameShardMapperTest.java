@@ -26,23 +26,23 @@ package oap.logstream.sharding;
 
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
 
 /**
  * Created by anton on 11/3/16.
  */
 public class FilenameShardMapperTest {
 
-   @Test
-   public void testShardParsing() {
-      FilenameShardMapper mapper = new FilenameShardMapper( "(^\\d+)" );
-      assertEquals( 100, mapper.getShardNumber( "myhost", "100/traffic/some/log/3/2016" ) );
-      assertEquals( 24, mapper.getShardNumber( "myhost", "24/100/traffic/some/log/3/2016" ) );
-   }
+    @Test
+    public void testShardParsing() {
+        FilenameShardMapper mapper = new FilenameShardMapper( "(^\\d+)" );
+        assertEquals( 100, mapper.getShardNumber( "myhost", "100/traffic/some/log/3/2016" ) );
+        assertEquals( 24, mapper.getShardNumber( "myhost", "24/100/traffic/some/log/3/2016" ) );
+    }
 
-   @Test(expectedExceptions = IllegalArgumentException.class)
-   public void testNoShardInPath() {
-      FilenameShardMapper mapper = new FilenameShardMapper( "(^\\d+)" );
-      assertEquals( 100, mapper.getShardNumber( "myhost", "blah/traffic/some/log/3/2016" ) );
-   }
+    @Test( expectedExceptions = IllegalArgumentException.class )
+    public void testNoShardInPath() {
+        FilenameShardMapper mapper = new FilenameShardMapper( "(^\\d+)" );
+        assertEquals( 100, mapper.getShardNumber( "myhost", "blah/traffic/some/log/3/2016" ) );
+    }
 }
