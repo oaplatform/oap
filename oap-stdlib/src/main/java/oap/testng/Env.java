@@ -122,6 +122,7 @@ public class Env {
     }
 
     public static void resetPorts() {
+        System.out.println( "ENV::ports = []" );
         ports.clear();
     }
 }
