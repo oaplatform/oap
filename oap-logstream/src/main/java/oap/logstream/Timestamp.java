@@ -36,8 +36,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
-import static oap.logstream.Consts.BUCKETS_PER_HOUR;
-
 public class Timestamp {
     public static final Pattern FILE_NAME_WITH_TIMESTAMP = Pattern.compile( ".+-(\\d{4}-\\d\\d-\\d\\d-\\d\\d-\\d\\d)\\..+" );
     public static final DateTimeFormatter FILE_FORMATTER = DateTimeFormat
@@ -47,6 +45,8 @@ public class Timestamp {
         .forPattern( "yyyy-MM/dd" )
         .withZoneUTC();
     public static final char SEPARATOR_CHAR = '/';
+    public static final int MINUTES_PER_BUCKET = 5;
+    public static final int BUCKETS_PER_HOUR = 60 / MINUTES_PER_BUCKET;
 
     public static Optional<DateTime> parse( Path path ) {
         final Matcher matcher = FILE_NAME_WITH_TIMESTAMP.matcher( path.getFileName().toString() );

@@ -21,26 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.logstream;
 
-package oap.logstream.exceptions;
 
-/**
- * Created by igor.petrenko on 16.06.2017.
- */
-public class BufferOverflowException extends LoggerException {
-    public final String hostName;
-    public final byte clientId;
-    public final String selector;
-    public final int bufferSize;
-    public final int size;
+import java.io.Closeable;
 
-    public BufferOverflowException( String hostName, byte clientId, String selector, int bufferSize, int size ) {
-        super( "buffer overflow: chunk size is " + size + " when buffer size is "
-            + bufferSize + " from " + hostName + "/" + clientId + " with " + selector );
-        this.hostName = hostName;
-        this.clientId = clientId;
-        this.selector = selector;
-        this.bufferSize = bufferSize;
-        this.size = size;
+public abstract class LoggerBackend implements Closeable {
+    public final LoggerListeners listeners = new LoggerListeners();
+
+    public void log( String hostName, String fileName, String line ) {
+        log( hostName, fileName, ( line + "\n" ).getBytes() );
+    }
+
+    public void log( String hostName, String fileName, byte[] buffer ) {
+        log( hostName, fileName, buffer, 0, buffer.length );
+    }
+
+    public abstract void log( String hostName, String fileName, byte[] buffer, int offset, int length );
+
+    public abstract void close();
+
+    public abstract AvailabilityReport availabilityReport();
+
+    public boolean isLoggingAvailable() {
+        return availabilityReport().state == AvailabilityReport.State.OPERATIONAL;
+    }
+
+    public boolean isLoggingAvailable( String hostName, String fileName ) {
+        return isLoggingAvailable();
+    }
+
+    public void addListener( LoggerListener listener ) {
+        listeners.addListener( listener );
+    }
+
+    public void removeListener( LoggerListener listener ) {
+        listeners.removeListener( listener );
     }
 }

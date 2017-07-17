@@ -26,9 +26,9 @@ package oap.logstream;
 
 import lombok.val;
 import oap.io.IoStreams.Encoding;
-import oap.logstream.disk.DiskLoggingBackend;
-import oap.logstream.net.SocketLoggingBackend;
-import oap.logstream.net.SocketLoggingServer;
+import oap.logstream.disk.DiskLoggerBackend;
+import oap.logstream.net.SocketLoggerBackend;
+import oap.logstream.net.SocketLoggerServer;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Dates;
@@ -37,8 +37,8 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Files;
 
-import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_BUFFER;
-import static oap.logstream.disk.DiskLoggingBackend.DEFAULT_FREE_SPACE_REQUIRED;
+import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
+import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_FREE_SPACE_REQUIRED;
 import static oap.net.Inet.HOSTNAME;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
@@ -66,7 +66,7 @@ public class LoggerTest extends AbstractTest {
 
         String host = useClientHostPrefix ? HOSTNAME + "/" : "";
         String content = "12345678";
-        try( DiskLoggingBackend backend = new DiskLoggingBackend( tmpPath( "logs" ), ext, DEFAULT_BUFFER ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( tmpPath( "logs" ), ext, DEFAULT_BUFFER ) ) {
             backend.useClientHostPrefix = useClientHostPrefix;
             Logger logger = new Logger( backend );
             logger.log( "a", content );
@@ -89,9 +89,9 @@ public class LoggerTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "12345678";
 
-        try( val serverBackend = new DiskLoggingBackend( tmpPath( "logs" ), ".log", DEFAULT_BUFFER ) ) {
-            SocketLoggingServer server = new SocketLoggingServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
-            try( val clientBackend = new SocketLoggingBackend( ( byte ) 1, "localhost", Env.port( "net" ),
+        try( val serverBackend = new DiskLoggerBackend( tmpPath( "logs" ), ".log", DEFAULT_BUFFER ) ) {
+            SocketLoggerServer server = new SocketLoggerServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
+            try( val clientBackend = new SocketLoggerBackend( ( byte ) 1, "localhost", Env.port( "net" ),
                 tmpPath( "buffers" ), 50 ) ) {
 
                 serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 1000L;

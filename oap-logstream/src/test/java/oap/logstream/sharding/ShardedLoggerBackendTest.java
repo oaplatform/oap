@@ -25,8 +25,8 @@
 package oap.logstream.sharding;
 
 import oap.logstream.AvailabilityReport;
-import oap.logstream.LoggingBackend;
-import oap.logstream.exceptions.NoLoggerConfiguredForShardsException;
+import oap.logstream.LoggerBackend;
+import oap.logstream.NoLoggerConfiguredForShardsException;
 import oap.util.Stream;
 import org.testng.annotations.Test;
 
@@ -48,20 +48,20 @@ import static org.testng.Assert.assertTrue;
 /**
  * Created by anton on 11/3/16.
  */
-public class ShardedLoggingBackendTest {
+public class ShardedLoggerBackendTest {
 
     ShardMapper mapper = mock( ShardMapper.class );
 
     @Test
     public void testRouting() {
-        LoggingBackend log1 = mock( LoggingBackend.class );
-        LoggingBackend log2 = mock( LoggingBackend.class );
+        LoggerBackend log1 = mock( LoggerBackend.class );
+        LoggerBackend log2 = mock( LoggerBackend.class );
 
         LoggerShardRange shard0To100 = new LoggerShardRange( log1, 0, 100 );
         LoggerShardRange shard100To200 = new LoggerShardRange( log2, 100, 200 );
 
         List<LoggerShardRange> shards = Arrays.asList( shard0To100, shard100To200 );
-        ShardedLoggingBackend slb = new ShardedLoggingBackend( shards, mapper );
+        ShardedLoggerBackend slb = new ShardedLoggerBackend( shards, mapper );
         when( mapper.getShardNumber( anyString(), eq( "34/df/file1" ), any( byte[].class ) ) ).thenReturn( 34 );
         when( mapper.getShardNumber( anyString(), eq( "142/345/file1" ), any( byte[].class ) ) ).thenReturn( 142 );
 
@@ -74,25 +74,25 @@ public class ShardedLoggingBackendTest {
 
     @Test( expectedExceptions = NoLoggerConfiguredForShardsException.class )
     public void testUnconfiguredShards() {
-        LoggingBackend log1 = mock( LoggingBackend.class );
+        LoggerBackend log1 = mock( LoggerBackend.class );
 
         LoggerShardRange shard0To100 = new LoggerShardRange( log1, 0, 100 );
         LoggerShardRange shard100To200 = new LoggerShardRange( log1, 110, 200 );
 
         List<LoggerShardRange> shards = Arrays.asList( shard0To100, shard100To200 );
-        new ShardedLoggingBackend( shards, mapper );
+        new ShardedLoggerBackend( shards, mapper );
     }
 
     @Test
     public void testAvailability() {
-        LoggingBackend log1 = mock( LoggingBackend.class );
-        LoggingBackend log2 = mock( LoggingBackend.class );
+        LoggerBackend log1 = mock( LoggerBackend.class );
+        LoggerBackend log2 = mock( LoggerBackend.class );
 
         LoggerShardRange shard0To100 = new LoggerShardRange( log1, 0, 100 );
         LoggerShardRange shard100To200 = new LoggerShardRange( log2, 100, 200 );
 
         List<LoggerShardRange> shards = Arrays.asList( shard0To100, shard100To200 );
-        ShardedLoggingBackend slb = new ShardedLoggingBackend( shards, mapper );
+        ShardedLoggerBackend slb = new ShardedLoggerBackend( shards, mapper );
 
 
         when( log1.availabilityReport() ).thenReturn( new AvailabilityReport( OPERATIONAL ) );

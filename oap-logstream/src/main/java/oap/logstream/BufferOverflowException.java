@@ -24,31 +24,23 @@
 
 package oap.logstream;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 /**
- * Created by igor.petrenko on 19.06.2017.
+ * Created by igor.petrenko on 16.06.2017.
  */
-public class LoggingEvent {
-    protected final ConcurrentLinkedQueue<LoggerListener> listeners = new ConcurrentLinkedQueue<>();
+public class BufferOverflowException extends LoggerException {
+    public final String hostName;
+    public final byte clientId;
+    public final String selector;
+    public final int bufferSize;
+    public final int size;
 
-    public void addListener( LoggerListener listener ) {
-        listeners.add( listener );
-    }
-
-    public void removeListener( LoggerListener listener ) {
-        listeners.remove( listener );
-    }
-
-    protected void fireError( String msg ) {
-        listeners.forEach( listener -> listener.error( msg ) );
-    }
-
-    protected void fireWarning( String msg ) {
-        listeners.forEach( listener -> listener.warn( msg ) );
-    }
-
-    protected void fireError( Exception exception ) {
-        fireError( exception.getMessage() );
+    public BufferOverflowException( String hostName, byte clientId, String selector, int bufferSize, int size ) {
+        super( "buffer overflow: chunk size is " + size + " when buffer size is "
+            + bufferSize + " from " + hostName + "/" + clientId + " with " + selector );
+        this.hostName = hostName;
+        this.clientId = clientId;
+        this.selector = selector;
+        this.bufferSize = bufferSize;
+        this.size = size;
     }
 }

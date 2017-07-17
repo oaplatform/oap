@@ -25,9 +25,10 @@
 package oap.logstream;
 
 /**
- * Created by igor.petrenko on 16.05.2017.
+ * Created by igor.petrenko on 16.06.2017.
  */
-public class Consts {
-    public static final int MINUTES_PER_BUCKET = 5;
-    public static final int BUCKETS_PER_HOUR = 60 / MINUTES_PER_BUCKET;
+public class BackendLoggerNotAvailableException extends LoggerException {
+    public BackendLoggerNotAvailableException( String hostName, byte clientId ) {
+        super( "[" + hostName + "/" + clientId + "] backend logging is not available" );
+    }
 }

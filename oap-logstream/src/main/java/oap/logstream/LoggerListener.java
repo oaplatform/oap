@@ -28,7 +28,7 @@ package oap.logstream;
  * Created by igor.petrenko on 16.06.2017.
  */
 public interface LoggerListener {
-    default void error( String message ) {}
+    void error( String message );
 
-    default void warn( String message ) {}
+    void warn( String message );
 }

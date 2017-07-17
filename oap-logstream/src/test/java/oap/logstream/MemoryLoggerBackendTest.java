@@ -22,15 +22,23 @@
  * SOFTWARE.
  */
 
-package oap.logstream.exceptions;
+package oap.logstream;
 
-import java.util.List;
+import org.testng.annotations.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Created by igor.petrenko on 16.06.2017.
+ * Created by igor.petrenko on 19.12.2016.
  */
-public class NoLoggerConfiguredForShardsException extends LoggerException {
-    public NoLoggerConfiguredForShardsException( List<Integer> notConfiguredShards ) {
-        super( "No logger configured for shards:" + notConfiguredShards );
+public class MemoryLoggerBackendTest {
+    @Test
+    public void testGetLines() throws Exception {
+        final MemoryLoggerBackend lb = new MemoryLoggerBackend();
+        lb.log( "test1", "file1", "line1" );
+        lb.log( "test1", "file1", "line2" );
+
+        assertThat( lb.getLines( "test1", "file1" ) ).containsExactly( "line1", "line2" );
     }
+
 }

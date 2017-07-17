@@ -24,18 +24,18 @@
 package oap.logstream.net;
 
 enum SocketError {
-   BUFFER_OVERFLOW( -10 ),
-   BACKEND_UNAVAILABLE( -20 ),
-   UNKNOWN_ERROR( 0 );
+    BUFFER_OVERFLOW( -10 ),
+    BACKEND_UNAVAILABLE( -20 ),
+    UNKNOWN_ERROR( 0 );
 
-   public final int code;
+    public final int code;
 
-   SocketError( int code ) {
-      this.code = code;
-   }
+    SocketError( int code ) {
+        this.code = code;
+    }
 
-   public static SocketError fromCode( int code ) {
-      for( SocketError error : SocketError.values() ) if( error.code == code ) return error;
-      return UNKNOWN_ERROR;
-   }
+    public static SocketError fromCode( int code ) {
+        for( SocketError error : SocketError.values() ) if( error.code == code ) return error;
+        return UNKNOWN_ERROR;
+    }
 }

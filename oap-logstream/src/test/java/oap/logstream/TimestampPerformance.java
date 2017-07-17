@@ -24,14 +24,15 @@
 
 package oap.logstream;
 
-import oap.testng.AbstractPerformance;
+import oap.benchmark.Benchmark;
 import org.testng.annotations.Test;
 
-public class TimestampPerformance extends AbstractPerformance {
+public class TimestampPerformance {
     @Test
     public void directoryName() {
-        benchmark( builder( "Timestamp::directoryName" ).samples( 1000000 ).build(),
-            ( i ) -> Timestamp.directoryName( "2015-12-03-11-05" ) );
-//      benchmark( "Timestamp::directoryName2", 1000000, 5, (i) -> Timestamp.directoryName2( "2015-12-03-11-05" ));
+        Benchmark.benchmark( "directoryName",
+            1000000,
+            () -> Timestamp.directoryName( "2015-12-03-11-05" ) )
+            .run();
     }
 }

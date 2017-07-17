@@ -29,15 +29,15 @@ package oap.logstream.sharding;
  */
 public interface ShardMapper {
 
-   int getShardNumber( String hostName, String fileName );
+    int getShardNumber( String hostName, String fileName );
 
-   default int getShardNumber( String hostName, String fileName, String line ) {
-      return getShardNumber( hostName, fileName );
-   }
+    default int getShardNumber( String hostName, String fileName, String line ) {
+        return getShardNumber( hostName, fileName );
+    }
 
-   default int getShardNumber( String hostName, String fileName, byte[] buffer ) {
-      return getShardNumber( hostName, fileName );
-   }
+    default int getShardNumber( String hostName, String fileName, byte[] buffer ) {
+        return getShardNumber( hostName, fileName );
+    }
 
 
 }

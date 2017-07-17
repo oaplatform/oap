@@ -22,21 +22,33 @@
  * SOFTWARE.
  */
 
-package oap.logstream.exceptions;
+package oap.logstream;
+
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * Created by igor.petrenko on 16.06.2017.
+ * Created by igor.petrenko on 19.06.2017.
  */
-public class LoggerException extends RuntimeException {
-    public LoggerException( String message ) {
-        super( message );
+public class LoggerListeners {
+    protected final ConcurrentLinkedQueue<LoggerListener> listeners = new ConcurrentLinkedQueue<>();
+
+    public void addListener( LoggerListener listener ) {
+        listeners.add( listener );
     }
 
-    public LoggerException( Throwable cause ) {
-        super( cause );
+    public void removeListener( LoggerListener listener ) {
+        listeners.remove( listener );
     }
 
-    public LoggerException( String message, Throwable cause ) {
-        super( message, cause );
+    public void fireError( String message ) {
+        listeners.forEach( listener -> listener.error( message ) );
+    }
+
+    public void fireWarning( String message ) {
+        listeners.forEach( listener -> listener.warn( message ) );
+    }
+
+    public void fireError( Exception exception ) {
+        fireError( exception.getMessage() );
     }
 }

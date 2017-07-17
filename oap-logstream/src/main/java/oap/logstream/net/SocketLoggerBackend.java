@@ -31,8 +31,8 @@ import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.logstream.AvailabilityReport;
-import oap.logstream.LoggingBackend;
-import oap.logstream.exceptions.LoggerException;
+import oap.logstream.LoggerBackend;
+import oap.logstream.LoggerException;
 import oap.metrics.Metrics;
 
 import java.nio.file.Path;
@@ -43,7 +43,7 @@ import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
 
 @Slf4j
 @ToString( of = { "host" } )
-public class SocketLoggingBackend extends LoggingBackend {
+public class SocketLoggerBackend extends LoggerBackend {
 
     private final byte clientId;
     private final String host;
@@ -57,11 +57,11 @@ public class SocketLoggingBackend extends LoggingBackend {
     private boolean loggingAvailable = true;
     private boolean closed = false;
 
-    public SocketLoggingBackend( byte clientId, String host, int port, Path location, int bufferSize, long flushInterval ) {
+    public SocketLoggerBackend( byte clientId, String host, int port, Path location, int bufferSize, long flushInterval ) {
         this( clientId, host, port, location, BufferConfigurationMap.DEFAULT( bufferSize ), flushInterval );
     }
 
-    public SocketLoggingBackend( byte clientId, String host, int port, Path location, BufferConfigurationMap configurations, long flushInterval ) {
+    public SocketLoggerBackend( byte clientId, String host, int port, Path location, BufferConfigurationMap configurations, long flushInterval ) {
         this.clientId = clientId;
         this.host = host;
         this.port = port;
@@ -76,11 +76,11 @@ public class SocketLoggingBackend extends LoggingBackend {
         ) );
     }
 
-    public SocketLoggingBackend( byte clientId, String host, int port, Path location, int bufferSize ) {
+    public SocketLoggerBackend( byte clientId, String host, int port, Path location, int bufferSize ) {
         this( clientId, host, port, location, BufferConfigurationMap.DEFAULT( bufferSize ) );
     }
 
-    public SocketLoggingBackend( byte clientId, String host, int port, Path location, BufferConfigurationMap configurations ) {
+    public SocketLoggerBackend( byte clientId, String host, int port, Path location, BufferConfigurationMap configurations ) {
         this( clientId, host, port, location, configurations, 5000 );
     }
 
@@ -104,7 +104,7 @@ public class SocketLoggingBackend extends LoggingBackend {
             log.debug( "sending done" );
         } catch( Exception e ) {
             loggingAvailable = false;
-            fireError( new LoggerException( e ) );
+            listeners.fireError( new LoggerException( e ) );
             log.warn( e.getMessage() );
             log.trace( e.getMessage(), e );
             Closeables.close( connection );
@@ -134,7 +134,7 @@ public class SocketLoggingBackend extends LoggingBackend {
                 if( size <= 0 ) {
                     loggingAvailable = false;
                     val msg = "Error completing remote write: " + SocketError.fromCode( size );
-                    fireError( msg );
+                    listeners.fireError( msg );
                     log.error( msg );
                     return false;
                 }
@@ -145,7 +145,7 @@ public class SocketLoggingBackend extends LoggingBackend {
                 loggingAvailable = false;
                 log.warn( e.getMessage() );
                 log.trace( e.getMessage(), e );
-                fireError( e );
+                listeners.fireError( e );
                 Closeables.close( connection );
                 return false;
             }

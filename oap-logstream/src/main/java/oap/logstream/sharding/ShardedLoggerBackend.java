@@ -27,8 +27,8 @@ package oap.logstream.sharding;
 import com.google.common.base.Preconditions;
 import lombok.val;
 import oap.logstream.AvailabilityReport;
-import oap.logstream.LoggingBackend;
-import oap.logstream.exceptions.NoLoggerConfiguredForShardsException;
+import oap.logstream.LoggerBackend;
+import oap.logstream.NoLoggerConfiguredForShardsException;
 import oap.util.Stream;
 
 import java.util.List;
@@ -41,11 +41,11 @@ import static oap.util.Pair.__;
 /**
  * Created by anton on 11/2/16.
  */
-public class ShardedLoggingBackend extends LoggingBackend {
-    public final LoggingBackend[] loggers;
+public class ShardedLoggerBackend extends LoggerBackend {
+    public final LoggerBackend[] loggers;
     public final ShardMapper shardMapper;
 
-    public ShardedLoggingBackend( List<LoggerShardRange> shards, ShardMapper shardMapper ) throws NoLoggerConfiguredForShardsException {
+    public ShardedLoggerBackend( List<LoggerShardRange> shards, ShardMapper shardMapper ) throws NoLoggerConfiguredForShardsException {
 
         Preconditions.checkNotNull( shards );
         Preconditions.checkArgument( !shards.isEmpty() );
@@ -56,7 +56,7 @@ public class ShardedLoggingBackend extends LoggingBackend {
         shards.stream().mapToInt( l -> l.lower ).min().orElseThrow( () -> new IllegalArgumentException( "No logging ranges are configured" ) );
         int maxShard = shards.stream().mapToInt( l -> l.upper ).max().orElseThrow( () -> new IllegalArgumentException( "No logging ranges are configured" ) );
 
-        loggers = new LoggingBackend[maxShard + 1];
+        loggers = new LoggerBackend[maxShard + 1];
 
         for( LoggerShardRange ls : shards ) {
             for( int i = ls.lower; i <= ls.upper; i++ ) {
@@ -72,7 +72,7 @@ public class ShardedLoggingBackend extends LoggingBackend {
 
         if( !notConfiguredShards.isEmpty() ) {
             val exception = new NoLoggerConfiguredForShardsException( notConfiguredShards );
-            fireError( exception );
+            listeners.fireError( exception );
             throw exception;
         }
     }
@@ -108,7 +108,7 @@ public class ShardedLoggingBackend extends LoggingBackend {
 
     @Override
     public boolean isLoggingAvailable() {
-        return Stream.of( loggers ).allMatch( LoggingBackend::isLoggingAvailable );
+        return Stream.of( loggers ).allMatch( LoggerBackend::isLoggingAvailable );
     }
 
     @Override

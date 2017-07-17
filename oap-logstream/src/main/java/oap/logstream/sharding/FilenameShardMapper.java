@@ -39,38 +39,38 @@ import java.util.regex.Pattern;
  */
 public class FilenameShardMapper implements ShardMapper {
 
-   private final Pattern pattern;
-   private final LoadingCache<String, Integer> filenameToShardCache;
+    private final Pattern pattern;
+    private final LoadingCache<String, Integer> filenameToShardCache;
 
-   public FilenameShardMapper( String regexp ) {
-      pattern = Pattern.compile( regexp );
-      filenameToShardCache = CacheBuilder
-         .newBuilder()
-         .maximumSize( 1000000 )
-         .expireAfterWrite( 10, TimeUnit.MINUTES )
-         .build( new CacheLoader<String, Integer>() {
-            public Integer load( String key ) {
-               return parseShardNumber( key );
-            }
-         } );
-   }
+    public FilenameShardMapper( String regexp ) {
+        pattern = Pattern.compile( regexp );
+        filenameToShardCache = CacheBuilder
+            .newBuilder()
+            .maximumSize( 1000000 )
+            .expireAfterWrite( 10, TimeUnit.MINUTES )
+            .build( new CacheLoader<String, Integer>() {
+                public Integer load( String key ) {
+                    return parseShardNumber( key );
+                }
+            } );
+    }
 
-   private int parseShardNumber( String filename ) {
-      Matcher m = pattern.matcher( filename );
+    private int parseShardNumber( String filename ) {
+        Matcher m = pattern.matcher( filename );
 
-      if( m.find() ) {
-         return Integer.parseInt( m.group( 1 ) );
-      } else {
-         throw new IllegalArgumentException(filename + " doesn't contain shard number");
-      }
-   }
+        if( m.find() ) {
+            return Integer.parseInt( m.group( 1 ) );
+        } else {
+            throw new IllegalArgumentException( filename + " doesn't contain shard number" );
+        }
+    }
 
-   @Override
-   public int getShardNumber( String hostName, String fileName ) {
-      try {
-         return filenameToShardCache.get( fileName );
-      } catch( UncheckedExecutionException | ExecutionException e ) {
-         throw new IllegalArgumentException( e.getCause() );
-      }
-   }
+    @Override
+    public int getShardNumber( String hostName, String fileName ) {
+        try {
+            return filenameToShardCache.get( fileName );
+        } catch( UncheckedExecutionException | ExecutionException e ) {
+            throw new IllegalArgumentException( e.getCause() );
+        }
+    }
 }
