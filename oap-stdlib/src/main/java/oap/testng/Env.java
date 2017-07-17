@@ -56,7 +56,7 @@ public class Env {
         }
     }
 
-    private static String teamcityBuildPrefix() {
+    public static String teamcityBuildPrefix() {
         String prefix = "";
 
         val teamcity_buildconf_name = System.getenv( "TEAMCITY_BUILDCONF_NAME" );
