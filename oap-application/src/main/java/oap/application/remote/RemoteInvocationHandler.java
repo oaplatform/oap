@@ -23,6 +23,7 @@
  */
 package oap.application.remote;
 
+import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
 import oap.util.Result;
@@ -93,6 +94,8 @@ public class RemoteInvocationHandler implements InvocationHandler {
             arguments.add( new RemoteInvocation.Argument( parameters[i].getName(),
                 parameters[i].getType(), args[i] ) );
         }
+
+        Preconditions.checkNotNull( uri, "uri == null" );
 
         return client.post( uri.toString(),
             fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) ),
