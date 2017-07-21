@@ -80,7 +80,7 @@ public class Archiver implements Runnable {
         log.debug( "packing is done" );
     }
 
-    private void archive( Path path ) {
+    protected void archive( Path path ) {
         Encoding from = Encoding.from( path );
 
         Path destination = destinationDirectory.resolve(
