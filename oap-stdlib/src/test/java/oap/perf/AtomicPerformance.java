@@ -25,6 +25,7 @@
 package oap.perf;
 
 import oap.testng.AbstractPerformance;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.LongAdder;
  */
 @Test
 public class AtomicPerformance extends AbstractPerformance {
+    private final MutableLong ml = new MutableLong();
     private final AtomicLong al = new AtomicLong( 0 );
     private final LongAdder la = new LongAdder();
     private final AtomicInteger ai = new AtomicInteger( 0 );
@@ -47,27 +49,23 @@ public class AtomicPerformance extends AbstractPerformance {
         final int threads = 1024;
         final int samples = 100000000;
 
-        benchmark( builder( "atomic-long" ).samples( samples ).threads( threads ).build(), ( i ) -> {
-            al.incrementAndGet();
-        } );
+        benchmark( "mutale-long", samples, ml::incrementAndGet ).run();
 
-        benchmark( builder( "long-adder" ).samples( samples ).threads( threads ).build(), ( i ) -> {
-            la.increment();
-        } );
+        benchmark( "atomic-long-one-thread", samples, al::incrementAndGet ).run();
 
-        benchmark( builder( "atomic-integer" ).samples( samples ).threads( threads ).build(), ( i ) -> {
-            ai.incrementAndGet();
-        } );
+        benchmark( "atomic-long", samples, al::incrementAndGet ).inThreads( threads ).run();
 
-        benchmark( builder( "long" ).samples( samples ).threads( threads ).build(), ( i ) -> {
-            l++;
-        } );
+        benchmark( "long-adder", samples, la::increment ).inThreads( threads ).run();
 
-        benchmark( builder( "long-synchronized" ).samples( samples ).threads( threads ).build(), ( i ) -> {
+        benchmark( "atomic-integer", samples, ai::incrementAndGet ).inThreads( threads ).run();
+
+        benchmark( "long", samples, () -> l++ ).inThreads( threads ).run();
+
+        benchmark( "long-synchronized", samples, () -> {
             synchronized( AtomicPerformance.class ) {
                 l2++;
             }
-        } );
+        } ).inThreads( threads ).run();
 
         System.out.println( "al:" + al.get() + " vs l:" + l + " vs ls:" + l2 );
     }
