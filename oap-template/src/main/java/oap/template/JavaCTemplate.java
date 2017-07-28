@@ -143,7 +143,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
         c.append( "\n" );
         tab( c, tab ).append( "// " ).append(
-            line.path != null ? line.path : "\"" + line.defaultValue + "\"" ).append( "\n" );
+            line.path != null ? line.path : "\"" + StringEscapeUtils.escapeJava( line.defaultValue.toString() ) + "\"" ).append( "\n" );
 
         if( line.path == null ) {
             tab( c, tab ).append( "acc.accept( \"" ).append( StringEscapeUtils.escapeJava( line.defaultValue.toString() ) ).append( "\" );\n" );
