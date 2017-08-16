@@ -209,14 +209,7 @@ public final class Files {
     public static Stream<String> lines( Path path ) {
         log.trace( "reading {}...", path );
         final InputStream in = IoStreams.in( path );
-        try {
-            final BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( in ) );
-            final java.util.stream.Stream<String> lines = bufferedReader.lines().onClose( Try.run( bufferedReader::close ) );
-            return Stream.of( lines );
-        } catch( Exception e ) {
-            IOUtils.closeQuietly( in );
-            throw e;
-        }
+        return IoStreams.lines( in, true );
     }
 
     @SneakyThrows

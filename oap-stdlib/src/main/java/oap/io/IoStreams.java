@@ -99,7 +99,17 @@ public class IoStreams {
     }
 
     public static Stream<String> lines( InputStream stream ) {
-        return Stream.of( new BufferedReader( new InputStreamReader( stream, StandardCharsets.UTF_8 ) ).lines() );
+        return lines( stream, false );
+    }
+
+    public static Stream<String> lines( InputStream stream, boolean autoClose ) {
+        BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, StandardCharsets.UTF_8 ) );
+        java.util.stream.Stream<String> ustream = bufferedReader.lines();
+        if(autoClose) {
+            ustream = ustream.onClose( Try.run( bufferedReader::close ) );
+        }
+
+        return Stream.of( ustream );
     }
 
     public static void write( Path path, Encoding encoding, String value ) {
