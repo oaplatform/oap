@@ -49,25 +49,13 @@ public class BinderPerformance extends AbstractPerformance {
 
         final int samples = 10000000;
 
-        benchmark( builder( "arraylist-deserialization" ).samples( samples ).build(), ( i ) -> {
-            Binder.json.unmarshal( TMix.class, source );
-        } );
-        benchmark( builder( "array-deserialization" ).samples( samples ).build(), ( i ) -> {
-            Binder.json.unmarshal( TArray.class, source );
-        } );
-        benchmark( builder( "list-deserialization" ).samples( samples ).build(), ( i ) -> {
-            Binder.json.unmarshal( TList.class, source );
-        } );
+        benchmark( "arraylist-deserialization", samples, () -> Binder.json.unmarshal( TMix.class, source ) ).run();
+        benchmark( "array-deserialization", samples, () -> Binder.json.unmarshal( TArray.class, source ) ).run();
+        benchmark( "list-deserialization", samples, () -> Binder.json.unmarshal( TList.class, source ) ).run();
 
-        benchmark( builder( "array-serialization" ).samples( samples ).build(), ( i ) -> {
-            Binder.json.marshal( tArray );
-        } );
-        benchmark( builder( "arraylist-serialization" ).samples( samples ).build(), ( i ) -> {
-            Binder.json.marshal( tMix );
-        } );
-        benchmark( builder( "list-serialization" ).samples( samples ).build(), ( i ) -> {
-            Binder.json.marshal( tList );
-        } );
+        benchmark( "array-serialization", samples, () -> Binder.json.marshal( tArray ) ).run();
+        benchmark( "arraylist-serialization", samples, () -> Binder.json.marshal( tMix ) ).run();
+        benchmark( "list-serialization", samples, () -> Binder.json.marshal( tList ) ).run();
     }
 
     public static class TArray {

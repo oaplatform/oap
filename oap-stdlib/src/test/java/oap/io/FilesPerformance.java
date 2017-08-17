@@ -60,31 +60,27 @@ public class FilesPerformance extends AbstractPerformance {
     public void testLastModificationTime() {
         final long[] size = { 0 };
 
-        benchmark( builder( "java.nio.file.Files.getLastModifiedTime()" ).samples( SAMPLES ).build(), ( x ) -> {
-            size[0] += java.nio.file.Files.getLastModifiedTime( path ).to( TimeUnit.NANOSECONDS );
-        } );
+        benchmark( "java.nio.file.Files.getLastModifiedTime()", SAMPLES,
+            () -> size[0] += java.nio.file.Files.getLastModifiedTime( path ).to( TimeUnit.NANOSECONDS ) ).run();
 
-        benchmark( builder( "java.nio.file.Files.getLastModifiedTime()-2" ).samples( SAMPLES ).build(), ( x ) -> {
-            size[0] += java.nio.file.Files.getLastModifiedTime( path2 ).to( TimeUnit.NANOSECONDS );
-        } );
+        benchmark( "java.nio.file.Files.getLastModifiedTime()-2", SAMPLES,
+            () -> size[0] += java.nio.file.Files.getLastModifiedTime( path2 ).to( TimeUnit.NANOSECONDS ) ).run();
 
-        benchmark( builder( "java.io.File.lastModified()" ).samples( SAMPLES ).build(), ( x ) -> {
-            size[0] += path.toFile().lastModified();
-        } );
-        benchmark( builder( "java.io.File.lastModified()-2" ).samples( SAMPLES ).build(), ( x ) -> {
-            size[0] += path2.toFile().lastModified();
-        } );
+        benchmark( "java.io.File.lastModified()", SAMPLES,
+            () -> size[0] += path.toFile().lastModified() ).run();
+        benchmark( "java.io.File.lastModified()-2", SAMPLES,
+            () -> size[0] += path2.toFile().lastModified() ).run();
     }
 
     @Test( enabled = false )
     public void testExists() {
-        benchmark( builder( "java.nio.file.Files.exists()" ).samples( SAMPLES ).build(), ( x ) -> {
+        benchmark( "java.nio.file.Files.exists()", SAMPLES, () -> {
             java.nio.file.Files.exists( path );
             java.nio.file.Files.exists( pathNotExists );
-        } );
-        benchmark( builder( "java.io.File.exists()" ).samples( SAMPLES ).build(), ( x ) -> {
+        } ).run();
+        benchmark( "java.io.File.exists()", SAMPLES, () -> {
             path.toFile().exists();
             pathNotExists.toFile().exists();
-        } );
+        } ).run();
     }
 }

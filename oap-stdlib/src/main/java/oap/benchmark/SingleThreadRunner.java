@@ -48,7 +48,7 @@ class SingleThreadRunner extends Runner {
                     long total = IntStream.range( 0, benchmark.samples )
                         .mapToLong( time -> {
                             long start = System.nanoTime();
-                            benchmark.code.run();
+                            benchmark.code.accept( time );
                             return System.nanoTime() - start;
                         } ).sum();
 

@@ -49,7 +49,7 @@ public class CompressionPerformance extends AbstractPerformance {
     public void testC( IoStreams.Encoding encoding ) throws IOException {
         Path path = Env.tmpPath( "test." + encoding );
 
-        benchmark( builder( "compress " + encoding.name() ).samples( 2 ).build(), ( s ) -> {
+        benchmark( "compress " + encoding.name(), 2, () -> {
             try( InputStream is = IoStreams.in( Resources.filePath( getClass(), "/file.txt" ).get(), PLAIN );
                  OutputStream out = IoStreams.out( path, encoding, 1024 * 1024 * 10, false ) ) {
 
@@ -61,13 +61,13 @@ public class CompressionPerformance extends AbstractPerformance {
                 }
             }
 
-        } );
+        } ).run();
 
         System.out.println( encoding + " = " + path.toFile().length() + " bytes" );
 
         byte[] bytes = new byte[1024];
 
-        benchmark( builder( "decompress " + encoding.name() ).samples( 100 ).build(), ( s ) -> {
+        benchmark( "decompress " + encoding.name(), 100, () -> {
             try( InputStream in = IoStreams.in( path, encoding ) ) {
                 int read = 0;
                 while( ( read = in.read( bytes ) ) > 0 ) {
@@ -75,7 +75,7 @@ public class CompressionPerformance extends AbstractPerformance {
                 }
             }
 
-        } );
+        } ).run();
 
         System.out.println( encoding + " = " + path.toFile().length() + " bytes" );
     }

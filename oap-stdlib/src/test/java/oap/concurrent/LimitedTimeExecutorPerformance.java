@@ -37,13 +37,11 @@ public class LimitedTimeExecutorPerformance extends AbstractPerformance {
         final int SAMPLES = 100000;
         final int THREADS = 5000;
 
-        benchmark( builder( "without-LimitedTime" ).samples( SAMPLES ).threads( THREADS ).build(), ( i ) -> {
-            Thread.sleep( 10 );
-        } );
+        benchmark( "without-LimitedTime", SAMPLES, () -> Thread.sleep( 10 ) ).inThreads( THREADS ).run();
 
         LimitedTimeExecutor lt = new LimitedTimeExecutor( 100, TimeUnit.MILLISECONDS );
 
-        benchmark( builder( "LimitedTime" ).samples( SAMPLES ).threads( THREADS ).build(), ( i ) -> {
+        benchmark( "LimitedTime", SAMPLES, () -> {
             lt.execute( () -> {
                 try {
                     Thread.sleep( 10 );
@@ -51,6 +49,6 @@ public class LimitedTimeExecutorPerformance extends AbstractPerformance {
                     e.printStackTrace();
                 }
             } );
-        } );
+        } ).inThreads( THREADS ).run();
     }
 }

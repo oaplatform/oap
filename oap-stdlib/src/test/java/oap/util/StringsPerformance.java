@@ -110,29 +110,29 @@ public class StringsPerformance extends AbstractPerformance {
     public void remove() {
         final int samples = 10000000;
 
-        benchmark( builder( "remove-bidwise" ).samples( samples ).build(), ( i ) -> {
+        benchmark( "remove-bidwise", samples, () -> {
             removeBitwise( "12345", ' ', '-' );
             removeBitwise( "-123 - 45-", ' ', '-', '_' );
             removeBitwise( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
-        } );
+        } ).run();
 
-        benchmark( builder( "remove-bit-set" ).samples( samples ).build(), ( i ) -> {
+        benchmark( "remove-bit-set", samples, () -> {
             removeBitset( "12345", ' ', '-' );
             removeBitset( "-123 - 45-", ' ', '-', '_' );
             removeBitset( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
-        } );
+        } ).run();
 
-        benchmark( builder( "remove" ).samples( samples ).build(), ( i ) -> {
+        benchmark( "remove", samples, () -> {
             Strings.remove( "12345", ' ', '-' );
             Strings.remove( "-123 - 45-", ' ', '-', '_' );
             Strings.remove( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
-        } );
+        } ).run();
 
-        benchmark( builder( "remove-set" ).samples( samples ).build(), ( i ) -> {
+        benchmark( "remove-set", samples, () -> {
             removeSet( "12345", ' ', '-' );
             removeSet( "-123 - 45-", ' ', '-', '_' );
             removeSet( "-123 - 45-", ' ', '-', 'a', 'b', 'c', 'd', 'e' );
-        } );
+        } ).run();
 
     }
 

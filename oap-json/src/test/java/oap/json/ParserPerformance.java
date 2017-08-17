@@ -70,8 +70,8 @@ public class ParserPerformance extends AbstractPerformance {
         mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
         mapper.registerModule( new OapJsonModule() );
 
-        benchmark( builder( "mapParser-jackson" ).samples( 5000 ).build(),
-            i -> mapper.writeValueAsString( mapper.readValue( yearJson, Map.class ) ) );
+        benchmark( "mapParser-jackson", 5000,
+            () -> mapper.writeValueAsString( mapper.readValue( yearJson, Map.class ) ) ).run();
 
         final ObjectMapper mapper2 = new ObjectMapper();
         mapper2.registerModule( new Jdk8Module() );
@@ -86,8 +86,8 @@ public class ParserPerformance extends AbstractPerformance {
         mapper2.registerModule( new AfterburnerModule() );
 
 
-        benchmark( builder( "mapParser-jackson2" ).samples( 5000 ).build(), i ->
-            mapper2.writeValueAsString( mapper2.readValue( yearJson, Map.class ) ) );
+        benchmark( "mapParser-jackson2", 5000,
+            () -> mapper2.writeValueAsString( mapper2.readValue( yearJson, Map.class ) ) ).run();
 
     }
 
@@ -99,14 +99,14 @@ public class ParserPerformance extends AbstractPerformance {
         System.out.println( testEmpty );
         System.out.println( testNotEmpty );
 
-        benchmark( builder( "parse-null" ).samples( 5000000 ).build(), ( i ) -> {
+        benchmark( "parse-null", 5000000, () -> {
             Binder.json.unmarshal( TestNull.class, testEmpty );
             Binder.json.unmarshal( TestNull.class, testNotEmpty );
-        } );
-        benchmark( builder( "parse-optional-empty" ).samples( 5000000 ).build(), ( i ) -> {
+        } ).run();
+        benchmark( "parse-optional-empty", 5000000, () -> {
             Binder.json.unmarshal( TestOptional.class, testEmpty );
             Binder.json.unmarshal( TestOptional.class, testNotEmpty );
-        } );
+        } ).run();
     }
 
     public static class TestNull {

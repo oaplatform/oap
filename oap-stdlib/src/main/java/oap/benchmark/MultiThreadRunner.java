@@ -58,7 +58,7 @@ class MultiThreadRunner extends Runner {
                 System.out.println( "warming up..." );
                 IntStream
                     .range( 0, warming )
-                    .mapToObj( i -> pool.submit( benchmark.code ) )
+                    .mapToObj( i -> pool.submit( () -> benchmark.code.accept( 0 ) ) )
                     .collect( toList() )
                     .forEach( Try.consume( Future::get ) );
             }
@@ -77,7 +77,7 @@ class MultiThreadRunner extends Runner {
                             .range( 0, threads )
                             .mapToObj( t -> pool.submit( () -> IntStream
                                 .range( t * samplesPerThread, ( t + 1 ) * samplesPerThread )
-                                .forEach( i -> benchmark.code.run() )
+                                .forEach( benchmark.code )
 
                             ) )
                             .collect( toList() )

@@ -39,12 +39,10 @@ public class MutableLongPerformance extends AbstractPerformance {
         final HashMap<Integer, MutableLong> map1 = new HashMap<>();
         final HashMap<Integer, Long> map2 = new HashMap<>();
 
-        benchmark( builder( "mutable_long" ).samples( SAMPLES ).build(), ( i ) -> {
-            map1.computeIfAbsent( i % 5, ( k ) -> new MutableLong() ).increment();
-        } );
+        benchmark( "mutable_long", SAMPLES,
+            ( i ) -> map1.computeIfAbsent( i % 5, ( k ) -> new MutableLong() ).increment() ).run();
 
-        benchmark( builder( "Long_compute" ).samples( SAMPLES ).build(), ( i ) -> {
-            map2.compute( i % 5, ( k, old ) -> old != null ? old + 1 : 1L );
-        } );
+        benchmark( "Long_compute", SAMPLES,
+            ( i ) -> map2.compute( i % 5, ( k, old ) -> old != null ? old + 1 : 1L ) ).run();
     }
 }

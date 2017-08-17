@@ -54,6 +54,10 @@ public abstract class AbstractPerformance extends AbstractTest {
         return Benchmark.benchmark( name, samples, code );
     }
 
+    public static Benchmark benchmark( String name, int samples, Try.ThrowingIntConsumer code ) {
+        return Benchmark.benchmark( name, samples, code );
+    }
+
     @Deprecated
     public static BenchmarkConfiguration.BenchmarkConfigurationBuilder builder( String name ) {
         return BenchmarkConfiguration.builder().name( name );
