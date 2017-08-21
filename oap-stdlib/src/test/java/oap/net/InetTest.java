@@ -22,19 +22,23 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.net;
 
-import oap.net.Inet;
+import oap.util.Strings;
+import org.testng.annotations.Test;
 
-/**
- * Created by anton on 7/27/17
- *
- * @see Inet#toLong(String) .
- */
-@Deprecated
-public class IpAddressUtils {
+import static oap.benchmark.Benchmark.benchmark;
+import static org.assertj.core.api.Assertions.assertThat;
 
-    public static long ipAsLong( final String ipAddress ) {
-        return Inet.toLong( ipAddress );
+public class InetTest {
+    @Test
+    public void toLong() throws Exception {
+        assertThat( Inet.toLong( "10.0.0.111" ) ).isEqualTo( 167772271L );
+        assertThat( Inet.toLong( "10.0.0.11" ) ).isEqualTo( 167772171L );
+        assertThat( Inet.toLong( "10.0.0.1" ) ).isEqualTo( 167772161L );
+        assertThat( Strings.toHexString( Inet.toLong( "10.0.0.1" ) ) ).isEqualTo( "A000001" );
+        benchmark( "toLong", 10000000, () -> Inet.toLong( "10.0.0.1" ) )
+            .run();
     }
+
 }

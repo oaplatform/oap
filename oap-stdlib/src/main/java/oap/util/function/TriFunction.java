@@ -29,9 +29,12 @@ import java.util.function.Function;
 
 /**
  * Created by anton on 2/15/17.
+ *
+ * @see oap.util.Functions.TriFunction
  */
 @FunctionalInterface
-public interface TriFunction<AT1,AT2,AT3,R> {
+@Deprecated
+public interface TriFunction<AT1, AT2, AT3, R> {
 
     /**
      * Applies this function to the given arguments.
@@ -41,7 +44,7 @@ public interface TriFunction<AT1,AT2,AT3,R> {
      * @param arg3 the third function argument
      * @return the function result
      */
-    R apply(AT1 arg1, AT2 arg2, AT3 arg3);
+    R apply( AT1 arg1, AT2 arg2, AT3 arg3 );
 
     /**
      * Returns a composed function that first applies this function to
@@ -49,16 +52,16 @@ public interface TriFunction<AT1,AT2,AT3,R> {
      * If evaluation of either function throws an exception, it is relayed to
      * the caller of the composed function.
      *
-     * @param <V> the type of output of the {@code after} function, and of the
-     *           composed function
+     * @param <V>   the type of output of the {@code after} function, and of the
+     *              composed function
      * @param after the function to apply after this function is applied
      * @return a composed function that first applies this function and then
      * applies the {@code after} function
      * @throws NullPointerException if after is null
      */
-    default <V> TriFunction<AT1,AT2,AT3, V> andThen(
-        Function<? super R, ? extends V> after) {
-        Objects.requireNonNull(after);
-        return (AT1 arg1, AT2 arg2, AT3 arg3) -> after.apply(apply(arg1, arg2, arg3));
+    default <V> TriFunction<AT1, AT2, AT3, V> andThen(
+        Function<? super R, ? extends V> after ) {
+        Objects.requireNonNull( after );
+        return ( AT1 arg1, AT2 arg2, AT3 arg3 ) -> after.apply( apply( arg1, arg2, arg3 ) );
     }
 }

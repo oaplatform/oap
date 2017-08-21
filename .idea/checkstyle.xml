@@ -39,7 +39,6 @@
         <property name="basedir" value="${basedir}"/>
     -->
 
-    <module name="SuppressionCommentFilter"/>
 
     <property name="fileExtensions" value="java, properties, xml"/>
 
@@ -68,6 +67,8 @@
     <!-- </module> -->
 
     <module name="TreeWalker">
+
+        <module name="SuppressionCommentFilter"/>
 
         <!--<module name="Indentation"/>-->
         <module name="FileContentsHolder"/>

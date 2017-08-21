@@ -49,4 +49,23 @@ public class Inet {
             return false;
         }
     }
+
+    public static long toLong( final String ip ) {
+        final StringBuilder stringBuilder = new StringBuilder();
+        long result = 0;
+        int i = 3;
+
+        for( char c : ip.toCharArray() ) {
+            if( c != '.' ) stringBuilder.append( c );
+            else {
+                result |= Long.parseLong( stringBuilder.toString() ) << ( i * 8 );
+                stringBuilder.setLength( 0 );
+            }
+        }
+
+        result |= Long.parseLong( stringBuilder.toString() );
+
+        return result;
+    }
+
 }
