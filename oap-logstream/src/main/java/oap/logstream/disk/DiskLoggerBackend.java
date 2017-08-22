@@ -38,6 +38,8 @@ import oap.logstream.LoggerBackend;
 import oap.logstream.LoggerException;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
+import oap.net.Inet;
+import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +61,7 @@ public class DiskLoggerBackend extends LoggerBackend {
     private final Name writersMetric;
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
     public boolean useClientHostPrefix = true;
+    protected String prefix = "";
     private boolean closed;
 
     public DiskLoggerBackend( Path logDirectory, String ext, int bufferSize ) {
@@ -71,7 +74,9 @@ public class DiskLoggerBackend extends LoggerBackend {
             .build( new CacheLoader<String, Writer>() {
                 @Override
                 public Writer load( String fullFileName ) throws Exception {
-                    return new Writer( logDirectory, fullFileName, ext, bufferSize );
+                    return new Writer( logDirectory,
+                        StringUtils.replace( prefix, "${HOST}", Inet.hostname() ) + fullFileName,
+                        ext, bufferSize );
                 }
             } );
         this.writersMetric = Metrics.measureGauge(
