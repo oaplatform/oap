@@ -131,6 +131,7 @@ public class Module {
         public boolean schedule;
         public String startWith = "start";
         public String stopWith = "stop";
+        public String reloadWith = "reload";
         public long delay; //ms
         public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
     }

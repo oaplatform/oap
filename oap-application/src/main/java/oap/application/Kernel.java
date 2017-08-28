@@ -54,6 +54,7 @@ import static org.apache.commons.collections4.CollectionUtils.subtract;
 public class Kernel {
     private final List<URL> modules;
     private Supervisor supervisor = new Supervisor();
+    private Set<Module> moduleConfigs;
 
     public Kernel( List<URL> modules ) {
         this.modules = modules;
@@ -100,7 +101,8 @@ public class Kernel {
                 if( service.supervision.supervise )
                     supervisor.startSupervised( serviceName, instance,
                         service.supervision.startWith,
-                        service.supervision.stopWith );
+                        service.supervision.stopWith,
+                        service.supervision.reloadWith );
                 if( service.supervision.thread )
                     supervisor.startThread( serviceName, instance );
                 else {
@@ -214,7 +216,7 @@ public class Kernel {
         log.debug( "initializing application kernel..." );
         log.debug( "application config {}", config );
 
-        Set<Module> moduleConfigs = Stream.of( modules )
+        moduleConfigs = Stream.of( modules )
             .map( module -> Module.CONFIGURATION.fromHocon( module, config.services ) )
             .toSet();
         log.debug( "modules = " + Sets.map( moduleConfigs, m -> m.name ) );
@@ -247,6 +249,12 @@ public class Kernel {
         supervisor.stop();
         Application.unregisterServices();
         log.debug( "application kernel stopped" );
+    }
+
+    public void reload() {
+        log.debug( "reloading application kernel..." );
+        supervisor.reload();
+        log.debug( "application kernel reloaded" );
     }
 
 }

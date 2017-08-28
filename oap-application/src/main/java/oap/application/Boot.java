@@ -26,52 +26,56 @@ package oap.application;
 import oap.cli.Cli;
 import oap.cli.Option;
 import org.slf4j.Logger;
+import sun.misc.Signal;
 
 import java.nio.file.Path;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class Boot {
-   public static boolean terminated = false;
-   private static Logger logger = getLogger( Boot.class );
-   private static Kernel kernel;
+    public static boolean terminated = false;
+    private static Logger logger = getLogger( Boot.class );
+    private static Kernel kernel;
 
-   public static void main( String[] args ) {
-      Cli.create()
-         .group( "Starting service",
-            params -> {
-               Path config = ( Path ) params.get( "config" );
-               Boot.start( config, ( Path ) params.getOrDefault( "config-directory", config.getParent().resolve( "conf.d" ) ) );
-            },
-            Option.simple( "start" ).required(),
-            Option.path( "config" ).required(),
-            Option.path( "config-directory" )
-         )
-         .act( args );
-   }
+    public static void main( String[] args ) {
+        Cli.create()
+            .group( "Starting service",
+                params -> {
+                    Path config = ( Path ) params.get( "config" );
+                    Boot.start( config, ( Path ) params.getOrDefault( "config-directory", config.getParent().resolve( "conf.d" ) ) );
+                },
+                Option.simple( "start" ).required(),
+                Option.path( "config" ).required(),
+                Option.path( "config-directory" )
+            )
+            .act( args );
+    }
 
-   public static void start( Path config, Path confd ) {
+    public static void start( Path config, Path confd ) {
 //      System.setSecurityManager(new ExitMonitorSecurityManager());
-      Runtime.getRuntime().addShutdownHook( new ShutdownHook() );
-      try {
-         kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-         kernel.start( config, confd );
-         logger.debug( "started" );
-      } catch( Exception e ) {
-         logger.error( e.getMessage(), e );
-      }
-   }
-
-   public static synchronized void stop() {
-      if( !terminated ) {
-         terminated = true;
-         try {
-            kernel.stop();
-            logger.debug( "stopped" );
-         } catch( Exception e ) {
+        Signal.handle( new Signal( "HUP" ), signal -> kernel.reload() );
+        final ShutdownHook shutdownHook = new ShutdownHook();
+        Signal.handle( new Signal( "INT" ), signal -> shutdownHook.run() );
+        Signal.handle( new Signal( "TERM" ), signal -> shutdownHook.run() );
+        try {
+            kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
+            kernel.start( config, confd );
+            logger.debug( "started" );
+        } catch( Exception e ) {
             logger.error( e.getMessage(), e );
-         }
-      }
-   }
+        }
+    }
+
+    public static synchronized void stop() {
+        if( !terminated ) {
+            terminated = true;
+            try {
+                kernel.stop();
+                logger.debug( "stopped" );
+            } catch( Exception e ) {
+                logger.error( e.getMessage(), e );
+            }
+        }
+    }
 
 }

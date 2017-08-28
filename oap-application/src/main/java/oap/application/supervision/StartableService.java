@@ -33,15 +33,17 @@ import java.util.Optional;
 
 public class StartableService implements Supervised {
     private final Logger logger;
+    private final String reloadWith;
     private final Object supervised;
     private final String startWith;
     private final String stopWith;
     private boolean started;
 
-    public StartableService( Object supervised, String startWith, String stopWith ) {
+    public StartableService( Object supervised, String startWith, String stopWith, String reloadWith ) {
         this.supervised = supervised;
         this.startWith = startWith;
         this.stopWith = stopWith;
+        this.reloadWith = reloadWith;
         this.logger = LoggerFactory.getLogger( supervised.getClass() );
     }
 
@@ -51,6 +53,17 @@ public class StartableService implements Supervised {
         try {
             getControlMethod( startWith ).ifPresent( m -> m.invoke( supervised ) );
             started = true;
+        } catch( Exception e ) {
+            logger.error( e.getMessage(), e );
+            throw e;
+        }
+    }
+
+    @SneakyThrows
+    @Override
+    public void reload() {
+        try {
+            getControlMethod( reloadWith ).ifPresent( m -> m.invoke( supervised ) );
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
             throw e;
