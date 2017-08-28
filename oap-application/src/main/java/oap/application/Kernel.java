@@ -28,6 +28,7 @@ import lombok.val;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.json.Binder;
+import oap.metrics.Metrics;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
@@ -246,6 +247,7 @@ public class Kernel {
         log.debug( "stopping application kernel..." );
         supervisor.stop();
         Application.unregisterServices();
+        Metrics.resetAll();
         log.debug( "application kernel stopped" );
     }
 
