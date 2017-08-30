@@ -60,14 +60,18 @@ public class Supervisor {
         this.stopped = false;
         this.supervised.forEach( ( name, service ) -> {
             log.debug( "starting {}...", name );
+            long start = System.currentTimeMillis();
             service.start();
-            log.debug( "started {}", name );
+            long end = System.currentTimeMillis();
+            log.debug( "starting {}... Done. ({}ms)", name, end - start );
         } );
 
         this.scheduled.forEach( ( name, service ) -> {
             log.debug( "schedule {}...", name );
+            long start = System.currentTimeMillis();
             service.start();
-            log.debug( "scheduled {}", name );
+            long end = System.currentTimeMillis();
+            log.debug( "schedule {}... Done. ({}ms)", name, end - start );
         } );
     }
 
@@ -93,16 +97,20 @@ public class Supervisor {
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
+                    long start = System.currentTimeMillis();
                     service.stop();
-                    log.debug( "stopped {}", name );
+                    long end = System.currentTimeMillis();
+                    log.debug( "stopping {}... Done ({}ms)", name, end - start );
                 } );
             this.scheduled.clear();
             BiStream.of( this.supervised )
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
+                    long start = System.currentTimeMillis();
                     service.stop();
-                    log.debug( "stopped {}", name );
+                    long end = System.currentTimeMillis();
+                    log.debug( "stopping {}... Done. ({}ms)", name, end - start );
                 } );
             this.supervised.clear();
         }
