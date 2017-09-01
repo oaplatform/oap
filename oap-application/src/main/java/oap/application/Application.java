@@ -56,7 +56,8 @@ public class Application {
     }
 
     public synchronized static void register( String name, Object service ) throws DuplicateServiceException {
-        if( services.containsKey( name ) ) throw new DuplicateServiceException( name );
+        final Object rService = services.get( name );
+        if( rService != null ) throw new DuplicateServiceException( name, rService.getClass() );
 
         services.put( name, service );
     }
@@ -78,8 +79,8 @@ public class Application {
     }
 
     public static class DuplicateServiceException extends RuntimeException {
-        public DuplicateServiceException( String service ) {
-            super( "Service " + service + " is already registered" );
+        public DuplicateServiceException( String service, Class serviceClass ) {
+            super( "Service " + service + " is already registered [" + serviceClass + "]" );
         }
     }
 
