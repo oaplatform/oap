@@ -25,7 +25,9 @@
 package oap.tools;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
+import javax.tools.DiagnosticCollector;
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaCompiler;
@@ -42,43 +44,40 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Collections.singletonMap;
-
 /**
  * Created by igor.petrenko on 30.08.2016.
  */
+@Slf4j
 public class MemoryClassLoader extends ClassLoader {
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-    private final MemoryFileManager manager = new MemoryFileManager( this.compiler );
+    private final MemoryFileManager manager = new MemoryFileManager( compiler );
 
     public MemoryClassLoader( String classname, String filecontent, Path diskCache ) {
-        this( singletonMap( classname, filecontent ), diskCache );
-    }
-
-    private MemoryClassLoader( Map<String, String> map, Path diskCache ) {
+        DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         List<Source> list = new ArrayList<>();
-        for( Map.Entry<String, String> entry : map.entrySet() ) {
-            final String name = entry.getKey();
 
-            if( diskCache != null ) {
-                final Path sourceFile = diskCache.resolve( name + ".java" );
-                final Path classFile = diskCache.resolve( name + ".class" );
-                if(
-                    Files.exists( sourceFile )
-                        && entry.getValue().equals( oap.io.Files.readString( sourceFile ) )
-                        && Files.exists( classFile ) ) {
+        if( diskCache != null ) {
+            final Path sourceFile = diskCache.resolve( classname + ".java" );
+            final Path classFile = diskCache.resolve( classname + ".class" );
+            if(
+                Files.exists( sourceFile )
+                    && filecontent.equals( oap.io.Files.readString( sourceFile ) )
+                    && Files.exists( classFile ) ) {
 
-                    final byte[] bytes = oap.io.Files.read( classFile );
-                    this.manager.map.put( name, new Output( name, JavaFileObject.Kind.CLASS, bytes ) );
-                } else {
-                    list.add( new Source( name, JavaFileObject.Kind.SOURCE, entry.getValue() ) );
-                }
+                log.trace( "found: {}", classname );
+
+                final byte[] bytes = oap.io.Files.read( classFile );
+                manager.map.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
             } else {
-                list.add( new Source( name, JavaFileObject.Kind.SOURCE, entry.getValue() ) );
+                log.trace( "not found: {}", classname );
+                list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
             }
+        } else {
+            list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
         }
+
         if( !list.isEmpty() ) {
-            this.compiler.getTask( null, this.manager, null, null, null, list ).call();
+            compiler.getTask( null, manager, diagnostics, null, null, list ).call();
 
             if( diskCache != null ) {
                 for( Source source : list ) {
@@ -92,8 +91,8 @@ public class MemoryClassLoader extends ClassLoader {
 
     @Override
     protected Class<?> findClass( String name ) throws ClassNotFoundException {
-        synchronized( this.manager ) {
-            Output mc = this.manager.map.remove( name );
+        synchronized( manager ) {
+            Output mc = manager.map.remove( name );
             if( mc != null ) {
                 byte[] array = mc.toByteArray();
                 return defineClass( name, array, 0, array.length );
@@ -103,7 +102,7 @@ public class MemoryClassLoader extends ClassLoader {
     }
 
     private static class Source extends SimpleJavaFileObject {
-        public final String originalName;
+        final String originalName;
         private final String content;
 
         Source( String name, Kind kind, String content ) {

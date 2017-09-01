@@ -83,8 +83,6 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
             String className = clazz.getName().replace( '$', '.' );
 
-            val templateClassName = getClass().getSimpleName() + StringUtils.capitalize( name );
-
             c.append( "package " ).append( getClass().getPackage().getName() ).append( ";\n"
                 + "\n"
                 + "import oap.util.Strings;\n"
@@ -93,7 +91,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 + "import java.util.function.BiFunction;\n"
                 + "import com.google.common.base.CharMatcher;\n"
                 + "\n"
-                + "public  class " ).append( templateClassName ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
+                + "public  class " ).append( name ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
                 + "   @Override\n"
                 + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
                 + "     StringBuilder jb = new StringBuilder();\n"
@@ -117,7 +115,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 .collect( joining( "\n" ) )
             );
 
-            val fullTemplateName = getClass().getName() + StringUtils.capitalize( name );
+            val fullTemplateName = getClass().getPackage().getName() + "." + name;
             MemoryClassLoader mcl = new MemoryClassLoader( fullTemplateName, c.toString(), cacheFile );
             func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( fullTemplateName ).newInstance();
 

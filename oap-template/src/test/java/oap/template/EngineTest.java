@@ -43,7 +43,6 @@ import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static oap.template.Template.Line.line;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +61,7 @@ public class EngineTest extends AbstractTest {
 
         final Path test = Env.tmpPath( "test" );
         Files.ensureDirectory( test );
-        engine = new Engine( test, true );
+        engine = new Engine( test );
     }
 
     @Test
@@ -212,7 +211,6 @@ public class EngineTest extends AbstractTest {
             singletonList( line( "f1", "test3.map.mapKey", "unknown" ) ), " " )
             .renderString( sample ) ).isEqualTo( "mapValue" );
     }
-
 
     @Test
     public void testMutableStrategy() {
