@@ -24,11 +24,14 @@
 
 package oap.template;
 
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import oap.io.Files;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,7 +47,7 @@ import static oap.template.TemplateStrategy.DEFAULT;
  * Created by igor.petrenko on 15.06.2017.
  */
 @Slf4j
-public class Engine {
+public class Engine implements Runnable {
     private final static HashMap<String, String> builtInFunction = new HashMap<>();
 
     static {
@@ -52,20 +55,42 @@ public class Engine {
     }
 
     public final Path tmpPath;
-    public final boolean cleanTmpBeforeRun;
+    public final long ttl;
 
-    public Engine( Path tmpPath, boolean cleanTmpBeforeRun ) {
-        this.tmpPath = tmpPath;
-        this.cleanTmpBeforeRun = cleanTmpBeforeRun;
-
-        start();
+    public Engine( Path tmpPath ) {
+        this( tmpPath, 1000L * 60 * 60 * 24 * 30 );
     }
 
-    private void start() {
-        if( cleanTmpBeforeRun && tmpPath != null ) {
-            Files.ensureDirectory( tmpPath );
-            Files.cleanDirectory( tmpPath );
+    public Engine( Path tmpPath, long ttl ) {
+        this.tmpPath = tmpPath;
+        this.ttl = ttl;
+    }
+
+    public static String getName( String template ) {
+        final HashFunction hashFunction = Hashing.murmur3_128();
+
+        val hash = hashFunction.hashUnencodedChars( template ).asLong();
+        return hashToName( hash );
+    }
+
+    private static String hashToName( long hash ) {
+        return "template_" + ( hash >= 0 ? String.valueOf( hash ) : "_" + String.valueOf( hash ).substring( 1 ) );
+    }
+
+    public static <TLine extends Template.Line> String getName( List<TLine> pathAndDefault, String delimiter ) {
+        final HashFunction hashFunction = Hashing.murmur3_32();
+
+        val hash = hashFunction
+            .newHasher();
+
+
+        for( val line : pathAndDefault ) {
+            hash.putUnencodedChars( line.path );
         }
+
+        hash.putUnencodedChars( delimiter );
+
+        return hashToName( hash.hash().asLong() );
     }
 
     public <T, TLine extends Template.Line> Template<T, TLine> getTemplate( String name, Class<T> clazz,
@@ -193,6 +218,25 @@ public class Engine {
         if( text.length() > 0 ) {
             lines.add( new Template.Line( "text", null, text.toString() ) );
             text.replace( 0, text.length(), "" );
+        }
+    }
+
+    @Override
+    public void run() {
+        try {
+            final long now = System.currentTimeMillis();
+            Files.walk( tmpPath ).forEach( path -> {
+                try {
+                    if( now - Files.getLastModifiedTime( path ).toMillis() > ttl ) {
+                        log.debug( "delete {}", path );
+                        Files.deleteIfExists( path );
+                    }
+                } catch( IOException e ) {
+                    log.error( e.getMessage() );
+                }
+            } );
+        } catch( IOException e ) {
+            log.error( e.getMessage(), e );
         }
     }
 }

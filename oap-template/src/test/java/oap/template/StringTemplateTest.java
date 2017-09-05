@@ -50,15 +50,49 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class StringTemplateTest extends AbstractTest {
     private Engine engine;
+    private Path test;
 
     @BeforeMethod
     @Override
     public void beforeMethod() throws Exception {
         super.beforeMethod();
 
-        final Path test = Env.tmpPath( "test" );
+        test = Env.tmpPath( "test" );
         Files.ensureDirectory( test );
-        engine = new Engine( test, true );
+        engine = new Engine( test );
+    }
+
+    @Test
+    public void testTtl() {
+        final String clazz = Engine.getName( "test" );
+        val template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
+
+        template.renderString( new EngineTest.Test1() );
+        engine.run();
+
+        assertThat( test.resolve( "oap.template." + clazz + ".java" ) ).exists();
+        assertThat( test.resolve( "oap.template." + clazz + ".class" ) ).exists();
+
+        Files.setLastModifiedTime( test.resolve( "oap.template." + clazz + ".java" ), System.currentTimeMillis() - engine.ttl - 100 );
+        Files.setLastModifiedTime( test.resolve( "oap.template." + clazz + ".class" ), System.currentTimeMillis() - engine.ttl - 100 );
+
+        engine.run();
+
+        assertThat( test.resolve( "oap.template." + clazz + ".java" ) ).doesNotExist();
+        assertThat( test.resolve( "oap.template." + clazz + ".class" ) ).doesNotExist();
+    }
+
+    @Test
+    public void testLoadFromDisk() {
+        final String clazz = Engine.getName( "test" );
+        val template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
+
+        template.renderString( new EngineTest.Test1() );
+
+        Engine engine2 = new Engine( test );
+
+        val template2 = engine2.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
+        template2.renderString( new EngineTest.Test1() );
     }
 
     @Test

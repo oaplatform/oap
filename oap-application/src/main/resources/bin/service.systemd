@@ -5,6 +5,7 @@ After=network.target remote-fs.target
 [Service]
 ExecStart=${oap.service.home}/bin/${oap.service.name}.sh --start
 ExecStop=${oap.service.home}/bin/${oap.service.name}.sh --stop
+ExecReload=/bin/kill -HUP $MAINPID
 PIDFile=/var/tmp/${oap.service.name}.pid
 Type=forking
 User=${oap.service.user}

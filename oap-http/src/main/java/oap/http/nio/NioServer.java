@@ -23,44 +23,107 @@
  */
 package oap.http.nio;
 
-import oap.http.cors.CorsPolicy;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.http.Handler;
 import oap.http.Protocol;
 import oap.http.Server;
-import org.apache.http.ExceptionLogger;
+import oap.http.cors.CorsPolicy;
+import oap.io.IoStreams;
+import org.apache.http.impl.client.DefaultClientConnectionReuseStrategy;
 import org.apache.http.impl.nio.bootstrap.HttpServer;
 import org.apache.http.impl.nio.bootstrap.ServerBootstrap;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.nio.protocol.UriHttpAsyncRequestHandlerMapper;
+import org.apache.http.protocol.HttpProcessorBuilder;
+import org.apache.http.protocol.ResponseConnControl;
+import org.apache.http.protocol.ResponseContent;
+import org.apache.http.protocol.ResponseDate;
+import org.apache.http.protocol.ResponseServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import java.io.IOException;
+import java.net.BindException;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.concurrent.TimeUnit;
 
+import static oap.io.IoStreams.Encoding.PLAIN;
+
+@Slf4j
 public class NioServer implements oap.http.HttpServer {
 
     private static Logger logger = LoggerFactory.getLogger( Server.class );
-    private UriHttpAsyncRequestHandlerMapper mapper = new UriHttpAsyncRequestHandlerMapper();
     private final int port;
+    protected Path keystoreLocation;
+    protected String keystorePassword;
+
+    private UriHttpAsyncRequestHandlerMapper mapper = new UriHttpAsyncRequestHandlerMapper();
     private HttpServer server;
 
-    public NioServer( int port ) {
+    @SneakyThrows
+    public NioServer( int port, int workers ) {
         this.port = port;
         this.mapper.register( "/static/*", new NioClasspathResourceHandler( "/static", "/WEB-INF" ) );
 
-        IOReactorConfig config = IOReactorConfig.custom()
-            .setTcpNoDelay( true )
-            .setSoKeepAlive( true )
+        val ioReactorConfig = IOReactorConfig.custom().setIoThreadCount( workers ).build();
+        val httpProcessor = HttpProcessorBuilder.create()
+            .add( new ResponseDate() )
+            .add( new ResponseServer( "OAP Server/1.0" ) )
+            .add( new ResponseContent() )
+            .add( new ResponseConnControl() )
             .build();
+
+        SSLContext sslContext = getSslContext( port );
+
 
         server = ServerBootstrap.bootstrap()
             .setListenerPort( port )
             .setServerInfo( "OAP Server/1.0" )
-            .setIOReactorConfig( config )
-            .setExceptionLogger( ExceptionLogger.STD_ERR )
+            .setConnectionReuseStrategy( DefaultClientConnectionReuseStrategy.INSTANCE )
+            .setHttpProcessor( httpProcessor )
+            .setIOReactorConfig( ioReactorConfig )
+            .setSslContext( sslContext )
+            .setExceptionLogger( ex -> log.debug( ex.getMessage(), ex ) )
             .setHandlerMapper( mapper )
             .create();
+    }
+
+    public SSLContext getSslContext( int port ) throws IOException, KeyStoreException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException, KeyManagementException {
+        SSLContext sslContext;
+        if( keystoreLocation != null && Files.exists( keystoreLocation ) ) {
+            try( val inputStream = IoStreams.in( keystoreLocation, PLAIN ) ) {
+                log.info( "Keystore {} exists, trying to initialize", keystoreLocation );
+                KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
+                keyStore.load( inputStream, keystorePassword.toCharArray() );
+
+                KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
+                    KeyManagerFactory.getDefaultAlgorithm() );
+                keyManagerFactory.init( keyStore, keystorePassword.toCharArray() );
+
+                sslContext = SSLContext.getInstance( "TLS" );
+                sslContext.init( keyManagerFactory.getKeyManagers(), null, null );
+
+                log.info( "Successfully initialized secure http listener" );
+            } catch( BindException e ) {
+                log.error( "Cannot bind to port [{}]", port );
+                throw e;
+            }
+        } else {
+            throw new CertificateException( keystoreLocation + " not found" );
+        }
+        return sslContext;
     }
 
     @Override
@@ -78,7 +141,7 @@ public class NioServer implements oap.http.HttpServer {
 
     @Override
     public void accepted( Socket socket ) {
-        throw new UnsupportedOperationException("NioServer is not yet supported");
+        throw new UnsupportedOperationException( "NioServer is not yet supported" );
     }
 
     public void start() {

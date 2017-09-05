@@ -62,7 +62,6 @@ import static oap.util.Pair.__;
 @Slf4j
 public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T, TLine> {
     private static final String math = "/*+-%";
-    private static final HashMap<String, BiFunction<?, Accumulator, ?>> cache = new HashMap<>();
     private final Map<String, String> overrides;
     private final Map<String, Supplier<String>> mapper;
     private BiFunction<T, Accumulator, ?> func;
@@ -84,8 +83,6 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
             String className = clazz.getName().replace( '$', '.' );
 
-            val templateClassName = getClass().getSimpleName() + StringUtils.capitalize( name );
-
             c.append( "package " ).append( getClass().getPackage().getName() ).append( ";\n"
                 + "\n"
                 + "import oap.util.Strings;\n"
@@ -94,7 +91,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 + "import java.util.function.BiFunction;\n"
                 + "import com.google.common.base.CharMatcher;\n"
                 + "\n"
-                + "public  class " ).append( templateClassName ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
+                + "public  class " ).append( name ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
                 + "   @Override\n"
                 + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
                 + "     StringBuilder jb = new StringBuilder();\n"
@@ -118,17 +115,9 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 .collect( joining( "\n" ) )
             );
 
-            synchronized( cache ) {
-                BiFunction<?, Accumulator, ?> s = cache.get( c.toString() );
-
-                if( s != null ) func = ( BiFunction<T, Accumulator, ?> ) s;
-                else {
-                    val fullTemplateName = getClass().getName() + StringUtils.capitalize( name );
-                    MemoryClassLoader mcl = new MemoryClassLoader( fullTemplateName, c.toString(), cacheFile );
-                    func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( fullTemplateName ).newInstance();
-                    cache.put( c.toString(), func );
-                }
-            }
+            val fullTemplateName = getClass().getPackage().getName() + "." + name;
+            MemoryClassLoader mcl = new MemoryClassLoader( fullTemplateName, c.toString(), cacheFile );
+            func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( fullTemplateName ).newInstance();
 
         } catch( Exception e ) {
             log.error( c.toString() );
@@ -143,7 +132,8 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
         c.append( "\n" );
         tab( c, tab ).append( "// " ).append(
-            line.path != null ? line.path : "\"" + line.defaultValue + "\"" ).append( "\n" );
+            line.path != null ? line.path
+                : "\"" + StringEscapeUtils.escapeJava( line.defaultValue.toString() ) + "\"" ).append( "\n" );
 
         if( line.path == null ) {
             tab( c, tab ).append( "acc.accept( \"" ).append( StringEscapeUtils.escapeJava( line.defaultValue.toString() ) ).append( "\" );\n" );

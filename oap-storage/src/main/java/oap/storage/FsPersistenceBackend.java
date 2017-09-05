@@ -28,6 +28,7 @@ import com.google.common.io.CountingOutputStream;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.val;
+import oap.concurrent.Threads;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
@@ -47,6 +48,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,6 +65,8 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
     private final List<FileStorageMigration> migrations;
     private final Logger log;
     private MemoryStorage<T> storage;
+    private final Lock lock = new ReentrantLock();
+
     private PeriodicScheduled scheduled;
 
     FsPersistenceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync, int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
@@ -76,95 +81,112 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
         this.storage.addDataListener( this );
     }
 
+
     @SneakyThrows
-    private synchronized void load() {
-        Files.ensureDirectory( path );
-        List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
-        log.debug( "found {} files", paths.size() );
+    private void load() {
 
-        for( Path file : paths ) {
-            final Persisted persisted = Persisted.valueOf( file );
+        Threads.synchronously( lock, () -> {
+            Files.ensureDirectory( path );
+            List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
+            log.debug( "found {} files", paths.size() );
 
-            for( long version = persisted.version; version < this.version; version++ ) {
-                file = migration( file );
+            for( Path file : paths ) {
+                final Persisted persisted = Persisted.valueOf( file );
+
+                for( long version = persisted.version; version < this.version; version++ ) {
+                    file = migration( file );
+                }
+
+                final Metadata<T> unmarshal = Binder.json.unmarshal( new TypeReference<Metadata<T>>() {
+                }, file );
+
+                final Path newPath = filenameFor( unmarshal.object, this.version );
+
+                if( !java.nio.file.Files.exists( newPath ) || !java.nio.file.Files.isSameFile( file, newPath ) ) {
+                    Files.move( file, newPath, StandardCopyOption.REPLACE_EXISTING );
+                }
+
+                storage.data.put( unmarshal.id, unmarshal );
+
             }
 
-            final Metadata<T> unmarshal = Binder.json.unmarshal( new TypeReference<Metadata<T>>() {
-            }, file );
-
-            final Path newPath = filenameFor( unmarshal.object, this.version );
-
-            if( !java.nio.file.Files.exists( newPath ) || !java.nio.file.Files.isSameFile( file, newPath ) ) {
-                Files.move( file, newPath, StandardCopyOption.REPLACE_EXISTING );
-            }
-
-            storage.data.put( unmarshal.id, unmarshal );
-
-        }
-
-        log.info( storage.data.size() + " object(s) loaded." );
+            log.info( storage.data.size() + " object(s) loaded." );
+        } );
     }
 
     @SneakyThrows
-    private synchronized Path migration( Path path ) {
-        JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {
-        }, path ) );
+    private Path migration( Path path ) {
 
-        Persisted fn = Persisted.valueOf( path );
+        return Threads.synchronously( lock, () -> {
+            JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {
+            }, path ) );
 
-        log.debug( "migration {}", fn );
+            Persisted fn = Persisted.valueOf( path );
 
-        val migration = Lists.find2( migrations, m -> m.fromVersion() == fn.version );
-        if( migration == null )
-            throw new FileStorageMigrationException( "migration from version " + fn + " not found" );
+            log.debug( "migration {}", fn );
+
+            val migration = Lists.find2( migrations, m -> m.fromVersion() == fn.version );
+            if( migration == null )
+                throw new FileStorageMigrationException( "migration from version " + fn + " not found" );
 
 
-        Path name = fn.toVersion( migration.fromVersion() + 1 );
-        JsonMetadata newV = migration.run( oldV );
+            Path name = fn.toVersion( migration.fromVersion() + 1 );
+            JsonMetadata newV = migration.run( oldV );
 
-        long writeLen = -1;
-        while( name.toFile().length() != writeLen ){
-            try( val out = new CountingOutputStream( IoStreams.out( name, PLAIN, DEFAULT_BUFFER, false, true ) ) ) {
-                Binder.json.marshal( out, newV.underlying );
-                writeLen = out.getCount();
+            long writeLen = -1;
+            while( name.toFile().length() != writeLen ) {
+                try( val out = new CountingOutputStream( IoStreams.out( name, PLAIN, DEFAULT_BUFFER, false, true ) ) ) {
+                    Binder.json.marshal( out, newV.underlying );
+                    writeLen = out.getCount();
+                }
             }
-        }
 
-        Files.delete( path );
-        return name;
+            Files.delete( path );
+            return name;
+        } );
+
     }
 
     @SneakyThrows
-    private synchronized void fsync( long last ) {
-        log.trace( "fsync: last: {}, storage size: {}", last, storage.data.size() );
+    private void fsync( long last ) {
 
-        for( val value : storage.data.values() ) {
-            if( value.modified < last ) continue;
+        Threads.synchronously( lock, () -> {
+            log.trace( "fsync: last: {}, storage size: {}", last, storage.data.size() );
 
-            final Path fn = filenameFor( value.object, version );
-            try( OutputStream outputStream = IoStreams.out( fn, PLAIN, DEFAULT_BUFFER, false, true ) ) {
-                log.trace( "fsync storing {} with modification time {}", fn.getFileName(), value.modified );
-                Binder.json.marshal( outputStream, value );
-                log.trace( "fsync storing {} done", fn.getFileName() );
+            for( val value : storage.data.values() ) {
+                if( value.modified < last ) continue;
+
+                final Path fn = filenameFor( value.object, version );
+                try( OutputStream outputStream = IoStreams.out( fn, PLAIN, DEFAULT_BUFFER, false, true ) ) {
+                    log.trace( "fsync storing {} with modification time {}", fn.getFileName(), value.modified );
+                    Binder.json.marshal( outputStream, value );
+                    log.trace( "fsync storing {} done", fn.getFileName() );
+                }
             }
-        }
+        } );
     }
 
-    public synchronized void delete( T id ) {
-        Path path = filenameFor( id, version );
-        Files.delete( path );
+    public void delete( T id ) {
+        Threads.synchronously( lock, () -> {
+            Path path = filenameFor( id, version );
+            Files.delete( path );
+        } );
     }
 
     @Override
-    public synchronized void close() {
-        Scheduled.cancel( scheduled );
-        fsync( scheduled.lastExecuted() );
+    public void close() {
+        Threads.synchronously( lock, () -> {
+            Scheduled.cancel( scheduled );
+            fsync( scheduled.lastExecuted() );
+        } );
     }
 
     private Path filenameFor( T object, long version ) {
-        final String ver = this.version > 0 ? ".v" + version : "";
-        return fsResolve.apply( this.path, object )
-            .resolve( this.storage.identifier.get( object ) + ver + ".json" );
+        return Threads.synchronously( lock, () -> {
+            final String ver = this.version > 0 ? ".v" + version : "";
+            return fsResolve.apply( this.path, object )
+                .resolve( this.storage.identifier.get( object ) + ver + ".json" );
+        } );
     }
 
     @Override

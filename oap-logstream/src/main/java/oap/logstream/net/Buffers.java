@@ -30,6 +30,7 @@ import lombok.val;
 import oap.io.Files;
 import oap.logstream.net.BufferConfigurationMap.BufferConfiguration;
 import oap.metrics.Metrics;
+import oap.util.Cuid;
 
 import java.io.Closeable;
 import java.io.Serializable;
@@ -42,7 +43,6 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 @EqualsAndHashCode( exclude = "closed" )
@@ -171,11 +171,11 @@ public class Buffers implements Closeable {
     }
 
     static class ReadyQueue implements Serializable {
-        static AtomicLong digestionIds = new AtomicLong( System.nanoTime() );
+        static Cuid.Counter digestionIds = new Cuid.TimeSeedCounter();
         private Queue<Buffer> buffers = new ConcurrentLinkedQueue<>();
 
         public final void ready( Buffer buffer ) {
-            buffer.close( digestionIds.incrementAndGet() );
+            buffer.close( digestionIds.next() );
             buffers.offer( buffer );
         }
 

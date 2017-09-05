@@ -62,9 +62,10 @@ public class WebServicesPerformance extends AbstractPerformance {
                 Collections.emptyList(), Protocol.HTTP );
 
             HttpAsserts.reset();
-            benchmark( builder( "Server.invocations" ).samples( samples ).threads( 5000 ).build(),
-                number -> HttpAsserts.assertGet( HTTP_URL( "/x/v/math/id?a=aaa" ) ).responded( 200, "OK",
-                    ContentType.APPLICATION_JSON, "\"aaa\"" ) );
+            benchmark( "Server.invocations", samples, () ->
+                HttpAsserts.assertGet( HTTP_URL( "/x/v/math/id?a=aaa" ) ).responded( 200, "OK",
+                    ContentType.APPLICATION_JSON, "\"aaa\"" )
+            ).inThreads( 5000 ).run();
 
             HttpAsserts.reset();
         } finally {
@@ -75,7 +76,7 @@ public class WebServicesPerformance extends AbstractPerformance {
 
     @Test
     public void nio_threads() throws Exception {
-        NioServer server = new NioServer( Env.port() );
+        NioServer server = new NioServer( Env.port(), 500 );
         try {
             WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
             ws.bind( "x/v/math", GenericCorsPolicy.DEFAULT, new MathWS(), false, SESSION_MANAGER,
@@ -84,14 +85,14 @@ public class WebServicesPerformance extends AbstractPerformance {
             Thread.sleep( 3000 ); // ??? TODO: fix me
 
             HttpAsserts.reset();
-            benchmark( builder( "NioServer.invocations" ).samples( samples ).threads( 5000 ).build(), ( number ) -> {
+            benchmark( "NioServer.invocations", samples, () -> {
                 try {
                     HttpAsserts.assertGet( HTTP_URL( "/x/v/math/id?a=aaa" ) )
                         .responded( 200, "OK", ContentType.APPLICATION_JSON, "\"aaa\"" );
                 } catch( Throwable e ) {
                     e.printStackTrace();
                 }
-            } );
+            } ).inThreads( 5000 ).run();
 
             HttpAsserts.reset();
         } finally {

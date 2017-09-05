@@ -25,7 +25,9 @@
 package oap.concurrent;
 
 import lombok.SneakyThrows;
+import oap.util.Try;
 
+import java.util.concurrent.locks.Lock;
 import java.util.function.Supplier;
 
 public class Threads {
@@ -74,4 +76,27 @@ public class Threads {
     public static boolean isInterrupted() {
         return Thread.currentThread().isInterrupted();
     }
+
+    @SneakyThrows
+    public static <T> T synchronously( Lock lock, Try.ThrowingSupplier<T> func ) {
+        lock.lockInterruptibly();
+
+        try {
+            return func.get();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @SneakyThrows
+    public static void synchronously( Lock lock, Try.ThrowingRunnable func ) {
+        lock.lockInterruptibly();
+        try {
+            func.run();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+
 }

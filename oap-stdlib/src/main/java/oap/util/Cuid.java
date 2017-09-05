@@ -67,7 +67,7 @@ public class Cuid {
     public static class SeedCounter implements Counter {
         private AtomicLong value = new AtomicLong();
 
-        SeedCounter( long seed ) {
+        public SeedCounter( long seed ) {
             this.value.set( seed );
         }
 

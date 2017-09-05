@@ -60,8 +60,8 @@ public class TreePerformance extends AbstractPerformance {
     public static final Pattern ARRAY_LONG_PATTERN = Pattern.compile( "^arrayLong(\\d+)-\\d+$" );
     public static final Pattern ARRAY_ENUM_PATTERN = Pattern.compile( "^arrayEnum(\\d+)-([^\\-]+)-\\d+$" );
     public static final Pattern ENUM_PATTERN = Pattern.compile( "^enum-([^\\-]+)-\\d+$" );
-    private static final AtomicInteger dimensionId = new AtomicInteger( 0 );
     public static final int SAMPLES = 100000;
+    private static final AtomicInteger dimensionId = new AtomicInteger( 0 );
 
     private static <T> Set<T> s( T... data ) {
         return new HashSet<>( asList( data ) );
@@ -69,10 +69,10 @@ public class TreePerformance extends AbstractPerformance {
 
     @Test
     public void tree() {
-        run( 0.25, Integer.MIN_VALUE,1000 );
-        run( 0.5, Integer.MIN_VALUE,1000 );
+        run( 0.25, Integer.MIN_VALUE, 1000 );
+        run( 0.5, Integer.MIN_VALUE, 1000 );
         run( 1, Integer.MIN_VALUE, 1000 );
-        run( 0.75, Integer.MIN_VALUE,1000 );
+        run( 0.75, Integer.MIN_VALUE, 1000 );
     }
 
     public void run( double fillFactor, int arrayToTree, int dataCount ) {
@@ -108,9 +108,9 @@ public class TreePerformance extends AbstractPerformance {
             .load( data );
 
 
-        benchmark( builder( "tree-" + fillFactor + "-" + dataCount ).samples( SAMPLES ).build(), ( i ) -> {
+        benchmark( "tree-" + fillFactor + "-" + dataCount, SAMPLES, ( i ) -> {
             Assertions.assertThat( tree.find( bids.get( i % bids.size() ) ) ).isNotEmpty();
-        } );
+        } ).run();
 
         System.out.println( tree.getMaxDepth() );
     }

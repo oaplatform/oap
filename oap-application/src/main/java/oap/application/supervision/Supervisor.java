@@ -39,8 +39,8 @@ public class Supervisor {
     private LinkedHashMap<String, Supervised> scheduled = new LinkedHashMap<>();
     private boolean stopped = false;
 
-    public void startSupervised( String name, Object service, String startWith, String stopWith ) {
-        this.supervised.put( name, new StartableService( service, startWith, stopWith ) );
+    public void startSupervised( String name, Object service, String startWith, String stopWith, String reloadWith ) {
+        this.supervised.put( name, new StartableService( service, startWith, stopWith, reloadWith ) );
     }
 
     public void startThread( String name, Object instance ) {
@@ -60,14 +60,32 @@ public class Supervisor {
         this.stopped = false;
         this.supervised.forEach( ( name, service ) -> {
             log.debug( "starting {}...", name );
+            long start = System.currentTimeMillis();
             service.start();
-            log.debug( "started {}", name );
+            long end = System.currentTimeMillis();
+            log.debug( "starting {}... Done. ({}ms)", name, end - start );
         } );
 
         this.scheduled.forEach( ( name, service ) -> {
             log.debug( "schedule {}...", name );
+            long start = System.currentTimeMillis();
             service.start();
-            log.debug( "scheduled {}", name );
+            long end = System.currentTimeMillis();
+            log.debug( "schedule {}... Done. ({}ms)", name, end - start );
+        } );
+    }
+
+    public synchronized void reload() {
+        this.supervised.forEach( ( name, service ) -> {
+            log.debug( "reloading {}...", name );
+            service.reload();
+            log.debug( "reloaded {}", name );
+        } );
+
+        this.scheduled.forEach( ( name, service ) -> {
+            log.debug( "reloading {}...", name );
+            service.reload();
+            log.debug( "reloaded {}", name );
         } );
     }
 
@@ -79,16 +97,20 @@ public class Supervisor {
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
+                    long start = System.currentTimeMillis();
                     service.stop();
-                    log.debug( "stopped {}", name );
+                    long end = System.currentTimeMillis();
+                    log.debug( "stopping {}... Done ({}ms)", name, end - start );
                 } );
             this.scheduled.clear();
             BiStream.of( this.supervised )
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
+                    long start = System.currentTimeMillis();
                     service.stop();
-                    log.debug( "stopped {}", name );
+                    long end = System.currentTimeMillis();
+                    log.debug( "stopping {}... Done. ({}ms)", name, end - start );
                 } );
             this.supervised.clear();
         }

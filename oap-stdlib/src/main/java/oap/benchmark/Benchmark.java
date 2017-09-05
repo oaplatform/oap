@@ -29,6 +29,7 @@ import oap.reflect.Reflect;
 import oap.util.Try;
 import org.joda.time.Period;
 
+import java.util.function.IntConsumer;
 import java.util.function.LongFunction;
 
 import static oap.util.Functions.empty.run;
@@ -38,24 +39,32 @@ import static oap.util.Functions.empty.run;
  */
 @ToString( exclude = "code" )
 public class Benchmark {
-    String name;
-    int samples;
-    Runnable code;
-    Runner runner = SingleThreadRunner.INSTANCE;
     public int experiments = 5;
     public Period period = Period.seconds( 1 );
+    String name;
+    int samples;
+    IntConsumer code;
+    Runner runner = SingleThreadRunner.INSTANCE;
     Runnable beforeExperiment = run;
     Runnable afterExperiment = run;
     LongFunction<String> rateToString = rate -> rate + " action/${PERIOD}";
 
-    public static Benchmark benchmark( String name, int samples, Try.ThrowingRunnable code ) {
+    private Benchmark( String name, int samples, Try.ThrowingIntConsumer code ) {
+        this.name = name;
+        this.samples = samples;
+        this.code = code.asConsumer();
+    }
+
+    public static Benchmark benchmark( String name, int samples, Try.ThrowingIntConsumer code ) {
         return new Benchmark( Reflect.caller( 1 ).getSimpleName() + "#" + name, samples, code );
     }
 
-    private Benchmark( String name, int samples, Try.ThrowingRunnable code ) {
-        this.name = name;
-        this.samples = samples;
-        this.code = code.asRunnable();
+    public static Benchmark benchmark( String name, int samples, Try.ThrowingRunnable code ) {
+        return new Benchmark( Reflect.caller( 1 ).getSimpleName() + "#" + name, samples, ( i ) -> code.run() );
+    }
+
+    private static long getRate( int samples, Period period, long total ) {
+        return ( long ) ( samples / ( total / period.toStandardDuration().getMillis() / 1000000f ) );
     }
 
     public Benchmark inThreads( int threads ) {
@@ -82,6 +91,11 @@ public class Benchmark {
         return this;
     }
 
+    public Benchmark period( Period period ) {
+        this.period = period;
+        return this;
+    }
+
     private String getPeriod() {
         final long millis = period.toStandardDuration().getMillis();
         if( millis == 1 ) return "ms";
@@ -93,10 +107,6 @@ public class Benchmark {
 
     private String rateToString( long avgRate ) {
         return rateToString.apply( avgRate ).replace( "${PERIOD}", getPeriod() );
-    }
-
-    private static long getRate( int samples, Period period, long total ) {
-        return ( long ) ( samples / ( total / period.toStandardDuration().getMillis() / 1000000f ) );
     }
 
     void printResult( long totalTime, Result result ) {

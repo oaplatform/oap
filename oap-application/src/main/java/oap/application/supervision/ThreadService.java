@@ -74,4 +74,8 @@ public class ThreadService extends SynchronizedRunnable implements Supervised, S
         if( supervisee instanceof Closeable ) Closeables.close( ( Closeable ) supervisee );
         thread.stop();
     }
+
+    @Override
+    public void reload() {
+    }
 }

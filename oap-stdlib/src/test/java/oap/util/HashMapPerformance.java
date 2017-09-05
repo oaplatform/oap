@@ -40,13 +40,9 @@ public class HashMapPerformance extends AbstractPerformance {
 
         final int samples = 5000000;
 
-        benchmark( builder( "computeIfAbsent" ).samples( samples ).build(), ( i ) -> {
-            map.computeIfAbsent( "key" + i, ( k ) -> "key" );
-        } );
+        benchmark( "computeIfAbsent", samples, ( i ) -> map.computeIfAbsent( "key" + i, ( k ) -> "key" ) ).run();
 
-        benchmark( builder( "get" ).samples( samples ).build(), ( i ) -> {
-            map.get( "key" + i );
-        } );
+        benchmark( "get", samples, ( i ) -> map.get( "key" + i ) ).run();
     }
 
     @Test
@@ -63,16 +59,16 @@ public class HashMapPerformance extends AbstractPerformance {
             map2.put( randoms[i] + randoms[i + 1] + randoms[i + 2], 1 );
         }
 
-        benchmark( builder( "list-string-key" ).samples( SAMPLES ).build(), ( i ) -> {
+        benchmark( "list-string-key", SAMPLES, ( i ) -> {
             int p = ( i % 33 ) * 3;
 
             map1.get( java.util.Arrays.asList( randoms[p], randoms[p + 1], randoms[p + 2] ) );
-        } );
+        } ).run();
 
-        benchmark( builder( "one-string-key" ).samples( SAMPLES ).build(), ( i ) -> {
+        benchmark( "one-string-key", SAMPLES, ( i ) -> {
             int p = ( i % 33 ) * 3;
 
             map2.get( randoms[p] + randoms[p + 1] + randoms[p + 2] );
-        } );
+        } ).run();
     }
 }

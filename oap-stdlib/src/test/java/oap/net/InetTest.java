@@ -22,23 +22,23 @@
  * SOFTWARE.
  */
 
-package oap.perf;
+package oap.net;
 
-import oap.io.Files;
-import oap.testng.AbstractPerformance;
-import org.apache.commons.io.FilenameUtils;
+import oap.util.Strings;
 import org.testng.annotations.Test;
 
-@Test( enabled = false )
-public class WildcardMatchPerformance extends AbstractPerformance {
-    @Test( enabled = false )
-    public void perf() {
-        benchmark( "FilenameUtils.wildcardMatch", 10000000, () ->
-            FilenameUtils.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" )
-        ).experiments( 5 ).run();
+import static oap.benchmark.Benchmark.benchmark;
+import static org.assertj.core.api.Assertions.assertThat;
 
-        benchmark( "wildcardMatch", 10000000, () ->
-            Files.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" )
-        ).experiments( 5 ).run();
+public class InetTest {
+    @Test
+    public void toLong() throws Exception {
+        assertThat( Inet.toLong( "10.0.0.111" ) ).isEqualTo( 167772271L );
+        assertThat( Inet.toLong( "10.0.0.11" ) ).isEqualTo( 167772171L );
+        assertThat( Inet.toLong( "10.0.0.1" ) ).isEqualTo( 167772161L );
+        assertThat( Strings.toHexString( Inet.toLong( "10.0.0.1" ) ) ).isEqualTo( "A000001" );
+        benchmark( "toLong", 10000000, () -> Inet.toLong( "10.0.0.1" ) )
+            .run();
     }
+
 }

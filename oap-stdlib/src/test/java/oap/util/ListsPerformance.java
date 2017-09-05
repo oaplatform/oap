@@ -41,15 +41,15 @@ public class ListsPerformance extends AbstractPerformance {
         final AtomicBoolean res = new AtomicBoolean();
 
         final int samples = 100000000;
-        benchmark( builder( "stream-allMatch" ).samples( samples ).build(), ( x ) -> {
+        benchmark( "stream-allMatch", samples, () -> {
             final boolean b = list.stream().allMatch( ( v ) -> v.length() < 1000 );
             res.compareAndSet( b, b );
-        } );
+        } ).run();
 
-        benchmark( builder( "foreach-allMatch" ).samples( samples ).build(), ( x ) -> {
+        benchmark( "foreach-allMatch", samples, () -> {
             final boolean b = Lists.allMatch( list, v -> v.length() < 1000 );
             res.compareAndSet( b, b );
-        } );
+        } ).run();
     }
 
     @Test
@@ -59,14 +59,14 @@ public class ListsPerformance extends AbstractPerformance {
         final AtomicInteger res = new AtomicInteger();
 
         final int samples = 100000000;
-        benchmark( builder( "stream-filter" ).samples( samples ).build(), ( x ) -> {
+        benchmark( "stream-filter", samples, () -> {
             final int b = list.stream().filter( ( v ) -> v < 6 ).collect( Collectors.toList() ).size();
             res.addAndGet( b );
-        } );
+        } ).run();
 
-        benchmark( builder( "foreach-filter" ).samples( samples ).build(), ( x ) -> {
+        benchmark( "foreach-filter", samples, () -> {
             final int b = Lists.filter( list, ( v ) -> v < 6 ).size();
             res.addAndGet( b );
-        } );
+        } ).run();
     }
 }

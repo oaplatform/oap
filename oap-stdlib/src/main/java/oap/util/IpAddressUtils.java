@@ -22,23 +22,19 @@
  * SOFTWARE.
  */
 
-package oap.perf;
+package oap.util;
 
-import oap.io.Files;
-import oap.testng.AbstractPerformance;
-import org.apache.commons.io.FilenameUtils;
-import org.testng.annotations.Test;
+import oap.net.Inet;
 
-@Test( enabled = false )
-public class WildcardMatchPerformance extends AbstractPerformance {
-    @Test( enabled = false )
-    public void perf() {
-        benchmark( "FilenameUtils.wildcardMatch", 10000000, () ->
-            FilenameUtils.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" )
-        ).experiments( 5 ).run();
+/**
+ * Created by anton on 7/27/17
+ *
+ * @see Inet#toLong(String) .
+ */
+@Deprecated
+public class IpAddressUtils {
 
-        benchmark( "wildcardMatch", 10000000, () ->
-            Files.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" )
-        ).experiments( 5 ).run();
+    public static long ipAsLong( final String ipAddress ) {
+        return Inet.toLong( ipAddress );
     }
 }

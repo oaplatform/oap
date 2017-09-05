@@ -27,11 +27,10 @@ import lombok.SneakyThrows;
 import oap.reflect.Reflect;
 import org.slf4j.Logger;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
@@ -154,6 +153,21 @@ public class Try {
         void accept( T t ) throws Exception;
 
         default Consumer<T> asConsumer() {
+            return t -> {
+                try {
+                    this.accept( t );
+                } catch( Exception e ) {
+                    throw Throwables.propagate( e );
+                }
+            };
+        }
+    }
+
+    @FunctionalInterface
+    public interface ThrowingIntConsumer {
+        void accept( int t ) throws Exception;
+
+        default IntConsumer asConsumer() {
             return t -> {
                 try {
                     this.accept( t );

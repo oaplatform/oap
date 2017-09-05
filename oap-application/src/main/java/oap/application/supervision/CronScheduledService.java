@@ -38,4 +38,9 @@ public class CronScheduledService extends ScheduledService {
     protected Scheduled schedule() {
         return Scheduler.scheduleCron( cron, this );
     }
+
+    @Override
+    public void reload() {
+
+    }
 }

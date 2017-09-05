@@ -25,6 +25,7 @@ package oap.util;
 
 import com.google.common.base.Suppliers;
 
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -45,6 +46,12 @@ public class Functions {
          * @return the function result
          */
         R apply( T t, U u, S s );
+
+        default <V> oap.util.function.TriFunction<T, U, S, V> andThen(
+            Function<? super R, ? extends V> after ) {
+            Objects.requireNonNull( after );
+            return ( T t, U u, S s ) -> after.apply( apply( t, u, s ) );
+        }
     }
 
     @SuppressWarnings( "unchecked" )

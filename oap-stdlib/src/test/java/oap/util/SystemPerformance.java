@@ -33,7 +33,7 @@ public class SystemPerformance extends AbstractPerformance {
     public void testNanoTimeVsCurrentTimeMillis() {
         final int SAMPLES = 10000000;
 
-        benchmark( builder( "nanoTime" ).samples( SAMPLES ).build(), ( i ) -> System.nanoTime() );
-        benchmark( builder( "currentTimeMillis" ).samples( SAMPLES ).build(), ( i ) -> System.currentTimeMillis() );
+        benchmark( "nanoTime", SAMPLES, System::nanoTime ).run();
+        benchmark( "currentTimeMillis", SAMPLES, System::currentTimeMillis ).run();
     }
 }
