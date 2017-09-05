@@ -43,6 +43,7 @@ public class ServiceOne {
     Complex complex;
     List<Complex> complexes = new ArrayList<>();
     ActionListener listener;
+    List<ServiceOne> list = new ArrayList<>();
 
     public ServiceOne( int i ) {
         this.i = i;

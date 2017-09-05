@@ -95,6 +95,7 @@ public class Module {
         public Optional<FST.SerializationMethod> serialization = Optional.empty();
         public LinkedHashMap<String, Object> listen = new LinkedHashMap<>();
         public RemoteLocation remote;
+        public boolean enabled = true;
         @JsonIgnore
         private Supplier<RemoteLocation> remoteCache = Functions.memoize( () -> {
             log.warn( "service attributes remoteUrl, remoteName, cerrificateLocation, certificatePassword,"
