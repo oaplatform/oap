@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>1.43.11</version>
+    <version>1.43.12</version>
 
     <name>oap</name>
 
@@ -59,6 +59,7 @@
         <module>oap-alert-slack</module>
         <module>oap-media</module>
         <module>oap-mail</module>
+        <module>oap-stats-db</module>
         <module>maven</module>
     </modules>
 

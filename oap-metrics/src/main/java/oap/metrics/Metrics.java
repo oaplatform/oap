@@ -86,7 +86,12 @@ public final class Metrics {
     }
 
     public static <T> Name measureCachedGauge( Name metric, long timeout, TimeUnit timeUnit, Supplier<T> get ) {
-        measureGauge( metric.line, get );
+        registry.register( metric.line, new CachedGauge<T>( timeout, timeUnit ) {
+            @Override
+            protected T loadValue() {
+                return get.get();
+            }
+        } );
         return metric;
     }
 
