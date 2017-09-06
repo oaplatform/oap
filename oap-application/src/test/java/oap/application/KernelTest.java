@@ -82,5 +82,21 @@ public class KernelTest extends AbstractTest {
         }
     }
 
+    @Test
+    public void testEnabledFalseList() {
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
+        modules.add( urlOfTestResource( KernelTest.class, "modules/m3.conf" ) );
+
+        Kernel kernel = new Kernel( modules );
+        try {
+            kernel.start();
+
+            assertThat( Application.<ServiceOne>service( "s1" ) ).isNotNull();
+            assertThat( Application.<ServiceOne>service( "s1" ).list ).isEmpty();
+            assertThat( Application.<ServiceOne>service( "s2" ) ).isNull();
+        } finally {
+            kernel.stop();
+        }
+    }
 }
 

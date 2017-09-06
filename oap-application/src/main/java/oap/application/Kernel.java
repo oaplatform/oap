@@ -39,6 +39,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -68,12 +69,24 @@ public class Kernel {
 
         for( Map.Entry<String, Module.Service> entry : services.entrySet() ) {
             Module.Service service = entry.getValue();
+            if( !service.enabled ) {
+                log.debug( "service {} is disabled.", entry.getKey() );
+                continue;
+            }
             String serviceName = service.name != null ? service.name : entry.getKey();
             if( service.profile != null && !config.profiles.contains( service.profile ) ) {
                 log.debug( "skipping " + entry.getKey() + " with profile " + service.profile );
                 continue;
             }
-            if( initialized.containsAll( service.dependsOn ) ) {
+
+            val dependsOn = new ArrayList<String>();
+
+            for( val s : service.dependsOn ) {
+                val ds = services.get( s );
+                if( ds == null || ds.enabled ) dependsOn.add( s );
+            }
+
+            if( initialized.containsAll( dependsOn ) ) {
                 log.debug( "initializing {} as {}", entry.getKey(), serviceName );
 
                 if( service.implementation == null ) {
@@ -85,7 +98,7 @@ public class Kernel {
                 Object instance;
                 if( !service.isRemoteService() ) {
                     try {
-                        initializeServiceLinks( serviceName, service );
+                        initializeServiceLinks( serviceName, service, services );
                         instance = reflect.newInstance( service.parameters );
                         initializeListeners( service.listen, instance );
                     } catch( ReflectException e ) {
@@ -126,20 +139,25 @@ public class Kernel {
     }
 
     @SuppressWarnings( "unchecked" )
-    private void initializeServiceLinks( String name, Module.Service service ) {
-        initializeServiceLinks( name, service.parameters );
-        initializeServiceLinks( name, service.listen );
+    private void initializeServiceLinks( String name, Module.Service service, Map<String, Module.Service> services ) {
+        initializeServiceLinks( name, service.parameters, services );
+        initializeServiceLinks( name, service.listen, services );
     }
 
-    private void initializeServiceLinks( String name, LinkedHashMap<String, Object> map ) {
+    private void initializeServiceLinks( String name, LinkedHashMap<String, Object> map, Map<String, Module.Service> services ) {
         for( Map.Entry<String, Object> entry : map.entrySet() ) {
             final Object value = entry.getValue();
             final String key = entry.getKey();
 
-            if( value instanceof String ) entry.setValue( resolve( name, key, value ) );
+            if( value instanceof String ) entry.setValue( resolve( name, key, value, services, true ) );
             else if( value instanceof List<?> ) {
                 ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
-                while( it.hasNext() ) it.set( resolve( name, key, it.next() ) );
+                while( it.hasNext() ) {
+                    final Object link = resolve( name, key, it.next(), services, false );
+
+                    if( link != null ) it.set( link );
+                    else it.remove();
+                }
             }
         }
     }
@@ -155,12 +173,17 @@ public class Kernel {
         } );
     }
 
-    private Object resolve( String name, String key, Object value ) {
+    private Object resolve( String name, String key, Object value, Map<String, Module.Service> services, boolean throwErrorIfNotFound ) {
         if( value instanceof String && ( ( String ) value ).startsWith( "@service:" ) ) {
-            Object link = Application.service( ( ( String ) value ).substring( "@service:".length() ) );
+            final String linkName = ( ( String ) value ).substring( "@service:".length() );
+            Object link = Application.service( linkName );
             log.debug( "for {} linking {} -> {} as {}", name, key, value, link );
-            if( link == null )
-                throw new ApplicationException( "for " + name + " service link " + value + " is not found" );
+            if( link == null && throwErrorIfNotFound ) {
+                val linkService = services.get( linkName );
+                if( linkService == null || linkService.enabled ) {
+                    throw new ApplicationException( "for " + name + " service link " + value + " is not found" );
+                }
+            }
             return link;
         }
         return value;
