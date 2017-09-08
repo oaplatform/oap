@@ -24,76 +24,98 @@
 
 package oap.statsdb;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import oap.io.IoStreams;
+import oap.json.Binder;
+import oap.util.Throwables;
 import org.joda.time.DateTimeUtils;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import static oap.io.IoStreams.DEFAULT_BUFFER;
+import static oap.io.IoStreams.Encoding.GZIP;
 
 /**
  * Created by igor.petrenko on 05.09.2017.
  */
 @Slf4j
-public class StatsDB extends Node implements RemoteStatsDB {
-    public StatsDB() {
+public abstract class StatsDB<T extends StatsDB.Database> extends Node implements Closeable {
+    protected final Path directory;
+    private final TypeReference<T> typeReference;
+
+    public StatsDB( Path directory, TypeReference<T> typeReference ) {
         super( -1 );
+        this.directory = directory;
+        this.typeReference = typeReference;
     }
 
-    private static List<List<String>> merge( Map<String, Node> masterDB, Map<String, Node> remoteDB ) {
-        val retList = new ArrayList<List<String>>();
-        for( val entry : remoteDB.entrySet() ) {
-            val key = entry.getKey();
-            val node = entry.getValue();
+    protected abstract T toDatabase( ConcurrentHashMap<String, Node> db );
 
-            val masterNode = masterDB.computeIfAbsent( key, ( k ) -> new Node( DateTimeUtils.currentTimeMillis() ) );
-
-            val ret = masterNode.merge( node );
-            if( !ret ) {
-                val k = new ArrayList<String>();
-                k.add( key );
-                retList.add( k );
-            }
-            val list = merge( masterNode.db, node.db );
-            list.forEach( l -> l.add( 0, key ) );
-
-            retList.addAll( list );
-        }
-
-        return retList;
-    }
-
-    public <TKey extends Key<TKey>, TValue extends Value<TValue>> void update( TKey key, Consumer<TValue> cons ) {
+    public <TKey extends Iterable<String>, TValue extends Value<TValue>> void update( TKey key, Consumer<TValue> update, Supplier<TValue> create ) {
         Node node = this;
         for( val keyItem : key ) {
             node = node.db.computeIfAbsent( keyItem, ( k ) -> new Node( DateTimeUtils.currentTimeMillis() ) );
         }
 
-        node.update( cons );
+        node.updateValue( update, create );
+    }
+
+    public synchronized void fsync() {
+        val db = directory.resolve( "stats.db.gz" );
+
+        try( OutputStream outputStream = IoStreams.out( db, GZIP, DEFAULT_BUFFER, false, true ) ) {
+            Binder.json.marshal( outputStream, toDatabase( this.db ) );
+        } catch( IOException e ) {
+            log.error( e.getMessage(), e );
+            throw Throwables.propagate( e );
+        }
+    }
+
+    public void start() {
+        val db = directory.resolve( "stats.db.gz" );
+        if( Files.exists( db ) ) {
+            try( InputStream inputStream = IoStreams.in( db, GZIP ) ) {
+                val database = Binder.json.unmarshal( typeReference, inputStream );
+                start( database );
+                if( database.db != null ) this.db.putAll( database.db );
+            } catch( IOException e ) {
+                log.error( e.getMessage(), e );
+                throw Throwables.propagate( e );
+            }
+        }
+
+    }
+
+    protected void start( T database ) {
+
     }
 
     @Override
-    public synchronized boolean update( Map<String, Node> data, String host ) {
-        val failedKeys = merge( db, data );
+    public void close() {
+        fsync();
+    }
 
-        if( !failedKeys.isEmpty() ) {
-            log.error( "failed keys:" );
-            failedKeys.forEach( key -> log.error( "[{}]: {}", host, key ) );
+    public static class Database implements Serializable {
+        private static final long serialVersionUID = 20816260507748956L;
+
+        public ConcurrentHashMap<String, Node> db;
+
+        public Database() {
         }
 
-        return true;
+        public Database( ConcurrentHashMap<String, Node> db ) {
+            this.db = db;
+        }
     }
-
-    public interface Key<T extends Key> extends Iterable<String> {
-
-    }
-
-    public interface Value<T extends Value> {
-        T merge( T other );
-
-        T clone();
-    }
-
 }

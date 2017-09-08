@@ -24,30 +24,61 @@
 
 package oap.statsdb;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import oap.json.TypeIdFactory;
 import org.joda.time.DateTimeUtils;
 
+import java.io.Serializable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Created by igor.petrenko on 05.09.2017.
  */
+@EqualsAndHashCode
+@ToString
 @Slf4j
 class Node {
     volatile ConcurrentHashMap<String, Node> db = new ConcurrentHashMap<>();
+    @JsonTypeIdResolver( TypeIdFactory.class )
+    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "object:type" )
     StatsDB.Value value;
     long createdTime;
     long modifiedTime;
+
+    public Node() {
+    }
 
     public Node( long createdTime ) {
         this.modifiedTime = this.createdTime = createdTime;
     }
 
     @SuppressWarnings( "unchecked" )
-    synchronized <TValue extends StatsDB.Value<TValue>> void update( Consumer<TValue> cons ) {
-        cons.accept( ( TValue ) value );
+    synchronized <TValue extends Value<TValue>> void updateValue( Consumer<TValue> update, Supplier<TValue> create ) {
+        if( value == null ) value = create.get();
+        update.accept( ( TValue ) value );
         this.modifiedTime = DateTimeUtils.currentTimeMillis();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <TKey extends Iterable<String>, TValue extends Value<TValue>> TValue get( TKey key ) {
+        Node obj = this;
+
+        for( val item : key ) {
+            if( obj == null ) return null;
+
+            obj = obj.db.get( item );
+        }
+
+        if( obj == null ) return null;
+
+        return ( TValue ) obj.value;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -64,5 +95,9 @@ class Node {
             }
         }
         return true;
+    }
+
+    public interface Value<T extends Value> extends Serializable {
+        T merge( T other );
     }
 }

@@ -24,20 +24,35 @@
 
 package oap.statsdb;
 
-import lombok.AllArgsConstructor;
-import org.joda.time.DateTimeUtils;
-
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.function.Function;
 
 /**
- * Created by igor.petrenko on 05.09.2017.
+ * Created by igor.petrenko on 08.09.2017.
  */
-public interface RemoteStatsDB {
-    boolean update( Sync data, String host );
+public class MockRemoteStatsDB implements RemoteStatsDB {
+    public final ArrayList<Sync> syncs = new ArrayList<>();
+    private Function<Sync, RuntimeException> exceptionFunc;
 
-    @AllArgsConstructor
-    class Sync {
-        public final Map<String, Node> data;
-        public final long id = DateTimeUtils.currentTimeMillis();
+    @Override
+    public boolean update( Sync data, String host ) {
+        if( exceptionFunc != null ) throw exceptionFunc.apply( data );
+
+        syncs.add( data );
+
+        return true;
+    }
+
+    public void syncWithException( Function<Sync, RuntimeException> exceptionFunc ) {
+        this.exceptionFunc = exceptionFunc;
+    }
+
+    public void syncWithoutException() {
+        this.exceptionFunc = null;
+    }
+
+    public void reset() {
+        syncs.clear();
+        exceptionFunc = null;
     }
 }

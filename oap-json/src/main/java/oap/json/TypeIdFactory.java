@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.DatabindContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
 import oap.util.Throwables;
 
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 /**
  * Created by Igor Petrenko on 14.03.2016.
  */
+@Slf4j
 public class TypeIdFactory implements TypeIdResolver {
     private final static ConcurrentHashMap<String, Class<?>> idToClass = new ConcurrentHashMap<>();
     private final static ConcurrentHashMap<Class<?>, String> classToId = new ConcurrentHashMap<>();
@@ -50,6 +52,7 @@ public class TypeIdFactory implements TypeIdResolver {
     static {
         Resources.urls( "META-INF/json-mapping.properties" )
             .forEach( url -> {
+                log.info( "loading {}...", url );
                 try( InputStream is = url.openStream() ) {
                     final Properties properties = new Properties();
                     properties.load( is );

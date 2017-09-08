@@ -24,65 +24,72 @@
 
 package oap.statsdb;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import oap.io.IoStreams;
 import oap.io.SafeFileOutputStream;
 import oap.json.Binder;
 import oap.net.Inet;
+import oap.statsdb.RemoteStatsDB.Sync;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static oap.io.IoStreams.Encoding.GZIP;
 
 /**
  * Created by igor.petrenko on 05.09.2017.
  */
 @Slf4j
-public class StatsDBNode extends StatsDB {
+public class StatsDBNode extends StatsDB<StatsDB.Database> {
     private final RemoteStatsDB master;
-    private final Path directory;
-    volatile Map<String, Node> sync = null;
+    volatile Sync sync = null;
 
     public StatsDBNode( RemoteStatsDB master, Path directory ) {
+        super( directory, new TypeReference<Database>() {} );
         this.master = master;
-        this.directory = directory;
+    }
+
+    @Override
+    protected Database toDatabase( ConcurrentHashMap db ) {
+        return new Database( db );
     }
 
     public synchronized void sync() {
         if( sync == null ) {
-            sync = db;
+            sync = new Sync( db );
             db = new ConcurrentHashMap<>();
-            flush( false );
+            fsync( false );
         }
 
-        if( master.update( sync, Inet.hostname() ) ) {
-            sync = null;
-            flush( true );
+        try {
+            if( master.update( sync, Inet.hostname() ) ) {
+                sync = null;
+                fsync( true );
+            }
+        } catch( Exception e ) {
+            log.error( e.getMessage(), e );
         }
     }
 
-    private synchronized void flush( boolean syncOnly ) {
+    private synchronized void fsync( boolean syncOnly ) {
         if( !syncOnly ) {
-            try( val sfos = new SafeFileOutputStream( directory.resolve( "db" ), false, IoStreams.Encoding.GZIP ) ) {
-                Binder.json.marshal( sfos, db );
-            } catch( IOException e ) {
-                log.error( e.getMessage(), e );
-            }
+            fsync();
         }
 
         if( sync == null ) try {
-            Files.deleteIfExists( directory.resolve( "sync" ) );
+            Files.deleteIfExists( directory.resolve( "sync.db.gz" ) );
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
         }
-        else
-            try( val sfos = new SafeFileOutputStream( directory.resolve( "sync" ), false, IoStreams.Encoding.GZIP ) ) {
+        else {
+            try( val sfos = new SafeFileOutputStream( directory.resolve( "sync" ), false, GZIP ) ) {
                 Binder.json.marshal( sfos, sync );
             } catch( IOException e ) {
                 log.error( e.getMessage(), e );
             }
+        }
     }
 }

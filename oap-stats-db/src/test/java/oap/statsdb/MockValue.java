@@ -24,20 +24,22 @@
 
 package oap.statsdb;
 
-import lombok.AllArgsConstructor;
-import org.joda.time.DateTimeUtils;
-
-import java.util.Map;
-
 /**
- * Created by igor.petrenko on 05.09.2017.
+ * Created by igor.petrenko on 08.09.2017.
  */
-public interface RemoteStatsDB {
-    boolean update( Sync data, String host );
+public class MockValue implements StatsDB.Value<MockValue> {
+    public long l1;
+    public int i2;
 
-    @AllArgsConstructor
-    class Sync {
-        public final Map<String, Node> data;
-        public final long id = DateTimeUtils.currentTimeMillis();
+    @Override
+    public MockValue merge( MockValue other ) {
+        l1 += other.l1;
+        i2 += other.i2;
+        return this;
+    }
+
+    @Override
+    public MockValue clone() {
+        return null;
     }
 }
