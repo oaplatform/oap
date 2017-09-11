@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by igor.petrenko on 08.09.2017.
  */
 @Slf4j
-public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> implements RemoteStatsDB {
+public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> implements RemoteStatsDB, Runnable {
     private final ConcurrentHashMap<String, Long> hosts = new ConcurrentHashMap<>();
 
     public StatsDBMaster( Path directory ) {
@@ -102,6 +102,11 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
 
             return true;
         }
+    }
+
+    @Override
+    public void run() {
+        fsync();
     }
 
     public static class MasterDatabase extends StatsDB.Database {

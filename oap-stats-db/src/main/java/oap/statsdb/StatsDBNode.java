@@ -43,7 +43,7 @@ import static oap.io.IoStreams.Encoding.GZIP;
  * Created by igor.petrenko on 05.09.2017.
  */
 @Slf4j
-public class StatsDBNode extends StatsDB<StatsDB.Database> {
+public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable {
     private final RemoteStatsDB master;
     volatile Sync sync = null;
 
@@ -91,5 +91,10 @@ public class StatsDBNode extends StatsDB<StatsDB.Database> {
                 log.error( e.getMessage(), e );
             }
         }
+    }
+
+    @Override
+    public void run() {
+        fsync( false );
     }
 }
