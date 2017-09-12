@@ -95,6 +95,14 @@ public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable {
 
     @Override
     public void run() {
+        sync();
+    }
+
+    @Override
+    public synchronized void removeAll() {
+        super.removeAll();
+
+        sync = null;
         fsync( false );
     }
 }

@@ -106,6 +106,11 @@ public abstract class StatsDB<T extends StatsDB.Database> extends Node implement
         fsync();
     }
 
+    public synchronized void removeAll() {
+        db.clear();
+        fsync();
+    }
+
     public static class Database implements Serializable {
         private static final long serialVersionUID = 20816260507748956L;
 
