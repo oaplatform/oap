@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.43.17</version>
+        <version>1.43.18</version>
     </parent>
 
 

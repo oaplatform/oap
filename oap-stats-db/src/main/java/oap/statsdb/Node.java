@@ -44,7 +44,9 @@ import java.util.function.Supplier;
 @EqualsAndHashCode
 @ToString
 @Slf4j
-public class Node {
+public class Node implements Serializable {
+    private static final long serialVersionUID = 4194048067764234L;
+
     volatile ConcurrentHashMap<String, Node> db = new ConcurrentHashMap<>();
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "object:type" )
