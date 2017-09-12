@@ -27,6 +27,7 @@ package oap.statsdb;
 import lombok.AllArgsConstructor;
 import org.joda.time.DateTimeUtils;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -36,7 +37,9 @@ public interface RemoteStatsDB {
     boolean update( Sync data, String host );
 
     @AllArgsConstructor
-    class Sync {
+    class Sync implements Serializable {
+        private static final long serialVersionUID = 6835215675536753051L;
+
         public final Map<String, Node> data;
         public final long id = DateTimeUtils.currentTimeMillis();
     }
