@@ -25,15 +25,21 @@
 package oap.application;
 
 class ShutdownHook extends Thread {
-   static int EXIT_STATUS = 0;
+    static int EXIT_STATUS = 0;
 
-   public ShutdownHook() {
-      super( "shutdown-hook" );
-   }
+    public ShutdownHook() {
+        super( "shutdown-hook" );
+    }
 
-   @Override
-   public void run() {
-      System.out.println( "exit status = " + EXIT_STATUS );
-      Boot.stop();
-   }
+    @Override
+    public void run() {
+        System.out.println( "exit status = " + EXIT_STATUS );
+        try {
+            Boot.stop();
+        } catch( Throwable e ) {
+            e.printStackTrace();
+        }
+
+        System.exit( 0 );
+    }
 }
