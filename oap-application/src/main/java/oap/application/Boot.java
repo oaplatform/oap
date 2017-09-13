@@ -53,10 +53,31 @@ public class Boot {
 
     public static void start( Path config, Path confd ) {
 //      System.setSecurityManager(new ExitMonitorSecurityManager());
-        Signal.handle( new Signal( "HUP" ), signal -> kernel.reload() );
+        Signal.handle( new Signal( "HUP" ), signal -> {
+            logger.info( "SIGHUP" );
+            System.out.println( "SIGHUP" );
+            System.out.flush();
+            kernel.reload();
+        } );
         final ShutdownHook shutdownHook = new ShutdownHook();
-        Signal.handle( new Signal( "INT" ), signal -> shutdownHook.run() );
-        Signal.handle( new Signal( "TERM" ), signal -> shutdownHook.run() );
+
+        // https://stackoverflow.com/questions/1409165/signal-handling-using-term
+        // On current versions of Java this signal handling code fails because the "INT" signal is "reserved by the VM or the OS".
+//        Signal.handle( new Signal( "INT" ), signal -> {
+//            logger.info( "SIGINT" );
+//            System.out.println( "SIGINT" );
+//            System.out.flush();
+//            shutdownHook.run();
+//        } );
+
+        Runtime.getRuntime().addShutdownHook( shutdownHook );
+
+        Signal.handle( new Signal( "TERM" ), signal -> {
+            logger.info( "SIGTERM" );
+            System.out.println( "SIGTERM" );
+            System.out.flush();
+            shutdownHook.run();
+        } );
         try {
             kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
             kernel.start( config, confd );
