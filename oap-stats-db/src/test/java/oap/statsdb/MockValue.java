@@ -31,6 +31,14 @@ public class MockValue implements StatsDB.Value<MockValue> {
     public long l1;
     public int i2;
 
+    public MockValue() {
+        this( 0 );
+    }
+
+    public MockValue( int i2 ) {
+        this.i2 = i2;
+    }
+
     @Override
     public MockValue merge( MockValue other ) {
         l1 += other.l1;

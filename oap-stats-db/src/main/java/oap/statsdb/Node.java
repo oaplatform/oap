@@ -64,7 +64,7 @@ public class Node implements Serializable {
     @SuppressWarnings( "unchecked" )
     synchronized <TValue extends Value<TValue>> void updateValue( Consumer<TValue> update, Supplier<TValue> create ) {
         if( value == null ) value = create.get();
-        update.accept( ( TValue ) value );
+        else update.accept( ( TValue ) value );
         this.modifiedTime = DateTimeUtils.currentTimeMillis();
     }
 

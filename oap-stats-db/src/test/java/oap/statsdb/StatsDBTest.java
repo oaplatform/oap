@@ -44,7 +44,7 @@ public class StatsDBTest extends AbstractTest {
     public void testPersistMaster() {
         try( val master = new StatsDBMaster( Env.tmpPath( "master" ) ) ) {
             master.start();
-            master.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, MockValue::new );
+            master.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
         }
 
         try( val master = new StatsDBMaster( Env.tmpPath( "master" ) ) ) {
@@ -58,7 +58,7 @@ public class StatsDBTest extends AbstractTest {
         final MockRemoteStatsDB master = new MockRemoteStatsDB();
         try( val node = new StatsDBNode( master, Env.tmpPath( "node" ) ) ) {
             node.start();
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, MockValue::new );
+            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
         }
 
         try( val node = new StatsDBNode( master, Env.tmpPath( "node" ) ) ) {
@@ -75,16 +75,16 @@ public class StatsDBTest extends AbstractTest {
             node.start();
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, MockValue::new );
-            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 20, MockValue::new );
+            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
+            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 20, () -> new MockValue( 20 ) );
             node.sync();
             assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNull();
             assertThat( master.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ).i2 ).isEqualTo( 10 );
             assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 20 );
 
             DateTimeUtils.setCurrentMillisFixed( 2 );
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, MockValue::new );
-            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 21, MockValue::new );
+            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
+            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 21, () -> new MockValue( 21 ) );
             node.sync();
             assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNull();
             assertThat( master.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ).i2 ).isEqualTo( 20 );
@@ -99,7 +99,7 @@ public class StatsDBTest extends AbstractTest {
             node.start();
 
             master.syncWithException( ( sync ) -> new RuntimeException( "sync" ) );
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, MockValue::new );
+            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
             node.sync();
             assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNull();
         }
@@ -127,11 +127,11 @@ public class StatsDBTest extends AbstractTest {
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
 
-            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 20, MockValue::new );
+            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 20, () -> new MockValue( 20 ) );
             node.sync();
             assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 20 );
 
-            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 21, MockValue::new );
+            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 21, () -> new MockValue( 21 ) );
             node.sync();
             assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 20 );
         }
