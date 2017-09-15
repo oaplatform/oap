@@ -120,9 +120,10 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
    }
 
    @Override
-   public void delete( String id ) {
+   public Optional<T> delete( String id ) {
       open();
       super.delete( id );
+       return null;
    }
 
    private synchronized void open() {

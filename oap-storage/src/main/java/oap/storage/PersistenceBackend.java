@@ -28,4 +28,6 @@ import java.io.Closeable;
 interface PersistenceBackend<T> extends Closeable {
    @Override
    void close();
+
+    void delete( T object );
 }

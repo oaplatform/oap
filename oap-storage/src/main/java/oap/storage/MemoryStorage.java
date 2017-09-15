@@ -151,8 +151,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         fireDeleted( objects );
     }
 
-    public void delete( String id ) {
-        deleteObject( id ).ifPresent( m -> fireDeleted( m.object ) );
+    public Optional<T> delete( String id ) {
+        final Optional<Metadata<T>> metadata = deleteObject( id );
+        metadata.ifPresent( m -> fireDeleted( m.object ) );
+
+        return metadata.map(m -> m.object);
     }
 
     protected Optional<Metadata<T>> deleteObject( String id ) {

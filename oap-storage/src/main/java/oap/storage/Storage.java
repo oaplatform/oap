@@ -48,7 +48,7 @@ public interface Storage<T> extends Closeable, Iterable<T> {
 
     Optional<T> get( String id );
 
-    void delete( String id );
+    Optional<T> delete( String id );
 
     void deleteAll();
 

@@ -29,6 +29,7 @@ import oap.util.Try;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -130,6 +131,14 @@ public class FileStorage<T> extends MemoryStorage<T> {
 
     public FileStorage( Path path, Identifier<T> identifier, int version, List<String> migrations ) {
         this( path, identifier, 60000, version, migrations );
+    }
+
+    @Override
+    public Optional<T> delete( String id ) {
+        final Optional<T> d = super.delete( id );
+        d.ifPresent( persistence::delete );
+
+        return d;
     }
 
     @Override
