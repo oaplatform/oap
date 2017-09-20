@@ -119,6 +119,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                 T object = init.get();
                 m = new Metadata<>( id, object );
                 data.put( m.id, m );
+                m.update( m.object ); // fix modification time
             } else {
                 update.accept( m.object );
                 m.update( m.object );
