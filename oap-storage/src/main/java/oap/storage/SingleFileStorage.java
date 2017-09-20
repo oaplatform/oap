@@ -116,6 +116,13 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
     @Override
     public synchronized void close() {
         Scheduled.cancel( scheduled );
+        fsync();
+    }
+
+    @Override
+    public void fsync() {
+        super.fsync();
+
         fsync( scheduled.lastExecuted() );
     }
 

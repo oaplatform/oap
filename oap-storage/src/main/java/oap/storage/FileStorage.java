@@ -142,6 +142,13 @@ public class FileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
+    public void fsync() {
+        super.fsync();
+
+        persistence.fsync();
+    }
+
+    @Override
     public synchronized void close() {
         persistence.close();
         data.clear();

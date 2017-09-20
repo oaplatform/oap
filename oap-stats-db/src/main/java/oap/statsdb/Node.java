@@ -24,6 +24,8 @@
 
 package oap.statsdb;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
@@ -34,6 +36,7 @@ import oap.json.TypeIdFactory;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -47,17 +50,21 @@ import java.util.function.Supplier;
 public class Node implements Serializable {
     private static final long serialVersionUID = 4194048067764234L;
 
+    public final String name;
     volatile ConcurrentHashMap<String, Node> db = new ConcurrentHashMap<>();
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "object:type" )
-    StatsDB.Value value;
+    Value value;
     long createdTime;
     long modifiedTime;
 
-    public Node() {
+    @JsonCreator
+    public Node( @JsonProperty String name ) {
+        this( name, DateTimeUtils.currentTimeMillis() );
     }
 
-    public Node( long createdTime ) {
+    public Node( String name, long createdTime ) {
+        this.name = name;
         this.modifiedTime = this.createdTime = createdTime;
     }
 
@@ -69,10 +76,12 @@ public class Node implements Serializable {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TKey extends Iterable<String>, TValue extends Value<TValue>> TValue get( TKey key ) {
+    public <TValue extends Value<TValue>> TValue get( Iterator<String> key ) {
         Node obj = this;
 
-        for( val item : key ) {
+        while( key.hasNext() ) {
+            val item = key.next();
+
             if( obj == null ) return null;
 
             obj = obj.db.get( item );

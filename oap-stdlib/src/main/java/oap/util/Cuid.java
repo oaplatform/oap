@@ -79,7 +79,7 @@ public class Cuid {
 
     public static class TimeSeedCounter implements Counter {
         volatile private long lastTime = System.currentTimeMillis();
-        private final AtomicLong value = new AtomicLong( lastTime << 16 );
+        private final AtomicLong value = new AtomicLong( lastTime << 20 );
 
         @Override
         public long next() {
@@ -87,8 +87,8 @@ public class Cuid {
             if( ct > lastTime ) {
                 synchronized( TimeSeedCounter.class ) {
                     if( ct > lastTime ) {
+                        value.set( ct << 20 );
                         lastTime = ct;
-                        value.set( ct << 16 );
                     }
                 }
             }

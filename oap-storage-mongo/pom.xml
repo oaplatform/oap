@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>1.43.23</version>
+        <version>1.44.0</version>
     </parent>
 
     <dependencies>
@@ -42,6 +42,17 @@
             <artifactId>oap-storage</artifactId>
             <version>${project.parent.version}</version>
          </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-json</artifactId>
+            <version>${project.parent.version}</version>
+         </dependency>
+
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver</artifactId>
+            <version>3.4.2</version>
+        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>

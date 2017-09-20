@@ -30,4 +30,6 @@ interface PersistenceBackend<T> extends Closeable {
    void close();
 
     void delete( T object );
+
+    void fsync();
 }

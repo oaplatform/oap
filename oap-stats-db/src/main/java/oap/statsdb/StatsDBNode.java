@@ -24,43 +24,62 @@
 
 package oap.statsdb;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import oap.io.SafeFileOutputStream;
+import oap.io.IoStreams;
+import oap.io.IoStreams.Encoding;
 import oap.json.Binder;
 import oap.net.Inet;
 import oap.statsdb.RemoteStatsDB.Sync;
+import oap.storage.Storage;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static oap.io.IoStreams.Encoding.GZIP;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Created by igor.petrenko on 05.09.2017.
  */
 @Slf4j
-public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable {
+public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, Closeable {
+    private final Path directory;
     private final RemoteStatsDB master;
     volatile Sync sync = null;
+    private KeySchema schema;
 
-    public StatsDBNode( RemoteStatsDB master, Path directory ) {
-        super( directory, new TypeReference<Database>() {} );
+    public StatsDBNode( RemoteStatsDB master, Path directory, Storage<Node> storage ) {
+        super( storage );
+        this.directory = directory;
         this.master = master;
+
+        val syncPath = directory.resolve( "sync.db.gz" );
+        if( Files.exists( syncPath ) ) {
+            log.info( "sync file = {}", sync );
+            sync = Binder.json.unmarshal( Sync.class, syncPath );
+        }
+    }
+
+    public void start() {
+        schema = master.getSchema();
+    }
+
+    public <TKey extends Iterable<String>, TValue extends Node.Value<TValue>> void update( TKey strings, Consumer<TValue> update, Supplier<TValue> create ) {
+        super.update( schema, strings, update, create );
     }
 
     @Override
-    protected Database toDatabase( ConcurrentHashMap db ) {
+    protected Database toDatabase( ConcurrentHashMap<String, Node> db ) {
         return new Database( db );
     }
 
     public synchronized void sync() {
         if( sync == null ) {
-            sync = new Sync( db );
-            db = new ConcurrentHashMap<>();
+            sync = new Sync( storage.copyAndClean().toMap() );
+            if( sync.isEmpty() ) return;
             fsync( false );
         }
 
@@ -76,16 +95,19 @@ public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable {
 
     private synchronized void fsync( boolean syncOnly ) {
         if( !syncOnly ) {
-            fsync();
+            storage.fsync();
         }
 
+        val syncFile = directory.resolve( "sync.db.gz" );
         if( sync == null ) try {
-            Files.deleteIfExists( directory.resolve( "sync.db.gz" ) );
+            Files.deleteIfExists( syncFile );
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
         }
         else {
-            try( val sfos = new SafeFileOutputStream( directory.resolve( "sync" ), false, GZIP ) ) {
+            log.debug( "fsync {}", syncFile );
+            oap.io.Files.ensureFile( syncFile );
+            try( val sfos = IoStreams.out( syncFile, Encoding.from( syncFile ), IoStreams.DEFAULT_BUFFER, false, true ) ) {
                 Binder.json.marshal( sfos, sync );
             } catch( IOException e ) {
                 log.error( e.getMessage(), e );
@@ -103,6 +125,11 @@ public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable {
         super.removeAll();
 
         sync = null;
+        fsync( false );
+    }
+
+    @Override
+    public void close() {
         fsync( false );
     }
 }

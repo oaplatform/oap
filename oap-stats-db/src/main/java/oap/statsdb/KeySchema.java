@@ -22,41 +22,26 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.statsdb;
 
-import oap.concurrent.Threads;
-import org.testng.annotations.Test;
+import lombok.ToString;
 
-import java.util.Set;
+import java.io.Serializable;
+import java.util.ArrayList;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static java.util.Arrays.asList;
 
-public class CuidTest {
+/**
+ * Created by igor.petrenko on 20.09.2017.
+ */
+@ToString
+public class KeySchema extends ArrayList<String> implements Serializable {
+    private static final long serialVersionUID = 5960753080754091696L;
 
-    @Test
-    public void next() {
-        for( int i = 0; i < 20; i++ ) {
-            if( i % 3 == 0 ) Threads.sleepSafely( 1 );
-            System.out.println( Cuid.next() );
-        }
+    public KeySchema() {
     }
 
-    @Test
-    public void idLength() {
-        assertThat( Cuid.next().length() ).isEqualTo( 23 );
-    }
-
-    @Test
-    public void hiResBug() {
-        Set<String> ids = Sets.empty();
-
-        int count = 2000000;
-        for( int i = 0; i < count; i++ ) {
-            String next = Cuid.next();
-            ids.add( next );
-        }
-
-        assertThat( ids.size() ).isEqualTo( count );
+    public KeySchema( String... keys ) {
+        this.addAll( asList( keys ) );
     }
 }
-

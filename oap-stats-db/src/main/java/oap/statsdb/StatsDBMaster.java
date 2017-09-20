@@ -24,49 +24,71 @@
 
 package oap.statsdb;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.joda.time.DateTimeUtils;
+import oap.storage.Storage;
 
-import java.nio.file.Path;
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Created by igor.petrenko on 08.09.2017.
  */
 @Slf4j
-public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> implements RemoteStatsDB, Runnable {
+public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> implements RemoteStatsDB, Closeable {
     private final ConcurrentHashMap<String, Long> hosts = new ConcurrentHashMap<>();
+    private final KeySchema schema;
 
-    public StatsDBMaster( Path directory ) {
-        super( directory, new TypeReference<MasterDatabase>() {} );
+    public StatsDBMaster( KeySchema schema, Storage<Node> storage ) {
+        super( storage );
+        this.schema = schema;
     }
 
-    private static List<List<String>> merge( Map<String, Node> masterDB, Map<String, Node> remoteDB ) {
+    private static List<List<String>> merge( Storage<Node> storage, Map<String, Node> remoteDB ) {
         val retList = new ArrayList<List<String>>();
+
+        remoteDB.forEach( ( key, rnode ) -> {
+            storage.update( key,
+                mnode -> merge( key, mnode, rnode, retList ),
+                () -> {
+                    final Node mnode = new Node( rnode.name );
+                    merge( key, mnode, rnode, retList );
+                    return mnode;
+                } );
+        } );
+
+        return retList;
+    }
+
+    private static List<List<String>> merge( Map<String, Node> masterDB, Map<String, Node> remoteDB, List<List<String>> retList ) {
         for( val entry : remoteDB.entrySet() ) {
             val key = entry.getKey();
-            val node = entry.getValue();
+            val rNode = entry.getValue();
 
-            val masterNode = masterDB.computeIfAbsent( key, ( k ) -> new Node( DateTimeUtils.currentTimeMillis() ) );
+            val masterNode = masterDB.computeIfAbsent( key, ( k ) -> new Node( rNode.name ) );
 
-            val ret = masterNode.merge( node );
-            if( !ret ) {
-                val k = new ArrayList<String>();
-                k.add( key );
-                retList.add( k );
-            }
-            val list = merge( masterNode.db, node.db );
-            list.forEach( l -> l.add( 0, key ) );
-
-            retList.addAll( list );
+            merge( key, masterNode, rNode, retList );
         }
 
         return retList;
+    }
+
+    private static void merge( String key, Node masterNode, Node rNode, List<List<String>> retList ) {
+        val ret = masterNode.merge( rNode );
+        if( !ret ) {
+            val k = new ArrayList<String>();
+            k.add( key );
+            retList.add( k );
+        }
+        val list = merge( masterNode.db, rNode.db, retList );
+        list.forEach( l -> l.add( 0, key ) );
+
+        retList.addAll( list );
     }
 
     @Override
@@ -82,6 +104,10 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
             hosts.putAll( database.hosts );
     }
 
+    public <TKey extends Iterable<String>, TValue extends Node.Value<TValue>> void update( TKey strings, Consumer<TValue> update, Supplier<TValue> create ) {
+        super.update( schema, strings, update, create );
+    }
+
     @Override
     public boolean update( RemoteStatsDB.Sync sync, String host ) {
         synchronized( host.intern() ) {
@@ -93,7 +119,7 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
 
             hosts.put( host, sync.id );
 
-            val failedKeys = merge( db, sync.data );
+            val failedKeys = merge( storage, sync.data );
 
             if( !failedKeys.isEmpty() ) {
                 log.error( "failed keys:" );
@@ -105,8 +131,13 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
     }
 
     @Override
-    public void run() {
-        fsync();
+    public KeySchema getSchema() {
+        return schema;
+    }
+
+    @Override
+    public void close() {
+        storage.fsync();
     }
 
     public static class MasterDatabase extends StatsDB.Database {

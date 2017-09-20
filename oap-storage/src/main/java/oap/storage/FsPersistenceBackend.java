@@ -64,9 +64,8 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
     private final int version;
     private final List<FileStorageMigration> migrations;
     private final Logger log;
-    private MemoryStorage<T> storage;
     private final Lock lock = new ReentrantLock();
-
+    private MemoryStorage<T> storage;
     private PeriodicScheduled scheduled;
 
     FsPersistenceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync, int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
@@ -177,6 +176,13 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
     public void close() {
         Threads.synchronously( lock, () -> {
             Scheduled.cancel( scheduled );
+            fsync();
+        } );
+    }
+
+    @Override
+    public void fsync() {
+        Threads.synchronously( lock, () -> {
             fsync( scheduled.lastExecuted() );
         } );
     }

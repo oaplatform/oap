@@ -24,91 +24,68 @@
 
 package oap.statsdb;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import oap.io.IoStreams;
-import oap.json.Binder;
-import oap.util.Throwables;
-import org.joda.time.DateTimeUtils;
+import oap.storage.Storage;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
-import static oap.io.IoStreams.DEFAULT_BUFFER;
-import static oap.io.IoStreams.Encoding.GZIP;
 
 /**
  * Created by igor.petrenko on 05.09.2017.
  */
 @Slf4j
-public abstract class StatsDB<T extends StatsDB.Database> extends Node implements Closeable {
-    protected final Path directory;
-    private final TypeReference<T> typeReference;
+public abstract class StatsDB<T extends StatsDB.Database> {
+    protected final Storage<Node> storage;
 
-    public StatsDB( Path directory, TypeReference<T> typeReference ) {
-        super( -1 );
-        this.directory = directory;
-        this.typeReference = typeReference;
+    public StatsDB( Storage<Node> storage ) {
+        this.storage = storage;
     }
 
     protected abstract T toDatabase( ConcurrentHashMap<String, Node> db );
 
-    public <TKey extends Iterable<String>, TValue extends Value<TValue>> void update( TKey key, Consumer<TValue> update, Supplier<TValue> create ) {
-        Node node = this;
-        for( val keyItem : key ) {
-            node = node.db.computeIfAbsent( keyItem, ( k ) -> new Node( DateTimeUtils.currentTimeMillis() ) );
-        }
-
-        node.updateValue( update, create );
+    protected <TKey extends Iterable<String>, TValue extends Node.Value<TValue>> void update( KeySchema schema, TKey key, Consumer<TValue> update, Supplier<TValue> create ) {
+        val iterator = key.iterator();
+        val schemaIterator = schema.iterator();
+        val schemaKey = schemaIterator.next();
+        storage.update( iterator.next(),
+            node -> updateNode( update, create, iterator, node, schemaIterator ),
+            () -> updateNode( update, create, iterator, new Node( schemaKey ), schemaIterator )
+        );
     }
 
-    public synchronized void fsync() {
-        val db = directory.resolve( "stats.db.gz" );
+    public <TKey extends Iterable<String>, TValue extends Node.Value<TValue>> TValue get( TKey key ) {
+        val it = key.iterator();
+        if( !it.hasNext() ) return null;
 
-        try( OutputStream outputStream = IoStreams.out( db, GZIP, DEFAULT_BUFFER, false, true ) ) {
-            Binder.json.marshal( outputStream, toDatabase( this.db ) );
-        } catch( IOException e ) {
-            log.error( e.getMessage(), e );
-            throw Throwables.propagate( e );
-        }
+        val dbKey = it.next();
+
+        return storage.get( dbKey ).map( node -> node.<TValue>get( it ) ).orElse( null );
     }
 
-    public void start() {
-        val db = directory.resolve( "stats.db.gz" );
-        if( Files.exists( db ) ) {
-            try( InputStream inputStream = IoStreams.in( db, GZIP ) ) {
-                val database = Binder.json.unmarshal( typeReference, inputStream );
-                start( database );
-                if( database.db != null ) this.db.putAll( database.db );
-            } catch( IOException e ) {
-                log.error( e.getMessage(), e );
-                throw Throwables.propagate( e );
-            }
+    public <TValue extends Node.Value<TValue>> Node updateNode(
+        Consumer<TValue> update, Supplier<TValue> create, Iterator<String> iterator, final Node node, Iterator<String> schemaIterator ) {
+        Node tNode = node;
+        while( iterator.hasNext() ) {
+            val keyItem = iterator.next();
+            val schemaItem = schemaIterator.next();
+            tNode = tNode.db.computeIfAbsent( keyItem, ( k ) -> new Node( schemaItem ) );
         }
 
+        tNode.updateValue( update, create );
+
+        return node;
     }
 
     protected void start( T database ) {
 
     }
 
-    @Override
-    public void close() {
-        fsync();
-    }
-
     public synchronized void removeAll() {
-        db.clear();
-        fsync();
+        storage.deleteAll();
     }
 
     public static class Database implements Serializable {

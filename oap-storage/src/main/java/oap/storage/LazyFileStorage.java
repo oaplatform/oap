@@ -49,21 +49,21 @@ import static oap.util.Pair.__;
  */
 @Slf4j
 public class LazyFileStorage<T> extends MemoryStorage<T> {
-   private Path path;
-   private boolean closed = true;
+    private Path path;
+    private boolean closed = true;
 
-   /**
-    * @deprecated use {@link #LazyFileStorage(Path, Identifier)}} instead.
-    */
-   @Deprecated
-   public LazyFileStorage( Path path, Function<T, String> identify ) {
-      this( path, IdentifierBuilder.identify( identify ).build() );
-   }
+    /**
+     * @deprecated use {@link #LazyFileStorage(Path, Identifier)}} instead.
+     */
+    @Deprecated
+    public LazyFileStorage( Path path, Function<T, String> identify ) {
+        this( path, IdentifierBuilder.identify( identify ).build() );
+    }
 
-   public LazyFileStorage( Path path, Identifier<T> identifier ) {
-      super( identifier );
-      this.path = path;
-   }
+    public LazyFileStorage( Path path, Identifier<T> identifier ) {
+        super( identifier );
+        this.path = path;
+    }
 
     @Override
     public List<Metadata<T>> updatedSince( long time ) {
@@ -72,87 +72,94 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
-   public Stream<T> select() {
-      open();
-      return super.select();
-   }
+    public Stream<T> select() {
+        open();
+        return super.select();
+    }
 
-   @Override
-   public void store( T object ) {
-      open();
-      super.store( object );
-   }
+    @Override
+    public void store( T object ) {
+        open();
+        super.store( object );
+    }
 
-   @Override
-   public Optional<T> update( String id, Consumer<T> update ) {
-      open();
-      return super.update( id, update );
-   }
+    @Override
+    public Optional<T> update( String id, Consumer<T> update ) {
+        open();
+        return super.update( id, update );
+    }
 
-   @Override
-   public Optional<T> update( String id, Consumer<T> update, Supplier<T> init ) {
-      open();
-      return super.update( id, update, init );
-   }
+    @Override
+    public Optional<T> update( String id, Consumer<T> update, Supplier<T> init ) {
+        open();
+        return super.update( id, update, init );
+    }
 
-   @Override
-   public void update( Collection<String> ids, Consumer<T> update ) {
-      open();
-      super.update( ids, update );
-   }
+    @Override
+    public void update( Collection<String> ids, Consumer<T> update ) {
+        open();
+        super.update( ids, update );
+    }
 
-   @Override
-   public void update( Collection<String> ids, Consumer<T> update, Supplier<T> init ) {
-      open();
-      super.update( ids, update, init );
-   }
+    @Override
+    public void update( Collection<String> ids, Consumer<T> update, Supplier<T> init ) {
+        open();
+        super.update( ids, update, init );
+    }
 
-   @Override
-   public Optional<T> get( String id ) {
-      open();
-      return super.get( id );
-   }
+    @Override
+    public Optional<T> get( String id ) {
+        open();
+        return super.get( id );
+    }
 
-   @Override
-   public void deleteAll() {
-      open();
-      super.deleteAll();
-   }
+    @Override
+    public void deleteAll() {
+        open();
+        super.deleteAll();
+    }
 
-   @Override
-   public Optional<T> delete( String id ) {
-      open();
-      super.delete( id );
-       return null;
-   }
+    @Override
+    public Optional<T> delete( String id ) {
+        open();
+        super.delete( id );
+        return null;
+    }
 
-   private synchronized void open() {
-      if( data.size() > 0 ) {
-         return;
-      }
-      Files.ensureFile( path );
+    private synchronized void open() {
+        if( data.size() > 0 ) {
+            return;
+        }
+        Files.ensureFile( path );
 
-      if( java.nio.file.Files.exists( path ) ) {
-         data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
-         }, path )
-            .stream()
-            .map( x -> __( x.id, x ) )
-            .collect( toConcurrentMap() );
-      }
-      closed = false;
-      log.info( data.size() + " object(s) loaded." );
-   }
+        if( java.nio.file.Files.exists( path ) ) {
+            data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
+            }, path )
+                .stream()
+                .map( x -> __( x.id, x ) )
+                .collect( toConcurrentMap() );
+        }
+        closed = false;
+        log.info( data.size() + " object(s) loaded." );
+    }
 
-   @Override
-   @SneakyThrows
-   public synchronized void close() {
-      if ( closed ) return;
-      OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), IoStreams.DEFAULT_BUFFER, false, true );
-      Binder.json.marshal( out, data.values() );
-      out.close();
-      log.debug( "storing {}... done", path );
-      data.clear();
-      closed = true;
-   }
+    @Override
+    @SneakyThrows
+    public synchronized void close() {
+        if( closed ) return;
+        fsync();
+        data.clear();
+        closed = true;
+    }
+
+    @Override
+    @SneakyThrows
+    public void fsync() {
+        super.fsync();
+        try( OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), IoStreams.DEFAULT_BUFFER, false, true ) ) {
+            Binder.json.marshal( out, data.values() );
+        }
+        log.debug( "storing {}... done", path );
+    }
 
 }

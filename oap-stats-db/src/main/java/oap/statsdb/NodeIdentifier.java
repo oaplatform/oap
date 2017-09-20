@@ -24,30 +24,15 @@
 
 package oap.statsdb;
 
+import oap.storage.Identifier;
+import oap.storage.IdentifierBuilder;
+import org.apache.commons.lang3.NotImplementedException;
+
 /**
- * Created by igor.petrenko on 08.09.2017.
+ * Created by igor.petrenko on 20.09.2017.
  */
-public class MockValue implements StatsDB.Value<MockValue> {
-    public long l1;
-    public int i2;
-
-    public MockValue() {
-        this( 0 );
-    }
-
-    public MockValue( int i2 ) {
-        this.i2 = i2;
-    }
-
-    @Override
-    public MockValue merge( MockValue other ) {
-        l1 += other.l1;
-        i2 += other.i2;
-        return this;
-    }
-
-    @Override
-    public MockValue clone() {
-        return null;
-    }
+public class NodeIdentifier {
+    public static final Identifier<Node> identifier = IdentifierBuilder.<Node>identify( node -> {
+        throw new NotImplementedException( "identifier" );
+    } ).build();
 }
