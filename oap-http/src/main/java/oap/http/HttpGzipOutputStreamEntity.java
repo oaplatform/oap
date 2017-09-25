@@ -61,7 +61,11 @@ public class HttpGzipOutputStreamEntity extends AbstractHttpEntity {
 
     @Override
     public void writeTo( OutputStream outputStream ) throws IOException {
-        consumer.accept( new GZIPOutputStream( outputStream ) );
+        final GZIPOutputStream gzipOutputStream = new GZIPOutputStream( outputStream );
+
+        consumer.accept( gzipOutputStream );
+
+        gzipOutputStream.close();
     }
 
     @Override
