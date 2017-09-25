@@ -112,6 +112,12 @@ public class HttpResponse {
         return response;
     }
 
+    public static HttpResponse gzipOutputStream( Consumer<OutputStream> cons, ContentType contentType ) {
+        HttpResponse response = new HttpResponse( HTTP_OK );
+        response.contentEntity = new HttpGzipOutputStreamEntity( cons, contentType );
+        return response;
+    }
+
     public static HttpResponse file( Path file, ContentType contentType ) {
         HttpResponse response = new HttpResponse( HTTP_OK );
         response.contentEntity = new FileEntity( file.toFile(), contentType );

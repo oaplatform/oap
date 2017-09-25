@@ -33,6 +33,7 @@ import oap.util.Maps;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
+import org.apache.http.Header;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.util.EntityUtils;
@@ -44,6 +45,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.GZIPInputStream;
 
 import static oap.util.Pair.__;
 
@@ -80,18 +82,39 @@ public class Request {
         this.cookies = header( "Cookie" )
             .map( cookie -> Stream.of( SPLITTER.split( cookie ).iterator() )
                 .map( s -> Strings.split( s, "=" ) )
-                .collect( Maps.Collectors.<String, String>toMap() ) )
+                .collect( Maps.Collectors.toMap() ) )
             .orElse( Maps.empty() );
     }
 
     private static Optional<InputStream> content( HttpRequest req ) {
         try {
-            return req instanceof HttpEntityEnclosingRequest
-                ? Optional.of( ( ( HttpEntityEnclosingRequest ) req ).getEntity().getContent() )
-                : Optional.empty();
+            if ( req instanceof HttpEntityEnclosingRequest ) {
+                final HttpEntityEnclosingRequest enclosingRequest = ( HttpEntityEnclosingRequest ) req;
+
+                final InputStream content = enclosingRequest.getEntity().getContent();
+
+                return isRequestGzipped( req )
+                    ? Optional.of( new GZIPInputStream( content ) )
+                    : Optional.of( content );
+            } else {
+                return Optional.empty();
+            }
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
+    }
+
+    private static boolean isRequestGzipped( HttpRequest httpRequest ) {
+        final Header[] headers = httpRequest.getHeaders( "Content-Encoding" );
+        if ( headers != null ) {
+            for( final Header header : headers ) {
+                if( header.getValue().contains( "gzip" ) ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static ListMultimap<String, String> params( HttpRequest req ) {
