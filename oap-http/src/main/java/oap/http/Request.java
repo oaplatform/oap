@@ -33,6 +33,7 @@ import oap.util.Maps;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
+import org.apache.http.Header;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.util.EntityUtils;
@@ -44,6 +45,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.zip.GZIPInputStream;
 
 import static oap.util.Pair.__;
 
@@ -72,7 +74,7 @@ public class Request {
             context.location.length() );
         this.httpMethod = HttpMethod.valueOf( req.getRequestLine().getMethod().toUpperCase() );
         this.context = context;
-        this.body = content( req );
+        this.body = content( req ); // Headers have to be constructed at this point
         this.params = params( req );
         this.ua = header( "User-Agent" ).orElse( null );
         this.referrer = header( "Referrer" ).orElse( null );
@@ -84,11 +86,32 @@ public class Request {
             .orElse( Maps.empty() );
     }
 
-    private static Optional<InputStream> content( HttpRequest req ) {
+    public boolean isRequestGzipped() {
+        final List<String> headers = headers( "Content-Encoding" );
+        if ( headers != null ) {
+            for( final String header : headers ) {
+                if( header.contains( "gzip" ) ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private Optional<InputStream> content( HttpRequest req ) {
         try {
-            return req instanceof HttpEntityEnclosingRequest
-                ? Optional.of( ( ( HttpEntityEnclosingRequest ) req ).getEntity().getContent() )
-                : Optional.empty();
+            if ( req instanceof HttpEntityEnclosingRequest ) {
+                final HttpEntityEnclosingRequest enclosingRequest = ( HttpEntityEnclosingRequest ) req;
+
+                final InputStream content = enclosingRequest.getEntity().getContent();
+
+                return isRequestGzipped()
+                    ? Optional.of( new GZIPInputStream( content ) )
+                    : Optional.of( content );
+            } else {
+                return Optional.empty();
+            }
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }

@@ -25,15 +25,21 @@ package oap.ws;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Application;
+import oap.http.Client;
 import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Response;
 import oap.metrics.Metrics;
+import oap.util.Maps;
+import oap.util.Pair;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPOutputStream;
 
 import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertGet;
@@ -41,6 +47,7 @@ import static oap.http.testng.HttpAsserts.assertPost;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 
 @Slf4j
@@ -106,11 +113,30 @@ public class WebServicesTest extends AbstractWebServicesTest {
             APPLICATION_OCTET_STREAM ).containsHeader( "Access-Control-Allow-Origin", "*" );
     }
 
+    @Test
+    public void testShouldVerifyGZIPRequestProcessing() throws Exception {
+        final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        final GZIPOutputStream gzip = new GZIPOutputStream( byteArrayOutputStream );
+        gzip.write( "{\"i\":1,\"s\":\"sss\"}".getBytes( "UTF-8" ) );
+        gzip.close();
+
+        final Client.Response response = Client
+            .custom()
+            .build()
+            .post( HTTP_URL( "/x/v/math/json" ),
+                new ByteArrayInputStream( byteArrayOutputStream.toByteArray() ),
+                APPLICATION_JSON, Maps.of( Pair.__( "Content-Encoding", "gzip" ) ) );
+
+        assertThat( response.code ).isEqualTo( 200 );
+        assertThat( response.contentString.get() ).isEqualTo( "{\"i\":1,\"s\":\"sss\"}" );
+    }
+
     static class TestHandler implements Handler {
         @Override
         public void handle( Request request, Response response ) {
             response.respond( HttpResponse.NO_CONTENT );
         }
     }
+
 }
 
