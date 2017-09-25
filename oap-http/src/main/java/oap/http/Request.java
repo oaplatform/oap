@@ -86,6 +86,19 @@ public class Request {
             .orElse( Maps.empty() );
     }
 
+    public static boolean isRequestGzipped( HttpRequest httpRequest ) {
+        final Header[] headers = httpRequest.getHeaders( "Content-Encoding" );
+        if ( headers != null ) {
+            for( final Header header : headers ) {
+                if( header.getValue().contains( "gzip" ) ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private static Optional<InputStream> content( HttpRequest req ) {
         try {
             if ( req instanceof HttpEntityEnclosingRequest ) {
@@ -102,19 +115,6 @@ public class Request {
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
-    }
-
-    private static boolean isRequestGzipped( HttpRequest httpRequest ) {
-        final Header[] headers = httpRequest.getHeaders( "Content-Encoding" );
-        if ( headers != null ) {
-            for( final Header header : headers ) {
-                if( header.getValue().contains( "gzip" ) ) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
     }
 
     private static ListMultimap<String, String> params( HttpRequest req ) {
