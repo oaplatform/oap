@@ -74,7 +74,7 @@ public class Request {
             context.location.length() );
         this.httpMethod = HttpMethod.valueOf( req.getRequestLine().getMethod().toUpperCase() );
         this.context = context;
-        this.body = content( req );
+        this.body = content( req ); // Headers have to be constructed at this point
         this.params = params( req );
         this.ua = header( "User-Agent" ).orElse( null );
         this.referrer = header( "Referrer" ).orElse( null );
@@ -82,15 +82,15 @@ public class Request {
         this.cookies = header( "Cookie" )
             .map( cookie -> Stream.of( SPLITTER.split( cookie ).iterator() )
                 .map( s -> Strings.split( s, "=" ) )
-                .collect( Maps.Collectors.toMap() ) )
+                .collect( Maps.Collectors.<String, String>toMap() ) )
             .orElse( Maps.empty() );
     }
 
-    public static boolean isRequestGzipped( HttpRequest httpRequest ) {
-        final Header[] headers = httpRequest.getHeaders( "Content-Encoding" );
+    public boolean isRequestGzipped() {
+        final List<String> headers = headers( "Content-Encoding" );
         if ( headers != null ) {
-            for( final Header header : headers ) {
-                if( header.getValue().contains( "gzip" ) ) {
+            for( final String header : headers ) {
+                if( header.contains( "gzip" ) ) {
                     return true;
                 }
             }
@@ -99,14 +99,14 @@ public class Request {
         return false;
     }
 
-    private static Optional<InputStream> content( HttpRequest req ) {
+    private Optional<InputStream> content( HttpRequest req ) {
         try {
             if ( req instanceof HttpEntityEnclosingRequest ) {
                 final HttpEntityEnclosingRequest enclosingRequest = ( HttpEntityEnclosingRequest ) req;
 
                 final InputStream content = enclosingRequest.getEntity().getContent();
 
-                return isRequestGzipped( req )
+                return isRequestGzipped()
                     ? Optional.of( new GZIPInputStream( content ) )
                     : Optional.of( content );
             } else {
