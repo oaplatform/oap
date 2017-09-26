@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
 
 @EqualsAndHashCode
@@ -131,7 +132,7 @@ public class Module {
         public boolean thread;
         public boolean schedule;
         public String startWith = "start";
-        public String stopWith = "stop";
+        public List<String> stopWith = asList( "stop", "close" );
         public String reloadWith = "reload";
         public long delay; //ms
         public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger

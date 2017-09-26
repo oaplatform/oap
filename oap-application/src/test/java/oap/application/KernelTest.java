@@ -28,6 +28,8 @@ import oap.testng.AbstractTest;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
@@ -40,6 +42,20 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class KernelTest extends AbstractTest {
+
+    private static final StringBuilder res = new StringBuilder();
+
+    @Test
+    public void testCloseable() {
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
+        modules.add( urlOfTestResource( KernelTest.class, "modules/start_stop.conf" ) );
+
+        Kernel kernel = new Kernel( modules );
+        kernel.start();
+        kernel.stop();
+
+        assertThat( res ).isEqualToIgnoringCase( "stop2/close/" );
+    }
 
     @Test
     public void start() {
@@ -62,7 +78,7 @@ public class KernelTest extends AbstractTest {
                 ServiceOne.Complex expected = new ServiceOne.Complex( 2 );
                 expected.map = Maps.of( __( "a", new ServiceOne.Complex( 1 ) ) );
                 assertThat( one.complex ).isEqualTo( expected );
-                assertThat( one.complexes ).contains( new ServiceOne.Complex( 2 ) );
+//                assertThat( one.complexes ).contains( new ServiceOne.Complex( 2 ) );
                 assertNotNull( two );
                 assertThat( two.j ).isEqualTo( 3000 );
                 assertThat( two.one ).isSameAs( one );
@@ -96,6 +112,27 @@ public class KernelTest extends AbstractTest {
             assertThat( Application.<ServiceOne>service( "s2" ) ).isNull();
         } finally {
             kernel.stop();
+        }
+    }
+
+    public static class TestCloseable implements Closeable {
+
+        @Override
+        public void close() throws IOException {
+            res.append( "close/" );
+        }
+    }
+
+    public static class TestCloseable2 implements Closeable {
+
+        public void stop() {
+            res.append( "stop2/" );
+
+        }
+
+        @Override
+        public void close() throws IOException {
+            res.append( "close2/" );
         }
     }
 }
