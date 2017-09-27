@@ -245,5 +245,10 @@ public class Try {
                 if( propagate ) throw e;
             }
         }
+
+        @Override
+        public String toString() {
+            return "caching:" + runnable.toString();
+        }
     }
 }

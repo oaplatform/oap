@@ -51,6 +51,7 @@ import static oap.util.Strings.FriendlyIdOption.FILL;
 import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
 
 public final class Strings {
+    public static final String DEFAULT = "DEFAULT";
     public static final String UNDEFINED = "UNDEFINED";
     public static final String UNKNOWN = "UNKNOWN";
     private static char[] hex = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };

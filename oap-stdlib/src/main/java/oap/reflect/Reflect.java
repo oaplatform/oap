@@ -115,7 +115,6 @@ public class Reflect {
                     next = null;
                     continue;
                 }
-                ;
                 next = f.get( instance );
                 if( next == null ) continue;
                 if( next instanceof Optional ) next = ( ( Optional ) next ).orElse( null );
@@ -143,8 +142,4 @@ public class Reflect {
         }
 
     }
-
-//    unapply - check possibility to parameterize with Function to pass parameters from class.
-//    implementation should be based on unapply/constructor. Probably wont help because of erasure.
-//    bet there is a chance to get good enough syntax for instance matching
 }

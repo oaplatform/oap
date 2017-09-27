@@ -141,28 +141,31 @@ public class Maps {
                 Collector.Characteristics.UNORDERED );
         }
 
-        public static <K, V> Collector<? super Pair<K, V>, Map<K, V>, Map<K, V>> toMap() {
+        public static <K, V> Collector<? super Pair<K, V>, Map<K, V>, Map<K, V>> toMap( Supplier<Map<K, V>> supplier ) {
             return Collector.<Pair<K, V>, Map<K, V>>of(
-                LinkedHashMap::new,
+                supplier,
                 ( map, pair ) -> map.put( pair._1, pair._2 ),
                 ( left, right ) -> {
                     left.putAll( right );
                     return left;
                 },
                 Collector.Characteristics.UNORDERED );
+
+        }
+
+        public static <K, V> Collector<? super Pair<K, V>, Map<K, V>, Map<K, V>> toMap() {
+            return toMap( LinkedHashMap::new );
         }
 
         public static <K, V> Collector<? super Pair<K, V>, ?, ConcurrentMap<K, V>> toConcurrentMap() {
             return toConcurrentMap( ConcurrentHashMap::new );
         }
 
-        public static <K, V> Collector<? super Pair<K, V>, ?, ConcurrentMap<K, V>> toConcurrentMap(
-            ConcurrentMap<K, V> map ) {
+        public static <K, V> Collector<? super Pair<K, V>, ?, ConcurrentMap<K, V>> toConcurrentMap( ConcurrentMap<K, V> map ) {
             return toConcurrentMap( () -> map );
         }
 
-        private static <K, V> Collector<? super Pair<K, V>, ?, ConcurrentMap<K, V>> toConcurrentMap(
-            Supplier<ConcurrentMap<K, V>> supplier ) {
+        private static <K, V> Collector<? super Pair<K, V>, ?, ConcurrentMap<K, V>> toConcurrentMap( Supplier<ConcurrentMap<K, V>> supplier ) {
             return Collector.<Pair<K, V>, ConcurrentMap<K, V>>of(
                 supplier,
                 ( map, pair ) -> map.put( pair._1, pair._2 ),

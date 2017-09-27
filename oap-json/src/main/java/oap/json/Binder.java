@@ -54,6 +54,8 @@ import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
+import oap.reflect.Coercions;
+import oap.reflect.TypeRef;
 import oap.util.Dates;
 import oap.util.Try;
 import org.joda.time.ReadableInstant;
@@ -61,8 +63,10 @@ import org.joda.time.ReadableInstant;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -143,7 +147,7 @@ public class Binder {
         return ( JsonDeserializer<T> ) new DateTimeDeserializer( cls, JACKSON_DATE_FORMAT );
     }
 
-    public final JsonGenerator getJsonGenerator( Path path ) throws JsonException {
+    public final JsonGenerator getJsonGenerator( Path path ) {
         try {
             return mapper.getFactory().createGenerator( path.toFile(), JsonEncoding.UTF8 );
         } catch( IOException e ) {
@@ -151,11 +155,11 @@ public class Binder {
         }
     }
 
-    public String canonicalize( Class<?> clazz, String json ) throws JsonException {
+    public String canonicalize( Class<?> clazz, String json ) {
         return marshal( unmarshal( clazz, json ) );
     }
 
-    public String marshal( Object value ) throws JsonException {
+    public String marshal( Object value ) {
         try {
             return mapper.writeValueAsString( value );
         } catch( IOException e ) {
@@ -163,7 +167,16 @@ public class Binder {
         }
     }
 
-    public <T> String marshal( TypeReference<T> ref, Object value ) throws JsonException {
+    public <T> String marshal( TypeRef<T> ref, Object value ) {
+        try {
+            return mapper.writerFor( toTypeReference( ref ) ).writeValueAsString( value );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
+    }
+
+    @Deprecated
+    public <T> String marshal( TypeReference<T> ref, Object value ) {
         try {
             return mapper.writerFor( ref ).writeValueAsString( value );
         } catch( IOException e ) {
@@ -171,7 +184,7 @@ public class Binder {
         }
     }
 
-    public void marshal( OutputStream os, Object value ) throws JsonException {
+    public void marshal( OutputStream os, Object value ) {
         try {
             mapper.writeValue( os, value );
         } catch( IOException e ) {
@@ -180,7 +193,7 @@ public class Binder {
     }
 
 
-    public void marshal( Path path, Object object ) throws JsonException {
+    public void marshal( Path path, Object object ) {
         Files.ensureFile( path );
 
         try( final OutputStream os = IoStreams.out( path ) ) {
@@ -190,7 +203,7 @@ public class Binder {
         }
     }
 
-    public <T> T unmarshal( Class<T> clazz, Path path ) throws JsonException {
+    public <T> T unmarshal( Class<T> clazz, Path path ) {
         try( val in = IoStreams.in( path ) ) {
             return unmarshal( clazz, in );
         } catch( IOException e ) {
@@ -198,7 +211,7 @@ public class Binder {
         }
     }
 
-    public <T> T unmarshal( Class<T> clazz, URL url ) throws JsonException {
+    public <T> T unmarshal( Class<T> clazz, URL url ) {
         try( val in = url.openStream() ) {
             return unmarshal( clazz, in );
         } catch( IOException e ) {
@@ -207,24 +220,55 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( TypeReference<T> ref, String string ) throws JsonException {
+    public <T> T unmarshal( TypeRef<T> ref, String string ) {
         try {
-            return ( T ) mapper.readValue( string, ref );
+            return ( T ) mapper.readValue( string, toTypeReference( ref ) );
         } catch( IOException e ) {
-            log.debug( "json: " + string );
+            log.trace( "json: " + string );
             throw new JsonException( "json error: " + e.getMessage(), e );
         }
     }
 
+    private static <T> TypeReference<T> toTypeReference( TypeRef<T> ref ) {
+        return new TypeReference<T>() {
+            @Override
+            public Type getType() {
+                return ref.type();
+            }
+        };
+    }
+
+    @Deprecated
+    public <T> T unmarshal( TypeReference<T> ref, String string ) {
+        try {
+            return ( T ) mapper.readValue( string, ref );
+        } catch( IOException e ) {
+            log.trace( "json: " + string );
+            throw new JsonException( "json error: " + e.getMessage(), e );
+        }
+    }
+
+    @Deprecated
     public ObjectReader readerFor( TypeReference<?> ref ) {
         return mapper.readerFor( ref );
     }
 
+    @Deprecated
     public ObjectWriter writerFor( TypeReference<?> ref ) {
         return mapper.writerFor( ref );
     }
 
-    public <T> T unmarshal( TypeReference<T> ref, Path path ) throws JsonException {
+    public <T> T unmarshal( TypeRef<T> ref, Path path ) {
+        try( val in = IoStreams.in( path ) ) {
+            return unmarshal( ref, in );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+
+        }
+    }
+
+    @Deprecated
+    public <T> T unmarshal( TypeReference<T> ref, Path path ) {
         try( val in = IoStreams.in( path ) ) {
             return unmarshal( ref, in );
         } catch( IOException e ) {
@@ -232,6 +276,15 @@ public class Binder {
         }
     }
 
+    public <T> T unmarshal( TypeRef<T> ref, URL url ) {
+        try( val in = url.openStream() ) {
+            return unmarshal( ref, in );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
+    }
+
+    @Deprecated
     public <T> T unmarshal( TypeReference<T> ref, URL url ) {
         try( val in = url.openStream() ) {
             return unmarshal( ref, in );
@@ -241,7 +294,17 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( TypeReference<T> ref, InputStream is ) throws JsonException {
+    public <T> T unmarshal( TypeRef<T> ref, InputStream is ) {
+        try {
+            return ( T ) mapper.readValue( is, toTypeReference( ref ) );
+        } catch( IOException e ) {
+            throw new JsonException( e.getMessage(), e );
+        }
+    }
+
+    @Deprecated
+    @SuppressWarnings( "unchecked" )
+    public <T> T unmarshal( TypeReference<T> ref, InputStream is ) {
         try {
             return ( T ) mapper.readValue( is, ref );
         } catch( IOException e ) {
@@ -250,7 +313,7 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( Class<?> clazz, String string ) throws JsonException {
+    public <T> T unmarshal( Class<?> clazz, String string ) {
         try {
             return ( T ) mapper.readValue( string, clazz );
         } catch( Exception e ) {
@@ -260,7 +323,7 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( Class<?> clazz, Map<String, Object> map ) throws JsonException {
+    public <T> T unmarshal( Class<?> clazz, Map<String, Object> map ) {
         try {
             return ( T ) mapper.convertValue( map, clazz );
         } catch( Exception e ) {
@@ -270,7 +333,28 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( TypeReference<T> ref, Map<String, Object> map ) throws JsonException {
+    public <T> T unmarshal( Class<?> clazz, List<Object> map ) {
+        try {
+            return ( T ) mapper.convertValue( map, clazz );
+        } catch( Exception e ) {
+            log.trace( String.valueOf( map ) );
+            throw new JsonException( e.getMessage(), e );
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <T> T unmarshal( TypeRef<T> ref, Map<String, Object> map ) {
+        try {
+            return ( T ) mapper.convertValue( map, toTypeReference( ref ) );
+        } catch( Exception e ) {
+            log.trace( String.valueOf( map ) );
+            throw new JsonException( e.getMessage(), e );
+        }
+    }
+
+    @Deprecated
+    @SuppressWarnings( "unchecked" )
+    public <T> T unmarshal( TypeReference<T> ref, Map<String, Object> map ) {
         try {
             return ( T ) mapper.convertValue( map, ref );
         } catch( Exception e ) {
@@ -280,7 +364,17 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( Class<?> clazz, InputStream json ) throws JsonException {
+    public <T> T unmarshal( TypeRef<T> ref, List<Object> list ) {
+        try {
+            return ( T ) mapper.convertValue( list, toTypeReference( ref ) );
+        } catch( Exception e ) {
+            log.trace( String.valueOf( list ) );
+            throw new JsonException( e.getMessage(), e );
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <T> T unmarshal( Class<?> clazz, InputStream json ) {
         try {
             return ( T ) mapper.readValue( json, clazz );
         } catch( IOException e ) {
@@ -288,8 +382,7 @@ public class Binder {
         }
     }
 
-    public <T> T unmarshalResource( Class<?> context, Class<T> clazz,
-                                    String resourceJsonPath ) throws JsonException {
+    public <T> T unmarshalResource( Class<?> context, Class<T> clazz, String resourceJsonPath ) {
         try( InputStream is = context.getResourceAsStream( resourceJsonPath ) ) {
             if( is == null ) throw new JsonException( "not found " + resourceJsonPath );
             return this.unmarshal( clazz, is );
@@ -300,14 +393,14 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T clone( T object ) throws JsonException {
+    public <T> T clone( T object ) {
         return unmarshal( object.getClass(), marshal( object ) );
     }
 
-    public void update( Object obj, Map<String, Object> values ) throws JsonException {
+    public void update( Object obj, Map<String, Object> values ) {
         try {
-            final String marshal = json.marshal( obj );
-            final String vs = json.marshal( values );
+            String marshal = json.marshal( obj );
+            String vs = json.marshal( values );
 
             hoconWithConfig( vs ).mapper.readerForUpdating( obj ).readValue( marshal );
         } catch( IOException e ) {
@@ -315,12 +408,13 @@ public class Binder {
         }
     }
 
-    public void update( Object obj, String json ) throws JsonException {
+    public void update( Object obj, String json ) {
         try {
             mapper.readerForUpdating( obj ).readValue( json );
         } catch( IOException e ) {
             throw new JsonException( e );
         }
     }
+
 }
 

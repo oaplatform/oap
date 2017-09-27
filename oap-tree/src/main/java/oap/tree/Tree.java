@@ -89,6 +89,7 @@ public class Tree<T> {
         return new ValueData<>( data, selection );
     }
 
+    @SafeVarargs
     public static <T> ArrayList<T> l( T... data ) {
         return Lists.of( data );
     }
@@ -105,6 +106,7 @@ public class Tree<T> {
         return new TreeBuilder<>( asList( dimensions ) );
     }
 
+    @SafeVarargs
     public static <T> Array a( boolean include, T... values ) {
         return new Array( l( values ), include );
     }
@@ -211,6 +213,7 @@ public class Tree<T> {
         return longData;
     }
 
+    @SuppressWarnings( "unchecked" )
     private TreeNode<T> toNode( List<ValueData<T>> data, long[] uniqueCount, BitSet eq ) {
         if( data.isEmpty() ) return null;
 
@@ -317,12 +320,10 @@ public class Tree<T> {
         final Dimension dimension = dimensions.get( finalSplitDimension );
 
         if( dimension.operationType == null ) { //array
-            val any = new ArrayList<ValueData<T>>();
-            val sets = new ArrayList<ValueData<T>>();
 
-            oap.util.Collections.partition( data, any, sets, vd -> !( ( Array ) vd.data.get( finalSplitDimension ) ).isEmpty() );
+            Pair<List<ValueData<T>>, List<ValueData<T>>> partition = Lists.partition( data, vd -> !( ( Array ) vd.data.get( finalSplitDimension ) ).isEmpty() );
 
-            return new SplitDimension( finalSplitDimension, Consts.ANY, emptyList(), emptyList(), emptyList(), any, sets, emptyList() );
+            return new SplitDimension( finalSplitDimension, Consts.ANY, emptyList(), emptyList(), emptyList(), partition._2, partition._1, emptyList() );
         } else {
 
             val partition_any_other = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY ) == ANY_AS_ARRAY );

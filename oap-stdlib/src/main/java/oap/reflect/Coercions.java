@@ -23,27 +23,38 @@
  */
 package oap.reflect;
 
+import oap.util.BiStream;
 import oap.util.Dates;
+import oap.util.Lists;
+import oap.util.Maps;
 import oap.util.Numbers;
 import oap.util.Pair;
+import oap.util.Sets;
+import oap.util.Stream;
+import oap.util.Try;
 import org.joda.time.DateTime;
 
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.util.Pair.__;
 
 public final class Coercions {
@@ -57,7 +68,7 @@ public final class Coercions {
             value -> value instanceof String
                 ? value
                 : value instanceof byte[]
-                    ? new String( ( byte[] ) value, StandardCharsets.UTF_8 )
+                    ? new String( ( byte[] ) value, UTF_8 )
                     : String.valueOf( value ) );
 
         BooleanConvertor booleanConvertor = new BooleanConvertor();
@@ -97,12 +108,31 @@ public final class Coercions {
         convertors.put( URL.class, new URLConvertor() );
         convertors.put( URI.class, new URIConvertor() );
         convertors.put( Pattern.class, new PatternConvertor() );
+        convertors.put( Class.class, Try.map( value -> Class.forName( ( String ) value ) ) );
     }
 
-    private List<Pair<Predicate<Reflection>, BiFunction<Reflection, Object, Object>>> coersions =
-        new ArrayList<>();
+    private List<Pair<BiPredicate<Reflection, Object>, BiFunction<Reflection, Object, Object>>> coersions = Lists.empty();
 
+    @SuppressWarnings( "unchecked" )
     private Coercions() {
+        with( ( r, v ) -> r.isEnum(), ( r, v ) -> v instanceof Enum ? v : r.enumValue( ( String ) v ) );
+        with( ( r, v ) -> !r.assignableTo( Map.class ) && v instanceof Map<?, ?>, ( r, v ) -> r.newInstance( ( Map<String, Object> ) v ) );
+        with( ( r, v ) -> r.assignableTo( Collection.class ), ( r, v ) -> {
+            Reflection componentType = r.getCollectionComponentType();
+            return Stream.of( ( List<?> ) v )
+                .map( o -> cast( componentType, o ) )
+                .collect( Collectors.toCollection( () -> r.isInterface()
+                    ? r.assignableTo( List.class ) ? Lists.of() : Sets.of()
+                    : r.newInstance() ) );
+        } );
+        with( ( r, v ) -> r.assignableTo( Map.class ), ( r, v ) -> {
+            Pair<Reflection, Reflection> componentType = r.getMapComponentsType();
+            return BiStream.of( ( Map<?, ?> ) v )
+                .map( ( k, o ) -> __( cast( componentType._1, k ), cast( componentType._2, o ) ) )
+                .collect( Maps.Collectors.toMap( () -> r.isInterface()
+                    ? r.assignableFrom( ConcurrentMap.class ) ? new ConcurrentHashMap<>() : Maps.of()
+                    : r.newInstance() ) );
+        } );
     }
 
     public static Coercions basic() {
@@ -112,33 +142,33 @@ public final class Coercions {
     public Object cast( Reflection target, Object value ) {
         if( value == null ) return null;
         try {
-            if( target.assignableFrom( value.getClass() ) ) return value;
+            if( target.assignableFrom( value.getClass() )
+                && !target.assignableTo( Collection.class )
+                && !target.assignableTo( Map.class ) )
+                return value;
 
             Function<Object, Object> ff = convertors.getOrDefault( target.underlying, v -> {
-                if( target.isEnum() ) return value instanceof Enum ? value
-                    : target.enumValue( ( String ) value )
-                        .orElseThrow( () -> new ReflectException( value + " is not a member of " + target ) );
-                else
-                    for( Pair<Predicate<Reflection>, BiFunction<Reflection, Object, Object>> coersion : coersions )
-                        if( coersion._1.test( target ) ) return coersion._2.apply( target, value );
+                for( Pair<BiPredicate<Reflection, Object>, BiFunction<Reflection, Object, Object>> coersion : coersions )
+                    if( coersion._1.test( target, value ) ) return coersion._2.apply( target, value );
                 throw new ReflectException( "cannot cast " + value + " to " + target );
             } );
-
             return ff.apply( value );
         } catch( ClassCastException | NumberFormatException e ) {
             throw new ReflectException( e );
         }
     }
 
-    public Coercions with( Predicate<Reflection> test,
-                           BiFunction<Reflection, Object, Object> coersion ) {
+    public Coercions with( BiPredicate<Reflection, Object> test, BiFunction<Reflection, Object, Object> coersion ) {
         coersions.add( __( test, coersion ) );
         return this;
     }
 
+    public Coercions with( Predicate<Reflection> test, BiFunction<Reflection, Object, Object> coersion ) {
+        return with( ( r, v ) -> test.test( r ), coersion );
+    }
+
     public Coercions withIdentity() {
-        coersions.add( __( r -> true, ( r, value ) -> value ) );
-        return this;
+        return with( ( r, v ) -> true, ( r, value ) -> value );
     }
 
     public static class LongConvertor implements Function<Object, Object> {

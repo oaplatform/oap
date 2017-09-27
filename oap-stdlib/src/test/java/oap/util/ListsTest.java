@@ -24,12 +24,11 @@
 
 package oap.util;
 
-import lombok.val;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ListsTest {
@@ -42,11 +41,29 @@ public class ListsTest {
     }
 
     @Test
-    public void testFilter() {
-        val list = asList( 1, 2, 4, 5 );
+    public void filter() {
+        List<Integer> list = Lists.of( 1, 2, 4, 5 );
 
         assertThat( Lists.filter( list, i -> i > 2 ) ).containsExactly( 4, 5 );
         assertThat( Lists.filter( list, i -> i > 5 ) ).isEmpty();
         assertThat( Lists.filter( list, i -> i == 2 ) ).containsExactly( 2 );
     }
+
+    @Test
+    public void partition() {
+        ArrayList<Integer> list = Lists.of( 1, 2, 1, 4 );
+
+        Pair<List<Integer>, List<Integer>> partition = Lists.partition( list, v -> v > 2 );
+
+        assertThat( partition._1 ).containsExactly( 4 );
+        assertThat( partition._2 ).containsExactly( 1, 2, 1 );
+    }
+
+    @Test
+    public void sxx() {
+        Runnable f = () -> {} ;
+        System.out.println( Try.catching( f ) );
+    }
+
+
 }
