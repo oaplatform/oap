@@ -26,9 +26,11 @@ package oap.application.supervision;
 import lombok.SneakyThrows;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
+import oap.util.Optionals;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Optional;
 
 public class StartableService implements Supervised {
@@ -36,10 +38,10 @@ public class StartableService implements Supervised {
     private final String reloadWith;
     private final Object supervised;
     private final String startWith;
-    private final String stopWith;
+    private final List<String> stopWith;
     private boolean started;
 
-    public StartableService( Object supervised, String startWith, String stopWith, String reloadWith ) {
+    public StartableService( Object supervised, String startWith, List<String> stopWith, String reloadWith ) {
         this.supervised = supervised;
         this.startWith = startWith;
         this.stopWith = stopWith;
@@ -73,8 +75,13 @@ public class StartableService implements Supervised {
     @Override
     public void stop() {
         try {
-            if( started ) getControlMethod( stopWith )
-                .ifPresent( m -> m.invoke( supervised ) );
+            if( started ) {
+                stopWith
+                    .stream()
+                    .flatMap( m -> Optionals.toStream( getControlMethod( m ) ) )
+                    .findFirst()
+                    .ifPresent( m -> m.invoke( supervised ) );
+            }
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
         }

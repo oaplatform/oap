@@ -27,6 +27,7 @@ import oap.util.Stream;
 
 import java.io.Closeable;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -53,6 +54,12 @@ public interface Storage<T> extends Closeable, Iterable<T> {
     void deleteAll();
 
     long size();
+
+    Storage<T> copyAndClean();
+
+    void fsync();
+
+    Map<String, T> toMap();
 
     void addDataListener( DataListener<T> dataListener );
 

@@ -65,7 +65,7 @@ public class Buffers implements Closeable {
         try {
             if( java.nio.file.Files.exists( location ) )
                 readyBuffers = Files.readObject( location );
-            log.debug( "unsent buffers: {}", readyBuffers.size() );
+            log.info( "unsent buffers: {}", readyBuffers.size() );
         } catch( Exception e ) {
             log.warn( e.getMessage() );
         }
@@ -172,9 +172,9 @@ public class Buffers implements Closeable {
 
     static class ReadyQueue implements Serializable {
         static Cuid.Counter digestionIds = new Cuid.TimeSeedCounter();
-        private Queue<Buffer> buffers = new ConcurrentLinkedQueue<>();
+        private final ConcurrentLinkedQueue<Buffer> buffers = new ConcurrentLinkedQueue<>();
 
-        public final void ready( Buffer buffer ) {
+        public final synchronized void ready( Buffer buffer ) {
             buffer.close( digestionIds.next() );
             buffers.offer( buffer );
         }

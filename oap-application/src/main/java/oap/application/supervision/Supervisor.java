@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.util.BiStream;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 //@todo per module supervisor hierarchy
@@ -39,7 +40,7 @@ public class Supervisor {
     private LinkedHashMap<String, Supervised> scheduled = new LinkedHashMap<>();
     private boolean stopped = false;
 
-    public void startSupervised( String name, Object service, String startWith, String stopWith, String reloadWith ) {
+    public void startSupervised( String name, Object service, String startWith, List<String> stopWith, String reloadWith ) {
         this.supervised.put( name, new StartableService( service, startWith, stopWith, reloadWith ) );
     }
 

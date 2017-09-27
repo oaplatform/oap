@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Env {
     public static final String LOCALHOST;
     static final Path tmp = Paths.get( "/tmp/test" );
-    public static final Path tmpRoot = tmp.resolve( "temp" + teamcityBuildPrefix() );
+    public static final Path tmpRoot = tmp.resolve( "temp" + teamcityBuildPrefix() + "_" + System.currentTimeMillis() );
     private static final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
 
     static {

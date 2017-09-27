@@ -87,8 +87,8 @@ public class Cuid {
             if( ct > lastTime ) {
                 synchronized( TimeSeedCounter.class ) {
                     if( ct > lastTime ) {
-                        lastTime = ct;
                         value.set( ct << 16 );
+                        lastTime = ct;
                     }
                 }
             }

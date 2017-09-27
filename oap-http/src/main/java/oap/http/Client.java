@@ -261,6 +261,20 @@ public class Client implements Closeable {
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
+    public Response post( String uri, InputStream content, ContentType contentType, Map<String, Object> headers ) {
+        HttpPost request = new HttpPost( uri );
+        request.setEntity( new InputStreamEntity( content, contentType ) );
+        return execute( request, headers, FOREVER )
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
+    }
+
+    public Response post( String uri, byte[] content, ContentType contentType, Map<String, Object> headers ) {
+        HttpPost request = new HttpPost( uri );
+        request.setEntity( new ByteArrayEntity( content, contentType ) );
+        return execute( request, headers, FOREVER )
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
+    }
+
     public Response put( String uri, String content, ContentType contentType ) {
         HttpPut request = new HttpPut( uri );
         request.setEntity( new StringEntity( content, contentType ) );

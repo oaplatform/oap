@@ -31,18 +31,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static oap.concurrent.Threads.synchronizedOn;
 
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     protected final Identifier<T> identifier;
-    protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
+    volatile protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
     private List<DataListener<T>> dataListeners = new ArrayList<>();
 
     /**
@@ -117,6 +119,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                 T object = init.get();
                 m = new Metadata<>( id, object );
                 data.put( m.id, m );
+                m.update( m.object ); // fix modification time
             } else {
                 update.accept( m.object );
                 m.update( m.object );
@@ -155,7 +158,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         final Optional<Metadata<T>> metadata = deleteObject( id );
         metadata.ifPresent( m -> fireDeleted( m.object ) );
 
-        return metadata.map(m -> m.object);
+        return metadata.map( m -> m.object );
     }
 
     protected Optional<Metadata<T>> deleteObject( String id ) {
@@ -169,6 +172,24 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     @Override
     public long size() {
         return data.size();
+    }
+
+    @Override
+    public synchronized MemoryStorage<T> copyAndClean() {
+        final MemoryStorage<T> ms = new MemoryStorage<>( identifier );
+        ms.data = data;
+        this.data = new ConcurrentHashMap<>();
+        return ms;
+    }
+
+    @Override
+    public synchronized Map<String, T> toMap() {
+        return data.entrySet().stream().collect( Collectors.toMap( Map.Entry::getKey, entry -> entry.getValue().object ) );
+    }
+
+    @Override
+    public void fsync() {
+
     }
 
     protected void fireUpdated( T object, boolean isNew ) {

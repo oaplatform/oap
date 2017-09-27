@@ -32,7 +32,12 @@ import java.util.function.Function;
  */
 public class MockRemoteStatsDB implements RemoteStatsDB {
     public final ArrayList<Sync> syncs = new ArrayList<>();
+    private final KeySchema schema;
     private Function<Sync, RuntimeException> exceptionFunc;
+
+    public MockRemoteStatsDB( KeySchema schema ) {
+        this.schema = schema;
+    }
 
     @Override
     public boolean update( Sync data, String host ) {
@@ -41,6 +46,11 @@ public class MockRemoteStatsDB implements RemoteStatsDB {
         syncs.add( data );
 
         return true;
+    }
+
+    @Override
+    public KeySchema getSchema() {
+        return schema;
     }
 
     public void syncWithException( Function<Sync, RuntimeException> exceptionFunc ) {
