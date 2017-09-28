@@ -24,27 +24,20 @@
 package oap.application;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.remote.FST;
 import oap.application.remote.RemoteLocation;
-import oap.json.Binder;
 import oap.reflect.Coercions;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.util.Functions;
-import oap.util.Stream;
 
-import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import static java.util.Arrays.asList;
@@ -55,25 +48,7 @@ import static java.util.stream.Collectors.joining;
 public class Module {
     public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
     @SuppressWarnings( "unchecked" )
-    static final Coercions coersions = Coercions.basic()
-        .with( r -> r.underlying.isAssignableFrom( List.class ),
-            ( r, list ) -> {
-                if( list instanceof List<?>
-                    && ( ( List<?> ) list ).stream().allMatch( o -> o instanceof Map<?, ?> ) ) {
-                    return Stream.of( ( List<?> ) list )
-                        .map( map -> Binder.json.unmarshal(
-                            r.getCollectionComponentType().underlying, ( Map<String, Object> ) map ) )
-                        .toList();
-                } else return list;
-            } )
-        .with( r -> !r.assignableFrom( Map.class ),
-            ( r, map ) -> map instanceof Map<?, ?> ? Binder.json.unmarshal( new TypeReference<Object>() {
-                @Override
-                public Type getType() {
-                    return r.getType();
-                }
-            }, ( Map<String, Object> ) map ) : map )
-        .withIdentity();
+    static final Coercions coersions = Coercions.basic().withIdentity();
     public String name;
     public ArrayList<String> dependsOn = new ArrayList<>();
     public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
@@ -92,8 +67,8 @@ public class Module {
         public String certificatePassword;
         public String profile;
         public String name;
-        public Optional<Long> timeout = Optional.empty();
-        public Optional<FST.SerializationMethod> serialization = Optional.empty();
+        public long timeout = RemoteLocation.DEFAULT_TIMEOUT;
+        public FST.SerializationMethod serialization = FST.SerializationMethod.DEFAULT;
         public LinkedHashMap<String, Object> listen = new LinkedHashMap<>();
         public RemoteLocation remote;
         public boolean enabled = true;
@@ -110,8 +85,7 @@ public class Module {
                 .collect( joining( ", " ) )
                 + " } instead." );
             return new RemoteLocation( remoteUrl, remoteName, certificateLocation,
-                certificatePassword, timeout.orElse( RemoteLocation.DEFAULT_TIMEOUT ),
-                serialization.orElse( RemoteLocation.DEFAULT_SERIALIZATION ) );
+                certificatePassword, timeout, serialization );
         } );
 
         public RemoteLocation remoting() {
