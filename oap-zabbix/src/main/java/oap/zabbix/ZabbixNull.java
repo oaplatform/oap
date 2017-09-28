@@ -27,6 +27,11 @@ package oap.zabbix;
 /**
  * Created by igor.petrenko on 28.09.2017.
  */
-public interface Zabbix {
-    Response updateItem( String item, String value );
+public class ZabbixNull implements Zabbix {
+    private static final Response RESPONSE = new Response( "", "" );
+
+    @Override
+    public Response updateItem( String item, String value ) {
+        return RESPONSE;
+    }
 }

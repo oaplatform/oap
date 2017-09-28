@@ -33,7 +33,7 @@ import java.io.IOException;
  */
 public class ZabbixTest {
     public static void main( String[] args ) throws IOException {
-        val zabbix = new Zabbix( "zabbix.quple.rocks", 10051 );
+        val zabbix = new ZabbixImpl( "zabbix.quple.rocks", 10051 );
 
         zabbix.updateItem( "test-item", "19" );
         zabbix.updateItem( "test-item", "20" );
