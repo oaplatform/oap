@@ -61,6 +61,7 @@
         <module>oap-media</module>
         <module>oap-mail</module>
         <module>oap-stats-db</module>
+        <module>oap-zabbix</module>
         <module>maven</module>
     </modules>
 
