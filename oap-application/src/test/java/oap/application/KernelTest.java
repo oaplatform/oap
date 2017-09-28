@@ -78,7 +78,7 @@ public class KernelTest extends AbstractTest {
                 ServiceOne.Complex expected = new ServiceOne.Complex( 2 );
                 expected.map = Maps.of( __( "a", new ServiceOne.Complex( 1 ) ) );
                 assertThat( one.complex ).isEqualTo( expected );
-//                assertThat( one.complexes ).contains( new ServiceOne.Complex( 2 ) );
+                assertThat( one.complexes ).contains( new ServiceOne.Complex( 2 ) );
                 assertNotNull( two );
                 assertThat( two.j ).isEqualTo( 3000 );
                 assertThat( two.one ).isSameAs( one );
