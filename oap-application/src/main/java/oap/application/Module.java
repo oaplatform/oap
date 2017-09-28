@@ -111,7 +111,7 @@ public class Module {
                 + " } instead." );
             return new RemoteLocation( remoteUrl, remoteName, certificateLocation,
                 certificatePassword, timeout.orElse( RemoteLocation.DEFAULT_TIMEOUT ),
-                serialization.orElse( RemoteLocation.DEFAULT_SERIALIZATION ) );
+                serialization.orElse( FST.SerializationMethod.DEFAULT ) );
         } );
 
         public RemoteLocation remoting() {
