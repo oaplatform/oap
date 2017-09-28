@@ -24,7 +24,6 @@
 
 package oap.util;
 
-import lombok.val;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,10 +38,10 @@ import java.util.function.Predicate;
  * Created by igor.petrenko on 16.05.2017.
  */
 public class Collections {
-    public static <T, L extends Collection<T>> long count( L collection, Predicate<T> predicate ) {
+    public static <E, L extends Collection<E>> long count( L collection, Predicate<E> predicate ) {
         long count = 0;
 
-        for( val item : collection ) {
+        for( E item : collection ) {
             if( predicate.test( item ) ) count++;
         }
 
@@ -60,23 +59,19 @@ public class Collections {
     }
 
     public static <E, L extends Collection<E>> boolean allMatch( L list, Predicate<E> predicate ) {
-        for( val e : list ) {
-            if( !predicate.test( e ) ) return false;
-        }
+        for( E e : list ) if( !predicate.test( e ) ) return false;
         return true;
     }
 
     public static <E, L extends Collection<E>> boolean anyMatch( L list, Predicate<E> predicate ) {
-        for( val e : list ) {
-            if( predicate.test( e ) ) return true;
-        }
+        for( E e : list ) if( predicate.test( e ) ) return true;
         return false;
     }
 
     public static <G, E> Map<G, List<E>> groupBy( Collection<E> list, Function<E, G> classifier ) {
         final HashMap<G, List<E>> result = new HashMap<>();
 
-        for( val e : list ) {
+        for( E e : list ) {
             final G key = classifier.apply( e );
             result.computeIfAbsent( key, ( k ) -> new ArrayList<>() ).add( e );
         }
@@ -84,8 +79,12 @@ public class Collections {
         return result;
     }
 
+    /**
+     * @see Lists#partition(List, Predicate)
+     */
+    @Deprecated
     public static <E> void partition( Collection<E> list, List<E> left, List<E> right, Predicate<E> predicate ) {
-        for( val v : list ) {
+        for( E v : list ) {
             if( predicate.test( v ) ) right.add( v );
             else left.add( v );
         }
@@ -95,9 +94,7 @@ public class Collections {
         assert !ints.isEmpty();
 
         int max = Integer.MIN_VALUE;
-        for( val i : ints ) {
-            if( max < i ) max = i;
-        }
+        for( Integer i : ints ) if( max < i ) max = i;
 
         return max;
     }

@@ -48,9 +48,7 @@ public class Lists extends oap.util.Collections {
 
     @SafeVarargs
     public static <E> List<E> addAll( List<E> list, E... array ) {
-        for( val e : array ) {
-            list.add( e );
-        }
+        Collections.addAll( list, array );
         return list;
     }
 
@@ -81,14 +79,14 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <T> Pair<List<T>, List<T>> partition( List<T> list, Predicate<T> p ) {
-        ArrayList<T> left = new ArrayList<>();
-        ArrayList<T> right = new ArrayList<>();
+        ArrayList<T> match = new ArrayList<>();
+        ArrayList<T> nomatch = new ArrayList<>();
 
         for( T item : list )
-            if( p.test( item ) ) left.add( item );
-            else right.add( item );
+            if( p.test( item ) ) match.add( item );
+            else nomatch.add( item );
 
-        return __( left, right );
+        return __( match, nomatch );
     }
 
     public static <E, R> ArrayList<R> map( Collection<? extends E> list, Function<? super E, R> mapper ) {
@@ -106,9 +104,7 @@ public class Lists extends oap.util.Collections {
     public static <E> ArrayList<E> filter( List<E> list, Predicate<E> predicate ) {
         final ArrayList<E> result = new ArrayList<>();
 
-        for( val e : list ) {
-            if( predicate.test( e ) ) result.add( e );
-        }
+        for( E e : list ) if( predicate.test( e ) ) result.add( e );
 
         return result;
     }
@@ -190,6 +186,11 @@ public class Lists extends oap.util.Collections {
                 },
                 oap.util.Collectors.CH_ID );
         }
+    }
+
+    public static <E> boolean contains( List<E> list, Predicate<E> predicate ) {
+        for( E e : list ) if( predicate.test( e ) ) return true;
+        return false;
     }
 
 }

@@ -27,18 +27,25 @@ package oap.reflect;
 import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
+import java.lang.annotation.RetentionPolicy;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class CoercionsTest extends AbstractTest {
     @Test
     public void cast() {
         Coercions coercions = Coercions.basic().withIdentity();
-        assertEquals( coercions.cast( Reflect.reflect( int.class ), 1l ), 1 );
-        assertEquals( coercions.cast( Reflect.reflect( Integer.class ), 1l ), 1 );
-        assertEquals( coercions.cast( Reflect.reflect( boolean.class ), true ), true );
-        assertEquals( coercions.cast( Reflect.reflect( Boolean.class ), true ), true );
-        assertEquals( coercions.cast( Reflect.reflect( char.class ), "c" ), 'c' );
-        assertEquals( coercions.cast( Reflect.reflect( Character.class ), "a" ), 'a' );
+        assertThat( coercions.cast( Reflect.reflect( int.class ), 1L ) ).isEqualTo( 1 );
+        assertThat( coercions.cast( Reflect.reflect( Integer.class ), 1L ) ).isEqualTo( 1 );
+        assertThat( coercions.cast( Reflect.reflect( boolean.class ), true ) ).isEqualTo( true );
+        assertThat( coercions.cast( Reflect.reflect( Boolean.class ), true ) ).isEqualTo( true );
+        assertThat( coercions.cast( Reflect.reflect( char.class ), "c" ) ).isEqualTo( 'c' );
+        assertThat( coercions.cast( Reflect.reflect( Character.class ), "a" ) ).isEqualTo( 'a' );
+        assertThat( coercions.cast( Reflect.reflect( String.class ), "a" ) ).isEqualTo( "a" );
+        assertThat( coercions.cast( Reflect.reflect( Path.class ), "/a" ) ).isEqualTo( Paths.get( "/a" ) );
+        assertThat( coercions.cast( Reflect.reflect( Class.class ), "java.lang.String" ) ).isEqualTo( String.class );
+        assertThat( coercions.cast( Reflect.reflect( RetentionPolicy.class ), "SOURCE" ) ).isEqualTo( RetentionPolicy.SOURCE );
     }
-
 }

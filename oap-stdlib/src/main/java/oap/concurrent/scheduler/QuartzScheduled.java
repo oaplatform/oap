@@ -25,6 +25,7 @@ package oap.concurrent.scheduler;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
+import oap.util.Lists;
 import oap.util.Try;
 import org.quartz.JobDetail;
 
@@ -44,20 +45,18 @@ public class QuartzScheduled extends Scheduled {
 
             int i = 10;
 
-            while( --i >= 0 && Scheduler.scheduler.getCurrentlyExecutingJobs()
-                .stream()
-                .anyMatch( j -> j.getJobDetail().getKey().equals( job.getKey() ) ) ) {
+            while( --i >= 0 && Lists.contains( Scheduler.scheduler.getCurrentlyExecutingJobs(),
+                j -> j.getJobDetail().getKey().equals( job.getKey() ) ) ) {
 
                 try {
-                    Scheduler.scheduler.getCurrentlyExecutingJobs()
-                        .stream()
-                        .filter( j -> j.getJobDetail().getKey().equals( job.getKey() ) )
-                        .forEach( Try.consume( j -> {
+                    Lists.find( Scheduler.scheduler.getCurrentlyExecutingJobs(),
+                        j -> j.getJobDetail().getKey().equals( job.getKey() ) )
+                        .ifPresent( Try.consume( j -> {
                             log.debug( "running job [{}]...", j.getJobDetail().getKey() );
                             Scheduler.scheduler.interrupt( j.getJobDetail().getKey() );
                         } ) );
                 } catch( Exception e ) {
-                    e.printStackTrace();
+                    log.error( e.getMessage(), e );
                 }
 
                 Threads.sleepSafely( 1000 );

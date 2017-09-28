@@ -47,7 +47,7 @@ public class Functions {
          */
         R apply( T t, U u, S s );
 
-        default <V> oap.util.function.TriFunction<T, U, S, V> andThen(
+        default <V> TriFunction<T, U, S, V> andThen(
             Function<? super R, ? extends V> after ) {
             Objects.requireNonNull( after );
             return ( T t, U u, S s ) -> after.apply( apply( t, u, s ) );

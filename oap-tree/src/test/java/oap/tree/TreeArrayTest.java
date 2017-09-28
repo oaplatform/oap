@@ -24,12 +24,11 @@
 
 package oap.tree;
 
+import oap.util.Sets;
 import org.testng.annotations.Test;
 
-import java.util.HashSet;
 import java.util.Set;
 
-import static java.util.Arrays.asList;
 import static oap.tree.Dimension.ARRAY_LONG;
 import static oap.tree.Dimension.ARRAY_STRING;
 import static oap.tree.Dimension.LONG;
@@ -43,8 +42,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Created by igor.petrenko on 26.12.2016.
  */
 public class TreeArrayTest {
+
+    @SafeVarargs
     private static <T> Set<T> s( T... data ) {
-        return new HashSet<>( asList( data ) );
+        return Sets.of( data );
     }
 
     private static <T> Tree.Array as( boolean include, Set<T> values ) {

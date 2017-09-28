@@ -28,14 +28,13 @@ import java.net.URI;
 import java.nio.file.Path;
 
 public class RemoteLocation {
-    public static final FST.SerializationMethod DEFAULT_SERIALIZATION = FST.SerializationMethod.DEFAULT;
     public static long DEFAULT_TIMEOUT = 5000L;
     public URI url;
     public String name;
     public Path certificateLocation;
     public String certificatePassword;
     public long timeout = DEFAULT_TIMEOUT;
-    public FST.SerializationMethod serialization = DEFAULT_SERIALIZATION;
+    public FST.SerializationMethod serialization = FST.SerializationMethod.DEFAULT;
 
     public RemoteLocation() {
     }

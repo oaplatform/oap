@@ -30,6 +30,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.concurrent.LongAdder;
+import oap.reflect.TypeRef;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Dates;
@@ -44,6 +45,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -99,6 +101,17 @@ public class BinderTest extends AbstractTest {
         assertThat( result ).isEqualTo( source );
     }
 
+    private static <T> void assertBind( TypeRef<T> ref, T source ) {
+        System.out.println( "========================================" );
+        String json = Binder.json.marshal( source );
+        System.out.println( "JSON:" );
+        System.out.println( json );
+        T result = Binder.json.unmarshal( ref, json );
+        System.out.println( "Object:" );
+        System.out.println( result );
+        assertThat( result ).isEqualTo( source );
+    }
+
     @Test
     public void bindPrimitives() {
         assertBind( boolean.class, true );
@@ -126,6 +139,8 @@ public class BinderTest extends AbstractTest {
     @Test
     public void bindList() {
         assertBind( new TypeReference<ArrayList<Integer>>() {
+        }, Lists.of( 1, 2, 3 ) );
+        assertBind( new TypeRef<ArrayList<Integer>>() {
         }, Lists.of( 1, 2, 3 ) );
     }
 
@@ -233,7 +248,7 @@ public class BinderTest extends AbstractTest {
 
     @Test
     public void map() {
-        Bean bean = Binder.json.unmarshal( Bean.class, Maps.of(
+        LinkedHashMap<String, Object> map = Maps.of(
             __( "str", "aaa" ),
             __( "i", 1 ),
             __( "sb2", Maps.of(
@@ -241,8 +256,10 @@ public class BinderTest extends AbstractTest {
                 __( "i2", 2 ),
                 __( "list", Lists.of( 1, 2, 3, 4 ) )
             ) )
-        ) );
-        assertThat( bean ).isEqualTo( new Bean( "aaa", 1, new Bean2( "bbb", 2, Lists.of( 1, 2, 3, 4 ) ) ) );
+        );
+        Bean expected = new Bean( "aaa", 1, new Bean2( "bbb", 2, Lists.of( 1, 2, 3, 4 ) ) );
+        assertThat( Binder.json.<Bean>unmarshal( Bean.class, map ) ).isEqualTo( expected );
+
     }
 
     @Test
@@ -252,6 +269,7 @@ public class BinderTest extends AbstractTest {
 
         assertThat( path ).hasContent( "{\"map\":{\"a\":1,\"b\":2}}" );
     }
+
 }
 
 @ToString
@@ -493,5 +511,20 @@ class LongAdderBean {
     public LongAdderBean add( long value ) {
         la.add( value );
         return this;
+    }
+}
+
+@ToString
+@EqualsAndHashCode
+class Complex {
+    Bean bean;
+    List<Bean> list = new ArrayList<>();
+    Map<String, Bean> map = new LinkedHashMap<>();
+
+
+    public Complex( Bean bean, List<Bean> list, Map<String, Bean> map ) {
+        this.bean = bean;
+        this.list = list;
+        this.map = map;
     }
 }
