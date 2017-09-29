@@ -28,11 +28,13 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.json.Binder;
 import oap.net.Inet;
+import oap.zabbix.logback.ZabbixRequest;
 import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -45,7 +47,6 @@ import static java.util.Collections.singletonList;
  */
 @Slf4j
 public class ZabbixImpl implements Zabbix {
-    private static final byte header[] = { 'Z', 'B', 'X', 'D', '\1' };
     public final String host;
     public final int port;
     public int socketTimeout = 10000;
@@ -74,20 +75,7 @@ public class ZabbixImpl implements Zabbix {
             val data = new Data( Inet.hostname(), item, value );
             val request = new Request( singletonList( data ) );
 
-            val bRequest = Binder.json.marshal( request ).getBytes();
-            val bRequestLength = bRequest.length;
-
-            val baos = new ByteArrayOutputStream();
-            baos.write( header );
-            baos.write( new byte[] { ( byte ) ( bRequestLength & 0xFF ),
-                ( byte ) ( ( bRequestLength >> 8 ) & 0x00FF ),
-                ( byte ) ( ( bRequestLength >> 16 ) & 0x0000FF ),
-                ( byte ) ( ( bRequestLength >> 24 ) & 0x000000FF ),
-                '\0', '\0', '\0', '\0' } );
-            baos.write( bRequest );
-
-            outputStream.write( baos.toByteArray() );
-            outputStream.flush();
+            new ZabbixRequest( request ).writeExternal( new ObjectOutputStream( outputStream ) );
 
             val buf = new byte[1024];
             val responseBaos = new ByteArrayOutputStream();
