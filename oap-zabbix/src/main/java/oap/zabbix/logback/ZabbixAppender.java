@@ -45,11 +45,11 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Collection;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.Collections.singletonList;
+import java.util.stream.Collectors;
 
 /**
  * Created by igor.petrenko on 29.09.2017.
@@ -69,7 +69,7 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
     private Future<?> task;
     private String peerId;
 
-    private LinkedBlockingDeque<ILoggingEvent> deque;
+    volatile private LinkedBlockingDeque<ILoggingEvent> deque;
     private volatile Socket socket;
     private SocketConnector connector;
 
@@ -125,7 +125,7 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
 
 
         if( errorCount == 0 ) {
-            deque = new LinkedBlockingDeque<>( queueSize );
+            deque = createDeque();
             peerId = "remote peer " + remoteHost + ":" + port + ": ";
             connector = createConnector( address, port );
             task = getContext().getScheduledExecutorService().submit( this::connectSocketAndDispatchEvents );
@@ -165,24 +165,37 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
 
     private void dispatchEvents( ObjectWriter objectWriter ) throws InterruptedException, IOException {
         while( true ) {
-            ILoggingEvent event = deque.takeFirst();
+            val q = deque;
+            deque = createDeque();
+
+            val dataList = q
+                .stream()
+                .map( ( ILoggingEvent event ) -> new Data( Inet.hostname(), event.getLoggerName().substring( prefixLength ), event.getMessage() ) )
+                .collect( Collectors.toList() );
+
+            val request = new Request( dataList );
+            val zabbixRequest = new ZabbixRequest( request );
+
             try {
-                val data = new Data( Inet.hostname(), event.getLoggerName().substring( prefixLength ), event.getMessage() );
-                val request = new Request( singletonList( data ) );
-                val zabbixRequest = new ZabbixRequest( request );
                 objectWriter.write( zabbixRequest );
             } catch( IOException e ) {
-                tryReAddingEventToFrontOfQueue( event );
+                tryReAddingEventsToFrontOfQueue( q );
                 throw e;
             }
         }
     }
 
-    private void tryReAddingEventToFrontOfQueue( ILoggingEvent event ) {
-        final boolean wasInserted = deque.offerFirst( event );
-        if( !wasInserted ) {
-            addInfo( "Dropping event due to socket connection error and maxed out deque capacity" );
-        }
+    private LinkedBlockingDeque<ILoggingEvent> createDeque() {
+        return new LinkedBlockingDeque<>( queueSize );
+    }
+
+    private void tryReAddingEventsToFrontOfQueue( Collection<ILoggingEvent> events ) {
+        events.forEach( event -> {
+            final boolean wasInserted = deque.offerFirst( event );
+            if( !wasInserted ) {
+                addInfo( "Dropping event due to socket connection error and maxed out deque capacity" );
+            }
+        } );
     }
 
     private boolean socketConnectionCouldBeEstablished() throws InterruptedException {
