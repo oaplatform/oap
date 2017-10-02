@@ -70,6 +70,7 @@ public class Kernel {
         for( Map.Entry<String, Module.Service> entry : services.entrySet() ) {
             Module.Service service = entry.getValue();
             if( !service.enabled ) {
+                initialized.add( service.name );
                 log.debug( "service {} is disabled.", entry.getKey() );
                 continue;
             }
