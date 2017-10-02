@@ -35,6 +35,7 @@ import oap.reflect.Reflection;
 import oap.util.Optionals;
 import oap.util.Sets;
 import oap.util.Stream;
+import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.URL;
@@ -62,7 +63,19 @@ public class Kernel {
         this.modules = modules;
     }
 
-    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
+    private static Predicate<String> isServiceEnabled( Set<Module> modules ) {
+        return ( name ) -> {
+            for( val module : modules ) {
+                final Module.Service service = module.services.get( name );
+                if( service != null && !service.enabled ) return false;
+            }
+
+            return true;
+        };
+    }
+
+    private Map<String, Module.Service> initializeServices( Predicate<String> enabled,
+                                                            Map<String, Module.Service> services,
                                                             Set<String> initialized, ApplicationConfiguration config ) {
 
         HashMap<String, Module.Service> deferred = new HashMap<>();
@@ -83,8 +96,7 @@ public class Kernel {
             val dependsOn = new ArrayList<String>();
 
             for( val s : service.dependsOn ) {
-                val ds = services.get( s );
-                if( ds == null || ds.enabled ) dependsOn.add( s );
+                if( enabled.evaluate( s ) ) dependsOn.add( s );
             }
 
             if( initialized.containsAll( dependsOn ) ) {
@@ -136,7 +148,8 @@ public class Kernel {
             }
         }
 
-        return deferred.size() == services.size() ? deferred : initializeServices( deferred, initialized, config );
+        return deferred.size() == services.size() ? deferred
+            : initializeServices( enabled, deferred, initialized, config );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -198,7 +211,7 @@ public class Kernel {
             if( initialized.containsAll( module.dependsOn ) ) {
 
                 Map<String, Module.Service> def =
-                    initializeServices( module.services, initializedServices, config );
+                    initializeServices( isServiceEnabled( modules ), module.services, initializedServices, config );
                 if( !def.isEmpty() ) {
                     Set<String> names = Sets.map( def.entrySet(), Map.Entry::getKey );
                     log.error( "failed to initialize: " + names );
