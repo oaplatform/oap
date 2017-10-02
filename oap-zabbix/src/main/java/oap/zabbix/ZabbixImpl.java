@@ -34,7 +34,6 @@ import org.apache.commons.io.IOUtils;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -75,7 +74,7 @@ public class ZabbixImpl implements Zabbix {
             val data = new Data( Inet.hostname(), item, value );
             val request = new Request( singletonList( data ) );
 
-            new ZabbixRequest( request ).writeExternal( new ObjectOutputStream( outputStream ) );
+            ZabbixRequest.writeExternal( request, outputStream );
 
             val buf = new byte[1024];
             val responseBaos = new ByteArrayOutputStream();

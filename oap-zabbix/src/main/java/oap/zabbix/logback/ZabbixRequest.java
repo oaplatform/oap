@@ -28,28 +28,18 @@ import lombok.ToString;
 import lombok.val;
 import oap.json.Binder;
 import oap.zabbix.Request;
-import org.apache.commons.lang3.NotImplementedException;
 
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.OutputStream;
 
 /**
  * Created by igor.petrenko on 29.09.2017.
  */
 @ToString
-public class ZabbixRequest implements Externalizable {
+public final class ZabbixRequest {
     private static final byte header[] = { 'Z', 'B', 'X', 'D', '\1' };
 
-    public final Request request;
-
-    public ZabbixRequest( Request request ) {
-        this.request = request;
-    }
-
-    @Override
-    public void writeExternal( ObjectOutput out ) throws IOException {
+    public static void writeExternal( Request request, OutputStream out ) throws IOException {
         out.write( header );
 
         val bRequest = Binder.json.marshal( request ).getBytes();
@@ -63,10 +53,5 @@ public class ZabbixRequest implements Externalizable {
         out.write( bRequest );
 
         out.flush();
-    }
-
-    @Override
-    public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException {
-        throw new NotImplementedException( "" );
     }
 }

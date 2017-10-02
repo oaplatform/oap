@@ -179,7 +179,6 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
 
 
         val request = new Request( list );
-        val zabbixRequest = new ZabbixRequest( request );
 
         try {
             if( !socketConnectionCouldBeEstablished() ) {
@@ -188,12 +187,12 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
 
             addInfo( peerId + "connection established" );
 
-            val objectOutputStream = new ObjectOutputStream( socket.getOutputStream() );
+            val outputStream = socket.getOutputStream();
             val inputStream = socket.getInputStream();
 
-            addInfo( "zabbixRequest = " + zabbixRequest );
-            zabbixRequest.writeExternal( objectOutputStream );
-            objectOutputStream.flush();
+            addInfo( "zabbixRequest = " + request );
+            ZabbixRequest.writeExternal( request, outputStream );
+            outputStream.flush();
 
             val buf = new byte[1024];
             val responseBaos = new ByteArrayOutputStream();
