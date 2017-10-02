@@ -39,6 +39,7 @@ import javax.net.SocketFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -148,17 +149,11 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
 
     private void connectSocketAndDispatchEvents() {
         try {
-            while( socketConnectionCouldBeEstablished() ) {
+            while( true ) {
                 try {
-                    ObjectOutputStream objectWriter = createObjectWriterForSocket();
-                    addInfo( peerId + "connection established" );
-                    dispatchEvents( objectWriter );
+                    dispatchEvents();
                 } catch( IOException ex ) {
                     addInfo( peerId + "connection failed: " + ex );
-                } finally {
-                    CloseUtil.closeQuietly( socket );
-                    socket = null;
-                    addInfo( peerId + "connection closed" );
                 }
             }
         } catch( InterruptedException ex ) {
@@ -167,7 +162,7 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
         addInfo( "shutting down" );
     }
 
-    private void dispatchEvents( ObjectOutputStream objectWriter ) throws InterruptedException, IOException {
+    private void dispatchEvents() throws InterruptedException, IOException {
         ILoggingEvent event = deque.takeFirst();
 
         val events = new ArrayList<ILoggingEvent>();
@@ -187,14 +182,22 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
         val zabbixRequest = new ZabbixRequest( request );
 
         try {
+            if( !socketConnectionCouldBeEstablished() ) {
+                throw new ConnectException();
+            }
+
+            addInfo( peerId + "connection established" );
+
+            val objectOutputStream = new ObjectOutputStream( socket.getOutputStream() );
+            val inputStream = socket.getInputStream();
+
             addInfo( "zabbixRequest = " + zabbixRequest );
-            zabbixRequest.writeExternal( objectWriter );
-            objectWriter.flush();
+            zabbixRequest.writeExternal( objectOutputStream );
+            objectOutputStream.flush();
 
             val buf = new byte[1024];
             val responseBaos = new ByteArrayOutputStream();
 
-            val inputStream = socket.getInputStream();
 
             while( true ) {
                 int read = inputStream.read( buf );
@@ -216,6 +219,10 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
         } catch( IOException e ) {
             tryReAddingEventsToFrontOfQueue( events );
             throw e;
+        } finally {
+            CloseUtil.closeQuietly( socket );
+            socket = null;
+            addInfo( peerId + "connection closed" );
         }
     }
 
