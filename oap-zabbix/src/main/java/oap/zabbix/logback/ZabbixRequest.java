@@ -24,6 +24,7 @@
 
 package oap.zabbix.logback;
 
+import lombok.ToString;
 import lombok.val;
 import oap.json.Binder;
 import oap.zabbix.Request;
@@ -37,6 +38,7 @@ import java.io.ObjectOutput;
 /**
  * Created by igor.petrenko on 29.09.2017.
  */
+@ToString
 public class ZabbixRequest implements Externalizable {
     private static final byte header[] = { 'Z', 'B', 'X', 'D', '\1' };
 

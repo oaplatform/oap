@@ -45,11 +45,11 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * Created by igor.petrenko on 29.09.2017.
@@ -69,9 +69,15 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
     private Future<?> task;
     private String peerId;
 
-    volatile private LinkedBlockingDeque<ILoggingEvent> deque;
+    private LinkedBlockingDeque<ILoggingEvent> deque;
     private volatile Socket socket;
     private SocketConnector connector;
+
+    private static void addEvent( ILoggingEvent event, ArrayList<Data> list ) {
+        val data = new Data( Inet.hostname(), event.getLoggerName().substring( prefixLength ), event.getMessage() );
+
+        list.add( data );
+    }
 
     @Override
     protected void append( ILoggingEvent event ) {
@@ -164,24 +170,30 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
     }
 
     private void dispatchEvents( ObjectWriter objectWriter ) throws InterruptedException, IOException {
-        while( true ) {
-            val q = deque;
-            deque = createDeque();
+        ILoggingEvent event = deque.takeFirst();
 
-            val dataList = q
-                .stream()
-                .map( ( ILoggingEvent event ) -> new Data( Inet.hostname(), event.getLoggerName().substring( prefixLength ), event.getMessage() ) )
-                .collect( Collectors.toList() );
+        val events = new ArrayList<ILoggingEvent>();
+        events.add( event );
 
-            val request = new Request( dataList );
-            val zabbixRequest = new ZabbixRequest( request );
+        val list = new ArrayList<Data>();
 
-            try {
-                objectWriter.write( zabbixRequest );
-            } catch( IOException e ) {
-                tryReAddingEventsToFrontOfQueue( q );
-                throw e;
-            }
+        addEvent( event, list );
+
+        while( ( event = deque.pollFirst() ) != null ) {
+            events.add( event );
+            addEvent( event, list );
+        }
+
+
+        val request = new Request( list );
+        val zabbixRequest = new ZabbixRequest( request );
+
+        try {
+            addInfo( "zabbixRequest = " + zabbixRequest );
+            objectWriter.write( zabbixRequest );
+        } catch( IOException e ) {
+            tryReAddingEventsToFrontOfQueue( events );
+            throw e;
         }
     }
 
