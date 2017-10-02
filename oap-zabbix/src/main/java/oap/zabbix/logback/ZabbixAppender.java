@@ -27,7 +27,6 @@ package oap.zabbix.logback;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 import ch.qos.logback.core.net.DefaultSocketConnector;
-import ch.qos.logback.core.net.ObjectWriter;
 import ch.qos.logback.core.net.SocketConnector;
 import ch.qos.logback.core.util.CloseUtil;
 import ch.qos.logback.core.util.Duration;
@@ -35,16 +34,15 @@ import lombok.val;
 import oap.net.Inet;
 import oap.zabbix.Data;
 import oap.zabbix.Request;
-import org.apache.commons.lang3.NotImplementedException;
 
 import javax.net.SocketFactory;
-import java.io.Externalizable;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.Future;
@@ -74,7 +72,7 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
     private SocketConnector connector;
 
     private static void addEvent( ILoggingEvent event, ArrayList<Data> list ) {
-        val data = new Data( Inet.hostname(), event.getLoggerName().substring( prefixLength ), event.getMessage() );
+        val data = new Data( Inet.hostname(), event.getLoggerName().substring( prefixLength ), event.getFormattedMessage() );
 
         list.add( data );
     }
@@ -152,7 +150,7 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
         try {
             while( socketConnectionCouldBeEstablished() ) {
                 try {
-                    ObjectWriter objectWriter = createObjectWriterForSocket();
+                    ObjectOutputStream objectWriter = createObjectWriterForSocket();
                     addInfo( peerId + "connection established" );
                     dispatchEvents( objectWriter );
                 } catch( IOException ex ) {
@@ -169,7 +167,7 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
         addInfo( "shutting down" );
     }
 
-    private void dispatchEvents( ObjectWriter objectWriter ) throws InterruptedException, IOException {
+    private void dispatchEvents( ObjectOutputStream objectWriter ) throws InterruptedException, IOException {
         ILoggingEvent event = deque.takeFirst();
 
         val events = new ArrayList<ILoggingEvent>();
@@ -190,7 +188,31 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
 
         try {
             addInfo( "zabbixRequest = " + zabbixRequest );
-            objectWriter.write( zabbixRequest );
+            zabbixRequest.writeExternal( objectWriter );
+            objectWriter.flush();
+
+            val buf = new byte[1024];
+            val responseBaos = new ByteArrayOutputStream();
+
+            val inputStream = socket.getInputStream();
+
+            while( true ) {
+                int read = inputStream.read( buf );
+                if( read <= 0 ) {
+                    break;
+                }
+                responseBaos.write( buf, 0, read );
+            }
+
+            val bResponse = responseBaos.toByteArray();
+
+            if( bResponse.length < 13 ) {
+                addInfo( "response.length < 13" );
+            } else {
+                String jsonString = new String( bResponse, 13, bResponse.length - 13, StandardCharsets.UTF_8 );
+                addInfo( "response = " + jsonString );
+            }
+
         } catch( IOException e ) {
             tryReAddingEventsToFrontOfQueue( events );
             throw e;
@@ -234,9 +256,9 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
         return SocketFactory.getDefault();
     }
 
-    private ObjectWriter createObjectWriterForSocket() throws IOException {
+    private ObjectOutputStream createObjectWriterForSocket() throws IOException {
         socket.setSoTimeout( acceptConnectionTimeout );
-        ObjectWriter objectWriter = new DirectAutoFlushingObjectWriter( socket.getOutputStream() );
+        ObjectOutputStream objectWriter = new ObjectOutputStream( socket.getOutputStream() );
         socket.setSoTimeout( 0 );
         return objectWriter;
     }
@@ -275,23 +297,5 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
 
     void setAcceptConnectionTimeout( int acceptConnectionTimeout ) {
         this.acceptConnectionTimeout = acceptConnectionTimeout;
-    }
-
-    private static class DirectAutoFlushingObjectWriter implements ObjectWriter {
-        private final OutputStream outputStream;
-
-        public DirectAutoFlushingObjectWriter( OutputStream outputStream ) {
-            this.outputStream = outputStream;
-        }
-
-        @Override
-        public void write( Object object ) throws IOException {
-            throw new NotImplementedException( "" );
-        }
-
-        public void write( Externalizable externalizable ) throws IOException {
-            externalizable.writeExternal( new ObjectOutputStream( outputStream ) );
-            outputStream.flush();
-        }
     }
 }
