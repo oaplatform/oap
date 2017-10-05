@@ -26,6 +26,7 @@ package oap.statsdb;
 
 import com.google.common.collect.Iterators;
 import lombok.AllArgsConstructor;
+import lombok.ToString;
 import lombok.val;
 import oap.storage.MemoryStorage;
 import oap.storage.SingleFileStorage;
@@ -152,6 +153,7 @@ public class StatsDBTest extends AbstractTest {
         }
     }
 
+    @ToString
     @AllArgsConstructor
     public static class MockKey2 implements Iterable<String> {
         public final String key1;
@@ -163,6 +165,7 @@ public class StatsDBTest extends AbstractTest {
         }
     }
 
+    @ToString
     @AllArgsConstructor
     public static class MockKey1 implements Iterable<String> {
         public final String key1;
@@ -173,6 +176,7 @@ public class StatsDBTest extends AbstractTest {
         }
     }
 
+    @ToString
     public static class MockValue implements Node.Value<MockValue> {
         public long l1;
         public int i2;
