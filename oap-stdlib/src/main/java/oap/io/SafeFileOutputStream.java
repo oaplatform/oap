@@ -52,7 +52,7 @@ public class SafeFileOutputStream extends FileOutputStream {
     public void close() throws IOException {
         super.close();
         final Path unsafePath = Paths.get( this.path + ".unsafe" );
-        if( !java.nio.file.Files.exists( unsafePath ) )
+        if( !java.nio.file.Files.exists( unsafePath ) || java.nio.file.Files.size( unsafePath ) == 0 )
             Files.delete( unsafePath );
         else
             Files.rename( unsafePath, this.path );
