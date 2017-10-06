@@ -41,33 +41,41 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Created by Igor Petrenko on 15.04.2016.
  */
 public class DictionaryParserTest extends AbstractTest {
-   @Test
-   public void testSerialize() {
-      final Path path = Env.tmpPath( "test/test.json" );
-      DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path );
+    @Test
+    public void testSerialize() {
+        final Path path = Env.tmpPath( "test/test.json" );
+        DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path );
 
-      final DictionaryRoot dictionary = DictionaryParser.parse( path );
+        final DictionaryRoot dictionary = DictionaryParser.parse( path );
 
-      assertThat( dictionary.getValues() ).contains( new DictionaryLeaf( "id2", true, '2',
-         Maps.of( __( "title", "title2" ) ) )
-      );
+        assertThat( dictionary.getValues() ).contains( new DictionaryLeaf( "id2", true, '2',
+            Maps.of( __( "title", "title2" ) ) )
+        );
 
-      assertThat( dictionary.getValues().get( 0 ).getValues() ).contains(
-         new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
-      );
+        assertThat( dictionary.getValues().get( 0 ).getValues() ).contains(
+            new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
+        );
 
-      assertThat( dictionary.getProperty( "version" ) ).contains( 1L );
-   }
+        assertThat( dictionary.getProperty( "version" ) ).contains( 1L );
+    }
 
-   @Test(
-      expectedExceptions = {DictionaryError.class},
-      expectedExceptionsMessageRegExp = "duplicate eid: path: /id1; eid: 11; one: id11; two: id12, path: /id1/id12; eid: 50; one: id2; two: id3"
-   )
-   public void testInvalidEid() {
-      final Optional<URL> url = Resources.url( getClass(), getClass().getSimpleName() + "/" + "invalid-eid-dictionary.conf" );
+    @Test(
+        expectedExceptions = { DictionaryError.class },
+        expectedExceptionsMessageRegExp = "duplicate eid: path: /id1; eid: 11; one: id11; two: id12, path: /id1/id12; eid: 50; one: id2; two: id3"
+    )
+    public void testInvalidEid() {
+        final Optional<URL> url = Resources.url( getClass(), getClass().getSimpleName() + "/" + "invalid-eid-dictionary.conf" );
 
-      assertThat( url ).isPresent();
+        assertThat( url ).isPresent();
 
-      DictionaryParser.parse( url.get() );
-   }
+        DictionaryParser.parse( url.get() );
+    }
+
+    @Test
+    public void testZeroStringEid() {
+        final DictionaryRoot dictionary = Dictionaries.getDictionary( "test-dictionary2" );
+        assertThat(dictionary.getOrDefault( 0, "not found" )).isEqualTo( "-" );
+        assertThat(dictionary.getOrDefault( 'I', "not found" )).isEqualTo( "IMAGE" );
+
+    }
 }
