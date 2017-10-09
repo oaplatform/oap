@@ -54,7 +54,6 @@ import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
-import oap.reflect.Coercions;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
 import oap.util.Try;
@@ -147,6 +146,19 @@ public class Binder {
         return ( JsonDeserializer<T> ) new DateTimeDeserializer( cls, JACKSON_DATE_FORMAT );
     }
 
+    private static <T> TypeReference<T> toTypeReference( TypeRef<T> ref ) {
+        return new TypeReference<T>() {
+            @Override
+            public Type getType() {
+                return ref.type();
+            }
+        };
+    }
+
+    public ObjectMapper getMapper() {
+        return mapper;
+    }
+
     public final JsonGenerator getJsonGenerator( Path path ) {
         try {
             return mapper.getFactory().createGenerator( path.toFile(), JsonEncoding.UTF8 );
@@ -192,7 +204,6 @@ public class Binder {
         }
     }
 
-
     public void marshal( Path path, Object object ) {
         Files.ensureFile( path );
 
@@ -227,15 +238,6 @@ public class Binder {
             log.trace( "json: " + string );
             throw new JsonException( "json error: " + e.getMessage(), e );
         }
-    }
-
-    private static <T> TypeReference<T> toTypeReference( TypeRef<T> ref ) {
-        return new TypeReference<T>() {
-            @Override
-            public Type getType() {
-                return ref.type();
-            }
-        };
     }
 
     @Deprecated
