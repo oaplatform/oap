@@ -24,11 +24,12 @@
 
 package oap.ws;
 
-import oap.application.Application;
+import oap.application.Kernel;
 import oap.concurrent.SynchronizedThread;
 import oap.http.PlainHttpListener;
 import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
+import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
 import org.testng.annotations.AfterClass;
@@ -42,22 +43,25 @@ import static oap.http.testng.HttpAsserts.reset;
 /**
  * Created by igor.petrenko on 16.02.2017.
  */
-public class AbstractWebServicesTest {
+public class AbstractWebServicesTest extends AbstractTest {
     private Server server;
     private WebServices ws;
 
     private SynchronizedThread listener;
+    private Kernel kernel;
 
     @BeforeClass
     public void startServer() {
         Env.resetPorts();
-
+        kernel = new Kernel( Lists.empty() );
         server = new Server( 100 );
         ws = new WebServices( server, new SessionManager( 10, null, "/" ),
             GenericCorsPolicy.DEFAULT,
             Lists.map( getConfig(), n -> WsConfig.CONFIGURATION.fromResource( getClass(), n ) )
         );
 
+        kernel.start();
+        registerServices( kernel );
         ws.start();
         listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
         listener.start();
@@ -67,13 +71,16 @@ public class AbstractWebServicesTest {
         return asList( "ws.json", "ws.conf" );
     }
 
+    protected void registerServices( Kernel kernel ) {
+
+    }
+
     @AfterClass
     public void stopServer() {
         listener.stop();
         server.stop();
         ws.stop();
+        kernel.stop();
         reset();
-
-        Application.unregisterServices();
     }
 }

@@ -24,13 +24,11 @@
 
 package oap.ws;
 
-import oap.application.Application;
+import oap.application.Kernel;
 import oap.http.HttpResponse;
 import oap.util.Lists;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
 import java.util.List;
 
 import static oap.http.Request.HttpMethod.GET;
@@ -39,21 +37,18 @@ import static oap.http.testng.HttpAsserts.assertGet;
 
 public class WebServicesProfileTest extends AbstractWebServicesTest {
 
-    @BeforeClass
     @Override
-    public void startServer() {
-        Application.register( "no-profile", new TestWS() );
-        Application.register( "with-profile", new TestWS() );
-        Application.register( "new-profile", new TestWS() );
+    protected void registerServices( Kernel kernel ) {
+        kernel.register( "no-profile", new TestWS() );
+        kernel.register( "with-profile", new TestWS() );
+        kernel.register( "new-profile", new TestWS() );
+        kernel.enableProfiles( "test-profile" );
 
-        Application.registerProfiles( Lists.of( "test-profile" ) );
-
-        super.startServer();
     }
 
     @Override
     protected List<String> getConfig() {
-        return Collections.singletonList( "ws-profile.conf" );
+        return Lists.of( "ws-profile.conf" );
     }
 
     @Test

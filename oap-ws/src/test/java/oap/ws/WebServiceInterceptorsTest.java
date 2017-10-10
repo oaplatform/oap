@@ -24,12 +24,11 @@
 
 package oap.ws;
 
-import oap.application.Application;
+import oap.application.Kernel;
 import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Session;
 import oap.reflect.Reflection;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
@@ -42,14 +41,11 @@ import static oap.http.testng.HttpAsserts.assertGet;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
-    @BeforeClass
     @Override
-    public void startServer() {
-        Application.register( "test", new TestWS() );
-        Application.register( "empty-interceptor", new EmptyInterceptor() );
-        Application.register( "error-interceptor", new ErrorInterceptor() );
-
-        super.startServer();
+    protected void registerServices( Kernel kernel ) {
+        kernel.register( "test", new TestWS() );
+        kernel.register( "empty-interceptor", new EmptyInterceptor() );
+        kernel.register( "error-interceptor", new ErrorInterceptor() );
     }
 
     @Override

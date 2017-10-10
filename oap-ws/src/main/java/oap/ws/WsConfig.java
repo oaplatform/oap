@@ -25,15 +25,13 @@ package oap.ws;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.application.config.Configuration;
-import oap.http.cors.CorsPolicy;
+import oap.application.Configuration;
 import oap.http.Protocol;
+import oap.http.cors.CorsPolicy;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
 
 @EqualsAndHashCode
 @ToString

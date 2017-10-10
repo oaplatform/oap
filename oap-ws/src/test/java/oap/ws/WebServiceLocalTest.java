@@ -24,9 +24,8 @@
 
 package oap.ws;
 
-import oap.application.Application;
+import oap.application.Kernel;
 import oap.http.HttpResponse;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -37,12 +36,10 @@ import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertGet;
 
 public class WebServiceLocalTest extends AbstractWebServicesTest {
-    @BeforeClass
-    @Override
-    public void startServer() {
-        Application.register( "test", new TestWS() );
 
-        super.startServer();
+    @Override
+    protected void registerServices( Kernel kernel ) {
+        kernel.register( "test", new TestWS() );
     }
 
     @Override

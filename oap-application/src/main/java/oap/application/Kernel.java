@@ -23,8 +23,8 @@
  */
 package oap.application;
 
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.json.Binder;
@@ -35,12 +35,11 @@ import oap.reflect.Reflection;
 import oap.util.Optionals;
 import oap.util.Sets;
 import oap.util.Stream;
-import org.apache.commons.collections4.Predicate;
+import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -48,34 +47,34 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.collections4.CollectionUtils.subtract;
 
 @Slf4j
+@ToString( of = "name" )
 public class Kernel {
-    private final List<URL> modules;
-    private Supervisor supervisor = new Supervisor();
-    private Set<Module> moduleConfigs;
+    public static final String DEFAULT = Strings.DEFAULT;
+    final String name;
+    private final List<URL> configurations;
+    private final Set<String> profiles = Sets.empty();
+    private final Set<Module> modules = Sets.empty();
+    private final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
+    private final Supervisor supervisor = new Supervisor();
 
-    public Kernel( List<URL> modules ) {
-        this.modules = modules;
+    public Kernel( String name, List<URL> configurations ) {
+        this.name = name;
+        this.configurations = configurations;
     }
 
-    private static Predicate<String> isServiceEnabled( Set<Module> modules ) {
-        return ( name ) -> {
-            for( val module : modules ) {
-                final Module.Service service = module.services.get( name );
-                if( service != null && !service.enabled ) return false;
-            }
-
-            return true;
-        };
+    public Kernel( List<URL> configurations ) {
+        this( DEFAULT, configurations );
     }
 
-    private Map<String, Module.Service> initializeServices( Predicate<String> enabled,
-                                                            Map<String, Module.Service> services,
+    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
                                                             Set<String> initialized, ApplicationConfiguration config ) {
 
         HashMap<String, Module.Service> deferred = new HashMap<>();
@@ -93,11 +92,7 @@ public class Kernel {
                 continue;
             }
 
-            val dependsOn = new ArrayList<String>();
-
-            for( val s : service.dependsOn ) {
-                if( enabled.evaluate( s ) ) dependsOn.add( s );
-            }
+            List<String> dependsOn = Stream.of( service.dependsOn ).filter( this::serviceEnabled ).toList();
 
             if( initialized.containsAll( dependsOn ) ) {
                 log.debug( "initializing {} as {}", entry.getKey(), serviceName );
@@ -111,7 +106,7 @@ public class Kernel {
                 Object instance;
                 if( !service.isRemoteService() ) {
                     try {
-                        initializeServiceLinks( serviceName, service, services );
+                        initializeServiceLinks( serviceName, service );
                         instance = reflect.newInstance( service.parameters );
                         initializeListeners( service.listen, instance );
                     } catch( ReflectException e ) {
@@ -121,9 +116,9 @@ public class Kernel {
                 } else instance = RemoteInvocationHandler.proxy(
                     service.remoting(),
                     reflect.underlying );
-                Application.register( serviceName, instance );
+                register( serviceName, instance );
                 if( !serviceName.equals( entry.getKey() ) )
-                    Application.register( entry.getKey(), instance );
+                    register( entry.getKey(), instance );
 
                 if( service.supervision.supervise )
                     supervisor.startSupervised( serviceName, instance,
@@ -149,25 +144,26 @@ public class Kernel {
         }
 
         return deferred.size() == services.size() ? deferred
-            : initializeServices( enabled, deferred, initialized, config );
+            : initializeServices( deferred, initialized, config );
     }
 
     @SuppressWarnings( "unchecked" )
-    private void initializeServiceLinks( String name, Module.Service service, Map<String, Module.Service> services ) {
-        initializeServiceLinks( name, service.parameters, services );
-        initializeServiceLinks( name, service.listen, services );
+    private void initializeServiceLinks( String name, Module.Service service ) {
+        initializeServiceLinks( name, service.parameters );
+        initializeServiceLinks( name, service.listen );
     }
 
-    private void initializeServiceLinks( String name, LinkedHashMap<String, Object> map, Map<String, Module.Service> services ) {
+    @SuppressWarnings( "unchecked" )
+    private void initializeServiceLinks( String name, LinkedHashMap<String, Object> map ) {
         for( Map.Entry<String, Object> entry : map.entrySet() ) {
             final Object value = entry.getValue();
             final String key = entry.getKey();
 
-            if( value instanceof String ) entry.setValue( resolve( name, key, value, services, true ) );
+            if( value instanceof String ) entry.setValue( resolve( name, key, value, true ) );
             else if( value instanceof List<?> ) {
                 ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
                 while( it.hasNext() ) {
-                    final Object link = resolve( name, key, it.next(), services, false );
+                    final Object link = resolve( name, key, it.next(), false );
 
                     if( link != null ) it.set( link );
                     else it.remove();
@@ -182,22 +178,18 @@ public class Kernel {
             String methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
             Optionals.fork( Reflect.reflect( service.getClass() ).method( methodName ) )
                 .ifPresent( m -> m.invoke( service, instance ) )
-                .ifAbsentThrow( () ->
-                    new ReflectException( "listener " + listener + " should have method " + methodName + " in " + service ) );
+                .ifAbsentThrow( () -> new ReflectException( "listener " + listener
+                    + " should have method " + methodName + " in " + service ) );
         } );
     }
 
-    private Object resolve( String name, String key, Object value, Map<String, Module.Service> services, boolean throwErrorIfNotFound ) {
+    private Object resolve( String name, String key, Object value, boolean throwErrorIfNotFound ) {
         if( value instanceof String && ( ( String ) value ).startsWith( "@service:" ) ) {
             final String linkName = ( ( String ) value ).substring( "@service:".length() );
-            Object link = Application.service( linkName );
+            Object link = service( linkName );
             log.debug( "for {} linking {} -> {} as {}", name, key, value, link );
-            if( link == null && throwErrorIfNotFound ) {
-                val linkService = services.get( linkName );
-                if( linkService == null || linkService.enabled ) {
-                    throw new ApplicationException( "for " + name + " service link " + value + " is not found" );
-                }
-            }
+            if( link == null && throwErrorIfNotFound && serviceEnabled( linkName ) )
+                throw new ApplicationException( "for " + name + " service link " + value + " is not found" );
             return link;
         }
         return value;
@@ -211,7 +203,7 @@ public class Kernel {
             if( initialized.containsAll( module.dependsOn ) ) {
 
                 Map<String, Module.Service> def =
-                    initializeServices( isServiceEnabled( modules ), module.services, initializedServices, config );
+                    initializeServices( module.services, initializedServices, config );
                 if( !def.isEmpty() ) {
                     Set<String> names = Sets.map( def.entrySet(), Map.Entry::getKey );
                     log.error( "failed to initialize: " + names );
@@ -243,7 +235,7 @@ public class Kernel {
     }
 
     public void start( Path appConfigPath, Map<Object, Object> properties ) {
-        val map = new HashMap<Object, Object>();
+        Map<Object, Object> map = new HashMap<>();
         map.putAll( System.getProperties() );
         map.putAll( properties );
 
@@ -252,48 +244,98 @@ public class Kernel {
 
     private void start( ApplicationConfiguration config ) {
         log.debug( "initializing application kernel..." );
+        Application.register( this );
         log.debug( "application config {}", config );
+        this.profiles.addAll( config.profiles );
 
-        moduleConfigs = Stream.of( modules )
+        this.modules.addAll( Stream.of( configurations )
             .map( module -> Module.CONFIGURATION.fromHocon( module, config.services ) )
-            .toSet();
-        log.debug( "modules = " + Sets.map( moduleConfigs, m -> m.name ) );
-        log.trace( "modules configs = " + moduleConfigs );
+            .toSet() );
+        log.debug( "modules = " + Sets.map( this.modules, m -> m.name ) );
+        log.trace( "modules configs = " + this.modules );
 
-        Set<Module> def = initialize( moduleConfigs, new HashSet<>(), new HashSet<>(), config );
+        Set<Module> def = initialize( this.modules, new HashSet<>(), new HashSet<>(), config );
         if( !def.isEmpty() ) {
             Set<String> names = Sets.map( def, m -> m.name );
             log.error( "failed to initialize: {} ", names );
             throw new ApplicationException( "failed to initialize modules: " + names );
         }
 
-        Application.registerProfiles( config.profiles );
+        this.supervisor.start();
 
-        supervisor.start();
-
+        this.modules.add( new Module( Module.DEFAULT ) );
         log.debug( "application kernel started" );
     }
 
     public void stop( String service ) {
         log.debug( "stopping {}...", service );
-
         supervisor.stop( service );
-
+        unregister( service );
         log.debug( "{} stopped", service );
     }
 
     public void stop() {
-        log.debug( "stopping application kernel..." );
+        log.debug( "stopping application kernel " + name + "..." );
         supervisor.stop();
-        Application.unregisterServices();
+        services.clear();
         Metrics.resetAll();
+        Application.unregister( this );
         log.debug( "application kernel stopped" );
     }
 
     public void reload() {
-        log.debug( "reloading application kernel..." );
+//@todo rething this
+        log.debug( "reloading application kernel" + name + "..." );
         supervisor.reload();
         log.debug( "application kernel reloaded" );
     }
 
+    public boolean profileEnabled( String profile ) {
+        return profiles.contains( profile );
+    }
+
+    public void register( String name, Object service ) {
+        Object registered;
+        if( ( registered = services.putIfAbsent( name, service ) ) != null )
+            throw new ApplicationException( "Service " + service + " is already registered [" + registered.getClass() + "]" );
+    }
+
+    public void unregister( String name ) {
+        //@todo check for dependencies
+        services.remove( name );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <T> T service( String name ) {
+        return ( T ) services.get( name );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <T> List<T> ofClass( Class<T> clazz ) {
+        return Stream.of( services.values() )
+            .filter( clazz::isInstance )
+            .map( x -> ( T ) x )
+            .toList();
+    }
+
+    /**
+     * @see #stop()
+     */
+    @Deprecated
+    public void unregisterServices() {
+        services.clear();
+    }
+
+    public void enableProfiles( String... profiles ) {
+        this.profiles.addAll( Sets.of( profiles ) );
+    }
+
+    private boolean serviceEnabled( String name ) {
+        for( Module module : this.modules ) {
+            Module.Service service = module.services.get( name );
+            if( service != null && !service.enabled ) return false;
+        }
+
+        return true;
+    }
 }

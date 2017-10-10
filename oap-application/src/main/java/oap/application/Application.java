@@ -23,65 +23,55 @@
  */
 package oap.application;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
+import oap.util.Maps;
+
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 
+import static oap.application.Kernel.DEFAULT;
+
 public class Application {
-    private static final Map<String, Object> services = new HashMap<>();
-    private static final Set<String> profiles = new HashSet<>();
+    private static final ConcurrentMap<String, Kernel> kernels = new ConcurrentHashMap<>();
 
-    @SuppressWarnings( "unchecked" )
-    public static <T> T service( String name ) {
-        return ( T ) services.get( name );
+    public static synchronized <T> T service( String name ) {
+        return kernel( DEFAULT ).service( name );
     }
 
-    @SuppressWarnings( "unchecked" )
-    public static <T> Stream<T> instancesOf( Class<T> clazz ) {
-        return services
-            .values()
-            .stream()
-            .filter( clazz::isInstance )
-            .map( x -> ( T ) x );
+    public static synchronized <T> Stream<T> instancesOf( Class<T> clazz ) {
+        return kernel( DEFAULT ).ofClass( clazz ).stream();
     }
 
-    public static <T> T service( Class<T> clazz ) {
+    public static synchronized <T> T service( Class<T> clazz ) {
         Iterator<T> services = instancesOf( clazz ).iterator();
         return !services.hasNext() ? null : services.next();
     }
 
-    public synchronized static void register( String name, Object service ) throws DuplicateServiceException {
-        final Object rService = services.get( name );
-        if( rService != null ) throw new DuplicateServiceException( name, rService.getClass() );
-
-        services.put( name, service );
+    public static synchronized void register( String name, Object service ) {
+        kernel( DEFAULT ).register( name, service );
     }
 
     public static synchronized void unregister( String name ) {
-        services.remove( name );
+        kernel( DEFAULT ).unregister( name );
     }
 
+    @Deprecated
     public static synchronized void unregisterServices() {
-        services.clear();
+        kernel( DEFAULT ).unregisterServices();
     }
 
-    public static synchronized void registerProfiles( final Collection<String> inputProfiles ) {
-        profiles.addAll( inputProfiles );
+    public static synchronized void register( Kernel kernel ) {
+        if( kernels.putIfAbsent( kernel.name, kernel ) != null )
+            throw new ApplicationException( "kernel " + kernel.name + " already registered" );
     }
 
-    public static Set<String> getProfiles() {
-        return Collections.unmodifiableSet( profiles );
+    public static synchronized Kernel kernel( String name ) {
+        return Maps.getOrThrow( kernels, name, () -> new ApplicationException( "kernel " + name + " is not registered" ) );
     }
 
-    public static class DuplicateServiceException extends RuntimeException {
-        public DuplicateServiceException( String service, Class serviceClass ) {
-            super( "Service " + service + " is already registered [" + serviceClass + "]" );
-        }
+    public static synchronized void unregister( Kernel kernel ) {
+        kernels.remove( kernel.name );
     }
 
 }

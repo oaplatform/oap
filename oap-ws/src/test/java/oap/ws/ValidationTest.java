@@ -25,8 +25,7 @@
 package oap.ws;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.application.Application;
-import org.testng.annotations.BeforeClass;
+import oap.application.Kernel;
 import org.testng.annotations.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -39,12 +38,9 @@ import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 @Slf4j
 public class ValidationTest extends AbstractWebServicesTest {
-    @BeforeClass
     @Override
-    public void startServer() {
-        Application.register( "validatedWS", new ValidatedWS() );
-
-        super.startServer();
+    protected void registerServices( Kernel kernel ) {
+        kernel.register( "validatedWS", new ValidatedWS() );
     }
 
     @Override

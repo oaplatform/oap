@@ -23,7 +23,6 @@
  */
 package oap.application;
 
-import oap.application.config.Configuration;
 import oap.json.Binder;
 import oap.util.Strings;
 
@@ -31,24 +30,24 @@ import java.net.URL;
 import java.util.Map;
 
 public class ModuleConfiguration extends Configuration<Module> {
-   public ModuleConfiguration() {
-      super( Module.class, "oap-module" );
-   }
+    public ModuleConfiguration() {
+        super( Module.class, "oap-module" );
+    }
 
-   public Module fromHocon( URL hocon, Map<String, Map<String, Object>> config ) {
-      return fromHocon( Strings.readString( hocon ), config );
-   }
+    public Module fromHocon( URL hocon, Map<String, Map<String, Object>> config ) {
+        return fromHocon( Strings.readString( hocon ), config );
+    }
 
-   public Module fromHocon( String hocon, Map<String, Map<String, Object>> config ) {
-      Module module = super.fromHocon( hocon );
+    public Module fromHocon( String hocon, Map<String, Map<String, Object>> config ) {
+        Module module = super.fromHocon( hocon );
 
-      module.services
-         .entrySet()
-         .stream()
-         .filter( e -> config.containsKey( e.getKey() ) )
-         .forEach( e -> Binder.hocon.update( e.getValue(), config.get( e.getKey() ) ) );
+        module.services
+            .entrySet()
+            .stream()
+            .filter( e -> config.containsKey( e.getKey() ) )
+            .forEach( e -> Binder.hocon.update( e.getValue(), config.get( e.getKey() ) ) );
 
-      return module;
-   }
+        return module;
+    }
 
 }

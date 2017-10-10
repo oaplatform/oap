@@ -24,7 +24,7 @@
 package oap.ws;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.application.Application;
+import oap.application.Kernel;
 import oap.http.Client;
 import oap.http.Handler;
 import oap.http.HttpResponse;
@@ -33,7 +33,6 @@ import oap.http.Response;
 import oap.metrics.Metrics;
 import oap.util.Maps;
 import oap.util.Pair;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -53,13 +52,10 @@ import static org.testng.Assert.assertEquals;
 @Slf4j
 public class WebServicesTest extends AbstractWebServicesTest {
 
-    @BeforeClass
     @Override
-    public void startServer() {
-        Application.register( "math", new MathWS() );
-        Application.register( "handler", new TestHandler() );
-
-        super.startServer();
+    protected void registerServices( Kernel kernel ) {
+        kernel.register( "math", new MathWS() );
+        kernel.register( "handler", new TestHandler() );
     }
 
     @Test

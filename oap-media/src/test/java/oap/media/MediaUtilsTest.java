@@ -24,7 +24,6 @@
 
 package oap.media;
 
-import oap.io.Resources;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.Test;
@@ -34,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
+import static oap.testng.Asserts.pathOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -41,20 +41,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class MediaUtilsTest extends AbstractTest {
     @Test
-    public void testContentType() throws IOException {
-        final Path file = Resources.filePath( getClass(), "SampleVideo_1280x720_1mb.mp4" ).get();
+    public void getContentType() throws IOException {
+        Path file = pathOfTestResource( WsFileUploaderTest.class, "video.mp4" );
         assertThat( MediaUtils.getContentType( file, Optional.empty() ) )
             .isEqualTo( "video/mp4" );
 
-        final Path fileWithoutExtensions = Env.tmpPath( "1" );
-        Files.copy(file, fileWithoutExtensions );
+        Path fileWithoutExtensions = Env.tmpPath( "1" );
+        Files.copy( file, fileWithoutExtensions );
 
         assertThat( MediaUtils.getContentType( fileWithoutExtensions, Optional.empty() ) )
             .isEqualTo( "video/quicktime" );
-        assertThat( MediaUtils.getContentType( fileWithoutExtensions, Optional.of("SampleVideo_1280x720_1mb.mp4") ) )
+        assertThat( MediaUtils.getContentType( fileWithoutExtensions, Optional.of( "video.mp4" ) ) )
             .isEqualTo( "video/mp4" );
 
-        assertThat( MediaUtils.getContentType( Resources.filePath( getClass(), "ws-multipart.conf" ).get(), Optional.empty() ) )
+        assertThat( MediaUtils.getContentType( pathOfTestResource( getClass(), "test.txt" ), Optional.empty() ) )
             .isEqualTo( "text/plain" );
     }
 

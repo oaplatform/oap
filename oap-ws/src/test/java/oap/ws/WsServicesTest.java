@@ -25,7 +25,6 @@
 package oap.ws;
 
 import oap.testng.AbstractTest;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.Optional;
@@ -35,7 +34,7 @@ import static org.testng.Assert.assertEquals;
 public class WsServicesTest extends AbstractTest {
     @Test
     public void compile() {
-        Assert.assertEquals( WsServices.compile( "/y/{year:(\\d\\d\\d\\d)}/{month}/{date}" ).toString(), "^/y/(\\d\\d\\d\\d)/([^/]+)/([^/]+)$" );
+        assertEquals( WsServices.compile( "/y/{year:(\\d\\d\\d\\d)}/{month}/{date}" ).toString(), "^/y/(\\d\\d\\d\\d)/([^/]+)/([^/]+)$" );
         assertEquals( WsServices.compile( "/y/{year:(\\d{4})}/{month}/{date}" ).toString(), "^/y/(\\d{4})/([^/]+)/([^/]+)$" );
     }
 

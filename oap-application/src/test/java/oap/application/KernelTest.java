@@ -43,8 +43,6 @@ import static org.testng.Assert.assertTrue;
 
 public class KernelTest extends AbstractTest {
 
-    private static final StringBuilder res = new StringBuilder();
-
     @Test
     public void testCloseable() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
@@ -52,9 +50,13 @@ public class KernelTest extends AbstractTest {
 
         Kernel kernel = new Kernel( modules );
         kernel.start();
+        TestCloseable tc = Application.service( "c1" );
+        TestCloseable2 tc2 = Application.service( "c2" );
         kernel.stop();
 
-        assertThat( res ).isEqualToIgnoringCase( "stop2/close/" );
+        assertThat( tc.closed ).isTrue();
+        assertThat( tc2.closed ).isFalse();
+        assertThat( tc2.stopped ).isTrue();
     }
 
     @Test
@@ -117,22 +119,26 @@ public class KernelTest extends AbstractTest {
 
     public static class TestCloseable implements Closeable {
 
+        public boolean closed;
+
         @Override
         public void close() throws IOException {
-            res.append( "close/" );
+            this.closed = true;
         }
     }
 
     public static class TestCloseable2 implements Closeable {
+        public boolean stopped;
+        public boolean closed;
 
         public void stop() {
-            res.append( "stop2/" );
+            this.stopped = true;
 
         }
 
         @Override
         public void close() throws IOException {
-            res.append( "close2/" );
+            this.closed = true;
         }
     }
 }

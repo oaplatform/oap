@@ -23,11 +23,11 @@
  */
 package oap.ws;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Application;
+import oap.application.Kernel;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
 import oap.http.Protocol;
@@ -39,7 +39,6 @@ import org.apache.http.entity.ContentType;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -72,7 +71,7 @@ public class WebServices {
     public void start() {
         log.info( "binding web services..." );
 
-        final Set<String> profiles = Application.getProfiles();
+        Kernel kernel = Application.kernel( Kernel.DEFAULT );
 
         for( WsConfig config : wsConfigs ) {
             final List<Interceptor> interceptors = config.interceptors.stream()
@@ -83,9 +82,9 @@ public class WebServices {
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
                 final WsConfig.Service serviceConfig = entry.getValue();
 
-                if( StringUtils.isNotEmpty( serviceConfig.profile ) && !profiles.contains( serviceConfig.profile ) ) {
-                    log.debug( "skipping " + entry.getKey() + " web service initialization with " +
-                        "service profile " + serviceConfig.profile );
+                if( StringUtils.isNotEmpty( serviceConfig.profile ) && !kernel.profileEnabled( serviceConfig.profile ) ) {
+                    log.debug( "skipping " + entry.getKey() + " web service initialization with "
+                        + "service profile " + serviceConfig.profile );
                     continue;
                 }
 
