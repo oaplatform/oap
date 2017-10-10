@@ -41,10 +41,10 @@ import java.util.concurrent.TimeUnit;
 public class AuthService {
 
     private final Cache<String, Token> tokenStorage;
-    private final UserStorage userStorage;
+    private final UserStorage<User> userStorage;
     private final String salt;
 
-    public AuthService( UserStorage userStorage, int expirationTime, String salt ) {
+    public AuthService( UserStorage<User> userStorage, int expirationTime, String salt ) {
         this.tokenStorage = CacheBuilder.newBuilder()
             .expireAfterAccess( expirationTime, TimeUnit.MINUTES )
             .build();
