@@ -61,7 +61,7 @@ public class ParserPerformance extends AbstractPerformance {
         mapper.registerModule( new Jdk8Module() );
         final JodaModule module = new JodaModule();
         module.addDeserializer( DateTime.class, forType( DateTime.class ) );
-        module.addSerializer( DateTime.class, new DateTimeSerializer( jodaDateFormat ) );
+        module.addSerializer( DateTime.class, new DateTimeSerializer( jodaDateFormat, 0 ) );
         mapper.registerModule( module );
         mapper.enable( DeserializationFeature.USE_LONG_FOR_INTS );
         mapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
