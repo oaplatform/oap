@@ -23,7 +23,7 @@ public class LogoutWS {
         this.authService = authService;
     }
 
-    @WsMethod( method = GET, path = "/logout" )
+    @WsMethod( method = GET, path = "/" )
     @WsSecurity( role = Role.USER )
     @WsValidate( { "validateUserAccess" } )
     public void logout( @WsParam( from = QUERY ) String email, @WsParam( from = SESSION ) User user ) {
