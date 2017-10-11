@@ -10,7 +10,7 @@ import java.util.Objects;
 
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
-import static oap.http.Request.HttpMethod.DELETE;
+import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.QUERY;
 import static oap.ws.WsParam.From.SESSION;
 
@@ -23,7 +23,7 @@ public class LogoutWS {
         this.authService = authService;
     }
 
-    @WsMethod( method = DELETE, path = "/" )
+    @WsMethod( method = GET, path = "/" )
     @WsSecurity( role = Role.USER )
     @WsValidate( { "validateUserAccess" } )
     public void logout( @WsParam( from = QUERY ) String email, @WsParam( from = SESSION ) User user ) {
