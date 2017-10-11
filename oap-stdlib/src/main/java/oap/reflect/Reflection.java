@@ -353,7 +353,7 @@ public class Reflection extends Annotated<Class<?>> {
         }
 
         public <T> T invoke( Map<String, Object> args ) {
-            //      @todo check correspondence of parameter types
+            //      @todo check match of parameter types
             try {
                 Object[] cArgs = Stream.of( parameters )
                     .map( p -> coercions.cast( p.type(), args.get( p.name() ) ) )
@@ -373,7 +373,7 @@ public class Reflection extends Annotated<Class<?>> {
                 return instance;
 
             } catch( Exception e ) {
-                throw new ReflectException( this + ":" + args, e instanceof ReflectException ? e.getCause() : e );
+                throw new ReflectException( this + ":" + args, e  );
             }
         }
 

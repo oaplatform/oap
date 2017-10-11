@@ -52,7 +52,6 @@ public class Boot {
     }
 
     public static void start( Path config, Path confd ) {
-//      System.setSecurityManager(new ExitMonitorSecurityManager());
         Signal.handle( new Signal( "HUP" ), signal -> {
             logger.info( "SIGHUP" );
             System.out.println( "SIGHUP" );

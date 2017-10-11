@@ -23,8 +23,6 @@
  */
 package oap.util;
 
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -33,6 +31,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public final class Hash {
 
     private Hash() {
+    }
+
+    public static String md5( String input ) {
+        return hash( "", input, "MD5" );
     }
 
     public static String sha256( String salt, String input ) {

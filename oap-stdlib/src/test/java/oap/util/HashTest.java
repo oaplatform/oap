@@ -22,21 +22,17 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.util;
 
-import lombok.extern.slf4j.Slf4j;
+import org.testng.annotations.Test;
 
-@Slf4j
-public class ExitMonitorSecurityManager extends SecurityManager {
-   @Override
-   public void checkExit( int status ) {
-      super.checkExit( status );
+import static oap.testng.Asserts.assertString;
 
-      System.out.println( "Setting exit value[" + status + "] via security manager..." );
+public class HashTest {
+    @Test
+    public void md5() {
+        assertString( Hash.md5( "abc" ) ).isEqualToIgnoringCase( "900150983cd24fb0d6963f7d28e17f72" );
+    }
 
-      if( log.isDebugEnabled() )
-         new Exception().printStackTrace();
 
-      ShutdownHook.EXIT_STATUS = status;
-   }
 }

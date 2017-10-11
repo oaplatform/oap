@@ -56,10 +56,7 @@ public abstract class AbstractTest {
             if( !java.nio.file.Files.exists( Env.tmp ) ) return;
 
             try( val stream = java.nio.file.Files.newDirectoryStream( Env.tmp ) ) {
-                val iterator = stream.iterator();
-                while( iterator.hasNext() ) {
-                    val build = iterator.next();
-
+                for( Path build : stream ) {
                     final boolean self = Env.tmpRoot.equals( build );
                     final long lastModified = java.nio.file.Files.getLastModifiedTime( build ).toMillis();
                     final long diff = now - lastModified;
@@ -86,6 +83,7 @@ public abstract class AbstractTest {
 
     @BeforeMethod
     public void beforeMethod() throws Exception {
+        System.setProperty( "java.io.tmpdir", Env.tmpRoot.toString() );
         MockitoAnnotations.initMocks( this );
         DateTimeUtils.setCurrentMillisSystem();
     }

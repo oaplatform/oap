@@ -40,6 +40,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -64,6 +65,7 @@ public class Kernel {
     private final Set<Module> modules = Sets.empty();
     private final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
     private final Supervisor supervisor = new Supervisor();
+    private final List<DynamicConfig.Control> dynamicConfigurations = new ArrayList<>();
 
     public Kernel( String name, List<URL> configurations ) {
         this.name = name;
@@ -108,6 +110,7 @@ public class Kernel {
                     try {
                         initializeServiceLinks( serviceName, service );
                         instance = reflect.newInstance( service.parameters );
+                        initializeDynamicConfigurations( reflect, instance );
                         initializeListeners( service.listen, instance );
                     } catch( ReflectException e ) {
                         log.info( "service name = {}, remoteName = {}, profile = {}", service.name, service.remoteName, service.profile );
@@ -145,6 +148,17 @@ public class Kernel {
 
         return deferred.size() == services.size() ? deferred
             : initializeServices( deferred, initialized, config );
+    }
+
+    private void initializeDynamicConfigurations( Reflection reflect, Object instance ) {
+        reflect.fields
+            .values()
+            .stream()
+            .filter( field -> field.type().assignableFrom( DynamicConfig.class ) )
+            .forEach( f -> {
+                DynamicConfig<?> config = ( DynamicConfig<?> ) f.get( instance );
+                if( config.isUpdateable() ) dynamicConfigurations.add( config.control );
+            } );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -261,6 +275,8 @@ public class Kernel {
             throw new ApplicationException( "failed to initialize modules: " + names );
         }
 
+        this.dynamicConfigurations.forEach( DynamicConfig.Control::start );
+
         this.supervisor.start();
 
         this.modules.add( new Module( Module.DEFAULT ) );
@@ -276,6 +292,7 @@ public class Kernel {
 
     public void stop() {
         log.debug( "stopping application kernel " + name + "..." );
+        this.dynamicConfigurations.forEach( DynamicConfig.Control::stop );
         supervisor.stop();
         services.clear();
         Metrics.resetAll();
