@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>1.44.21</version>
+    <version>1.45.5</version>
 
     <name>oap</name>
 
@@ -93,7 +93,7 @@
         <compress.version>1.13</compress.version>
         <joda.version>2.9.9</joda.version>
         <metrics.version>3.2.2</metrics.version>
-        <jackson.version>2.8.6</jackson.version>
+        <jackson.version>2.9.1</jackson.version>
         <lombok.version>1.16.16</lombok.version>
         <reflections.version>0.9.11</reflections.version>
         <jamm.version>0.2.5</jamm.version>

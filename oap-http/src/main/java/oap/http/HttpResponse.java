@@ -173,6 +173,10 @@ public class HttpResponse {
         return this;
     }
 
+    public String getFirstHeader( String name ) {
+        return headers.stream().filter( p -> p._1.equals( name ) ).findFirst().map( p -> p._2 ).orElse( null );
+    }
+
     @Override
     public String toString() {
         return "HttpResponse{" + "reasonPhrase='" + reasonPhrase + '\'' + ", headers=" + headers + ", code=" + code +
