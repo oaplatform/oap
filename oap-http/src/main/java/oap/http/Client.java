@@ -88,6 +88,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.KeyStore;
@@ -180,6 +181,10 @@ public class Client implements Closeable {
         return get( uri, Maps.empty(), Maps.empty() );
     }
 
+    public Response get( URI uri ) {
+        return get( uri, Maps.empty() );
+    }
+
     @SafeVarargs
     public final Response get( String uri, Pair<String, Object>... params ) {
         return get( uri, Maps.of( params ) );
@@ -194,12 +199,21 @@ public class Client implements Closeable {
             .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) );
     }
 
+    public Response get( URI uri, Map<String, Object> headers ) {
+        return get( uri, headers, FOREVER )
+            .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) );
+    }
+
     public Optional<Response> get( String uri, Map<String, Object> params, long timeout ) {
         return get( uri, params, Maps.empty(), timeout );
     }
 
     public Optional<Response> get( String uri, Map<String, Object> params, Map<String, Object> headers, long timeout ) {
-        return execute( new HttpGet( Uri.uri( uri, params ) ), headers, timeout );
+        return get( Uri.uri( uri, params ), headers, timeout );
+    }
+
+    public Optional<Response> get( URI uri, Map<String, Object> headers, long timeout ) {
+        return execute( new HttpGet( uri ), headers, timeout );
     }
 
     public Response post( String uri, Map<String, Object> params ) {
