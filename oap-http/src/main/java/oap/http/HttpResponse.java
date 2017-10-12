@@ -41,6 +41,7 @@ import org.joda.time.format.DateTimeFormatter;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +75,10 @@ public class HttpResponse {
 
     public static HttpResponse redirect( String location ) {
         return new HttpResponse( HTTP_MOVED_TEMP ).withHeader( "Location", location );
+    }
+
+    public static HttpResponse redirect( URI location ) {
+        return redirect( location.toString() );
     }
 
     public static HttpResponse ok( Object content, boolean raw, ContentType contentType ) {
