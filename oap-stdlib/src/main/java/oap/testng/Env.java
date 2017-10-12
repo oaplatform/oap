@@ -49,6 +49,7 @@ public class Env {
     private static final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
 
     static {
+        System.setProperty( "oap.test.tmpdir", Env.tmpRoot.toString() );
         try {
             LOCALHOST = InetAddress.getByName( "127.0.0.1" ).getCanonicalHostName();
         } catch( UnknownHostException e ) {

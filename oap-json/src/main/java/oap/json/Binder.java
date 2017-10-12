@@ -89,7 +89,7 @@ public class Binder {
             .collect( toSet() );
 
         json = new Binder( initialize( new ObjectMapper(), false ) );
-        jsonWithTyping = new Binder( initialize( new ObjectMapper(), false ) );
+        jsonWithTyping = new Binder( initialize( new ObjectMapper(), true ) );
         xml = new Binder( initialize( new XmlMapper(), false ) );
         xmlWithTyping = new Binder( initialize( new XmlMapper(), true ) );
         hoconWithoutSystemProperties =

@@ -48,6 +48,10 @@ public abstract class AbstractTest {
 
     protected boolean cleanupTemp = true;
 
+    static {
+        System.out.println( "initializing env " + Env.tmpRoot );
+    }
+
     @AfterSuite
     public void afterSuite() throws Exception {
         if( cleanupTemp ) {
@@ -83,7 +87,6 @@ public abstract class AbstractTest {
 
     @BeforeMethod
     public void beforeMethod() throws Exception {
-        System.setProperty( "java.io.tmpdir", Env.tmpRoot.toString() );
         MockitoAnnotations.initMocks( this );
         DateTimeUtils.setCurrentMillisSystem();
     }

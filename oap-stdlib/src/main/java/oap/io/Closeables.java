@@ -82,9 +82,7 @@ public class Closeables {
         try {
             if( cleanerField == null ) {
                 synchronized( Closeables.class ) {
-                    if( cleanerField == null ) {
-                        init();
-                    }
+                    if( cleanerField == null ) init();
                 }
             }
             Cleaner cleaner = ( Cleaner ) cleanerField.get( buffer );

@@ -40,26 +40,26 @@ import java.io.Reader;
  * Created by Igor Petrenko on 11.11.6015.
  */
 public class HoconFactoryWithSystemProperties extends HoconFactory {
-   private final Logger log;
+    private final Logger log;
 
-   public HoconFactoryWithSystemProperties( Logger log ) {
-      this.log = log;
+    public HoconFactoryWithSystemProperties( Logger log ) {
+        this.log = log;
 //        if( log.isTraceEnabled() ) System.setProperty( "config.trace", "loads" );
-   }
+    }
 
-   @Override
-   protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) throws IOException {
-      final ConfigParseOptions options = ConfigParseOptions.defaults();
-      final Config config = ConfigFactory.parseReader( r, options );
+    @Override
+    protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) throws IOException {
+        final ConfigParseOptions options = ConfigParseOptions.defaults();
+        final Config config = ConfigFactory.parseReader( r, options );
 
-      final Config unresolvedConfig = config.withFallback( ConfigFactory.systemProperties() );
+        final Config unresolvedConfig = config.withFallback( ConfigFactory.systemProperties() );
 //        log.trace( unresolvedConfig.root().render() );
-      try {
-         final Config resolvedConfig = unresolvedConfig.resolve();
-         return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
-      } catch( ConfigException e ) {
-         log.error( unresolvedConfig.root().render() );
-         throw e;
-      }
-   }
+        try {
+            final Config resolvedConfig = unresolvedConfig.resolve();
+            return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
+        } catch( ConfigException e ) {
+            log.error( unresolvedConfig.root().render() );
+            throw e;
+        }
+    }
 }
