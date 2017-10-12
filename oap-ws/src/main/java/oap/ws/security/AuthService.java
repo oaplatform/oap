@@ -59,10 +59,10 @@ public class AuthService {
         final String inputPassword = Hash.sha256( salt, password );
         if( !user.getPassword().equals( inputPassword ) ) return Optional.empty();
 
-        return generateToken( user );
+        return Optional.of( generateToken( user ) );
     }
 
-    public synchronized Optional<Token> generateToken( User user ) {
+    public synchronized Token generateToken( User user ) {
         Token token = null;
 
         for( Token t : tokenStorage.asMap().values() ) {
@@ -76,7 +76,7 @@ public class AuthService {
             log.debug( "Updating existing token for user [{}]...", user.getEmail() );
             tokenStorage.put( token.id, token );
 
-            return Optional.of( token );
+            return token;
         }
 
         log.debug( "Generating new token for user [{}]...", user.getEmail() );
@@ -87,7 +87,7 @@ public class AuthService {
 
         tokenStorage.put( token.id, token );
 
-        return Optional.of( token );
+        return token;
     }
 
     public synchronized Optional<Token> getToken( String tokenId ) {
