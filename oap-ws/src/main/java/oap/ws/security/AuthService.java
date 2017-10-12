@@ -59,10 +59,10 @@ public class AuthService {
         final String inputPassword = Hash.sha256( salt, password );
         if( !user.getPassword().equals( inputPassword ) ) return Optional.empty();
 
-        return getToken( user );
+        return generateToken( user );
     }
 
-    public synchronized Optional<Token> getToken( User user ) {
+    public synchronized Optional<Token> generateToken( User user ) {
         Token token = null;
 
         for( Token t : tokenStorage.asMap().values() ) {
