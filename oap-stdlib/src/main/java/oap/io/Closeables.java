@@ -43,10 +43,6 @@ public class Closeables {
 
     private static Field cleanerField;
 
-    static {
-        init();
-    }
-
     @SneakyThrows
     private static void init() {
         File tempFile = File.createTempFile( "test", "test" );
@@ -84,6 +80,13 @@ public class Closeables {
 
     public static void close( MappedByteBuffer buffer ) {
         try {
+            if( cleanerField == null ) {
+                synchronized( Closeables.class ) {
+                    if( cleanerField == null ) {
+                        init();
+                    }
+                }
+            }
             Cleaner cleaner = ( Cleaner ) cleanerField.get( buffer );
             cleaner.clean();
         } catch( IllegalAccessException e ) {
