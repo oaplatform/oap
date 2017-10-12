@@ -25,7 +25,6 @@ package oap.reflect;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.Test;

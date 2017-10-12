@@ -22,40 +22,53 @@
  * SOFTWARE.
  */
 
-package oap.media;
+package oap.application;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import oap.io.Files;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-import java.nio.file.Files;
+import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import static oap.testng.Asserts.pathOfTestResource;
+import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 20.02.2017.
- */
-public class MediaUtilsTest extends AbstractTest {
+public class DynamicConfigTest extends AbstractTest {
     @Test
-    public void getContentType() throws IOException {
-        Path file = pathOfTestResource( WsFileUploaderTest.class, "video.mp4" );
-        assertThat( MediaUtils.getContentType( file, Optional.empty() ) )
-            .isEqualTo( "video/mp4" );
+    public void defaultConfig() throws MalformedURLException {
+        Path update = Env.tmpPath( "update.conf" );
 
-        Path fileWithoutExtensions = Env.tmpPath( "1" );
-        Files.copy( file, fileWithoutExtensions );
+        DynamicConfig<Cfg> config = new DynamicConfig<>( 10, Cfg.class,
+            urlOfTestResource( getClass(), "default.conf" ),
+            update.toUri().toURL()
+        );
+        AtomicInteger updates = new AtomicInteger( 0 );
+        config.addListener( updates::incrementAndGet );
+        assertThat( config.value ).isEqualTo( new Cfg( "value1" ) );
 
-        assertThat( MediaUtils.getContentType( fileWithoutExtensions, Optional.empty() ) )
-            .isEqualTo( "video/quicktime" );
-        assertThat( MediaUtils.getContentType( fileWithoutExtensions, Optional.of( "video.mp4" ) ) )
-            .isEqualTo( "video/mp4" );
-
-        assertThat( MediaUtils.getContentType( pathOfTestResource( getClass(), "test.txt" ), Optional.empty() ) )
-            .isEqualTo( "text/plain" );
+        Files.writeString( update, "{parameter=\"valueUpdated\"}" );
+        config.control.sync();
+        config.control.sync();
+        config.control.sync();
+        config.control.sync();
+        assertThat( config.value ).isEqualTo( new Cfg( "valueUpdated" ) );
+        assertThat( updates.get() ).isEqualTo( 1 );
     }
+}
 
+@EqualsAndHashCode
+@ToString
+class Cfg {
+    String parameter;
+
+    @JsonCreator
+    public Cfg( String parameter ) {
+        this.parameter = parameter;
+    }
 }

@@ -59,13 +59,13 @@ public class Env {
     public static String teamcityBuildPrefix() {
         String prefix = "";
 
-        val teamcity_buildconf_name = System.getenv( "TEAMCITY_BUILDCONF_NAME" );
+        val teamcityBuildconfName = System.getenv( "TEAMCITY_BUILDCONF_NAME" );
         prefix += "_";
-        if( teamcity_buildconf_name != null ) prefix += teamcity_buildconf_name;
+        if( teamcityBuildconfName != null ) prefix += teamcityBuildconfName;
 
-        val build_number = System.getenv( "BUILD_NUMBER" );
+        val buildNumber = System.getenv( "BUILD_NUMBER" );
         prefix += "_";
-        if( build_number != null ) prefix += build_number;
+        if( buildNumber != null ) prefix += buildNumber;
 
         return prefix;
     }

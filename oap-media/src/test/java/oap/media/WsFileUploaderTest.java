@@ -24,18 +24,18 @@
 
 package oap.media;
 
-import lombok.val;
-import oap.application.Application;
+import oap.application.Kernel;
 import oap.concurrent.SynchronizedThread;
 import oap.http.PlainHttpListener;
 import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.Files;
-import oap.io.Resources;
 import oap.media.postprocessing.VastMediaProcessing;
 import oap.testng.AbstractTest;
+import oap.testng.Asserts;
 import oap.testng.Env;
 import oap.util.Cuid;
+import oap.util.Lists;
 import oap.util.Pair;
 import oap.ws.SessionManager;
 import oap.ws.WebServices;
@@ -47,13 +47,13 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Collections.singletonList;
 import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertUploadFile;
 import static oap.http.testng.HttpAsserts.reset;
 import static oap.io.CommandLine.shell;
+import static oap.testng.Asserts.pathOfTestResource;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,6 +66,7 @@ public class WsFileUploaderTest extends AbstractTest {
     private WebServices ws;
     private SynchronizedThread listener;
     private Path path;
+    private Kernel kernel;
 
     @BeforeMethod
     @Override
@@ -73,6 +74,8 @@ public class WsFileUploaderTest extends AbstractTest {
         Env.resetPorts();
         super.beforeMethod();
 
+        kernel = new Kernel( Lists.empty() );
+        kernel.start();
         path = Env.tmpPath( "/tmp" );
 
         Files.ensureDirectory( path );
@@ -84,16 +87,17 @@ public class WsFileUploaderTest extends AbstractTest {
             GenericCorsPolicy.DEFAULT, WsConfig.CONFIGURATION.fromResource( getClass(), "ws-multipart.conf" )
         );
 
-        val service = new WsFileUploader( path, 1024 * 1024, -1,
+        WsFileUploader service = new WsFileUploader( path, 1024 * 1024, -1,
             singletonList( new VastMediaProcessing(
                 shell( "ffprobe -v quiet -print_format xml -show_format -sexagesimal -show_streams {FILE}" ), 10000L
             ) )
         );
         service.addListener( ( media, mediaInfo ) -> WsFileUploaderTest.this.medias.add( __( media, mediaInfo ) ) );
-        Application.register( "upload", service );
+        kernel.register( "upload", service );
         ws.start();
         listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
         listener.start();
+        Cuid.reset( "p", 1 );
     }
 
     @AfterMethod
@@ -102,54 +106,49 @@ public class WsFileUploaderTest extends AbstractTest {
         listener.stop();
         server.stop();
         ws.stop();
+        kernel.stop();
         reset();
-
-        Application.unregisterServices();
     }
 
     @Test
-    public void testUploadVideo() throws IOException {
-        val path = Resources.filePath( getClass(), "SampleVideo_1280x720_1mb.mp4" ).get();
-
-        Cuid.reset( "p", 1 );
-
-        val resp = new AtomicReference<WsFileUploader.MediaResponse>();
+    public void uploadVideo() throws IOException {
+        Path path = pathOfTestResource( getClass(), "video.mp4" );
 
         assertUploadFile( HTTP_URL( "/upload/" ), "test/test2", path )
             .isOk()
-            .is( r -> resp.set( r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get() ) );
+            .is( r -> {
+                WsFileUploader.MediaResponse resp = r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get();
+                assertThat( resp.id ).isEqualTo( "test/test2/2p.mp4" );
+                assertThat( resp.info.get( "vast" ) ).isNotNull();
+                assertThat( resp.info.get( "Content-Type" ) ).isEqualTo( "video/mp4" );
 
-        assertThat( resp.get().id ).isEqualTo( "test/test2/2p.mp4" );
-        assertThat( resp.get().info.get( "vast" ) ).isNotNull();
-        assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "video/mp4" );
+                assertThat( medias ).hasSize( 1 );
+                assertThat( medias.get( 0 )._1.id ).startsWith( "test/test2/2p.mp4" );
+                assertThat( medias.get( 0 )._1.name ).isEqualTo( "video.mp4" );
+                assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "video/mp4" );
+                assertThat( medias.get( 0 )._2.get( "vast" ) ).isNotNull();
+                assertThat( resp.info.get( "Content-Type" ) ).isEqualTo( "video/mp4" );
 
-        assertThat( medias ).hasSize( 1 );
-        assertThat( medias.get( 0 )._1.id ).startsWith( "test/test2/2p.mp4" );
-        assertThat( medias.get( 0 )._1.name ).isEqualTo( "SampleVideo_1280x720_1mb.mp4" );
-        assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "video/mp4" );
-        assertThat( medias.get( 0 )._2.get( "vast" ) ).isNotNull();
-        assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "video/mp4" );
+            } );
     }
 
     @Test
-    public void testUploadImage() throws IOException {
-        val path = Resources.filePath( getClass(), "qt.png" ).get();
-
-        Cuid.reset( "p", 1 );
-
-        val resp = new AtomicReference<WsFileUploader.MediaResponse>();
+    public void uploadImage() throws IOException {
+        Path path = pathOfTestResource( getClass(), "image.png" );
 
         assertUploadFile( HTTP_URL( "/upload/" ), "test/test2", path )
             .isOk()
-            .is( r -> resp.set( r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get() ) );
+            .is( r -> {
+                WsFileUploader.MediaResponse resp = r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get();
+                assertThat( resp.id ).isEqualTo( "test/test2/2p.png" );
+                assertThat( resp.info.get( "Content-Type" ) ).isEqualTo( "image/png" );
 
-        assertThat( resp.get().id ).isEqualTo( "test/test2/2p.png" );
-        assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "image/png" );
+                assertThat( medias ).hasSize( 1 );
+                assertThat( medias.get( 0 )._1.id ).isEqualTo( "test/test2/2p.png" );
+                assertThat( medias.get( 0 )._1.name ).isEqualTo( "image.png" );
+                assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "image/png" );
+                assertThat( resp.info.get( "Content-Type" ) ).isEqualTo( "image/png" );
+            } );
 
-        assertThat( medias ).hasSize( 1 );
-        assertThat( medias.get( 0 )._1.id ).isEqualTo( "test/test2/2p.png" );
-        assertThat( medias.get( 0 )._1.name ).isEqualTo( "qt.png" );
-        assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "image/png" );
-        assertThat( resp.get().info.get( "Content-Type" ) ).isEqualTo( "image/png" );
     }
 }

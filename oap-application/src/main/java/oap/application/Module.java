@@ -23,6 +23,7 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -33,6 +34,7 @@ import oap.reflect.Coercions;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.util.Functions;
+import oap.util.Strings;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -47,12 +49,18 @@ import static java.util.stream.Collectors.joining;
 @EqualsAndHashCode
 @ToString
 public class Module {
+    public static final String DEFAULT = Strings.DEFAULT;
     public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
     @SuppressWarnings( "unchecked" )
     static final Coercions coersions = Coercions.basic().withIdentity();
     public String name;
     public ArrayList<String> dependsOn = new ArrayList<>();
     public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
+
+    @JsonCreator
+    public Module( String name ) {
+        this.name = name;
+    }
 
     @EqualsAndHashCode( exclude = "remoteCache" )
     @ToString( exclude = "remoteCache" )

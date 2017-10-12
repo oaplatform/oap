@@ -77,6 +77,12 @@ public class Maps {
         return Optional.ofNullable( map.get( key ) );
     }
 
+    public static <E extends Throwable, K, V> V getOrThrow( Map<? super K, V> map, K key, Supplier<E> ex ) throws E {
+        V v = map.get( key );
+        if( v == null ) throw ex.get();
+        return v;
+    }
+
     @SafeVarargs
     public static <K, V> SetMultimap<K, V> setmmap( Pair<K, V>... pairs ) {
         return Stream.of( pairs ).collect( toSetMultimap() );

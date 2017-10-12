@@ -25,6 +25,8 @@
 package oap.application;
 
 import oap.testng.AbstractTest;
+import oap.testng.Env;
+import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
@@ -34,6 +36,7 @@ import java.net.URL;
 import java.util.List;
 
 import static oap.testng.Asserts.assertEventually;
+import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
 import static oap.util.Pair.__;
@@ -43,26 +46,43 @@ import static org.testng.Assert.assertTrue;
 
 public class KernelTest extends AbstractTest {
 
-    private static final StringBuilder res = new StringBuilder();
-
     @Test
-    public void testCloseable() {
+    public void stoppingCLoseables() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( KernelTest.class, "modules/start_stop.conf" ) );
+        modules.add( urlOfTestResource( getClass(), "modules/start_stop.conf" ) );
 
         Kernel kernel = new Kernel( modules );
         kernel.start();
+        TestCloseable tc = Application.service( "c1" );
+        TestCloseable2 tc2 = Application.service( "c2" );
         kernel.stop();
 
-        assertThat( res ).isEqualToIgnoringCase( "stop2/close/" );
+        assertThat( tc.closed ).isTrue();
+        assertThat( tc2.closed ).isFalse();
+        assertThat( tc2.stopped ).isTrue();
+    }
+
+    @Test
+    public void dynamicConfigurations() {
+        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "dynaconf/dynaconf.conf" ) );
+        Env.deployTestData( getClass(), "dynaconf" );
+        Kernel kernel = new Kernel( modules );
+        try {
+            kernel.start( pathOfTestResource( getClass(), "dynaconf/application.conf" ) );
+            Dynaconf dynaconf = Application.service( "c1" );
+            assertString( dynaconf.x.value.parameter ).isEqualTo( "valueUpdated" );
+        } finally {
+            kernel.stop();
+        }
     }
 
     @Test
     public void start() {
         System.setProperty( "failedValue", "value that can fail config parsing" );
-        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( KernelTest.class, "modules/m1.conf" ) );
-        modules.add( urlOfTestResource( KernelTest.class, "modules/m2.json" ) );
+        List<URL> modules = Lists.of(
+            urlOfTestResource( getClass(), "modules/m1.conf" ),
+            urlOfTestResource( getClass(), "modules/m2.json" )
+        );
 
         Kernel kernel = new Kernel( modules );
         try {
@@ -99,9 +119,8 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void testEnabledFalseList() {
-        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( KernelTest.class, "modules/m3.conf" ) );
+    public void disabledServices() {
+        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "modules/m3.conf" ) );
 
         Kernel kernel = new Kernel( modules );
         try {
@@ -117,23 +136,35 @@ public class KernelTest extends AbstractTest {
 
     public static class TestCloseable implements Closeable {
 
+        public boolean closed;
+
         @Override
         public void close() throws IOException {
-            res.append( "close/" );
+            this.closed = true;
         }
     }
 
     public static class TestCloseable2 implements Closeable {
+        public boolean stopped;
+        public boolean closed;
 
         public void stop() {
-            res.append( "stop2/" );
+            this.stopped = true;
 
         }
 
         @Override
         public void close() throws IOException {
-            res.append( "close2/" );
+            this.closed = true;
         }
+    }
+
+    public static class Dynaconf {
+        DynamicConfig<DynaconfCfg> x;
+    }
+
+    public static class DynaconfCfg {
+        String parameter;
     }
 }
 

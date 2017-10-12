@@ -106,9 +106,8 @@ public class Reflection extends Annotated<Class<?>> {
 
     @SuppressWarnings( "unchecked" )
     public <T> T newInstance( Map<String, Object> args ) throws ReflectException {
-        for( Constructor constructor : constructors ) {
+        for( Constructor constructor : constructors )
             if( constructor.nameMatch( args ) ) return constructor.invoke( args );
-        }
 
         throw constructorNotFound( args );
     }
@@ -119,10 +118,10 @@ public class Reflection extends Annotated<Class<?>> {
         return new ReflectException( "cannot find matching constructor: " + args + " in " + underlying + " candidates: " + candidates );
     }
 
-    private static void setAccessible( AccessibleObject ao, boolean flag ) {
+    private static void trySetAccessible( AccessibleObject ao, boolean flag ) {
         try {
             ao.setAccessible( flag );
-        } catch( SecurityException e ) {
+        } catch( SecurityException ignored ) {
 
         }
     }
@@ -232,7 +231,7 @@ public class Reflection extends Annotated<Class<?>> {
 
         Field( java.lang.reflect.Field field ) {
             super( field );
-            setAccessible( this.underlying, true );
+            trySetAccessible( this.underlying, true );
         }
 
         public Object get( Object instance ) {
@@ -283,7 +282,7 @@ public class Reflection extends Annotated<Class<?>> {
 
         Method( java.lang.reflect.Method method ) {
             super( method );
-            setAccessible( this.underlying, true );
+            trySetAccessible( this.underlying, true );
             this.parameters = Lists.map( method.getParameters(), Parameter::new );
         }
 
@@ -324,7 +323,7 @@ public class Reflection extends Annotated<Class<?>> {
 
         Constructor( java.lang.reflect.Constructor<?> constructor ) {
             super( constructor );
-            setAccessible( this.underlying, true );
+            trySetAccessible( this.underlying, true );
             this.parameters = Lists.map( constructor.getParameters(), Parameter::new );
             this.parameterNames = Lists.map( constructor.getParameters(), java.lang.reflect.Parameter::getName );
             this.parameterTypes = Suppliers.memoize( () ->
@@ -354,7 +353,7 @@ public class Reflection extends Annotated<Class<?>> {
         }
 
         public <T> T invoke( Map<String, Object> args ) {
-            //      @todo check correspondence of parameter types
+            //      @todo check match of parameter types
             try {
                 Object[] cArgs = Stream.of( parameters )
                     .map( p -> coercions.cast( p.type(), args.get( p.name() ) ) )
@@ -374,7 +373,7 @@ public class Reflection extends Annotated<Class<?>> {
                 return instance;
 
             } catch( Exception e ) {
-                throw new ReflectException( this + ":" + args, e instanceof ReflectException ? e.getCause() : e );
+                throw new ReflectException( this + ":" + args, e  );
             }
         }
 
