@@ -38,7 +38,7 @@ import static java.lang.String.format;
 @Slf4j
 public class SecurityInterceptor implements Interceptor {
 
-    private final TokenService tokenService;
+    TokenService tokenService;
 
     public SecurityInterceptor( TokenService tokenService ) {
         this.tokenService = tokenService;
