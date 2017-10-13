@@ -55,17 +55,22 @@ public class LoginWS {
 
         if( optionalToken.isPresent() ) {
             final Token token = optionalToken.get();
-            return HttpResponse.ok( token ).withHeader( "Authorization", token.id )
-                .withCookie( new HttpResponse.CookieBuilder()
-                    .withCustomValue( "Authorization", token.id )
-                    .withDomain( cookieDomain )
-                    .withPath( "/" )
-                    .withExpires( DateTime.now().plusMinutes( cookieExpiration ) )
-                    .build()
-                );
+            final HttpResponse ok = HttpResponse.ok( token );
+            return withAuthorization( ok, token );
         } else {
             return HttpResponse.status( HTTP_UNAUTHORIZED, "Username or password is invalid" );
         }
+    }
+
+    public HttpResponse withAuthorization( HttpResponse response, Token token ) {
+        return response.withHeader( "Authorization", token.id )
+                    .withCookie( new HttpResponse.CookieBuilder()
+                        .withCustomValue( "Authorization", token.id )
+                        .withDomain( cookieDomain )
+                        .withPath( "/" )
+                        .withExpires( DateTime.now().plusMinutes( cookieExpiration ) )
+                        .build()
+                    );
     }
 
 }
