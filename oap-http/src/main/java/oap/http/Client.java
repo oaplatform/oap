@@ -33,6 +33,7 @@ import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
+import oap.reflect.TypeRef;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
@@ -490,6 +491,10 @@ public class Client implements Closeable {
 
         public <T> Optional<T> unmarshal( Class<?> clazz ) {
             return this.contentString.map( json -> Binder.json.unmarshal( clazz, json ) );
+        }
+
+        public <T> Optional<T> unmarshal( TypeRef<T> ref ) {
+            return this.contentString.map( json -> Binder.json.unmarshal( ref, json ) );
         }
     }
 
