@@ -32,7 +32,6 @@ import oap.util.Stream;
 import oap.util.Try;
 
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -52,26 +51,19 @@ public class Dictionaries {
 
     private synchronized static void load() {
         if( dictionaries.isEmpty() ) {
-            final ArrayList<URL> dicts = new ArrayList<>();
-            dicts.addAll( Stream.of( Files.fastWildcard( defaultPath, "*.json" ).stream() )
-                    .concat( Files.fastWildcard( defaultPath, "*.conf" ).stream() )
-                    .map( Try.map( p -> p.toUri().toURL() ) )
-                    .collect( toList() ) );
+            dictionaries.putAll( Stream.of( Files.fastWildcard( defaultPath, "*.json" ).stream() )
+                .concat( Files.fastWildcard( defaultPath, "*.conf" ).stream() )
+                .map( Try.map( p -> p.toUri().toURL() ) )
+                .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
+                .toMap() );
 
-            dicts.addAll( Stream.of( Resources.urls( "dictionary", "json" ) )
-                    .concat( Resources.urls( "dictionary", "conf" ).stream() )
-                    .collect( toList() ) );
+            dictionaries.putAll( Stream.of( Stream.of( Resources.urls( "dictionary", "json" ) )
+                .concat( Resources.urls( "dictionary", "conf" ).stream() )
+                .collect( toList() ) )
+                .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
+                .filter( p -> !dictionaries.containsKey( p._1 ) )
+                .toMap() );
 
-            dictionaries.putAll( Stream.of( dicts )
-                    .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
-                    .toMap() );
-            log.info( "dictionaries: {}", dictionaries );
-
-
-            dictionaries.putAll( Stream.of( Resources.urls( "dictionary", "json" ) )
-                    .concat( Stream.of( Resources.urls( "dictionary", "conf" ) ) )
-                    .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
-                    .toMap() );
             log.info( "dictionaries: {}", dictionaries );
         }
     }
@@ -86,8 +78,8 @@ public class Dictionaries {
         load();
 
         return Maps.get( dictionaries, name )
-                .map( DictionaryParser::parse )
-                .orElseThrow( () -> new DictionaryNotFoundError( name ) );
+            .map( DictionaryParser::parse )
+            .orElseThrow( () -> new DictionaryNotFoundError( name ) );
     }
 
     public static DictionaryRoot getCachedDictionary( String name ) throws DictionaryNotFoundError {
