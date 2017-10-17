@@ -41,6 +41,12 @@ public class ElasticSearchSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
+    public void testConvert__id() throws Exception {
+        assertString( convert( schema( "{type:object,properties:{_id: {type:string}}}" ) ) )
+            .isEqualTo( "{\"properties\":{}}" );
+    }
+
+    @Test
     public void testConvert_dictionary() throws Exception {
         assertString( convert( schema( "{type:object,properties:{a: {type: dictionary, name: dict}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"keyword\"}}}" );

@@ -85,6 +85,7 @@ public class ElasticSearchSchema {
 
             jsonGenerator.writeObjectFieldStart( "properties" );
             for( val entry : objectSchemaAST.properties.entrySet() ) {
+                if( entry.getKey().equals( "_id" ) ) continue;
                 jsonGenerator.writeObjectFieldStart( entry.getKey() );
 
                 convert( entry.getValue(), jsonGenerator, false );
