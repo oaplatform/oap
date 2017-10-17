@@ -58,7 +58,7 @@ public class Application {
 
     @Deprecated
     public static synchronized void unregisterServices() {
-        kernel( DEFAULT ).unregisterServices();
+        if(kernels.containsKey( DEFAULT )) kernel( DEFAULT ).unregisterServices();
     }
 
     public static synchronized void register( Kernel kernel ) {
