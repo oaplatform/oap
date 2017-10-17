@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
 
@@ -84,6 +85,8 @@ public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
         wrapper.common = node( context ).asCommon();
         wrapper.additionalProperties = node( context ).asBoolean( ADDITIONAL_PROPERTIES ).optional();
         wrapper.extendsValue = node( context ).asString( "extends" ).optional();
+        wrapper.nested = node( context ).asBoolean( "nested" ).optional();
+        wrapper.dynamic = Optional.ofNullable( context.node.get( "dynamic" ) ).map( v -> Dynamic.valueOf( v.toString().toUpperCase() ) );
 
         wrapper.extendsSchema = wrapper.extendsValue
             .map( url -> ( ( ObjectSchemaASTWrapper ) context.urlParser.apply( SchemaPath.resolve( context.rootPath, context.path ), url ) ) );

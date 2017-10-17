@@ -29,44 +29,51 @@ import java.util.LinkedHashMap;
 import java.util.Optional;
 
 public class ObjectSchemaAST extends SchemaAST<ObjectSchemaAST> {
-   public final Optional<Boolean> additionalProperties;
-   public final Optional<String> extendsValue;
-   public final LinkedHashMap<String, SchemaAST> properties;
+    public final Optional<Boolean> additionalProperties;
+    public final Optional<String> extendsValue;
+    public final Optional<Boolean> nested;
+    public final Optional<Dynamic> dynamic;
+    public final LinkedHashMap<String, SchemaAST> properties;
 
-   public ObjectSchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
-                           Optional<String> extendsValue, LinkedHashMap<String, SchemaAST> properties,
-                           String path) {
-      super( common, path );
-      this.additionalProperties = additionalProperties;
-      this.extendsValue = extendsValue;
-      this.properties = properties;
-   }
+    public ObjectSchemaAST( CommonSchemaAST common, Optional<Boolean> additionalProperties,
+                            Optional<String> extendsValue, Optional<Boolean> nested, Optional<Dynamic> dynamic,
+                            LinkedHashMap<String, SchemaAST> properties,
+                            String path ) {
+        super( common, path );
+        this.additionalProperties = additionalProperties;
+        this.extendsValue = extendsValue;
+        this.nested = nested;
+        this.dynamic = dynamic;
+        this.properties = properties;
+    }
 
-   @Override
-   public ObjectSchemaAST merge( ObjectSchemaAST cs ) {
-      return new ObjectSchemaAST(
-         common.merge( cs.common ),
-         additionalProperties.isPresent() ? additionalProperties : cs.additionalProperties,
-         extendsValue.isPresent() ? extendsValue : cs.extendsValue,
-         merge( properties, cs.properties ),
-         path
-      );
-   }
+    @Override
+    public ObjectSchemaAST merge( ObjectSchemaAST cs ) {
+        return new ObjectSchemaAST(
+            common.merge( cs.common ),
+            additionalProperties.isPresent() ? additionalProperties : cs.additionalProperties,
+            extendsValue.isPresent() ? extendsValue : cs.extendsValue,
+            nested.isPresent() ? nested : cs.nested,
+            dynamic.isPresent() ? dynamic : cs.dynamic,
+            merge( properties, cs.properties ),
+            path
+        );
+    }
 
-   @SuppressWarnings( "unchecked" )
-   private LinkedHashMap<String, SchemaAST> merge( LinkedHashMap<String, SchemaAST> parentProperties, LinkedHashMap<String, SchemaAST> current ) {
-      final LinkedHashMap<String, SchemaAST> result = new LinkedHashMap<>();
+    @SuppressWarnings( "unchecked" )
+    private LinkedHashMap<String, SchemaAST> merge( LinkedHashMap<String, SchemaAST> parentProperties, LinkedHashMap<String, SchemaAST> current ) {
+        final LinkedHashMap<String, SchemaAST> result = new LinkedHashMap<>();
 
-      current.entrySet().stream().filter( e -> !parentProperties.containsKey( e.getKey() ) ).forEach( e -> result.put( e.getKey(), e.getValue() ) );
+        current.entrySet().stream().filter( e -> !parentProperties.containsKey( e.getKey() ) ).forEach( e -> result.put( e.getKey(), e.getValue() ) );
 
-      parentProperties.forEach( ( k, v ) -> {
-         final SchemaAST cs = current.get( k );
-         if( cs == null || !v.common.schemaType.equals( cs.common.schemaType ) )
-            result.put( k, v );
-         else
-            result.put( k, v.merge( cs ) );
-      } );
+        parentProperties.forEach( ( k, v ) -> {
+            final SchemaAST cs = current.get( k );
+            if( cs == null || !v.common.schemaType.equals( cs.common.schemaType ) )
+                result.put( k, v );
+            else
+                result.put( k, v.merge( cs ) );
+        } );
 
-      return result;
-   }
+        return result;
+    }
 }

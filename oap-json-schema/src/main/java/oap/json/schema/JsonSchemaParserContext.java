@@ -76,7 +76,7 @@ public class JsonSchemaParserContext {
             astW, ast );
       } else {
          throw new UnknownTypeValidationSyntaxException(
-            "Unknown type" + ( schemaType == null ? "nothing" : schemaType.getClass() )
+            "Unknown type " + ( schemaType == null ? "nothing" : schemaType.getClass() )
          );
       }
    }
