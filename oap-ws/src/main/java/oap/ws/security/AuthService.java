@@ -56,10 +56,14 @@ public class AuthService {
         final User user = userStorage.getByEmail( email.toLowerCase() ).orElse( null );
         if( user == null ) return Optional.empty();
 
-        final String inputPassword = Hash.sha256( salt, password );
+        final String inputPassword = getHash( password );
         if( !user.getPassword().equals( inputPassword ) ) return Optional.empty();
 
         return Optional.of( generateToken( user ) );
+    }
+
+    public String getHash( String password ) {
+        return Hash.sha256( salt, password );
     }
 
     public synchronized Token generateToken( User user ) {
