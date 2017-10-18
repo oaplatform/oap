@@ -27,7 +27,7 @@ package oap.ws.security;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
-import oap.util.Hash;
+import lombok.val;
 import org.joda.time.DateTime;
 
 import java.util.Map;
@@ -40,30 +40,26 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class AuthService {
 
+    private final PasswordHasher passwordHasher;
     private final Cache<String, Token> tokenStorage;
     private final UserStorage<? extends User> userStorage;
-    private final String salt;
 
-    public AuthService( UserStorage<? extends User> userStorage, int expirationTime, String salt ) {
+    public AuthService( UserStorage<? extends User> userStorage, PasswordHasher passwordHasher, int expirationTime ) {
+        this.passwordHasher = passwordHasher;
         this.tokenStorage = CacheBuilder.newBuilder()
             .expireAfterAccess( expirationTime, TimeUnit.MINUTES )
             .build();
         this.userStorage = userStorage;
-        this.salt = salt;
     }
 
     public synchronized Optional<Token> generateToken( String email, String password ) {
         final User user = userStorage.getByEmail( email.toLowerCase() ).orElse( null );
         if( user == null ) return Optional.empty();
 
-        final String inputPassword = getHash( password );
+        val inputPassword = passwordHasher.hashPassword( password );
         if( !user.getPassword().equals( inputPassword ) ) return Optional.empty();
 
         return Optional.of( generateToken( user ) );
-    }
-
-    public String getHash( String password ) {
-        return Hash.sha256( salt, password );
     }
 
     public synchronized Token generateToken( User user ) {
