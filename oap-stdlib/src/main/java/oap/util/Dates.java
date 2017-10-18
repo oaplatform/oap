@@ -28,18 +28,33 @@ import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.DateTimeFormatterBuilder;
+import org.joda.time.format.DateTimeParser;
+import org.joda.time.format.ISODateTimeFormat;
 
 public class Dates {
-    public static final DateTimeFormatter FORMAT_FULL = DateTimeFormat
-        .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSSZ" )
-        .withZoneUTC();
-
     public static final DateTimeFormatter FORMAT_MILLIS = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss.SSS" )
         .withZoneUTC();
-
     public static final DateTimeFormatter FORMAT_SIMPLE = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss" )
+        .withZoneUTC();
+
+    private static final DateTimeParser TIMEZONE_PARSER = DateTimeFormat.forPattern( "Z" ).getParser();
+
+    private static final DateTimeParser FRACTION_PARSER =
+        new DateTimeFormatterBuilder()
+            .appendLiteral( '.' )
+            .appendFractionOfSecond( 3, 9 )
+            .appendOptional( TIMEZONE_PARSER )
+            .toParser();
+
+    public static final DateTimeFormatter FORMAT_FULL = new DateTimeFormatterBuilder()
+        .append( ISODateTimeFormat.date() )
+        .appendLiteral( "T" )
+        .append( ISODateTimeFormat.hourMinuteSecond() )
+        .appendOptional( FRACTION_PARSER )
+        .toFormatter()
         .withZoneUTC();
 
     public static Result<DateTime, Exception> parseDateWithMillis( String date ) {
