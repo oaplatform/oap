@@ -103,8 +103,8 @@ public class HttpAsserts {
 
         public HttpAssertion hasCode( int code ) {
             assertThat( response.code )
-                .isEqualTo( code )
-                .as( "check http code (code = {}, reasonPhrase = {}, body = {})", response.code, response.reasonPhrase, response.contentString );
+                .as( "check http code (code = {}, reasonPhrase = {}, body = {})", response.code, response.reasonPhrase, response.contentString )
+                .isEqualTo( code );
             return this;
         }
 
