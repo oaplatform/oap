@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static oap.util.Maps.Collectors.toConcurrentMap;
@@ -84,27 +85,15 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
-    public Optional<T> update( String id, Consumer<T> update ) {
+    public Optional<T> update( String id, Predicate<T> predicate, Consumer<T> update, Supplier<T> init ) {
         open();
-        return super.update( id, update );
+        return super.update( id, predicate, update, init );
     }
 
     @Override
-    public Optional<T> update( String id, Consumer<T> update, Supplier<T> init ) {
+    public void update( Collection<String> ids, Predicate<T> predicate, Consumer<T> update, Supplier<T> init ) {
         open();
-        return super.update( id, update, init );
-    }
-
-    @Override
-    public void update( Collection<String> ids, Consumer<T> update ) {
-        open();
-        super.update( ids, update );
-    }
-
-    @Override
-    public void update( Collection<String> ids, Consumer<T> update, Supplier<T> init ) {
-        open();
-        super.update( ids, update, init );
+        super.update( ids, predicate, update, init );
     }
 
     @Override

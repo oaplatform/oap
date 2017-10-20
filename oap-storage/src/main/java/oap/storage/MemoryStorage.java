@@ -37,6 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -98,20 +99,15 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public Optional<T> update( String id, Consumer<T> update ) {
-        return update( id, update, null );
-    }
-
-    @Override
-    public Optional<T> update( String id, Consumer<T> update, Supplier<T> init ) {
-        return updateObject( id, update, init )
+    public Optional<T> update( String id, Predicate<T> predicate, Consumer<T> update, Supplier<T> init ) {
+        return updateObject( id, predicate, update, init )
             .map( m -> {
                 fireUpdated( m.object, false );
                 return m.object;
             } );
     }
 
-    protected Optional<Metadata<T>> updateObject( String id, Consumer<T> update, Supplier<T> init ) {
+    protected Optional<Metadata<T>> updateObject( String id, Predicate<T> predicate, Consumer<T> update, Supplier<T> init ) {
         return synchronizedOn( id, () -> {
             Metadata<T> m = data.get( id );
             if( m == null ) {
@@ -121,22 +117,21 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                 data.put( m.id, m );
                 m.update( m.object ); // fix modification time
             } else {
-                update.accept( m.object );
-                m.update( m.object );
+                if( predicate.test( m.object ) ) {
+                    update.accept( m.object );
+                    m.update( m.object );
+                } else {
+                    return Optional.empty();
+                }
             }
             return Optional.of( m );
         } );
     }
 
     @Override
-    public void update( Collection<String> ids, Consumer<T> update ) {
-        update( ids, update, null );
-    }
-
-    @Override
-    public void update( Collection<String> ids, Consumer<T> update, Supplier<T> init ) {
+    public void update( Collection<String> ids, Predicate<T> predicate, Consumer<T> update, Supplier<T> init ) {
         fireUpdated( Stream.of( ids )
-            .flatMap( id -> Optionals.toStream( updateObject( id, update, init )
+            .flatMap( id -> Optionals.toStream( updateObject( id, predicate, update, init )
                 .map( m -> m.object ) ) )
             .toList(), false );
     }

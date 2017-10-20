@@ -30,6 +30,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public interface Storage<T> extends Closeable, Iterable<T> {
@@ -39,13 +40,33 @@ public interface Storage<T> extends Closeable, Iterable<T> {
 
     void store( Collection<T> objects );
 
-    Optional<T> update( String id, Consumer<T> update );
+    default Optional<T> update( String id, Consumer<T> update ) {
+        return update( id, update, null );
+    }
 
-    Optional<T> update( String id, Consumer<T> update, Supplier<T> init );
+    default Optional<T> update( String id, Predicate<T> predicate, Consumer<T> update ) {
+        return update( id, predicate, update, null );
+    }
 
-    void update( Collection<String> ids, Consumer<T> update );
+    Optional<T> update( String id, Predicate<T> predicate, Consumer<T> update, Supplier<T> init );
 
-    void update( Collection<String> ids, Consumer<T> update, Supplier<T> init );
+    default Optional<T> update( String id, Consumer<T> update, Supplier<T> init ) {
+        return update( id, t -> true, update, init );
+    }
+
+    default void update( Collection<String> ids, Consumer<T> update ) {
+        update( ids, t -> true, update, null );
+    }
+
+    default void update( Collection<String> ids, Predicate<T> predicate, Consumer<T> update ) {
+        update( ids, predicate, update, null );
+    }
+
+    default void update( Collection<String> ids, Consumer<T> update, Supplier<T> init ) {
+        update( ids, t -> true, update, init );
+    }
+
+    void update( Collection<String> ids, Predicate<T> predicate, Consumer<T> update, Supplier<T> init );
 
     Optional<T> get( String id );
 
