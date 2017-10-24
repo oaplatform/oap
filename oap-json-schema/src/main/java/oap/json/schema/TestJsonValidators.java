@@ -59,7 +59,7 @@ public final class TestJsonValidators {
                             .filter( p -> "oap-validators".equals( p._2.get( "name" ) ) )
                             .map( p -> p._1 )
                             .collect( toList() );
-                        val kernel = new Kernel( urls );
+                        val kernel = new Kernel( TestJsonValidators.class.getSimpleName(), urls );
                         try {
                             kernel.start();
 
