@@ -34,27 +34,31 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Created by Igor Petrenko on 19.04.2016.
  */
 public class SchemaWrapperPathTest extends AbstractSchemaTest {
-   @Test
-   public void testTraverseObject() throws Exception {
-      final String schema = "{type: object, properties: {a: {type: object, properties: {b: {type: string}}}}}";
+    private SchemaASTWrapper wrapper( String schema ) {
+        return jsonValidators.schemaFromString( schema, NO_STORAGE ).parse( schema, NO_STORAGE );
+    }
 
-      final Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( JsonValidatorFactory.parse( schema, NO_STORAGE ) );
-      assertThat( traverse ).hasValueSatisfying( s -> assertThat( s.common.schemaType ).isEqualTo( "string" ) );
-   }
+    @Test
+    public void testTraverseObject() throws Exception {
+        final String schema = "{type: object, properties: {a: {type: object, properties: {b: {type: string}}}}}";
 
-   @Test
-   public void testTraverseArray() throws Exception {
-      final String schema = "{type: object, properties: {a: {type: array, items: {type: object, properties: {b: {type: string}}}}}}";
+        final Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( wrapper( schema ) );
+        assertThat( traverse ).hasValueSatisfying( s -> assertThat( s.common.schemaType ).isEqualTo( "string" ) );
+    }
 
-      final Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.items.b" ).traverse( JsonValidatorFactory.parse( schema, NO_STORAGE ) );
-      assertThat( traverse ).hasValueSatisfying( s -> assertThat( s.common.schemaType ).isEqualTo( "string" ) );
-   }
+    @Test
+    public void testTraverseArray() throws Exception {
+        final String schema = "{type: object, properties: {a: {type: array, items: {type: object, properties: {b: {type: string}}}}}}";
 
-   @Test
-   public void testTraverseNotFound() throws Exception {
-      final String schema = "{type: object, properties: {a: {type: string}}}";
+        final Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.items.b" ).traverse( wrapper( schema ) );
+        assertThat( traverse ).hasValueSatisfying( s -> assertThat( s.common.schemaType ).isEqualTo( "string" ) );
+    }
 
-      final Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( JsonValidatorFactory.parse( schema, NO_STORAGE ) );
-      assertThat( traverse ).isEmpty();
-   }
+    @Test
+    public void testTraverseNotFound() throws Exception {
+        final String schema = "{type: object, properties: {a: {type: string}}}";
+
+        final Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( wrapper( schema ) );
+        assertThat( traverse ).isEmpty();
+    }
 }

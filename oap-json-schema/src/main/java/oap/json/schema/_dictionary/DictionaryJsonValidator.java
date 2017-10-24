@@ -50,6 +50,19 @@ import static oap.json.schema.SchemaPath.rightTrimItems;
 @Slf4j
 public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchemaAST> {
 
+    public DictionaryJsonValidator() {
+        super( "dictionary" );
+    }
+
+    private static String printIds( final List<Dictionary> dictionaries ) {
+        return dictionaries
+            .stream()
+            .flatMap( dictionary -> dictionary.ids().stream() )
+            .distinct()
+            .collect( toList() )
+            .toString();
+    }
+
     private Result<List<Dictionary>, List<String>> validate( JsonValidatorProperties properties, Optional<DictionarySchemaAST> schemaOpt, List<Dictionary> dictionaries ) {
         if( !schemaOpt.isPresent() ) return Result.success( dictionaries );
 
@@ -107,7 +120,7 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
         validate( properties, schema.parent, dictionaries )
             .ifFailure( errors::addAll )
             .ifSuccess( successes -> {
-                if ( !successes.isEmpty() &&
+                if( !successes.isEmpty() &&
                     successes.stream().noneMatch( d -> d.containsValueWithId( String.valueOf( value ) ) ) ) {
 
                     errors.addAll( Lists.of( properties.error( "instance does not match any member resolve " +
@@ -116,15 +129,6 @@ public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchem
             } );
 
         return errors;
-    }
-
-    private static String printIds( final List<Dictionary> dictionaries ) {
-        return dictionaries
-            .stream()
-            .flatMap( dictionary -> dictionary.ids().stream() )
-            .distinct()
-            .collect( toList() )
-            .toString();
     }
 
     @Override

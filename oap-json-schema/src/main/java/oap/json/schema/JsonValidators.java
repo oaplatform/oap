@@ -21,15 +21,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.json.schema._number;
+package oap.json.schema;
 
-public class DoubleJsonValidator extends NumberJsonValidator<Double> {
-    public DoubleJsonValidator() {
-        super( "double" );
+import lombok.val;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class JsonValidators {
+    private static Map<String, JsonValidatorFactory> schemas = new ConcurrentHashMap<>();
+
+    private final Map<String, JsonSchemaValidator<?>> validators = new HashMap<>();
+
+    public JsonValidators( VL validators ) {
+        for( val validator : validators ) {
+            this.validators.put( validator.type, validator );
+        }
     }
 
-    @Override
-    protected boolean valid( Object value ) {
-        return value instanceof Number;
+    public JsonValidatorFactory schema( String url, SchemaStorage storage ) {
+        return schemas.computeIfAbsent( url, u -> schemaFromString( storage.get( url ), storage ) );
     }
+
+    public JsonValidatorFactory schemaFromString( String schema, SchemaStorage storage ) {
+        return new JsonValidatorFactory( schema, storage, validators );
+    }
+
+    public List<JsonSchemaValidator> validators() {
+        return new ArrayList<>( validators.values() );
+    }
+
+    public static class VL extends ArrayList<JsonSchemaValidator<?>> {}
+
 }

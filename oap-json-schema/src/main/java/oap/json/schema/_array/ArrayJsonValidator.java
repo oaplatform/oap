@@ -31,6 +31,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ArrayJsonValidator extends JsonSchemaValidator<ArraySchemaAST> {
+   public ArrayJsonValidator() {
+      super( "array" );
+   }
+
    @Override
    public List<String> validate( JsonValidatorProperties properties, ArraySchemaAST schema,
                                  Object value ) {

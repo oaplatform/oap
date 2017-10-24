@@ -24,6 +24,10 @@
 package oap.json.schema._number;
 
 public class LongJsonValidator extends NumberJsonValidator<Long> {
+    protected LongJsonValidator() {
+        super( "long" );
+    }
+
     @Override
     protected boolean valid( Object value ) {
         return value instanceof Long;

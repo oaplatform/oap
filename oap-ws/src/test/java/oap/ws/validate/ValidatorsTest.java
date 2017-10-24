@@ -24,17 +24,19 @@
 
 package oap.ws.validate;
 
+import oap.json.schema.TestJsonValidators;
 import oap.reflect.Reflect;
 import org.testng.annotations.Test;
 
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ValidatorsTest {
     @Test
     public void caching() {
-        Validators.Validator v1 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(), new Validatee(), false );
-        Validators.Validator v2 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(), new Validatee(), false );
+        Validators.Validator v1 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(),
+            new Validatee(), false, TestJsonValidators.jsonValidatos() );
+        Validators.Validator v2 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(),
+            new Validatee(), false, TestJsonValidators.jsonValidatos() );
 
         assertThat( v1 ).isNotSameAs( v2 );
     }

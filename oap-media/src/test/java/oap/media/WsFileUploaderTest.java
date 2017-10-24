@@ -30,9 +30,9 @@ import oap.http.PlainHttpListener;
 import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.Files;
+import oap.json.schema.TestJsonValidators;
 import oap.media.postprocessing.VastMediaProcessing;
 import oap.testng.AbstractTest;
-import oap.testng.Asserts;
 import oap.testng.Env;
 import oap.util.Cuid;
 import oap.util.Lists;
@@ -84,7 +84,9 @@ public class WsFileUploaderTest extends AbstractTest {
 
         server = new Server( 100 );
         ws = new WebServices( server, new SessionManager( 10, null, "/" ),
-            GenericCorsPolicy.DEFAULT, WsConfig.CONFIGURATION.fromResource( getClass(), "ws-multipart.conf" )
+            GenericCorsPolicy.DEFAULT,
+            TestJsonValidators.jsonValidatos(),
+            WsConfig.CONFIGURATION.fromResource( getClass(), "ws-multipart.conf" )
         );
 
         WsFileUploader service = new WsFileUploader( path, 1024 * 1024, -1,

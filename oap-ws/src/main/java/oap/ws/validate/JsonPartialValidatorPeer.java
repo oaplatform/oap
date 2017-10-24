@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.json.schema.JsonValidatorFactory;
+import oap.json.schema.JsonValidators;
 import oap.json.schema.ResourceSchemaStorage;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
@@ -51,13 +52,22 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
     private final Object instance;
 
     public JsonPartialValidatorPeer( WsPartialValidateJson validate,
-                                     Reflection.Method targetMethod, Object instance, Type type ) {
-        factory = JsonValidatorFactory.schema( validate.schema(), storage );
+                                     Reflection.Method targetMethod, Object instance, Type type, JsonValidators jsonValidators ) {
+        factory = jsonValidators.schema( validate.schema(), storage );
         this.validate = validate;
         this.instance = instance;
         this.method = Reflect.reflect( instance.getClass() )
             .method( validate.methodName() )
             .orElseThrow( () -> new WsException( "No such method " + validate.methodName() ) );
+    }
+
+    private static Object getValue( final LinkedHashMap<Reflection.Parameter, Object> originalValues,
+                                    final String idName ) {
+        return originalValues.entrySet().stream()
+            .filter( p -> p.getKey().name().equals( idName ) )
+            .findFirst()
+            .get()
+            .getValue();
     }
 
     @Override
@@ -133,15 +143,6 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
         }
-    }
-
-    private static Object getValue( final LinkedHashMap<Reflection.Parameter, Object> originalValues,
-                                    final String idName ) {
-        return originalValues.entrySet().stream()
-            .filter( p -> p.getKey().name().equals( idName ) )
-            .findFirst()
-            .get()
-            .getValue();
     }
 
 }

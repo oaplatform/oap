@@ -33,6 +33,7 @@ import oap.http.HttpServer;
 import oap.http.Protocol;
 import oap.http.cors.CorsPolicy;
 import oap.json.Binder;
+import oap.json.schema.JsonValidators;
 import oap.util.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
@@ -47,21 +48,23 @@ public class WebServices {
         HttpResponse.registerProducer( ContentType.APPLICATION_JSON.getMimeType(), Binder.json::marshal );
     }
 
+    private final JsonValidators jsonValidators;
     private final List<WsConfig> wsConfigs;
     private final HttpServer server;
     private final SessionManager sessionManager;
     private final CorsPolicy globalCorsPolicy;
     public WsResponse defaultResponse = WsResponse.TEXT;
 
-    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy ) {
-        this( server, sessionManager, globalCorsPolicy, WsConfig.CONFIGURATION.fromClassPath() );
+    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, JsonValidators jsonValidators ) {
+        this( server, sessionManager, globalCorsPolicy, jsonValidators, WsConfig.CONFIGURATION.fromClassPath() );
     }
 
-    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, WsConfig... wsConfigs ) {
-        this( server, sessionManager, globalCorsPolicy, Lists.of( wsConfigs ) );
+    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, JsonValidators jsonValidators, WsConfig... wsConfigs ) {
+        this( server, sessionManager, globalCorsPolicy, jsonValidators, Lists.of( wsConfigs ) );
     }
 
-    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, List<WsConfig> wsConfigs ) {
+    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, JsonValidators jsonValidators, List<WsConfig> wsConfigs ) {
+        this.jsonValidators = jsonValidators;
         this.wsConfigs = wsConfigs;
         this.server = server;
         this.sessionManager = sessionManager;
@@ -117,7 +120,7 @@ public class WebServices {
     @VisibleForTesting
     public void bind( String context, CorsPolicy corsPolicy, Object impl, boolean sessionAware, SessionManager sessionManager,
                       List<Interceptor> interceptors, Protocol protocol ) {
-        server.bind( context, corsPolicy, new WsService( impl, sessionAware, sessionManager, interceptors, defaultResponse ), protocol );
+        server.bind( context, corsPolicy, new WsService( impl, sessionAware, sessionManager, interceptors, defaultResponse, jsonValidators ), protocol );
     }
 
 }

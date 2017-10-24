@@ -70,6 +70,10 @@ public class Application {
         return Maps.getOrThrow( kernels, name, () -> new ApplicationException( "kernel " + name + " is not registered" ) );
     }
 
+    public static synchronized boolean containsKernel( String name ) {
+        return kernels.containsKey( name );
+    }
+
     public static synchronized void unregister( Kernel kernel ) {
         kernels.remove( kernel.name );
     }

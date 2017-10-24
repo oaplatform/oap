@@ -23,6 +23,7 @@
  */
 package oap.ws.validate.testng;
 
+import oap.json.schema.TestJsonValidators;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.util.Stream;
@@ -137,7 +138,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                     for( int i = 0; i < parameters.size(); i++ ) {
                         Reflection.Parameter parameter = parameters.get( i );
                         paramErrors.merge( Validators
-                            .forParameter( method, parameter, instance, false )
+                            .forParameter( method, parameter, instance, false, TestJsonValidators.jsonValidatos() )
                             .validate( args[i], values ) );
                     }
                     if( paramErrors.isFailed() ) {
@@ -145,7 +146,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                         return null;
                     } else {
                         ValidationErrors methodErrors = Validators
-                            .forMethod( method, instance, false )
+                            .forMethod( method, instance, false, TestJsonValidators.jsonValidatos() )
                             .validate( args, values );
                         runAsserts( methodErrors );
                         if( methodErrors.isFailed() ) return null;

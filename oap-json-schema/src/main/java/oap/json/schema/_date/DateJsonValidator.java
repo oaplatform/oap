@@ -35,22 +35,26 @@ import java.util.List;
 
 public class DateJsonValidator extends JsonSchemaValidator<DefaultSchemaAST> {
 
-   @Override
-   public List<String> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
-      if( !( value instanceof String ) ) return typeFailed( properties, schema, value );
+    public DateJsonValidator() {
+        super( "date" );
+    }
 
-      final String dateValue = ( String ) value;
+    @Override
+    public List<String> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
+        if( !( value instanceof String ) ) return typeFailed( properties, schema, value );
 
-      final List<String> errors = new ArrayList<>();
+        final String dateValue = ( String ) value;
 
-      Dates.parseDateWithTimeZone( dateValue )
-          .ifFailure( e -> errors.add( properties.error( e.getMessage() ) ) );
+        final List<String> errors = new ArrayList<>();
 
-      return errors;
-   }
+        Dates.parseDateWithTimeZone( dateValue )
+            .ifFailure( e -> errors.add( properties.error( e.getMessage() ) ) );
 
-   @Override
-   public DefaultSchemaASTWrapper parse( JsonSchemaParserContext context ) {
-      return defaultParse( context );
-   }
+        return errors;
+    }
+
+    @Override
+    public DefaultSchemaASTWrapper parse( JsonSchemaParserContext context ) {
+        return defaultParse( context );
+    }
 }

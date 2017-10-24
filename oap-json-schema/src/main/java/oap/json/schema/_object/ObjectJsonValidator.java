@@ -37,6 +37,9 @@ import java.util.Map;
 import java.util.Optional;
 
 public class ObjectJsonValidator extends JsonSchemaValidator<ObjectSchemaAST> {
+    public ObjectJsonValidator() {
+        super( "object" );
+    }
 
     @Override
     public List<String> validate( JsonValidatorProperties properties, ObjectSchemaAST schema, Object value ) {

@@ -24,39 +24,39 @@
 
 package oap.json.schema;
 
+import lombok.val;
 import org.testng.annotations.Test;
 
-import static oap.json.schema.AbstractSchemaTest.NO_STORAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by igor.petrenko on 02.03.2017.
  */
-public class SchemaPathTest {
+public class SchemaPathTest extends AbstractSchemaTest {
     @Test
     public void testTraverse() throws Exception {
         String schema = "{additionalProperties = true, type: object, properties: {a: {type: boolean, required: true}}}";
 
-        final JsonValidatorFactory validator = JsonValidatorFactory.schemaFromString( schema, NO_STORAGE );
+        val schemaAST = schema( schema );
 
-        assertThat( SchemaPath.traverse( validator.schema, "properties.b" ).schema ).isEmpty();
-        assertThat( SchemaPath.traverse( validator.schema, "b" ).schema ).isEmpty();
-        assertThat( SchemaPath.traverse( validator.schema, "a" ).schema ).isPresent();
-        assertThat( SchemaPath.traverse( validator.schema, "a" ).additionalProperties ).contains( true );
-        assertThat( SchemaPath.traverse( validator.schema, "a" ).schema.get().common.schemaType ).isEqualTo( "boolean" );
+        assertThat( SchemaPath.traverse( schemaAST, "properties.b" ).schema ).isEmpty();
+        assertThat( SchemaPath.traverse( schemaAST, "b" ).schema ).isEmpty();
+        assertThat( SchemaPath.traverse( schemaAST, "a" ).schema ).isPresent();
+        assertThat( SchemaPath.traverse( schemaAST, "a" ).additionalProperties ).contains( true );
+        assertThat( SchemaPath.traverse( schemaAST, "a" ).schema.get().common.schemaType ).isEqualTo( "boolean" );
     }
 
     @Test
     public void testTraverseArray() throws Exception {
         String schema = "{type: array, items { type = object, properties: {a: {type: array, items {type = boolean, required: true}}}}}";
 
-        final JsonValidatorFactory validator = JsonValidatorFactory.schemaFromString( schema, NO_STORAGE );
+        val schemaAST = schema( schema );
 
-        assertThat( SchemaPath.traverse( validator.schema, "items.properties.b" ).schema ).isEmpty();
-        assertThat( SchemaPath.traverse( validator.schema, "b" ).schema ).isEmpty();
-        assertThat( SchemaPath.traverse( validator.schema, "a" ).schema ).isEmpty();
-        assertThat( SchemaPath.traverse( validator.schema, "items.a" ).schema ).isPresent();
-        assertThat( SchemaPath.traverse( validator.schema, "items.a.items" ).schema.get().common.schemaType ).isEqualTo( "boolean" );
+        assertThat( SchemaPath.traverse( schemaAST, "items.properties.b" ).schema ).isEmpty();
+        assertThat( SchemaPath.traverse( schemaAST, "b" ).schema ).isEmpty();
+        assertThat( SchemaPath.traverse( schemaAST, "a" ).schema ).isEmpty();
+        assertThat( SchemaPath.traverse( schemaAST, "items.a" ).schema ).isPresent();
+        assertThat( SchemaPath.traverse( schemaAST, "items.a.items" ).schema.get().common.schemaType ).isEqualTo( "boolean" );
     }
 
 }

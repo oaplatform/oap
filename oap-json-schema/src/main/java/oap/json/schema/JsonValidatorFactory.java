@@ -23,66 +23,40 @@
  */
 package oap.json.schema;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import lombok.val;
-import oap.io.Resources;
+import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
 import oap.util.Lists;
-import oap.util.Throwables;
 
-import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
-public final class JsonValidatorFactory {
-    private static final HashMap<String, JsonSchemaValidator> validators = new HashMap<>();
-
-    private static org.slf4j.Logger logger = getLogger( JsonValidatorFactory.class );
-    private static Map<String, JsonValidatorFactory> schemas = new ConcurrentHashMap<>();
-
-    static {
-        for( URL url : Resources.urls( "META-INF/oap-validator.conf" ) ) {
-            val map = Binder.hoconWithoutSystemProperties.unmarshal( new TypeReference<Map<String, String>>() {}, url );
-            map.forEach( ( name, clazz ) -> {
-                try {
-                    validators.put( name, ( JsonSchemaValidator ) Class.forName( clazz ).newInstance() );
-                } catch( InstantiationException | IllegalAccessException | ClassNotFoundException e ) {
-                    throw Throwables.propagate( e );
-                }
-            } );
-        }
-    }
-
+@Slf4j
+public class JsonValidatorFactory {
     public final SchemaAST schema;
+    private final Map<String, JsonSchemaValidator<?>> validators;
 
-    private JsonValidatorFactory( String schema, SchemaStorage storage ) {
+    JsonValidatorFactory( String schema, SchemaStorage storage, Map<String, JsonSchemaValidator<?>> validators ) {
+        this.validators = validators;
         final JsonSchemaParserContext context = new JsonSchemaParserContext(
             "", null, "",
-            JsonValidatorFactory::parse,
+            this::parse,
             ( rp, url ) -> parse( url, storage.get( url ), storage, rp ),
             "", "", new HashMap<>(), new HashMap<>() );
 
         this.schema = parse( schema, context ).unwrap( context );
     }
 
-    public static JsonValidatorFactory schema( String url, SchemaStorage storage ) {
-        return schemas.computeIfAbsent( url, u -> schemaFromString( storage.get( url ), storage ) );
-    }
-
-    public static JsonValidatorFactory schemaFromString( String schema, SchemaStorage storage ) {
-        return new JsonValidatorFactory( schema, storage );
+    private SchemaASTWrapper parse( String schema, JsonSchemaParserContext context ) {
+        return parse( context.withNode( "", Binder.hocon.unmarshal( Object.class, schema ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
-    private static List<String> validate( JsonValidatorProperties properties, SchemaAST schema, Object value ) {
+    private List<String> validate( JsonValidatorProperties properties, SchemaAST schema, Object value ) {
         JsonSchemaValidator jsonSchemaValidator = validators.get( schema.common.schemaType );
         if( jsonSchemaValidator == null ) {
-            logger.trace( "registered validators: " + validators.keySet() );
+            log.trace( "registered validators: " + validators.keySet() );
             throw new ValidationSyntaxException( "[schema:type]: unknown simple type [" + schema.common.schemaType + "]" );
         }
 
@@ -101,34 +75,26 @@ public final class JsonValidatorFactory {
         }
     }
 
-    public static void reset() {
-        schemas.clear();
-    }
-
-    static SchemaASTWrapper parse( String schema, SchemaStorage storage ) {
+    SchemaASTWrapper parse( String schema, SchemaStorage storage ) {
         return parse( "", schema, storage, "" );
     }
 
-    static SchemaASTWrapper parse( String schemaName, String schema, SchemaStorage storage, String rootPath ) {
+    SchemaASTWrapper parse( String schemaName, String schema, SchemaStorage storage, String rootPath ) {
         final JsonSchemaParserContext context = new JsonSchemaParserContext(
             schemaName,
             null, "",
-            JsonValidatorFactory::parse,
+            this::parse,
             ( rp, url ) -> parse( url, storage.get( url ), storage, rp ),
             rootPath, "", new HashMap<>(), new HashMap<>() );
         return parse( schema, context );
     }
 
-    private static SchemaASTWrapper parse( String schema, JsonSchemaParserContext context ) {
-        return parse( context.withNode( "", Binder.hocon.unmarshal( Object.class, schema ) ) );
-    }
-
-    private static SchemaASTWrapper parse( JsonSchemaParserContext context ) {
+    private SchemaASTWrapper parse( JsonSchemaParserContext context ) {
         JsonSchemaValidator<?> schemaParser = validators.get( context.schemaType );
         if( schemaParser != null ) {
             return schemaParser.parse( context );
         } else {
-            if( logger.isTraceEnabled() ) logger.trace( "registered parsers: " + validators.keySet() );
+            log.trace( "registered parsers: {}", validators.keySet() );
             throw new ValidationSyntaxException(
                 "[schema:type]: unknown simple type [" + context.schemaType + "]" );
         }
@@ -146,7 +112,7 @@ public final class JsonValidatorFactory {
             Optional.empty(),
             traverseResult.additionalProperties,
             ignoreRequiredDefault,
-            JsonValidatorFactory::validate
+            this::validate
         );
 
         return validate( properties, partialSchema, json );
@@ -161,7 +127,7 @@ public final class JsonValidatorFactory {
             Optional.empty(),
             Optional.empty(),
             ignoreRequiredDefault,
-            JsonValidatorFactory::validate
+            this::validate
         );
         return validate( properties, schema, json );
     }

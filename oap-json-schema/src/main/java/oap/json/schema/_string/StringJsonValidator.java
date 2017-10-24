@@ -31,37 +31,41 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class StringJsonValidator extends JsonSchemaValidator<StringSchemaAST> {
-   @Override
-   public List<String> validate( JsonValidatorProperties properties, StringSchemaAST schema, Object value ) {
-      if( !( value instanceof String ) ) return typeFailed( properties, schema, value );
+    public StringJsonValidator( String type ) {
+        super( type );
+    }
 
-      String strValue = ( String ) value;
+    @Override
+    public List<String> validate( JsonValidatorProperties properties, StringSchemaAST schema, Object value ) {
+        if( !( value instanceof String ) ) return typeFailed( properties, schema, value );
 
-      List<String> errors = new ArrayList<>();
+        String strValue = ( String ) value;
 
-      schema.minLength
-         .filter( minLength -> strValue.length() < minLength )
-         .ifPresent( minLength -> errors.add( properties.error( "string " + strValue + " is shorter than minLength " + minLength ) ) );
+        List<String> errors = new ArrayList<>();
 
-      schema.maxLength
-         .filter( maxLength -> strValue.length() > maxLength )
-         .ifPresent( maxLength -> errors.add( properties.error( "string " + strValue + " is longer than maxLength " + maxLength ) ) );
+        schema.minLength
+            .filter( minLength -> strValue.length() < minLength )
+            .ifPresent( minLength -> errors.add( properties.error( "string " + strValue + " is shorter than minLength " + minLength ) ) );
 
-      schema.pattern
-         .filter( pattern -> !pattern.matcher( strValue ).matches() )
-         .ifPresent( pattern -> errors.add( properties.error( "string " + strValue + " does not match specified regex " + pattern ) ) );
+        schema.maxLength
+            .filter( maxLength -> strValue.length() > maxLength )
+            .ifPresent( maxLength -> errors.add( properties.error( "string " + strValue + " is longer than maxLength " + maxLength ) ) );
 
-      return errors;
-   }
+        schema.pattern
+            .filter( pattern -> !pattern.matcher( strValue ).matches() )
+            .ifPresent( pattern -> errors.add( properties.error( "string " + strValue + " does not match specified regex " + pattern ) ) );
 
-   @Override
-   public StringSchemaASTWrapper parse( JsonSchemaParserContext context ) {
-      final StringSchemaASTWrapper wrapper = context.createWrapper( StringSchemaASTWrapper::new );
-      wrapper.common = node( context ).asCommon();
-      wrapper.minLength = node( context ).asInt( "minLength" ).optional();
-      wrapper.maxLength = node( context ).asInt( "maxLength" ).optional();
-      wrapper.pattern = node( context ).asPattern( "pattern" ).optional();
+        return errors;
+    }
 
-      return wrapper;
-   }
+    @Override
+    public StringSchemaASTWrapper parse( JsonSchemaParserContext context ) {
+        final StringSchemaASTWrapper wrapper = context.createWrapper( StringSchemaASTWrapper::new );
+        wrapper.common = node( context ).asCommon();
+        wrapper.minLength = node( context ).asInt( "minLength" ).optional();
+        wrapper.maxLength = node( context ).asInt( "maxLength" ).optional();
+        wrapper.pattern = node( context ).asPattern( "pattern" ).optional();
+
+        return wrapper;
+    }
 }

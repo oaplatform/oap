@@ -30,6 +30,7 @@ import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.nio.NioServer;
 import oap.http.testng.HttpAsserts;
+import oap.json.schema.TestJsonValidators;
 import oap.testng.AbstractPerformance;
 import oap.testng.Env;
 import org.apache.http.entity.ContentType;
@@ -41,7 +42,7 @@ import java.util.Collections;
 import static oap.http.testng.HttpAsserts.HTTP_URL;
 
 public class WebServicesPerformance extends AbstractPerformance {
-    public static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
+    private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
     private final int samples = 100000;
 
     @BeforeMethod
@@ -57,7 +58,7 @@ public class WebServicesPerformance extends AbstractPerformance {
         SynchronizedThread listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
         listener.start();
         try {
-            WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+            WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT, TestJsonValidators.jsonValidatos() );
             ws.bind( "x/v/math", GenericCorsPolicy.DEFAULT, new MathWS(), false, SESSION_MANAGER,
                 Collections.emptyList(), Protocol.HTTP );
 
@@ -78,7 +79,7 @@ public class WebServicesPerformance extends AbstractPerformance {
     public void nio_threads() throws Exception {
         NioServer server = new NioServer( Env.port(), 500 );
         try {
-            WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+            WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT, TestJsonValidators.jsonValidatos() );
             ws.bind( "x/v/math", GenericCorsPolicy.DEFAULT, new MathWS(), false, SESSION_MANAGER,
                 Collections.emptyList(), Protocol.HTTP );
             server.start();

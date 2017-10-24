@@ -37,6 +37,11 @@ import java.util.regex.Pattern;
 public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
     public static final String JSON_PATH = "json-path";
     protected static final String ADDITIONAL_PROPERTIES = "additionalProperties";
+    public final String type;
+
+    protected JsonSchemaValidator( String type ) {
+        this.type = type;
+    }
 
     public static String getType( Object object ) {
         if( object instanceof Boolean ) return "boolean";
@@ -174,11 +179,13 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
             final Object anEnum = properties.node.get( "enum" );
             final Optional<Boolean> index = asBoolean( "index" ).optional();
             final Optional<Boolean> include_in_all = asBoolean( "include_in_all" ).optional();
+            final Optional<String> denormalized = asString( "denormalized" ).optional();
 
             return new SchemaAST.CommonSchemaAST(
                 properties.schemaType, required, enabled,
                 defaultValue, toEnum( anEnum ),
-                index, include_in_all
+                index, include_in_all,
+                denormalized
             );
         }
 

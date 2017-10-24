@@ -26,6 +26,7 @@ package oap.ws.validate;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.json.schema.JsonValidatorFactory;
+import oap.json.schema.JsonValidators;
 import oap.json.schema.ResourceSchemaStorage;
 import oap.reflect.Reflection;
 import oap.ws.WsClientException;
@@ -39,8 +40,8 @@ public class JsonValidatorPeer implements ValidatorPeer {
     private final WsValidateJson validate;
 
     public JsonValidatorPeer( WsValidateJson validate,
-                              Reflection.Method targetMethod, Object instance, Type type ) {
-        this.factory = JsonValidatorFactory.schema( validate.schema(), storage );
+                              Reflection.Method targetMethod, Object instance, Type type, JsonValidators jsonValidators ) {
+        this.factory = jsonValidators.schema( validate.schema(), storage );
         this.validate = validate;
     }
 

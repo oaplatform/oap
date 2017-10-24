@@ -30,6 +30,7 @@ import oap.http.Request;
 import oap.http.Response;
 import oap.http.Session;
 import oap.json.Binder;
+import oap.json.schema.JsonValidators;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
 import oap.reflect.Coercions;
@@ -76,6 +77,7 @@ public class WsService implements Handler {
     private final boolean sessionAware;
     private final Reflection reflection;
     private final WsResponse defaultResponse;
+    private final JsonValidators jsonValidators;
     private final SessionManager sessionManager;
     private final List<Interceptor> interceptors;
     private final Coercions coercions = Coercions.basic()
@@ -84,11 +86,13 @@ public class WsService implements Handler {
     private Map<String, Pattern> compiledPaths = new HashMap<>();
 
     public WsService( Object impl, boolean sessionAware,
-                      SessionManager sessionManager, List<Interceptor> interceptors, WsResponse defaultResponse ) {
+                      SessionManager sessionManager, List<Interceptor> interceptors, WsResponse defaultResponse,
+                      JsonValidators jsonValidators ) {
         this.impl = impl;
         this.logger = LoggerFactory.getLogger( impl.getClass() );
         this.reflection = Reflect.reflect( impl.getClass() );
         this.defaultResponse = defaultResponse;
+        this.jsonValidators = jsonValidators;
         this.reflection.methods.forEach( m -> m.findAnnotation( WsMethod.class )
             .ifPresent( a -> compiledPaths.put( a.path(), WsServices.compile( a.path() ) ) )
         );
@@ -219,14 +223,14 @@ public class WsService implements Handler {
                 originalValues.forEach( ( parameter, value ) ->
                     paramValidation.merge(
                         Validators
-                            .forParameter( method, parameter, impl, true )
+                            .forParameter( method, parameter, impl, true, jsonValidators )
                             .validate( value, originalValues )
                     )
                 );
 
                 paramValidation.throwIfInvalid();
 
-                Validators.forMethod( method, impl, true )
+                Validators.forMethod( method, impl, true, jsonValidators )
                     .validate( originalValues.values().toArray( new Object[originalValues.size()] ), originalValues )
                     .throwIfInvalid();
 
@@ -236,13 +240,13 @@ public class WsService implements Handler {
                 values.forEach( ( parameter, value ) ->
                     paramValidation.merge(
                         Validators
-                            .forParameter( method, parameter, impl, false )
+                            .forParameter( method, parameter, impl, false, jsonValidators )
                             .validate( value, values )
                     ) );
 
                 paramValidation.throwIfInvalid();
 
-                Validators.forMethod( method, impl, false )
+                Validators.forMethod( method, impl, false, jsonValidators )
                     .validate( paramValues, values )
                     .throwIfInvalid();
 

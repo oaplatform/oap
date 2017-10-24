@@ -32,6 +32,7 @@ import oap.http.Session;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.testng.HttpAsserts;
 import oap.json.Binder;
+import oap.json.schema.TestJsonValidators;
 import oap.metrics.Metrics;
 import oap.testng.Env;
 import oap.util.Maps;
@@ -54,7 +55,7 @@ public class WsServiceSessionTest {
     private final SessionManager sessionManager = new SessionManager( 10, null, "/" );
 
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, sessionManager, GenericCorsPolicy.DEFAULT );
+    private final WebServices ws = new WebServices( server, sessionManager, GenericCorsPolicy.DEFAULT, TestJsonValidators.jsonValidatos() );
 
     private SynchronizedThread listener;
 

@@ -31,41 +31,45 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class NumberJsonValidator<T extends Number> extends JsonSchemaValidator<NumberSchemaAST> {
-   protected abstract boolean valid( Object value );
+    protected NumberJsonValidator( String type ) {
+        super( type );
+    }
 
-   @Override
-   public List<String> validate( JsonValidatorProperties properties, NumberSchemaAST schema, Object value ) {
-      if( !valid( value ) ) return typeFailed( properties, schema, value );
+    protected abstract boolean valid( Object value );
 
-      final Double doubleValue = ( ( Number ) value ).doubleValue();
+    @Override
+    public List<String> validate( JsonValidatorProperties properties, NumberSchemaAST schema, Object value ) {
+        if( !valid( value ) ) return typeFailed( properties, schema, value );
 
-      final List<String> errors = new ArrayList<>();
+        final Double doubleValue = ( ( Number ) value ).doubleValue();
 
-      schema.minimum.filter( minimum -> doubleValue < minimum && !schema.exclusiveMinimum.orElse( false ) )
-         .ifPresent( minimum -> errors.add( properties.error( "number " + doubleValue + " is lower than the required minimum " + minimum ) ) );
+        final List<String> errors = new ArrayList<>();
 
-      schema.maximum.filter( maximum -> doubleValue > maximum && !schema.exclusiveMaximum.orElse( false ) )
-         .ifPresent( maximum -> errors.add( properties.error( "number " + doubleValue + " is greater than the required maximum " + maximum ) ) );
+        schema.minimum.filter( minimum -> doubleValue < minimum && !schema.exclusiveMinimum.orElse( false ) )
+            .ifPresent( minimum -> errors.add( properties.error( "number " + doubleValue + " is lower than the required minimum " + minimum ) ) );
 
-      schema.minimum.filter( minimum -> doubleValue <= minimum && schema.exclusiveMinimum.orElse( false ) )
-         .ifPresent( minimum -> errors.add( properties.error( "number " + doubleValue + " is not strictly greater than the required minimum " + minimum ) ) );
+        schema.maximum.filter( maximum -> doubleValue > maximum && !schema.exclusiveMaximum.orElse( false ) )
+            .ifPresent( maximum -> errors.add( properties.error( "number " + doubleValue + " is greater than the required maximum " + maximum ) ) );
 
-      schema.maximum.filter( maximum -> doubleValue >= maximum && schema.exclusiveMaximum.orElse( false ) )
-         .ifPresent( maximum -> errors.add( properties.error( "number " + doubleValue + " is not strictly lower than the required maximum " + maximum ) ) );
+        schema.minimum.filter( minimum -> doubleValue <= minimum && schema.exclusiveMinimum.orElse( false ) )
+            .ifPresent( minimum -> errors.add( properties.error( "number " + doubleValue + " is not strictly greater than the required minimum " + minimum ) ) );
 
-      return errors;
-   }
+        schema.maximum.filter( maximum -> doubleValue >= maximum && schema.exclusiveMaximum.orElse( false ) )
+            .ifPresent( maximum -> errors.add( properties.error( "number " + doubleValue + " is not strictly lower than the required maximum " + maximum ) ) );
 
-   @Override
-   public NumberSchemaASTWrapper parse( JsonSchemaParserContext context ) {
-      final NumberSchemaASTWrapper wrapper = context.createWrapper( NumberSchemaASTWrapper::new );
+        return errors;
+    }
 
-      wrapper.common = node( context ).asCommon();
-      wrapper.exclusiveMinimum = node( context ).asBoolean( "exclusiveMinimum" ).optional();
-      wrapper.exclusiveMaximum = node( context ).asBoolean( "exclusiveMaximum" ).optional();
-      wrapper.minimum = node( context ).asDouble( "minimum" ).optional();
-      wrapper.maximum = node( context ).asDouble( "maximum" ).optional();
+    @Override
+    public NumberSchemaASTWrapper parse( JsonSchemaParserContext context ) {
+        final NumberSchemaASTWrapper wrapper = context.createWrapper( NumberSchemaASTWrapper::new );
 
-      return wrapper;
-   }
+        wrapper.common = node( context ).asCommon();
+        wrapper.exclusiveMinimum = node( context ).asBoolean( "exclusiveMinimum" ).optional();
+        wrapper.exclusiveMaximum = node( context ).asBoolean( "exclusiveMaximum" ).optional();
+        wrapper.minimum = node( context ).asDouble( "minimum" ).optional();
+        wrapper.maximum = node( context ).asDouble( "maximum" ).optional();
+
+        return wrapper;
+    }
 }

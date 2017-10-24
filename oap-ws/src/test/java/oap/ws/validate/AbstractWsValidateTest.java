@@ -31,6 +31,7 @@ import oap.http.Protocol;
 import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.testng.HttpAsserts;
+import oap.json.schema.TestJsonValidators;
 import oap.metrics.Metrics;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
@@ -46,10 +47,10 @@ import java.util.List;
  * Created by igor.petrenko on 02.03.2017.
  */
 public abstract class AbstractWsValidateTest extends AbstractTest {
-    protected static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
+    private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
 
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+    private final WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT, TestJsonValidators.jsonValidatos() );
     private SynchronizedThread listener;
 
 

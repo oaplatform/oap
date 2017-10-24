@@ -24,7 +24,6 @@
 
 package oap.json.schema;
 
-import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -298,7 +297,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
     }
 
     private List<JsonDiff.Line> __diff( String schema, String from, String to ) {
-        final SchemaAST ast = JsonValidatorFactory.schemaFromString( schema, NO_STORAGE ).schema;
+        final SchemaAST ast = schema( schema );
 
         return diff( from, to, ast ).getDiff();
     }

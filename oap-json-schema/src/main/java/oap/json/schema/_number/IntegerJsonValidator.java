@@ -24,9 +24,13 @@
 package oap.json.schema._number;
 
 public class IntegerJsonValidator extends NumberJsonValidator<Integer> {
+    public IntegerJsonValidator() {
+        super( "integer" );
+    }
+
     @Override
     protected boolean valid( Object value ) {
-        return value instanceof Long && (Long) value == (long) ((Long) value).intValue();
+        return value instanceof Long && ( Long ) value == ( long ) ( ( Long ) value ).intValue();
     }
 
 }
