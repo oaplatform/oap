@@ -45,19 +45,22 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
         public final Optional<BooleanReference> enabled;
         public final Optional<Object> defaultValue;
         public final Optional<EnumFunction> enumValue;
-        public final Optional<Index> index;
+        public final Optional<Boolean> index;
+        public final Optional<Boolean> norms;
         public final Optional<Boolean> include_in_all;
         public final Optional<String> denormalized;
         public final Optional<String> analyzer;
+
         public CommonSchemaAST( String schemaType,
                                 Optional<BooleanReference> required,
                                 Optional<BooleanReference> enabled,
                                 Optional<Object> defaultValue,
                                 Optional<EnumFunction> enumValue,
-                                Optional<Index> index,
+                                Optional<Boolean> index,
                                 Optional<Boolean> include_in_all,
                                 Optional<String> denormalized,
-                                Optional<String> analyzer ) {
+                                Optional<String> analyzer,
+                                Optional<Boolean> norms ) {
             this.schemaType = schemaType;
             this.required = required;
             this.enabled = enabled;
@@ -67,6 +70,7 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
             this.include_in_all = include_in_all;
             this.denormalized = denormalized;
             this.analyzer = analyzer;
+            this.norms = norms;
         }
 
         public CommonSchemaAST merge( CommonSchemaAST common ) {
@@ -79,10 +83,9 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
                 index.isPresent() ? index : common.index,
                 include_in_all.isPresent() ? include_in_all : common.include_in_all,
                 denormalized.isPresent() ? denormalized : common.denormalized,
-                analyzer.isPresent() ? analyzer : common.analyzer
+                analyzer.isPresent() ? analyzer : common.analyzer,
+                norms.isPresent() ? norms : common.norms
             );
         }
-
-        public enum Index {analyzed, not_analyzed, no}
     }
 }

@@ -41,9 +41,6 @@ import org.apache.commons.io.output.StringBuilderWriter;
 
 import java.io.IOException;
 
-import static oap.json.schema.SchemaAST.CommonSchemaAST.Index.analyzed;
-import static oap.json.schema.SchemaAST.CommonSchemaAST.Index.no;
-
 /**
  * Created by igor.petrenko on 17.10.2017.
  */
@@ -66,8 +63,7 @@ public class ElasticSearchSchema {
         if( schemaAST instanceof ObjectSchemaAST ) {
             val objectSchemaAST = ( ObjectSchemaAST ) schemaAST;
 
-            val index = objectSchemaAST.common.index.orElse( analyzed );
-            if( index == no )
+            if( !objectSchemaAST.common.index.orElse( true ) )
                 jsonGenerator.writeBooleanField( "enabled", false );
 
             val nested = objectSchemaAST.nested.orElse( false );
@@ -151,9 +147,11 @@ public class ElasticSearchSchema {
         if( !schemaAST.common.include_in_all.orElse( true ) )
             jsonGenerator.writeBooleanField( "include_in_all", false );
 
-        val index = schemaAST.common.index.orElse( analyzed );
-        if( index != analyzed )
-            jsonGenerator.writeStringField( "index", index.name() );
+        if( !schemaAST.common.index.orElse( true ) )
+            jsonGenerator.writeBooleanField( "index", false );
+
+        if( schemaAST.common.norms.orElse( false ) )
+            jsonGenerator.writeBooleanField( "norms", true );
 
         schemaAST.common.analyzer.ifPresent( Try.consume( a -> jsonGenerator.writeStringField( "analyzer", a ) ) );
     }

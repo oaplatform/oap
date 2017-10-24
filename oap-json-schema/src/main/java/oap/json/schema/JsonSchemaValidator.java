@@ -24,7 +24,6 @@
 package oap.json.schema;
 
 import lombok.val;
-import oap.json.schema.SchemaAST.CommonSchemaAST.Index;
 import oap.util.Lists;
 import oap.util.Pair;
 
@@ -183,16 +182,17 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
             final Optional<BooleanReference> enabled = asBooleanReference( "enabled" );
             final Optional<Object> defaultValue = Optional.ofNullable( properties.node.get( "default" ) );
             final Object anEnum = properties.node.get( "enum" );
-            final Optional<Index> index = asEnum( "index", Index.class ).optional();
+            final Optional<Boolean> index = asBoolean( "index" ).optional();
             final Optional<Boolean> include_in_all = asBoolean( "include_in_all" ).optional();
             final Optional<String> denormalized = asString( "denormalized" ).optional();
             final Optional<String> analyzer = asString( "analyzer" ).optional();
+            final Optional<Boolean> norms = asBoolean( "norms" ).optional();
 
             return new SchemaAST.CommonSchemaAST(
                 properties.schemaType, required, enabled,
                 defaultValue, toEnum( anEnum ),
                 index, include_in_all,
-                denormalized, analyzer
+                denormalized, analyzer, norms
             );
         }
 
