@@ -40,25 +40,44 @@ public class Application {
     }
 
     public static synchronized <T> Stream<T> instancesOf( Class<T> clazz ) {
-        return kernel( DEFAULT ).ofClass( clazz ).stream();
+        return instancesOf( DEFAULT, clazz );
+    }
+
+    public static synchronized <T> Stream<T> instancesOf( String kernelName, Class<T> clazz ) {
+        return kernel( kernelName ).ofClass( clazz ).stream();
     }
 
     public static synchronized <T> T service( Class<T> clazz ) {
-        Iterator<T> services = instancesOf( clazz ).iterator();
+        return service( DEFAULT, clazz );
+    }
+
+    public static synchronized <T> T service( String kernelName, Class<T> clazz ) {
+        Iterator<T> services = instancesOf( kernelName, clazz ).iterator();
         return !services.hasNext() ? null : services.next();
     }
 
     public static synchronized void register( String name, Object service ) {
-        kernel( DEFAULT ).register( name, service );
+        register( DEFAULT, name, service );
+    }
+
+    public static synchronized void register( String kernelName, String name, Object service ) {
+        kernel( kernelName ).register( name, service );
     }
 
     public static synchronized void unregister( String name ) {
-        kernel( DEFAULT ).unregister( name );
+        unregister( DEFAULT, name );
     }
 
-    @Deprecated
+    public static synchronized void unregister( String kernelName, String name ) {
+        kernel( kernelName ).unregister( name );
+    }
+
     public static synchronized void unregisterServices() {
-        if(kernels.containsKey( DEFAULT )) kernel( DEFAULT ).unregisterServices();
+        unregister( DEFAULT );
+    }
+
+    public static synchronized void unregisterServices( String kernelName ) {
+        if( kernels.containsKey( kernelName ) ) kernel( kernelName ).unregisterServices();
     }
 
     public static synchronized void register( Kernel kernel ) {

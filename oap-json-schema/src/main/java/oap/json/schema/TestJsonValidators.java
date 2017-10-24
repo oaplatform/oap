@@ -63,8 +63,7 @@ public final class TestJsonValidators {
                         try {
                             kernel.start();
 
-                            jsonValidators = Application.service( JsonValidators.class );
-
+                            jsonValidators = Application.service( TestJsonValidators.class.getSimpleName(), JsonValidators.class );
                         } finally {
                             kernel.stop();
                         }
