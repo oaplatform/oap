@@ -74,9 +74,9 @@ public class ElasticSearchSchemaTest extends AbstractSchemaTest {
 
     @Test
     public void testConvert_string_index() throws Exception {
-        assertString( convert( schema( "{type:object,properties:{a: {type:string,index:false}}}" ) ) )
-            .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"keyword\",\"index\":false}}}" );
-        assertString( convert( schema( "{type:object,properties:{a: {type:string,index:true}}}" ) ) )
+        assertString( convert( schema( "{type:object,properties:{a: {type:string,index:not_analyzed}}}" ) ) )
+            .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"keyword\",\"index\":\"not_analyzed\"}}}" );
+        assertString( convert( schema( "{type:object,properties:{a: {type:string,index:analyzed}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"keyword\"}}}" );
     }
 

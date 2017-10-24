@@ -45,17 +45,16 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
         public final Optional<BooleanReference> enabled;
         public final Optional<Object> defaultValue;
         public final Optional<EnumFunction> enumValue;
-        public final Optional<Boolean> index;
+        public final Optional<Index> index;
         public final Optional<Boolean> include_in_all;
         public final Optional<String> denormalized;
         public final Optional<String> analyzer;
-
         public CommonSchemaAST( String schemaType,
                                 Optional<BooleanReference> required,
                                 Optional<BooleanReference> enabled,
                                 Optional<Object> defaultValue,
                                 Optional<EnumFunction> enumValue,
-                                Optional<Boolean> index,
+                                Optional<Index> index,
                                 Optional<Boolean> include_in_all,
                                 Optional<String> denormalized,
                                 Optional<String> analyzer ) {
@@ -83,5 +82,7 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
                 analyzer.isPresent() ? analyzer : common.analyzer
             );
         }
+
+        public enum Index {analyzed, not_analyzed, no}
     }
 }
