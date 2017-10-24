@@ -24,6 +24,7 @@
 package oap.ws.validate;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.json.schema.JsonValidators;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
@@ -42,7 +43,8 @@ public class MethodValidatorPeer implements ValidatorPeer {
     private final List<Validator> validators;
 
     public MethodValidatorPeer( WsValidate validate,
-                                Reflection.Method targetMethod, Object instance, Type type ) {
+                                Reflection.Method targetMethod, Object instance, Type type,
+                                JsonValidators jsonValidators ) {
         if( type == Type.PARAMETER )
             this.validators = Stream.of( validate.value() )
                 .<Validator>map( m -> new ParameterValidator( m, instance ) )

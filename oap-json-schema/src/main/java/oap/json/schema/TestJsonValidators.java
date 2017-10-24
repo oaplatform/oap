@@ -54,7 +54,7 @@ public final class TestJsonValidators {
                         ? Application.instancesOf( JsonValidators.class ).findFirst().orElse( null )
                         : null;
                     if( jsonValidators == null ) {
-                        val urls = Stream.of( Resources.urls( "/META-INF/oap-module.conf" ) )
+                        val urls = Stream.of( Resources.urls( "META-INF/oap-module.conf" ) )
                             .map( Try.map( url -> __( url, Binder.hocon.unmarshal( Map.class, url ) ) ) )
                             .filter( p -> "oap-validators".equals( p._2.get( "name" ) ) )
                             .map( p -> p._1 )
