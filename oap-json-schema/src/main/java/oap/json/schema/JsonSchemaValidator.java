@@ -180,12 +180,13 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
             final Optional<Boolean> index = asBoolean( "index" ).optional();
             final Optional<Boolean> include_in_all = asBoolean( "include_in_all" ).optional();
             final Optional<String> denormalized = asString( "denormalized" ).optional();
+            final Optional<String> analyzer = asString( "analyzer" ).optional();
 
             return new SchemaAST.CommonSchemaAST(
                 properties.schemaType, required, enabled,
                 defaultValue, toEnum( anEnum ),
                 index, include_in_all,
-                denormalized
+                denormalized, analyzer
             );
         }
 

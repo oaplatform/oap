@@ -48,6 +48,7 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
         public final Optional<Boolean> index;
         public final Optional<Boolean> include_in_all;
         public final Optional<String> denormalized;
+        public final Optional<String> analyzer;
 
         public CommonSchemaAST( String schemaType,
                                 Optional<BooleanReference> required,
@@ -56,7 +57,8 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
                                 Optional<EnumFunction> enumValue,
                                 Optional<Boolean> index,
                                 Optional<Boolean> include_in_all,
-                                Optional<String> denormalized ) {
+                                Optional<String> denormalized,
+                                Optional<String> analyzer ) {
             this.schemaType = schemaType;
             this.required = required;
             this.enabled = enabled;
@@ -65,6 +67,7 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
             this.index = index;
             this.include_in_all = include_in_all;
             this.denormalized = denormalized;
+            this.analyzer = analyzer;
         }
 
         public CommonSchemaAST merge( CommonSchemaAST common ) {
@@ -76,7 +79,8 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
                 enumValue.isPresent() ? enumValue : common.enumValue,
                 index.isPresent() ? index : common.index,
                 include_in_all.isPresent() ? include_in_all : common.include_in_all,
-                denormalized.isPresent() ? denormalized : common.denormalized
+                denormalized.isPresent() ? denormalized : common.denormalized,
+                analyzer.isPresent() ? analyzer : common.analyzer
             );
         }
     }

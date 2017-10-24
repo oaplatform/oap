@@ -81,6 +81,12 @@ public class ElasticSearchSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
+    public void testConvert_string_analyzer() throws Exception {
+        assertString( convert( schema( "{type:object,properties:{a: {type:string,analyzer:english}}}" ) ) )
+            .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"keyword\",\"analyzer\":\"english\"}}}" );
+    }
+
+    @Test
     public void testConvert_boolean() throws Exception {
         assertString( convert( schema( "{type:object,properties:{a: {type:boolean}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"boolean\"}}}" );

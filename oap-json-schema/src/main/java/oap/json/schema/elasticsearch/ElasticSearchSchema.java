@@ -36,6 +36,7 @@ import oap.json.schema._number.NumberSchemaAST;
 import oap.json.schema._object.Dynamic;
 import oap.json.schema._object.ObjectSchemaAST;
 import oap.json.schema._string.StringSchemaAST;
+import oap.util.Try;
 import org.apache.commons.io.output.StringBuilderWriter;
 
 import java.io.IOException;
@@ -147,5 +148,6 @@ public class ElasticSearchSchema {
             jsonGenerator.writeBooleanField( "include_in_all", false );
         if( !schemaAST.common.index.orElse( true ) )
             jsonGenerator.writeBooleanField( "index", false );
+        schemaAST.common.analyzer.ifPresent( Try.consume( a -> jsonGenerator.writeStringField( "analyzer", a ) ) );
     }
 }
