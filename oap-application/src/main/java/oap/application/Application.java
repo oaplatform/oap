@@ -73,7 +73,7 @@ public class Application {
     }
 
     public static synchronized void unregisterServices() {
-        unregister( DEFAULT );
+        kernels.keySet().forEach( Application::unregisterServices );
     }
 
     public static synchronized void unregisterServices( String kernelName ) {
