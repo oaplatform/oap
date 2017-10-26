@@ -45,7 +45,7 @@ public class ModuleConfiguration extends Configuration<Module> {
             .entrySet()
             .stream()
             .filter( e -> config.containsKey( e.getKey() ) )
-            .forEach( e -> Binder.hocon.update( e.getValue(), config.get( e.getKey() ) ) );
+            .forEach( e -> Binder.update( e.getValue(), config.get( e.getKey() ) ) );
 
         return module;
     }

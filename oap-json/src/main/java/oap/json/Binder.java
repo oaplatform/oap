@@ -79,8 +79,6 @@ public class Binder {
     public static final Binder jsonWithTyping;
     public static final Binder xml;
     public static final Binder xmlWithTyping;
-    private static final Binder jsonWithNullInclusion;
-    private static final Binder hoconWithNullInclusion;
     private static final JacksonJodaDateFormat JACKSON_DATE_FORMAT = new JacksonJodaDateFormat( Dates.FORMAT_FULL );
     private static Set<Module> modules;
 
@@ -91,13 +89,10 @@ public class Binder {
             .collect( toSet() );
 
         json = new Binder( initialize( new ObjectMapper(), false, false ) );
-        jsonWithNullInclusion = new Binder( initialize( new ObjectMapper(), false, true ) );
         jsonWithTyping = new Binder( initialize( new ObjectMapper(), true, false ) );
         xml = new Binder( initialize( new XmlMapper(), false, false ) );
         xmlWithTyping = new Binder( initialize( new XmlMapper(), true, false ) );
         hoconWithoutSystemProperties =
-            new Binder( initialize( new ObjectMapper( new HoconFactory() ), false, false ) );
-        hoconWithNullInclusion =
             new Binder( initialize( new ObjectMapper( new HoconFactory() ), false, false ) );
         hocon =
             new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false, false ) );
@@ -115,6 +110,14 @@ public class Binder {
 
     public static Binder hoconWithConfig( Map<String, Object> config ) {
         return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false, false ) );
+    }
+
+    private static Binder hoconWithConfigWithNullInclusion( Map<String, Object> config ) {
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false, true ) );
+    }
+
+    private static Binder hoconWithConfigWithNullInclusion( String... config ) {
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false, true ) );
     }
 
     private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping, boolean nonNullInclusion ) {
@@ -161,12 +164,18 @@ public class Binder {
     }
 
     public static void update( Object obj, Map<String, Object> values ) {
-        update( obj, jsonWithNullInclusion.marshal( values ) );
+        try {
+            String marshal = json.marshal( obj );
+            hoconWithConfigWithNullInclusion( values ).mapper.readerForUpdating( obj ).readValue( marshal );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
     }
 
     public static void update( Object obj, String json ) {
         try {
-            hoconWithNullInclusion.mapper.readerForUpdating( obj ).readValue( json );
+            String marshal = Binder.json.marshal( obj );
+            hoconWithConfigWithNullInclusion( json ).mapper.readerForUpdating( obj ).readValue( marshal );
         } catch( IOException e ) {
             throw new JsonException( e );
         }

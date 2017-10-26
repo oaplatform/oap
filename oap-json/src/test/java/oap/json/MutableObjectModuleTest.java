@@ -51,7 +51,7 @@ public class MutableObjectModuleTest extends AbstractTest {
         final TestMutableObjectBean b = new TestMutableObjectBean();
         b.i.setValue( 101 );
 
-        Binder.json.update( b.i, "102" );
+        Binder.json.update( b, "{i = 102}" );
         assertThat( b.i.getValue() ).isEqualTo( 102 );
     }
 
