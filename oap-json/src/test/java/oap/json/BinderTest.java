@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.val;
 import oap.concurrent.LongAdder;
 import oap.reflect.TypeRef;
 import oap.testng.AbstractTest;
@@ -49,6 +50,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static java.util.Collections.singletonMap;
 import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -270,6 +272,22 @@ public class BinderTest extends AbstractTest {
         assertThat( path ).hasContent( "{\"map\":{\"a\":1,\"b\":2}}" );
     }
 
+    @Test
+    public void testUpdate() {
+        val obj = new Bean( "1", 1, null );
+        Binder.update( obj, singletonMap( "str", "test" ) );
+        assertThat( obj.str ).isEqualTo( "test" );
+
+        Binder.update( obj, singletonMap( "str", null ) );
+        assertThat( obj.str ).isNull();
+
+        Binder.update( obj, "{str = test}" );
+        assertThat( obj.str ).isEqualTo( "test" );
+
+        Binder.update( obj, "{str = null}" );
+        assertThat( obj.str ).isNull();
+
+    }
 }
 
 @ToString

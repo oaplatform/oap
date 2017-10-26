@@ -79,6 +79,8 @@ public class Binder {
     public static final Binder jsonWithTyping;
     public static final Binder xml;
     public static final Binder xmlWithTyping;
+    private static final Binder jsonWithNullInclusion;
+    private static final Binder hoconWithNullInclusion;
     private static final JacksonJodaDateFormat JACKSON_DATE_FORMAT = new JacksonJodaDateFormat( Dates.FORMAT_FULL );
     private static Set<Module> modules;
 
@@ -88,14 +90,17 @@ public class Binder {
             .map( Try.map( clazz -> ( ( Module ) Class.forName( clazz ).newInstance() ) ) )
             .collect( toSet() );
 
-        json = new Binder( initialize( new ObjectMapper(), false ) );
-        jsonWithTyping = new Binder( initialize( new ObjectMapper(), true ) );
-        xml = new Binder( initialize( new XmlMapper(), false ) );
-        xmlWithTyping = new Binder( initialize( new XmlMapper(), true ) );
+        json = new Binder( initialize( new ObjectMapper(), false, false ) );
+        jsonWithNullInclusion = new Binder( initialize( new ObjectMapper(), false, true ) );
+        jsonWithTyping = new Binder( initialize( new ObjectMapper(), true, false ) );
+        xml = new Binder( initialize( new XmlMapper(), false, false ) );
+        xmlWithTyping = new Binder( initialize( new XmlMapper(), true, false ) );
         hoconWithoutSystemProperties =
-            new Binder( initialize( new ObjectMapper( new HoconFactory() ), false ) );
+            new Binder( initialize( new ObjectMapper( new HoconFactory() ), false, false ) );
+        hoconWithNullInclusion =
+            new Binder( initialize( new ObjectMapper( new HoconFactory() ), false, false ) );
         hocon =
-            new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false ) );
+            new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false, false ) );
     }
 
     private ObjectMapper mapper;
@@ -105,14 +110,14 @@ public class Binder {
     }
 
     public static Binder hoconWithConfig( String... config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false ) );
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false, false ) );
     }
 
     public static Binder hoconWithConfig( Map<String, Object> config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false ) );
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false, false ) );
     }
 
-    private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping ) {
+    private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping, boolean nonNullInclusion ) {
         if( mapper instanceof XmlMapper ) {
             ( ( XmlMapper ) mapper ).setDefaultUseWrapper( false );
         }
@@ -131,7 +136,7 @@ public class Binder {
         mapper.disable( SerializationFeature.FAIL_ON_EMPTY_BEANS );
         mapper.configure( JsonGenerator.Feature.AUTO_CLOSE_TARGET, false );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
-        mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
+        if( !nonNullInclusion ) mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
 
         modules.forEach( mapper::registerModule );
 
@@ -153,6 +158,18 @@ public class Binder {
                 return ref.type();
             }
         };
+    }
+
+    public static void update( Object obj, Map<String, Object> values ) {
+        update( obj, jsonWithNullInclusion.marshal( values ) );
+    }
+
+    public static void update( Object obj, String json ) {
+        try {
+            hoconWithNullInclusion.mapper.readerForUpdating( obj ).readValue( json );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
     }
 
     public ObjectMapper getMapper() {
@@ -397,25 +414,6 @@ public class Binder {
     @SuppressWarnings( "unchecked" )
     public <T> T clone( T object ) {
         return unmarshal( object.getClass(), marshal( object ) );
-    }
-
-    public void update( Object obj, Map<String, Object> values ) {
-        try {
-            String marshal = json.marshal( obj );
-            String vs = json.marshal( values );
-
-            hoconWithConfig( vs ).mapper.readerForUpdating( obj ).readValue( marshal );
-        } catch( IOException e ) {
-            throw new JsonException( e );
-        }
-    }
-
-    public void update( Object obj, String json ) {
-        try {
-            mapper.readerForUpdating( obj ).readValue( json );
-        } catch( IOException e ) {
-            throw new JsonException( e );
-        }
     }
 
 }
