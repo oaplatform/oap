@@ -127,7 +127,7 @@ public final class Coercions {
         } );
         with( ( r, v ) -> r.assignableTo( Map.class ), ( r, v ) -> {
             Pair<Reflection, Reflection> componentType = r.getMapComponentsType();
-            return BiStream.of( ( Map<?, ?> ) v )
+            return componentType == null ? r.newInstance() : BiStream.of( ( Map<?, ?> ) v )
                 .map( ( k, o ) -> __( cast( componentType._1, k ), cast( componentType._2, o ) ) )
                 .collect( Maps.Collectors.toMap( () -> r.isInterface()
                     ? r.assignableFrom( ConcurrentMap.class ) ? new ConcurrentHashMap<>() : Maps.of()

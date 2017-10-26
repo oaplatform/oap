@@ -30,9 +30,11 @@ import lombok.ToString;
 
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @ToString( exclude = "listener" )
 @EqualsAndHashCode
@@ -42,6 +44,7 @@ public class ServiceOne {
     int i2;
     Complex complex;
     List<Complex> complexes = new ArrayList<>();
+    ComplexMap complexMap;
     ActionListener listener;
     List<ServiceOne> list = new ArrayList<>();
 
@@ -62,6 +65,69 @@ public class ServiceOne {
         @JsonCreator
         public Complex( @JsonProperty( "i" ) int i ) {
             this.i = i;
+        }
+    }
+
+    public static class ComplexMap implements Map<String, Complex> {
+
+        @Override
+        public int size() {
+            return 0;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return false;
+        }
+
+        @Override
+        public boolean containsKey( Object key ) {
+            return false;
+        }
+
+        @Override
+        public boolean containsValue( Object value ) {
+            return false;
+        }
+
+        @Override
+        public Complex get( Object key ) {
+            return null;
+        }
+
+        @Override
+        public Complex put( String key, Complex value ) {
+            return null;
+        }
+
+        @Override
+        public Complex remove( Object key ) {
+            return null;
+        }
+
+        @Override
+        public void putAll( Map<? extends String, ? extends Complex> m ) {
+
+        }
+
+        @Override
+        public void clear() {
+
+        }
+
+        @Override
+        public Set<String> keySet() {
+            return null;
+        }
+
+        @Override
+        public Collection<Complex> values() {
+            return null;
+        }
+
+        @Override
+        public Set<Entry<String, Complex>> entrySet() {
+            return null;
         }
     }
 }
