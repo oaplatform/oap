@@ -77,6 +77,11 @@ public final class IdentifierBuilder<T> {
             identity, "identity must not be null" ), null );
     }
 
+    public static <T> IdentifierBuilder<T> identify( Function<T, String> identity, BiConsumer<T, String> setId ) {
+        return new IdentifierBuilder<>( Objects.requireNonNull(
+            identity, "identity must not be null" ), setId );
+    }
+
     /**
      * Specifies where to get the base string for identifier generation (needs to be specified if
      * {@link #identityPath(String)} is used and there is a chance for identifier to be null)
