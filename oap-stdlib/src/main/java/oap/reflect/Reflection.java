@@ -51,13 +51,13 @@ import static java.util.stream.Collectors.joining;
 import static oap.util.Pair.__;
 
 public class Reflection extends Annotated<Class<?>> {
-    public final Class<?> underlying;
     public final LinkedHashMap<String, Field> fields = new LinkedHashMap<>();
-    public final List<Method> methods;
-    public final List<Reflection> typeParameters;
-    public final List<Constructor> constructors;
     private final Coercions coercions;
     private final TypeToken<?> typeToken;
+    public Class<?> underlying;
+    public List<Method> methods;
+    public List<Reflection> typeParameters;
+    public List<Constructor> constructors;
 
     Reflection( TypeToken<?> typeToken ) {
         this( typeToken, Coercions.basic().withIdentity() );
@@ -67,18 +67,6 @@ public class Reflection extends Annotated<Class<?>> {
         super( typeToken.getRawType() );
         this.coercions = coercions;
         this.typeToken = Objects.requireNonNull( typeToken );
-        this.methods = Lists.map( declared( typeToken.getRawType(), Class::getDeclaredMethods ), Method::new );
-
-        for( java.lang.reflect.Field field : declared( typeToken.getRawType(), Class::getDeclaredFields ) )
-            fields.put( field.getName(), new Field( field ) );
-
-        this.constructors = Stream.of( typeToken.getRawType().getDeclaredConstructors() )
-            .map( Constructor::new )
-            .sorted( Comparator.comparingInt( Constructor::parameterCount ).reversed() )
-            .toList();
-
-        this.underlying = typeToken.getRawType();
-        this.typeParameters = Lists.map( typeToken.getRawType().getTypeParameters(), this::resolve );
     }
 
     static <A> List<A> declared( Class<?> clazz, Function<Class<?>, A[]> collector ) {
@@ -89,6 +77,36 @@ public class Reflection extends Annotated<Class<?>> {
             .flatMap( c -> Stream.of( collector.apply( c ) ) )
             .concat( interfaceDeclaredObjects )
             .toList();
+    }
+
+    private static void trySetAccessible( AccessibleObject ao, boolean flag ) {
+        try {
+            ao.setAccessible( flag );
+        } catch( SecurityException ignored ) {
+
+        }
+    }
+
+    Reflection init() {
+        if( this.methods == null ) {
+            synchronized( this ) {
+                if( this.methods == null ) {
+                    this.methods = Lists.map( declared( typeToken.getRawType(), Class::getDeclaredMethods ), Method::new );
+
+                    for( java.lang.reflect.Field field : declared( typeToken.getRawType(), Class::getDeclaredFields ) )
+                        fields.put( field.getName(), new Field( field ) );
+
+                    this.constructors = Stream.of( typeToken.getRawType().getDeclaredConstructors() )
+                        .map( Constructor::new )
+                        .sorted( Comparator.comparingInt( Constructor::parameterCount ).reversed() )
+                        .toList();
+
+                    this.underlying = typeToken.getRawType();
+                    this.typeParameters = Lists.map( typeToken.getRawType().getTypeParameters(), this::resolve );
+                }
+            }
+        }
+        return this;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -116,14 +134,6 @@ public class Reflection extends Annotated<Class<?>> {
         List<String> candidates = Stream.of( constructors ).map( Constructor::toString ).toList();
 
         return new ReflectException( "cannot find matching constructor: " + args + " in " + underlying + " candidates: " + candidates );
-    }
-
-    private static void trySetAccessible( AccessibleObject ao, boolean flag ) {
-        try {
-            ao.setAccessible( flag );
-        } catch( SecurityException ignored ) {
-
-        }
     }
 
     public boolean assignableTo( Class<?> clazz ) {
@@ -373,7 +383,7 @@ public class Reflection extends Annotated<Class<?>> {
                 return instance;
 
             } catch( Exception e ) {
-                throw new ReflectException( this + ":" + args, e  );
+                throw new ReflectException( this + ":" + args, e );
             }
         }
 

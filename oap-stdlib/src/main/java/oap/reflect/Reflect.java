@@ -39,6 +39,7 @@ public class Reflect {
 
     private static HashMap<TypeToken<?>, Reflection> reflections = new HashMap<>();
     private static Map<String, Class<?>> classes = new ConcurrentHashMap<>();
+    private static SecurityManager securityManager = new SecurityManager();
 
     public static Reflection reflect( TypeRef<?> ref ) {
         return reflect( ref.token );
@@ -53,11 +54,11 @@ public class Reflect {
     }
 
     protected static synchronized Reflection reflect( TypeToken<?> token ) {
-        return reflections.computeIfAbsent( token, Reflection::new );
+        return reflections.computeIfAbsent( token, Reflection::new ).init();
     }
 
     protected static synchronized Reflection reflect( TypeToken<?> token, Coercions coercions ) {
-        return reflections.computeIfAbsent( token, ( typeToken ) -> new Reflection( typeToken, coercions ) );
+        return reflections.computeIfAbsent( token, ( typeToken ) -> new Reflection( typeToken, coercions ) ).init();
     }
 
     public static Reflection reflect( String className ) {
@@ -75,15 +76,6 @@ public class Reflect {
     public static Class<?> caller( int depth ) {
         return securityManager.getClassContext()[2 + depth];
     }
-
-    private static class SecurityManager extends java.lang.SecurityManager {
-        @Override
-        public Class[] getClassContext() {
-            return super.getClassContext();
-        }
-    }
-
-    private static SecurityManager securityManager = new SecurityManager();
 
     public static <T> T newInstance( Class<T> clazz, Object... args ) {
         return reflect( clazz ).newInstance( args );
@@ -141,5 +133,12 @@ public class Reflect {
             }
         }
 
+    }
+
+    private static class SecurityManager extends java.lang.SecurityManager {
+        @Override
+        public Class[] getClassContext() {
+            return super.getClassContext();
+        }
     }
 }

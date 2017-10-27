@@ -115,6 +115,16 @@ public class BinderTest extends AbstractTest {
     }
 
     @Test
+    public void testDeserializeTimeToNumber() {
+        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 1s}" ).l ).isEqualTo( 1000L );
+        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 1ms}" ).l ).isEqualTo( 1L );
+        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 2m}" ).l ).isEqualTo( 1000L * 60 * 2 );
+        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 3h}" ).l ).isEqualTo( 1000L * 60 * 60 * 3 );
+        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 4d}" ).l ).isEqualTo( 1000L * 60 * 60 * 24 * 4 );
+        assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 5w}" ).l ).isEqualTo( 1000L * 60 * 60 * 24 * 7 * 5 );
+    }
+
+    @Test
     public void bindPrimitives() {
         assertBind( boolean.class, true );
         assertBind( boolean.class, false );
@@ -300,14 +310,20 @@ class EmptyBean {
 class Bean {
     public String str;
     public int i;
+    public long l;
     public Bean2 sb2;
 
     public Bean() {
     }
 
     public Bean( String str, int i, Bean2 sb2 ) {
+        this( str, i, 0, sb2 );
+    }
+
+    public Bean( String str, int i, long l, Bean2 sb2 ) {
         this.str = str;
         this.i = i;
+        this.l = l;
         this.sb2 = sb2;
     }
 

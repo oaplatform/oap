@@ -23,51 +23,58 @@
  */
 package oap.util;
 
+import lombok.val;
+
 public final class Numbers {
     private Numbers() {
     }
 
     public static long parseLongWithUnits( String value ) {
         if( value != null ) {
-            String v = value.trim();
-            String unit = "";
-            String number = "";
+            val v = value.trim();
+            val unit = new StringBuilder();
+            val number = new StringBuilder();
             boolean stillNumber = true;
             for( int i = 0; i < v.length(); i++ ) {
                 char c = value.charAt( i );
-                if( Character.isDigit( c ) && stillNumber ) number += c;
+                if( Character.isDigit( c ) && stillNumber ) number.append( c );
                 else {
                     stillNumber = false;
-                    unit += c;
+                    unit.append( c );
                 }
             }
-            switch( unit.trim().toLowerCase() ) {
+            val strNumber = number.toString();
+            switch( unit.toString().trim().toLowerCase() ) {
                 case "kb":
-                    return Long.parseLong( number ) * 1024;
+                    return Long.parseLong( strNumber ) * 1024;
                 case "mb":
-                    return Long.parseLong( number ) * 1024 * 1024;
+                    return Long.parseLong( strNumber ) * 1024 * 1024;
                 case "gb":
-                    return Long.parseLong( number ) * 1024 * 1024 * 1024;
+                    return Long.parseLong( strNumber ) * 1024 * 1024 * 1024;
                 case "ms":
-                    return Long.parseLong( number );
+                    return Long.parseLong( strNumber );
                 case "s":
                 case "second":
                 case "seconds":
-                    return Long.parseLong( number ) * 1000;
+                    return Long.parseLong( strNumber ) * 1000;
                 case "m":
                 case "minute":
                 case "minutes":
-                    return Long.parseLong( number ) * 1000 * 60;
+                    return Long.parseLong( strNumber ) * 1000 * 60;
                 case "h":
                 case "hour":
                 case "hours":
-                    return Long.parseLong( number ) * 1000 * 60 * 60;
+                    return Long.parseLong( strNumber ) * 1000 * 60 * 60;
                 case "d":
                 case "day":
                 case "days":
-                    return Long.parseLong( number ) * 1000 * 60 * 60 * 24;
+                    return Long.parseLong( strNumber ) * 1000 * 60 * 60 * 24;
+                case "w":
+                case "week":
+                case "weeks":
+                    return Long.parseLong( strNumber ) * 1000 * 60 * 60 * 24 * 7;
                 case "":
-                    return Long.parseLong( number );
+                    return Long.parseLong( strNumber );
                 default:
                     throw new NumberFormatException( value );
             }

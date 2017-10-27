@@ -47,6 +47,7 @@ public class ServiceOne {
     ComplexMap complexMap;
     ActionListener listener;
     List<ServiceOne> list = new ArrayList<>();
+    List<TestRec> list2 = new ArrayList<>();
 
     public ServiceOne( int i ) {
         this.i = i;
@@ -54,6 +55,10 @@ public class ServiceOne {
 
     public void addSomeListener( ActionListener listener ) {
         this.listener = listener;
+    }
+
+    public static class TestRec<T extends TestRec> {
+        public ArrayList<T> recs = new ArrayList<>();
     }
 
     @EqualsAndHashCode
