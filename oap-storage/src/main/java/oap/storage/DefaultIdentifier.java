@@ -27,6 +27,7 @@ package oap.storage;
 import oap.util.Strings;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -53,7 +54,7 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
     }
 
     @Override
-    public synchronized String getOrInit( final T object, final Storage<T> storage ) {
+    public synchronized String getOrInit( T object, Function<String, Optional<T>> storage ) {
         String id = getId.apply( object );
 
         if( id == null ) {
@@ -61,7 +62,7 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
             Objects.requireNonNull( setId, "Set of nullable identifier is not specified" );
 
             id = Strings.toUserFriendlyId( suggestion.apply( object ),
-                size, newId -> storage.get( newId ).isPresent(), NO_VOWELS, FILL );
+                size, newId -> storage.apply( newId ).isPresent(), NO_VOWELS, FILL );
 
             setId.accept( object, id );
         }

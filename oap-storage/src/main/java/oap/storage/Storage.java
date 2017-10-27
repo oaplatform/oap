@@ -30,10 +30,11 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public interface Storage<T> extends Closeable, Iterable<T> {
+public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Optional<T>> {
     Stream<T> select();
 
     void store( T object );
@@ -69,6 +70,10 @@ public interface Storage<T> extends Closeable, Iterable<T> {
     void update( Collection<String> ids, Predicate<T> predicate, Consumer<T> update, Supplier<T> init );
 
     Optional<T> get( String id );
+
+    default Optional<T> apply( String id ) {
+        return get( id );
+    }
 
     Optional<T> delete( String id );
 

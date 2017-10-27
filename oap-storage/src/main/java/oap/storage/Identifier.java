@@ -24,9 +24,12 @@
 
 package oap.storage;
 
+import java.util.Optional;
+import java.util.function.Function;
+
 public interface Identifier<T> {
 
-    String getOrInit( T object, Storage<T> storage );
+    String getOrInit( T object, Function<String, Optional<T>> storage );
 
     String get( T object );
 }
