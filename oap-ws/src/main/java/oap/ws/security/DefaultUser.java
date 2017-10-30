@@ -24,22 +24,34 @@
 
 package oap.ws.security;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 /**
- * Created by igor.petrenko on 25.10.2017.
+ * Created by igor.petrenko on 30.10.2017.
  */
-public class MockUser implements User {
+@EqualsAndHashCode
+@ToString
+public class DefaultUser implements User {
+    private static final long serialVersionUID = 7717142374765357180L;
+
     public String email;
     public String password;
     public Role role;
-    public String organization;
+    public String organizationId;
+    public String organizationName;
 
-    public MockUser() {
+    public DefaultUser() {
     }
 
-    public MockUser( Role role, String organization, String email ) {
-        this.email = email;
+    public DefaultUser( Role role, String organizationId, String email ) {
         this.role = role;
-        this.organization = organization;
+        this.organizationId = organizationId;
+        this.email = email;
+    }
+
+    public DefaultUser( User user ) {
+        this( user.getRole(), user.getOrganization(), user.getEmail() );
     }
 
     @Override
@@ -59,6 +71,6 @@ public class MockUser implements User {
 
     @Override
     public String getOrganization() {
-        return organization;
+        return organizationId;
     }
 }

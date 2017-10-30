@@ -81,7 +81,7 @@ public class AuthService {
 
         log.debug( "Generating new token for user [{}]...", user.getEmail() );
         token = new Token();
-        token.user = user;
+        token.user = new DefaultUser( user );
         token.created = DateTime.now();
         token.id = UUID.randomUUID().toString();
 

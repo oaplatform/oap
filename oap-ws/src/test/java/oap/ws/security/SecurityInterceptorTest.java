@@ -24,8 +24,6 @@
 
 package oap.ws.security;
 
-import lombok.AllArgsConstructor;
-import lombok.ToString;
 import oap.http.Context;
 import oap.http.HttpResponse;
 import oap.http.Protocol;
@@ -74,7 +72,7 @@ public class SecurityInterceptorTest {
         final Reflection.Method methodWithAnnotation = REFLECTION.method(
             method -> method.name().equals( "methodWithAnnotation" ) ).get();
 
-        final User user = new TestUser( "test@test.com", "1", Role.ADMIN, "org" );
+        final User user = new DefaultUser( Role.ADMIN, "org", "test@test.com" );
 
         final Session session = new Session();
         session.set( "user", user );
@@ -99,10 +97,10 @@ public class SecurityInterceptorTest {
 
         final Request request = new Request( httpRequest, context );
 
-        final User user = new TestUser( "test@example.com", "12345", Role.ADMIN, "testOrg" );
+        final User user = new DefaultUser( Role.ADMIN, "testOrg", "test@example.com" );
 
         final Token token = new Token();
-        token.user = user;
+        token.user = new DefaultUser( user );
         token.id = tokenId;
         token.created = DateTime.now();
 
@@ -122,35 +120,5 @@ public class SecurityInterceptorTest {
         public void methodWithAnnotation() {}
 
         public void methodWithoutAnnotation() {}
-    }
-
-    @AllArgsConstructor
-    @ToString
-    private static class TestUser implements User {
-
-        private final String email;
-        private final String password;
-        private final Role role;
-        private final String organization;
-
-        @Override
-        public String getEmail() {
-            return email;
-        }
-
-        @Override
-        public String getPassword() {
-            return password;
-        }
-
-        @Override
-        public Role getRole() {
-            return role;
-        }
-
-        @Override
-        public String getOrganization() {
-            return organization;
-        }
     }
 }
