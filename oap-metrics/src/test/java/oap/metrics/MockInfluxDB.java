@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import static java.util.Collections.emptyList;
 
@@ -68,6 +70,11 @@ public class MockInfluxDB implements InfluxDB {
     }
 
     @Override
+    public InfluxDB enableBatch( int i, int i1, TimeUnit timeUnit, ThreadFactory threadFactory, BiConsumer<Iterable<Point>, Throwable> biConsumer ) {
+        return this;
+    }
+
+    @Override
     public void disableBatch() {
 
     }
@@ -85,6 +92,21 @@ public class MockInfluxDB implements InfluxDB {
     @Override
     public String version() {
         return "mock";
+    }
+
+    @Override
+    public void write( Point point ) {
+
+    }
+
+    @Override
+    public void write( String s ) {
+
+    }
+
+    @Override
+    public void write( List<String> list ) {
+
     }
 
     @Override
@@ -129,6 +151,11 @@ public class MockInfluxDB implements InfluxDB {
     }
 
     @Override
+    public void query( Query query, int i, Consumer<QueryResult> consumer ) {
+
+    }
+
+    @Override
     public QueryResult query( Query query, TimeUnit timeUnit ) {
         return new QueryResult();
     }
@@ -149,7 +176,32 @@ public class MockInfluxDB implements InfluxDB {
     }
 
     @Override
+    public boolean databaseExists( String s ) {
+        return true;
+    }
+
+    @Override
+    public void flush() {
+
+    }
+
+    @Override
     public void close() {
 
+    }
+
+    @Override
+    public InfluxDB setConsistency( ConsistencyLevel consistencyLevel ) {
+        return this;
+    }
+
+    @Override
+    public InfluxDB setDatabase( String s ) {
+        return this;
+    }
+
+    @Override
+    public InfluxDB setRetentionPolicy( String s ) {
+        return this;
     }
 }
