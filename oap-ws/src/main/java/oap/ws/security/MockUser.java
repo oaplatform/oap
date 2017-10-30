@@ -33,6 +33,15 @@ public class MockUser implements User {
     public Role role;
     public String organization;
 
+    public MockUser() {
+    }
+
+    public MockUser( Role role, String organization, String email ) {
+        this.email = email;
+        this.role = role;
+        this.organization = organization;
+    }
+
     @Override
     public String getEmail() {
         return email;
