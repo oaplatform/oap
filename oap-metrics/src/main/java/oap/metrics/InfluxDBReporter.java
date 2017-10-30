@@ -33,7 +33,6 @@ import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Timer;
-import com.google.common.escape.Escapers;
 import lombok.SneakyThrows;
 import lombok.val;
 import oap.util.Pair;
@@ -62,6 +61,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -96,7 +96,7 @@ class InfluxDBReporter extends ScheduledReporter {
         modifiersField.setAccessible( true );
         modifiersField.setInt( key_escaper, key_escaper.getModifiers() & ~Modifier.FINAL );
 
-        key_escaper.set( null, Escapers.builder().addEscape( ' ', "\\ " ).build() );
+        key_escaper.set( null, ( Function<String, String> ) s -> s.replace( " ", "\\ " ) );
 
         this.aggregates = aggregates
             .stream()
