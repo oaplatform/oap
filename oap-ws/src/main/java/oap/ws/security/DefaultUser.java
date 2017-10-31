@@ -25,6 +25,7 @@
 package oap.ws.security;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
@@ -36,10 +37,15 @@ import lombok.ToString;
 public class DefaultUser implements User {
     private static final long serialVersionUID = 7717142374765357180L;
 
+    @JsonProperty
     public String email;
+    @JsonProperty
     public String password;
+    @JsonProperty
     public Role role;
+    @JsonProperty
     public String organizationId;
+    @JsonProperty
     public String organizationName;
 
     public DefaultUser() {
