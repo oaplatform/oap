@@ -24,6 +24,7 @@
 
 package oap.ws.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
@@ -54,21 +55,25 @@ public class DefaultUser implements User {
         this( user.getRole(), user.getOrganization(), user.getEmail() );
     }
 
+    @JsonIgnore
     @Override
     public String getEmail() {
         return email;
     }
 
+    @JsonIgnore
     @Override
     public String getPassword() {
         return password;
     }
 
+    @JsonIgnore
     @Override
     public Role getRole() {
         return role;
     }
 
+    @JsonIgnore
     @Override
     public String getOrganization() {
         return organizationId;
