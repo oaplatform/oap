@@ -78,4 +78,23 @@ public class CounterTest {
         assertThat( counter.value ).isEqualTo( 1 );
     }
 
+    @Test
+    public void testMerge() throws Exception {
+        Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
+        val counter1 = new Counter.HourlyCounter();
+        counter1.inc();
+
+        val counter2 = new Counter.HourlyCounter();
+        counter2.inc();
+
+        Dates.setTimeFixed( 2017, 6, 2, 14 + 1, 16, 10 );
+        val counter3 = new Counter.HourlyCounter();
+        counter3.inc();
+
+        counter1.merge( counter2 );
+        assertThat( counter1.value ).isEqualTo( 2 );
+
+        counter1.merge( counter3 );
+        assertThat( counter1.value ).isEqualTo( 1 );
+    }
 }

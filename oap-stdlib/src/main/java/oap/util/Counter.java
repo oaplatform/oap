@@ -37,7 +37,7 @@ import java.io.Serializable;
  */
 @EqualsAndHashCode
 @ToString
-public abstract class Counter implements Serializable {
+public abstract class Counter<T extends Counter<T>> implements Serializable {
     public long tick = -1;
     public long value = 0;
 
@@ -52,6 +52,15 @@ public abstract class Counter implements Serializable {
 
     public final long get( long tick ) {
         return this.tick == tick ? value : 0;
+    }
+
+    public Counter<T> merge( Counter<T> other ) {
+        if( this.tick == other.tick ) this.value += other.value;
+        else if( this.tick < other.tick ) {
+            this.value = other.value;
+            this.tick = other.tick;
+        }
+        return this;
     }
 
     public final void inc( long value ) {
@@ -70,7 +79,7 @@ public abstract class Counter implements Serializable {
 
     @ToString( callSuper = true )
     @EqualsAndHashCode( callSuper = true )
-    public static final class HourlyCounter extends Counter {
+    public static final class HourlyCounter extends Counter<HourlyCounter> {
         private static final long serialVersionUID = -6350858231677830610L;
 
         public static long currentTick() {
@@ -85,7 +94,7 @@ public abstract class Counter implements Serializable {
 
     @ToString( callSuper = true )
     @EqualsAndHashCode( callSuper = true )
-    public static final class DailyCounter extends Counter {
+    public static final class DailyCounter extends Counter<DailyCounter> {
         private static final long serialVersionUID = -4287987989875991573L;
 
         public static long currentTick() {
@@ -100,7 +109,7 @@ public abstract class Counter implements Serializable {
 
     @ToString( callSuper = true )
     @EqualsAndHashCode( callSuper = true )
-    public static final class MonthlyCounter extends Counter {
+    public static final class MonthlyCounter extends Counter<MonthlyCounter> {
         private static final long serialVersionUID = 4419536959429173372L;
 
         public static long currentTick() {
