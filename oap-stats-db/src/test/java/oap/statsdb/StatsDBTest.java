@@ -79,12 +79,12 @@ public class StatsDBTest extends AbstractTest {
     public void testPersistNode() {
         final MockRemoteStatsDB master = new MockRemoteStatsDB( schema );
         try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
-             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) ) {
+             val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), storage ) ) ) {
             node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
         }
 
         try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
-             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) ) {
+             val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), storage ) ) ) {
             assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNotNull();
             assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ).i2 ).isEqualTo( 10 );
         }
@@ -94,7 +94,7 @@ public class StatsDBTest extends AbstractTest {
     public void testSync() {
         try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000 ) );
              val master = service( new StatsDBMaster( schema, storage ) );
-             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
+             val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
             node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.ci = 10, () -> new MockChild( 10 ) );
@@ -133,7 +133,7 @@ public class StatsDBTest extends AbstractTest {
         final MockRemoteStatsDB master = new MockRemoteStatsDB( schema );
 
         try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
-             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) ) {
+             val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), storage ) ) ) {
 
             master.syncWithException( ( sync ) -> new RuntimeException( "sync" ) );
             node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
@@ -144,7 +144,7 @@ public class StatsDBTest extends AbstractTest {
         assertThat( master.syncs ).isEmpty();
 
         try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
-             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) ) {
+             val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), storage ) ) ) {
 
             master.syncWithoutException();
             node.sync();
@@ -158,7 +158,7 @@ public class StatsDBTest extends AbstractTest {
     @Test
     public void testVersion() {
         try( val master = service( new StatsDBMaster( schema, new MemoryStorage<>( NodeIdentifier.identifier ) ) );
-             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
+             val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
 

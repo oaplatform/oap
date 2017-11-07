@@ -148,11 +148,6 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
     }
 
     @Override
-    public KeySchema getSchema() {
-        return schema;
-    }
-
-    @Override
     public void close() {
         storage.fsync();
     }

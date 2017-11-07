@@ -48,23 +48,20 @@ import java.util.function.Supplier;
 public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, Closeable {
     private final Path directory;
     private final RemoteStatsDB master;
+    private final KeySchema schema;
     volatile Sync sync = null;
-    private KeySchema schema;
 
-    public StatsDBNode( RemoteStatsDB master, Path directory, Storage<Node> storage ) {
+    public StatsDBNode( KeySchema schema, RemoteStatsDB master, Path directory, Storage<Node> storage ) {
         super( storage );
         this.directory = directory;
         this.master = master;
+        this.schema = schema;
 
         val syncPath = directory.resolve( "sync.db.gz" );
         if( Files.exists( syncPath ) ) {
             log.info( "sync file = {}", sync );
             sync = Binder.json.unmarshal( Sync.class, syncPath );
         }
-    }
-
-    public void start() {
-        schema = master.getSchema();
     }
 
     public <TKey extends Iterable<String>, TValue extends Node.Value<TValue>> void update( TKey strings, Consumer<TValue> update, Supplier<TValue> create ) {

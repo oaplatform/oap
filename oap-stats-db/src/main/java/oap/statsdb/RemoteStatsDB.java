@@ -37,8 +37,6 @@ import java.util.Map;
 public interface RemoteStatsDB {
     boolean update( Sync data, String host );
 
-    KeySchema getSchema();
-
     @AllArgsConstructor
     class Sync implements Serializable {
         private static final long serialVersionUID = 6835215675536753051L;

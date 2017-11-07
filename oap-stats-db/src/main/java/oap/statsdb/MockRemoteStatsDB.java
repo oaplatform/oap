@@ -48,11 +48,6 @@ public class MockRemoteStatsDB implements RemoteStatsDB {
         return true;
     }
 
-    @Override
-    public KeySchema getSchema() {
-        return schema;
-    }
-
     public void syncWithException( Function<Sync, RuntimeException> exceptionFunc ) {
         this.exceptionFunc = exceptionFunc;
     }
