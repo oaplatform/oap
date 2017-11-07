@@ -24,6 +24,7 @@
 
 package oap.statsdb;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Iterators;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
@@ -33,10 +34,14 @@ import oap.storage.SingleFileStorage;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.joda.time.DateTimeUtils;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.stream.Stream;
 
+import static oap.application.ApplicationUtils.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -44,18 +49,27 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class StatsDBTest extends AbstractTest {
     private static final KeySchema schema = new KeySchema( "n1", "n2" );
+    private Path masterDbPath;
+    private Path nodeDbPath;
+
+    @BeforeMethod
+    @Override
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
+
+        masterDbPath = Env.tmpPath( "master.db" );
+        nodeDbPath = Env.tmpPath( "node.db" );
+    }
 
     @Test
     public void testPersistMaster() {
-        val masterDbPath = Env.tmpPath( "master.db" );
-
-        try( val storage = new SingleFileStorage<Node>( masterDbPath, NodeIdentifier.identifier, 10000 );
-             val master = new StatsDBMaster( schema, storage ) ) {
+        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000 ) );
+             val master = service( new StatsDBMaster( schema, storage ) ) ) {
             master.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
         }
 
-        try( val storage = new SingleFileStorage<Node>( masterDbPath, NodeIdentifier.identifier, 10000 );
-             val master = new StatsDBMaster( schema, storage ) ) {
+        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000 ) );
+             val master = service( new StatsDBMaster( schema, storage ) ) ) {
             assertThat( master.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNotNull();
             assertThat( master.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ).i2 ).isEqualTo( 10 );
         }
@@ -63,18 +77,14 @@ public class StatsDBTest extends AbstractTest {
 
     @Test
     public void testPersistNode() {
-        val nodeDbPath = Env.tmpPath( "node.db" );
-
         final MockRemoteStatsDB master = new MockRemoteStatsDB( schema );
-        try( val storage = new SingleFileStorage<Node>( nodeDbPath, NodeIdentifier.identifier, 10000 );
-             val node = new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) {
-            node.start();
+        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
+             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) ) {
             node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
         }
 
-        try( val storage = new SingleFileStorage<Node>( nodeDbPath, NodeIdentifier.identifier, 10000 );
-             val node = new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) {
-            node.start();
+        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
+             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) ) {
             assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNotNull();
             assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ).i2 ).isEqualTo( 10 );
         }
@@ -82,37 +92,48 @@ public class StatsDBTest extends AbstractTest {
 
     @Test
     public void testSync() {
-        try( val master = new StatsDBMaster( schema, new MemoryStorage<>( NodeIdentifier.identifier ) );
-             val node = new StatsDBNode( master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) {
-            node.start();
+        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000 ) );
+             val master = service( new StatsDBMaster( schema, storage ) );
+             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
+            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.ci = 10, () -> new MockChild( 10 ) );
+            node.update( new MockKey2( "k1", "k3" ), ( c ) -> c.ci = 1, () -> new MockChild( 1 ) );
             node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 20, () -> new MockValue( 20 ) );
+
             node.sync();
             assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNull();
-            assertThat( master.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ).i2 ).isEqualTo( 10 );
+            assertThat( master.<MockKey2, MockChild>get( new MockKey2( "k1", "k2" ) ).ci ).isEqualTo( 10 );
             assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 20 );
 
             DateTimeUtils.setCurrentMillisFixed( 2 );
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
+            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.ci = 10, () -> new MockChild( 10 ) );
             node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 21, () -> new MockValue( 21 ) );
+
             node.sync();
             assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNull();
-            assertThat( master.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ).i2 ).isEqualTo( 20 );
+            assertThat( master.<MockKey2, MockChild>get( new MockKey2( "k1", "k2" ) ).ci ).isEqualTo( 20 );
             assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 41 );
+            assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).sum ).isEqualTo( 21L );
+        }
+    }
+
+    @Test( dependsOnMethods = "testSync" )
+    public void testCalculatedValuesAfterRestart() {
+        testSync();
+
+        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000 ) );
+             val master = service( new StatsDBMaster( schema, storage ) ) ) {
+            assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).sum ).isEqualTo( 21L );
         }
     }
 
     @Test
     public void testSyncFailed() {
-        val nodeDbPath = Env.tmpPath( "node.db" );
-
         final MockRemoteStatsDB master = new MockRemoteStatsDB( schema );
 
-        try( val storage = new SingleFileStorage<Node>( nodeDbPath, NodeIdentifier.identifier, 10000 );
-             val node = new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) {
-            node.start();
+        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
+             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) ) {
 
             master.syncWithException( ( sync ) -> new RuntimeException( "sync" ) );
             node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
@@ -122,9 +143,8 @@ public class StatsDBTest extends AbstractTest {
 
         assertThat( master.syncs ).isEmpty();
 
-        try( val storage = new SingleFileStorage<Node>( nodeDbPath, NodeIdentifier.identifier, 10000 );
-             val node = new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) {
-            node.start();
+        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
+             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), storage ) ) ) {
 
             master.syncWithoutException();
             node.sync();
@@ -137,9 +157,8 @@ public class StatsDBTest extends AbstractTest {
 
     @Test
     public void testVersion() {
-        try( val master = new StatsDBMaster( schema, new MemoryStorage<>( NodeIdentifier.identifier ) );
-             val node = new StatsDBNode( master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) {
-            node.start();
+        try( val master = service( new StatsDBMaster( schema, new MemoryStorage<>( NodeIdentifier.identifier ) ) );
+             val node = service( new StatsDBNode( master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
 
@@ -177,9 +196,12 @@ public class StatsDBTest extends AbstractTest {
     }
 
     @ToString
-    public static class MockValue implements Node.Value<MockValue> {
+    public static class MockValue implements Node.Container<MockValue, MockChild> {
         public long l1;
         public int i2;
+
+        @JsonIgnore
+        public long sum;
 
         public MockValue() {
             this( 0 );
@@ -190,15 +212,36 @@ public class StatsDBTest extends AbstractTest {
         }
 
         @Override
-        public MockValue merge( MockValue other ) {
-            l1 += other.l1;
-            i2 += other.i2;
+        public MockValue merge( Stream<MockChild> children ) {
+            sum = children.mapToLong( c -> c.ci ).sum();
+
             return this;
         }
 
         @Override
-        public MockValue clone() {
-            return null;
+        public MockValue merge( MockValue other ) {
+            l1 += other.l1;
+            i2 += other.i2;
+
+            return this;
+        }
+    }
+
+    @ToString
+    public static class MockChild implements Node.Value<MockChild> {
+        public long ci;
+
+        public MockChild() {
+        }
+
+        public MockChild( long ci ) {
+            this.ci = ci;
+        }
+
+        @Override
+        public MockChild merge( MockChild other ) {
+            ci += other.ci;
+            return this;
         }
     }
 }

@@ -40,6 +40,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * Created by igor.petrenko on 05.09.2017.
@@ -98,6 +99,8 @@ public class Node implements Serializable {
         if( value == null ) value = node.value;
         else {
             try {
+                if( value instanceof Container<?, ?> )
+                    ( ( Container ) value ).merge( db.values().stream().map( n -> n.value ) );
                 value.merge( node.value );
             } catch( Throwable t ) {
                 log.error( t.getMessage(), t );
@@ -108,7 +111,11 @@ public class Node implements Serializable {
         return true;
     }
 
-    public interface Value<T extends Value> extends Serializable {
+    public interface Value<T extends Value<T>> extends Serializable {
         T merge( T other );
+    }
+
+    public interface Container<T extends Value<T>, TChild extends Value<TChild>> extends Value<T> {
+        T merge( Stream<TChild> children );
     }
 }

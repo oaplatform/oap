@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * Created by igor.petrenko on 08.09.2017.
@@ -79,16 +80,31 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
     }
 
     private static void merge( String key, Node masterNode, Node rNode, List<List<String>> retList ) {
+        val list = merge( masterNode.db, rNode.db, retList );
+        list.forEach( l -> l.add( 0, key ) );
+
+        retList.addAll( list );
+
         val ret = masterNode.merge( rNode );
         if( !ret ) {
             val k = new ArrayList<String>();
             k.add( key );
             retList.add( k );
         }
-        val list = merge( masterNode.db, rNode.db, retList );
-        list.forEach( l -> l.add( 0, key ) );
+    }
 
-        retList.addAll( list );
+    public void start() {
+        init( storage.select() );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private void init( Stream<Node> nodes ) {
+        nodes.forEach( node -> {
+            if( node.value instanceof Node.Container ) {
+                init( node.db.values().stream() );
+                ( ( Node.Container ) node.value ).merge( node.db.values().stream().map( b -> b.value ) );
+            }
+        } );
     }
 
     @Override
@@ -104,7 +120,8 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
             hosts.putAll( database.hosts );
     }
 
-    public <TKey extends Iterable<String>, TValue extends Node.Value<TValue>> void update( TKey strings, Consumer<TValue> update, Supplier<TValue> create ) {
+    public <TKey extends Iterable<String>, TValue extends Node.Value<TValue>>
+    void update( TKey strings, Consumer<TValue> update, Supplier<TValue> create ) {
         super.update( schema, strings, update, create );
     }
 
