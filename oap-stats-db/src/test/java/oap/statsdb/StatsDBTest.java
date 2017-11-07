@@ -212,7 +212,7 @@ public class StatsDBTest extends AbstractTest {
         }
 
         @Override
-        public MockValue merge( Stream<MockChild> children ) {
+        public MockValue aggregate( Stream<MockChild> children ) {
             sum = children.mapToLong( c -> c.ci ).sum();
 
             return this;

@@ -100,7 +100,7 @@ public class Node implements Serializable {
         else {
             try {
                 if( value instanceof Container<?, ?> )
-                    ( ( Container ) value ).merge( db.values().stream().map( n -> n.value ) );
+                    ( ( Container ) value ).aggregate( db.values().stream().map( n -> n.value ) );
                 value.merge( node.value );
             } catch( Throwable t ) {
                 log.error( t.getMessage(), t );
@@ -116,6 +116,6 @@ public class Node implements Serializable {
     }
 
     public interface Container<T extends Value<T>, TChild extends Value<TChild>> extends Value<T> {
-        T merge( Stream<TChild> children );
+        T aggregate( Stream<TChild> children );
     }
 }

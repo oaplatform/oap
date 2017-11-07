@@ -102,7 +102,7 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
         nodes.forEach( node -> {
             if( node.value instanceof Node.Container ) {
                 init( node.db.values().stream() );
-                ( ( Node.Container ) node.value ).merge( node.db.values().stream().map( b -> b.value ) );
+                ( ( Node.Container ) node.value ).aggregate( node.db.values().stream().map( b -> b.value ) );
             }
         } );
     }
