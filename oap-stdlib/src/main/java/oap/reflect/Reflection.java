@@ -148,6 +148,10 @@ public class Reflection extends Annotated<Class<?>> {
         return this.typeToken.getRawType().isEnum();
     }
 
+    public boolean isArray() {
+        return this.typeToken.getRawType().isArray();
+    }
+
     public boolean isOptional() {
         return Optional.class.equals( this.typeToken.getRawType() );
     }

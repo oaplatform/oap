@@ -28,6 +28,7 @@ import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.List;
 
 import static java.util.Arrays.asList;
 
@@ -41,7 +42,11 @@ public class KeySchema extends ArrayList<String> implements Serializable {
     public KeySchema() {
     }
 
-    public KeySchema( String... keys ) {
-        this.addAll( asList( keys ) );
+    public KeySchema( String... key ) {
+        this( asList( key ) );
+    }
+
+    public KeySchema( List<String> keys ) {
+        super( keys );
     }
 }
