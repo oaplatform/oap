@@ -87,18 +87,18 @@ public abstract class StatsDB<T extends StatsDB.Database> {
 
     @SuppressWarnings( "unchecked" )
     public <TValue extends Node.Value<TValue>> TValue get( String... key ) {
-        return ( TValue ) getNode( key ).value;
+        val node = getNode( key );
+        return node != null ? ( TValue ) node.value : null;
     }
 
-    @SuppressWarnings( "unchecked" )
-    public <TValue extends Node.Value<TValue>> TValue _getNode( String[] key, int position, Node node ) {
+    public Node _getNode( String[] key, int position, Node node ) {
         if( node == null ) return null;
-        if( position >= key.length ) return ( TValue ) node.value;
+        if( position >= key.length ) return node;
 
         return _getNode( key, position + 1, node.db.get( key[position] ) );
     }
 
-    public Node getNode( String... key ) {
+    protected Node getNode( String... key ) {
         if( key.length == 0 ) return null;
 
         return _getNode( key, 1, storage.get( key[0] ).orElse( null ) );
@@ -112,7 +112,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
 
     @SuppressWarnings( "unchecked" )
     private <TValue extends Node.Value<TValue>> Stream<TValue> _children( String[] key, int position, Node node ) {
-        if( node == null ) return null;
+        if( node == null ) return Stream.empty();
         if( position >= key.length ) return node.db.values().stream().map( n -> ( TValue ) n.value );
 
         return _children( key, position + 1, node.db.get( key[position] ) );
