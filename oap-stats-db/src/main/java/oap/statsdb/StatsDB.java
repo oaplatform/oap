@@ -37,6 +37,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static java.util.Arrays.asList;
+
 /**
  * Created by igor.petrenko on 05.09.2017.
  */
@@ -50,10 +52,12 @@ public abstract class StatsDB<T extends StatsDB.Database> {
 
     protected abstract T toDatabase( ConcurrentHashMap<String, Node> db );
 
-    protected <TKey extends Iterable<String>, TValue extends Node.Value<TValue>> void update( KeySchema schema, TKey key, Consumer<TValue> update, Supplier<TValue> create ) {
+    protected <TKey extends Iterable<String>, TValue extends Node.Value<TValue>> void update(
+        KeySchema schema, TKey key, Consumer<TValue> update, Supplier<TValue> create ) {
         val iterator = key.iterator();
         val schemaIterator = schema.iterator();
         val schemaKey = schemaIterator.next();
+
         storage.update( iterator.next(),
             node -> updateNode( update, create, iterator, node, schemaIterator ),
             () -> updateNode( update, create, iterator, new Node( schemaKey ), schemaIterator )
@@ -67,6 +71,32 @@ public abstract class StatsDB<T extends StatsDB.Database> {
         val dbKey = it.next();
 
         return storage.get( dbKey ).map( node -> node.<TValue>get( it ) ).orElse( null );
+    }
+
+    public <TValue extends Node.Value<TValue>> Stream<TValue> children( String... keys ) {
+        return children( asList( keys ) );
+    }
+
+    public <TKey extends Iterable<String>, TValue extends Node.Value<TValue>> Stream<TValue> children( TKey key ) {
+        val it = key.iterator();
+        if( !it.hasNext() ) return null;
+
+        val dbKey = it.next();
+
+        return _children( it, storage.get( dbKey ).orElse( null ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private <TValue extends Node.Value<TValue>> Stream<TValue> _children( Iterator<String> key, Node node ) {
+        if( node != null && key.hasNext() ) {
+            val itKey = key.next();
+
+            return _children( key, node.db.get( itKey ) );
+        } else if( node != null ) {
+            return node.db.values().stream().map( n -> ( TValue ) n.value );
+        }
+
+        return Stream.empty();
     }
 
     public <TValue extends Node.Value<TValue>> Node updateNode(

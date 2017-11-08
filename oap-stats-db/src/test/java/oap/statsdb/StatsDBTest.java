@@ -27,6 +27,7 @@ package oap.statsdb;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Iterators;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.val;
 import oap.storage.MemoryStorage;
@@ -62,10 +63,34 @@ public class StatsDBTest extends AbstractTest {
     }
 
     @Test
+    public void testChildren() {
+        try( val master = service( new StatsDBMaster( schema, new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
+            master.update( new MockKey2( "k1", "k2" ), ( c ) -> c.ci = 10, MockChild::new );
+            master.update( new MockKey2( "k1", "k3" ), ( c ) -> c.ci = 3, MockChild::new );
+            master.update( new MockKey2( "k2", "k4" ), ( c ) -> c.ci = 4, MockChild::new );
+            master.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 10, MockValue::new );
+
+
+            assertThat( master.children( "k1" ) )
+                .hasSize( 2 )
+                .contains( new MockChild( 10 ) )
+                .contains( new MockChild( 3 ) );
+
+            assertThat( master.children( "k2" ) )
+                .hasSize( 1 )
+                .contains( new MockChild( 4 ) );
+
+            assertThat( master.children( "unknown" ) ).isEmpty();
+            assertThat( master.children( "k1", "k2" ) ).isEmpty();
+        }
+
+    }
+
+    @Test
     public void testPersistMaster() {
         try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000 ) );
              val master = service( new StatsDBMaster( schema, storage ) ) ) {
-            master.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
+            master.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, MockValue::new );
         }
 
         try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000 ) );
@@ -80,7 +105,7 @@ public class StatsDBTest extends AbstractTest {
         final MockRemoteStatsDB master = new MockRemoteStatsDB( schema );
         try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
              val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), storage ) ) ) {
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
+            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, MockValue::new );
         }
 
         try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
@@ -97,8 +122,8 @@ public class StatsDBTest extends AbstractTest {
              val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.ci = 10, () -> new MockChild( 10 ) );
-            node.update( new MockKey2( "k1", "k3" ), ( c ) -> c.ci = 1, () -> new MockChild( 1 ) );
+            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.ci = 10, MockChild::new );
+            node.update( new MockKey2( "k1", "k3" ), ( c ) -> c.ci = 1, MockChild::new );
             node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 20, () -> new MockValue( 20 ) );
 
             node.sync();
@@ -107,7 +132,7 @@ public class StatsDBTest extends AbstractTest {
             assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 20 );
 
             DateTimeUtils.setCurrentMillisFixed( 2 );
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.ci = 10, () -> new MockChild( 10 ) );
+            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.ci = 10, MockChild::new );
             node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 21, () -> new MockValue( 21 ) );
 
             node.sync();
@@ -136,7 +161,7 @@ public class StatsDBTest extends AbstractTest {
              val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), storage ) ) ) {
 
             master.syncWithException( ( sync ) -> new RuntimeException( "sync" ) );
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, () -> new MockValue( 10 ) );
+            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, MockValue::new );
             node.sync();
             assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNull();
         }
@@ -162,11 +187,11 @@ public class StatsDBTest extends AbstractTest {
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
 
-            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 20, () -> new MockValue( 20 ) );
+            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 20, MockValue::new );
             node.sync();
             assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 20 );
 
-            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 21, () -> new MockValue( 21 ) );
+            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 21, MockValue::new );
             node.sync();
             assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 20 );
         }
@@ -196,6 +221,7 @@ public class StatsDBTest extends AbstractTest {
     }
 
     @ToString
+    @EqualsAndHashCode
     public static class MockValue implements Node.Container<MockValue, MockChild> {
         public long l1;
         public int i2;
@@ -228,6 +254,7 @@ public class StatsDBTest extends AbstractTest {
     }
 
     @ToString
+    @EqualsAndHashCode
     public static class MockChild implements Node.Value<MockChild> {
         public long ci;
 
