@@ -52,12 +52,12 @@ public class Node implements Serializable {
     private static final long serialVersionUID = 4194048067764234L;
 
     public final String name;
-    volatile ConcurrentHashMap<String, Node> db = new ConcurrentHashMap<>();
+    public volatile ConcurrentHashMap<String, Node> db = new ConcurrentHashMap<>();
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "object:type" )
-    Value value;
-    long createdTime;
-    long modifiedTime;
+    public Value value;
+    public long createdTime;
+    public long modifiedTime;
 
     @JsonCreator
     public Node( @JsonProperty String name ) {
