@@ -64,6 +64,10 @@ public abstract class StatsDB<T extends StatsDB.Database> {
         );
     }
 
+    public <TValue extends Node.Value<TValue>> TValue get( String... key ) {
+        return get( asList( key ) );
+    }
+
     public <TKey extends Iterable<String>, TValue extends Node.Value<TValue>> TValue get( TKey key ) {
         val it = key.iterator();
         if( !it.hasNext() ) return null;
