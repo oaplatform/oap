@@ -33,8 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -43,11 +41,9 @@ import java.util.stream.Stream;
 @Slf4j
 public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> implements RemoteStatsDB, Closeable {
     private final ConcurrentHashMap<String, Long> hosts = new ConcurrentHashMap<>();
-    private final KeySchema schema;
 
     public StatsDBMaster( KeySchema schema, Storage<Node> storage ) {
-        super( storage );
-        this.schema = schema;
+        super( schema, storage );
     }
 
     private static List<List<String>> merge( Storage<Node> storage, Map<String, Node> remoteDB ) {
@@ -118,11 +114,6 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
 
         if( database.hosts != null )
             hosts.putAll( database.hosts );
-    }
-
-    public <TKey extends Iterable<String>, TValue extends Node.Value<TValue>>
-    void update( TKey strings, Consumer<TValue> update, Supplier<TValue> create ) {
-        super.update( schema, strings, update, create );
     }
 
     @Override

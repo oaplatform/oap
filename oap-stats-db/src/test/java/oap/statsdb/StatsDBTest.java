@@ -25,8 +25,6 @@
 package oap.statsdb;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.collect.Iterators;
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.val;
@@ -39,7 +37,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.stream.Stream;
 
 import static oap.application.ApplicationUtils.service;
@@ -65,10 +62,10 @@ public class StatsDBTest extends AbstractTest {
     @Test
     public void testChildren() {
         try( val master = service( new StatsDBMaster( schema, new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
-            master.update( new MockKey2( "k1", "k2" ), ( c ) -> c.ci = 10, MockChild::new );
-            master.update( new MockKey2( "k1", "k3" ), ( c ) -> c.ci = 3, MockChild::new );
-            master.update( new MockKey2( "k2", "k4" ), ( c ) -> c.ci = 4, MockChild::new );
-            master.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 10, MockValue::new );
+            master.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
+            master.update( "k1", "k3", ( c ) -> c.ci = 3, MockChild::new );
+            master.update( "k2", "k4", ( c ) -> c.ci = 4, MockChild::new );
+            master.update( "k1", ( c ) -> c.i2 = 10, MockValue::new );
 
 
             assertThat( master.children( "k1" ) )
@@ -90,13 +87,13 @@ public class StatsDBTest extends AbstractTest {
     public void testPersistMaster() {
         try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000 ) );
              val master = service( new StatsDBMaster( schema, storage ) ) ) {
-            master.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, MockValue::new );
+            master.update( "k1", "k2", ( c ) -> c.i2 = 10, MockValue::new );
         }
 
         try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000 ) );
              val master = service( new StatsDBMaster( schema, storage ) ) ) {
-            assertThat( master.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNotNull();
-            assertThat( master.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ).i2 ).isEqualTo( 10 );
+            assertThat( master.<MockValue>get( "k1", "k2" ) ).isNotNull();
+            assertThat( master.<MockValue>get( "k1", "k2" ).i2 ).isEqualTo( 10 );
         }
     }
 
@@ -105,13 +102,13 @@ public class StatsDBTest extends AbstractTest {
         final MockRemoteStatsDB master = new MockRemoteStatsDB( schema );
         try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
              val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), storage ) ) ) {
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, MockValue::new );
+            node.update( "k1", "k2", ( c ) -> c.i2 = 10, MockValue::new );
         }
 
         try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000 ) );
              val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), storage ) ) ) {
-            assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNotNull();
-            assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ).i2 ).isEqualTo( 10 );
+            assertThat( node.<MockValue>get( "k1", "k2" ) ).isNotNull();
+            assertThat( node.<MockValue>get( "k1", "k2" ).i2 ).isEqualTo( 10 );
         }
     }
 
@@ -122,24 +119,24 @@ public class StatsDBTest extends AbstractTest {
              val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.ci = 10, MockChild::new );
-            node.update( new MockKey2( "k1", "k3" ), ( c ) -> c.ci = 1, MockChild::new );
-            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 20, () -> new MockValue( 20 ) );
+            node.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
+            node.update( "k1", "k3", ( c ) -> c.ci = 1, MockChild::new );
+            node.update( "k1", ( c ) -> c.i2 = 20, MockValue::new );
 
             node.sync();
-            assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNull();
-            assertThat( master.<MockKey2, MockChild>get( new MockKey2( "k1", "k2" ) ).ci ).isEqualTo( 10 );
-            assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 20 );
+            assertThat( node.<MockValue>get( "k1", "k2" ) ).isNull();
+            assertThat( master.<MockChild>get( "k1", "k2" ).ci ).isEqualTo( 10 );
+            assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );
 
             DateTimeUtils.setCurrentMillisFixed( 2 );
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.ci = 10, MockChild::new );
-            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 21, () -> new MockValue( 21 ) );
+            node.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
+            node.update( "k1", ( c ) -> c.i2 = 21, () -> new MockValue( 21 ) );
 
             node.sync();
-            assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNull();
-            assertThat( master.<MockKey2, MockChild>get( new MockKey2( "k1", "k2" ) ).ci ).isEqualTo( 20 );
-            assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 41 );
-            assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).sum ).isEqualTo( 21L );
+            assertThat( node.<MockValue>get( "k1", "k2" ) ).isNull();
+            assertThat( master.<MockChild>get( "k1", "k2" ).ci ).isEqualTo( 20 );
+            assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 41 );
+            assertThat( master.<MockValue>get( "k1" ).sum ).isEqualTo( 21L );
         }
     }
 
@@ -149,7 +146,7 @@ public class StatsDBTest extends AbstractTest {
 
         try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000 ) );
              val master = service( new StatsDBMaster( schema, storage ) ) ) {
-            assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).sum ).isEqualTo( 21L );
+            assertThat( master.<MockValue>get( "k1" ).sum ).isEqualTo( 21L );
         }
     }
 
@@ -161,9 +158,9 @@ public class StatsDBTest extends AbstractTest {
              val node = service( new StatsDBNode( schema, master, Env.tmpPath( "node" ), storage ) ) ) {
 
             master.syncWithException( ( sync ) -> new RuntimeException( "sync" ) );
-            node.update( new MockKey2( "k1", "k2" ), ( c ) -> c.i2 = 10, MockValue::new );
+            node.update( "k1", "k2", ( c ) -> c.i2 = 10, MockValue::new );
             node.sync();
-            assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNull();
+            assertThat( node.<MockValue>get( "k1", "k2" ) ).isNull();
         }
 
         assertThat( master.syncs ).isEmpty();
@@ -174,7 +171,7 @@ public class StatsDBTest extends AbstractTest {
             master.syncWithoutException();
             node.sync();
 
-            assertThat( node.<MockKey2, MockValue>get( new MockKey2( "k1", "k2" ) ) ).isNull();
+            assertThat( node.<MockValue>get( "k1", "k2" ) ).isNull();
         }
 
         assertThat( master.syncs ).hasSize( 1 );
@@ -187,36 +184,13 @@ public class StatsDBTest extends AbstractTest {
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
 
-            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 20, MockValue::new );
+            node.update( "k1", ( c ) -> c.i2 = 20, MockValue::new );
             node.sync();
-            assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 20 );
+            assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );
 
-            node.update( new MockKey1( "k1" ), ( c ) -> c.i2 = 21, MockValue::new );
+            node.update( "k1", ( c ) -> c.i2 = 21, MockValue::new );
             node.sync();
-            assertThat( master.<MockKey1, MockValue>get( new MockKey1( "k1" ) ).i2 ).isEqualTo( 20 );
-        }
-    }
-
-    @ToString
-    @AllArgsConstructor
-    public static class MockKey2 implements Iterable<String> {
-        public final String key1;
-        public final String key2;
-
-        @Override
-        public Iterator<String> iterator() {
-            return Iterators.forArray( key1, key2 );
-        }
-    }
-
-    @ToString
-    @AllArgsConstructor
-    public static class MockKey1 implements Iterable<String> {
-        public final String key1;
-
-        @Override
-        public Iterator<String> iterator() {
-            return Iterators.forArray( key1 );
+            assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );
         }
     }
 

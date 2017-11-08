@@ -38,8 +38,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Created by igor.petrenko on 05.09.2017.
@@ -52,7 +50,7 @@ public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, 
     volatile Sync sync = null;
 
     public StatsDBNode( KeySchema schema, RemoteStatsDB master, Path directory, Storage<Node> storage ) {
-        super( storage );
+        super( schema, storage );
         this.directory = directory;
         this.master = master;
         this.schema = schema;
@@ -62,10 +60,6 @@ public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, 
             log.info( "sync file = {}", sync );
             sync = Binder.json.unmarshal( Sync.class, syncPath );
         }
-    }
-
-    public <TKey extends Iterable<String>, TValue extends Node.Value<TValue>> void update( TKey strings, Consumer<TValue> update, Supplier<TValue> create ) {
-        super.update( schema, strings, update, create );
     }
 
     @Override
