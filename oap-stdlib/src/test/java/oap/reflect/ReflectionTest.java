@@ -178,11 +178,11 @@ public class ReflectionTest {
         assertThat( Reflect.reflect( MatchingConstructor.class ).constructors ).hasSize( 2 );
         assertThatExceptionOfType( ReflectException.class )
             .isThrownBy( () -> Reflect.reflect( MatchingConstructor.class ).newInstance() )
-            .withMessage( "cannot find matching constructor: {} in class oap.reflect.MatchingConstructor candidates: [oap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list), oap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)]" );
+            .withMessage( "class oap.reflect.MatchingConstructor: cannot find matching constructor: {} candidates: [oap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list), oap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)]" );
         assertThat( Reflect.reflect( NoConstructors.class ).constructors ).hasSize( 1 );
         assertThatExceptionOfType( ReflectException.class )
             .isThrownBy( () -> Reflect.reflect( MatchingConstructor.class ).newInstance( Maps.empty() ) )
-            .withMessage( "cannot find matching constructor: {} in class oap.reflect.MatchingConstructor candidates: [oap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list), oap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)]" );
+            .withMessage( "class oap.reflect.MatchingConstructor: cannot find matching constructor: {} candidates: [oap.reflect.MatchingConstructor(int i,java.util.List<java.lang.Integer> list), oap.reflect.MatchingConstructor(java.util.List<java.lang.Integer> list)]" );
     }
 
     @Test
