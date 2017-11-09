@@ -55,8 +55,8 @@ public abstract class StatsDB<T extends StatsDB.Database> {
         String[] key, Consumer<TValue> update, Supplier<TValue> create ) {
 
         storage.update( key[0],
-            node -> updateNode( update, create, key, node, schema ),
-            () -> updateNode( update, create, key, new Node( schema.get( 0 ) ), schema )
+            node -> updateNode( key, update, create, node, schema ),
+            () -> updateNode( key, update, create, new Node( schema.get( 0 ) ), schema )
         );
     }
 
@@ -119,7 +119,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
     }
 
     public <TValue extends Node.Value<TValue>> Node updateNode(
-        Consumer<TValue> update, Supplier<TValue> create, String[] key, final Node node, KeySchema schema ) {
+        String[] key, Consumer<TValue> update, Supplier<TValue> create, final Node node, KeySchema schema ) {
         Node tNode = node;
 
         for( int i = 1; i < key.length; i++ ) {

@@ -133,7 +133,7 @@ public class Reflection extends Annotated<Class<?>> {
     private ReflectException constructorNotFound( Object args ) {
         List<String> candidates = Stream.of( constructors ).map( Constructor::toString ).toList();
 
-        return new ReflectException( "cannot find matching constructor: " + args + " in " + underlying + " candidates: " + candidates );
+        return new ReflectException( underlying + ": cannot find matching constructor: " + args + " candidates: " + candidates );
     }
 
     public boolean assignableTo( Class<?> clazz ) {
