@@ -98,7 +98,9 @@ public class StatsDBTest extends AbstractTest {
             node.sync();
 
             assertThat( master.<MockValue>get( "p" ).i2 ).isEqualTo( 2 );
+            assertThat( master.<MockValue>get( "p" ).sum ).isEqualTo( 1 );
             assertThat( master.<MockChild>get( "p", "c1" ).ci ).isEqualTo( 1 );
+            assertThat( master.<MockChild>get( "p", "c1" ).sum ).isEqualTo( 4 );
             assertThat( master.<MockChild>get( "p", "c1", "c2" ).ci ).isEqualTo( 4 );
         }
     }
@@ -250,8 +252,9 @@ public class StatsDBTest extends AbstractTest {
 
     @ToString
     @EqualsAndHashCode
-    public static class MockChild implements Node.Value<MockChild> {
+    public static class MockChild implements Node.Container<MockChild, MockChild> {
         public long ci;
+        public long sum;
 
         public MockChild() {
         }
@@ -263,6 +266,12 @@ public class StatsDBTest extends AbstractTest {
         @Override
         public MockChild merge( MockChild other ) {
             ci += other.ci;
+            return this;
+        }
+
+        @Override
+        public MockChild aggregate( Stream<MockChild> children ) {
+            sum = children.mapToLong( c -> c.ci ).sum();
             return this;
         }
     }

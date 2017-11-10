@@ -95,15 +95,14 @@ public class Node implements Serializable {
 
     @SuppressWarnings( "unchecked" )
     public boolean merge( Node node ) {
-        if( node.value == null ) return true;
-
         modifiedTime = DateTimeUtils.currentTimeMillis();
         if( value == null ) value = node.value;
         else {
             try {
                 if( value instanceof Container<?, ?> )
                     ( ( Container ) value ).aggregate( db.values().stream().map( n -> n.value ) );
-                value.merge( node.value );
+
+                if( node.value != null ) value.merge( node.value );
             } catch( Throwable t ) {
                 log.error( t.getMessage(), t );
 
