@@ -86,7 +86,7 @@ public class StatsDBTest extends AbstractTest {
     @Test
     public void testMergeChild() {
         try( val master = service( new StatsDBMaster( schema3, new MemoryStorage<>( NodeIdentifier.identifier ) ) );
-             val node = service( new StatsDBNode( schema3, master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
+             val node = service( new StatsDBNode( schema3, master, null, new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
             node.update( "p", ( p ) -> {}, () -> new MockValue( 1 ) );
             node.update( "p", "c1", ( c ) -> {}, () -> new MockChild( 1 ) );

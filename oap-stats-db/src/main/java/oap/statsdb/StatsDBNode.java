@@ -46,19 +46,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, Closeable {
     private final Path directory;
     private final RemoteStatsDB master;
-    private final KeySchema schema;
     volatile Sync sync = null;
 
     public StatsDBNode( KeySchema schema, RemoteStatsDB master, Path directory, Storage<Node> storage ) {
         super( schema, storage );
         this.directory = directory;
         this.master = master;
-        this.schema = schema;
 
-        val syncPath = directory.resolve( "sync.db.gz" );
-        if( Files.exists( syncPath ) ) {
-            log.info( "sync file = {}", sync );
-            sync = Binder.json.unmarshal( Sync.class, syncPath );
+        if( directory != null ) {
+            val syncPath = directory.resolve( "sync.db.gz" );
+            if( Files.exists( syncPath ) ) {
+                log.info( "sync file = {}", sync );
+                sync = Binder.json.unmarshal( Sync.class, syncPath );
+            }
         }
     }
 
@@ -89,19 +89,21 @@ public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, 
             storage.fsync();
         }
 
-        val syncFile = directory.resolve( "sync.db.gz" );
-        if( sync == null ) try {
-            Files.deleteIfExists( syncFile );
-        } catch( IOException e ) {
-            log.error( e.getMessage(), e );
-        }
-        else {
-            log.debug( "fsync {}", syncFile );
-            oap.io.Files.ensureFile( syncFile );
-            try( val sfos = IoStreams.out( syncFile, Encoding.from( syncFile ), IoStreams.DEFAULT_BUFFER, false, true ) ) {
-                Binder.json.marshal( sfos, sync );
+        if( directory != null ) {
+            val syncFile = directory.resolve( "sync.db.gz" );
+            if( sync == null ) try {
+                Files.deleteIfExists( syncFile );
             } catch( IOException e ) {
                 log.error( e.getMessage(), e );
+            }
+            else {
+                log.debug( "fsync {}", syncFile );
+                oap.io.Files.ensureFile( syncFile );
+                try( val sfos = IoStreams.out( syncFile, Encoding.from( syncFile ), IoStreams.DEFAULT_BUFFER, false, true ) ) {
+                    Binder.json.marshal( sfos, sync );
+                } catch( IOException e ) {
+                    log.error( e.getMessage(), e );
+                }
             }
         }
     }
