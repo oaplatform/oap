@@ -95,6 +95,8 @@ public class Node implements Serializable {
 
     @SuppressWarnings( "unchecked" )
     public boolean merge( Node node ) {
+        if( node.value == null ) return true;
+
         modifiedTime = DateTimeUtils.currentTimeMillis();
         if( value == null ) value = node.value;
         else {
