@@ -139,7 +139,7 @@ public class StatsDBTest extends AbstractTest {
     public void testSync() {
         try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000 ) );
              val master = service( new StatsDBMaster( schema2, storage ) );
-             val node = service( new StatsDBNode( schema2, master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
+             val node = service( new StatsDBNode( schema2, master, null, new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
             node.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
@@ -203,7 +203,7 @@ public class StatsDBTest extends AbstractTest {
     @Test
     public void testVersion() {
         try( val master = service( new StatsDBMaster( schema2, new MemoryStorage<>( NodeIdentifier.identifier ) ) );
-             val node = service( new StatsDBNode( schema2, master, Env.tmpPath( "node" ), new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
+             val node = service( new StatsDBNode( schema2, master, null, new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
             DateTimeUtils.setCurrentMillisFixed( 1 );
 
