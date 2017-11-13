@@ -46,6 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, Closeable {
     private final Path directory;
     private final RemoteStatsDB master;
+    protected boolean lastSyncSuccess = false;
     volatile Sync sync = null;
 
     public StatsDBNode( KeySchema schema, RemoteStatsDB master, Path directory, Storage<Node> storage ) {
@@ -79,7 +80,9 @@ public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, 
                 sync = null;
                 fsync( true );
             }
+            lastSyncSuccess = true;
         } catch( Exception e ) {
+            lastSyncSuccess = false;
             log.error( e.getMessage(), e );
         }
     }
