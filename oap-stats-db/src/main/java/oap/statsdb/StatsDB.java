@@ -42,11 +42,22 @@ import java.util.stream.Stream;
 @Slf4j
 public abstract class StatsDB<T extends StatsDB.Database> {
     protected final Storage<Node> storage;
-    private final KeySchema schema;
+    protected final KeySchema schema;
 
     public StatsDB( KeySchema schema, Storage<Node> storage ) {
         this.schema = schema;
         this.storage = storage;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    protected static void updateAggregates( Node mnode ) {
+        for( val node : mnode.db.values() ) {
+            updateAggregates( node );
+
+            if( node.value instanceof Node.Container ) {
+                ( ( Node.Container ) node.value ).aggregate( node.db.values().stream().map( n -> n.value ) );
+            }
+        }
     }
 
     protected abstract T toDatabase( ConcurrentHashMap<String, Node> db );
@@ -55,8 +66,15 @@ public abstract class StatsDB<T extends StatsDB.Database> {
         String[] key, Consumer<TValue> update, Supplier<TValue> create ) {
 
         storage.update( key[0],
-            node -> updateNode( key, update, create, node, schema ),
-            () -> updateNode( key, update, create, new Node( schema.get( 0 ) ), schema )
+            node -> {
+                final Node ret = updateNode( key, update, create, node, schema );
+                updateAggregates( ret );
+            },
+            () -> {
+                final Node ret = updateNode( key, update, create, new Node( schema.get( 0 ) ), schema );
+                updateAggregates( ret );
+                return ret;
+            }
         );
     }
 

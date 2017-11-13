@@ -51,10 +51,14 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
 
         remoteDB.forEach( ( key, rnode ) -> {
             storage.update( key,
-                mnode -> merge( key, mnode, rnode, retList ),
+                mnode -> {
+                    merge( key, mnode, rnode, retList );
+                    updateAggregates( mnode );
+                },
                 () -> {
                     final Node mnode = new Node( rnode.name );
                     merge( key, mnode, rnode, retList );
+                    updateAggregates( mnode );
                     return mnode;
                 } );
         } );

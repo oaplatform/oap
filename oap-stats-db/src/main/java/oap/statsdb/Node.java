@@ -99,9 +99,6 @@ public class Node implements Serializable {
         if( value == null ) value = node.value;
         else {
             try {
-                if( value instanceof Container<?, ?> )
-                    ( ( Container ) value ).aggregate( db.values().stream().map( n -> n.value ) );
-
                 if( node.value != null ) value.merge( node.value );
             } catch( Throwable t ) {
                 log.error( t.getMessage(), t );
