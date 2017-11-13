@@ -53,10 +53,11 @@ public abstract class StatsDB<T extends StatsDB.Database> {
     protected static void updateAggregates( Node mnode ) {
         for( val node : mnode.db.values() ) {
             updateAggregates( node );
+        }
 
-            if( node.value instanceof Node.Container ) {
-                ( ( Node.Container ) node.value ).aggregate( node.db.values().stream().map( n -> n.value ) );
-            }
+        final Node.Value value = mnode.value;
+        if( value instanceof Node.Container ) {
+            ( ( Node.Container ) value ).aggregate( mnode.db.values().stream().map( n -> n.value ) );
         }
     }
 
@@ -66,15 +67,8 @@ public abstract class StatsDB<T extends StatsDB.Database> {
         String[] key, Consumer<TValue> update, Supplier<TValue> create ) {
 
         storage.update( key[0],
-            node -> {
-                final Node ret = updateNode( key, update, create, node, schema );
-                updateAggregates( ret );
-            },
-            () -> {
-                final Node ret = updateNode( key, update, create, new Node( schema.get( 0 ) ), schema );
-                updateAggregates( ret );
-                return ret;
-            }
+            node -> updateNode( key, update, create, node, schema ),
+            () -> updateNode( key, update, create, new Node( schema.get( 0 ) ), schema )
         );
     }
 
