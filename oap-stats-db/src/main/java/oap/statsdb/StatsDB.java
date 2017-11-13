@@ -179,6 +179,10 @@ public abstract class StatsDB<T extends StatsDB.Database> {
                                 n5 -> new Select5<>( ( T1 ) n1.value, ( T2 ) n2.value, ( T3 ) n3.value, ( T4 ) n4.value, ( T5 ) n5.value ) ) ) ) ) );
     }
 
+    public void clear() {
+        storage.deleteAll();
+    }
+
     public static class Database implements Serializable {
         private static final long serialVersionUID = 20816260507748956L;
 
