@@ -24,6 +24,8 @@
 
 package oap.statsdb;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +46,8 @@ public class IdNode extends Node {
         this.id = id;
     }
 
-    public IdNode( String id, String name, long createdTime ) {
+    @JsonCreator
+    public IdNode( @JsonProperty String id, @JsonProperty String name, @JsonProperty long createdTime ) {
         super( name, createdTime );
         this.id = id;
     }
