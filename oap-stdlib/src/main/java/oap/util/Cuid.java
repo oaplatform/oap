@@ -33,7 +33,11 @@ import java.util.concurrent.atomic.AtomicLong;
 public class Cuid {
     private static final String UNKNOWN_IP = "UUUUUUUU";
     private static String suffix = ipSuffix();
-    private static Counter counter = new TimeSeedCounter();
+    private static Counter counter;
+
+    static {
+        restore();
+    }
 
     public static String next() {
         return Strings.toHexString( counter.next() ) + suffix;
@@ -58,6 +62,10 @@ public class Cuid {
         } catch( Exception e ) {
             return UNKNOWN_IP;
         }
+    }
+
+    public static void restore() {
+        counter = new TimeSeedCounter();
     }
 
     public interface Counter {

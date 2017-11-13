@@ -40,7 +40,7 @@ import java.util.stream.Stream;
  */
 @Slf4j
 public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> implements RemoteStatsDB, Closeable {
-    private final ConcurrentHashMap<String, Long> hosts = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> hosts = new ConcurrentHashMap<>();
 
     public StatsDBMaster( KeySchema schema, Storage<Node> storage ) {
         super( schema, storage );
@@ -123,8 +123,8 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
     @Override
     public boolean update( RemoteStatsDB.Sync sync, String host ) {
         synchronized( host.intern() ) {
-            val lastId = hosts.getOrDefault( host, 0L );
-            if( sync.id <= lastId ) {
+            val lastId = hosts.getOrDefault( host, "" );
+            if( sync.id.compareTo( lastId ) <= 0 ) {
                 log.warn( "[{}] diff ({}) already merged. Last merged diff is ({})", host, sync.id, lastId );
                 return true;
             }
@@ -150,12 +150,12 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
     public static class MasterDatabase extends StatsDB.Database {
         private static final long serialVersionUID = -5047870798844607693L;
 
-        public ConcurrentHashMap<String, Long> hosts;
+        public ConcurrentHashMap<String, String> hosts;
 
         public MasterDatabase() {
         }
 
-        public MasterDatabase( ConcurrentHashMap<String, Node> db, ConcurrentHashMap<String, Long> hosts ) {
+        public MasterDatabase( ConcurrentHashMap<String, Node> db, ConcurrentHashMap<String, String> hosts ) {
             super( db );
             this.hosts = hosts;
         }

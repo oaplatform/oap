@@ -71,7 +71,7 @@ public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, 
     public synchronized void sync() {
         if( sync == null ) {
             sync = new Sync( storage.copyAndClean().toMap() );
-            fsync( false );
+            fsync( true );
         }
 
         try {

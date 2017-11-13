@@ -26,7 +26,7 @@ package oap.statsdb;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
-import org.joda.time.DateTimeUtils;
+import oap.util.Cuid;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -42,7 +42,7 @@ public interface RemoteStatsDB {
         private static final long serialVersionUID = 6835215675536753051L;
 
         public final Map<String, Node> data;
-        public final long id = DateTimeUtils.currentTimeMillis();
+        public final String id = Cuid.next();
 
         @JsonIgnore
         public final boolean isEmpty() {

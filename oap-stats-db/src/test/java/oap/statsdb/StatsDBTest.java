@@ -32,7 +32,8 @@ import oap.storage.MemoryStorage;
 import oap.storage.SingleFileStorage;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import org.joda.time.DateTimeUtils;
+import oap.util.Cuid;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -58,6 +59,14 @@ public class StatsDBTest extends AbstractTest {
 
         masterDbPath = Env.tmpPath( "master.db" );
         nodeDbPath = Env.tmpPath( "node.db" );
+    }
+
+    @AfterMethod
+    @Override
+    public void afterMethod() throws Exception {
+        Cuid.restore();
+
+        super.afterMethod();
     }
 
     @Test
@@ -141,10 +150,8 @@ public class StatsDBTest extends AbstractTest {
              val master = service( new StatsDBMaster( schema2, storage ) );
              val node = service( new StatsDBNode( schema2, master, null, new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
-            DateTimeUtils.setCurrentMillisFixed( 1 );
             node.sync();
 
-            DateTimeUtils.setCurrentMillisFixed( 2 );
             node.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
             node.update( "k1", "k3", ( c ) -> c.ci = 1, MockChild::new );
             node.update( "k1", ( c ) -> c.i2 = 20, MockValue::new );
@@ -154,7 +161,6 @@ public class StatsDBTest extends AbstractTest {
             assertThat( master.<MockChild>get( "k1", "k2" ).ci ).isEqualTo( 10 );
             assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );
 
-            DateTimeUtils.setCurrentMillisFixed( 3 );
             node.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
             node.update( "k1", ( c ) -> c.i2 = 21, () -> new MockValue( 21 ) );
 
@@ -208,12 +214,13 @@ public class StatsDBTest extends AbstractTest {
         try( val master = service( new StatsDBMaster( schema2, new MemoryStorage<>( NodeIdentifier.identifier ) ) );
              val node = service( new StatsDBNode( schema2, master, null, new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
-            DateTimeUtils.setCurrentMillisFixed( 1 );
+            Cuid.reset( "s", 0 );
 
             node.update( "k1", ( c ) -> c.i2 = 20, MockValue::new );
             node.sync();
             assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );
 
+            Cuid.reset( "s", 0 );
             node.update( "k1", ( c ) -> c.i2 = 21, MockValue::new );
             node.sync();
             assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );
