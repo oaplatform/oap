@@ -141,9 +141,10 @@ public class StatsDBTest extends AbstractTest {
              val master = service( new StatsDBMaster( schema2, storage ) );
              val node = service( new StatsDBNode( schema2, master, null, new MemoryStorage<>( NodeIdentifier.identifier ) ) ) ) {
 
+            DateTimeUtils.setCurrentMillisFixed( 1 );
             node.sync();
 
-            DateTimeUtils.setCurrentMillisFixed( 1 );
+            DateTimeUtils.setCurrentMillisFixed( 2 );
             node.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
             node.update( "k1", "k3", ( c ) -> c.ci = 1, MockChild::new );
             node.update( "k1", ( c ) -> c.i2 = 20, MockValue::new );
@@ -153,7 +154,7 @@ public class StatsDBTest extends AbstractTest {
             assertThat( master.<MockChild>get( "k1", "k2" ).ci ).isEqualTo( 10 );
             assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );
 
-            DateTimeUtils.setCurrentMillisFixed( 2 );
+            DateTimeUtils.setCurrentMillisFixed( 3 );
             node.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
             node.update( "k1", ( c ) -> c.i2 = 21, () -> new MockValue( 21 ) );
 
