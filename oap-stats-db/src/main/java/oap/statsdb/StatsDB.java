@@ -41,10 +41,10 @@ import java.util.stream.Stream;
  */
 @Slf4j
 public abstract class StatsDB<T extends StatsDB.Database> {
-    protected final Storage<Node> storage;
+    protected final Storage<IdNode> storage;
     protected final KeySchema schema;
 
-    public StatsDB( KeySchema schema, Storage<Node> storage ) {
+    public StatsDB( KeySchema schema, Storage<IdNode> storage ) {
         this.schema = schema;
         this.storage = storage;
     }
@@ -68,7 +68,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
 
         storage.update( key[0],
             node -> updateNode( key, update, create, node, schema ),
-            () -> updateNode( key, update, create, new Node( schema.get( 0 ) ), schema )
+            () -> updateNode( key, update, create, new IdNode( key[0], schema.get( 0 ) ), schema )
         );
     }
 
@@ -130,8 +130,8 @@ public abstract class StatsDB<T extends StatsDB.Database> {
         return _children( key, position + 1, node.db.get( key[position] ) );
     }
 
-    public <TValue extends Node.Value<TValue>> Node updateNode(
-        String[] key, Consumer<TValue> update, Supplier<TValue> create, final Node node, KeySchema schema ) {
+    public <TNode extends Node, TValue extends Node.Value<TValue>> TNode updateNode(
+        String[] key, Consumer<TValue> update, Supplier<TValue> create, TNode node, KeySchema schema ) {
         Node tNode = node;
 
         for( int i = 1; i < key.length; i++ ) {

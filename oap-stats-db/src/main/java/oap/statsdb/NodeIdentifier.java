@@ -26,13 +26,10 @@ package oap.statsdb;
 
 import oap.storage.Identifier;
 import oap.storage.IdentifierBuilder;
-import org.apache.commons.lang3.NotImplementedException;
 
 /**
  * Created by igor.petrenko on 20.09.2017.
  */
 public class NodeIdentifier {
-    public static final Identifier<Node> identifier = IdentifierBuilder.<Node>identify( node -> {
-        throw new NotImplementedException( "identifier" );
-    } ).build();
+    public static final Identifier<IdNode> identifier = IdentifierBuilder.<IdNode>identify( node -> node.id ).build();
 }

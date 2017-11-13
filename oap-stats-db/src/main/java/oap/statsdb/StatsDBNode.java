@@ -49,7 +49,7 @@ public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, 
     protected boolean lastSyncSuccess = false;
     volatile Sync sync = null;
 
-    public StatsDBNode( KeySchema schema, RemoteStatsDB master, Path directory, Storage<Node> storage ) {
+    public StatsDBNode( KeySchema schema, RemoteStatsDB master, Path directory, Storage<IdNode> storage ) {
         super( schema, storage );
         this.directory = directory;
         this.master = master;

@@ -42,11 +42,11 @@ import java.util.stream.Stream;
 public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> implements RemoteStatsDB, Closeable {
     private final ConcurrentHashMap<String, String> hosts = new ConcurrentHashMap<>();
 
-    public StatsDBMaster( KeySchema schema, Storage<Node> storage ) {
+    public StatsDBMaster( KeySchema schema, Storage<IdNode> storage ) {
         super( schema, storage );
     }
 
-    private static List<List<String>> merge( Storage<Node> storage, Map<String, Node> remoteDB ) {
+    private static List<List<String>> merge( Storage<IdNode> storage, Map<String, IdNode> remoteDB ) {
         val retList = new ArrayList<List<String>>();
 
         remoteDB.forEach( ( key, rnode ) -> {
@@ -56,7 +56,7 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
                     updateAggregates( mnode );
                 },
                 () -> {
-                    final Node mnode = new Node( rnode.name );
+                    final IdNode mnode = new IdNode( key, rnode.name );
                     merge( key, mnode, rnode, retList );
                     updateAggregates( mnode );
                     return mnode;
@@ -98,7 +98,7 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
     }
 
     @SuppressWarnings( "unchecked" )
-    private void init( Stream<Node> nodes ) {
+    private void init( Stream<? extends Node> nodes ) {
         nodes.forEach( node -> {
             if( node.value instanceof Node.Container ) {
                 init( node.db.values().stream() );

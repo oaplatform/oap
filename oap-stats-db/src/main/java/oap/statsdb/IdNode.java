@@ -24,29 +24,28 @@
 
 package oap.statsdb;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import oap.util.Cuid;
-
-import java.io.Serializable;
-import java.util.Map;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by igor.petrenko on 05.09.2017.
  */
-public interface RemoteStatsDB {
-    boolean update( Sync data, String host );
+@EqualsAndHashCode( callSuper = true )
+@ToString( callSuper = true )
+@Slf4j
+public class IdNode extends Node {
+    private static final long serialVersionUID = -1085389239945330686L;
 
-    @AllArgsConstructor
-    class Sync implements Serializable {
-        private static final long serialVersionUID = 6835215675536753051L;
+    public final String id;
 
-        public final Map<String, IdNode> data;
-        public final String id = Cuid.next();
+    public IdNode( String id, String name ) {
+        super( name );
+        this.id = id;
+    }
 
-        @JsonIgnore
-        public final boolean isEmpty() {
-            return data.isEmpty();
-        }
+    public IdNode( String id, String name, long createdTime ) {
+        super( name, createdTime );
+        this.id = id;
     }
 }
