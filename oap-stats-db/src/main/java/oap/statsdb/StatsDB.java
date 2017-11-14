@@ -55,9 +55,9 @@ public abstract class StatsDB<T extends StatsDB.Database> {
             updateAggregates( node );
         }
 
-        final Node.Value value = mnode.value;
+        final Node.Value value = mnode.v;
         if( value instanceof Node.Container ) {
-            ( ( Node.Container ) value ).aggregate( mnode.db.values().stream().map( n -> n.value ) );
+            ( ( Node.Container ) value ).aggregate( mnode.db.values().stream().map( n -> n.v ) );
         }
     }
 
@@ -68,7 +68,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
 
         storage.update( key[0],
             node -> updateNode( key, update, create, node, schema ),
-            () -> updateNode( key, update, create, new IdNode( key[0], schema.get( 0 ) ), schema )
+            () -> updateNode( key, update, create, new IdNode( key[0] ), schema )
         );
     }
 
@@ -100,7 +100,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
     @SuppressWarnings( "unchecked" )
     public <TValue extends Node.Value<TValue>> TValue get( String... key ) {
         val node = getNode( key );
-        return node != null ? ( TValue ) node.value : null;
+        return node != null ? ( TValue ) node.v : null;
     }
 
     public Node _getNode( String[] key, int position, Node node ) {
@@ -125,7 +125,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
     @SuppressWarnings( "unchecked" )
     private <TValue extends Node.Value<TValue>> Stream<TValue> _children( String[] key, int position, Node node ) {
         if( node == null ) return Stream.empty();
-        if( position >= key.length ) return node.db.values().stream().map( n -> ( TValue ) n.value );
+        if( position >= key.length ) return node.db.values().stream().map( n -> ( TValue ) n.v );
 
         return _children( key, position + 1, node.db.get( key[position] ) );
     }
@@ -136,8 +136,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
 
         for( int i = 1; i < key.length; i++ ) {
             val keyItem = key[i];
-            val schemaItem = schema.get( i );
-            tNode = tNode.db.computeIfAbsent( keyItem, ( k ) -> new Node( schemaItem ) );
+            tNode = tNode.db.computeIfAbsent( keyItem, ( k ) -> new Node() );
         }
 
         tNode.updateValue( update, create );
@@ -158,7 +157,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
         return
             storage.select()
                 .flatMap( n1 -> n1.db.values().stream().map(
-                    n2 -> new Select2<>( ( T1 ) n1.value, ( T2 ) n2.value ) ) );
+                    n2 -> new Select2<>( ( T1 ) n1.v, ( T2 ) n2.v ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -167,7 +166,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
             storage.select()
                 .flatMap( n1 -> n1.db.values().stream().flatMap(
                     n2 -> n2.db.values().stream().map(
-                        n3 -> new Select3<>( ( T1 ) n1.value, ( T2 ) n2.value, ( T3 ) n3.value ) ) ) );
+                        n3 -> new Select3<>( ( T1 ) n1.v, ( T2 ) n2.v, ( T3 ) n3.v ) ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -177,7 +176,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
                 .flatMap( n1 -> n1.db.values().stream().flatMap(
                     n2 -> n2.db.values().stream().flatMap(
                         n3 -> n3.db.values().stream().map(
-                            n4 -> new Select4<>( ( T1 ) n1.value, ( T2 ) n2.value, ( T3 ) n3.value, ( T4 ) n4.value ) ) ) ) );
+                            n4 -> new Select4<>( ( T1 ) n1.v, ( T2 ) n2.v, ( T3 ) n3.v, ( T4 ) n4.v ) ) ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -188,7 +187,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
                     n2 -> n2.db.values().stream().flatMap(
                         n3 -> n3.db.values().stream().flatMap(
                             n4 -> n4.db.values().stream().map(
-                                n5 -> new Select5<>( ( T1 ) n1.value, ( T2 ) n2.value, ( T3 ) n3.value, ( T4 ) n4.value, ( T5 ) n5.value ) ) ) ) ) );
+                                n5 -> new Select5<>( ( T1 ) n1.v, ( T2 ) n2.v, ( T3 ) n3.v, ( T4 ) n4.v, ( T5 ) n5.v ) ) ) ) ) );
     }
 
     public void clear() {

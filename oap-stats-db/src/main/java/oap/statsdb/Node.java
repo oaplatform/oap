@@ -51,29 +51,27 @@ import java.util.stream.Stream;
 public class Node implements Serializable {
     private static final long serialVersionUID = 4194048067764234L;
 
-    public final String name;
     public volatile ConcurrentHashMap<String, Node> db = new ConcurrentHashMap<>();
     @JsonTypeIdResolver( TypeIdFactory.class )
-    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "object:type" )
-    public Value value;
-    public long createdTime;
-    public long modifiedTime;
+    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "o:t" )
+    public Value v;
+    public long ct;
+    public long mt;
 
-    @JsonCreator
-    public Node( @JsonProperty String name ) {
-        this( name, DateTimeUtils.currentTimeMillis() );
+    public Node() {
+        this( DateTimeUtils.currentTimeMillis() );
     }
 
-    public Node( String name, long createdTime ) {
-        this.name = name;
-        this.modifiedTime = this.createdTime = createdTime;
+    @JsonCreator
+    public Node( @JsonProperty long ct ) {
+        this.mt = this.ct = ct;
     }
 
     @SuppressWarnings( "unchecked" )
     synchronized <TValue extends Value<TValue>> void updateValue( Consumer<TValue> update, Supplier<TValue> create ) {
-        if( value == null ) value = create.get();
-        update.accept( ( TValue ) value );
-        this.modifiedTime = DateTimeUtils.currentTimeMillis();
+        if( v == null ) v = create.get();
+        update.accept( ( TValue ) v );
+        this.mt = DateTimeUtils.currentTimeMillis();
     }
 
     @SuppressWarnings( "unchecked" )
@@ -90,16 +88,16 @@ public class Node implements Serializable {
 
         if( obj == null ) return null;
 
-        return ( TValue ) obj.value;
+        return ( TValue ) obj.v;
     }
 
     @SuppressWarnings( "unchecked" )
     public boolean merge( Node node ) {
-        modifiedTime = DateTimeUtils.currentTimeMillis();
-        if( value == null ) value = node.value;
+        mt = DateTimeUtils.currentTimeMillis();
+        if( v == null ) v = node.v;
         else {
             try {
-                if( node.value != null ) value.merge( node.value );
+                if( node.v != null ) v.merge( node.v );
             } catch( Throwable t ) {
                 log.error( t.getMessage(), t );
 

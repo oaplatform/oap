@@ -56,7 +56,7 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
                     updateAggregates( mnode );
                 },
                 () -> {
-                    final IdNode mnode = new IdNode( key, rnode.name );
+                    final IdNode mnode = new IdNode( key );
                     merge( key, mnode, rnode, retList );
                     updateAggregates( mnode );
                     return mnode;
@@ -71,7 +71,7 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
             val key = entry.getKey();
             val rNode = entry.getValue();
 
-            val masterNode = masterDB.computeIfAbsent( key, ( k ) -> new Node( rNode.name ) );
+            val masterNode = masterDB.computeIfAbsent( key, ( k ) -> new Node() );
 
             merge( key, masterNode, rNode, retList );
         }
@@ -100,9 +100,9 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
     @SuppressWarnings( "unchecked" )
     private void init( Stream<? extends Node> nodes ) {
         nodes.forEach( node -> {
-            if( node.value instanceof Node.Container ) {
+            if( node.v instanceof Node.Container ) {
                 init( node.db.values().stream() );
-                ( ( Node.Container ) node.value ).aggregate( node.db.values().stream().map( b -> b.value ) );
+                ( ( Node.Container ) node.v ).aggregate( node.db.values().stream().map( b -> b.v ) );
             }
         } );
     }

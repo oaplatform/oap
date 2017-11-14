@@ -41,14 +41,14 @@ public class IdNode extends Node {
 
     public final String id;
 
-    public IdNode( String id, String name ) {
-        super( name );
+    public IdNode( String id ) {
+        super();
         this.id = id;
     }
 
     @JsonCreator
-    public IdNode( @JsonProperty String id, @JsonProperty String name, @JsonProperty long createdTime ) {
-        super( name, createdTime );
+    public IdNode( @JsonProperty String id, @JsonProperty long createdTime ) {
+        super( createdTime );
         this.id = id;
     }
 }
