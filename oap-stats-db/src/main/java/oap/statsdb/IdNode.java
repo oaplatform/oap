@@ -47,8 +47,8 @@ public class IdNode extends Node {
     }
 
     @JsonCreator
-    public IdNode( @JsonProperty String id, @JsonProperty long createdTime ) {
-        super( createdTime );
+    public IdNode( @JsonProperty String id, @JsonProperty long ct ) {
+        super( ct );
         this.id = id;
     }
 }
