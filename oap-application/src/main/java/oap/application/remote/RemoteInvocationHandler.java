@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
 import oap.util.Result;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -97,19 +98,26 @@ public class RemoteInvocationHandler implements InvocationHandler {
 
         Preconditions.checkNotNull( uri, "uri == null" );
 
-        return client.post( uri.toString(),
-            fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) ),
-            timeout )
-            .<Result<Object, Throwable>>map( response -> {
-                if( response.code == HTTP_OK ) {
-                    return response.content
-                        .map( b -> ( Result<Object, Throwable> ) fst.conf.asObject( b ) )
-                        .orElse( Result.failure( new RemoteInvocationException( "no content " + uri ) ) );
-                } else return Result.failure( new RemoteInvocationException( response.code + " " + response.reasonPhrase
-                    + "\n" + response.contentString ) );
-            } )
-            .orElseThrow( () -> new RemoteInvocationException( "invocation failed " + uri ) )
-            .orElseThrow( t -> t );
+        try {
+            final byte[] content = fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) );
+            return client.post( uri.toString(),
+                content,
+                timeout )
+                .<Result<Object, Throwable>>map( response -> {
+                    if( response.code == HTTP_OK ) {
+                        return response.content
+                            .map( b -> ( Result<Object, Throwable> ) fst.conf.asObject( b ) )
+                            .orElse( Result.failure( new RemoteInvocationException( "no content " + uri ) ) );
+                    } else
+                        return Result.failure( new RemoteInvocationException( response.code + " " + response.reasonPhrase
+                            + "\n" + response.contentString ) );
+                } )
+                .orElseThrow( () -> new RemoteInvocationException( "invocation failed " + uri ) )
+                .orElseThrow( t -> t );
+        } catch( IOException e ) {
+            log.error( "remote service uri = {}, service name = {}, method name = {}", uri, service, method.getName() );
+            throw e;
+        }
     }
 
     @Override
