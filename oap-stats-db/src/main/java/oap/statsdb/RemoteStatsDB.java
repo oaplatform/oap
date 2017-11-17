@@ -24,8 +24,9 @@
 
 package oap.statsdb;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import oap.util.Cuid;
 
 import java.io.Serializable;
@@ -37,12 +38,21 @@ import java.util.Map;
 public interface RemoteStatsDB {
     boolean update( Sync data, String host );
 
-    @AllArgsConstructor
     class Sync implements Serializable {
         private static final long serialVersionUID = 6835215675536753051L;
 
         public final Map<String, IdNode> data;
-        public final String id = Cuid.next();
+        public final String id;
+
+        public Sync( Map<String, IdNode> data ) {
+            this( data, Cuid.next() );
+        }
+
+        @JsonCreator
+        public Sync( @JsonProperty Map<String, IdNode> data, @JsonProperty String id ) {
+            this.data = data;
+            this.id = id;
+        }
 
         @JsonIgnore
         public final boolean isEmpty() {
