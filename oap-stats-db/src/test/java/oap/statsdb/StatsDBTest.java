@@ -104,15 +104,21 @@ public class StatsDBTest extends AbstractTest {
             node.update( "p", "c1", "c2", ( c ) -> {}, () -> new MockChild( 2 ) );
             node.sync();
 
+            assertThat( master.<MockValue>get( "p" ).sum ).isEqualTo( 3 );
+
             node.update( "p", ( p ) -> {}, () -> new MockValue( 1 ) );
+            node.update( "p", "c1", "c2", "c3", ( c ) -> {}, () -> new MockChild( 2 ) );
+            node.sync();
+
             node.update( "p", "c1", "c2", ( c ) -> {}, () -> new MockChild( 2 ) );
             node.sync();
 
             assertThat( master.<MockValue>get( "p" ).i2 ).isEqualTo( 2 );
-            assertThat( master.<MockValue>get( "p" ).sum ).isEqualTo( 1 );
+            assertThat( master.<MockValue>get( "p" ).sum ).isEqualTo( 5 );
             assertThat( master.<MockChild>get( "p", "c1" ).ci ).isEqualTo( 1 );
             assertThat( master.<MockChild>get( "p", "c1" ).sum ).isEqualTo( 4 );
             assertThat( master.<MockChild>get( "p", "c1", "c2" ).ci ).isEqualTo( 4 );
+            assertThat( master.<MockChild>get( "p", "c1", "c2", "c3" ).ci ).isEqualTo( 2 );
         }
     }
 
@@ -248,7 +254,7 @@ public class StatsDBTest extends AbstractTest {
 
         @Override
         public MockValue aggregate( Stream<MockChild> children ) {
-            sum += children.mapToLong( c -> c.ci ).sum();
+            sum = children.mapToLong( c -> c.sum + c.ci ).sum();
 
             return this;
         }
@@ -283,7 +289,7 @@ public class StatsDBTest extends AbstractTest {
 
         @Override
         public MockChild aggregate( Stream<MockChild> children ) {
-            sum += children.mapToLong( c -> c.ci ).sum();
+            sum = children.mapToLong( c -> c.ci ).sum();
             return this;
         }
     }

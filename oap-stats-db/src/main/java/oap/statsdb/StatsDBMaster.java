@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -54,12 +53,12 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
             storage.update( key,
                 mnode -> {
                     merge( key, mnode, rnode, retList );
-                    updateAggregates( mnode, rnode );
+                    updateAggregates( mnode );
                 },
                 () -> {
                     final IdNode mnode = new IdNode( key );
                     merge( key, mnode, rnode, retList );
-                    updateAggregates( mnode, rnode );
+                    updateAggregates( mnode );
                     return mnode;
                 } );
         } );
