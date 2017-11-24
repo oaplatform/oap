@@ -63,7 +63,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         lockStrategy.synchronizedOn( id, () -> {
             Metadata<T> metadata = data.get( id );
             if( metadata != null ) metadata.update( object );
-            else data.put( id, new Metadata<>( id, object ) );
+            else data.computeIfAbsent( id, id1 -> new Metadata<>( id1, object ) );
             fireUpdated( object, metadata == null );
         } );
     }
@@ -81,7 +81,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                     metadata.update( object );
                     updatedObjects.add( object );
                 } else {
-                    data.put( id, new Metadata<>( id, object ) );
+                    data.computeIfAbsent( id, ( id1 ) -> new Metadata<>( id1, object ) );
                     newObjects.add( object );
                 }
             } );
@@ -104,8 +104,8 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             Metadata<T> m = data.get( id );
             if( m == null ) {
                 if( init == null ) return Optional.empty();
-                T object = init.get();
-                m = new Metadata<>( id, object );
+
+                m = data.computeIfAbsent( id, ( id1 ) -> new Metadata<>( id, init.get() ) );
                 data.put( m.id, m );
                 m.update( m.object ); // fix modification time
             } else {
@@ -149,11 +149,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     protected Optional<Metadata<T>> deleteObject( String id ) {
-        return lockStrategy.synchronizedOn( id, () -> {
-            Optional<Metadata<T>> metadata = Maps.get( data, id );
-            metadata.ifPresent( m -> data.remove( id ) );
-            return metadata;
-        } );
+        return lockStrategy.synchronizedOn( id, () -> Optional.ofNullable( data.remove( id ) ) );
     }
 
     @Override
