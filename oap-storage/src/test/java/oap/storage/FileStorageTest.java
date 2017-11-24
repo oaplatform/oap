@@ -105,7 +105,7 @@ public class FileStorageTest extends AbstractTest {
         assertThat( data.resolve( "1.json" ) ).exists();
         assertThat( data.resolve( "2.json" ) ).exists();
 
-        try( FileStorage<Bean> storage2 = new FileStorage<>( data, Bean.identifier, 50, Lock ) ) {
+        try( FileStorage<Bean> storage2 = new FileStorage<>( data, ( p, s ) -> p.resolve( s.s ), Bean.identifier, 50, Lock ) ) {
             assertThat( storage2.select() ).containsExactly( new Bean( "1", "aaa" ), new Bean( "2", "bbb" ) );
 
             assertThat( data.resolve( "aaa/1.json" ) ).exists();

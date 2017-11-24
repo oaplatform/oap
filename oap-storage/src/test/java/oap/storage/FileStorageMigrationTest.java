@@ -59,8 +59,8 @@ public class FileStorageMigrationTest extends AbstractTest {
             storage1.store( new Bean( "2" ) );
         }
 
-        assertThat( data.resolve( "aaa/1.json" ) ).exists();
-        assertThat( data.resolve( "aaa/2.json" ) ).exists();
+        assertThat( data.resolve( "1.json" ) ).exists();
+        assertThat( data.resolve( "2.json" ) ).exists();
 
         try( FileStorage<Bean2> storage2 = new FileStorage<>( data, Bean2.identifier, Long.MAX_VALUE, 2, Lists.of(
             BeanMigration.class.getName(),
@@ -69,14 +69,14 @@ public class FileStorageMigrationTest extends AbstractTest {
             assertThat( storage2.select() ).containsExactly( new Bean2( "11" ), new Bean2( "21" ) );
         }
 
-        assertThat( data.resolve( "aaa/1.json" ) ).doesNotExist();
-        assertThat( data.resolve( "aaa/2.json" ) ).doesNotExist();
+        assertThat( data.resolve( "1.json" ) ).doesNotExist();
+        assertThat( data.resolve( "2.json" ) ).doesNotExist();
 
-        assertThat( data.resolve( "aaa/1.v1.json" ) ).doesNotExist();
-        assertThat( data.resolve( "aaa/2.v1.json" ) ).doesNotExist();
+        assertThat( data.resolve( "1.v1.json" ) ).doesNotExist();
+        assertThat( data.resolve( "2.v1.json" ) ).doesNotExist();
 
-        assertThat( data.resolve( "aaa/11.v2.json" ) ).exists();
-        assertThat( data.resolve( "aaa/21.v2.json" ) ).exists();
+        assertThat( data.resolve( "11.v2.json" ) ).exists();
+        assertThat( data.resolve( "21.v2.json" ) ).exists();
     }
 
     @Test
