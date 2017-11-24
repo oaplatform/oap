@@ -36,28 +36,19 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static oap.concurrent.Threads.synchronizedOn;
-
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     protected final Identifier<T> identifier;
+    private final LockStrategy lockStrategy;
     volatile protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
     private List<DataListener<T>> dataListeners = new ArrayList<>();
 
-    /**
-     * @deprecated use {@link #MemoryStorage(Identifier)} instead.
-     */
-    @Deprecated
-    public MemoryStorage( Function<T, String> identify ) {
-        this( IdentifierBuilder.identify( identify ).build() );
-    }
-
-    public MemoryStorage( Identifier<T> identifier ) {
+    public MemoryStorage( Identifier<T> identifier, LockStrategy lockStrategy ) {
         this.identifier = identifier;
+        this.lockStrategy = lockStrategy;
     }
 
     @Override
@@ -65,10 +56,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         return Stream.of( data.values() ).map( m -> m.object );
     }
 
+
     @Override
     public void store( T object ) {
         String id = identifier.getOrInit( object, this );
-        synchronizedOn( id, () -> {
+        lockStrategy.synchronizedOn( id, () -> {
             Metadata<T> metadata = data.get( id );
             if( metadata != null ) metadata.update( object );
             else data.put( id, new Metadata<>( id, object ) );
@@ -83,7 +75,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
         for( T object : objects ) {
             String id = identifier.getOrInit( object, this );
-            synchronizedOn( id, () -> {
+            lockStrategy.synchronizedOn( id, () -> {
                 Metadata<T> metadata = data.get( id );
                 if( metadata != null ) {
                     metadata.update( object );
@@ -108,7 +100,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     protected Optional<Metadata<T>> updateObject( String id, Predicate<T> predicate, Consumer<T> update, Supplier<T> init ) {
-        return synchronizedOn( id, () -> {
+        return lockStrategy.synchronizedOn( id, () -> {
             Metadata<T> m = data.get( id );
             if( m == null ) {
                 if( init == null ) return Optional.empty();
@@ -157,7 +149,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     protected Optional<Metadata<T>> deleteObject( String id ) {
-        return synchronizedOn( id, () -> {
+        return lockStrategy.synchronizedOn( id, () -> {
             Optional<Metadata<T>> metadata = Maps.get( data, id );
             metadata.ifPresent( m -> data.remove( id ) );
             return metadata;
@@ -171,7 +163,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public synchronized MemoryStorage<T> copyAndClean() {
-        final MemoryStorage<T> ms = new MemoryStorage<>( identifier );
+        final MemoryStorage<T> ms = new MemoryStorage<>( identifier, lockStrategy );
         ms.data = data;
         this.data = new ConcurrentHashMap<>();
         return ms;

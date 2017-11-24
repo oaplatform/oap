@@ -33,6 +33,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import static oap.storage.Storage.LockStrategy.Lock;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -50,8 +51,8 @@ public class MongoStorageTest {
     }
 
     public MongoStorage<TestMongoBean> reopen() {
-        return new MongoStorage<TestMongoBean>( "teamcity", 27017, dbName, "test",
-            IdentifierBuilder.<TestMongoBean>identify( b -> b.id ).build(), new TypeReference<Metadata<TestMongoBean>>() {} );
+        return new MongoStorage<>( "teamcity", 27017, dbName, "test",
+            IdentifierBuilder.<TestMongoBean>identify( b -> b.id ).build(), new TypeReference<Metadata<TestMongoBean>>() {}, Lock );
     }
 
     @AfterMethod

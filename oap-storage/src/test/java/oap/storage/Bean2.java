@@ -35,6 +35,8 @@ import oap.storage.migration.JsonMetadata;
 @ToString
 @EqualsAndHashCode
 public class Bean2 {
+    public static final Identifier<Bean2> identifier = IdentifierBuilder.<Bean2>identify( p -> p.s ).build();
+
     public String id2;
     public String s = "aaa";
     public BeanIn in;

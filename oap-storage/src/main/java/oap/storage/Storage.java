@@ -23,6 +23,7 @@
  */
 package oap.storage;
 
+import oap.concurrent.Threads;
 import oap.util.Stream;
 
 import java.io.Closeable;
@@ -125,5 +126,38 @@ public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Opt
             objects.forEach( this::deleted );
         }
 
+    }
+
+    interface LockStrategy {
+        LockStrategy NoLock = new NoLock();
+        LockStrategy Lock = new Lock();
+
+        void synchronizedOn( String id, Runnable run );
+
+        <R> R synchronizedOn( String id, Supplier<R> run );
+
+        final class NoLock implements LockStrategy {
+            @Override
+            public final void synchronizedOn( String id, Runnable run ) {
+                run.run();
+            }
+
+            @Override
+            public final <R> R synchronizedOn( String id, Supplier<R> run ) {
+                return run.get();
+            }
+        }
+
+        final class Lock implements LockStrategy {
+            @Override
+            public final void synchronizedOn( String id, Runnable run ) {
+                Threads.synchronizedOn( id, run );
+            }
+
+            @Override
+            public final <R> R synchronizedOn( String id, Supplier<R> run ) {
+                return Threads.synchronizedOn( id, run );
+            }
+        }
     }
 }

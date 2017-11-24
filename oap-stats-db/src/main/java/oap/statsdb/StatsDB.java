@@ -50,14 +50,14 @@ public abstract class StatsDB<T extends StatsDB.Database> {
     }
 
     @SuppressWarnings( "unchecked" )
-    protected static void updateAggregates( Node mnode ) {
-        for( val node : mnode.db.values() ) {
-            updateAggregates( node );
+    protected static void updateAggregates( Node mnode, Node patch ) {
+        for( val entry : patch.db.entrySet() ) {
+            updateAggregates( mnode.db.get( entry.getKey() ), entry.getValue() );
         }
 
         final Node.Value value = mnode.v;
         if( value instanceof Node.Container ) {
-            ( ( Node.Container ) value ).aggregate( mnode.db.values().stream().map( n -> n.v ) );
+            ( ( Node.Container ) value ).aggregate( patch.db.values().stream().map( n -> n.v ) );
         }
     }
 

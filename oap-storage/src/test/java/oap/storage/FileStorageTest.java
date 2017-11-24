@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.util.function.BiFunction;
 
 import static java.util.Collections.emptyList;
+import static oap.storage.Storage.LockStrategy.Lock;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Env.deployTestData;
 import static oap.testng.Env.tmpPath;
@@ -52,7 +53,7 @@ public class FileStorageTest extends AbstractTest {
 
     @Test
     public void load() {
-        try( FileStorage<Bean> storage = new FileStorage<>( deployTestData( getClass() ), b -> b.id ) ) {
+        try( FileStorage<Bean> storage = new FileStorage<>( deployTestData( getClass() ), Bean.identifier, Lock ) ) {
             assertThat( storage.select() )
                 .containsExactly( new Bean( "t1" ), new Bean( "t2" ) );
         }
@@ -60,12 +61,12 @@ public class FileStorageTest extends AbstractTest {
 
     @Test
     public void persist() {
-        try( FileStorage<Bean> storage1 = new FileStorage<>( tmpPath( "data" ), b -> b.id, 50 ) ) {
+        try( FileStorage<Bean> storage1 = new FileStorage<>( tmpPath( "data" ), Bean.identifier, 50, Lock ) ) {
             storage1.store( new Bean( "1" ) );
             storage1.store( new Bean( "2" ) );
         }
 
-        try( FileStorage<Bean> storage2 = new FileStorage<>( tmpPath( "data" ), b -> b.id ) ) {
+        try( FileStorage<Bean> storage2 = new FileStorage<>( tmpPath( "data" ), Bean.identifier, Lock ) ) {
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "1" ), new Bean( "2" ) );
         }
@@ -75,7 +76,7 @@ public class FileStorageTest extends AbstractTest {
     public void persistFsLayout() {
         Path data = tmpPath( "data" );
         BiFunction<Path, Bean, Path> fsResolve = ( p, o ) -> p.resolve( o.s );
-        try( FileStorage<Bean> storage1 = new FileStorage<>( data, fsResolve, b -> b.id, 50 ) ) {
+        try( FileStorage<Bean> storage1 = new FileStorage<>( data, fsResolve, Bean.identifier, 50, Lock ) ) {
             storage1.store( new Bean( "1" ) );
             storage1.store( new Bean( "2" ) );
         }
@@ -83,7 +84,7 @@ public class FileStorageTest extends AbstractTest {
         assertThat( data.resolve( "aaa/1.json" ) ).exists();
         assertThat( data.resolve( "aaa/2.json" ) ).exists();
 
-        try( FileStorage<Bean> storage2 = new FileStorage<>( data, fsResolve, b -> b.id, 50 ) ) {
+        try( FileStorage<Bean> storage2 = new FileStorage<>( data, fsResolve, Bean.identifier, 50, Lock ) ) {
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "1" ), new Bean( "2" ) );
         }
@@ -93,7 +94,7 @@ public class FileStorageTest extends AbstractTest {
     @Test
     public void restructureFsLayout() {
         final Path data = tmpPath( "data" );
-        try( FileStorage<Bean> storage1 = new FileStorage<>( data, b -> b.id, 50 ) ) {
+        try( FileStorage<Bean> storage1 = new FileStorage<>( data, Bean.identifier, 50, Lock ) ) {
             storage1.store( new Bean( "1", "aaa" ) );
             storage1.store( new Bean( "2", "bbb" ) );
         }
@@ -104,7 +105,7 @@ public class FileStorageTest extends AbstractTest {
         assertThat( data.resolve( "1.json" ) ).exists();
         assertThat( data.resolve( "2.json" ) ).exists();
 
-        try( FileStorage<Bean> storage2 = new FileStorage<>( data, ( p, o ) -> p.resolve( o.s ), b -> b.id, 50 ) ) {
+        try( FileStorage<Bean> storage2 = new FileStorage<>( data, Bean.identifier, 50, Lock ) ) {
             assertThat( storage2.select() ).containsExactly( new Bean( "1", "aaa" ), new Bean( "2", "bbb" ) );
 
             assertThat( data.resolve( "aaa/1.json" ) ).exists();
@@ -117,12 +118,12 @@ public class FileStorageTest extends AbstractTest {
 
     @Test
     public void storeAndUpdate() {
-        try( FileStorage<Bean> storage = new FileStorage<>( tmpPath( "data" ), b -> b.id, 50 ) ) {
+        try( FileStorage<Bean> storage = new FileStorage<>( tmpPath( "data" ), Bean.identifier, 50, Lock ) ) {
             storage.store( new Bean( "111" ) );
             storage.update( "111", u -> u.s = "bbb" );
         }
 
-        try( FileStorage<Bean> storage2 = new FileStorage<>( tmpPath( "data" ), b -> b.id ) ) {
+        try( FileStorage<Bean> storage2 = new FileStorage<>( tmpPath( "data" ), Bean.identifier, Lock ) ) {
             assertThat( storage2.select() )
                 .containsExactly( new Bean( "111", "bbb" ) );
         }
@@ -131,7 +132,7 @@ public class FileStorageTest extends AbstractTest {
     @Test
     public void delete() {
         Path data = tmpPath( "data" );
-        try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50 ) ) {
+        try( FileStorage<Bean> storage = new FileStorage<>( data, Bean.identifier, 50, Lock ) ) {
             storage.store( new Bean( "111" ) );
             assertEventually( 200, 10, () -> {
                 log.debug( "going to assert existence of {}", data.resolve( "111.json" ) );
@@ -146,7 +147,7 @@ public class FileStorageTest extends AbstractTest {
     @Test
     public void deleteVersion() {
         Path data = tmpPath( "data" );
-        try( FileStorage<Bean> storage = new FileStorage<>( data, b -> b.id, 50, 1, emptyList() ) ) {
+        try( FileStorage<Bean> storage = new FileStorage<>( data, Bean.identifier, 50, 1, emptyList(), Lock ) ) {
             storage.store( new Bean( "111" ) );
             assertEventually( 100, 100, () -> assertThat( data.resolve( "111.v1.json" ) ).exists() );
             storage.delete( "111" );

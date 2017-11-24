@@ -40,7 +40,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 import static oap.concurrent.Threads.synchronizedOn;
 import static oap.io.IoStreams.DEFAULT_BUFFER;
@@ -60,16 +59,8 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
     private AtomicBoolean modified = new AtomicBoolean( false );
 
 
-    /**
-     * @deprecated use {@link #SingleFileStorage(Path, Identifier, long)} instead.
-     */
-    @Deprecated
-    public SingleFileStorage( Path path, Function<T, String> identify, long fsync ) {
-        this( path, IdentifierBuilder.identify( identify ).build(), fsync );
-    }
-
-    public SingleFileStorage( Path path, Identifier<T> identifier, long fsync ) {
-        super( identifier );
+    public SingleFileStorage( Path path, Identifier<T> identifier, long fsync, LockStrategy lockStrategy ) {
+        super( identifier, lockStrategy );
         this.path = path;
 
         load();

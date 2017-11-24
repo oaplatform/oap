@@ -37,54 +37,56 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import static java.util.Collections.emptyList;
+import static oap.storage.Storage.LockStrategy.Lock;
+import static oap.storage.Storage.LockStrategy.NoLock;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class FileStorageMigrationTest extends AbstractTest {
-   @BeforeMethod
-   @Override
-   public void beforeMethod() throws Exception {
-      super.beforeMethod();
+    @BeforeMethod
+    @Override
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
 
-      TypeIdFactory.register( Bean.class, Bean.class.getName() );
-      TypeIdFactory.register( Bean2.class, Bean2.class.getName() );
-   }
+        TypeIdFactory.register( Bean.class, Bean.class.getName() );
+        TypeIdFactory.register( Bean2.class, Bean2.class.getName() );
+    }
 
-   @Test
-   public void testMigration() throws IOException {
-      Path data = Env.tmpPath( "data" );
-      try( FileStorage<Bean> storage1 = new FileStorage<>( data, ( p, b ) -> p.resolve( b.s ), b -> b.id, Long.MAX_VALUE ) ) {
-         storage1.store( new Bean( "1" ) );
-         storage1.store( new Bean( "2" ) );
-      }
+    @Test
+    public void testMigration() throws IOException {
+        Path data = Env.tmpPath( "data" );
+        try( FileStorage<Bean> storage1 = new FileStorage<>( data, Bean.identifier, Long.MAX_VALUE, NoLock ) ) {
+            storage1.store( new Bean( "1" ) );
+            storage1.store( new Bean( "2" ) );
+        }
 
-      assertThat( data.resolve( "aaa/1.json" ) ).exists();
-      assertThat( data.resolve( "aaa/2.json" ) ).exists();
+        assertThat( data.resolve( "aaa/1.json" ) ).exists();
+        assertThat( data.resolve( "aaa/2.json" ) ).exists();
 
-      try( FileStorage<Bean2> storage2 = new FileStorage<>( data, ( p, b ) -> p.resolve( b.s ), b -> b.id2, Long.MAX_VALUE, 2, Lists.of(
-         BeanMigration.class.getName(),
-         Bean2Migration.class.getName()
-      ) ) ) {
-         assertThat( storage2.select() ).containsExactly( new Bean2( "11" ), new Bean2( "21" ) );
-      }
+        try( FileStorage<Bean2> storage2 = new FileStorage<>( data, Bean2.identifier, Long.MAX_VALUE, 2, Lists.of(
+            BeanMigration.class.getName(),
+            Bean2Migration.class.getName()
+        ), Lock ) ) {
+            assertThat( storage2.select() ).containsExactly( new Bean2( "11" ), new Bean2( "21" ) );
+        }
 
-      assertThat( data.resolve( "aaa/1.json" ) ).doesNotExist();
-      assertThat( data.resolve( "aaa/2.json" ) ).doesNotExist();
+        assertThat( data.resolve( "aaa/1.json" ) ).doesNotExist();
+        assertThat( data.resolve( "aaa/2.json" ) ).doesNotExist();
 
-      assertThat( data.resolve( "aaa/1.v1.json" ) ).doesNotExist();
-      assertThat( data.resolve( "aaa/2.v1.json" ) ).doesNotExist();
+        assertThat( data.resolve( "aaa/1.v1.json" ) ).doesNotExist();
+        assertThat( data.resolve( "aaa/2.v1.json" ) ).doesNotExist();
 
-      assertThat( data.resolve( "aaa/11.v2.json" ) ).exists();
-      assertThat( data.resolve( "aaa/21.v2.json" ) ).exists();
-   }
+        assertThat( data.resolve( "aaa/11.v2.json" ) ).exists();
+        assertThat( data.resolve( "aaa/21.v2.json" ) ).exists();
+    }
 
-   @Test
-   public void testStoreWithVersion() {
-      final Path data = Env.tmpPath( "data" );
-      try( FileStorage<Bean> storage1 = new FileStorage<>( data, b -> b.id, Long.MAX_VALUE, 10, emptyList() ) ) {
-         storage1.store( new Bean( "1" ) );
-      }
+    @Test
+    public void testStoreWithVersion() {
+        final Path data = Env.tmpPath( "data" );
+        try( FileStorage<Bean> storage1 = new FileStorage<>( data, Bean.identifier, Long.MAX_VALUE, 10, emptyList(), Lock ) ) {
+            storage1.store( new Bean( "1" ) );
+        }
 
-      assertThat( data.resolve( "1.v10.json" ).toFile() ).exists();
-   }
+        assertThat( data.resolve( "1.v10.json" ).toFile() ).exists();
+    }
 }
 

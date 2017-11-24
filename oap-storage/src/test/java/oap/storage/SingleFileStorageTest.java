@@ -32,6 +32,7 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 
+import static oap.storage.Storage.LockStrategy.Lock;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,45 +40,47 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Created by igor.petrenko on 23.09.2016.
  */
 public class SingleFileStorageTest extends AbstractTest {
-   @BeforeMethod
-   @Override
-   public void beforeMethod() throws Exception {
-      super.beforeMethod();
+    @BeforeMethod
+    @Override
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
 
-      TypeIdFactory.register( TestSFS.class, TestSFS.class.getName() );
-   }
+        TypeIdFactory.register( TestSFS.class, TestSFS.class.getName() );
+    }
 
-   @Test
-   public void testFsync() {
-      final Path path = Env.tmpPath( "file.json" );
-      try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, s -> s.id, 100 ) ) {
-         sfs.store( new TestSFS( "123" ) );
+    @Test
+    public void testFsync() {
+        final Path path = Env.tmpPath( "file.json" );
+        try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, TestSFS.identifier, 100, Lock ) ) {
+            sfs.store( new TestSFS( "123" ) );
 
-         assertEventually( 10, 200, () -> assertThat( path ).exists() );
-      }
-   }
+            assertEventually( 10, 200, () -> assertThat( path ).exists() );
+        }
+    }
 
-   @Test
-   public void testPersist() {
-      final Path path = Env.tmpPath( "file.json" );
-      try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, s -> s.id, 100 ) ) {
-         sfs.store( new TestSFS( "123" ) );
-      }
+    @Test
+    public void testPersist() {
+        final Path path = Env.tmpPath( "file.json" );
+        try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, TestSFS.identifier, 100, Lock ) ) {
+            sfs.store( new TestSFS( "123" ) );
+        }
 
-      try( final SingleFileStorage<TestSFS> sfs2 = new SingleFileStorage<>( path, s -> s.id, 100 ) ) {
-         assertThat( sfs2.get( "123" ) ).isPresent();
-      }
-   }
+        try( final SingleFileStorage<TestSFS> sfs2 = new SingleFileStorage<>( path, TestSFS.identifier, 100, Lock ) ) {
+            assertThat( sfs2.get( "123" ) ).isPresent();
+        }
+    }
 
 
-   public static class TestSFS {
-      public String id;
+    public static class TestSFS {
+        public static final Identifier<TestSFS> identifier = IdentifierBuilder.<TestSFS>identify( s -> s.id ).build();
 
-      public TestSFS() {
-      }
+        public String id;
 
-      public TestSFS( String id ) {
-         this.id = id;
-      }
-   }
+        public TestSFS() {
+        }
+
+        public TestSFS( String id ) {
+            this.id = id;
+        }
+    }
 }

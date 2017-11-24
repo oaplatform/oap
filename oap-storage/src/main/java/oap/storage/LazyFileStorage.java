@@ -38,7 +38,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -53,16 +52,8 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     private Path path;
     private boolean closed = true;
 
-    /**
-     * @deprecated use {@link #LazyFileStorage(Path, Identifier)}} instead.
-     */
-    @Deprecated
-    public LazyFileStorage( Path path, Function<T, String> identify ) {
-        this( path, IdentifierBuilder.identify( identify ).build() );
-    }
-
-    public LazyFileStorage( Path path, Identifier<T> identifier ) {
-        super( identifier );
+    public LazyFileStorage( Path path, Identifier<T> identifier, LockStrategy lockStrategy ) {
+        super( identifier, lockStrategy );
         this.path = path;
     }
 

@@ -34,6 +34,7 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static oap.storage.Storage.LockStrategy.NoLock;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,8 +46,8 @@ public class ReplicatorTest extends AbstractTest {
         val time = new AtomicLong( 0 );
         DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
-        MemoryStorage<Bean> slave = new MemoryStorage<>( b -> b.id );
-        try( FileStorage<Bean> master = new FileStorage<>( tmpPath( "master" ), b -> b.id, 50 );
+        MemoryStorage<Bean> slave = new MemoryStorage<>( Bean.identifier, NoLock );
+        try( FileStorage<Bean> master = new FileStorage<>( tmpPath( "master" ), Bean.identifier, 50, NoLock );
              Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 0 ) ) {
 
             val updates = new AtomicInteger();

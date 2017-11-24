@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static oap.util.Lists.empty;
 
@@ -44,93 +43,39 @@ public class FileStorage<T> extends MemoryStorage<T> {
     private static final int VERSION = 0;
     private PersistenceBackend<T> persistence;
 
-    /**
-     * @deprecated use {@link #FileStorage(Path, Identifier, long, int, List)}} instead.
-     */
-    @Deprecated
-    public FileStorage( Path path, Function<T, String> identify, long fsync, int version, List<String> migrations ) {
-        this( path, ( p, object ) -> p, IdentifierBuilder.identify( identify ).build(), fsync, version, migrations );
-    }
-
-    public FileStorage( Path path, Identifier<T> identifier, long fsync, int version, List<String> migrations ) {
-        this( path, ( p, object ) -> p, identifier, fsync, version, migrations );
-    }
-
-    /**
-     * @deprecated use {@link #FileStorage(Path, BiFunction, Identifier, long, int, List)}} instead.
-     */
-    @Deprecated
-    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Function<T, String> identify,
-                        long fsync, int version, List<String> migrations ) {
-        this( path, fsResolve, IdentifierBuilder.identify( identify ).build(), fsync, version, migrations );
+    public FileStorage( Path path, Identifier<T> identifier, long fsync, int version,
+                        List<String> migrations, LockStrategy lockStrategy ) {
+        this( path, ( p, object ) -> p, identifier, fsync, version, migrations, lockStrategy );
     }
 
     public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Identifier<T> identifier,
-                        long fsync, int version, List<String> migrations ) {
-        super( identifier );
+                        long fsync, int version, List<String> migrations, LockStrategy lockStrategy ) {
+        super( identifier, lockStrategy );
         this.persistence = new FsPersistenceBackend<>( path, fsResolve, fsync, version, Lists.map( migrations,
             Try.map( clazz -> ( FileStorageMigration ) Class.forName( clazz ).newInstance() )
         ), this );
     }
 
-    /**
-     * @deprecated use {@link #FileStorage(Path, BiFunction, Identifier, long)}} instead.
-     */
-    @Deprecated
-    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Function<T, String> identify, long fsync ) {
-        this( path, fsResolve, IdentifierBuilder.identify( identify ).build(), fsync, VERSION, empty() );
+    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Identifier<T> identifier, long fsync, LockStrategy lockStrategy ) {
+        this( path, fsResolve, identifier, fsync, VERSION, empty(), lockStrategy );
     }
 
-    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Identifier<T> identifier, long fsync ) {
-        this( path, fsResolve, identifier, fsync, VERSION, empty() );
+    public FileStorage( Path path, Identifier<T> identifier, long fsync, LockStrategy lockStrategy ) {
+        this( path, identifier, fsync, VERSION, empty(), lockStrategy );
     }
 
-    /**
-     * @deprecated use {@link #FileStorage(Path, Identifier, long)}} instead.
-     */
-    @Deprecated
-    public FileStorage( Path path, Function<T, String> identify, long fsync ) {
-        this( path, IdentifierBuilder.identify( identify ).build(), fsync, VERSION, empty() );
+    public FileStorage( Path path, Identifier<T> identifier, LockStrategy lockStrategy ) {
+        this( path, identifier, VERSION, empty(), lockStrategy );
     }
 
-    public FileStorage( Path path, Identifier<T> identifier, long fsync ) {
-        this( path, identifier, fsync, VERSION, empty() );
+    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Identifier<T> identifier,
+                        int version, List<String> migrations, LockStrategy lockStrategy ) {
+        this( path, fsResolve, identifier, 60000, version, migrations, lockStrategy );
     }
 
-    /**
-     * @deprecated use {@link #FileStorage(Path, Identifier)}} instead.
-     */
-    @Deprecated
-    public FileStorage( Path path, Function<T, String> identify ) {
-        this( path, IdentifierBuilder.identify( identify ).build(), VERSION, empty() );
-    }
-
-    public FileStorage( Path path, Identifier<T> identifier ) {
-        this( path, identifier, VERSION, empty() );
-    }
-
-    /**
-     * @deprecated use {@link #FileStorage(Path, BiFunction, Identifier, int version, List)}} instead.
-     */
-    @Deprecated
-    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Function<T, String> identify, int version, List<String> migrations ) {
-        this( path, fsResolve, IdentifierBuilder.identify( identify ).build(), 60000, version, migrations );
-    }
-
-    public FileStorage( Path path, BiFunction<Path, T, Path> fsResolve, Identifier<T> identifier, int version, List<String> migrations ) {
-        this( path, fsResolve, identifier, 60000, version, migrations );
-    }
-
-    /**
-     * @deprecated use {@link #FileStorage(Path, Identifier, int, List)}} instead.
-     */
-    @Deprecated
-    public FileStorage( Path path, Function<T, String> identify, int version, List<String> migrations ) {
-        this( path, IdentifierBuilder.identify( identify ).build(), 60000, version, migrations );
-    }
-
-    public FileStorage( Path path, Identifier<T> identifier, int version, List<String> migrations ) {
-        this( path, identifier, 60000, version, migrations );
+    public FileStorage( Path path, Identifier<T> identifier, int version, List<String> migrations,
+                        LockStrategy lockStrategy ) {
+        this( path, identifier, 60000, version, migrations, lockStrategy );
     }
 
     @Override

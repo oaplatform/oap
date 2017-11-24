@@ -53,8 +53,8 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
     private long lastFsync;
 
     public MongoStorage( String host, int port, String database, String table, Identifier<T> identifier,
-                         TypeReference<Metadata<T>> typeReference ) {
-        super( identifier );
+                         TypeReference<Metadata<T>> typeReference, LockStrategy lockStrategy ) {
+        super( identifier, lockStrategy );
         this.typeReference = typeReference;
 
         mongoClient = new MongoClient( new ServerAddress( host, port ) );
