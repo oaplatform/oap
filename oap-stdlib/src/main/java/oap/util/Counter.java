@@ -54,7 +54,7 @@ public abstract class Counter<T extends Counter<T>> implements Serializable {
         return this.tick == tick ? value : 0;
     }
 
-    public Counter<T> merge( Counter<T> other ) {
+    public synchronized Counter<T> merge( Counter<T> other ) {
         if( this.tick == other.tick ) this.value += other.value;
         else if( this.tick < other.tick ) {
             this.value = other.value;
@@ -63,7 +63,7 @@ public abstract class Counter<T extends Counter<T>> implements Serializable {
         return this;
     }
 
-    public final void inc( long value ) {
+    public synchronized final void inc( long value ) {
         val currentTick = _currentTick();
         if( this.tick != currentTick ) {
             this.value = value;
@@ -72,7 +72,7 @@ public abstract class Counter<T extends Counter<T>> implements Serializable {
             this.value += value;
     }
 
-    public final void reset() {
+    public synchronized final void reset() {
         tick = -1;
         value = 0;
     }
