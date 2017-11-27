@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collector;
 
 import static oap.util.Pair.__;
@@ -168,6 +169,22 @@ public class Lists extends oap.util.Collections {
         return list.get( list.size() - 1 );
     }
 
+    public static <E> boolean contains( List<E> list, Predicate<E> predicate ) {
+        for( E e : list ) if( predicate.test( e ) ) return true;
+        return false;
+    }
+
+    public static <T> int[] mapToIntArray( List<T> list, ToIntFunction<T> func ) {
+        val size = list.size();
+        val array = new int[size];
+
+        for( int i = 0; i < size; i++ ) {
+            array[i] = func.applyAsInt( list.get( i ) );
+        }
+
+        return array;
+    }
+
     public static class Collectors {
         public static <T> Collector<T, ?, ArrayList<T>> toArrayList() {
             return new oap.util.Collectors.CollectorImpl<T, ArrayList<T>, ArrayList<T>>( ArrayList::new, ArrayList::add,
@@ -186,11 +203,6 @@ public class Lists extends oap.util.Collections {
                 },
                 oap.util.Collectors.CH_ID );
         }
-    }
-
-    public static <E> boolean contains( List<E> list, Predicate<E> predicate ) {
-        for( E e : list ) if( predicate.test( e ) ) return true;
-        return false;
     }
 
 }

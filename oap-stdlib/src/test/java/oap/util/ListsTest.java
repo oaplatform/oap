@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ListsTest {
@@ -61,9 +62,13 @@ public class ListsTest {
 
     @Test
     public void sxx() {
-        Runnable f = () -> {} ;
+        Runnable f = () -> {};
         System.out.println( Try.catching( f ) );
     }
 
 
+    @Test
+    public void testMapToIntArray() {
+        assertThat( Lists.mapToIntArray( asList( "1", "2", "3" ), Integer::parseInt ) ).containsExactly( 1, 2, 3 );
+    }
 }
