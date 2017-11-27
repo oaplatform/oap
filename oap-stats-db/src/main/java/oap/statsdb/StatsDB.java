@@ -58,7 +58,11 @@ public abstract class StatsDB<T extends StatsDB.Database> {
 
         final Node.Value value = mnode.v;
         if( value instanceof Node.Container ) {
-            ( ( Node.Container ) value ).aggregate( mnode.db.values().stream().map( n -> n.v ) );
+            ( ( Node.Container ) value ).aggregate( mnode.db
+                .values()
+                .stream().map( n -> n.v )
+                .filter( Objects::nonNull )
+            );
         }
     }
 
