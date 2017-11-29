@@ -54,6 +54,7 @@ import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
+import oap.reflect.Reflection;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
 import oap.util.Try;
@@ -260,6 +261,16 @@ public class Binder {
     public <T> T unmarshal( TypeRef<T> ref, String string ) {
         try {
             return ( T ) mapper.readValue( string, toTypeReference( ref ) );
+        } catch( IOException e ) {
+            log.trace( "json: " + string );
+            throw new JsonException( "json error: " + e.getMessage(), e );
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <T> T unmarshal( Reflection type, String string ) {
+        try {
+            return ( T ) mapper.readValue( string, mapper.getTypeFactory().constructType( type.getType() ) );
         } catch( IOException e ) {
             log.trace( "json: " + string );
             throw new JsonException( "json error: " + e.getMessage(), e );

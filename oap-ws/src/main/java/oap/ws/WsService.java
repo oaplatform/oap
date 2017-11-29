@@ -33,7 +33,6 @@ import oap.json.Binder;
 import oap.json.schema.JsonValidators;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
-import oap.reflect.Coercions;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
@@ -52,6 +51,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -80,9 +80,6 @@ public class WsService implements Handler {
     private final JsonValidators jsonValidators;
     private final SessionManager sessionManager;
     private final List<Interceptor> interceptors;
-    private final Coercions coercions = Coercions.basic()
-        .with( r -> true, ( r, value ) -> Binder.json.unmarshal( r.underlying,
-            value instanceof String ? ( String ) value : new String( ( byte[] ) value, UTF_8 ) ) );
     private Map<String, Pattern> compiledPaths = new HashMap<>();
 
     public WsService( Object impl, boolean sessionAware,
@@ -99,27 +96,6 @@ public class WsService implements Handler {
         this.sessionAware = sessionAware;
         this.sessionManager = sessionManager;
         this.interceptors = interceptors;
-    }
-
-    private List<Object> convert( Reflection type, List<String> values ) {
-        try {
-            return Stream.of( values )
-                .map( v -> coercions.cast( type.typeParameters.get( 0 ), v ) )
-                .toList();
-        } catch( Exception e ) {
-            throw new WsClientException( e.getMessage(), e );
-        }
-    }
-
-    private Object convert( String name, Reflection type, Optional<?> value ) {
-        try {
-            Optional<Object> result = value.map( v -> coercions.cast( type.isOptional() ?
-                type.typeParameters.get( 0 ) : type, v ) );
-            return type.isOptional() ? result :
-                result.orElseThrow( () -> new WsClientException( name + " is required" ) );
-        } catch( Exception e ) {
-            throw new WsClientException( e.getMessage(), e );
-        }
     }
 
     private void wsError( Response response, Throwable e ) {
@@ -295,14 +271,31 @@ public class WsService implements Handler {
     }
 
     private LinkedHashMap<Reflection.Parameter, Object> getValues( LinkedHashMap<Reflection.Parameter, Object> values ) {
-        return values
-            .entrySet()
-            .stream()
-            .collect( toLinkedHashMap( Map.Entry::getKey, p -> p.getValue() instanceof List
-                ? convert( p.getKey().type(), ( List ) p.getValue() )
-                : convert( p.getKey().name(), p.getKey().type(),
-                    p.getValue() instanceof Optional ? ( Optional ) p.getValue()
-                        : Optional.ofNullable( p.getValue() ) ) ) );
+        val res = new LinkedHashMap<Reflection.Parameter, Object>();
+
+        values.forEach( ( key, value ) -> {
+            final Object map = map( key.type(), value );
+            res.put( key, map );
+        } );
+
+        return res;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private Object map( Reflection reflection, Object value ) {
+        if( reflection.isOptional() ) {
+            if( !( ( Optional ) value ).isPresent() ) return Optional.empty();
+            else
+                return Optional.ofNullable( map( reflection.typeParameters.get( 0 ), ( ( Optional ) value ).get() ) );
+        } else {
+            if( reflection.isEnum() ) return Enum.valueOf( ( Class<Enum> ) reflection.underlying, ( String ) value );
+
+            if( !( value instanceof String ) && Collection.class.isAssignableFrom( reflection.underlying ) )
+                value = Binder.json.marshal( value );
+            if( reflection.underlying.isInstance( value ) ) return value;
+
+            return Binder.json.unmarshal( reflection, ( String ) value );
+        }
     }
 
     private HttpResponse runInterceptors( Request request, Session session, Reflection.Method method ) {

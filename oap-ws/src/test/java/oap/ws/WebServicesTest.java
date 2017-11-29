@@ -64,30 +64,18 @@ public class WebServicesTest extends AbstractWebServicesTest {
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
         assertGet( HTTP_URL( "/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
-        assertGet( HTTP_URL( "/x/v/math/id?a=aaa" ) )
-            .responded( 200, "OK", APPLICATION_JSON, "\"aaa\"" );
-        assertGet( HTTP_URL( "/x/v/math/req" ) )
-            .responded( 200, "OK", APPLICATION_JSON, "\"" + HTTP_URL( "/x/v/math\"" ) );
         assertGet( HTTP_URL( "/x/v/math/sumab?a=1&b=2" ) )
-            .responded( 200, "OK", APPLICATION_JSON, "3" );
-        assertGet( HTTP_URL( "/x/v/math/sumabopt?a=1&b=2" ) )
             .responded( 200, "OK", APPLICATION_JSON, "3" );
         assertGet( HTTP_URL( "/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
         assertGet( HTTP_URL( "/x/v/math/sumabopt?a=1" ) )
             .responded( 200, "OK", APPLICATION_JSON, "1" );
-        assertGet( HTTP_URL( "/x/v/math/en?a=CLASS" ) )
-            .responded( 200, "OK", APPLICATION_JSON, "\"CLASS\"" );
-        assertGet( HTTP_URL( "/x/v/math/sum?a=1&b=2&b=3" ) )
-            .responded( 200, "OK", APPLICATION_JSON, "6" );
         assertGet( HTTP_URL( "/x/v/math/bean?i=1&s=sss" ) )
             .responded( 200, "OK", APPLICATION_JSON, "{\"i\":1,\"s\":\"sss\"}" );
         assertPost( HTTP_URL( "/x/v/math/bytes" ), "1234", APPLICATION_OCTET_STREAM )
             .responded( 200, "OK", APPLICATION_JSON, "\"1234\"" );
         assertPost( HTTP_URL( "/x/v/math/string" ), "1234", APPLICATION_OCTET_STREAM )
             .responded( 200, "OK", APPLICATION_JSON, "\"1234\"" );
-        assertPost( HTTP_URL( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}", APPLICATION_OCTET_STREAM )
-            .responded( 200, "OK", APPLICATION_JSON, "{\"i\":1,\"s\":\"sss\"}" );
         assertGet( HTTP_URL( "/x/v/math/code?code=204" ) )
             .hasCode( 204 );
         assertEquals(
@@ -99,6 +87,48 @@ public class WebServicesTest extends AbstractWebServicesTest {
         assertGet( HTTP_URL( "/hocon/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
 
+    }
+
+    @Test
+    public void testEnum() {
+        assertGet( HTTP_URL( "/x/v/math/en?a=CLASS" ) )
+            .responded( 200, "OK", APPLICATION_JSON, "\"CLASS\"" );
+    }
+
+    @Test
+    public void testOptional() {
+        assertGet( HTTP_URL( "/x/v/math/sumabopt?a=1&b=2" ) )
+            .responded( 200, "OK", APPLICATION_JSON, "3" );
+    }
+
+    @Test
+    public void testParameterList() {
+        assertGet( HTTP_URL( "/x/v/math/sum?a=1&b=2&b=3" ) )
+            .responded( 200, "OK", APPLICATION_JSON, "6" );
+    }
+
+    @Test
+    public void testString() {
+        assertGet( HTTP_URL( "/x/v/math/id?a=aaa" ) )
+            .responded( 200, "OK", APPLICATION_JSON, "\"aaa\"" );
+    }
+
+    @Test
+    public void testRequest() {
+        assertGet( HTTP_URL( "/x/v/math/req" ) )
+            .responded( 200, "OK", APPLICATION_JSON, "\"" + HTTP_URL( "/x/v/math\"" ) );
+    }
+
+    @Test
+    public void testBean() {
+        assertPost( HTTP_URL( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}", APPLICATION_JSON )
+            .responded( 200, "OK", APPLICATION_JSON, "{\"i\":1,\"s\":\"sss\"}" );
+    }
+
+    @Test
+    public void testList() {
+        assertPost( HTTP_URL( "/x/v/math/list" ), "[\"1str\", \"2str\"]", APPLICATION_JSON )
+            .responded( 200, "OK", APPLICATION_JSON, "[\"1str\",\"2str\"]" );
     }
 
     @Test

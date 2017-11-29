@@ -99,9 +99,8 @@ public class ValidationErrors {
       return code == DEFAULT_CODE;
    }
 
-   public WsClientException throwIfInvalid() throws WsClientException {
+   public void throwIfInvalid() throws WsClientException {
       if( isFailed() )
          throw new WsClientException( errors.size() > 1 ? "validation failed" : errors.get( 0 ), code, errors );
-      return null;
    }
 }

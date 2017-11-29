@@ -37,8 +37,8 @@ class MathWS {
 
     public int sum( int a, List<Integer> b, Optional<Integer> c, Optional<RetentionPolicy> rp ) {
         return a + b.stream().mapToInt( Integer::intValue ).sum()
-            + (c.isPresent() ? c.get() : 0)
-            + (rp.isPresent() ? 5 : 0);
+            + ( c.isPresent() ? c.get() : 0 )
+            + ( rp.isPresent() ? 5 : 0 );
     }
 
     public int sumab( int a, int b ) {
@@ -67,6 +67,10 @@ class MathWS {
 
     public Bean json( @WsParam( from = BODY ) Bean bean ) {
         return bean;
+    }
+
+    public List<String> list( @WsParam( from = BODY ) List<String> str ) {
+        return str;
     }
 
     public int x( int i, String s ) {
