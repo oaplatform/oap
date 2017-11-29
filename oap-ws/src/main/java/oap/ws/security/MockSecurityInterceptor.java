@@ -35,8 +35,14 @@ import java.util.Optional;
 
 @Slf4j
 public class MockSecurityInterceptor implements Interceptor {
+    public static final String SESSION_TOKEN = "sessionToken";
+    public static User USER = new DefaultUser( Role.ADMIN, "orgId", "admin@admin.com" );
+
     @Override
     public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method ) {
+        session.set( "sessionToken", SESSION_TOKEN );
+        session.set( "user", USER );
+
         return Optional.empty();
     }
 }
