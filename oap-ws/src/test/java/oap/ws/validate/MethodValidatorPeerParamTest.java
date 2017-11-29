@@ -86,7 +86,7 @@ public class MethodValidatorPeerParamTest extends AbstractWsValidateTest {
     @Test
     public void validationTypeFailed() {
         assertPost( HTTP_URL( "/test/run/validation/ok?q=test" ), "test", TEXT_PLAIN )
-            .responded( 400, "cannot cast test to int", TEXT_PLAIN, "cannot cast test to int" );
+            .hasCode( 400 );
     }
 
     public static class TestWS {

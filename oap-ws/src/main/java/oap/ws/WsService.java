@@ -30,6 +30,7 @@ import oap.http.Request;
 import oap.http.Response;
 import oap.http.Session;
 import oap.json.Binder;
+import oap.json.JsonException;
 import oap.json.schema.JsonValidators;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
@@ -271,14 +272,18 @@ public class WsService implements Handler {
     }
 
     private LinkedHashMap<Reflection.Parameter, Object> getValues( LinkedHashMap<Reflection.Parameter, Object> values ) {
-        val res = new LinkedHashMap<Reflection.Parameter, Object>();
+        try {
+            val res = new LinkedHashMap<Reflection.Parameter, Object>();
 
-        values.forEach( ( key, value ) -> {
-            final Object map = map( key.type(), value );
-            res.put( key, map );
-        } );
+            values.forEach( ( key, value ) -> {
+                final Object map = map( key.type(), value );
+                res.put( key, map );
+            } );
 
-        return res;
+            return res;
+        } catch( JsonException e ) {
+            throw new WsClientException( e );
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -288,6 +293,7 @@ public class WsService implements Handler {
             else
                 return Optional.ofNullable( map( reflection.typeParameters.get( 0 ), ( ( Optional ) value ).get() ) );
         } else {
+            if( value instanceof Optional ) return map( reflection, ( ( Optional ) value ).get() );
             if( reflection.isEnum() ) return Enum.valueOf( ( Class<Enum> ) reflection.underlying, ( String ) value );
 
             if( !( value instanceof String ) && Collection.class.isAssignableFrom( reflection.underlying ) )
