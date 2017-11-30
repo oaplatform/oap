@@ -23,15 +23,18 @@
  */
 package oap.io;
 
+import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
 import com.google.common.hash.Hashing;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.io.IoStreams.Encoding;
 import oap.util.Lists;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
-import oap.util.Try;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.NullOutputStream;
@@ -66,6 +69,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -224,20 +228,41 @@ public final class Files {
 
     @SneakyThrows
     public static void delete( Path path ) {
+        val retryer = RetryerBuilder.<FileVisitResult>newBuilder()
+            .retryIfException()
+            .withStopStrategy( StopStrategies.stopAfterAttempt( 3 ) )
+            .build();
+
         if( java.nio.file.Files.exists( path ) )
             java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException {
-                    java.nio.file.Files.delete( path );
-                    return FileVisitResult.CONTINUE;
+                    try {
+                        return retryer.call( () -> {
+                            if( java.nio.file.Files.exists( path ) )
+                                java.nio.file.Files.delete( path );
+                            return FileVisitResult.CONTINUE;
+                        } );
+                    } catch( ExecutionException e ) {
+                        throw new IOException( e.getCause() );
+                    } catch( RetryException e ) {
+                        throw new IOException( e.getLastFailedAttempt().getExceptionCause() );
+                    }
                 }
 
                 @Override
                 public FileVisitResult postVisitDirectory( Path path, IOException exc ) throws IOException {
-                    java.nio.file.Files.delete( path );
+                    if( java.nio.file.Files.exists( path ) )
+                        java.nio.file.Files.delete( path );
                     return FileVisitResult.CONTINUE;
                 }
 
+                @Override
+                public FileVisitResult visitFileFailed( Path file, IOException exc ) throws IOException {
+                    log.error( file.toString(), exc );
+
+                    return FileVisitResult.CONTINUE;
+                }
             } );
     }
 
