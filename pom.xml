@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>2.3.9</version>
+    <version>3.0.0</version>
 
     <name>oap</name>
 
@@ -97,6 +97,7 @@
         <lombok.version>1.16.18</lombok.version>
         <reflections.version>0.9.11</reflections.version>
         <jamm.version>0.2.5</jamm.version>
+        <springframework.version>1.5.9.RELEASE</springframework.version>
     </properties>
 
     <build>

@@ -24,22 +24,49 @@
 
 package oap.application;
 
-class ShutdownHook extends Thread {
-    static int EXIT_STATUS = 0;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
-    public ShutdownHook() {
-        super( "shutdown-hook" );
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+import java.nio.file.Paths;
+
+/**
+ * Created by igor.petrenko on 08.12.2017.
+ */
+@Service
+@Slf4j
+public class OapService {
+    private Kernel kernel;
+
+    @Value( "${config}" )
+    private String config;
+
+    @Value( "${config-directory:#{null}}" )
+    private String confd;
+
+    @PostConstruct
+    public void start() {
+        try {
+            val configPath = Paths.get( config );
+
+            kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
+            kernel.start( configPath, confd != null ? Paths.get( confd ) : configPath.getParent().resolve( "conf.d" ) );
+            log.debug( "started" );
+        } catch( Exception e ) {
+            log.error( e.getMessage(), e );
+        }
     }
 
-    @Override
-    public void run() {
-        System.out.println( "exit status = " + EXIT_STATUS );
+    @PreDestroy
+    public void stop() {
         try {
-//            Boot.stop();
-        } catch( Throwable e ) {
-            e.printStackTrace();
+            if( kernel != null ) kernel.stop();
+            log.debug( "stopped" );
+        } catch( Exception e ) {
+            log.error( e.getMessage(), e );
         }
-
-        System.exit( 0 );
     }
 }

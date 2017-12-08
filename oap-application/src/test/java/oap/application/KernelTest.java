@@ -24,6 +24,7 @@
 
 package oap.application;
 
+import lombok.val;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
@@ -32,7 +33,9 @@ import org.testng.annotations.Test;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static oap.testng.Asserts.assertEventually;
@@ -132,6 +135,14 @@ public class KernelTest extends AbstractTest {
         } finally {
             kernel.stop();
         }
+    }
+
+    @Test
+    public void testBoot() throws URISyntaxException {
+        val url = urlOfTestResource( getClass(), "application.conf" );
+        val config = Paths.get(url.toURI()).toString();
+
+        Boot.main( new String[] { "--config=" + config } );
     }
 
     public static class TestCloseable implements Closeable {
