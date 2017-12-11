@@ -45,13 +45,13 @@ public class MongoStorageTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        dbName = "db" + Env.teamcityBuildPrefix();
+        dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
         storage = reopen();
     }
 
     public MongoStorage<TestMongoBean> reopen() {
-        return new MongoStorage<>( "teamcity", 27017, dbName, "test",
+        return new MongoStorage<>( "localhost", 27017, dbName, "test",
             IdentifierBuilder.<TestMongoBean>identify( b -> b.id ).build(), new TypeReference<Metadata<TestMongoBean>>() {}, Lock );
     }
 
