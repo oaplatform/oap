@@ -48,9 +48,8 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class KernelTest extends AbstractTest {
-
     @Test
-    public void stoppingCLoseables() {
+    public void testStopCloseable() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/start_stop.conf" ) );
 

@@ -43,6 +43,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
@@ -57,7 +58,7 @@ import static org.apache.commons.collections4.CollectionUtils.subtract;
 
 @Slf4j
 @ToString( of = "name" )
-public class Kernel {
+public class Kernel implements Iterable<Map.Entry<String, Object>> {
     public static final String DEFAULT = Strings.DEFAULT;
     final String name;
     private final List<URL> configurations;
@@ -354,5 +355,10 @@ public class Kernel {
         }
 
         return true;
+    }
+
+    @Override
+    public Iterator<Map.Entry<String, Object>> iterator() {
+        return services.entrySet().iterator();
     }
 }

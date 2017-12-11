@@ -27,6 +27,7 @@ package oap.application;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -54,6 +55,13 @@ public class OapService {
 
             kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
             kernel.start( configPath, confd != null ? Paths.get( confd ) : configPath.getParent().resolve( "conf.d" ) );
+
+            val factory = new DefaultListableBeanFactory();
+
+            for( val entry : Application.kernel( Kernel.DEFAULT ) ) {
+                factory.registerSingleton( entry.getKey(), entry.getValue() );
+            }
+
             log.debug( "started" );
         } catch( Exception e ) {
             log.error( e.getMessage(), e );
