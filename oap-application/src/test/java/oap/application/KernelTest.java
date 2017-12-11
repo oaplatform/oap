@@ -29,6 +29,9 @@ import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Maps;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.batch.JobExecutionExitCodeGenerator;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.Closeable;
@@ -48,6 +51,14 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class KernelTest extends AbstractTest {
+    @BeforeMethod
+    @Override
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
+
+        Application.unregisterServices();
+    }
+
     @Test
     public void testStopCloseable() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
@@ -139,9 +150,11 @@ public class KernelTest extends AbstractTest {
     @Test
     public void testBoot() throws URISyntaxException {
         val url = urlOfTestResource( getClass(), "application.conf" );
-        val config = Paths.get(url.toURI()).toString();
+        val config = Paths.get( url.toURI() ).toString();
 
         Boot.main( new String[] { "--config=" + config } );
+
+        SpringApplication.exit( Boot.applicationContext, new JobExecutionExitCodeGenerator() );
     }
 
     public static class TestCloseable implements Closeable {
