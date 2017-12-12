@@ -154,6 +154,11 @@ public class KernelTest extends AbstractTest {
 
         Boot.main( new String[] { "--config=" + config } );
 
+        val service = Application.service( TestService.class );
+        assertThat( service ).isNotNull();
+
+        assertThat( Boot.applicationContext.getBean( "test" ) ).isSameAs( service );
+
         SpringApplication.exit( Boot.applicationContext, new JobExecutionExitCodeGenerator() );
     }
 
@@ -188,6 +193,10 @@ public class KernelTest extends AbstractTest {
 
     public static class DynaconfCfg {
         String parameter;
+    }
+
+    public static class TestService {
+
     }
 }
 

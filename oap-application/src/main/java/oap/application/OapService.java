@@ -26,8 +26,10 @@ package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -48,6 +50,9 @@ public class OapService {
     @Value( "${config-directory:#{null}}" )
     private String confd;
 
+    @Autowired
+    private ApplicationContext applicationContext;
+
     @PostConstruct
     public void start() {
         try {
@@ -56,9 +61,10 @@ public class OapService {
             kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
             kernel.start( configPath, confd != null ? Paths.get( confd ) : configPath.getParent().resolve( "conf.d" ) );
 
-            val factory = new DefaultListableBeanFactory();
+            val factory = ( ConfigurableListableBeanFactory ) applicationContext.getAutowireCapableBeanFactory();
 
             for( val entry : Application.kernel( Kernel.DEFAULT ) ) {
+                log.trace( "oap bean {}...", entry.getKey() );
                 factory.registerSingleton( entry.getKey(), entry.getValue() );
             }
 
