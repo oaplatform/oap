@@ -80,7 +80,7 @@ public class Binder {
     public static final Binder jsonWithTyping;
     public static final Binder xml;
     public static final Binder xmlWithTyping;
-    private static final JacksonJodaDateFormat JACKSON_DATE_FORMAT = new JacksonJodaDateFormat( Dates.FORMAT_FULL );
+    private static final JacksonJodaDateFormat JACKSON_DATE_FORMAT = new JacksonJodaDateFormat( Dates.PARSER_FULL );
     private static Set<Module> modules;
 
     static {

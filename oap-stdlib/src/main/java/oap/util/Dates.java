@@ -49,7 +49,7 @@ public class Dates {
             .appendOptional( TIMEZONE_PARSER )
             .toParser();
 
-    public static final DateTimeFormatter FORMAT_FULL = new DateTimeFormatterBuilder()
+    public static final DateTimeFormatter PARSER_FULL = new DateTimeFormatterBuilder()
         .append( ISODateTimeFormat.date() )
         .appendLiteral( "T" )
         .append( ISODateTimeFormat.hourMinuteSecond() )
@@ -66,7 +66,7 @@ public class Dates {
     }
 
     public static Result<DateTime, Exception> parseDateWithTimeZone( String date ) {
-        return parse( date, FORMAT_FULL );
+        return parse( date, PARSER_FULL );
     }
 
     private static Result<DateTime, Exception> parse( String date, DateTimeFormatter formatter ) {
@@ -95,10 +95,6 @@ public class Dates {
 
     public static String formatDateWithMillis( long millis ) {
         return FORMAT_MILLIS.print( millis );
-    }
-
-    public static String format( DateTime date ) {
-        return FORMAT_FULL.print( date );
     }
 
     public static void setTimeFixed( int year, int monthOfYear, int dayOfMonth, int hourOfDay ) {
