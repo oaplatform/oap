@@ -38,7 +38,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Paths;
 import java.util.List;
 
 import static oap.testng.Asserts.assertEventually;
@@ -149,10 +148,7 @@ public class KernelTest extends AbstractTest {
 
     @Test
     public void testBoot() throws URISyntaxException {
-        val url = urlOfTestResource( getClass(), "application.conf" );
-        val config = Paths.get( url.toURI() ).toString();
-
-        Boot.main( new String[] { "--config=" + config } );
+        Boot.main( new String[] { "--config=classpath:oap/application/KernelTest/application.conf" } );
 
         val service = Application.service( TestService.class );
         assertThat( service ).isNotNull();

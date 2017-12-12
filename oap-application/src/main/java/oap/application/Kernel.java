@@ -23,8 +23,11 @@
  */
 package oap.application;
 
+import com.google.common.base.Preconditions;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.json.Binder;
@@ -38,8 +41,10 @@ import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -239,6 +244,21 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
 
     public void start() {
         start( new ApplicationConfiguration() );
+    }
+
+    @SneakyThrows
+    public void start( String appConfigPath, String confd ) {
+        val configURL =
+            appConfigPath.startsWith( "classpath:" )
+                ? Thread.currentThread().getContextClassLoader().getResource( appConfigPath.substring( 10 ) )
+                : new File( appConfigPath ).toURI().toURL();
+
+        Preconditions.checkNotNull( configURL, appConfigPath + " not found" );
+
+        val confdPath = confd != null ? Paths.get( confd )
+            : new File(configURL.toURI()).toPath().getParent().resolve( "conf.d" );
+
+        start( ApplicationConfiguration.load( configURL, confdPath.toString() ) );
     }
 
     public void start( Path appConfigPath, Path confd ) {

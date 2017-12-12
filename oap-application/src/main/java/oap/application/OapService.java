@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.annotation.Resources;
 import java.nio.file.Paths;
 
 /**
@@ -56,10 +57,8 @@ public class OapService {
     @PostConstruct
     public void start() {
         try {
-            val configPath = Paths.get( config );
-
             kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-            kernel.start( configPath, confd != null ? Paths.get( confd ) : configPath.getParent().resolve( "conf.d" ) );
+            kernel.start( config, confd );
 
             val factory = ( ConfigurableListableBeanFactory ) applicationContext.getAutowireCapableBeanFactory();
 

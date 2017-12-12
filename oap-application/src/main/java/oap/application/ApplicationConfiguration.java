@@ -23,6 +23,7 @@
  */
 package oap.application;
 
+import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
@@ -31,32 +32,44 @@ import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Stream;
 
+import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static java.util.Collections.emptyList;
 
 @Slf4j
 @ToString
 public class ApplicationConfiguration {
-   List<String> profiles = Lists.empty();
-   Map<String, Map<String, Object>> services = Maps.empty();
+    List<String> profiles = Lists.empty();
+    Map<String, Map<String, Object>> services = Maps.empty();
 
-   public static ApplicationConfiguration load( Path appConfigPath ) {
-      return load( appConfigPath, new String[0] );
-   }
+    public static ApplicationConfiguration load( Path appConfigPath ) {
+        return load( appConfigPath, new String[0] );
+    }
 
-   public static ApplicationConfiguration load( Path appConfigPath, String[] configs ) {
-      log.debug( "application configurations: {}", appConfigPath );
-      return Binder.hoconWithConfig( configs )
-         .unmarshal( ApplicationConfiguration.class, appConfigPath );
-   }
+    @SneakyThrows
+    public static ApplicationConfiguration load( Path appConfigPath, String[] configs ) {
+        return load( appConfigPath.toUri().toURL(), configs );
+    }
 
-   public static ApplicationConfiguration load( Path appConfigPath, Path confd ) {
-      ArrayList<Path> paths = Files.wildcard( confd, "*.conf" );
-      log.info( "global configurations: {}", paths );
-      return load( appConfigPath, Stream.of( paths )
-         .map( Files::readString )
-         .toArray( String[]::new ) );
-   }
+    public static ApplicationConfiguration load( URL appConfigPath, String[] configs ) {
+        log.debug( "application configurations: {}", appConfigPath );
+        return Binder.hoconWithConfig( configs )
+            .unmarshal( ApplicationConfiguration.class, appConfigPath );
+    }
+
+    @SneakyThrows
+    public static ApplicationConfiguration load( Path appConfigPath, Path confd ) {
+        return load( appConfigPath.toUri().toURL(), confd.toString() );
+    }
+
+    public static ApplicationConfiguration load( URL appConfigPath, String confd ) {
+        List<Path> paths = confd != null ? Files.wildcard( confd, "*.conf" ) : emptyList();
+        log.info( "global configurations: {}", paths );
+        return load( appConfigPath, Stream.of( paths )
+            .map( Files::readString )
+            .toArray( String[]::new ) );
+    }
 }
