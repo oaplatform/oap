@@ -34,8 +34,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import javax.annotation.Resources;
-import java.nio.file.Paths;
 
 /**
  * Created by igor.petrenko on 08.12.2017.

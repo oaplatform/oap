@@ -24,13 +24,14 @@
 
 package oap.dictionary;
 
+import lombok.val;
 import oap.testng.AbstractTest;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
-import java.util.Arrays;
 import java.util.List;
 
+import static java.util.Arrays.asList;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertTrue;
@@ -39,19 +40,36 @@ import static org.testng.Assert.assertTrue;
  * Created by Igor Petrenko on 15.04.2016.
  */
 public class DictionaryTest extends AbstractTest {
-   @Test
-   public void testParse() {
-      assertThat( Dictionaries.getDictionary( "test-dictionary" ).name ).isEqualTo( "test-dictionary" );
-      List<? extends Dictionary> dictValues = Dictionaries.getDictionary( "test-dictionary" ).getValues();
-      assertThat( dictValues ).contains( new DictionaryValue( "id1", true, '1',
-            Arrays.asList(
-               new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) ),
-               new DictionaryLeaf( "id12", true, 12, Maps.of( __( "title", "title12" ) ) )
-            ),
-            Maps.of( __( "title", "title1" ) ) )
-         , new DictionaryLeaf( "id2", true, 50, Maps.of( __( "title", "title2" ) ) )
-      );
-      assertTrue(dictValues.get( 2 ).getTags().contains( "tag1" ));
-      assertTrue(dictValues.get( 2 ).getTags().contains( "tag2" ));
-   }
+    @Test
+    public void testParse() {
+        assertThat( Dictionaries.getDictionary( "test-dictionary" ).name ).isEqualTo( "test-dictionary" );
+        List<? extends Dictionary> dictValues = Dictionaries.getDictionary( "test-dictionary" ).getValues();
+        assertThat( dictValues ).contains( new DictionaryValue( "id1", true, '1',
+                asList(
+                    new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) ),
+                    new DictionaryLeaf( "id12", true, 12, Maps.of( __( "title", "title12" ) ) )
+                ),
+                Maps.of( __( "title", "title1" ) ) )
+            , new DictionaryLeaf( "id2", true, 50, Maps.of( __( "title", "title2" ) ) )
+        );
+        assertTrue( dictValues.get( 2 ).getTags().contains( "tag1" ) );
+        assertTrue( dictValues.get( 2 ).getTags().contains( "tag2" ) );
+    }
+
+    @Test
+    public void testExtends() {
+        val values = Dictionaries
+            .getDictionary( "test-dictionary-extends" )
+            .getValue( "id2" )
+            .getValues();
+
+        assertThat( values ).hasSize( 3 );
+        assertThat( values.get( 0 ).getId() ).isEqualTo( "id111" );
+        assertThat( values.get( 1 ).getId() ).isEqualTo( "id112" );
+        assertThat( values.get( 2 ).getId() ).isEqualTo( "id22" );
+
+        assertThat( values.get( 0 ).getExternalId() ).isEqualTo( 111 );
+        assertThat( values.get( 1 ).getExternalId() ).isEqualTo( 112 );
+        assertThat( values.get( 2 ).getExternalId() ).isEqualTo( 113 );
+    }
 }
