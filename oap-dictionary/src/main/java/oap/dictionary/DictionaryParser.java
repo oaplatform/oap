@@ -43,7 +43,6 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -54,17 +53,16 @@ import static java.util.Collections.emptyMap;
  * Created by Igor Petrenko on 15.04.2016.
  */
 public class DictionaryParser {
-    public static final String NAME = "name";
-    public static final String ID = "id";
-    public static final String ENABLED = "enabled";
-    public static final String EXTERNAL_ID = "eid";
-    public static final String VALUES = "values";
+    private static final String NAME = "name";
+    private static final String ID = "id";
+    private static final String ENABLED = "enabled";
+    private static final String EXTERNAL_ID = "eid";
+    private static final String VALUES = "values";
 
     private static final Set<String> defaultFields = new HashSet<>();
-    private static final BiFunction<Boolean, Object, Optional<Integer>> intFunc =
-        ( convert, str ) -> {
-            if( !convert ) return Optional.empty();
-            else if( str instanceof Long ) return Optional.of( ( ( Long ) str ).intValue() );
+    private static final Function<Object, Optional<Integer>> intFunc =
+        ( str ) -> {
+            if( str instanceof Long ) return Optional.of( ( ( Long ) str ).intValue() );
             else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).intValue() );
             else if( str instanceof String && ( ( String ) str ).length() == 1 )
                 return Optional.of( ( int ) ( ( String ) str ).charAt( 0 ) );
@@ -114,7 +112,7 @@ public class DictionaryParser {
 
             final String id = getString( valueMap, ID );
             final boolean enabled = getBooleanOpt( valueMap, ENABLED ).orElse( true );
-            final int externalId = getInt( valueMap, EXTERNAL_ID, true );
+            final int externalId = getInt( valueMap, EXTERNAL_ID );
 
             return values.isEmpty() ?
                 new DictionaryLeaf( id, enabled, externalId, p ) :
@@ -257,16 +255,12 @@ public class DictionaryParser {
         return getValueOpt( String.class, map, field, str -> Optional.empty() );
     }
 
-    private static int getInt( Map map, String field, boolean convert ) {
-        return getValue( Integer.class, map, field, str -> intFunc.apply( convert, str ) );
+    private static int getInt( Map map, String field ) {
+        return getValue( Integer.class, map, field, intFunc );
     }
 
     private static Optional<Boolean> getBooleanOpt( Map map, String field ) {
         return getValueOpt( Boolean.class, map, field, str -> Optional.empty() );
-    }
-
-    private static List getList( Map map, String field ) {
-        return getValue( List.class, map, field, ( str ) -> Optional.empty() );
     }
 
     private static <T> T getValue( Class<T> clazz, Map map, String field, Function<Object, Optional<T>> func ) {
@@ -284,7 +278,7 @@ public class DictionaryParser {
         }
 
         final Optional<T> apply = func.apply( f );
-        if( apply.isPresent() ) return Optional.ofNullable( apply.get() );
+        if( apply.isPresent() ) return Optional.of( apply.get() );
 
         throw new DictionaryFormatError( "field '" + field + "' type " + f.getClass() + " != " + clazz );
     }
@@ -293,7 +287,7 @@ public class DictionaryParser {
         serialize( dictionary, path, false );
     }
 
-    public static void serialize( DictionaryRoot dictionary, Path path, boolean format ) {
+    private static void serialize( DictionaryRoot dictionary, Path path, boolean format ) {
         try( JsonGenerator jsonGenerator = format ?
             Binder.json.getJsonGenerator( path ).useDefaultPrettyPrinter() :
             Binder.json.getJsonGenerator( path ) ) {
@@ -340,11 +334,11 @@ public class DictionaryParser {
     }
 
     private static class InvalidEntry {
-        public final Dictionary one;
-        public final Dictionary two;
         public final String path;
+        final Dictionary one;
+        final Dictionary two;
 
-        public InvalidEntry( Dictionary one, Dictionary two, String path ) {
+        InvalidEntry( Dictionary one, Dictionary two, String path ) {
             this.one = one;
             this.two = two;
             this.path = path;
