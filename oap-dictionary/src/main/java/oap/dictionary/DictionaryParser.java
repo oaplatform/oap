@@ -178,9 +178,12 @@ public class DictionaryParser {
             if( child instanceof DictionaryExtends ) {
                 iterator.remove();
 
-                for( val v : getValues( dictionaryRoot, ( ( DictionaryExtends ) child ).anExtends ) ) {
-                    iterator.add( v );
-                    lastExtendsId = v.getExternalId();
+                val anExtends = ( ( DictionaryExtends ) child ).anExtends;
+                for( val v : getValues( dictionaryRoot, anExtends ) ) {
+                    if( !anExtends.filter.isPresent() || anExtends.filter.filter( f -> v.getTags().contains( f ) ).isPresent() ) {
+                        iterator.add( v );
+                        lastExtendsId = v.getExternalId();
+                    }
                 }
             } else {
                 if( lastExtendsId >= 0 ) {

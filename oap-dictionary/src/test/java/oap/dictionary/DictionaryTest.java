@@ -72,4 +72,19 @@ public class DictionaryTest extends AbstractTest {
         assertThat( values.get( 1 ).getExternalId() ).isEqualTo( 112 );
         assertThat( values.get( 2 ).getExternalId() ).isEqualTo( 113 );
     }
+
+    @Test
+    public void testExtendsFilter() {
+        val values = Dictionaries
+            .getDictionary( "test-dictionary-extends-filter" )
+            .getValue( "id2" )
+            .getValues();
+
+        assertThat( values ).hasSize( 2 );
+        assertThat( values.get( 0 ).getId() ).isEqualTo( "id111" );
+        assertThat( values.get( 1 ).getId() ).isEqualTo( "id22" );
+
+        assertThat( values.get( 0 ).getExternalId() ).isEqualTo( 111 );
+        assertThat( values.get( 1 ).getExternalId() ).isEqualTo( 112 );
+    }
 }
