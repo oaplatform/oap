@@ -24,39 +24,41 @@
 
 package oap.storage;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.json.TypeIdFactory;
-import org.joda.time.DateTimeUtils;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoDatabase;
+import lombok.val;
+import org.bson.codecs.configuration.CodecRegistries;
 
-import java.io.Serializable;
+import java.io.Closeable;
 
-@EqualsAndHashCode( exclude = "object" )
-@ToString( exclude = "object" )
-public class Metadata<T> implements Comparable<Metadata<T>>, Serializable {
-    public String id;
-    public long modified = DateTimeUtils.currentTimeMillis();
-    @JsonTypeIdResolver( TypeIdFactory.class )
-    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
-    public T object;
+/**
+ * Created by igor.petrenko on 21.12.2017.
+ */
+public class MongoClient implements Closeable {
+    protected final com.mongodb.MongoClient mongoClient;
+    private final String host;
+    private final int port;
 
-    protected Metadata( String id, T object ) {
-        this.id = id;
-        this.object = object;
-    }
+    public MongoClient( String host, int port ) {
+        this.host = host;
+        this.port = port;
 
-    protected Metadata() {
+        val codecRegistry = CodecRegistries.fromRegistries(
+            CodecRegistries.fromCodecs( new JodaTimeCodec() ),
+            com.mongodb.MongoClient.getDefaultCodecRegistry() );
+
+        val options = MongoClientOptions.builder().codecRegistry( codecRegistry ).build();
+
+        mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ), options );
     }
 
     @Override
-    public int compareTo( Metadata<T> o ) {
-        return this.id.compareTo( o.id );
+    public void close() {
+        mongoClient.close();
     }
 
-    public void update( T t ) {
-        this.object = t;
-        this.modified = DateTimeUtils.currentTimeMillis();
+    public MongoDatabase getDatabase( String database ) {
+        return mongoClient.getDatabase( database );
     }
 }

@@ -25,18 +25,21 @@
 package oap.storage;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.mongodb.MongoClient;
-import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.WriteModel;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import oap.json.Binder;
+import oap.util.Lists;
+import oap.util.Stream;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.bson.Document;
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
 import org.joda.time.DateTimeUtils;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
@@ -46,33 +49,39 @@ import static com.mongodb.client.model.Filters.eq;
  */
 @Slf4j
 public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
+    public static final UpdateOptions UPDATE_OPTIONS_UPSERT = new UpdateOptions().upsert( true );
+
+    protected final MongoCollection<Metadata<T>> collection;
     final MongoDatabase database;
-    private final MongoClient mongoClient;
-    private final MongoCollection<Document> collection;
-    private final TypeReference<Metadata<T>> typeReference;
-    private long lastFsync;
+    public int bulkSize = 1000;
+    private long lastFsync = -1;
 
-    public MongoStorage( String host, int port, String database, String table, Identifier<T> identifier,
-                         TypeReference<Metadata<T>> typeReference, LockStrategy lockStrategy ) {
+    @SuppressWarnings( "unchecked" )
+    public MongoStorage( oap.storage.MongoClient mongoClient, String database, String table,
+                         Identifier<T> identifier,
+                         LockStrategy lockStrategy ) {
         super( identifier, lockStrategy );
-        this.typeReference = typeReference;
-
-        mongoClient = new MongoClient( new ServerAddress( host, port ) );
-
         this.database = mongoClient.getDatabase( database );
-        this.collection = this.database.getCollection( table, Document.class );
+
+
+        final Object o = new TypeReference<Metadata<T>>() {};
+        final CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
+            CodecRegistries.fromCodecs( new JsonCodec<>( ( TypeReference<Metadata> ) o, Metadata.class ) ),
+            this.database.getCodecRegistry()
+        );
+
+        final Object metadataMongoCollection = this.database
+            .getCollection( table, Metadata.class )
+            .withCodecRegistry( codecRegistry );
+        this.collection = ( MongoCollection<Metadata<T>> ) metadataMongoCollection;
 
         load();
     }
 
-
     private void load() {
         lastFsync = DateTimeUtils.currentTimeMillis();
 
-        final Consumer<Document> cons = item -> {
-            val metadata = Binder.json.unmarshal( typeReference, item );
-            data.put( metadata.id, metadata );
-        };
+        final Consumer<Metadata<T>> cons = metadata -> data.put( metadata.id, metadata );
 
         log.info( "total {}", collection.count() );
 
@@ -94,15 +103,17 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
 
         val count = new MutableInt();
 
-        data.values()
+        Stream.of( data.values()
             .stream()
-            .filter( m -> m.modified >= lastFsync )
-            .forEach( metadata -> {
-                count.increment();
-                collection.replaceOne(
-                    eq( "_id", metadata.id ),
-                    Document.parse( Binder.json.marshal( metadata ) ),
-                    new UpdateOptions().upsert( true ) );
+            .filter( m -> m.modified >= lastFsync ) )
+            .grouped( bulkSize )
+            .forEach( list -> {
+                count.add( list.size() );
+
+                final List<? extends WriteModel<Metadata<T>>> bulk = Lists.map( list,
+                    metadata -> new ReplaceOneModel<>( eq( "_id", metadata.id ), metadata, UPDATE_OPTIONS_UPSERT ) );
+                collection.bulkWrite( bulk );
+
             } );
 
         log.info( "fsync total: {}, modified: {}", size(), count.intValue() );

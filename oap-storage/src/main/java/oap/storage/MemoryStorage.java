@@ -42,9 +42,9 @@ import java.util.stream.Collectors;
 
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     protected final Identifier<T> identifier;
-    private final LockStrategy lockStrategy;
+    protected final LockStrategy lockStrategy;
+    private final List<DataListener<T>> dataListeners = new ArrayList<>();
     volatile protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
-    private List<DataListener<T>> dataListeners = new ArrayList<>();
 
     public MemoryStorage( Identifier<T> identifier, LockStrategy lockStrategy ) {
         this.identifier = identifier;
@@ -56,9 +56,8 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         return Stream.of( data.values() ).map( m -> m.object );
     }
 
-
     @Override
-    public void store( T object ) {
+    public T store( T object ) {
         String id = identifier.getOrInit( object, this );
         lockStrategy.synchronizedOn( id, () -> {
             Metadata<T> metadata = data.get( id );
@@ -66,6 +65,8 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             else data.computeIfAbsent( id, id1 -> new Metadata<>( id1, object ) );
             fireUpdated( object, metadata == null );
         } );
+
+        return object;
     }
 
     @Override
@@ -99,7 +100,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             } );
     }
 
-    protected Optional<Metadata<T>> updateObject( String id, Predicate<T> predicate, Consumer<T> update, Supplier<T> init ) {
+    protected Optional<? extends Metadata<T>> updateObject( String id, Predicate<T> predicate, Consumer<T> update, Supplier<T> init ) {
         return lockStrategy.synchronizedOn( id, () -> {
             Metadata<T> m = data.get( id );
             if( m == null ) {
@@ -225,7 +226,6 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public List<String> ids() {
         return new ArrayList<>( data.keySet() );
     }
-
 
     public void clear() {
         List<String> keys = new ArrayList<>( data.keySet() );

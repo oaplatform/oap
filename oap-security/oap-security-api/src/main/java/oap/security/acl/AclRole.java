@@ -22,41 +22,30 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.security.acl;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.json.TypeIdFactory;
-import org.joda.time.DateTimeUtils;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
+import java.util.List;
 
-@EqualsAndHashCode( exclude = "object" )
-@ToString( exclude = "object" )
-public class Metadata<T> implements Comparable<Metadata<T>>, Serializable {
-    public String id;
-    public long modified = DateTimeUtils.currentTimeMillis();
-    @JsonTypeIdResolver( TypeIdFactory.class )
-    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
-    public T object;
+/**
+ * Created by igor.petrenko on 21.12.2017.
+ */
+public class AclRole implements Serializable {
+    private static final long serialVersionUID = -7844632176452798221L;
 
-    protected Metadata( String id, T object ) {
+    public final String id;
+    public final String name;
+    public final List<String> permissions;
+
+    @JsonCreator
+    public AclRole( @JsonProperty String id,
+                    @JsonProperty String name,
+                    @JsonProperty List<String> permissions ) {
         this.id = id;
-        this.object = object;
-    }
-
-    protected Metadata() {
-    }
-
-    @Override
-    public int compareTo( Metadata<T> o ) {
-        return this.id.compareTo( o.id );
-    }
-
-    public void update( T t ) {
-        this.object = t;
-        this.modified = DateTimeUtils.currentTimeMillis();
+        this.name = name;
+        this.permissions = permissions;
     }
 }

@@ -24,7 +24,6 @@
 
 package oap.storage;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -42,23 +41,29 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MongoStorageTest {
     private String dbName;
     private MongoStorage<TestMongoBean> storage;
+    private MongoClient mongoClient;
 
     @BeforeMethod
     public void beforeMethod() {
         dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
+        mongoClient = new MongoClient( "localhost", 27017 );
+        mongoClient.getDatabase( dbName ).drop();
+
         storage = reopen();
     }
 
     public MongoStorage<TestMongoBean> reopen() {
-        return new MongoStorage<>( "localhost", 27017, dbName, "test",
-            IdentifierBuilder.<TestMongoBean>identify( b -> b.id ).build(), new TypeReference<Metadata<TestMongoBean>>() {}, Lock );
+
+        return new MongoStorage<>( mongoClient, dbName, "test",
+            IdentifierBuilder.<TestMongoBean>identify( b -> b.id ).build(), Lock );
     }
 
     @AfterMethod
     public void afterMethod() {
         storage.database.drop();
         storage.close();
+        mongoClient.close();
     }
 
     @Test

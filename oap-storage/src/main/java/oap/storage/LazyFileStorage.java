@@ -41,9 +41,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import static oap.util.Maps.Collectors.toConcurrentMap;
-import static oap.util.Pair.__;
-
 /**
  * Created by igor.petrenko on 23.09.2016.
  */
@@ -70,9 +67,9 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
-    public void store( T object ) {
+    public T store( T object ) {
         open();
-        super.store( object );
+        return super.store( object );
     }
 
     @Override
@@ -113,11 +110,8 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         Files.ensureFile( path );
 
         if( java.nio.file.Files.exists( path ) ) {
-            data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
-            }, path )
-                .stream()
-                .map( x -> __( x.id, x ) )
-                .collect( toConcurrentMap() );
+            Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {}, path )
+                .forEach( m -> data.put( m.id, m ) );
         }
         closed = false;
         log.info( data.size() + " object(s) loaded." );

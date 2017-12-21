@@ -38,7 +38,7 @@ import java.util.function.Supplier;
 public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Optional<T>> {
     Stream<T> select();
 
-    void store( T object );
+    T store( T object );
 
     void store( Collection<T> objects );
 

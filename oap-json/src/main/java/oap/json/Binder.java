@@ -292,6 +292,10 @@ public class Binder {
         return mapper.readerFor( ref );
     }
 
+    public ObjectReader readerForUpdating( Object obj ) {
+        return mapper.readerForUpdating( obj );
+    }
+
     @Deprecated
     public ObjectWriter writerFor( TypeReference<?> ref ) {
         return mapper.writerFor( ref );

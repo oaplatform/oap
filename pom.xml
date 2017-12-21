@@ -63,6 +63,8 @@
         <module>oap-stats-db</module>
         <module>oap-zabbix</module>
         <module>maven</module>
+        <module>oap-security/oap-security-api</module>
+        <module>oap-security/oap-security-backend</module>
     </modules>
 
     <repositories>

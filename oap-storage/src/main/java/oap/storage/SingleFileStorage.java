@@ -43,8 +43,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static oap.concurrent.Threads.synchronizedOn;
 import static oap.io.IoStreams.DEFAULT_BUFFER;
-import static oap.util.Maps.Collectors.toConcurrentMap;
-import static oap.util.Pair.__;
 
 /**
  * Created by igor.petrenko on 23.09.2016.
@@ -72,11 +70,9 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
         Files.ensureFile( path );
 
         if( java.nio.file.Files.exists( path ) ) {
-            data = Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
+            Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
             }, IoStreams.in( path ) )
-                .stream()
-                .map( x -> __( x.id, x ) )
-                .collect( toConcurrentMap() );
+                .forEach( m -> data.put( m.id, m ) );
         }
         log.info( data.size() + " object(s) loaded." );
     }

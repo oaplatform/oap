@@ -24,39 +24,26 @@
 
 package oap.storage;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.json.TypeIdFactory;
-import org.joda.time.DateTimeUtils;
+import org.bson.BsonReader;
+import org.bson.BsonWriter;
+import org.bson.codecs.Codec;
+import org.bson.codecs.DecoderContext;
+import org.bson.codecs.EncoderContext;
+import org.joda.time.DateTime;
 
-import java.io.Serializable;
-
-@EqualsAndHashCode( exclude = "object" )
-@ToString( exclude = "object" )
-public class Metadata<T> implements Comparable<Metadata<T>>, Serializable {
-    public String id;
-    public long modified = DateTimeUtils.currentTimeMillis();
-    @JsonTypeIdResolver( TypeIdFactory.class )
-    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
-    public T object;
-
-    protected Metadata( String id, T object ) {
-        this.id = id;
-        this.object = object;
-    }
-
-    protected Metadata() {
+public class JodaTimeCodec implements Codec<DateTime> {
+    @Override
+    public DateTime decode( BsonReader bsonReader, DecoderContext decoderContext ) {
+        return new DateTime( bsonReader.readDateTime() );
     }
 
     @Override
-    public int compareTo( Metadata<T> o ) {
-        return this.id.compareTo( o.id );
+    public void encode( BsonWriter bsonWriter, DateTime dateTime, EncoderContext encoderContext ) {
+        bsonWriter.writeDateTime( dateTime.getMillis() );
     }
 
-    public void update( T t ) {
-        this.object = t;
-        this.modified = DateTimeUtils.currentTimeMillis();
+    @Override
+    public Class<DateTime> getEncoderClass() {
+        return DateTime.class;
     }
 }
