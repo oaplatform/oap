@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.val;
 import oap.testng.Env;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -68,9 +69,9 @@ public class MongoStorageTest {
 
     @Test
     public void testStore() {
+        val bean1 = storage.store( new TestMongoBean() );
         storage.store( new TestMongoBean() );
-        storage.store( new TestMongoBean() );
-        storage.store( new TestMongoBean() );
+        storage.store( new TestMongoBean( bean1.id ) );
 
         storage.close();
 

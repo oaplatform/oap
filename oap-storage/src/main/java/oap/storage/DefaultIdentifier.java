@@ -60,12 +60,8 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
             Objects.requireNonNull( suggestion, "Suggestion is not specified for nullable identifier" );
             Objects.requireNonNull( setId, "Set of nullable identifier is not specified" );
 
-            final String apply = suggestion.apply( object );
-            System.out.println( apply );
-            id = Strings.toUserFriendlyId( apply,
+            id = Strings.toUserFriendlyId( suggestion.apply( object ),
                 size, newId -> storage.apply( newId ).isPresent(), idOptions );
-
-            System.out.println( id );
 
             setId.accept( object, id );
         }
