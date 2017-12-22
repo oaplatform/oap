@@ -149,6 +149,38 @@ public class DefaultAclService implements AclService {
     }
 
     @Override
+    public List<String> getChildren( String parentId, String type, boolean recursive ) {
+        return objectStorage
+            .select()
+            .filter( obj ->
+                ( recursive ? obj.ancestors.contains( parentId ) : obj.parents.contains( parentId ) )
+                    && obj.type.equals( type ) )
+            .map( obj -> obj.id )
+            .collect( toList() );
+    }
+
+    @Override
+    public List<String> findChildren( String parentId, String subjectId, String type, String permission ) {
+        val aclSubject = objectStorage.get( subjectId ).orElse( null );
+        if( aclSubject == null ) {
+            log.debug( "subject {} not found.", subjectId );
+            return emptyList();
+        }
+        val subjects = new HashSet<String>();
+        subjects.add( subjectId );
+        subjects.addAll( aclSubject.ancestors );
+
+        return objectStorage
+            .select()
+            .filter( obj ->
+                obj.ancestors.contains( parentId )
+                    && obj.type.equals( type )
+                    && obj.acls.stream().anyMatch( acl -> subjects.contains( acl.subjectId ) ) )
+            .map( obj -> obj.id )
+            .collect( toList() );
+    }
+
+    @Override
     public Optional<String> registerObject( String parentId, String type ) {
         val ancestors = new ArrayList<String>();
         val parents = new ArrayList<String>();
@@ -165,5 +197,22 @@ public class DefaultAclService implements AclService {
         objectStorage.store( ao );
 
         return Optional.of( ao.id );
+    }
+
+    @Override
+    public void unregisterObject( String objectId ) {
+        if( !objectStorage.get( objectId ).isPresent() )
+            throw new AclSecurityException( "Object '" + objectId + "' not found" );
+
+        if( objectStorage.select().anyMatch( obj -> obj.parents.contains( objectId ) ) )
+            throw new AclSecurityException( "Group '" + objectId + "' not empty" );
+
+        for( val obj : objectStorage ) {
+            if( obj.acls.stream().anyMatch( acl -> acl.subjectId.equals( objectId ) ) ) {
+                objectStorage.update( obj.id, o -> o.acls.removeIf( acl -> acl.subjectId.equals( objectId ) ) );
+            }
+        }
+
+        objectStorage.delete( objectId );
     }
 }

@@ -28,4 +28,10 @@ package oap.security.acl;
  * Created by igor.petrenko on 21.12.2017.
  */
 public class AclSecurityException extends SecurityException {
+    public AclSecurityException() {
+    }
+
+    public AclSecurityException( String s ) {
+        super( s );
+    }
 }

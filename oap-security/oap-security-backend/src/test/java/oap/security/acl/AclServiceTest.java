@@ -36,6 +36,7 @@ import java.io.IOException;
 import static java.util.Collections.singletonList;
 import static oap.storage.Storage.LockStrategy.Lock;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Created by igor.petrenko on 21.12.2017.
@@ -52,6 +53,7 @@ public class AclServiceTest {
     private AclRole role1;
     private String subjectGroupId;
     private String subjectId2;
+    private String subjectId23;
 
     @BeforeMethod
     public void beforeMethod() {
@@ -63,8 +65,9 @@ public class AclServiceTest {
         childId = aclService.registerObject( objectId, "child" ).get();
         childId2 = aclService.registerObject( childId, "child" ).get();
         subjectId = aclService.registerObject( objectId, "subject" ).get();
-        subjectGroupId = aclService.registerObject( objectId, "user-group" ).get();
-        subjectId2 = aclService.registerObject( subjectGroupId, "user" ).get();
+        subjectGroupId = aclService.registerObject( objectId, "subject" ).get();
+        subjectId2 = aclService.registerObject( subjectGroupId, "subject" ).get();
+        subjectId23 = aclService.registerObject( subjectId2, "subject" ).get();
 
         roleUknown = roleStorage.store( new AclRole( "roleIdUknown", "testRole1", singletonList( "testObjectUnknown.read" ) ) );
         role1 = roleStorage.store( new AclRole( "roleId1", "testRole1", singletonList( "testObject1.read" ) ) );
@@ -117,6 +120,42 @@ public class AclServiceTest {
         aclService.add( objectId, subjectGroupId, role1.id, true );
         assertThat( aclService.check( objectId, subjectId2, "testObject1.read" ) ).containsExactly( true );
         assertThat( aclService.check( childId, subjectId2, "testObject1.read" ) ).containsExactly( true );
+    }
+
+    @Test
+    public void testGetChildren() {
+        assertThat( aclService.getChildren( objectId, "test", true ) ).isEmpty();
+        assertThat( aclService.getChildren( objectId, "child", false ) )
+            .containsExactlyInAnyOrder( childId );
+        assertThat( aclService.getChildren( objectId, "child", true ) )
+            .containsExactlyInAnyOrder( childId, childId2 );
+    }
+
+    @Test
+    public void testUnregisterObject() {
+        assertThatThrownBy( () -> aclService.unregisterObject( childId ) )
+            .hasMessage( "Group '" + childId + "' not empty" )
+            .isInstanceOf( AclSecurityException.class );
+        assertThatThrownBy( () -> aclService.unregisterObject( "unknown" ) )
+            .hasMessage( "Object 'unknown' not found" )
+            .isInstanceOf( AclSecurityException.class );
+
+        aclService.add( objectId, childId2, role1.id, true );
+
+        assertThat( objectStorage.get( childId2 ) ).isPresent();
+        assertThat( aclService.list( subjectId2, childId2 ) ).isNotEmpty();
+        aclService.unregisterObject( childId2 );
+        assertThat( objectStorage.get( childId2 ) ).isEmpty();
+        assertThat( aclService.list( subjectId2, childId2 ) ).isEmpty();
+    }
+
+    @Test
+    public void testFindChildren() {
+        aclService.add( subjectGroupId, childId, role1.id, true );
+
+        assertThat( aclService.findChildren( subjectGroupId, subjectId, "subject", "testObject1.read" ) ).isEmpty();
+        assertThat( aclService.findChildren( subjectGroupId, childId, "subject", "testObject1.read" ) )
+            .containsExactlyInAnyOrder( subjectId2, subjectId23 );
     }
 
     @AfterMethod

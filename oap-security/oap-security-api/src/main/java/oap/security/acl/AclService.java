@@ -51,5 +51,11 @@ public interface AclService {
 
     List<AclRole> list( String objectId, String subjectId );
 
+    List<String> getChildren( String parentId, String type, boolean recursive );
+
+    List<String> findChildren( String parentId, String subjectId, String type, String permission );
+
     Optional<String> registerObject( String parentId, String type );
+
+    void unregisterObject( String objectId );
 }
