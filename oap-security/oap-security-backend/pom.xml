@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>3.0.8</version>
+        <version>3.1.0</version>
     </parent>
 
     <dependencies>
@@ -42,10 +42,9 @@
             <artifactId>oap-security-api</artifactId>
             <version>${parent.version}</version>
         </dependency>
-
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-storage-mongo</artifactId>
+            <artifactId>oap-storage</artifactId>
             <version>${parent.version}</version>
         </dependency>
 

@@ -24,15 +24,16 @@
 
 package oap.security.acl;
 
-import oap.storage.IdentifierBuilder;
 import oap.storage.MongoClient;
 import oap.storage.MongoStorage;
 
+import static oap.storage.Storage.LockStrategy.Lock;
+
 /**
- * Created by igor.petrenko on 21.12.2017.
+ * Created by igor.petrenko on 22.12.2017.
  */
-public class AclRoleStorage extends MongoStorage<AclRole> {
-    public AclRoleStorage( MongoClient mongoClient, String database, String table ) {
-        super( mongoClient, database, table, IdentifierBuilder.<AclRole>identify( ar -> ar.id ).build(), LockStrategy.Lock );
+public class AclObjectStorage extends MongoStorage<AclObject> {
+    public AclObjectStorage( MongoClient mongoClient, String database, String table ) {
+        super( mongoClient, database, table, ao -> ao.id, ( ao, id ) -> ao.id = id, Lock, AclObject.class );
     }
 }

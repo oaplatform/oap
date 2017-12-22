@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>3.0.8</version>
+    <version>3.1.0</version>
 
     <name>oap</name>
 
@@ -65,6 +65,7 @@
         <module>maven</module>
         <module>oap-security/oap-security-api</module>
         <module>oap-security/oap-security-backend</module>
+        <module>oap-security/oap-security-mongo</module>
     </modules>
 
     <repositories>

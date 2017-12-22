@@ -37,10 +37,13 @@ import oap.util.Stream;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.types.ObjectId;
 import org.joda.time.DateTimeUtils;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -50,23 +53,29 @@ import static com.mongodb.client.model.Filters.eq;
 @Slf4j
 public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
     public static final UpdateOptions UPDATE_OPTIONS_UPSERT = new UpdateOptions().upsert( true );
-
-    protected final MongoCollection<Metadata<T>> collection;
-    final MongoDatabase database;
+    public final MongoCollection<Metadata<T>> collection;
+    public final MongoDatabase database;
+    private final Class<T> clazz;
     public int bulkSize = 1000;
     private long lastFsync = -1;
 
     @SuppressWarnings( "unchecked" )
     public MongoStorage( oap.storage.MongoClient mongoClient, String database, String table,
-                         Identifier<T> identifier,
-                         LockStrategy lockStrategy ) {
-        super( identifier, lockStrategy );
+                         Function<T, String> getId, BiConsumer<T, String> setId,
+                         LockStrategy lockStrategy, Class<T> clazz ) {
+        super( IdentifierBuilder
+            .identify( getId, setId )
+            .suggestion( ar -> ObjectId.get().toString() )
+            .size( 24 )
+            .idOptions()
+            .build(), lockStrategy );
+        this.clazz = clazz;
         this.database = mongoClient.getDatabase( database );
 
 
         final Object o = new TypeReference<Metadata<T>>() {};
         final CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
-            CodecRegistries.fromCodecs( new JsonCodec<>( ( TypeReference<Metadata> ) o, Metadata.class ) ),
+            CodecRegistries.fromCodecs( new JsonCodec<>( ( TypeReference<Metadata> ) o, Metadata.class, clazz ) ),
             this.database.getCodecRegistry()
         );
 
@@ -111,7 +120,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
                 count.add( list.size() );
 
                 final List<? extends WriteModel<Metadata<T>>> bulk = Lists.map( list,
-                    metadata -> new ReplaceOneModel<>( eq( "_id", metadata.id ), metadata, UPDATE_OPTIONS_UPSERT ) );
+                    metadata -> new ReplaceOneModel<>( eq( "_id", new ObjectId( metadata.id ) ), metadata, UPDATE_OPTIONS_UPSERT ) );
                 collection.bulkWrite( bulk );
 
             } );

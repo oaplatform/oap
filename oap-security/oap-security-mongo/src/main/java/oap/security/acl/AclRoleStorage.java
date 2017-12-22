@@ -24,35 +24,16 @@
 
 package oap.security.acl;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import oap.storage.MongoClient;
+import oap.storage.MongoStorage;
 
-import java.io.Serializable;
-import java.util.List;
+import static oap.storage.Storage.LockStrategy.Lock;
 
 /**
  * Created by igor.petrenko on 21.12.2017.
  */
-@ToString
-@EqualsAndHashCode
-public class AclRole implements Serializable {
-    private static final long serialVersionUID = -7844632176452798221L;
-    public final String name;
-    public final List<String> permissions;
-    public String id;
-
-    @JsonCreator
-    public AclRole( @JsonProperty String id,
-                    @JsonProperty String name,
-                    @JsonProperty List<String> permissions ) {
-        this.id = id;
-        this.name = name;
-        this.permissions = permissions;
-    }
-
-    public AclRole( String name, List<String> permissions ) {
-        this( null, name, permissions );
+public class AclRoleStorage extends MongoStorage<AclRole> {
+    public AclRoleStorage( MongoClient mongoClient, String database, String table ) {
+        super( mongoClient, database, table, ar -> ar.id, ( ar, id ) -> ar.id = id, Lock, AclRole.class );
     }
 }

@@ -27,8 +27,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <name>oap-template</name>
-    <artifactId>oap-template</artifactId>
+    <name>oap-security-mongo</name>
+    <artifactId>oap-security-mongo</artifactId>
 
     <parent>
         <groupId>oap</groupId>
@@ -39,9 +39,15 @@
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-stdlib</artifactId>
-            <version>${project.parent.version}</version>
-         </dependency>
+            <artifactId>oap-security-backend</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-storage-mongo</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>

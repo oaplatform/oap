@@ -31,14 +31,12 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import static oap.util.Strings.FriendlyIdOption.FILL;
-import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
-
 public final class DefaultIdentifier<T> implements Identifier<T> {
 
     private final Function<? super T, String> getId;
     private final BiConsumer<? super T, String> setId;
     private final Function<? super T, String> suggestion;
+    private final Strings.FriendlyIdOption[] idOptions;
     private final int size;
 
     DefaultIdentifier( final IdentifierBuilder<? super T> identifierBuilder ) {
@@ -46,6 +44,7 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
         this.getId = identifierBuilder.getIdentityFunction();
         this.setId = identifierBuilder.getSetIdFunction().orElse( null );
         this.suggestion = identifierBuilder.getSuggestion().orElse( null );
+        this.idOptions = identifierBuilder.getIdOptions();
     }
 
     @Override
@@ -61,8 +60,12 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
             Objects.requireNonNull( suggestion, "Suggestion is not specified for nullable identifier" );
             Objects.requireNonNull( setId, "Set of nullable identifier is not specified" );
 
-            id = Strings.toUserFriendlyId( suggestion.apply( object ),
-                size, newId -> storage.apply( newId ).isPresent(), NO_VOWELS, FILL );
+            final String apply = suggestion.apply( object );
+            System.out.println( apply );
+            id = Strings.toUserFriendlyId( apply,
+                size, newId -> storage.apply( newId ).isPresent(), idOptions );
+
+            System.out.println( id );
 
             setId.accept( object, id );
         }

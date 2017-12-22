@@ -55,8 +55,8 @@ public class AclServiceTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        objectStorage = new MemoryStorage<>( IdentifierBuilder.<AclObject>identify( ao -> ao.id ).build(), Lock );
-        roleStorage = new MemoryStorage<>( IdentifierBuilder.<AclRole>identify( ao -> ao.id ).build(), Lock );
+        objectStorage = new MemoryStorage<>( IdentifierBuilder.<AclObject>identify( ao -> ao.id, ( ao, id ) -> ao.id = id ).build(), Lock );
+        roleStorage = new MemoryStorage<>( IdentifierBuilder.<AclRole>identify( ar -> ar.id, ( ar, id ) -> ar.id = id ).build(), Lock );
         aclService = new DefaultAclService( objectStorage, roleStorage );
 
         objectId = aclService.registerObject( null, "testObject1" ).get();

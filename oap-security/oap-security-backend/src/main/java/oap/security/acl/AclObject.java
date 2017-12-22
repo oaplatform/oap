@@ -27,6 +27,8 @@ package oap.security.acl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -35,18 +37,15 @@ import java.util.List;
 /**
  * Created by igor.petrenko on 20.12.2017.
  */
+@ToString
+@EqualsAndHashCode
 public class AclObject implements Serializable {
     private static final long serialVersionUID = -6189594932715997498L;
-
-    public final String id;
-
     public final String type;
-
     public final List<String> parents;
-
     public final List<String> ancestors;
-
     public final List<Acl> acls;
+    public String id;
 
 
     @JsonCreator
@@ -62,7 +61,13 @@ public class AclObject implements Serializable {
         this.acls = new ArrayList<>( acls );
     }
 
+    public AclObject( String type, List<String> parents, List<String> ancestors, List<Acl> acls ) {
+        this( null, type, parents, ancestors, acls );
+    }
+
     @JsonInclude( JsonInclude.Include.NON_DEFAULT )
+    @ToString
+    @EqualsAndHashCode
     public static class Acl {
         public final AclRole role;
         public final String subjectId;

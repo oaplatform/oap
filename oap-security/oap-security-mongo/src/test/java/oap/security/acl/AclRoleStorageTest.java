@@ -22,76 +22,55 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.security.acl;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.val;
+import oap.storage.MongoClient;
+import oap.testng.AbstractTest;
 import oap.testng.Env;
+import org.bson.types.ObjectId;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static oap.storage.Storage.LockStrategy.Lock;
+import java.util.Collections;
+
+import static com.mongodb.client.model.Filters.eq;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Created by igor.petrenko on 19.09.2017.
+ * Created by igor.petrenko on 22.12.2017.
  */
-public class MongoStorageTest {
-    private String dbName;
-    private MongoStorage<TestMongoBean> storage;
+public class AclRoleStorageTest extends AbstractTest {
+    private AclRoleStorage storage;
     private MongoClient mongoClient;
 
+    @Override
     @BeforeMethod
     public void beforeMethod() {
-        dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
+        val dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
         mongoClient = new MongoClient( "localhost", 27017 );
         mongoClient.getDatabase( dbName ).drop();
 
-        storage = reopen();
+        storage = new AclRoleStorage( mongoClient, dbName, "roles" );
     }
 
-    public MongoStorage<TestMongoBean> reopen() {
+    @Test
+    public void testId() {
+        val role = storage.store( new AclRole( "role1", singletonList( "test.permission" ) ) );
+        storage.fsync();
+        val role2 = storage.collection.find( eq( "_id", new ObjectId( role.id ) ) ).first();
 
-        return new MongoStorage<>( mongoClient, dbName, "test", b -> b.id, ( b, id ) -> b.id = id, Lock, TestMongoBean.class );
+        assertThat( role2.object ).isEqualTo( role );
     }
 
+    @Override
     @AfterMethod
     public void afterMethod() {
         storage.database.drop();
         storage.close();
         mongoClient.close();
-    }
-
-    @Test
-    public void testStore() {
-        storage.store( new TestMongoBean() );
-        storage.store( new TestMongoBean() );
-        storage.store( new TestMongoBean() );
-
-        storage.close();
-
-        storage = reopen();
-
-        assertThat( storage ).hasSize( 2 );
-
-    }
-
-    @ToString
-    @EqualsAndHashCode( of = { "id" } )
-    public static class TestMongoBean {
-        public String id;
-
-        @JsonCreator
-        public TestMongoBean( @JsonProperty String id ) {
-            this.id = id;
-        }
-
-        public TestMongoBean() {
-            this( null );
-        }
     }
 }

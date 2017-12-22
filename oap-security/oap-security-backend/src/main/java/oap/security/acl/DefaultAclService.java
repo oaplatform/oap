@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.storage.Storage;
 import oap.util.Lists;
-import org.bson.types.ObjectId;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -162,7 +161,7 @@ public class DefaultAclService implements AclService {
             ancestors.addAll( parent.ancestors );
         }
 
-        val ao = new AclObject( ObjectId.get().toString(), type, parents, ancestors, emptyList() );
+        val ao = new AclObject( null, type, parents, ancestors, emptyList() );
         objectStorage.store( ao );
 
         return Optional.of( ao.id );

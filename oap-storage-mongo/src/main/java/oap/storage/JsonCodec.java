@@ -28,7 +28,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.SneakyThrows;
+import lombok.val;
 import oap.json.Binder;
+import oap.json.TypeIdFactory;
+import org.bson.BsonDateTime;
 import org.bson.BsonReader;
 import org.bson.BsonWriter;
 import org.bson.Document;
@@ -36,6 +39,9 @@ import org.bson.codecs.Codec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.EncoderContext;
+import org.bson.types.ObjectId;
+
+import java.util.Date;
 
 /**
  * Created by igor.petrenko on 13.12.2017.
@@ -43,11 +49,13 @@ import org.bson.codecs.EncoderContext;
 public class JsonCodec<T> implements Codec<T> {
     private final DocumentCodec documentCodec;
     private final Class<T> clazz;
+    private final Class<?> objectTypeClass;
     private ObjectWriter fileWriter;
     private ObjectReader fileReader;
 
-    public JsonCodec( TypeReference<T> tr, Class<T> clazz ) {
+    public JsonCodec( TypeReference<T> tr, Class<T> clazz, Class<?> objectTypeClass ) {
         this.clazz = clazz;
+        this.objectTypeClass = objectTypeClass;
         documentCodec = new DocumentCodec();
         fileReader = Binder.json.readerFor( tr );
         fileWriter = Binder.json.writerFor( tr );
@@ -56,13 +64,30 @@ public class JsonCodec<T> implements Codec<T> {
     @SneakyThrows
     @Override
     public T decode( BsonReader bsonReader, DecoderContext decoderContext ) {
-        return fileReader.readValue( Binder.json.marshal( documentCodec.decode( bsonReader, decoderContext ) ) );
+        val doc = documentCodec.decode( bsonReader, decoderContext );
+        val id = doc.remove( "_id" );
+        doc.put( "id", id.toString() );
+
+        val modified = doc.get( "modified" );
+        doc.put( "modified", ( ( Date ) modified ).getTime() );
+
+        doc.put( "object:type", TypeIdFactory.get( objectTypeClass ) );
+
+        return fileReader.readValue( Binder.json.marshal( doc ) );
     }
 
     @SneakyThrows
     @Override
     public void encode( BsonWriter bsonWriter, T file, EncoderContext encoderContext ) {
-        documentCodec.encode( bsonWriter, Document.parse( fileWriter.writeValueAsString( file ) ), encoderContext );
+        val doc = Document.parse( fileWriter.writeValueAsString( file ) );
+        val id = doc.remove( "id" );
+        doc.put( "_id", new ObjectId( id.toString() ) );
+
+        val modified = doc.get( "modified" );
+        doc.put( "modified", new BsonDateTime( ( Long ) modified ) );
+
+        doc.remove( "object:type" );
+        documentCodec.encode( bsonWriter, doc, encoderContext );
     }
 
     @Override

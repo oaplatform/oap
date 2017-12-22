@@ -81,6 +81,10 @@ public class TypeIdFactory implements TypeIdResolver {
         return idToClass.get( id );
     }
 
+    public static String get( Class clazz ) {
+        return classToId.get( clazz );
+    }
+
     public static void register( Class<?> bean, String id ) {
         idToClass.put( id, bean );
         classToId.put( bean, id );

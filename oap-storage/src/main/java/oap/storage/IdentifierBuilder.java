@@ -26,11 +26,16 @@ package oap.storage;
 
 import com.google.common.base.Preconditions;
 import oap.reflect.Reflect;
+import oap.util.Cuid;
+import oap.util.Strings;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+
+import static oap.util.Strings.FriendlyIdOption.FILL;
+import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
 
 public final class IdentifierBuilder<T> {
 
@@ -38,8 +43,9 @@ public final class IdentifierBuilder<T> {
 
     private final Function<T, String> getId;
     private final BiConsumer<T, String> setId;
+    private Strings.FriendlyIdOption[] idOptions = new Strings.FriendlyIdOption[] { NO_VOWELS, FILL };
 
-    private Function<T, String> suggestion;
+    private Function<T, String> suggestion = obj -> Cuid.next();
 
     private int size = DEFAULT_ID_SIZE;
 
@@ -108,6 +114,12 @@ public final class IdentifierBuilder<T> {
         return this;
     }
 
+    public IdentifierBuilder<T> idOptions( Strings.FriendlyIdOption... idOptions ) {
+        this.idOptions = idOptions;
+
+        return this;
+    }
+
     public <T1 extends T> Identifier<T1> build() {
         return new DefaultIdentifier<>( this );
     }
@@ -126,5 +138,9 @@ public final class IdentifierBuilder<T> {
 
     int getSize() {
         return size;
+    }
+
+    public Strings.FriendlyIdOption[] getIdOptions() {
+        return idOptions;
     }
 }
