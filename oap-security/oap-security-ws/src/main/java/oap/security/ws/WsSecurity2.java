@@ -22,17 +22,17 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.security.ws;
 
-import oap.http.HttpResponse;
-import oap.http.Request;
-import oap.http.Session;
-import oap.reflect.Reflection;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import java.util.Map;
-import java.util.Optional;
+@Target( ElementType.METHOD )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface WsSecurity2 {
+    String permission();
 
-public interface Interceptor {
-
-    Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues );
+    String object();
 }

@@ -22,17 +22,33 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.security.ws;
 
-import oap.http.HttpResponse;
-import oap.http.Request;
-import oap.http.Session;
-import oap.reflect.Reflection;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-import java.util.Map;
-import java.util.Optional;
+import java.io.Serializable;
 
-public interface Interceptor {
+/**
+ * Created by igor.petrenko on 22.12.2017.
+ */
+@ToString
+@EqualsAndHashCode
+public class Token2 implements Serializable {
+    private static final long serialVersionUID = 8208126956380561231L;
 
-    Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues );
+    public String id;
+    public String userId;
+    public long created;
+
+    @JsonCreator
+    public Token2( @JsonProperty String id,
+                  @JsonProperty String userId,
+                  @JsonProperty long created ) {
+        this.id = id;
+        this.userId = userId;
+        this.created = created;
+    }
 }

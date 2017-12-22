@@ -22,17 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.security.ws;
 
-import oap.http.HttpResponse;
-import oap.http.Request;
-import oap.http.Session;
-import oap.reflect.Reflection;
+/**
+ * Created by igor.petrenko on 22.12.2017.
+ */
+public interface User2 {
+    String getPassword();
 
-import java.util.Map;
-import java.util.Optional;
-
-public interface Interceptor {
-
-    Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues );
+    String getId();
 }

@@ -22,17 +22,29 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.security.ws;
 
 import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Session;
 import oap.reflect.Reflection;
+import oap.ws.Interceptor;
 
 import java.util.Map;
 import java.util.Optional;
 
-public interface Interceptor {
+/**
+ * Created by igor.petrenko on 22.12.2017.
+ */
+public class MockSecurityInterceptor2 implements Interceptor {
+    public static final String SESSION_TOKEN = "sessionToken";
+    public static String USER = "admin@admin.com";
 
-    Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues );
+    @Override
+    public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues ) {
+        session.set( "sessionToken", SESSION_TOKEN );
+        session.set( "user-id", USER );
+
+        return Optional.empty();
+    }
 }

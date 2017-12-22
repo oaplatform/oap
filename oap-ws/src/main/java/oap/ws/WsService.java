@@ -185,17 +185,18 @@ public class WsService implements Handler {
                                  Name name, Pair<String, Session> session ) {
         logger.trace( "Internal session status: [{}]", session );
 
+        final Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
+        final List<Reflection.Parameter> parameters = method.parameters;
+        final LinkedHashMap<Reflection.Parameter, Object> originalValues = getOriginalValues( session, parameters, request, wsMethod );
+
         final HttpResponse interceptorResponse =
-            session != null ? runInterceptors( request, session._2, method ) : null;
+            session != null ? runInterceptors( request, session._2, method, originalValues ) : null;
 
         if( interceptorResponse != null ) {
             response.respond( interceptorResponse );
         } else {
             Metrics.measureTimer( name, () -> {
-                final Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
                 final ValidationErrors paramValidation = ValidationErrors.empty();
-                final List<Reflection.Parameter> parameters = method.parameters;
-                final LinkedHashMap<Reflection.Parameter, Object> originalValues = getOriginalValues( session, parameters, request, wsMethod );
 
                 originalValues.forEach( ( parameter, value ) ->
                     paramValidation.merge(
@@ -304,10 +305,10 @@ public class WsService implements Handler {
         }
     }
 
-    private HttpResponse runInterceptors( Request request, Session session, Reflection.Method method ) {
+    private HttpResponse runInterceptors( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues ) {
 
         for( Interceptor interceptor : interceptors ) {
-            final Optional<HttpResponse> interceptorResponse = interceptor.intercept( request, session, method );
+            final Optional<HttpResponse> interceptorResponse = interceptor.intercept( request, session, method, originalValues );
             if( interceptorResponse.isPresent() ) {
                 return interceptorResponse.get();
             }

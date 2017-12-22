@@ -41,6 +41,7 @@ import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.UUID;
 
+import static java.util.Collections.emptyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertFalse;
@@ -62,7 +63,7 @@ public class SecurityInterceptorTest {
         final Reflection.Method methodWithAnnotation = REFLECTION.method(
             method -> method.name().equals( "methodWithoutAnnotation" ) ).get();
 
-        final Optional<HttpResponse> httpResponse = securityInterceptor.intercept( null, null, methodWithAnnotation );
+        final Optional<HttpResponse> httpResponse = securityInterceptor.intercept( null, null, methodWithAnnotation, emptyMap() );
 
         assertFalse( httpResponse.isPresent() );
     }
@@ -78,7 +79,7 @@ public class SecurityInterceptorTest {
         session.set( "user", user );
 
         final Optional<HttpResponse> httpResponse = securityInterceptor.intercept( null,
-            session, methodWithAnnotation );
+            session, methodWithAnnotation, emptyMap() );
 
         assertFalse( httpResponse.isPresent() );
     }
@@ -108,7 +109,7 @@ public class SecurityInterceptorTest {
 
         final Session session = new Session();
         final Optional<HttpResponse> httpResponse = securityInterceptor.intercept( request,
-            session, methodWithAnnotation );
+            session, methodWithAnnotation, emptyMap() );
 
         assertFalse( httpResponse.isPresent() );
         assertNotNull( session.get( "user" ) );

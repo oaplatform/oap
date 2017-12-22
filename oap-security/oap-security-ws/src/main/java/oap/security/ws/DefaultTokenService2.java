@@ -22,17 +22,22 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.security.ws;
 
-import oap.http.HttpResponse;
-import oap.http.Request;
-import oap.http.Session;
-import oap.reflect.Reflection;
-
-import java.util.Map;
 import java.util.Optional;
 
-public interface Interceptor {
+/**
+ * Created by igor.petrenko on 22.12.2017.
+ */
+public class DefaultTokenService2 implements TokenService2 {
+    private final AuthService2 authService;
 
-    Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues );
+    public DefaultTokenService2( AuthService2 authService ) {
+        this.authService = authService;
+    }
+
+    @Override
+    public Optional<Token2> getToken( String tokenId ) {
+        return authService.getToken( tokenId );
+    }
 }

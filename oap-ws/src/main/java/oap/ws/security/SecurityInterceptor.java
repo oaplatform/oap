@@ -31,6 +31,7 @@ import oap.http.Session;
 import oap.reflect.Reflection;
 import oap.ws.Interceptor;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static java.lang.String.format;
@@ -45,7 +46,7 @@ public class SecurityInterceptor implements Interceptor {
     }
 
     @Override
-    public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method ) {
+    public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues ) {
         final Optional<WsSecurity> annotation = method.findAnnotation( WsSecurity.class );
         if( annotation.isPresent() ) {
             if( session == null ) {

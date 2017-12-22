@@ -39,6 +39,10 @@ public interface AclService {
         return check( objectId, subjectId, asList( permissions ) );
     }
 
+    default boolean checkOne( String objectId, String subjectId, String permission ) {
+        return check( objectId, subjectId, permission ).get( 0 );
+    }
+
     List<Boolean> check( String objectId, String subjectId, List<String> permissions );
 
     boolean add( String objectId, String subjectId, String roleId, boolean inherit );

@@ -66,6 +66,7 @@
         <module>oap-security/oap-security-api</module>
         <module>oap-security/oap-security-backend</module>
         <module>oap-security/oap-security-mongo</module>
+        <module>oap-security/oap-security-ws</module>
     </modules>
 
     <repositories>
