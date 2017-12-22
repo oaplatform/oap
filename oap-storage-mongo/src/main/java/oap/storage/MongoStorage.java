@@ -55,7 +55,6 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
     public static final UpdateOptions UPDATE_OPTIONS_UPSERT = new UpdateOptions().upsert( true );
     public final MongoCollection<Metadata<T>> collection;
     public final MongoDatabase database;
-    private final Class<T> clazz;
     public int bulkSize = 1000;
     private long lastFsync = -1;
 
@@ -69,7 +68,6 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
             .size( 24 )
             .idOptions()
             .build(), lockStrategy );
-        this.clazz = clazz;
         this.database = mongoClient.getDatabase( database );
 
 
@@ -108,8 +106,6 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
     public void fsync() {
         super.fsync();
 
-        lastFsync = System.currentTimeMillis();
-
         val count = new MutableInt();
 
         Stream.of( data.values()
@@ -126,6 +122,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
             } );
 
         log.info( "fsync total: {}, modified: {}", size(), count.intValue() );
+        lastFsync = System.currentTimeMillis();
     }
 
     @Override
