@@ -33,9 +33,9 @@ import static java.util.Arrays.asList;
  * Created by igor.petrenko on 20.12.2017.
  */
 public interface AclService {
-    String ROOT = "root";
-    String GLOBAL_ADMIN = "admin";
-    String GLOBAL_ADMIN_ROLE = "admin_role";
+    String ROOT = "5a4200fe97684103f0d6bb17";
+    String GLOBAL_ADMIN = "5a42011497684132d0d76dd4";
+    String GLOBAL_ADMIN_ROLE = "5a420121976841048ccd59bd";
 
     void validate( String objectId, String subjectId, String... permissions ) throws AclSecurityException;
 

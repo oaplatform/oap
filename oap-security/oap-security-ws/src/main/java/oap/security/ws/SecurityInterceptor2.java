@@ -108,7 +108,9 @@ public class SecurityInterceptor2 implements Interceptor {
     private String getObjectId( Reflection.Method method, WsSecurity2 annotation,
                                 Map<Reflection.Parameter, Object> originalValues ) {
         val parameterName = annotation.object();
-        val parameter = method.getParameter( parameterName );
-        return originalValues.get( parameter ).toString();
+        if( parameterName.startsWith( "{" ) ) {
+            val parameter = method.getParameter( parameterName.substring( 1, parameterName.length() - 1 ) );
+            return originalValues.get( parameter ).toString();
+        } else return parameterName;
     }
 }

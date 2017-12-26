@@ -132,7 +132,7 @@ public class SecurityInterceptor2Test {
     }
 
     private static class TestAPI {
-        @WsSecurity2( object = "parent", permission = "parent.read" )
+        @WsSecurity2( object = "{parent}", permission = "parent.read" )
         public void methodWithAnnotation( @WsParam String parent ) {}
 
         public void methodWithoutAnnotation() {}
