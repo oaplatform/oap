@@ -73,6 +73,12 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
+    public Optional<T> update( String id, T object ) {
+        open();
+        return super.update( id, object );
+    }
+
+    @Override
     public Optional<T> update( String id, Predicate<T> predicate, Consumer<T> update, Supplier<T> init ) {
         open();
         return super.update( id, predicate, update, init );

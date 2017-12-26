@@ -70,6 +70,18 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
+    public Optional<T> update( String id, T object ) {
+        return lockStrategy.synchronizedOn( id, () -> {
+            Metadata<T> metadata = data.get( id );
+            if( metadata != null ) {
+                metadata.update( object );
+                fireUpdated( object, false );
+                return Optional.of( metadata.object );
+            } else return Optional.empty();
+        } );
+    }
+
+    @Override
     public void store( Collection<T> objects ) {
         ArrayList<T> newObjects = new ArrayList<>();
         ArrayList<T> updatedObjects = new ArrayList<>();

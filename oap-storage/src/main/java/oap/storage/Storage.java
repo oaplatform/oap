@@ -50,6 +50,8 @@ public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Opt
         return update( id, predicate, update, null );
     }
 
+    Optional<T> update( String id, T object );
+
     Optional<T> update( String id, Predicate<T> predicate, Consumer<T> update, Supplier<T> init );
 
     default Optional<T> update( String id, Consumer<T> update, Supplier<T> init ) {
