@@ -37,6 +37,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
 @Slf4j
@@ -55,7 +56,7 @@ public class ApplicationConfiguration {
     }
 
     public static ApplicationConfiguration load( URL appConfigPath, String[] configs ) {
-        log.debug( "application configurations: {}", appConfigPath );
+        log.debug( "application configurations: {}, configs = {}", appConfigPath, asList( configs ) );
         return Binder.hoconWithConfig( configs )
             .unmarshal( ApplicationConfiguration.class, appConfigPath );
     }
