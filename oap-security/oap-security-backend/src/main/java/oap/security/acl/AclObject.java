@@ -34,6 +34,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Collections.emptyList;
+
 /**
  * Created by igor.petrenko on 20.12.2017.
  */
@@ -58,9 +60,9 @@ public class AclObject implements Serializable {
                       @JsonProperty String owner ) {
         this.id = id;
         this.type = type;
-        this.parents = new ArrayList<>( parents );
-        this.ancestors = new ArrayList<>( ancestors );
-        this.acls = new ArrayList<>( acls );
+        this.parents = new ArrayList<>( parents != null ? parents : emptyList() );
+        this.ancestors = new ArrayList<>( ancestors != null ? ancestors : emptyList() );
+        this.acls = new ArrayList<>( acls != null ? acls : emptyList() );
         this.owner = owner;
     }
 
