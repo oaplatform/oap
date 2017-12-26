@@ -43,11 +43,11 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class AuthService2 {
-    private final UserStorage2 userStorage;
+    private final UserStorage2<? extends User2> userStorage;
     private final PasswordHasher passwordHasher;
     private final Cache<String, Token2> tokenStorage;
 
-    public AuthService2( UserStorage2 userStorage, PasswordHasher passwordHasher, int expirationTime ) {
+    public AuthService2( UserStorage2<? extends User2> userStorage, PasswordHasher passwordHasher, int expirationTime ) {
         this.userStorage = userStorage;
         this.passwordHasher = passwordHasher;
         this.tokenStorage = CacheBuilder.newBuilder()
