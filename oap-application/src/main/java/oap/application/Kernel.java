@@ -219,7 +219,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         HashSet<Module> deferred = new HashSet<>();
 
         for( Module module : modules ) {
-            log.debug( "initializing module " + module.name );
+            log.debug( "initializing module " + module.name + " [abstract = " + module.isAbstract + "]" );
 
             if( module.isAbstract ) {
                 initialized.add( module.name );
@@ -228,7 +228,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
 
             if( initialized.containsAll( module.dependsOn ) ) {
                 for( val ext : module.extendsModules ) {
-                    val extModule = modules.stream().filter( m -> m.name.equals( ext ) ).findAny()
+                    val extModule = this.modules.stream().filter( m -> m.name.equals( ext ) ).findAny()
                         .orElseThrow( () -> new ApplicationException( "extends module " + ext + " not found." ) );
 
                     module.services.putAll( extModule.services );
