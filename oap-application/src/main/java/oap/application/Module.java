@@ -25,7 +25,7 @@ package oap.application;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -56,6 +56,10 @@ public class Module {
     static final Coercions coersions = Coercions.basic().withIdentity();
     public String name;
     public ArrayList<String> dependsOn = new ArrayList<>();
+    @JsonProperty( "extends" )
+    public ArrayList<String> extendsModules = new ArrayList<>();
+    @JsonProperty( "abstract" )
+    public boolean isAbstract = false;
     public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
 
     @JsonCreator

@@ -25,6 +25,7 @@
 package oap.application;
 
 import lombok.val;
+import oap.application.ServiceOne.Complex;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
@@ -40,6 +41,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 
+import static java.util.Arrays.asList;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.pathOfTestResource;
@@ -107,10 +109,10 @@ public class KernelTest extends AbstractTest {
                 assertNotNull( one );
                 assertThat( one.i ).isEqualTo( 2 );
                 assertThat( one.i2 ).isEqualTo( 100 );
-                ServiceOne.Complex expected = new ServiceOne.Complex( 2 );
-                expected.map = Maps.of( __( "a", new ServiceOne.Complex( 1 ) ) );
+                Complex expected = new Complex( 2 );
+                expected.map = Maps.of( __( "a", new Complex( 1 ) ) );
                 assertThat( one.complex ).isEqualTo( expected );
-                assertThat( one.complexes ).contains( new ServiceOne.Complex( 2 ) );
+                assertThat( one.complexes ).contains( new Complex( 2 ) );
                 assertNotNull( two );
                 assertThat( two.j ).isEqualTo( 3000 );
                 assertThat( two.one ).isSameAs( one );
@@ -141,6 +143,29 @@ public class KernelTest extends AbstractTest {
             assertThat( Application.<ServiceOne>service( "s1" ) ).isNotNull();
             assertThat( Application.<ServiceOne>service( "s1" ).list ).isEmpty();
             assertThat( Application.<ServiceOne>service( "s2" ) ).isNull();
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
+    public void testAbstractModules() {
+        List<URL> modules = asList(
+            urlOfTestResource( getClass(), "modules/abs.conf" ),
+            urlOfTestResource( getClass(), "modules/impl.conf" )
+        );
+
+        Kernel kernel = new Kernel( modules );
+        try {
+            kernel.start();
+
+            val serviceOneP1 = Application.<ServiceOne>service( "ServiceOneP1" );
+            val cm = Application.<Complex>service( "comp" );
+
+            assertThat( serviceOneP1 ).isNotNull();
+            assertThat( serviceOneP1.complex ).isNotNull();
+            assertThat( cm ).isNotNull();
+            assertThat( serviceOneP1.complex ).isSameAs( cm );
         } finally {
             kernel.stop();
         }

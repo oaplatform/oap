@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -35,6 +36,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 
 @ToString( exclude = "listener" )
 @EqualsAndHashCode
@@ -73,7 +77,13 @@ public class ServiceOne {
         }
     }
 
+    @ToString
+    @Slf4j
     public static class ComplexMap implements Map<String, Complex> {
+
+        public ComplexMap() {
+            log.info( "init()" );
+        }
 
         @Override
         public int size() {
@@ -82,7 +92,7 @@ public class ServiceOne {
 
         @Override
         public boolean isEmpty() {
-            return false;
+            return true;
         }
 
         @Override
@@ -122,17 +132,17 @@ public class ServiceOne {
 
         @Override
         public Set<String> keySet() {
-            return null;
+            return emptySet();
         }
 
         @Override
         public Collection<Complex> values() {
-            return null;
+            return emptyList();
         }
 
         @Override
         public Set<Entry<String, Complex>> entrySet() {
-            return null;
+            return emptySet();
         }
     }
 }

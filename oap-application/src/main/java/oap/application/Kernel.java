@@ -220,7 +220,19 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
 
         for( Module module : modules ) {
             log.debug( "initializing module " + module.name );
+
+            if( module.isAbstract ) {
+                initialized.add( module.name );
+                continue;
+            }
+
             if( initialized.containsAll( module.dependsOn ) ) {
+                for( val ext : module.extendsModules ) {
+                    val extModule = modules.stream().filter( m -> m.name.equals( ext ) ).findAny()
+                        .orElseThrow( () -> new ApplicationException( "extends module " + ext + " not found." ) );
+
+                    module.services.putAll( extModule.services );
+                }
 
                 Map<String, Module.Service> def =
                     initializeServices( module.services, initializedServices, config );
@@ -256,7 +268,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         Preconditions.checkNotNull( configURL, appConfigPath + " not found" );
 
         val confdPath = confd != null ? Paths.get( confd )
-            : new File(configURL.toURI()).toPath().getParent().resolve( "conf.d" );
+            : new File( configURL.toURI() ).toPath().getParent().resolve( "conf.d" );
 
         start( ApplicationConfiguration.load( configURL, confdPath.toString() ) );
     }
