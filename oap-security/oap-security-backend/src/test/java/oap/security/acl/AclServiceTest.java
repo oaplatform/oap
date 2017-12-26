@@ -34,6 +34,8 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 
 import static java.util.Collections.singletonList;
+import static oap.application.ApplicationUtils.service;
+import static oap.security.acl.AclService.ROOT;
 import static oap.storage.Storage.LockStrategy.Lock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -57,17 +59,17 @@ public class AclServiceTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        objectStorage = new MemoryStorage<>( IdentifierBuilder.<AclObject>identify( ao -> ao.id, ( ao, id ) -> ao.id = id ).build(), Lock );
-        roleStorage = new MemoryStorage<>( IdentifierBuilder.<AclRole>identify( ar -> ar.id, ( ar, id ) -> ar.id = id ).build(), Lock );
-        aclService = new DefaultAclService( objectStorage, roleStorage );
+        objectStorage = service( new MemoryStorage<>( IdentifierBuilder.<AclObject>identify( ao -> ao.id, ( ao, id ) -> ao.id = id ).build(), Lock ) );
+        roleStorage = service( new MemoryStorage<>( IdentifierBuilder.<AclRole>identify( ar -> ar.id, ( ar, id ) -> ar.id = id ).build(), Lock ) );
+        aclService = service( new DefaultAclService( objectStorage, roleStorage ) );
 
-        objectId = aclService.registerObject( null, "testObject1" ).get();
-        childId = aclService.registerObject( objectId, "child" ).get();
-        childId2 = aclService.registerObject( childId, "child" ).get();
-        subjectId = aclService.registerObject( objectId, "subject" ).get();
-        subjectGroupId = aclService.registerObject( objectId, "subject" ).get();
-        subjectId2 = aclService.registerObject( subjectGroupId, "subject" ).get();
-        subjectId23 = aclService.registerObject( subjectId2, "subject" ).get();
+        objectId = aclService.registerObject( ROOT, "testObject1", "own" ).get();
+        childId = aclService.registerObject( objectId, "child", "own" ).get();
+        childId2 = aclService.registerObject( childId, "child", "own" ).get();
+        subjectId = aclService.registerObject( objectId, "subject", "own" ).get();
+        subjectGroupId = aclService.registerObject( objectId, "subject", "own" ).get();
+        subjectId2 = aclService.registerObject( subjectGroupId, "subject", "own" ).get();
+        subjectId23 = aclService.registerObject( subjectId2, "subject", "own" ).get();
 
         roleUknown = roleStorage.store( new AclRole( "roleIdUknown", "testRole1", singletonList( "testObjectUnknown.read" ) ) );
         role1 = roleStorage.store( new AclRole( "roleId1", "testRole1", singletonList( "testObject1.read" ) ) );

@@ -33,6 +33,10 @@ import static java.util.Arrays.asList;
  * Created by igor.petrenko on 20.12.2017.
  */
 public interface AclService {
+    String ROOT = "root";
+    String GLOBAL_ADMIN = "admin";
+    String GLOBAL_ADMIN_ROLE = "admin_role";
+
     void validate( String objectId, String subjectId, String... permissions ) throws AclSecurityException;
 
     default List<Boolean> check( String objectId, String subjectId, String... permissions ) {
@@ -55,7 +59,7 @@ public interface AclService {
 
     List<String> findChildren( String parentId, String subjectId, String type, String permission );
 
-    Optional<String> registerObject( String parentId, String type );
+    Optional<String> registerObject( String parentId, String type, String owner );
 
     void unregisterObject( String objectId );
 }

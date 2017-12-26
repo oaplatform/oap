@@ -46,6 +46,7 @@ public class AclObject implements Serializable {
     public final List<String> ancestors;
     public final List<Acl> acls;
     public String id;
+    public String owner;
 
 
     @JsonCreator
@@ -53,16 +54,18 @@ public class AclObject implements Serializable {
                       @JsonProperty String type,
                       @JsonProperty List<String> parents,
                       @JsonProperty List<String> ancestors,
-                      @JsonProperty List<Acl> acls ) {
+                      @JsonProperty List<Acl> acls,
+                      @JsonProperty String owner ) {
         this.id = id;
         this.type = type;
         this.parents = new ArrayList<>( parents );
         this.ancestors = new ArrayList<>( ancestors );
         this.acls = new ArrayList<>( acls );
+        this.owner = owner;
     }
 
-    public AclObject( String type, List<String> parents, List<String> ancestors, List<Acl> acls ) {
-        this( null, type, parents, ancestors, acls );
+    public AclObject( String type, List<String> parents, List<String> ancestors, List<Acl> acls, String owner ) {
+        this( null, type, parents, ancestors, acls, owner );
     }
 
     @JsonInclude( JsonInclude.Include.NON_DEFAULT )

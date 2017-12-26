@@ -24,6 +24,7 @@
 
 package oap.security.acl;
 
+import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.storage.Storage;
@@ -36,6 +37,7 @@ import java.util.Optional;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -49,6 +51,21 @@ public class DefaultAclService implements AclService {
     public DefaultAclService( Storage<AclObject> objectStorage, Storage<AclRole> roleStorage ) {
         this.objectStorage = objectStorage;
         this.roleStorage = roleStorage;
+    }
+
+    public void start() {
+        if( !roleStorage.get( GLOBAL_ADMIN_ROLE ).isPresent() ) {
+            roleStorage.store( new AclRole( GLOBAL_ADMIN_ROLE, "ALL", singletonList( "*" ) ) );
+        }
+        if( !objectStorage.get( ROOT ).isPresent() ) {
+            objectStorage.store( new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), GLOBAL_ADMIN ) );
+        }
+        if( !objectStorage.get( GLOBAL_ADMIN ).isPresent() ) {
+            val globalAdminRole = roleStorage.get( GLOBAL_ADMIN_ROLE ).get();
+
+            objectStorage.store( new AclObject( GLOBAL_ADMIN, "user", singletonList( ROOT ), singletonList( ROOT ),
+                singletonList( new AclObject.Acl( globalAdminRole, GLOBAL_ADMIN, ROOT, true ) ), GLOBAL_ADMIN ) );
+        }
     }
 
     @Override
@@ -181,19 +198,19 @@ public class DefaultAclService implements AclService {
     }
 
     @Override
-    public Optional<String> registerObject( String parentId, String type ) {
+    public Optional<String> registerObject( String parentId, String type, String owner ) {
+        Preconditions.checkNotNull( parentId );
+
         val ancestors = new ArrayList<String>();
         val parents = new ArrayList<String>();
 
-        if( parentId != null ) {
-            val parent = objectStorage.get( parentId ).orElse( null );
-            if( parent == null ) return Optional.empty();
-            ancestors.add( parentId );
-            parents.add( parentId );
-            ancestors.addAll( parent.ancestors );
-        }
+        val parent = objectStorage.get( parentId ).orElse( null );
+        if( parent == null ) return Optional.empty();
+        ancestors.add( parentId );
+        parents.add( parentId );
+        ancestors.addAll( parent.ancestors );
 
-        val ao = new AclObject( null, type, parents, ancestors, emptyList() );
+        val ao = new AclObject( null, type, parents, ancestors, emptyList(), owner );
         objectStorage.store( ao );
 
         return Optional.of( ao.id );
