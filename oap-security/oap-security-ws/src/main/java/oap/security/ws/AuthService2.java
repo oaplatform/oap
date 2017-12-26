@@ -51,7 +51,7 @@ public class AuthService2 {
         this.userStorage = userStorage;
         this.passwordHasher = passwordHasher;
         this.tokenStorage = CacheBuilder.newBuilder()
-            .expireAfterAccess( expirationTime, TimeUnit.MINUTES )
+            .expireAfterAccess( expirationTime, TimeUnit.MILLISECONDS )
             .build();
     }
 
