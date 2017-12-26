@@ -65,6 +65,8 @@ public class DefaultAclService implements AclService {
 
             objectStorage.store( new AclObject( GLOBAL_ADMIN, "user", singletonList( ROOT ), singletonList( ROOT ),
                 singletonList( new AclObject.Acl( globalAdminRole, GLOBAL_ADMIN, ROOT, true ) ), GLOBAL_ADMIN ) );
+
+            add( ROOT, GLOBAL_ADMIN, GLOBAL_ADMIN_ROLE, true );
         }
     }
 
@@ -98,7 +100,7 @@ public class DefaultAclService implements AclService {
         return Lists.map( permissions,
             ( p ) -> aclObject.acls
                 .stream()
-                .anyMatch( acl -> subjects.contains( acl.subjectId ) && acl.role.permissions.contains( p ) )
+                .anyMatch( acl -> subjects.contains( acl.subjectId ) && ( acl.role.permissions.contains( "*" ) || acl.role.permissions.contains( p ) ) )
         );
     }
 
@@ -210,7 +212,9 @@ public class DefaultAclService implements AclService {
         parents.add( parentId );
         ancestors.addAll( parent.ancestors );
 
-        val ao = new AclObject( null, type, parents, ancestors, emptyList(), owner );
+        val acls = parent.acls.stream().filter( acl -> acl.inheritance ).collect( toList() );
+
+        val ao = new AclObject( null, type, parents, ancestors, acls, owner );
         objectStorage.store( ao );
 
         return Optional.of( ao.id );

@@ -35,6 +35,7 @@ import java.io.IOException;
 
 import static java.util.Collections.singletonList;
 import static oap.application.ApplicationUtils.service;
+import static oap.security.acl.AclService.GLOBAL_ADMIN;
 import static oap.security.acl.AclService.ROOT;
 import static oap.storage.Storage.LockStrategy.Lock;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,6 +74,11 @@ public class AclServiceTest {
 
         roleUknown = roleStorage.store( new AclRole( "roleIdUknown", "testRole1", singletonList( "testObjectUnknown.read" ) ) );
         role1 = roleStorage.store( new AclRole( "roleId1", "testRole1", singletonList( "testObject1.read" ) ) );
+    }
+
+    @Test
+    public void testGlobalAdmin() {
+        assertThat( aclService.checkOne( objectId, GLOBAL_ADMIN, "any permission" ) ).isTrue();
     }
 
     @Test
