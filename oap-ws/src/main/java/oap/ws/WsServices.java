@@ -24,6 +24,7 @@
 
 package oap.ws;
 
+import lombok.val;
 import oap.util.Stream;
 
 import java.util.Optional;
@@ -35,9 +36,9 @@ final class WsServices {
     private static Pattern namedParamPattern = Pattern.compile( "/\\{([^\\}]+)\\}" );
 
     public static Pattern compile( String mapping ) {
-        return Pattern.compile( '^' +
-            namedParamPattern.matcher( rxParamPattern.matcher( mapping ).replaceAll( "$2" ) )
-                .replaceAll( "/([^/]+)" ) + '$' );
+        val pattern = namedParamPattern.matcher( rxParamPattern.matcher( mapping ).replaceAll( "$2" ) )
+            .replaceAll( "/([^/]+)" );
+        return Pattern.compile( '^' + ( pattern.equals( "/" ) ? "" : pattern ) + '$' );
     }
 
     private static String filter( String mapping ) {

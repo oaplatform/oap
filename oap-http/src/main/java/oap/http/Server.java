@@ -107,10 +107,12 @@ public class Server implements HttpServer {
     @Override
     public void bind( final String context, final CorsPolicy corsPolicy, final Handler handler,
                       final Protocol protocol ) {
-        final String location = "/" + context + "/*";
-        mapper.register( location, new BlockingHandlerAdapter( "/" + context, handler, corsPolicy, protocol ) );
+        final String location1 = "/" + context + "/*";
+        final String location2 = "/" + context;
+        mapper.register( location1, new BlockingHandlerAdapter( "/" + context, handler, corsPolicy, protocol ) );
+        mapper.register( location2, new BlockingHandlerAdapter( "/" + context, handler, corsPolicy, protocol ) );
 
-        log.debug( handler + " bound to " + location );
+        log.debug( handler + " bound to [" + location1 + ", " + location2 + "]" );
     }
 
     @Override

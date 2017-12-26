@@ -30,6 +30,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 import java.util.Optional;
 
+import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.REQUEST;
 
@@ -39,6 +40,11 @@ class MathWS {
         return a + b.stream().mapToInt( Integer::intValue ).sum()
             + ( c.isPresent() ? c.get() : 0 )
             + ( rp.isPresent() ? 5 : 0 );
+    }
+
+    @WsMethod( method = GET, path = "/" )
+    public int test() {
+        return 2;
     }
 
     public int sumab( int a, int b ) {

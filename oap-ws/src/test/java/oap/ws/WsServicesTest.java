@@ -36,6 +36,7 @@ public class WsServicesTest extends AbstractTest {
     public void compile() {
         assertEquals( WsServices.compile( "/y/{year:(\\d\\d\\d\\d)}/{month}/{date}" ).toString(), "^/y/(\\d\\d\\d\\d)/([^/]+)/([^/]+)$" );
         assertEquals( WsServices.compile( "/y/{year:(\\d{4})}/{month}/{date}" ).toString(), "^/y/(\\d{4})/([^/]+)/([^/]+)$" );
+        assertEquals( WsServices.compile( "/" ).toString(), "^$" );
     }
 
     @Test
