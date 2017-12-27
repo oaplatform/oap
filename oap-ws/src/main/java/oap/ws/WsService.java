@@ -190,7 +190,7 @@ public class WsService implements Handler {
 
         final HttpResponse interceptorResponse =
             session != null
-                ? runInterceptors( request, session._2, method, ( p ) -> getValue( session, request, wsMethod, p ) )
+                ? runInterceptors( request, session._2, method, ( p ) -> getValue( session, request, wsMethod, p ).orElse( null ) )
                 : null;
 
         if( interceptorResponse != null ) {
