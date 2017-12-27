@@ -31,8 +31,8 @@ import oap.http.Session;
 import oap.reflect.Reflection;
 import oap.ws.Interceptor;
 
-import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 @Slf4j
 public class MockSecurityInterceptor implements Interceptor {
@@ -40,9 +40,10 @@ public class MockSecurityInterceptor implements Interceptor {
     public static User USER = new DefaultUser( Role.ADMIN, "orgId", "admin@admin.com" );
 
     @Override
-    public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues ) {
-        session.set( "sessionToken", SESSION_TOKEN );
-        session.set( "user", USER );
+    public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
+                                             Function<Reflection.Parameter, Object> getParameterValueFunc ) {
+        session.set( Interceptor.SESSION_TOKEN, SESSION_TOKEN );
+        session.set( Interceptor.USER_ID, USER.getEmail() );
 
         return Optional.empty();
     }

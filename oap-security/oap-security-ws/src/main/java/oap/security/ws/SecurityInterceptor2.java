@@ -34,8 +34,8 @@ import oap.reflect.Reflection;
 import oap.security.acl.AclService;
 import oap.ws.Interceptor;
 
-import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static java.lang.String.format;
 
@@ -54,7 +54,7 @@ public class SecurityInterceptor2 implements Interceptor {
 
     @Override
     public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
-                                             Map<Reflection.Parameter, Object> originalValues ) {
+                                             Function<Reflection.Parameter, Object> getParameterValueFunc ) {
         val annotation = method.findAnnotation( WsSecurity2.class ).orElse( null );
         if( annotation == null ) return Optional.empty();
 
@@ -66,7 +66,7 @@ public class SecurityInterceptor2 implements Interceptor {
             return Optional.of( httpResponse );
         }
 
-        var userId = ( String ) session.get( "userid" ).orElse( null );
+        var userId = ( String ) session.get( USER_ID ).orElse( null );
         if( userId == null ) {
             val sessionToken = request.header( "Authorization" ).orElse( request.cookie( "Authorization" ).orElse( null ) );
             if( sessionToken == null ) {
@@ -86,13 +86,13 @@ public class SecurityInterceptor2 implements Interceptor {
                 return Optional.of( httpResponse );
             }
             userId = token.userId;
-            session.set( "sessionToken", token.id );
-            session.set( "userid", userId );
+            session.set( SESSION_TOKEN, token.id );
+            session.set( USER_ID, userId );
         } else {
             log.trace( "User [{}] found in session", userId );
         }
 
-        val objectId = getObjectId( method, annotation, originalValues );
+        val objectId = getObjectId( method, annotation, getParameterValueFunc );
 
         if( !aclService.checkOne( objectId, userId, annotation.permission() ) ) {
             val httpResponse = HttpResponse.status( 403, String.format( "User [%s] has no access to method [%s]", userId, method.name() ) );
@@ -106,11 +106,11 @@ public class SecurityInterceptor2 implements Interceptor {
     }
 
     private String getObjectId( Reflection.Method method, WsSecurity2 annotation,
-                                Map<Reflection.Parameter, Object> originalValues ) {
+                                Function<Reflection.Parameter, Object> getParameterValueFunc ) {
         val parameterName = annotation.object();
         if( parameterName.startsWith( "{" ) ) {
             val parameter = method.getParameter( parameterName.substring( 1, parameterName.length() - 1 ) );
-            return originalValues.get( parameter ).toString();
+            return ( String ) getParameterValueFunc.apply( parameter );
         } else return parameterName;
     }
 }

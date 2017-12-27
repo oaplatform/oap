@@ -29,10 +29,14 @@ import oap.http.Request;
 import oap.http.Session;
 import oap.reflect.Reflection;
 
-import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 public interface Interceptor {
+    String SESSION_TOKEN = "sessionToken";
+    String USER_ID = "userid";
 
-    Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues );
+    Optional<HttpResponse> intercept( Request request, Session session,
+                                      Reflection.Method method,
+                                      Function<Reflection.Parameter, Object> getParameterValueFunc );
 }

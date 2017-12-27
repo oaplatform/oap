@@ -30,8 +30,8 @@ import oap.http.Session;
 import oap.reflect.Reflection;
 import oap.ws.Interceptor;
 
-import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Created by igor.petrenko on 22.12.2017.
@@ -41,9 +41,10 @@ public class MockSecurityInterceptor2 implements Interceptor {
     public static String USER = "admin@admin.com";
 
     @Override
-    public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues ) {
+    public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
+                                             Function<Reflection.Parameter, Object> getParameterValueFunc ) {
         session.set( "sessionToken", SESSION_TOKEN );
-        session.set( "userid", USER );
+        session.set( USER_ID, USER );
 
         return Optional.empty();
     }

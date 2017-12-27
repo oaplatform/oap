@@ -42,8 +42,7 @@ import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.UUID;
 
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
+import static oap.ws.Interceptor.USER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -63,7 +62,7 @@ public class SecurityInterceptor2Test {
     public void testShouldNotCheckMethodWithoutAnnotation() {
         val methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithoutAnnotation" ) ).get();
 
-        val httpResponse = securityInterceptor.intercept( null, null, methodWithAnnotation, emptyMap() );
+        val httpResponse = securityInterceptor.intercept( null, null, methodWithAnnotation, p -> null );
 
         assertThat( httpResponse ).isEmpty();
     }
@@ -75,12 +74,12 @@ public class SecurityInterceptor2Test {
         val userId = "testUser";
 
         final Session session = new Session();
-        session.set( "userid", userId );
+        session.set( USER_ID, userId );
 
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( true );
 
         val httpResponse = securityInterceptor.intercept( null,
-            session, methodWithAnnotation, singletonMap( methodWithAnnotation.getParameter( "parent" ), "obj" ) );
+            session, methodWithAnnotation, p -> "obj" );
 
         assertThat( httpResponse ).isEmpty();
     }
@@ -108,10 +107,10 @@ public class SecurityInterceptor2Test {
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( true );
 
         val httpResponse = securityInterceptor.intercept( request,
-            session, methodWithAnnotation, singletonMap( methodWithAnnotation.getParameter( "parent" ), "obj" ) );
+            session, methodWithAnnotation, p -> "obj" );
 
         assertThat( httpResponse ).isEmpty();
-        assertThat( session.get( "userid" ) ).contains( userId );
+        assertThat( session.get( USER_ID ) ).contains( userId );
     }
 
     @Test
@@ -121,12 +120,12 @@ public class SecurityInterceptor2Test {
         val userId = "testUser";
 
         final Session session = new Session();
-        session.set( "userid", userId );
+        session.set( USER_ID, userId );
 
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( false );
 
         val httpResponse = securityInterceptor.intercept( null,
-            session, methodWithAnnotation, singletonMap( methodWithAnnotation.getParameter( "parent" ), "obj" ) );
+            session, methodWithAnnotation, p -> "obj" );
 
         assertThat( httpResponse ).isPresent();
     }

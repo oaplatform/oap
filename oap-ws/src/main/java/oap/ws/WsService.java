@@ -60,6 +60,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
@@ -186,16 +187,19 @@ public class WsService implements Handler {
         logger.trace( "Internal session status: [{}]", session );
 
         final Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
-        final List<Reflection.Parameter> parameters = method.parameters;
-        final LinkedHashMap<Reflection.Parameter, Object> originalValues = getOriginalValues( session, parameters, request, wsMethod );
 
         final HttpResponse interceptorResponse =
-            session != null ? runInterceptors( request, session._2, method, originalValues ) : null;
+            session != null
+                ? runInterceptors( request, session._2, method, ( p ) -> getValue( session, request, wsMethod, p ) )
+                : null;
 
         if( interceptorResponse != null ) {
             response.respond( interceptorResponse );
         } else {
             Metrics.measureTimer( name, () -> {
+                final List<Reflection.Parameter> parameters = method.parameters;
+                final LinkedHashMap<Reflection.Parameter, Object> originalValues = getOriginalValues( session, parameters, request, wsMethod );
+
                 final ValidationErrors paramValidation = ValidationErrors.empty();
 
                 originalValues.forEach( ( parameter, value ) ->
@@ -305,10 +309,11 @@ public class WsService implements Handler {
         }
     }
 
-    private HttpResponse runInterceptors( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues ) {
+    private HttpResponse runInterceptors( Request request, Session session, Reflection.Method method,
+                                          Function<Reflection.Parameter, Object> getParameterValueFunc ) {
 
         for( Interceptor interceptor : interceptors ) {
-            final Optional<HttpResponse> interceptorResponse = interceptor.intercept( request, session, method, originalValues );
+            val interceptorResponse = interceptor.intercept( request, session, method, getParameterValueFunc );
             if( interceptorResponse.isPresent() ) {
                 return interceptorResponse.get();
             }
@@ -329,48 +334,57 @@ public class WsService implements Handler {
     }
 
     public LinkedHashMap<Reflection.Parameter, Object> getOriginalValues( Pair<String, Session> session,
-                                                                          List<Reflection.Parameter> parameters, Request request, Optional<WsMethod> wsMethod ) {
+                                                                          List<Reflection.Parameter> parameters,
+                                                                          Request request,
+                                                                          Optional<WsMethod> wsMethod ) {
 
-        return parameters.stream().collect( toLinkedHashMap( parameter -> parameter, parameter -> {
-            Object value = parameter.findAnnotation( WsParam.class )
-                .<Object>map( wsParam -> {
-                    switch( wsParam.from() ) {
-                        case REQUEST:
-                            return request;
-                        case SESSION:
-                            if( session == null ) return null;
-                            return parameter.type().isOptional() ?
-                                session._2.get( parameter.name() ) :
-                                session._2.get( parameter.name() ).orElse( null );
-                        case HEADER:
-                            return unwrap( parameter, request.header( parameter.name() ) );
-                        case PATH:
-                            return wsMethod.map( wsm -> WsServices.pathParam( wsm.path(), request.requestLine,
-                                parameter.name() ) )
-                                .orElseThrow( () -> new WsException(
-                                    "path parameter " + parameter.name() + " without " +
-                                        WsMethod.class.getName() + " annotation" ) );
-                        case BODY:
-                            return parameter.type().assignableFrom( byte[].class ) ?
-                                ( parameter.type().isOptional() ? request.readBody() :
-                                    request.readBody()
-                                        .orElseThrow( () -> new WsClientException(
-                                            "no body for " + parameter.name() ) )
-                                ) :
-                                unwrap( parameter, request.readBody().map( String::new ) );
-                        default:
-                            return parameter.type().assignableTo( List.class ) ?
-                                request.parameters( parameter.name() ) :
-                                unwrap( parameter, request.parameter( parameter.name() ) );
-
-                    }
-                } )
+        return parameters.stream().collect( toLinkedHashMap(
+            parameter -> parameter,
+            parameter -> getValue( session, request, wsMethod, parameter )
                 .orElseGet( () -> parameter.type().assignableTo( List.class ) ?
                     request.parameters( parameter.name() ) :
                     unwrap( parameter, request.parameter( parameter.name() ) )
-                );
-            return value;
-        } ) );
+                ) ) );
+    }
+
+    public Optional<Object> getValue(
+        Pair<String, Session> session,
+        Request request,
+        Optional<WsMethod> wsMethod,
+        Reflection.Parameter parameter ) {
+        return parameter.findAnnotation( WsParam.class )
+            .map( wsParam -> {
+                switch( wsParam.from() ) {
+                    case REQUEST:
+                        return request;
+                    case SESSION:
+                        if( session == null ) return null;
+                        return parameter.type().isOptional() ?
+                            session._2.get( parameter.name() ) :
+                            session._2.get( parameter.name() ).orElse( null );
+                    case HEADER:
+                        return unwrap( parameter, request.header( parameter.name() ) );
+                    case PATH:
+                        return wsMethod.map( wsm -> WsServices.pathParam( wsm.path(), request.requestLine,
+                            parameter.name() ) )
+                            .orElseThrow( () -> new WsException(
+                                "path parameter " + parameter.name() + " without " +
+                                    WsMethod.class.getName() + " annotation" ) );
+                    case BODY:
+                        return parameter.type().assignableFrom( byte[].class ) ?
+                            ( parameter.type().isOptional() ? request.readBody() :
+                                request.readBody()
+                                    .orElseThrow( () -> new WsClientException(
+                                        "no body for " + parameter.name() ) )
+                            ) :
+                            unwrap( parameter, request.readBody().map( String::new ) );
+                    default:
+                        return parameter.type().assignableTo( List.class ) ?
+                            request.parameters( parameter.name() ) :
+                            unwrap( parameter, request.parameter( parameter.name() ) );
+
+                }
+            } );
     }
 
 

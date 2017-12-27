@@ -33,8 +33,8 @@ import org.testng.annotations.Test;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static oap.http.Request.HttpMethod.GET;
 import static oap.http.testng.HttpAsserts.HTTP_URL;
@@ -76,14 +76,16 @@ public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
 
     private static class EmptyInterceptor implements Interceptor {
         @Override
-        public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues ) {
+        public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
+                                                 Function<Reflection.Parameter, Object> getParameterValueFunc ) {
             return Optional.empty();
         }
     }
 
     private static class ErrorInterceptor implements Interceptor {
         @Override
-        public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues ) {
+        public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
+                                                 Function<Reflection.Parameter, Object> getParameterValueFunc ) {
             return request.parameter( "value" ).get().equals( "error" ) ?
                 Optional.of( new HttpResponse( 403 ).withContent( "caused by interceptor", APPLICATION_JSON ) ) :
                 Optional.empty();
