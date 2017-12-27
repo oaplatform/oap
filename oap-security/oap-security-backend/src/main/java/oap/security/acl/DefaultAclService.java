@@ -93,6 +93,8 @@ public class DefaultAclService implements AclService {
 
         log.trace( "object = {}, subject = {}", aclObject, aclSubject );
 
+        if( objectId.equals( subjectId ) ) return Lists.map( permissions, ( p ) -> true );
+
         val subjects = new HashSet<String>();
         subjects.add( subjectId );
         subjects.addAll( aclSubject.ancestors );
@@ -100,7 +102,8 @@ public class DefaultAclService implements AclService {
         return Lists.map( permissions,
             ( p ) -> aclObject.acls
                 .stream()
-                .anyMatch( acl -> subjects.contains( acl.subjectId ) && ( acl.role.permissions.contains( "*" ) || acl.role.permissions.contains( p ) ) )
+                .anyMatch( acl -> subjects.contains( acl.subjectId )
+                    && ( acl.role.permissions.contains( "*" ) || acl.role.permissions.contains( p ) ) )
         );
     }
 

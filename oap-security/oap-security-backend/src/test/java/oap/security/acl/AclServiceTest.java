@@ -140,6 +140,11 @@ public class AclServiceTest {
     }
 
     @Test
+    public void testSelfPermission() {
+        assertThat( aclService.checkOne( subjectId, subjectId, "any permissions" ) ).isTrue();
+    }
+
+    @Test
     public void testUnregisterObject() {
         assertThatThrownBy( () -> aclService.unregisterObject( childId ) )
             .hasMessage( "Group '" + childId + "' not empty" )
