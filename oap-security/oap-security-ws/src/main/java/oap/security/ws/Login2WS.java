@@ -24,7 +24,9 @@
 
 package oap.security.ws;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.http.HttpResponse;
+import oap.security.acl.TemporaryTokenService;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
 import org.joda.time.DateTime;
@@ -38,21 +40,32 @@ import static oap.ws.WsParam.From.QUERY;
 /**
  * Created by igor.petrenko on 27.12.2017.
  */
+@Slf4j
 public class Login2WS {
     private final AuthService2 authService;
     private final String cookieDomain;
     private final int cookieExpiration;
+    private final TemporaryTokenService temporaryTokenService;
 
-    public Login2WS( AuthService2 authService, String cookieDomain, int cookieExpiration ) {
+    public Login2WS( AuthService2 authService,
+                     String cookieDomain, int cookieExpiration,
+                     TemporaryTokenService temporaryTokenService ) {
         this.authService = authService;
         this.cookieDomain = cookieDomain;
         this.cookieExpiration = cookieExpiration;
+        this.temporaryTokenService = temporaryTokenService;
     }
 
     @WsMethod( method = GET, path = "/" )
-    public HttpResponse login( @WsParam( from = QUERY ) String email, @WsParam( from = QUERY ) String password ) {
+    public HttpResponse login( @WsParam( from = QUERY ) String email,
+                               @WsParam( from = QUERY ) String password ) {
+        log.debug( "login email = {}, password = {}", email, "XXX" );
         final Optional<Token2> optionalToken = authService.generateToken( email, password );
 
+        return login( optionalToken );
+    }
+
+    private HttpResponse login( Optional<Token2> optionalToken ) {
         if( optionalToken.isPresent() ) {
             final Token2 token = optionalToken.get();
             final HttpResponse ok = HttpResponse.ok( token );
@@ -60,6 +73,13 @@ public class Login2WS {
         } else {
             return HttpResponse.status( HTTP_UNAUTHORIZED, "Username or password is invalid" );
         }
+    }
+
+    @WsMethod( method = GET, path = "/login/{tokenId}" )
+    public HttpResponse loginByTemporaryToken( @WsParam String tokenId ) {
+        log.debug( "loginByTemporaryToken tokenId = {}", tokenId );
+
+        return login( temporaryTokenService.get( tokenId ).flatMap( tt -> authService.generateToken( tt.objectId ) ) );
     }
 
     public HttpResponse withAuthorization( HttpResponse response, Token2 token ) {

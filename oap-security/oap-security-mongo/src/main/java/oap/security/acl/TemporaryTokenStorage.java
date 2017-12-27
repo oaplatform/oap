@@ -22,14 +22,18 @@
  * SOFTWARE.
  */
 
-package oap.security.ws;
+package oap.security.acl;
 
-import java.util.Optional;
+import oap.storage.MongoClient;
+import oap.storage.MongoStorage;
+
+import static oap.storage.Storage.LockStrategy.Lock;
 
 /**
- * Created by igor.petrenko on 22.12.2017.
+ * Created by igor.petrenko on 27.12.2017.
  */
-public interface UserStorage2<T extends User2> {
-    Optional<T> getByEmail( String email );
-    Optional<T> get( String id );
+public class TemporaryTokenStorage extends MongoStorage<TemporaryToken> {
+    public TemporaryTokenStorage( MongoClient mongoClient, String database, String table ) {
+        super( mongoClient, database, table, tt -> tt.id, ( tt, id ) -> tt.id = id, Lock, TemporaryToken.class );
+    }
 }

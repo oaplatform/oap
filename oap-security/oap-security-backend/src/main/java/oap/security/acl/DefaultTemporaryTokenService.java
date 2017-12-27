@@ -22,14 +22,43 @@
  * SOFTWARE.
  */
 
-package oap.security.ws;
+package oap.security.acl;
+
+import lombok.val;
+import oap.storage.Storage;
+import org.joda.time.DateTimeUtils;
 
 import java.util.Optional;
 
 /**
- * Created by igor.petrenko on 22.12.2017.
+ * Created by igor.petrenko on 27.12.2017.
  */
-public interface UserStorage2<T extends User2> {
-    Optional<T> getByEmail( String email );
-    Optional<T> get( String id );
+public class DefaultTemporaryTokenService implements TemporaryTokenService, Runnable {
+    private final Storage<TemporaryToken> storage;
+    private final long expiration;
+
+    public DefaultTemporaryTokenService( Storage<TemporaryToken> storage, long expiration ) {
+        this.storage = storage;
+        this.expiration = expiration;
+    }
+
+    @Override
+    public String create( String objectId ) {
+        return storage.store( new TemporaryToken( null, objectId, DateTimeUtils.currentTimeMillis() ) ).id;
+    }
+
+    @Override
+    public Optional<TemporaryToken> get( String tokenId ) {
+        return storage.get( tokenId );
+    }
+
+    @Override
+    public void run() {
+        val now = DateTimeUtils.currentTimeMillis() - expiration;
+        for( val tt : storage ) {
+            if( tt.time < now ) {
+                storage.delete( tt.id );
+            }
+        }
+    }
 }

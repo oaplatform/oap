@@ -65,6 +65,10 @@ public class AuthService2 {
         return Optional.of( generateToken( user ) );
     }
 
+    public synchronized Optional<Token2> generateToken( String id ) {
+        return userStorage.get( id ).map( this::generateToken );
+    }
+
     public synchronized Token2 generateToken( User2 user ) {
         Token2 token = null;
 

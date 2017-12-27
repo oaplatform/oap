@@ -22,14 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.security.ws;
+package oap.security.acl;
 
-import java.util.Optional;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.io.Serializable;
 
 /**
- * Created by igor.petrenko on 22.12.2017.
+ * Created by igor.petrenko on 27.12.2017.
  */
-public interface UserStorage2<T extends User2> {
-    Optional<T> getByEmail( String email );
-    Optional<T> get( String id );
+public class TemporaryToken implements Serializable {
+    private static final long serialVersionUID = -7308648704979898600L;
+    public String id;
+    public final String objectId;
+    public final long time;
+
+    @JsonCreator
+    public TemporaryToken( @JsonProperty String id,
+                           @JsonProperty String objectId,
+                           @JsonProperty long time ) {
+        this.id = id;
+        this.objectId = objectId;
+        this.time = time;
+    }
 }

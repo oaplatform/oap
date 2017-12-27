@@ -41,6 +41,7 @@ import org.bson.types.ObjectId;
 import org.joda.time.DateTimeUtils;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -128,5 +129,12 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
     @Override
     public void run() {
         fsync();
+    }
+
+    @Override
+    public Optional<T> delete( String id ) {
+        collection.deleteOne( eq( "_id", new ObjectId( id ) ) );
+
+        return super.delete( id );
     }
 }
