@@ -75,7 +75,7 @@ public class Login2WS {
         }
     }
 
-    @WsMethod( method = GET, path = "/login/{tokenId}" )
+    @WsMethod( method = GET, path = "/{tokenId}" )
     public HttpResponse loginByTemporaryToken( @WsParam String tokenId ) {
         log.debug( "loginByTemporaryToken tokenId = {}", tokenId );
 
