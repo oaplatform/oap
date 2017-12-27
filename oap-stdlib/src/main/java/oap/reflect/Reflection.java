@@ -177,6 +177,10 @@ public class Reflection extends Annotated<Class<?>> {
         return this.methods.stream().filter( matcher ).findFirst();
     }
 
+    public Optional<Method> method( Predicate<Method> matcher, Comparator<Method> comparator ) {
+        return this.methods.stream().sorted( comparator ).filter( matcher ).findFirst();
+    }
+
     public Optional<Method> method( String name ) {
         return method( m -> Objects.equals( m.name(), name ) );
     }

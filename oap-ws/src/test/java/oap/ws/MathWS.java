@@ -32,6 +32,7 @@ import java.util.Optional;
 
 import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.BODY;
+import static oap.ws.WsParam.From.PATH;
 import static oap.ws.WsParam.From.REQUEST;
 
 class MathWS {
@@ -45,6 +46,16 @@ class MathWS {
     @WsMethod( method = GET, path = "/" )
     public int test() {
         return 2;
+    }
+
+    @WsMethod( method = GET, path = "/test/sort/{id}" )
+    public String test1( @WsParam( from = PATH ) String id ) {
+        return id;
+    }
+
+    @WsMethod( method = GET, path = "/test/sort/default" )
+    public String test2() {
+        return "__default__";
     }
 
     public int sumab( int a, int b ) {

@@ -146,7 +146,12 @@ public class WsService implements Handler {
     @Override
     public void handle( Request request, Response response ) {
         try {
-            val method = reflection.method( m -> methodMatches( request.requestLine, request.httpMethod, m ) )
+            val method = reflection.method( m -> methodMatches( request.requestLine, request.httpMethod, m ), ( o1, o2 ) -> {
+                val path1 = o1.findAnnotation( WsMethod.class ).map( WsMethod::path ).orElse( o1.name() );
+                val path2 = o2.findAnnotation( WsMethod.class ).map( WsMethod::path ).orElse( o1.name() );
+
+                return path1.compareTo( path2 );
+            } )
                 .orElse( null );
 
             if( method == null ) response.respond( NOT_FOUND );
