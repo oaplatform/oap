@@ -35,6 +35,7 @@ import java.util.Optional;
 
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static oap.http.Request.HttpMethod.GET;
+import static oap.ws.WsParam.From.PATH;
 import static oap.ws.WsParam.From.QUERY;
 
 /**
@@ -76,7 +77,7 @@ public class Login2WS {
     }
 
     @WsMethod( method = GET, path = "/{tokenId}" )
-    public HttpResponse loginByTemporaryToken( @WsParam String tokenId ) {
+    public HttpResponse loginByTemporaryToken( @WsParam(from = PATH) String tokenId ) {
         log.debug( "loginByTemporaryToken tokenId = {}", tokenId );
 
         return login( temporaryTokenService.get( tokenId ).flatMap( tt -> authService.generateToken( tt.objectId ) ) );
