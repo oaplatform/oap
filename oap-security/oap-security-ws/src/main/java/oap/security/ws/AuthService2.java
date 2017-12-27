@@ -55,8 +55,8 @@ public class AuthService2 {
             .build();
     }
 
-    public synchronized Optional<Token2> generateToken( String id, String password ) {
-        final User2 user = userStorage.get( id ).orElse( null );
+    public synchronized Optional<Token2> generateToken( String email, String password ) {
+        final User2 user = userStorage.getByEmail( email ).orElse( null );
         if( user == null ) return Optional.empty();
 
         val inputPassword = passwordHasher.hashPassword( password );

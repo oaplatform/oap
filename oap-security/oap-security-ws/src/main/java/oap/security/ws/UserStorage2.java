@@ -30,5 +30,5 @@ import java.util.Optional;
  * Created by igor.petrenko on 22.12.2017.
  */
 public interface UserStorage2<T extends User2> {
-    Optional<T> get( String id );
+    Optional<T> getByEmail( String email );
 }
