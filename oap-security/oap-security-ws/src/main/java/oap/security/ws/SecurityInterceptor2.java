@@ -66,7 +66,7 @@ public class SecurityInterceptor2 implements Interceptor {
             return Optional.of( httpResponse );
         }
 
-        var userId = ( String ) session.get( "user-id" ).orElse( null );
+        var userId = ( String ) session.get( "userid" ).orElse( null );
         if( userId == null ) {
             val sessionToken = request.header( "Authorization" ).orElse( request.cookie( "Authorization" ).orElse( null ) );
             if( sessionToken == null ) {
@@ -87,7 +87,7 @@ public class SecurityInterceptor2 implements Interceptor {
             }
             userId = token.userId;
             session.set( "sessionToken", token.id );
-            session.set( "user-id", userId );
+            session.set( "userid", userId );
         } else {
             log.trace( "User [{}] found in session", userId );
         }

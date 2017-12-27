@@ -75,7 +75,7 @@ public class SecurityInterceptor2Test {
         val userId = "testUser";
 
         final Session session = new Session();
-        session.set( "user-id", userId );
+        session.set( "userid", userId );
 
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( true );
 
@@ -111,7 +111,7 @@ public class SecurityInterceptor2Test {
             session, methodWithAnnotation, singletonMap( methodWithAnnotation.getParameter( "parent" ), "obj" ) );
 
         assertThat( httpResponse ).isEmpty();
-        assertThat( session.get( "user-id" ) ).contains( userId );
+        assertThat( session.get( "userid" ) ).contains( userId );
     }
 
     @Test
@@ -121,7 +121,7 @@ public class SecurityInterceptor2Test {
         val userId = "testUser";
 
         final Session session = new Session();
-        session.set( "user-id", userId );
+        session.set( "userid", userId );
 
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( false );
 

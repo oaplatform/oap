@@ -43,7 +43,7 @@ public class MockSecurityInterceptor2 implements Interceptor {
     @Override
     public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method, Map<Reflection.Parameter, Object> originalValues ) {
         session.set( "sessionToken", SESSION_TOKEN );
-        session.set( "user-id", USER );
+        session.set( "userid", USER );
 
         return Optional.empty();
     }
