@@ -120,7 +120,10 @@ public class FileStorageTest extends AbstractTest {
     public void storeAndUpdate() {
         try( FileStorage<Bean> storage = new FileStorage<>( tmpPath( "data" ), Bean.identifier, 50, Lock ) ) {
             storage.store( new Bean( "111" ) );
-            storage.update( "111", u -> u.s = "bbb" );
+            storage.update( "111", u -> {
+                u.s = "bbb";
+                return u;
+            } );
         }
 
         try( FileStorage<Bean> storage2 = new FileStorage<>( tmpPath( "data" ), Bean.identifier, Lock ) ) {

@@ -37,7 +37,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -79,13 +79,13 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
-    public Optional<T> update( String id, Predicate<T> predicate, Consumer<T> update, Supplier<T> init ) {
+    public Optional<T> update( String id, Predicate<T> predicate, Function<T, T> update, Supplier<T> init ) {
         open();
         return super.update( id, predicate, update, init );
     }
 
     @Override
-    public void update( Collection<String> ids, Predicate<T> predicate, Consumer<T> update, Supplier<T> init ) {
+    public void update( Collection<String> ids, Predicate<T> predicate, Function<T, T> update, Supplier<T> init ) {
         open();
         super.update( ids, predicate, update, init );
     }

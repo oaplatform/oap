@@ -27,11 +27,9 @@ package oap.storage;
 import oap.util.Stream;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -39,68 +37,68 @@ import java.util.function.Supplier;
  * Created by igor.petrenko on 22.09.2016.
  */
 public class ShardStorage<T, ShardID> implements Closeable {
-   private ShardManager<T, ShardID> sm;
-   private Function<ShardID, Storage<T>> cons;
+    private ShardManager<T, ShardID> sm;
+    private Function<ShardID, Storage<T>> cons;
 
-   public ShardStorage( ShardManager<T, ShardID> sm, Function<ShardID, Storage<T>> cons ) {
-      this.sm = sm;
-      this.cons = cons;
-   }
+    public ShardStorage( ShardManager<T, ShardID> sm, Function<ShardID, Storage<T>> cons ) {
+        this.sm = sm;
+        this.cons = cons;
+    }
 
-   public Stream<T> select( ShardID shard ) {
-      return getStorage( shard ).select();
-   }
+    public Stream<T> select( ShardID shard ) {
+        return getStorage( shard ).select();
+    }
 
-   public Storage<T> getStorage( ShardID shard ) {
-      return sm.getOrCreate( shard, cons );
-   }
+    public Storage<T> getStorage( ShardID shard ) {
+        return sm.getOrCreate( shard, cons );
+    }
 
-   public void store( ShardID shard, T object ) {
-      getStorage( shard ).store( object );
-   }
+    public void store( ShardID shard, T object ) {
+        getStorage( shard ).store( object );
+    }
 
-   public void store( ShardID shard, Collection<T> objects ) {
-      getStorage( shard ).store( objects );
-   }
+    public void store( ShardID shard, Collection<T> objects ) {
+        getStorage( shard ).store( objects );
+    }
 
-   public Optional<T> update( ShardID shard, String id, Consumer<T> update ) {
-      return getStorage( shard ).update( id, update );
-   }
+    public Optional<T> update( ShardID shard, String id, Function<T, T> update ) {
+        return getStorage( shard ).update( id, update );
+    }
 
-   public Optional<T> update( ShardID shard, String id, Consumer<T> update, Supplier<T> init ) {
-      return getStorage( shard ).update( id, update, init );
-   }
+    public Optional<T> update( ShardID shard, String id, Function<T, T> update, Supplier<T> init ) {
+        return getStorage( shard ).update( id, update, init );
+    }
 
-   public void update( ShardID shard, Collection<String> ids, Consumer<T> update ) {
-      getStorage( shard ).update( ids, update );
-   }
+    public void update( ShardID shard, Collection<String> ids, Function<T, T> update ) {
+        getStorage( shard ).update( ids, update );
+    }
 
-   public void update( ShardID shard, Collection<String> ids, Consumer<T> update, Supplier<T> init ) {
-      getStorage( shard ).update( ids, update, init );
-   }
+    public void update( ShardID shard, Collection<String> ids, Function<T, T> update, Supplier<T> init ) {
+        getStorage( shard ).update( ids, update, init );
+    }
 
-   public Optional<T> get( ShardID shard, String id ) {
-      return getStorage( shard ).get( id );
-   }
+    public Optional<T> get( ShardID shard, String id ) {
+        return getStorage( shard ).get( id );
+    }
 
-   public void delete( ShardID shard, String id ) {
-      getStorage( shard ).delete( id );
-   }
+    public void delete( ShardID shard, String id ) {
+        getStorage( shard ).delete( id );
+    }
 
-   public void deleteAll( ShardID shard ) {
-      getStorage( shard ).deleteAll();
-   }
+    public void deleteAll( ShardID shard ) {
+        getStorage( shard ).deleteAll();
+    }
 
-   public long size( ShardID shard ) {
-      return getStorage( shard ).size();
-   }
+    public long size( ShardID shard ) {
+        return getStorage( shard ).size();
+    }
 
-   public Set<ShardID> shards() {
-      return sm.shards();
-   }
+    public Set<ShardID> shards() {
+        return sm.shards();
+    }
 
-   @Override
-   public void close() {
-      sm.close();
-   }
+    @Override
+    public void close() {
+        sm.close();
+    }
 }

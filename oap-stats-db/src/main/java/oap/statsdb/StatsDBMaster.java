@@ -54,6 +54,7 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
                 mnode -> {
                     merge( key, mnode, rnode, retList );
                     updateAggregates( mnode );
+                    return mnode;
                 },
                 () -> {
                     final IdNode mnode = new IdNode( key );

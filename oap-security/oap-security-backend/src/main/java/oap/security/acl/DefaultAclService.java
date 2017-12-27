@@ -123,10 +123,14 @@ public class DefaultAclService implements AclService {
                     .forEach( childs ->
                         objectStorage.update(
                             childs.id,
-                            child -> child.acls.add( new AclObject.Acl( aclRole, subjectId, objectId, false ) )
+                            child -> {
+                                child.acls.add( new AclObject.Acl( aclRole, subjectId, objectId, false ) );
+                                return child;
+                            }
                         )
                     );
             }
+            return aclObject;
         } ).isPresent();
     }
 
@@ -142,7 +146,10 @@ public class DefaultAclService implements AclService {
                             if( ao.ancestors.contains( objectId ) ) {
                                 objectStorage.update(
                                     ao.id,
-                                    aos -> aos.acls.removeIf( aclc -> aclc.subjectId.equals( subjectId ) && aclc.role.id.equals( roleId ) )
+                                    aos -> {
+                                        aos.acls.removeIf( aclc -> aclc.subjectId.equals( subjectId ) && aclc.role.id.equals( roleId ) );
+                                        return aos;
+                                    }
                                 );
                             }
 
@@ -153,6 +160,7 @@ public class DefaultAclService implements AclService {
                 }
                 return false;
             } );
+            return aclObject;
         } ).isPresent();
     }
 
@@ -233,7 +241,10 @@ public class DefaultAclService implements AclService {
 
         for( val obj : objectStorage ) {
             if( obj.acls.stream().anyMatch( acl -> acl.subjectId.equals( objectId ) ) ) {
-                objectStorage.update( obj.id, o -> o.acls.removeIf( acl -> acl.subjectId.equals( objectId ) ) );
+                objectStorage.update( obj.id, o -> {
+                    o.acls.removeIf( acl -> acl.subjectId.equals( objectId ) );
+                    return o;
+                } );
             }
         }
 
