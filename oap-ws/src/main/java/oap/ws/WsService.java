@@ -188,9 +188,16 @@ public class WsService implements Handler {
 
         final Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
 
+        final Function<Reflection.Parameter, Object> func = ( p ) -> {
+            val ret = getValue( session, request, wsMethod, p ).orElse( Optional.empty() );
+            if( ret instanceof Optional ) return ( ( Optional<?> ) ret ).orElse( null );
+
+            return ret;
+        };
+
         final HttpResponse interceptorResponse =
             session != null
-                ? runInterceptors( request, session._2, method, ( p ) -> getValue( session, request, wsMethod, p ).orElse( null ) )
+                ? runInterceptors( request, session._2, method, func )
                 : null;
 
         if( interceptorResponse != null ) {
