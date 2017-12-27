@@ -23,6 +23,7 @@
  */
 package oap.ws;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.http.Handler;
 import oap.http.HttpResponse;
@@ -47,8 +48,6 @@ import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
 import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
@@ -73,9 +72,9 @@ import static oap.util.Pair.__;
 import static oap.ws.WsResponse.TEXT;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
+@Slf4j
 public class WsService implements Handler {
     private final Object impl;
-    private final Logger logger;
     private final boolean sessionAware;
     private final Reflection reflection;
     private final WsResponse defaultResponse;
@@ -88,7 +87,6 @@ public class WsService implements Handler {
                       SessionManager sessionManager, List<Interceptor> interceptors, WsResponse defaultResponse,
                       JsonValidators jsonValidators ) {
         this.impl = impl;
-        this.logger = LoggerFactory.getLogger( impl.getClass() );
         this.reflection = Reflect.reflect( impl.getClass() );
         this.defaultResponse = defaultResponse;
         this.jsonValidators = jsonValidators;
@@ -109,7 +107,7 @@ public class WsService implements Handler {
             wsError( response, ( ( InvocationTargetException ) e ).getTargetException() );
         else if( e instanceof WsClientException ) {
             WsClientException clientException = ( WsClientException ) e;
-            logger.debug( e.toString(), e );
+            log.debug( service() + ": " + e.toString(), e );
             HttpResponse wsResponse = HttpResponse.status( clientException.code, e.getMessage() );
             if( !clientException.errors.isEmpty() ) {
                 if( defaultResponse == TEXT ) {
@@ -121,7 +119,7 @@ public class WsService implements Handler {
             }
             response.respond( wsResponse );
         } else {
-            logger.error( e.toString(), e );
+            log.error( service() + ": " + e.toString(), e );
             final HttpResponse wsResponse = HttpResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() );
             if( defaultResponse == TEXT ) {
                 wsResponse.withContent( Throwables.getRootCause( e ).getMessage(), TEXT_PLAIN );
@@ -158,7 +156,7 @@ public class WsService implements Handler {
             else {
                 Name name = Metrics
                     .name( "rest_timer" )
-                    .tag( "service", impl.getClass().getSimpleName() )
+                    .tag( "service", service() )
                     .tag( "method", method.name() );
 
                 if( !sessionAware ) {
@@ -167,13 +165,13 @@ public class WsService implements Handler {
                     String cookieId = request.cookie( "SID" ).orElse( null );
                     Session session;
                     if( cookieId != null && ( session = sessionManager.getSessionById( cookieId ) ) != null ) {
-                        logger.debug( "Valid SID [{}] found in cookie", cookieId );
+                        log.debug( "{}: Valid SID [{}] found in cookie", service(), cookieId );
 
                         handleInternal( request, response, method, name, __( cookieId, session ) );
                     } else {
                         cookieId = UUID.randomUUID().toString();
 
-                        logger.debug( "Creating new session with SID [{}]", cookieId );
+                        log.debug( "{}: Creating new session with SID [{}]", service(), cookieId );
 
                         session = new Session();
                         sessionManager.put( cookieId, session );
@@ -187,9 +185,13 @@ public class WsService implements Handler {
         }
     }
 
+    public String service() {
+        return impl.getClass().getSimpleName();
+    }
+
     private void handleInternal( Request request, Response response, Reflection.Method method,
                                  Name name, Pair<String, Session> session ) {
-        logger.trace( "Internal session status: [{}]", session );
+        log.trace( "{}: Internal session status: [{}]", service(), session );
 
         final Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
 
