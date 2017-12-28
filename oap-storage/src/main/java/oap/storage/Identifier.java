@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public interface Identifier<T> {
+    void set( T Object, String id );
 
     String getOrInit( T object, Function<String, Optional<T>> storage );
 

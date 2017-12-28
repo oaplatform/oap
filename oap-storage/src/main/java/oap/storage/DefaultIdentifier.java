@@ -48,6 +48,11 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
     }
 
     @Override
+    public void set( T object, String id ) {
+        setId.accept( object, id );
+    }
+
+    @Override
     public String get( T object ) {
         return getId.apply( object );
     }

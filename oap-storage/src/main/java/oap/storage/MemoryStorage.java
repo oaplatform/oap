@@ -75,6 +75,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         return lockStrategy.synchronizedOn( id, () -> {
             Metadata<T> metadata = data.get( id );
             if( metadata != null ) {
+                identifier.set( object, id );
                 metadata.update( object );
                 fireUpdated( object, false );
                 return Optional.of( metadata.object );
