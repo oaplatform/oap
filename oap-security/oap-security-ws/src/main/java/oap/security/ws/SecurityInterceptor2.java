@@ -92,14 +92,16 @@ public class SecurityInterceptor2 implements Interceptor {
             log.trace( "User [{}] found in session", userId );
         }
 
-        val objectId = getObjectId( method, annotation, getParameterValueFunc );
+        if( !annotation.object().isEmpty() && !annotation.permission().isEmpty() ) {
+            val objectId = getObjectId( method, annotation, getParameterValueFunc );
 
-        if( !aclService.checkOne( objectId, userId, annotation.permission() ) ) {
-            val httpResponse = HttpResponse.status( 403, String.format( "User [%s] has no access to method [%s]", userId, method.name() ) );
+            if( !aclService.checkOne( objectId, userId, annotation.permission() ) ) {
+                val httpResponse = HttpResponse.status( 403, String.format( "User [%s] has no access to method [%s]", userId, method.name() ) );
 
-            log.debug( httpResponse.toString() );
+                log.debug( httpResponse.toString() );
 
-            return Optional.of( httpResponse );
+                return Optional.of( httpResponse );
+            }
         }
 
         return Optional.empty();
