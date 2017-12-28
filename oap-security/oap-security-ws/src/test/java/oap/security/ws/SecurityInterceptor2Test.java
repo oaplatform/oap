@@ -42,6 +42,7 @@ import java.net.UnknownHostException;
 import java.util.Optional;
 import java.util.UUID;
 
+import static java.util.Arrays.asList;
 import static oap.ws.Interceptor.USER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -130,10 +131,31 @@ public class SecurityInterceptor2Test {
         assertThat( httpResponse ).isPresent();
     }
 
+    @Test
+    public void testPostProcessing() {
+        when( mockAclService.check( "1", "testUser", "test1.read", "test2.read" ) ).thenReturn( asList( true, false ) );
+
+        final Session session = new Session();
+        session.set( USER_ID, "testUser" );
+
+        val methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
+        assertThat( securityInterceptor.postProcessing( new TestAPI.Res( "1" ), session, methodWithAnnotation ).permissions )
+            .containsExactlyInAnyOrder( "test1.read" );
+    }
+
     private static class TestAPI {
         @WsSecurity2( object = "{parent}", permission = "parent.read" )
-        public void methodWithAnnotation( @WsParam String parent ) {}
+        @WsSecurityWithPermissions( permission = { "test1.read", "test2.read" } )
+        public Res methodWithAnnotation( @WsParam String parent ) {
+            return new Res( "1" );
+        }
 
         public void methodWithoutAnnotation() {}
+
+        public static class Res extends ObjectWithPermissions {
+            public Res( String id ) {
+                super( id );
+            }
+        }
     }
 }

@@ -22,25 +22,21 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.security.ws;
 
-import oap.http.HttpResponse;
-import oap.http.Request;
-import oap.http.Session;
-import oap.reflect.Reflection;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
-import java.util.Optional;
-import java.util.function.Function;
+import java.util.List;
 
-public interface Interceptor {
-    String SESSION_TOKEN = "sessionToken";
-    String USER_ID = "userid";
+/**
+ * Created by igor.petrenko on 28.12.2017.
+ */
+@JsonInclude( JsonInclude.Include.NON_DEFAULT )
+public abstract class ObjectWithPermissions {
+    public String id;
+    public List<String> permissions;
 
-    Optional<HttpResponse> intercept( Request request, Session session,
-                                      Reflection.Method method,
-                                      Function<Reflection.Parameter, Object> getParameterValueFunc );
-
-    default <T> T postProcessing( T value, Session session, Reflection.Method method ) {
-        return value;
+    public ObjectWithPermissions( String id ) {
+        this.id = id;
     }
 }

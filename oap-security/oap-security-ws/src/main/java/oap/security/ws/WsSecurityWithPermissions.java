@@ -22,25 +22,15 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.security.ws;
 
-import oap.http.HttpResponse;
-import oap.http.Request;
-import oap.http.Session;
-import oap.reflect.Reflection;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import java.util.Optional;
-import java.util.function.Function;
-
-public interface Interceptor {
-    String SESSION_TOKEN = "sessionToken";
-    String USER_ID = "userid";
-
-    Optional<HttpResponse> intercept( Request request, Session session,
-                                      Reflection.Method method,
-                                      Function<Reflection.Parameter, Object> getParameterValueFunc );
-
-    default <T> T postProcessing( T value, Session session, Reflection.Method method ) {
-        return value;
-    }
+@Target( ElementType.METHOD )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface WsSecurityWithPermissions {
+    String[] permission();
 }

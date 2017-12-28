@@ -269,25 +269,40 @@ public class WsService implements Handler {
                 else if( result instanceof Optional<?> ) {
                     response.respond(
                         ( ( Optional<?> ) result )
-                            .map( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) )
+                            .map( r -> HttpResponse.ok( runPostInterceptors( r, session._2, method ), isRaw, produces )
+                                .withCookie( cookie ) )
                             .orElse( NOT_FOUND )
                     );
                 } else if( result instanceof Result<?, ?> ) {
                     final Result<HttpResponse, HttpResponse> resp = ( ( Result<?, ?> ) result )
                         .mapSuccess( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) )
-                        .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r ).withCookie( cookie ) );
+                        .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r )
+                            .withCookie( cookie ) );
 
                     response.respond( resp.isSuccess() ? ( ( Result<?, ?> ) result )
-                        .mapSuccess( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) ).successValue
+                        .mapSuccess( r -> HttpResponse.ok( runPostInterceptors( r, session._2, method ), isRaw, produces )
+                            .withCookie( cookie ) ).successValue
                         : ( ( Result<?, ?> ) result )
                             .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r ).withCookie( cookie ) )
                             .failureValue );
 
                 } else if( result instanceof Stream<?> ) {
-                    response.respond( HttpResponse.stream( ( Stream<?> ) result, isRaw, produces ).withCookie( cookie ) );
-                } else response.respond( HttpResponse.ok( result, isRaw, produces ).withCookie( cookie ) );
+                    response.respond(
+                        HttpResponse.stream( ( ( Stream<?> ) result ).map( v -> runPostInterceptors( v, session._2, method ) ), isRaw, produces )
+                            .withCookie( cookie ) );
+                } else
+                    response.respond( HttpResponse.ok( runPostInterceptors( result, session._2, method ), isRaw, produces )
+                        .withCookie( cookie ) );
             } );
         }
+    }
+
+    private Object runPostInterceptors( Object value, Session session, Reflection.Method method ) {
+        for( Interceptor interceptor : interceptors ) {
+            value = interceptor.postProcessing( value, session, method );
+        }
+
+        return value;
     }
 
     private LinkedHashMap<Reflection.Parameter, Object> getValues( LinkedHashMap<Reflection.Parameter, Object> values ) {
