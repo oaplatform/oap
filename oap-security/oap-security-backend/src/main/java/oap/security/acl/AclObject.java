@@ -31,7 +31,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
@@ -44,9 +44,9 @@ import static java.util.Collections.emptyList;
 public class AclObject implements Serializable {
     private static final long serialVersionUID = -6189594932715997498L;
     public final String type;
-    public final List<String> parents;
-    public final List<String> ancestors;
-    public final List<Acl> acls;
+    public final LinkedHashSet<String> parents;
+    public final LinkedHashSet<String> ancestors;
+    public final LinkedHashSet<Acl> acls;
     public String id;
     public String owner;
 
@@ -60,9 +60,9 @@ public class AclObject implements Serializable {
                       @JsonProperty String owner ) {
         this.id = id;
         this.type = type;
-        this.parents = new ArrayList<>( parents != null ? parents : emptyList() );
-        this.ancestors = new ArrayList<>( ancestors != null ? ancestors : emptyList() );
-        this.acls = new ArrayList<>( acls != null ? acls : emptyList() );
+        this.parents = new LinkedHashSet<>( parents != null ? parents : emptyList() );
+        this.ancestors = new LinkedHashSet<>( ancestors != null ? ancestors : emptyList() );
+        this.acls = new LinkedHashSet<>( acls != null ? acls : emptyList() );
         this.owner = owner;
     }
 
@@ -84,6 +84,10 @@ public class AclObject implements Serializable {
             this.subjectId = subjectId;
             this.parent = parent;
             this.inheritance = inheritance;
+        }
+
+        public Acl cloneWithParent( String parent ) {
+            return new Acl( role, subjectId, parent, inheritance );
         }
     }
 }

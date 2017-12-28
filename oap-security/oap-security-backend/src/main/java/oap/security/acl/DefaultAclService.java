@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.storage.Storage;
 import oap.util.Lists;
+import org.testng.collections.SetMultiMap;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -223,7 +224,11 @@ public class DefaultAclService implements AclService {
         parents.add( parentId );
         ancestors.addAll( parent.ancestors );
 
-        val acls = parent.acls.stream().filter( acl -> acl.inheritance ).collect( toList() );
+        val acls = parent.acls
+            .stream()
+            .filter( acl -> acl.inheritance )
+            .map( acl -> acl.parent == null ? acl.cloneWithParent( parent.id ) : acl )
+            .collect( toList() );
 
         val ao = new AclObject( null, type, parents, ancestors, acls, owner );
         objectStorage.store( ao );
@@ -249,5 +254,43 @@ public class DefaultAclService implements AclService {
         }
 
         objectStorage.delete( objectId );
+    }
+
+    @Override
+    public List<ObjectRole> getSubjectRoles( String objectId, boolean inherited ) {
+        val obj = objectStorage.get( objectId ).orElse( null );
+        if( obj == null ) return emptyList();
+
+        val map = new SetMultiMap<String, AclRole>( false );
+
+        for( val acl : obj.acls ) {
+            if( inherited || acl.parent == null )
+                map.put( acl.subjectId, acl.role );
+        }
+
+        return map
+            .entrySet()
+            .stream()
+            .map( e -> new ObjectRole( e.getKey(), new ArrayList<>( e.getValue() ) ) )
+            .collect( toList() );
+    }
+
+    @Override
+    public List<ObjectRole> getRoles( String userId, boolean inherited ) {
+        val map = new SetMultiMap<String, AclRole>( false );
+
+        for( val obj : objectStorage ) {
+            for( val acl : obj.acls ) {
+                if( acl.subjectId.equals( userId ) )
+                    if( inherited || acl.parent == null )
+                        map.put( obj.id, acl.role );
+            }
+        }
+
+        return map
+            .entrySet()
+            .stream()
+            .map( e -> new ObjectRole( e.getKey(), new ArrayList<>( e.getValue() ) ) )
+            .collect( toList() );
     }
 }

@@ -33,6 +33,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static oap.application.ApplicationUtils.service;
 import static oap.security.acl.AclService.GLOBAL_ADMIN;
@@ -54,6 +55,7 @@ public class AclServiceTest {
     private String subjectId;
     private AclRole roleUknown;
     private AclRole role1;
+    private AclRole role2;
     private String subjectGroupId;
     private String subjectId2;
     private String subjectId23;
@@ -74,6 +76,7 @@ public class AclServiceTest {
 
         roleUknown = roleStorage.store( new AclRole( "roleIdUknown", "testRole1", singletonList( "testObjectUnknown.read" ) ) );
         role1 = roleStorage.store( new AclRole( "roleId1", "testRole1", singletonList( "testObject1.read" ) ) );
+        role2 = roleStorage.store( new AclRole( "roleId2", "testRole2", singletonList( "testObject2.read" ) ) );
     }
 
     @Test
@@ -169,6 +172,33 @@ public class AclServiceTest {
         assertThat( aclService.findChildren( subjectGroupId, subjectId, "subject", "testObject1.read" ) ).isEmpty();
         assertThat( aclService.findChildren( subjectGroupId, childId, "subject", "testObject1.read" ) )
             .containsExactlyInAnyOrder( subjectId2, subjectId23 );
+    }
+
+    @Test
+    public void testGetSubjectRoles() {
+        aclService.add( childId, subjectId, role1.id, false );
+        aclService.add( childId, subjectId, role2.id, false );
+        aclService.add( objectId, subjectId, role2.id, true );
+        aclService.add( childId, subjectId2, role2.id, false );
+
+        assertThat( aclService.getSubjectRoles( childId, false ) ).containsExactlyInAnyOrder(
+            new AclService.ObjectRole( subjectId, asList( role1, role2 ) ),
+            new AclService.ObjectRole( subjectId2, singletonList( role2 ) ) );
+
+        assertThat( aclService.getSubjectRoles( childId, true ) ).hasSize( 3 );
+    }
+
+    @Test
+    public void testGetRoles() {
+        aclService.add( objectId, subjectId, role1.id, false );
+        aclService.add( objectId, subjectId, role2.id, true );
+        aclService.add( childId, subjectId, role2.id, false );
+
+        assertThat( aclService.getRoles( subjectId, false ) ).containsExactlyInAnyOrder(
+            new AclService.ObjectRole( objectId, asList( role1, role2 ) ),
+            new AclService.ObjectRole( childId, singletonList( role2 ) ) );
+
+        assertThat( aclService.getRoles( subjectId, true ) ).hasSize( 7 );
     }
 
     @AfterMethod

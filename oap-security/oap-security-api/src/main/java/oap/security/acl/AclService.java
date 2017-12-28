@@ -24,6 +24,11 @@
 
 package oap.security.acl;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
+import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
 
@@ -36,6 +41,10 @@ public interface AclService {
     String ROOT = "5a4200fe97684103f0d6bb17";
     String GLOBAL_ADMIN = "5a42011497684132d0d76dd4";
     String GLOBAL_ADMIN_ROLE = "5a420121976841048ccd59bd";
+
+    List<ObjectRole> getSubjectRoles( String objectId, boolean inherited );
+
+    List<ObjectRole> getRoles( String userId, boolean inherited );
 
     void validate( String objectId, String subjectId, String... permissions ) throws AclSecurityException;
 
@@ -62,4 +71,19 @@ public interface AclService {
     Optional<String> registerObject( String parentId, String type, String owner );
 
     void unregisterObject( String objectId );
+
+    @ToString
+    @EqualsAndHashCode
+    class ObjectRole implements Serializable {
+        private static final long serialVersionUID = 5300251139316547048L;
+
+        public final String objectId;
+        public final List<AclRole> roles;
+
+        @JsonCreator
+        public ObjectRole( String objectId, List<AclRole> roles ) {
+            this.objectId = objectId;
+            this.roles = roles;
+        }
+    }
 }
