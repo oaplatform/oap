@@ -49,6 +49,7 @@ public class Logout2WS {
     }
 
     @WsMethod( method = GET, path = "/" )
+    @WsSecurity2
     public void logout( @WsParam( from = SESSION ) String userid ) {
         log.debug( "Invalidating token for user [{}]", userid );
 
