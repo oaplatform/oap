@@ -269,7 +269,7 @@ public class WsService implements Handler {
                 else if( result instanceof Optional<?> ) {
                     response.respond(
                         ( ( Optional<?> ) result )
-                            .map( r -> HttpResponse.ok( runPostInterceptors( r, session._2, method ), isRaw, produces )
+                            .map( r -> HttpResponse.ok( runPostInterceptors( r, session, method ), isRaw, produces )
                                 .withCookie( cookie ) )
                             .orElse( NOT_FOUND )
                     );
@@ -280,7 +280,7 @@ public class WsService implements Handler {
                             .withCookie( cookie ) );
 
                     response.respond( resp.isSuccess() ? ( ( Result<?, ?> ) result )
-                        .mapSuccess( r -> HttpResponse.ok( runPostInterceptors( r, session._2, method ), isRaw, produces )
+                        .mapSuccess( r -> HttpResponse.ok( runPostInterceptors( r, session, method ), isRaw, produces )
                             .withCookie( cookie ) ).successValue
                         : ( ( Result<?, ?> ) result )
                             .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r ).withCookie( cookie ) )
@@ -288,18 +288,19 @@ public class WsService implements Handler {
 
                 } else if( result instanceof Stream<?> ) {
                     response.respond(
-                        HttpResponse.stream( ( ( Stream<?> ) result ).map( v -> runPostInterceptors( v, session._2, method ) ), isRaw, produces )
+                        HttpResponse.stream( ( ( Stream<?> ) result ).map( v -> runPostInterceptors( v, session, method ) ), isRaw, produces )
                             .withCookie( cookie ) );
                 } else
-                    response.respond( HttpResponse.ok( runPostInterceptors( result, session._2, method ), isRaw, produces )
+                    response.respond( HttpResponse.ok( runPostInterceptors( result, session, method ), isRaw, produces )
                         .withCookie( cookie ) );
             } );
         }
     }
 
-    private Object runPostInterceptors( Object value, Session session, Reflection.Method method ) {
+    private Object runPostInterceptors( Object value, Pair<String, Session> session, Reflection.Method method ) {
+        if(session == null) return value;
         for( Interceptor interceptor : interceptors ) {
-            value = interceptor.postProcessing( value, session, method );
+            value = interceptor.postProcessing( value, session._2, method );
         }
 
         return value;
