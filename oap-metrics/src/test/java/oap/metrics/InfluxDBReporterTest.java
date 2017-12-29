@@ -87,7 +87,7 @@ public class InfluxDBReporterTest extends AbstractTest {
 
         assertString( getPoints() ).contains(
             "test", "t1=10.0", "g1=10i", "h1=10.0", "h1_75th=10.0", "name1=1i,name2=2i",
-            "t1=10.0", "t2=0.41666666666666663", "h2_stddev=0.0", "m2=0.0" );
+            "t1=10.0", "t2=0.416666666666666", "h2_stddev=0.0", "m2=0.0" );
     }
 
     public InfluxDBReporter createReporter( MockInfluxDB influxDB, MetricRegistry registry, List<String> aggregates ) {
