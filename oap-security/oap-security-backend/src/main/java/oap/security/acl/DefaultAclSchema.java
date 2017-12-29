@@ -29,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.storage.Storage;
 
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,10 +45,10 @@ import static java.util.Collections.singletonList;
 @Slf4j
 public class DefaultAclSchema implements AclSchema {
     private final Storage<AclObject> objectStorage;
-    private final Map<String, List<?>> schema;
+    private final Map<String, Object> schema;
 
     @JsonCreator
-    public DefaultAclSchema( Storage<AclObject> objectStorage, Map<String, List<?>> schema ) {
+    public DefaultAclSchema( Storage<AclObject> objectStorage, Map<String, Object> schema ) {
         this.objectStorage = objectStorage;
         this.schema = schema;
 
@@ -66,10 +66,11 @@ public class DefaultAclSchema implements AclSchema {
     }
 
     @SuppressWarnings( "unchecked" )
-    private List<Map<String, List<?>>> getSchemas( AclObject parent ) {
+    private List<Map<String, Object>> getSchemas( AclObject parent ) {
         if( parent == null ) return singletonList( schema );
         if( parent.parents.isEmpty() )
-            return Optional.ofNullable( ( List<Map<String, List<?>>> ) schema.get( parent.type ) ).orElse( emptyList() );
+            return Optional.ofNullable( ( Map<String, Object> ) schema.get( parent.type ) )
+                .map( Collections::singletonList ).orElse( emptyList() );
 
         return parent.parents
             .stream()
@@ -77,8 +78,8 @@ public class DefaultAclSchema implements AclSchema {
                 getSchemas( objectStorage.get( id ).get() )
                     .stream()
                     .flatMap( aclType ->
-                        Optional.ofNullable( ( List<Map<String, List<?>>> ) aclType.get( parent.type ) )
-                            .map( Collection::stream )
+                        Optional.ofNullable( ( Map<String, Object> ) aclType.get( parent.type ) )
+                            .map( Stream::of )
                             .orElse( Stream.empty() ) )
             )
             .collect( Collectors.toList() );

@@ -24,15 +24,13 @@
 
 package oap.security.acl;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.val;
 import oap.json.Binder;
+import oap.reflect.TypeRef;
 import oap.storage.IdentifierBuilder;
 import oap.storage.MemoryStorage;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import static java.util.Collections.emptyList;
@@ -48,7 +46,7 @@ public class DefaultAclSchemaTest {
     public void testValidateNewObject() {
         val storage = new MemoryStorage<AclObject>( IdentifierBuilder.<AclObject>identify( obj -> obj.id ).build(), NoLock );
         val schema = new DefaultAclSchema( storage,
-            Binder.hoconWithoutSystemProperties.unmarshal( new TypeReference<Map<String,List<?>>>() {}, "{root=[{user=[]},{organization=[{user=[]}]}]}" ) );
+            Binder.hoconWithoutSystemProperties.unmarshal( new TypeRef<Map<String, Object>>() {}, "{root{user{},organization{user{}}}}" ) );
 
 
         schema.validateNewObject( null, "root" );
@@ -56,10 +54,10 @@ public class DefaultAclSchemaTest {
         val root = storage.store( new AclObject( "root", "root", emptyList(), emptyList(), emptyList(), "owner" ) );
         schema.validateNewObject( root, "user" );
         schema.validateNewObject( root, "organization" );
-        assertThatThrownBy( () -> schema.validateNewObject( root, "unknown" )).hasMessageStartingWith( "unknown is not" );
+        assertThatThrownBy( () -> schema.validateNewObject( root, "unknown" ) ).hasMessageStartingWith( "unknown is not" );
 
         val organization = storage.store( new AclObject( "org1", "organization", singletonList( root.id ), singletonList( root.id ), emptyList(), "owner" ) );
         schema.validateNewObject( organization, "user" );
-        assertThatThrownBy( () -> schema.validateNewObject( organization, "root" )).hasMessageStartingWith( "root is not" );
+        assertThatThrownBy( () -> schema.validateNewObject( organization, "root" ) ).hasMessageStartingWith( "root is not" );
     }
 }
