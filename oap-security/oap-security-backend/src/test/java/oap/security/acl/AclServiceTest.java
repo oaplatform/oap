@@ -41,11 +41,14 @@ import static oap.security.acl.AclService.ROOT;
 import static oap.storage.Storage.LockStrategy.Lock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 /**
  * Created by igor.petrenko on 21.12.2017.
  */
 public class AclServiceTest {
+    private final AclSchema mockAclSchema = mock( AclSchema.class );
+
     private Storage<AclObject> objectStorage;
     private Storage<AclRole> roleStorage;
     private DefaultAclService aclService;
@@ -64,7 +67,7 @@ public class AclServiceTest {
     public void beforeMethod() {
         objectStorage = service( new MemoryStorage<>( IdentifierBuilder.<AclObject>identify( ao -> ao.id, ( ao, id ) -> ao.id = id ).build(), Lock ) );
         roleStorage = service( new MemoryStorage<>( IdentifierBuilder.<AclRole>identify( ar -> ar.id, ( ar, id ) -> ar.id = id ).build(), Lock ) );
-        aclService = service( new DefaultAclService( objectStorage, roleStorage ) );
+        aclService = service( new DefaultAclService( objectStorage, roleStorage, mockAclSchema ) );
 
         objectId = aclService.registerObject( ROOT, "testObject1", "own" ).get();
         childId = aclService.registerObject( objectId, "child", "own" ).get();

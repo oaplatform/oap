@@ -48,10 +48,12 @@ import static java.util.stream.Collectors.toList;
 public class DefaultAclService implements AclService {
     private final Storage<AclObject> objectStorage;
     private final Storage<AclRole> roleStorage;
+    private final AclSchema schema;
 
-    public DefaultAclService( Storage<AclObject> objectStorage, Storage<AclRole> roleStorage ) {
+    public DefaultAclService( Storage<AclObject> objectStorage, Storage<AclRole> roleStorage, AclSchema schema ) {
         this.objectStorage = objectStorage;
         this.roleStorage = roleStorage;
+        this.schema = schema;
     }
 
     public void start() {
@@ -215,14 +217,16 @@ public class DefaultAclService implements AclService {
     public Optional<String> registerObject( String parentId, String type, String owner ) {
         Preconditions.checkNotNull( parentId );
 
-        val ancestors = new ArrayList<String>();
-        val parents = new ArrayList<String>();
-
         val parent = objectStorage.get( parentId ).orElse( null );
         if( parent == null ) return Optional.empty();
-        ancestors.add( parentId );
+
+        schema.validateNewObject( parent, type );
+
+        val parents = new ArrayList<String>();
         parents.add( parentId );
-        ancestors.addAll( parent.ancestors );
+
+        val ancestors = new ArrayList<String>( parent.ancestors );
+        ancestors.add( parentId );
 
         val acls = parent.acls
             .stream()
