@@ -32,6 +32,8 @@ import oap.storage.MemoryStorage;
 import org.testng.annotations.Test;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -46,7 +48,7 @@ public class DefaultAclSchemaTest {
     public void testValidateNewObject() {
         val storage = new MemoryStorage<AclObject>( IdentifierBuilder.<AclObject>identify( obj -> obj.id ).build(), NoLock );
         val schema = new DefaultAclSchema( storage,
-            Binder.hoconWithoutSystemProperties.unmarshal( new TypeReference<AclSchema.AclType>() {}, "{root=[{user=[]},{organization=[{user=[]}]}]}" ) );
+            Binder.hoconWithoutSystemProperties.unmarshal( new TypeReference<Map<String,List<?>>>() {}, "{root=[{user=[]},{organization=[{user=[]}]}]}" ) );
 
 
         schema.validateNewObject( null, "root" );

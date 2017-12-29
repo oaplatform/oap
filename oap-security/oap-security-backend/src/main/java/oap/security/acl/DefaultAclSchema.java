@@ -31,6 +31,7 @@ import oap.storage.Storage;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,10 +45,10 @@ import static java.util.Collections.singletonList;
 @Slf4j
 public class DefaultAclSchema implements AclSchema {
     private final Storage<AclObject> objectStorage;
-    private final AclType schema;
+    private final Map<String, List<?>> schema;
 
     @JsonCreator
-    public DefaultAclSchema( Storage<AclObject> objectStorage, AclType schema ) {
+    public DefaultAclSchema( Storage<AclObject> objectStorage, Map<String, List<?>> schema ) {
         this.objectStorage = objectStorage;
         this.schema = schema;
 
@@ -64,9 +65,11 @@ public class DefaultAclSchema implements AclSchema {
         }
     }
 
-    private List<AclType> getSchemas( AclObject parent ) {
+    @SuppressWarnings( "unchecked" )
+    private List<Map<String, List<?>>> getSchemas( AclObject parent ) {
         if( parent == null ) return singletonList( schema );
-        if( parent.parents.isEmpty() ) return Optional.ofNullable( schema.get( parent.type ) ).orElse( emptyList() );
+        if( parent.parents.isEmpty() )
+            return Optional.ofNullable( ( List<Map<String, List<?>>> ) schema.get( parent.type ) ).orElse( emptyList() );
 
         return parent.parents
             .stream()
@@ -74,9 +77,9 @@ public class DefaultAclSchema implements AclSchema {
                 getSchemas( objectStorage.get( id ).get() )
                     .stream()
                     .flatMap( aclType ->
-                        Optional.ofNullable( aclType.get( parent.type ) )
+                        Optional.ofNullable( ( List<Map<String, List<?>>> ) aclType.get( parent.type ) )
                             .map( Collection::stream )
-                            .orElse( Stream.<AclType>empty() ) )
+                            .orElse( Stream.empty() ) )
             )
             .collect( Collectors.toList() );
     }

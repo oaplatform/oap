@@ -24,36 +24,9 @@
 
 package oap.security.acl;
 
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import lombok.ToString;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * Created by igor.petrenko on 29.12.2017.
  */
 public interface AclSchema {
     void validateNewObject( AclObject parent, String newObjectType ) throws AclSecurityException;
-
-    // bug
-    // https://github.com/fasterxml/jackson-databind/issues/76
-    // Problem handling datatypes Recursive type parameters
-    @ToString
-    class AclType {
-        @JsonAnySetter
-        public Map<String, List<AclType>> properties = new HashMap<>();
-
-        public AclType() {
-        }
-
-        public List<AclType> get( String type ) {
-            return properties.get( type );
-        }
-
-        public boolean containsKey( String objectType ) {
-            return properties.containsKey( objectType );
-        }
-    }
 }
