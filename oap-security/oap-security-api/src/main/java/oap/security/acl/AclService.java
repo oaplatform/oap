@@ -42,7 +42,7 @@ public interface AclService {
     String GLOBAL_ADMIN = "5a42011497684132d0d76dd4";
     String GLOBAL_ADMIN_ROLE = "5a420121976841048ccd59bd";
 
-    List<ObjectRole> getSubjectRoles( String objectId, boolean inherited );
+    List<SubjectRole> getSubjectRoles( String objectId, boolean inherited );
 
     List<ObjectRole> getRoles( String userId, boolean inherited );
 
@@ -83,6 +83,21 @@ public interface AclService {
         @JsonCreator
         public ObjectRole( String objectId, List<AclRole> roles ) {
             this.objectId = objectId;
+            this.roles = roles;
+        }
+    }
+
+    @ToString
+    @EqualsAndHashCode
+    class SubjectRole implements Serializable {
+        private static final long serialVersionUID = -3440629660794359704L;
+
+        public final String subjectId;
+        public final List<AclRole> roles;
+
+        @JsonCreator
+        public SubjectRole( String subjectId, List<AclRole> roles ) {
+            this.subjectId = subjectId;
             this.roles = roles;
         }
     }

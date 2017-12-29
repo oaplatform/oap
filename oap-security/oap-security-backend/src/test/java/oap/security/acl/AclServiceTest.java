@@ -182,8 +182,8 @@ public class AclServiceTest {
         aclService.add( childId, subjectId2, role2.id, false );
 
         assertThat( aclService.getSubjectRoles( childId, false ) ).containsExactlyInAnyOrder(
-            new AclService.ObjectRole( subjectId, asList( role1, role2 ) ),
-            new AclService.ObjectRole( subjectId2, singletonList( role2 ) ) );
+            new AclService.SubjectRole( subjectId, asList( role1, role2 ) ),
+            new AclService.SubjectRole( subjectId2, singletonList( role2 ) ) );
 
         assertThat( aclService.getSubjectRoles( childId, true ) ).hasSize( 3 );
     }

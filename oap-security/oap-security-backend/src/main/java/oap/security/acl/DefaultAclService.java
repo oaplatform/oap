@@ -257,7 +257,7 @@ public class DefaultAclService implements AclService {
     }
 
     @Override
-    public List<ObjectRole> getSubjectRoles( String objectId, boolean inherited ) {
+    public List<SubjectRole> getSubjectRoles( String objectId, boolean inherited ) {
         val obj = objectStorage.get( objectId ).orElse( null );
         if( obj == null ) return emptyList();
 
@@ -271,7 +271,7 @@ public class DefaultAclService implements AclService {
         return map
             .entrySet()
             .stream()
-            .map( e -> new ObjectRole( e.getKey(), new ArrayList<>( e.getValue() ) ) )
+            .map( e -> new SubjectRole( e.getKey(), new ArrayList<>( e.getValue() ) ) )
             .collect( toList() );
     }
 
