@@ -31,6 +31,7 @@ import oap.http.Request;
 import oap.http.Session;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
+import oap.security.acl.AclObject;
 import oap.security.acl.AclService;
 import oap.ws.WsParam;
 import org.apache.http.client.methods.HttpGet;
@@ -152,9 +153,9 @@ public class SecurityInterceptor2Test {
 
         public void methodWithoutAnnotation() {}
 
-        public static class Res extends ObjectWithPermissions {
+        public static class Res extends AclObject {
             public Res( String id ) {
-                super( id );
+                super( id, "test" );
             }
         }
     }

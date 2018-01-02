@@ -24,16 +24,12 @@
 
 package oap.security.acl;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.val;
-import oap.json.Binder;
-import oap.reflect.TypeRef;
 import oap.storage.IdentifierBuilder;
 import oap.storage.MemoryStorage;
 import org.testng.annotations.Test;
 
-import java.util.Map;
-
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static oap.storage.Storage.LockStrategy.NoLock;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,20 +40,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class DefaultAclSchemaTest {
     @Test
     public void testValidateNewObject() {
-        val storage = new MemoryStorage<AclObject>( IdentifierBuilder.<AclObject>identify( obj -> obj.id ).build(), NoLock );
-        val schema = new DefaultAclSchema( storage,
-            Binder.hoconWithoutSystemProperties.unmarshal( new TypeRef<Map<String, Object>>() {}, "{root{user{},organization{user{}}}}" ) );
+        val storage = new MemoryStorage<TestAclObject>( IdentifierBuilder.<TestAclObject>identify( obj -> obj.id ).build(), NoLock );
+        val schema = new DefaultAclSchema(
+            ImmutableMap.of( "organization", storage, "user", storage ), "/acl/test-acl-schema.conf" );
 
 
         schema.validateNewObject( null, "root" );
 
-        val root = storage.store( new AclObject( "root", "root", emptyList(), emptyList(), emptyList(), "owner" ) );
-        schema.validateNewObject( root, "user" );
-        schema.validateNewObject( root, "organization" );
-        assertThatThrownBy( () -> schema.validateNewObject( root, "unknown" ) ).hasMessageStartingWith( "unknown is not" );
+        schema.validateNewObject( schema.getObject( AclService.ROOT ).get(), "user" );
+        schema.validateNewObject( schema.getObject( AclService.ROOT ).get(), "organization" );
+        assertThatThrownBy( () -> schema.validateNewObject( schema.getObject( AclService.ROOT ).get(), "unknown" ) ).hasMessageStartingWith( "unknown is not" );
 
-        val organization = storage.store( new AclObject( "org1", "organization", singletonList( root.id ), singletonList( root.id ), emptyList(), "owner" ) );
+        val organization = storage.store( new TestAclObject( "org1", "organization", singletonList( AclService.ROOT ), singletonList( AclService.ROOT ) ) );
         schema.validateNewObject( organization, "user" );
         assertThatThrownBy( () -> schema.validateNewObject( organization, "root" ) ).hasMessageStartingWith( "root is not" );
     }
+
 }

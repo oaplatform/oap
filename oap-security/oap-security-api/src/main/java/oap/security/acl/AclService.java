@@ -39,7 +39,6 @@ import static java.util.Arrays.asList;
  */
 public interface AclService {
     String ROOT = "5a4200fe97684103f0d6bb17";
-    String GLOBAL_ADMIN = "5a42011497684132d0d76dd4";
     String GLOBAL_ADMIN_ROLE = "5a420121976841048ccd59bd";
 
     List<SubjectRole> getSubjectRoles( String objectId, boolean inherited );
@@ -68,7 +67,7 @@ public interface AclService {
 
     List<String> findChildren( String parentId, String subjectId, String type, String permission );
 
-    Optional<String> registerObject( String parentId, String type, String owner );
+    public <T extends AclObject> Optional<String> registerObject( String parentId, T obj );
 
     void unregisterObject( String objectId );
 

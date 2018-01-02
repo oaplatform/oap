@@ -31,6 +31,7 @@ import lombok.val;
 import oap.ws.security.PasswordHasher;
 import org.joda.time.DateTimeUtils;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -43,12 +44,12 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class AuthService2 {
-    private final UserStorage2<? extends User2> userStorage;
+    private final List<AuthProvider<? extends User2>> providers;
     private final PasswordHasher passwordHasher;
     private final Cache<String, Token2> tokenStorage;
 
-    public AuthService2( UserStorage2<? extends User2> userStorage, PasswordHasher passwordHasher, int expirationTime ) {
-        this.userStorage = userStorage;
+    public AuthService2( List<AuthProvider<? extends User2>> provides, PasswordHasher passwordHasher, int expirationTime ) {
+        this.providers = provides;
         this.passwordHasher = passwordHasher;
         this.tokenStorage = CacheBuilder.newBuilder()
             .expireAfterAccess( expirationTime, TimeUnit.MILLISECONDS )
@@ -56,7 +57,12 @@ public class AuthService2 {
     }
 
     public synchronized Optional<Token2> generateToken( String email, String password ) {
-        final User2 user = userStorage.getByEmail( email ).orElse( null );
+        final User2 user = providers
+            .stream()
+            .map( p -> p.getByEmail( email ).orElse( null ) )
+            .filter( Objects::nonNull )
+            .findFirst()
+            .orElse( null );
         if( user == null ) return Optional.empty();
 
         val inputPassword = passwordHasher.hashPassword( password );
@@ -66,7 +72,12 @@ public class AuthService2 {
     }
 
     public synchronized Optional<Token2> generateToken( String id ) {
-        return userStorage.get( id ).map( this::generateToken );
+        return providers
+            .stream()
+            .map( p -> p.get( id ).map( this::generateToken ) )
+            .filter( Optional::isPresent )
+            .findFirst()
+            .flatMap( p -> p );
     }
 
     public synchronized Token2 generateToken( User2 user ) {

@@ -43,6 +43,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,12 +54,14 @@ import static java.util.Collections.emptyMap;
  * Created by Igor Petrenko on 15.04.2016.
  */
 public class DictionaryParser {
+    public static final IdStrategy PROPERTY_ID_STRATEGY = new PropertyIdStrategy();
+    public static final IdStrategy INCREMENTAL_ID_STRATEGY = new IncrementalIdStrategy();
+
     private static final String NAME = "name";
     private static final String ID = "id";
     private static final String ENABLED = "enabled";
     private static final String EXTERNAL_ID = "eid";
     private static final String VALUES = "values";
-
     private static final Set<String> defaultFields = new HashSet<>();
     private static final Function<Object, Optional<Integer>> intFunc =
         ( str ) -> {
@@ -76,7 +79,7 @@ public class DictionaryParser {
     }
 
     @SuppressWarnings( "unchecked" )
-    private static Dictionary parseAsDictionaryValue( Object value, String path, boolean valueAsRoot ) {
+    private static Dictionary parseAsDictionaryValue( Object value, String path, boolean valueAsRoot, IdStrategy idStrategy ) {
         if( value instanceof Map ) {
             final Map<Object, Object> valueMap = ( Map<Object, Object> ) value;
             List<Dictionary> values = emptyList();
@@ -88,7 +91,7 @@ public class DictionaryParser {
                     final Object propertyValue = e.getValue();
 
                     if( VALUES.equals( propertyName ) )
-                        values = parseValues( ( List ) propertyValue, path );
+                        values = parseValues( ( List ) propertyValue, path, idStrategy );
                     else
                         properties.put( propertyName, propertyValue );
                 }
@@ -112,7 +115,7 @@ public class DictionaryParser {
 
             final String id = getString( valueMap, ID );
             final boolean enabled = getBooleanOpt( valueMap, ENABLED ).orElse( true );
-            final int externalId = getInt( valueMap, EXTERNAL_ID );
+            final int externalId = idStrategy.get( valueMap );
 
             return values.isEmpty() ?
                 new DictionaryLeaf( id, enabled, externalId, p ) :
@@ -127,28 +130,32 @@ public class DictionaryParser {
 
     public static DictionaryRoot parse( Path resource ) {
         final Map map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, resource );
-        return parse( map );
+        return parse( map, PROPERTY_ID_STRATEGY );
     }
 
     public static DictionaryRoot parse( URL resource ) {
         final Map map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, resource );
-        return parse( map );
+        return parse( map, PROPERTY_ID_STRATEGY );
     }
 
     public static DictionaryRoot parse( String resource ) {
+        return parse( resource, PROPERTY_ID_STRATEGY );
+    }
+
+    public static DictionaryRoot parse( String resource, IdStrategy idStrategy ) {
         final Map map = Binder.hoconWithoutSystemProperties.unmarshalResource( DictionaryParser.class, Map.class, resource );
 
-        return parse( map );
+        return parse( map, idStrategy );
     }
 
     public static DictionaryRoot parseFromString( String dictionary ) {
         final Map map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, dictionary );
 
-        return parse( map );
+        return parse( map, PROPERTY_ID_STRATEGY );
     }
 
-    private static DictionaryRoot parse( Map map ) {
-        final DictionaryRoot dictionaryRoot = ( DictionaryRoot ) parseAsDictionaryValue( map, "", true );
+    private static DictionaryRoot parse( Map map, IdStrategy idStrategy ) {
+        final DictionaryRoot dictionaryRoot = ( DictionaryRoot ) parseAsDictionaryValue( map, "", true, idStrategy );
         final ArrayList<InvalidEntry> invalid = new ArrayList<>();
         resolveExtends( dictionaryRoot, dictionaryRoot );
         validate( "", invalid, dictionaryRoot );
@@ -226,12 +233,12 @@ public class DictionaryParser {
         }
     }
 
-    private static ArrayList<Dictionary> parseValues( List values, String path ) {
+    private static ArrayList<Dictionary> parseValues( List values, String path, IdStrategy idStrategy ) {
         final ArrayList<Dictionary> dv = new ArrayList<>();
 
         for( int i = 0; i < values.size(); i++ ) {
             final Object value = values.get( i );
-            dv.add( parseAsDictionaryValue( value, path + "[" + i + "]", false ) );
+            dv.add( parseAsDictionaryValue( value, path + "[" + i + "]", false, idStrategy ) );
         }
 
         return dv;
@@ -333,6 +340,10 @@ public class DictionaryParser {
         value.getProperties().forEach( Try.consume( jsonGenerator::writeObjectField ) );
     }
 
+    public interface IdStrategy {
+        int get( Map<Object, Object> valueMap );
+    }
+
     private static class InvalidEntry {
         public final String path;
         final Dictionary one;
@@ -342,6 +353,22 @@ public class DictionaryParser {
             this.one = one;
             this.two = two;
             this.path = path;
+        }
+    }
+
+    public static class IncrementalIdStrategy implements IdStrategy {
+        private AtomicInteger id = new AtomicInteger();
+
+        @Override
+        public int get( Map<Object, Object> valueMap ) {
+            return id.incrementAndGet();
+        }
+    }
+
+    public static class PropertyIdStrategy implements IdStrategy {
+        @Override
+        public int get( Map<Object, Object> valueMap ) {
+            return getInt( valueMap, EXTERNAL_ID );
         }
     }
 }

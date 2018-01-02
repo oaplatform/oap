@@ -22,21 +22,22 @@
  * SOFTWARE.
  */
 
-package oap.security.ws;
+package oap.security.acl;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import oap.util.Strings;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by igor.petrenko on 28.12.2017.
+ * Created by igor.petrenko on 02.01.2018.
  */
-@JsonInclude( JsonInclude.Include.NON_DEFAULT )
-public abstract class ObjectWithPermissions {
-    public String id;
-    public List<String> permissions;
+public class TestAclObject extends AclObject {
+    public TestAclObject( String id, String type, List<String> parents, List<String> ancestors ) {
+        super( id, type, parents, ancestors, new ArrayList<>(), Strings.UNKNOWN );
+    }
 
-    public ObjectWithPermissions( String id ) {
-        this.id = id;
+    public TestAclObject( String type ) {
+        super( type );
     }
 }

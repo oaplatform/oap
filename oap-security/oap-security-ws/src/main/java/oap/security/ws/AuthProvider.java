@@ -22,11 +22,15 @@
  * SOFTWARE.
  */
 
-package oap.security.acl;
+package oap.security.ws;
+
+import java.util.Optional;
 
 /**
- * Created by igor.petrenko on 29.12.2017.
+ * Created by igor.petrenko on 22.12.2017.
  */
-public interface AclSchema {
-    void validateNewObject( AclObject parent, String newObjectType ) throws AclSecurityException;
+public interface AuthProvider<T extends User2> {
+    Optional<T> getByEmail( String email );
+
+    Optional<T> get( String id );
 }

@@ -36,18 +36,16 @@ import java.io.IOException;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static oap.application.ApplicationUtils.service;
-import static oap.security.acl.AclService.GLOBAL_ADMIN;
 import static oap.security.acl.AclService.ROOT;
 import static oap.storage.Storage.LockStrategy.Lock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
 
 /**
  * Created by igor.petrenko on 21.12.2017.
  */
 public class AclServiceTest {
-    private final AclSchema mockAclSchema = mock( AclSchema.class );
+    private AclSchema aclSchema;
 
     private Storage<AclObject> objectStorage;
     private Storage<AclRole> roleStorage;
@@ -62,29 +60,38 @@ public class AclServiceTest {
     private String subjectGroupId;
     private String subjectId2;
     private String subjectId23;
+    private String ga;
+    private AclRole gaRole;
 
     @BeforeMethod
     public void beforeMethod() {
         objectStorage = service( new MemoryStorage<>( IdentifierBuilder.<AclObject>identify( ao -> ao.id, ( ao, id ) -> ao.id = id ).build(), Lock ) );
         roleStorage = service( new MemoryStorage<>( IdentifierBuilder.<AclRole>identify( ar -> ar.id, ( ar, id ) -> ar.id = id ).build(), Lock ) );
-        aclService = service( new DefaultAclService( objectStorage, roleStorage, mockAclSchema ) );
+        aclSchema = new MockAclSchema( objectStorage );
+        aclService = service( new DefaultAclService( roleStorage, aclSchema ) );
 
-        objectId = aclService.registerObject( ROOT, "testObject1", "own" ).get();
-        childId = aclService.registerObject( objectId, "child", "own" ).get();
-        childId2 = aclService.registerObject( childId, "child", "own" ).get();
-        subjectId = aclService.registerObject( objectId, "subject", "own" ).get();
-        subjectGroupId = aclService.registerObject( objectId, "subject", "own" ).get();
-        subjectId2 = aclService.registerObject( subjectGroupId, "subject", "own" ).get();
-        subjectId23 = aclService.registerObject( subjectId2, "subject", "own" ).get();
+        objectId = aclService.registerObject( ROOT, objectStorage.store( new TestAclObject( "testObject1" ) ) ).get();
+        childId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "child" ) ) ).get();
+        childId2 = aclService.registerObject( childId, objectStorage.store( new TestAclObject( "child" ) ) ).get();
+        subjectId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "subject" ) ) ).get();
+        subjectGroupId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "subject" ) ) ).get();
+        subjectId2 = aclService.registerObject( subjectGroupId, objectStorage.store( new TestAclObject( "subject" ) ) ).get();
+        subjectId23 = aclService.registerObject( subjectId2, objectStorage.store( new TestAclObject( "subject" ) ) ).get();
+
+        ga = aclService.registerObject( ROOT, objectStorage.store( new TestAclObject( "user" ) ) ).get();
 
         roleUknown = roleStorage.store( new AclRole( "roleIdUknown", "testRole1", singletonList( "testObjectUnknown.read" ) ) );
         role1 = roleStorage.store( new AclRole( "roleId1", "testRole1", singletonList( "testObject1.read" ) ) );
         role2 = roleStorage.store( new AclRole( "roleId2", "testRole2", singletonList( "testObject2.read" ) ) );
+
+        gaRole = roleStorage.store( new AclRole( AclService.GLOBAL_ADMIN_ROLE, "ga", singletonList( "*" ) ) );
+
+        aclService.add( ROOT, ga, gaRole.id, true );
     }
 
     @Test
     public void testGlobalAdmin() {
-        assertThat( aclService.checkOne( objectId, GLOBAL_ADMIN, "any permission" ) ).isTrue();
+        assertThat( aclService.checkOne( objectId, ga, "any permission" ) ).isTrue();
     }
 
     @Test

@@ -46,12 +46,10 @@ import static java.util.stream.Collectors.toList;
  */
 @Slf4j
 public class DefaultAclService implements AclService {
-    private final Storage<AclObject> objectStorage;
     private final Storage<AclRole> roleStorage;
     private final AclSchema schema;
 
-    public DefaultAclService( Storage<AclObject> objectStorage, Storage<AclRole> roleStorage, AclSchema schema ) {
-        this.objectStorage = objectStorage;
+    public DefaultAclService( Storage<AclRole> roleStorage, AclSchema schema ) {
         this.roleStorage = roleStorage;
         this.schema = schema;
     }
@@ -59,17 +57,6 @@ public class DefaultAclService implements AclService {
     public void start() {
         if( !roleStorage.get( GLOBAL_ADMIN_ROLE ).isPresent() ) {
             roleStorage.store( new AclRole( GLOBAL_ADMIN_ROLE, "ALL", singletonList( "*" ) ) );
-        }
-        if( !objectStorage.get( ROOT ).isPresent() ) {
-            objectStorage.store( new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), GLOBAL_ADMIN ) );
-        }
-        if( !objectStorage.get( GLOBAL_ADMIN ).isPresent() ) {
-            val globalAdminRole = roleStorage.get( GLOBAL_ADMIN_ROLE ).get();
-
-            objectStorage.store( new AclObject( GLOBAL_ADMIN, "user", singletonList( ROOT ), singletonList( ROOT ),
-                singletonList( new AclObject.Acl( globalAdminRole, GLOBAL_ADMIN, ROOT, true ) ), GLOBAL_ADMIN ) );
-
-            add( ROOT, GLOBAL_ADMIN, GLOBAL_ADMIN_ROLE, true );
         }
     }
 
@@ -83,8 +70,8 @@ public class DefaultAclService implements AclService {
     public List<Boolean> check( String objectId, String subjectId, List<String> permissions ) {
         log.debug( "check object = {}, subject = {}, permissions = {}", objectId, subjectId, permissions );
 
-        val aclObject = objectStorage.get( objectId ).orElse( null );
-        val aclSubject = objectStorage.get( subjectId ).orElse( null );
+        val aclObject = schema.getObject( objectId ).orElse( null );
+        val aclSubject = schema.getObject( subjectId ).orElse( null );
         if( aclObject == null ) {
             log.debug( "object {} not found.", objectId );
             return Lists.map( permissions, ( p ) -> false );
@@ -100,10 +87,10 @@ public class DefaultAclService implements AclService {
 
         val subjects = new HashSet<String>();
         subjects.add( subjectId );
-        subjects.addAll( aclSubject.ancestors );
+        subjects.addAll( aclSubject.acl.ancestors );
 
         return Lists.map( permissions,
-            ( p ) -> aclObject.acls
+            ( p ) -> aclObject.acl.acls
                 .stream()
                 .anyMatch( acl -> subjects.contains( acl.subjectId )
                     && ( acl.role.permissions.contains( "*" ) || acl.role.permissions.contains( p ) ) )
@@ -117,23 +104,21 @@ public class DefaultAclService implements AclService {
         final AclRole aclRole = roleStorage.get( roleId ).orElse( null );
         if( aclRole == null ) return false;
 
-        return objectStorage.update( objectId, aclObject -> {
-            aclObject.acls.add( new AclObject.Acl( aclRole, subjectId, null, inherit ) );
+        return schema.updateObject( objectId, aclObject -> {
+            aclObject.acl.acls.add( new AclObject.Acl( aclRole, subjectId, null, inherit ) );
             if( inherit ) {
-                objectStorage
-                    .select()
-                    .filter( child -> child.ancestors.contains( objectId ) )
+                schema
+                    .selectObjects()
+                    .filter( child -> child.acl.ancestors.contains( objectId ) )
                     .forEach( childs ->
-                        objectStorage.update(
+                        schema.updateObject(
                             childs.id,
                             child -> {
-                                child.acls.add( new AclObject.Acl( aclRole, subjectId, objectId, false ) );
-                                return child;
+                                child.acl.acls.add( new AclObject.Acl( aclRole, subjectId, objectId, false ) );
                             }
                         )
                     );
             }
-            return aclObject;
         } ).isPresent();
     }
 
@@ -141,17 +126,16 @@ public class DefaultAclService implements AclService {
     public boolean remove( String objectId, String subjectId, String roleId ) {
         log.debug( "remove object = {}, subject = {}, role = {}", objectId, subjectId, roleId );
 
-        return objectStorage.update( objectId, aclObject -> {
-            aclObject.acls.removeIf( acl -> {
+        return schema.updateObject( objectId, aclObject -> {
+            aclObject.acl.acls.removeIf( acl -> {
                 if( acl.subjectId.equals( subjectId ) && acl.role.id.equals( roleId ) && acl.parent == null ) {
                     if( acl.inheritance ) {
-                        for( val ao : objectStorage ) {
-                            if( ao.ancestors.contains( objectId ) ) {
-                                objectStorage.update(
+                        for( val ao : schema.objects() ) {
+                            if( ao.acl.ancestors.contains( objectId ) ) {
+                                schema.updateObject(
                                     ao.id,
                                     aos -> {
-                                        aos.acls.removeIf( aclc -> aclc.subjectId.equals( subjectId ) && aclc.role.id.equals( roleId ) );
-                                        return aos;
+                                        aos.acl.acls.removeIf( aclc -> aclc.subjectId.equals( subjectId ) && aclc.role.id.equals( roleId ) );
                                     }
                                 );
                             }
@@ -163,7 +147,6 @@ public class DefaultAclService implements AclService {
                 }
                 return false;
             } );
-            return aclObject;
         } ).isPresent();
     }
 
@@ -171,10 +154,10 @@ public class DefaultAclService implements AclService {
     public List<AclRole> list( String objectId, String subjectId ) {
         log.debug( "list object = {}, subject = {}", objectId, subjectId );
 
-        val aclObject = objectStorage.get( objectId ).orElse( null );
+        val aclObject = schema.getObject( objectId ).orElse( null );
         if( aclObject == null ) return emptyList();
 
-        return aclObject.acls
+        return aclObject.acl.acls
             .stream()
             .filter( acl -> acl.subjectId.equals( subjectId ) )
             .map( acl -> acl.role )
@@ -183,10 +166,10 @@ public class DefaultAclService implements AclService {
 
     @Override
     public List<String> getChildren( String parentId, String type, boolean recursive ) {
-        return objectStorage
-            .select()
+        return schema
+            .selectObjects()
             .filter( obj ->
-                ( recursive ? obj.ancestors.contains( parentId ) : obj.parents.contains( parentId ) )
+                ( recursive ? obj.acl.ancestors.contains( parentId ) : obj.parents.contains( parentId ) )
                     && obj.type.equals( type ) )
             .map( obj -> obj.id )
             .collect( toList() );
@@ -194,80 +177,85 @@ public class DefaultAclService implements AclService {
 
     @Override
     public List<String> findChildren( String parentId, String subjectId, String type, String permission ) {
-        val aclSubject = objectStorage.get( subjectId ).orElse( null );
+        val aclSubject = schema.getObject( subjectId ).orElse( null );
         if( aclSubject == null ) {
             log.debug( "subject {} not found.", subjectId );
             return emptyList();
         }
         val subjects = new HashSet<String>();
         subjects.add( subjectId );
-        subjects.addAll( aclSubject.ancestors );
+        subjects.addAll( aclSubject.acl.ancestors );
 
-        return objectStorage
-            .select()
+        return schema
+            .selectObjects()
             .filter( obj ->
-                obj.ancestors.contains( parentId )
+                obj.acl.ancestors.contains( parentId )
                     && obj.type.equals( type )
-                    && obj.acls.stream().anyMatch( acl -> subjects.contains( acl.subjectId ) ) )
+                    && obj.acl.acls.stream().anyMatch( acl -> subjects.contains( acl.subjectId ) ) )
             .map( obj -> obj.id )
             .collect( toList() );
     }
 
     @Override
-    public Optional<String> registerObject( String parentId, String type, String owner ) {
+    public <T extends AclObject> Optional<String> registerObject( String parentId, T obj ) {
         Preconditions.checkNotNull( parentId );
 
-        val parent = objectStorage.get( parentId ).orElse( null );
+        val parent = schema.getObject( parentId ).orElse( null );
         if( parent == null ) return Optional.empty();
 
-        schema.validateNewObject( parent, type );
+        schema.validateNewObject( parent, obj.type );
 
         val parents = new ArrayList<String>();
         parents.add( parentId );
 
-        val ancestors = new ArrayList<String>( parent.ancestors );
+        val ancestors = new ArrayList<String>( parent.acl.ancestors );
         ancestors.add( parentId );
 
-        val acls = parent.acls
+        val acls = parent.acl.acls
             .stream()
             .filter( acl -> acl.inheritance )
             .map( acl -> acl.parent == null ? acl.cloneWithParent( parent.id ) : acl )
             .collect( toList() );
 
-        val ao = new AclObject( null, type, parents, ancestors, acls, owner );
-        objectStorage.store( ao );
+        obj.parents.clear();
+        obj.parents.addAll( parents );
 
-        return Optional.of( ao.id );
+        obj.acl.ancestors.clear();
+        obj.acl.ancestors.addAll( ancestors );
+
+        obj.acl.acls.clear();
+        obj.acl.acls.addAll( acls );
+
+        return Optional.of( obj.id );
     }
 
     @Override
     public void unregisterObject( String objectId ) {
-        if( !objectStorage.get( objectId ).isPresent() )
+        if( !schema.getObject( objectId ).isPresent() )
             throw new AclSecurityException( "Object '" + objectId + "' not found" );
 
-        if( objectStorage.select().anyMatch( obj -> obj.parents.contains( objectId ) ) )
+        if( schema.selectObjects().anyMatch( obj -> obj.parents.contains( objectId ) ) )
             throw new AclSecurityException( "Group '" + objectId + "' not empty" );
 
-        for( val obj : objectStorage ) {
-            if( obj.acls.stream().anyMatch( acl -> acl.subjectId.equals( objectId ) ) ) {
-                objectStorage.update( obj.id, o -> {
-                    o.acls.removeIf( acl -> acl.subjectId.equals( objectId ) );
-                    return o;
+        for( val obj : schema.objects() ) {
+            if( obj.acl.acls.stream().anyMatch( acl -> acl.subjectId.equals( objectId ) ) ) {
+                schema.updateObject( obj.id, o -> {
+                    o.acl.acls.removeIf( acl -> acl.subjectId.equals( objectId ) );
                 } );
             }
         }
 
-        objectStorage.delete( objectId );
+        schema.deleteObject( objectId );
     }
 
     @Override
     public List<SubjectRole> getSubjectRoles( String objectId, boolean inherited ) {
-        val obj = objectStorage.get( objectId ).orElse( null );
+        val obj = schema.getObject( objectId ).orElse( null );
         if( obj == null ) return emptyList();
 
         val map = new SetMultiMap<String, AclRole>( false );
 
-        for( val acl : obj.acls ) {
+        for( val acl : obj.acl.acls ) {
             if( inherited || acl.parent == null )
                 map.put( acl.subjectId, acl.role );
         }
@@ -283,8 +271,8 @@ public class DefaultAclService implements AclService {
     public List<ObjectRole> getRoles( String userId, boolean inherited ) {
         val map = new SetMultiMap<String, AclRole>( false );
 
-        for( val obj : objectStorage ) {
-            for( val acl : obj.acls ) {
+        for( val obj : schema.objects() ) {
+            for( val acl : obj.acl.acls ) {
                 if( acl.subjectId.equals( userId ) )
                     if( inherited || acl.parent == null )
                         map.put( obj.id, acl.role );

@@ -31,6 +31,7 @@ import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Session;
 import oap.reflect.Reflection;
+import oap.security.acl.AclObject;
 import oap.security.acl.AclService;
 import oap.ws.Interceptor;
 
@@ -110,20 +111,21 @@ public class SecurityInterceptor2 implements Interceptor {
 
     @Override
     public <T> T postProcessing( T value, Session session, Reflection.Method method ) {
-        if( value instanceof ObjectWithPermissions ) {
+        if( value instanceof AclObject ) {
             val annotation = method.findAnnotation( WsSecurityWithPermissions.class ).orElse( null );
             if( annotation == null ) return value;
 
             var userId = ( String ) session.get( USER_ID ).orElse( null );
 
-            val res = aclService.check( ( ( ObjectWithPermissions ) value ).id, userId, annotation.permission() );
+            val aclObject = ( AclObject ) value;
+            val res = aclService.check( aclObject.id, userId, annotation.permission() );
 
             val permissions = new ArrayList<String>();
             for( int i = 0; i < annotation.permission().length; i++ ) {
                 if( res.get( i ) ) permissions.add( annotation.permission()[i] );
             }
 
-            ( ( ObjectWithPermissions ) value ).permissions = permissions;
+            aclObject.permissions = permissions;
         }
         return value;
     }

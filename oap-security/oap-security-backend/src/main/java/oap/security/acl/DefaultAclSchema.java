@@ -27,32 +27,41 @@ package oap.security.acl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import oap.dictionary.Dictionary;
+import oap.dictionary.DictionaryParser;
 import oap.storage.Storage;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 
 /**
  * Created by igor.petrenko on 29.12.2017.
  */
 @Slf4j
 public class DefaultAclSchema implements AclSchema {
-    private final Storage<AclObject> objectStorage;
-    private final Map<String, Object> schema;
+    private final Map<String, Storage<? extends AclObject>> objectStorage;
+    private final Dictionary schema;
 
     @JsonCreator
-    public DefaultAclSchema( Storage<AclObject> objectStorage, Map<String, Object> schema ) {
-        this.objectStorage = objectStorage;
-        this.schema = schema;
+    public DefaultAclSchema( Map<String, Storage<? extends AclObject>> objectStorage, String schema ) {
+        this.objectStorage = new HashMap<>( objectStorage );
+        this.objectStorage.put( "root", new RootStorage() );
 
-        log.info( "acl schema = {}", schema );
+        log.info( "acl schema path = {}", schema );
+
+        this.schema = DictionaryParser.parse( schema, INCREMENTAL_ID_STRATEGY );
+
+        log.info( "acl schema = {}", this.schema );
     }
 
     @Override
@@ -60,25 +69,68 @@ public class DefaultAclSchema implements AclSchema {
         log.trace( "validateNewObject parent = {}, newObjectType = {}", parent, newObjectType );
 
         val parentSchema = getSchemas( parent );
-        if( parentSchema.stream().noneMatch( schema -> schema.containsKey( newObjectType ) ) ) {
+        if( parentSchema.stream().noneMatch( schema -> schema.containsValueWithId( newObjectType ) ) ) {
             throw new AclSecurityException( newObjectType + " is not allowed here." );
         }
     }
 
+    @Override
+    public Optional<? extends AclObject> getObject( String id ) {
+        for( val storage : objectStorage.values() ) {
+            AclObject obj;
+            if( ( obj = storage.get( id ).orElse( null ) ) != null ) return Optional.of( obj );
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
+    public Stream<AclObject> selectObjects() {
+        return objectStorage.values()
+            .stream()
+            .flatMap( Storage::select );
+    }
+
+    @Override
+    public Optional<? extends AclObject> updateObject( String id, Consumer<AclObject> cons ) {
+        for( val os : objectStorage.values() ) {
+            val res = os.update( id, ( o ) -> {
+                cons.accept( o );
+                return o;
+            } );
+
+            if( res.isPresent() ) return res;
+        }
+
+        return Optional.empty();
+    }
+
+    @Override
+    public Iterable<AclObject> objects() {
+        return () -> selectObjects().iterator();
+    }
+
+    @Override
+    public void deleteObject( String id ) {
+        for( val os : objectStorage.values() ) {
+            if( os.delete( id ).isPresent() ) return;
+        }
+    }
+
     @SuppressWarnings( "unchecked" )
-    private List<Map<String, Object>> getSchemas( AclObject parent ) {
+    private List<Dictionary> getSchemas( AclObject parent ) {
         if( parent == null ) return singletonList( schema );
         if( parent.parents.isEmpty() )
-            return Optional.ofNullable( ( Map<String, Object> ) schema.get( parent.type ) )
+            return Optional.ofNullable( schema.getValue( parent.type ) )
                 .map( Collections::singletonList ).orElse( emptyList() );
 
         return parent.parents
             .stream()
             .flatMap( id ->
-                getSchemas( objectStorage.get( id ).get() )
+                getSchemas( getObject( id ).get() )
                     .stream()
                     .flatMap( aclType ->
-                        Optional.ofNullable( ( Map<String, Object> ) aclType.get( parent.type ) )
+                        Optional.ofNullable( aclType.getValue( parent.type ) )
                             .map( Stream::of )
                             .orElse( Stream.empty() ) )
             )

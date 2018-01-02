@@ -24,13 +24,13 @@
 
 package oap.security.acl;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.util.Strings;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -41,33 +41,49 @@ import static java.util.Collections.emptyList;
  */
 @ToString
 @EqualsAndHashCode
-public class AclObject implements Serializable {
-    private static final long serialVersionUID = -6189594932715997498L;
+public abstract class AclObject implements Serializable {
     public final String type;
     public final LinkedHashSet<String> parents;
-    public final LinkedHashSet<String> ancestors;
-    public final LinkedHashSet<Acl> acls;
+    public final AclPrivate acl;
     public String id;
     public String owner;
+    @JsonInclude( JsonInclude.Include.NON_DEFAULT )
+    public List<String> permissions;
 
-
-    @JsonCreator
-    public AclObject( @JsonProperty String id,
-                      @JsonProperty String type,
-                      @JsonProperty List<String> parents,
-                      @JsonProperty List<String> ancestors,
-                      @JsonProperty List<Acl> acls,
-                      @JsonProperty String owner ) {
+    public AclObject( String id,
+                      String type,
+                      List<String> parents,
+                      List<String> ancestors,
+                      List<Acl> acls,
+                      String owner ) {
         this.id = id;
         this.type = type;
         this.parents = new LinkedHashSet<>( parents != null ? parents : emptyList() );
-        this.ancestors = new LinkedHashSet<>( ancestors != null ? ancestors : emptyList() );
-        this.acls = new LinkedHashSet<>( acls != null ? acls : emptyList() );
+        acl = new AclPrivate(
+            new LinkedHashSet<>( ancestors != null ? ancestors : emptyList() ),
+            new LinkedHashSet<>( acls != null ? acls : emptyList() )
+        );
         this.owner = owner;
     }
 
-    public AclObject( String type, List<String> parents, List<String> ancestors, List<Acl> acls, String owner ) {
-        this( null, type, parents, ancestors, acls, owner );
+
+    public AclObject( String type ) {
+        this( null, type, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Strings.UNKNOWN );
+    }
+
+    public AclObject( String id, String type ) {
+        this( id, type, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Strings.UNKNOWN );
+    }
+
+    @ToString
+    public static class AclPrivate {
+        public final LinkedHashSet<String> ancestors;
+        public final LinkedHashSet<Acl> acls;
+
+        public AclPrivate( LinkedHashSet<String> ancestors, LinkedHashSet<Acl> acls ) {
+            this.ancestors = ancestors;
+            this.acls = acls;
+        }
     }
 
     @JsonInclude( JsonInclude.Include.NON_DEFAULT )
