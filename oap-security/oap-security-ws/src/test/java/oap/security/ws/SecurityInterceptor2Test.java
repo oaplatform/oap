@@ -40,10 +40,12 @@ import org.testng.annotations.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static oap.ws.Interceptor.USER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -144,11 +146,28 @@ public class SecurityInterceptor2Test {
             .containsExactlyInAnyOrder( "test1.read" );
     }
 
+    @Test
+    public void testPostProcessingList() {
+        when( mockAclService.check( "1", "testUser", "test1.read", "test2.read" ) ).thenReturn( asList( true, false ) );
+
+        final Session session = new Session();
+        session.set( USER_ID, "testUser" );
+
+        val methodList = REFLECTION.method( method -> method.name().equals( "methodList" ) ).get();
+        assertThat( securityInterceptor.postProcessing( singletonList( new TestAPI.Res( "1" ) ), session, methodList ).get( 0 ).permissions )
+            .containsExactlyInAnyOrder( "test1.read" );
+    }
+
     private static class TestAPI {
         @WsSecurity2( object = "{parent}", permission = "parent.read" )
         @WsSecurityWithPermissions( permission = { "test1.read", "test2.read" } )
         public Res methodWithAnnotation( @WsParam String parent ) {
             return new Res( "1" );
+        }
+
+        @WsSecurityWithPermissions( permission = { "test1.read", "test2.read" } )
+        public List<Res> methodList( @WsParam String parent ) {
+            return singletonList( new Res( "1" ) );
         }
 
         public void methodWithoutAnnotation() {}
