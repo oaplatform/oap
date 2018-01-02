@@ -24,6 +24,7 @@
 
 package oap.security.acl;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -43,8 +44,8 @@ import static java.util.Collections.emptyList;
 @EqualsAndHashCode
 public abstract class AclObject implements Serializable {
     public final String type;
-    public final LinkedHashSet<String> parents;
     public final AclPrivate acl;
+    public LinkedHashSet<String> parents;
     public String id;
     public String owner;
     @JsonInclude( JsonInclude.Include.NON_DEFAULT )
@@ -80,9 +81,10 @@ public abstract class AclObject implements Serializable {
         public final LinkedHashSet<String> ancestors;
         public final LinkedHashSet<Acl> acls;
 
+        @JsonCreator
         public AclPrivate( LinkedHashSet<String> ancestors, LinkedHashSet<Acl> acls ) {
-            this.ancestors = ancestors;
-            this.acls = acls;
+            this.ancestors = ancestors != null ? ancestors : new LinkedHashSet<>();
+            this.acls = acls != null ? acls : new LinkedHashSet<>();
         }
     }
 
