@@ -43,7 +43,7 @@ import static java.util.Collections.emptyList;
 @ToString
 @EqualsAndHashCode
 public abstract class AclObject implements Serializable {
-    public final String type;
+    public String type;
     public final AclPrivate acl;
     public LinkedHashSet<String> parents;
     public String id;

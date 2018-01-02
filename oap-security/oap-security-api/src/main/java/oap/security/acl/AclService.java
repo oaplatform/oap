@@ -69,6 +69,22 @@ public interface AclService {
 
     <T extends AclObject> Optional<T> registerObject( String parentId, T obj );
 
+    default <T extends AclObject> void refresh( T newObject, T oldObject ) {
+        newObject.id = oldObject.id;
+        newObject.owner = oldObject.owner;
+        newObject.type = oldObject.type;
+
+        newObject.parents.clear();
+        newObject.parents.addAll( oldObject.parents );
+
+        newObject.acl.ancestors.clear();
+        newObject.acl.ancestors.addAll( oldObject.acl.ancestors );
+
+        newObject.acl.acls.clear();
+        newObject.acl.acls.addAll( oldObject.acl.acls );
+        newObject.permissions = null;
+    }
+
     void unregisterObject( String objectId );
 
     @ToString
