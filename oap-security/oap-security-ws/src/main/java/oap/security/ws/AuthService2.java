@@ -48,8 +48,8 @@ public class AuthService2 {
     private final PasswordHasher passwordHasher;
     private final Cache<String, Token2> tokenStorage;
 
-    public AuthService2( List<AuthProvider<? extends User2>> provides, PasswordHasher passwordHasher, int expirationTime ) {
-        this.providers = provides;
+    public AuthService2( List<AuthProvider<? extends User2>> providers, PasswordHasher passwordHasher, int expirationTime ) {
+        this.providers = providers;
         this.passwordHasher = passwordHasher;
         this.tokenStorage = CacheBuilder.newBuilder()
             .expireAfterAccess( expirationTime, TimeUnit.MILLISECONDS )
