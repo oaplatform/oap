@@ -188,6 +188,15 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
                     if( link != null ) it.set( link );
                     else it.remove();
                 }
+            } else if( value instanceof Map<?, ?> ) {
+                final Iterator<Map.Entry> it = ( ( Map ) value ).entrySet().iterator();
+                while( it.hasNext() ) {
+                    final Map.Entry e = it.next();
+                    final Object link = resolve( name, key, e.getValue(), false );
+
+                    if( link != null ) e.setValue( link );
+                    else it.remove();
+                }
             }
         }
     }

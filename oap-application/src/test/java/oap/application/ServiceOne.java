@@ -48,6 +48,7 @@ public class ServiceOne {
     int i2;
     Complex complex;
     List<Complex> complexes = new ArrayList<>();
+    Map<String, ServiceOne> map;
     ComplexMap complexMap;
     ActionListener listener;
     List<ServiceOne> list = new ArrayList<>();

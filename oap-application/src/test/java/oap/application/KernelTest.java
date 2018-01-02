@@ -153,6 +153,22 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
+    public void testMap() {
+        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "modules/m4.conf" ) );
+
+        Kernel kernel = new Kernel( modules );
+        try {
+            kernel.start();
+
+            assertThat( Application.<ServiceOne>service( "s1" ).map ).hasSize( 2 );
+            assertThat( Application.<ServiceOne>service( "s1" ).map.get( "test1" ) ).isInstanceOf(ServiceOne.class);
+            assertThat( Application.<ServiceOne>service( "s1" ).map.get( "test2" ) ).isInstanceOf(ServiceOne.class);
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
     public void testAbstractModules() {
         List<URL> modules = asList(
             urlOfTestResource( getClass(), "modules/abs.conf" ),
