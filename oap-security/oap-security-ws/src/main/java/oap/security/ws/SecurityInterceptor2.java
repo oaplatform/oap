@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Created by igor.petrenko on 22.12.2017.
@@ -111,7 +112,7 @@ public class SecurityInterceptor2 implements Interceptor {
     }
 
     @Override
-    public <T> T postProcessing( T value, Session session, Reflection.Method method ) {
+    public Object postProcessing( Object value, Session session, Reflection.Method method ) {
         if( value instanceof AclObject ) {
             val annotation = method.findAnnotation( WsSecurityWithPermissions.class ).orElse( null );
             if( annotation == null ) return value;
@@ -127,11 +128,10 @@ public class SecurityInterceptor2 implements Interceptor {
             }
 
             aclObject.permissions = permissions;
+
+            return aclService.removeAcl( aclObject );
         } else if( value instanceof List<?> ) {
-            for( val v : ( List<?> ) value ) {
-                postProcessing( v, session, method );
-            }
-            return value;
+            return ( ( List<?> ) value ).stream().map( v -> postProcessing( v, session, method ) ).collect( toList() );
         }
         return value;
     }

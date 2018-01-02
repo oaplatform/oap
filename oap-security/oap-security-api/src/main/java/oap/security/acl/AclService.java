@@ -87,6 +87,12 @@ public interface AclService {
 
     void unregisterObject( String objectId );
 
+    default AclObject removeAcl( AclObject value ) {
+        final AclObject clone = value.clone();
+        clone.acl = null;
+        return clone;
+    }
+
     @ToString
     @EqualsAndHashCode
     class ObjectRole implements Serializable {

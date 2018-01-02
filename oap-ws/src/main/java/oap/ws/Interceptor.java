@@ -40,7 +40,7 @@ public interface Interceptor {
                                       Reflection.Method method,
                                       Function<Reflection.Parameter, Object> getParameterValueFunc );
 
-    default <T> T postProcessing( T value, Session session, Reflection.Method method ) {
+    default Object postProcessing( Object value, Session session, Reflection.Method method ) {
         return value;
     }
 }

@@ -32,10 +32,13 @@ import oap.http.Session;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.security.acl.AclObject;
+import oap.security.acl.AclRole;
 import oap.security.acl.AclService;
 import oap.ws.WsParam;
 import org.apache.http.client.methods.HttpGet;
 import org.joda.time.DateTimeUtils;
+import org.mockito.internal.stubbing.answers.ReturnsArgumentAt;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
@@ -45,9 +48,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static oap.ws.Interceptor.USER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -61,6 +66,11 @@ public class SecurityInterceptor2Test {
     private final AclService mockAclService = mock( AclService.class );
 
     private final SecurityInterceptor2 securityInterceptor = new SecurityInterceptor2( mockAclService, mockTokenService );
+
+    @BeforeClass
+    public void beforeClass() {
+        when( mockAclService.removeAcl( anyObject() ) ).then( new ReturnsArgumentAt( 0 ) );
+    }
 
     @Test
     public void testShouldNotCheckMethodWithoutAnnotation() {
@@ -142,8 +152,8 @@ public class SecurityInterceptor2Test {
         session.set( USER_ID, "testUser" );
 
         val methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
-        assertThat( securityInterceptor.postProcessing( new TestAPI.Res( "1" ), session, methodWithAnnotation ).permissions )
-            .containsExactlyInAnyOrder( "test1.read" );
+        final AclObject aclObject = ( AclObject ) securityInterceptor.postProcessing( new TestAPI.Res( "1" ), session, methodWithAnnotation );
+        assertThat( aclObject.permissions ).containsExactlyInAnyOrder( "test1.read" );
     }
 
     @Test
@@ -154,8 +164,8 @@ public class SecurityInterceptor2Test {
         session.set( USER_ID, "testUser" );
 
         val methodList = REFLECTION.method( method -> method.name().equals( "methodList" ) ).get();
-        assertThat( securityInterceptor.postProcessing( singletonList( new TestAPI.Res( "1" ) ), session, methodList ).get( 0 ).permissions )
-            .containsExactlyInAnyOrder( "test1.read" );
+        final AclObject aclObject = ( ( List<AclObject> ) securityInterceptor.postProcessing( singletonList( new TestAPI.Res( "1" ) ), session, methodList ) ).get( 0 );
+        assertThat( aclObject.permissions ).containsExactlyInAnyOrder( "test1.read" );
     }
 
     private static class TestAPI {
@@ -174,7 +184,7 @@ public class SecurityInterceptor2Test {
 
         public static class Res extends AclObject {
             public Res( String id ) {
-                super( id, "test" );
+                super( id, "test", singletonList( AclService.ROOT ), singletonList( AclService.ROOT ), singletonList( new Acl( new AclRole( "1", "n", emptyList() ), "sub", null, false ) ), "own" );
             }
         }
     }

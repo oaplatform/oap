@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.json.Binder;
 import oap.util.Strings;
 
 import java.io.Serializable;
@@ -42,9 +43,9 @@ import static java.util.Collections.emptyList;
  */
 @ToString
 @EqualsAndHashCode
-public abstract class AclObject implements Serializable {
+public abstract class AclObject implements Serializable, Cloneable {
+    public AclPrivate acl;
     public String type;
-    public final AclPrivate acl;
     public LinkedHashSet<String> parents;
     public String id;
     public String owner;
@@ -74,6 +75,12 @@ public abstract class AclObject implements Serializable {
 
     public AclObject( String id, String type ) {
         this( id, type, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Strings.UNKNOWN );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    @Override
+    protected AclObject clone() {
+        return Binder.json.clone( this );
     }
 
     @ToString
