@@ -67,7 +67,7 @@ public interface AclService {
 
     List<String> findChildren( String parentId, String subjectId, String type, String permission );
 
-    public <T extends AclObject> Optional<String> registerObject( String parentId, T obj );
+    <T extends AclObject> Optional<T> registerObject( String parentId, T obj );
 
     void unregisterObject( String objectId );
 

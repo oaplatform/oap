@@ -197,7 +197,7 @@ public class DefaultAclService implements AclService {
     }
 
     @Override
-    public <T extends AclObject> Optional<String> registerObject( String parentId, T obj ) {
+    public <T extends AclObject> Optional<T> registerObject( String parentId, T obj ) {
         Preconditions.checkNotNull( parentId );
 
         val parent = schema.getObject( parentId ).orElse( null );
@@ -226,7 +226,7 @@ public class DefaultAclService implements AclService {
         obj.acl.acls.clear();
         obj.acl.acls.addAll( acls );
 
-        return Optional.of( obj.id );
+        return Optional.of( obj );
     }
 
     @Override

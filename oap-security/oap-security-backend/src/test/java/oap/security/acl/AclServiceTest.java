@@ -70,15 +70,15 @@ public class AclServiceTest {
         aclSchema = new MockAclSchema( objectStorage );
         aclService = service( new DefaultAclService( roleStorage, aclSchema ) );
 
-        objectId = aclService.registerObject( ROOT, objectStorage.store( new TestAclObject( "testObject1" ) ) ).get();
-        childId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "child" ) ) ).get();
-        childId2 = aclService.registerObject( childId, objectStorage.store( new TestAclObject( "child" ) ) ).get();
-        subjectId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "subject" ) ) ).get();
-        subjectGroupId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "subject" ) ) ).get();
-        subjectId2 = aclService.registerObject( subjectGroupId, objectStorage.store( new TestAclObject( "subject" ) ) ).get();
-        subjectId23 = aclService.registerObject( subjectId2, objectStorage.store( new TestAclObject( "subject" ) ) ).get();
+        objectId = aclService.registerObject( ROOT, objectStorage.store( new TestAclObject( "testObject1" ) ) ).get().id;
+        childId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "child" ) ) ).get().id;
+        childId2 = aclService.registerObject( childId, objectStorage.store( new TestAclObject( "child" ) ) ).get().id;
+        subjectId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "subject" ) ) ).get().id;
+        subjectGroupId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "subject" ) ) ).get().id;
+        subjectId2 = aclService.registerObject( subjectGroupId, objectStorage.store( new TestAclObject( "subject" ) ) ).get().id;
+        subjectId23 = aclService.registerObject( subjectId2, objectStorage.store( new TestAclObject( "subject" ) ) ).get().id;
 
-        ga = aclService.registerObject( ROOT, objectStorage.store( new TestAclObject( "user" ) ) ).get();
+        ga = aclService.registerObject( ROOT, objectStorage.store( new TestAclObject( "user" ) ) ).get().id;
 
         roleUknown = roleStorage.store( new AclRole( "roleIdUknown", "testRole1", singletonList( "testObjectUnknown.read" ) ) );
         role1 = roleStorage.store( new AclRole( "roleId1", "testRole1", singletonList( "testObject1.read" ) ) );
