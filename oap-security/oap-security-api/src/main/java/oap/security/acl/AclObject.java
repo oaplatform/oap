@@ -44,6 +44,7 @@ import static java.util.Collections.emptyList;
 @ToString
 @EqualsAndHashCode
 public abstract class AclObject implements Serializable, Cloneable {
+    @JsonInclude( JsonInclude.Include.NON_DEFAULT )
     public AclPrivate acl;
     public String type;
     public LinkedHashSet<String> parents;
