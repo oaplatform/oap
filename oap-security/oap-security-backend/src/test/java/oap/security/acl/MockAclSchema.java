@@ -26,6 +26,8 @@ package oap.security.acl;
 
 import oap.storage.Storage;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -72,5 +74,10 @@ public class MockAclSchema implements AclSchema {
     @Override
     public void deleteObject( String id ) {
         storage.delete( id );
+    }
+
+    @Override
+    public List<String> getPermissions( String objectId ) {
+        return Collections.emptyList();
     }
 }

@@ -37,11 +37,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 
 /**
@@ -117,6 +117,20 @@ public class DefaultAclSchema implements AclSchema {
         }
     }
 
+    @Override
+    public List<String> getPermissions( String objectId ) {
+        val object = getObject( objectId ).orElse( null );
+        if( object == null ) return emptyList();
+
+        val objectSchema = getSchemas( object );
+
+        return objectSchema
+            .stream()
+            .flatMap( os -> ( ( List<String> ) os.getProperty( "permissions" ).orElse( emptyList() ) ).stream() )
+            .distinct()
+            .collect( toList() );
+    }
+
     @SuppressWarnings( "unchecked" )
     private List<Dictionary> getSchemas( AclObject parent ) {
         if( parent == null ) return singletonList( schema );
@@ -134,7 +148,7 @@ public class DefaultAclSchema implements AclSchema {
                             .map( Stream::of )
                             .orElse( Stream.empty() ) )
             )
-            .collect( Collectors.toList() );
+            .collect( toList() );
     }
 
 }

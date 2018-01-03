@@ -32,6 +32,7 @@ import org.testng.annotations.Test;
 
 import static java.util.Collections.singletonList;
 import static oap.storage.Storage.LockStrategy.NoLock;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
@@ -56,4 +57,13 @@ public class DefaultAclSchemaTest {
         assertThatThrownBy( () -> schema.validateNewObject( organization, "root" ) ).hasMessageStartingWith( "root is not" );
     }
 
+    @Test
+    public void testGetPermissions() {
+        val storage = new MemoryStorage<TestAclObject>( IdentifierBuilder.<TestAclObject>identify( obj -> obj.id ).build(), NoLock );
+        val schema = new DefaultAclSchema(
+            ImmutableMap.of( "organization", storage, "user", storage ), "/acl/test-acl-schema.conf" );
+
+        val organization = storage.store( new TestAclObject( "org1", "organization", singletonList( AclService.ROOT ), singletonList( AclService.ROOT ) ) );
+        assertThat(schema.getPermissions( organization.id )).contains( "organization.read" );
+    }
 }

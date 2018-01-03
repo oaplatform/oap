@@ -146,7 +146,7 @@ public class SecurityInterceptor2Test {
 
     @Test
     public void testPostProcessing() {
-        when( mockAclService.check( "1", "testUser", "test1.read", "test2.read" ) ).thenReturn( asList( true, false ) );
+        when( mockAclService.checkAll( "1", "testUser") ).thenReturn( asList( "test1.read" ) );
 
         final Session session = new Session();
         session.set( USER_ID, "testUser" );
@@ -158,7 +158,7 @@ public class SecurityInterceptor2Test {
 
     @Test
     public void testPostProcessingList() {
-        when( mockAclService.check( "1", "testUser", "test1.read", "test2.read" ) ).thenReturn( asList( true, false ) );
+        when( mockAclService.checkAll( "1", "testUser" ) ).thenReturn( asList( "test1.read" ) );
 
         final Session session = new Session();
         session.set( USER_ID, "testUser" );
@@ -170,12 +170,12 @@ public class SecurityInterceptor2Test {
 
     private static class TestAPI {
         @WsSecurity2( object = "{parent}", permission = "parent.read" )
-        @WsSecurityWithPermissions( permission = { "test1.read", "test2.read" } )
+        @WsSecurityWithPermissions()
         public Res methodWithAnnotation( @WsParam String parent ) {
             return new Res( "1" );
         }
 
-        @WsSecurityWithPermissions( permission = { "test1.read", "test2.read" } )
+        @WsSecurityWithPermissions()
         public List<Res> methodList( @WsParam String parent ) {
             return singletonList( new Res( "1" ) );
         }

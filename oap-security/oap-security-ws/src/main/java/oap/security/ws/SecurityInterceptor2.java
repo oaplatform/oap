@@ -35,7 +35,6 @@ import oap.security.acl.AclObject;
 import oap.security.acl.AclService;
 import oap.ws.Interceptor;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -120,14 +119,11 @@ public class SecurityInterceptor2 implements Interceptor {
             var userId = ( String ) session.get( USER_ID ).orElse( null );
 
             val aclObject = ( AclObject ) value;
-            val res = aclService.check( aclObject.id, userId, annotation.permission() );
 
-            val permissions = new ArrayList<String>();
-            for( int i = 0; i < annotation.permission().length; i++ ) {
-                if( res.get( i ) ) permissions.add( annotation.permission()[i] );
-            }
 
-            aclObject.permissions = permissions;
+            val res = aclService.checkAll( aclObject.id, userId );
+
+            aclObject.permissions = res;
 
             return aclService.removeAcl( aclObject );
         } else if( value instanceof List<?> ) {

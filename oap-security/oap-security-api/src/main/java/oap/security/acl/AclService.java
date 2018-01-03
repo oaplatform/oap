@@ -57,6 +57,8 @@ public interface AclService {
 
     List<Boolean> check( String objectId, String subjectId, List<String> permissions );
 
+    List<String> checkAll( String objectId, String subjectId );
+
     boolean add( String objectId, String subjectId, String roleId, boolean inherit );
 
     boolean remove( String objectId, String subjectId, String roleId );

@@ -67,6 +67,22 @@ public class DefaultAclService implements AclService {
     }
 
     @Override
+    public List<String> checkAll( String objectId, String subjectId ) {
+        log.debug( "checkAll object = {}, subject = {}", objectId, subjectId );
+
+        val permissions = schema.getPermissions( objectId );
+        val res = check( objectId, subjectId, permissions );
+
+        val ret = new ArrayList<String>();
+
+        for( int i = 0; i < permissions.size(); i++ ) {
+            if( res.get( i ) ) ret.add( permissions.get( i ) );
+        }
+
+        return ret;
+    }
+
+    @Override
     public List<Boolean> check( String objectId, String subjectId, List<String> permissions ) {
         log.debug( "check object = {}, subject = {}, permissions = {}", objectId, subjectId, permissions );
 
