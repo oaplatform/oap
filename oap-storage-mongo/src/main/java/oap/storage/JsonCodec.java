@@ -42,6 +42,7 @@ import org.bson.codecs.EncoderContext;
 import org.bson.types.ObjectId;
 
 import java.util.Date;
+import java.util.function.Function;
 
 /**
  * Created by igor.petrenko on 13.12.2017.
@@ -50,12 +51,14 @@ public class JsonCodec<T> implements Codec<T> {
     private final DocumentCodec documentCodec;
     private final Class<T> clazz;
     private final Class<?> objectTypeClass;
+    private final Function<T, String> idFunc;
     private ObjectWriter fileWriter;
     private ObjectReader fileReader;
 
-    public JsonCodec( TypeReference<T> tr, Class<T> clazz, Class<?> objectTypeClass ) {
+    public JsonCodec( TypeReference<T> tr, Class<T> clazz, Class<?> objectTypeClass, Function<T, String> idFunc) {
         this.clazz = clazz;
         this.objectTypeClass = objectTypeClass;
+        this.idFunc = idFunc;
         documentCodec = new DocumentCodec();
         fileReader = Binder.json.readerFor( tr );
         fileWriter = Binder.json.writerFor( tr );
@@ -65,8 +68,7 @@ public class JsonCodec<T> implements Codec<T> {
     @Override
     public T decode( BsonReader bsonReader, DecoderContext decoderContext ) {
         val doc = documentCodec.decode( bsonReader, decoderContext );
-        val id = doc.remove( "_id" );
-        doc.put( "id", id.toString() );
+        doc.remove( "_id" );
 
         val modified = doc.get( "modified" );
         doc.put( "modified", ( ( Date ) modified ).getTime() );
@@ -78,10 +80,12 @@ public class JsonCodec<T> implements Codec<T> {
 
     @SneakyThrows
     @Override
-    public void encode( BsonWriter bsonWriter, T file, EncoderContext encoderContext ) {
-        val doc = Document.parse( fileWriter.writeValueAsString( file ) );
-        val id = doc.remove( "id" );
-        doc.put( "_id", new ObjectId( id.toString() ) );
+    public void encode( BsonWriter bsonWriter, T data, EncoderContext encoderContext ) {
+        val doc = Document.parse( fileWriter.writeValueAsString( data ) );
+
+        val id = idFunc.apply( data );
+
+        doc.put( "_id", new ObjectId( id ) );
 
         val modified = doc.get( "modified" );
         doc.put( "modified", new BsonDateTime( ( Long ) modified ) );

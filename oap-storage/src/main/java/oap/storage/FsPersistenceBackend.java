@@ -68,7 +68,8 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
     private MemoryStorage<T> storage;
     private PeriodicScheduled scheduled;
 
-    FsPersistenceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync, int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
+    FsPersistenceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync,
+                          int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
         this.path = path;
         this.fsResolve = fsResolve;
         this.version = version;
@@ -105,7 +106,9 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
                     Files.move( file, newPath, StandardCopyOption.REPLACE_EXISTING );
                 }
 
-                storage.data.put( unmarshal.id, unmarshal );
+                val id = storage.identifier.get( unmarshal.object );
+
+                storage.data.put( id, unmarshal );
 
             }
 

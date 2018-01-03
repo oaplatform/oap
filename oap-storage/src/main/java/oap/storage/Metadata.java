@@ -35,24 +35,17 @@ import java.io.Serializable;
 
 @EqualsAndHashCode( exclude = "object" )
 @ToString( exclude = "object" )
-public class Metadata<T> implements Comparable<Metadata<T>>, Serializable {
-    public String id;
+public class Metadata<T> implements Serializable {
     public long modified = DateTimeUtils.currentTimeMillis();
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
     public T object;
 
-    protected Metadata( String id, T object ) {
-        this.id = id;
+    protected Metadata( T object ) {
         this.object = object;
     }
 
     protected Metadata() {
-    }
-
-    @Override
-    public int compareTo( Metadata<T> o ) {
-        return this.id.compareTo( o.id );
     }
 
     public void update( T t ) {

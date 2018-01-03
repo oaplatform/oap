@@ -63,7 +63,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         lockStrategy.synchronizedOn( id, () -> {
             Metadata<T> metadata = data.get( id );
             if( metadata != null ) metadata.update( object );
-            else data.computeIfAbsent( id, id1 -> new Metadata<>( id1, object ) );
+            else data.computeIfAbsent( id, id1 -> new Metadata<>( object ) );
             fireUpdated( object, metadata == null );
         } );
 
@@ -96,7 +96,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                     metadata.update( object );
                     updatedObjects.add( object );
                 } else {
-                    data.computeIfAbsent( id, ( id1 ) -> new Metadata<>( id1, object ) );
+                    data.computeIfAbsent( id, ( id1 ) -> new Metadata<>( object ) );
                     newObjects.add( object );
                 }
             } );
@@ -120,8 +120,8 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             if( m == null ) {
                 if( init == null ) return Optional.empty();
 
-                m = data.computeIfAbsent( id, ( id1 ) -> new Metadata<>( id, init.get() ) );
-                data.put( m.id, m );
+                m = data.computeIfAbsent( id, ( id1 ) -> new Metadata<>( init.get() ) );
+                data.put( id, m );
                 m.update( m.object ); // fix modification time
             } else {
                 if( predicate.test( m.object ) ) {
