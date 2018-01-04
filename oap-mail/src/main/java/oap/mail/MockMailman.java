@@ -21,21 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.mail;
 
-import oap.storage.IdentifierBuilder;
-import oap.storage.MemoryStorage;
+import java.util.ArrayList;
+import java.util.List;
 
-import static oap.storage.Storage.LockStrategy.Lock;
+import static java.util.Collections.unmodifiableList;
 
-public class TestGMail {
+/**
+ * Created by igor.petrenko on 04.01.2018.
+ */
+public class MockMailman implements Mailman {
+    private final ArrayList<Message> messages = new ArrayList<>();
 
-    public static void main( String[] args ) throws MailException {
-        DefaultMailman queue = new DefaultMailman( "smtp.gmail.com", 587, true, "", "",
-            new MemoryStorage<>( IdentifierBuilder.<Message>identify( m -> m.id, ( m, id ) -> m.id = id ).build(), Lock ) );
-        Message message = Template.of( "/xjapanese" ).get().buildMessage();
-        message.setFrom( MailAddress.of( "Україна", "vladimir.kirichenko@gmail.com" ) );
-        message.setTo( MailAddress.of( "Little Green Mail", "vova@qupletech.com" ) );
-        queue.sendNow( message );
+    @Override
+    public void enqueue( Message message ) {
+        messages.add( message );
+    }
+
+    @Override
+    public void sendNow( Message message ) throws MailException {
+        messages.add( message );
+    }
+
+    public void reset() {
+        messages.clear();
+    }
+
+    public List<Message> getMessages() {
+        return unmodifiableList( messages );
     }
 }
