@@ -23,50 +23,55 @@
  */
 package oap.mail;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import oap.util.Cuid;
+
 import java.util.ArrayList;
 import java.util.List;
 
+import static java.util.Collections.emptyList;
+
 public class Message {
+    public final String id;
     private String subject;
     private String body;
-    private List<Attachment> attachments = new ArrayList<Attachment>();
+    private ArrayList<Attachment> attachments = new ArrayList<Attachment>();
     private MailAddress from;
     private MailAddress[] to = new MailAddress[0];
     private MailAddress[] cc = new MailAddress[0];
     private MailAddress[] bcc = new MailAddress[0];
     private String contentType = "text/plain";
 
-    public Message( String subject, String body, List<Attachment> attachments ) {
+    @JsonCreator
+    public Message( String id, String subject, String body, List<Attachment> attachments ) {
+        this.id = id;
         this.body = body;
         this.subject = subject;
         this.attachments.addAll( attachments );
     }
 
+    public Message( String subject, String body, List<Attachment> attachments ) {
+        this( Cuid.next(), subject, body, attachments );
+    }
+
     public Message() {
-    }
-
-    public void setFrom( MailAddress from ) {
-        this.from = from;
-    }
-
-    public void setTo( MailAddress... to ) {
-        this.to = to;
-    }
-
-    public void setCc( MailAddress... cc ) {
-        this.cc = cc;
-    }
-
-    public void setBcc( MailAddress... bcc ) {
-        this.bcc = bcc;
+        this( null, null, emptyList() );
     }
 
     public String getSubject() {
         return subject;
     }
 
+    public void setSubject( String subject ) {
+        this.subject = subject;
+    }
+
     public String getBody() {
         return body;
+    }
+
+    public void setBody( String body ) {
+        this.body = body;
     }
 
     public List<Attachment> getAttachments() {
@@ -77,46 +82,51 @@ public class Message {
         return from;
     }
 
+    public void setFrom( MailAddress from ) {
+        this.from = from;
+    }
+
     public MailAddress[] getCc() {
         return cc;
+    }
+
+    public void setCc( MailAddress... cc ) {
+        this.cc = cc;
     }
 
     public MailAddress[] getBcc() {
         return bcc;
     }
 
+    public void setBcc( MailAddress... bcc ) {
+        this.bcc = bcc;
+    }
+
     public MailAddress[] getTo() {
         return to;
     }
 
-    public void setSubject( String subject ) {
-        this.subject = subject;
-    }
-
-    public void setBody( String body ) {
-        this.body = body;
-    }
-
-    public void setContentType( String contentType ) {
-        this.contentType = contentType;
+    public void setTo( MailAddress... to ) {
+        this.to = to;
     }
 
     public String getContentType() {
         return contentType;
     }
 
+    public void setContentType( String contentType ) {
+        this.contentType = contentType;
+    }
+
     public void addAttachment( Attachment attachment ) {
         attachments.add( attachment );
     }
 
-    public final class Mime {
-        public static final String TEXT_PLAIN = "text/plain";
-        public static final String TEXT_HTML = "text/html";
-        public static final String IMAGE_JPEG = "image/jpeg";
-        public static final String IMAGE_GIF = "image/gif";
-        public static final String IMAGE_PNG = "image/png";
-
-        private Mime() {
-        }
+    public interface Mime {
+        String TEXT_PLAIN = "text/plain";
+        String TEXT_HTML = "text/html";
+        String IMAGE_JPEG = "image/jpeg";
+        String IMAGE_GIF = "image/gif";
+        String IMAGE_PNG = "image/png";
     }
 }

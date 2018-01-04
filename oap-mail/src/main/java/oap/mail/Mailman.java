@@ -25,6 +25,8 @@ package oap.mail;
 
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import oap.storage.Storage;
 import oap.util.Strings;
 import org.apache.commons.codec.EncoderException;
 import org.apache.commons.codec.net.QCodec;
@@ -43,6 +45,8 @@ import javax.mail.Transport;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Properties;
@@ -51,22 +55,65 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
-public class Mailman implements Runnable {
+public class Mailman implements Runnable, Closeable {
     private final String smtpHost;
     private final int smtpPort;
-    private boolean startTls;
     private final String username;
     private final String password;
+    private final Storage<Message> storage;
+    private boolean startTls;
     private ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
 
-    public Mailman( String smtpHost, int smtpPort, boolean startTls, String username, String password ) {
+    public Mailman( String smtpHost, int smtpPort, boolean startTls, String username, String password, Storage<Message> storage ) {
         this.smtpHost = smtpHost;
         this.smtpPort = smtpPort;
         this.startTls = startTls;
         this.username = username;
         this.password = password;
+        this.storage = storage;
         initMailCap();
 
+    }
+
+    static String makeMimeType( Attachment attachment ) throws MessagingException {
+        String name = attachment.getName();
+        if( name == null ) {
+            // try to construct the name from filename
+            name = attachment.getFile();
+            if( name != null ) {
+                int p = name.lastIndexOf( '/' );
+                if( p < 0 )
+                    p = name.lastIndexOf( '\\' );
+                if( p >= 0 )
+                    name = name.substring( p + 1 );
+            }
+        }
+        try {
+            MimeType mt = new MimeType( attachment.getContentType() );
+            if( name != null ) {
+                String encoded = name;
+                try {
+                    encoded = new QCodec().encode( name, "UTF-8" );
+                    String sub = encoded.substring( 10, encoded.length() - 2 );
+                    if( sub.equals( name ) )
+                        encoded = name;
+                } catch( EncoderException e ) {
+                    log.warn( "Encoging error for: " + name, e );
+                }
+                mt.setParameter( "name", encoded );
+            }
+            if( attachment.getFile() == null )
+                mt.setParameter( "charset", "UTF-8" );
+            return mt.toString();
+        } catch( MimeTypeParseException e ) {
+            throw new MessagingException( "Bad content type", e );
+        }
+    }
+
+    public void start() {
+        for( val message : storage ) {
+            messages.add( message );
+        }
     }
 
     private void initMailCap() {
@@ -84,6 +131,7 @@ public class Mailman implements Runnable {
         while( ( message = this.messages.poll() ) != null ) {
             try {
                 send( message );
+                storage.delete( message.id );
             } catch( MailException e ) {
                 log.error( e.toString(), e );
                 this.messages.offer( message );
@@ -93,6 +141,7 @@ public class Mailman implements Runnable {
 
     public void enqueue( Message message ) {
         messages.offer( message );
+        storage.store( message );
     }
 
     public void send( Message message ) throws MailException {
@@ -165,39 +214,9 @@ public class Mailman implements Runnable {
         }
     }
 
-    static String makeMimeType( Attachment attachment ) throws MessagingException {
-        String name = attachment.getName();
-        if( name == null ) {
-            // try to construct the name from filename
-            name = attachment.getFile();
-            if( name != null ) {
-                int p = name.lastIndexOf( '/' );
-                if( p < 0 )
-                    p = name.lastIndexOf( '\\' );
-                if( p >= 0 )
-                    name = name.substring( p + 1 );
-            }
-        }
-        try {
-            MimeType mt = new MimeType( attachment.getContentType() );
-            if( name != null ) {
-                String encoded = name;
-                try {
-                    encoded = new QCodec().encode( name, "UTF-8" );
-                    String sub = encoded.substring( 10, encoded.length() - 2 );
-                    if( sub.equals( name ) )
-                        encoded = name;
-                } catch( EncoderException e ) {
-                    log.warn( "Encoging error for: " + name, e );
-                }
-                mt.setParameter( "name", encoded );
-            }
-            if( attachment.getFile() == null )
-                mt.setParameter( "charset", "UTF-8" );
-            return mt.toString();
-        } catch( MimeTypeParseException e ) {
-            throw new MessagingException( "Bad content type", e );
-        }
+    @Override
+    public void close() throws IOException {
+        storage.fsync();
     }
 
     @Slf4j

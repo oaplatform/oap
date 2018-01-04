@@ -23,23 +23,34 @@
  */
 package oap.mail;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.SneakyThrows;
 
 import javax.mail.internet.InternetAddress;
 import java.nio.charset.StandardCharsets;
 
 public class MailAddress {
+    private final String personal;
+    private final String mail;
 
-    private String personal;
-    private String mail;
-
-    public MailAddress ( String mail ) {
+    public MailAddress( String mail ) {
         this( null, mail );
     }
 
+    @JsonCreator
     public MailAddress( String personal, String mail ) {
         this.personal = personal;
         this.mail = mail;
+    }
+
+    public static MailAddress[] of( String... mails ) {
+        MailAddress[] result = new MailAddress[mails.length];
+        for( int i = 0; i < mails.length; i++ ) result[i] = new MailAddress( mails[i] );
+        return result;
+    }
+
+    public static MailAddress of( String personal, String address ) {
+        return new MailAddress( personal, address );
     }
 
     @SneakyThrows
@@ -50,17 +61,6 @@ public class MailAddress {
 
     public String toString() {
         return personal == null ? mail : "\"" + personal + "\" <" + mail + ">";
-    }
-
-
-    public static MailAddress[] of( String... mails ) {
-        MailAddress[] result = new MailAddress[mails.length];
-        for( int i = 0; i < mails.length; i++ ) result[i] = new MailAddress( mails[i] );
-        return result;
-    }
-
-    public static MailAddress of( String personal, String address ) {
-        return new MailAddress( personal, address );
     }
 
 }

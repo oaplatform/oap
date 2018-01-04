@@ -24,19 +24,22 @@
 package oap.mail;
 
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import static com.google.common.base.Preconditions.checkArgument;
 
 public class Attachment {
+    private final String contentId;
+    private final String file;
+    private final String contentType;
+    private final String name;
     private String content;
-    private String contentId;
-    private String file;
-    private String contentType;
-    private String name;
 
     public Attachment( String contentType, String content ) {
         this( contentType, content, null, null, null );
     }
 
+    @JsonCreator
     public Attachment( String contentType, String content, String contentId, String file, String name ) {
         checkArgument( contentType.startsWith( "text/" ) || file != null, "contentType.startsWith( text/ ) || file != null" );
         this.contentType = contentType;
