@@ -32,7 +32,7 @@ public class TestGMail {
 
     public static void main( String[] args ) throws MailException {
         Mailman queue = new Mailman( "smtp.gmail.com", 587, true, "", "",
-            new MemoryStorage<>( IdentifierBuilder.<Message>identify( m -> m.id ).build(), Lock ) );
+            new MemoryStorage<>( IdentifierBuilder.<Message>identify( m -> m.id, ( m, id ) -> m.id = id ).build(), Lock ) );
         Message message = Template.of( "/xjapanese" ).get().buildMessage();
         message.setFrom( MailAddress.of( "Україна", "vladimir.kirichenko@gmail.com" ) );
         message.setTo( MailAddress.of( "Little Green Mail", "vova@qupletech.com" ) );

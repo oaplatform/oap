@@ -24,7 +24,6 @@
 package oap.mail;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import oap.util.Cuid;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +31,7 @@ import java.util.List;
 import static java.util.Collections.emptyList;
 
 public class Message {
-    public final String id;
+    public String id;
     private String subject;
     private String body;
     private ArrayList<Attachment> attachments = new ArrayList<Attachment>();
@@ -51,7 +50,7 @@ public class Message {
     }
 
     public Message( String subject, String body, List<Attachment> attachments ) {
-        this( Cuid.next(), subject, body, attachments );
+        this( null, subject, body, attachments );
     }
 
     public Message() {
