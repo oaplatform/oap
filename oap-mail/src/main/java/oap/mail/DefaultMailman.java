@@ -58,18 +58,16 @@ import java.util.regex.Pattern;
 public class DefaultMailman implements Mailman, Runnable, Closeable {
     private final String smtpHost;
     private final int smtpPort;
-    private final String username;
-    private final String password;
     private final Storage<Message> storage;
+    protected String username;
+    protected String password;
     private boolean startTls;
     private ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
 
-    public DefaultMailman( String smtpHost, int smtpPort, boolean startTls, String username, String password, Storage<Message> storage ) {
+    public DefaultMailman( String smtpHost, int smtpPort, boolean startTls, Storage<Message> storage ) {
         this.smtpHost = smtpHost;
         this.smtpPort = smtpPort;
         this.startTls = startTls;
-        this.username = username;
-        this.password = password;
         this.storage = storage;
         initMailCap();
 
