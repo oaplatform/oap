@@ -43,8 +43,11 @@ public class DefaultTemporaryTokenService implements TemporaryTokenService, Runn
     }
 
     @Override
-    public String create( String objectId ) {
-        return storage.store( new TemporaryToken( null, objectId, DateTimeUtils.currentTimeMillis() ) ).id;
+    public Token create( String objectId ) {
+        return new Token(
+            storage.store( new TemporaryToken( null, objectId, DateTimeUtils.currentTimeMillis() ) ).id,
+            ( int ) ( expiration / 1000 / 60 / 60 / 24 )
+        );
     }
 
     @Override

@@ -24,13 +24,29 @@
 
 package oap.security.acl;
 
+import lombok.ToString;
+
+import java.io.Serializable;
 import java.util.Optional;
 
 /**
  * Created by igor.petrenko on 27.12.2017.
  */
 public interface TemporaryTokenService {
-    String create( String objectId );
+    Token create( String objectId );
 
     Optional<TemporaryToken> get( String tokenId );
+
+    @ToString
+    class Token implements Serializable {
+        private static final long serialVersionUID = -7493542001012364584L;
+
+        public final String token;
+        public final int expirationDays;
+
+        public Token( String token, int expirationDays ) {
+            this.token = token;
+            this.expirationDays = expirationDays;
+        }
+    }
 }
