@@ -47,6 +47,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Properties;
@@ -126,15 +127,20 @@ public class DefaultMailman implements Mailman, Runnable, Closeable {
 
     public void run() {
         Message message;
+
+        val failed = new ArrayList<Message>();
+
         while( ( message = this.messages.poll() ) != null ) {
             try {
                 sendNow( message );
                 storage.delete( message.id );
             } catch( MailException e ) {
                 log.error( e.toString(), e );
-                this.messages.offer( message );
+                failed.add( message );
             }
         }
+
+        this.messages.addAll( failed );
     }
 
     @Override
