@@ -25,10 +25,12 @@ package oap.mail;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.SneakyThrows;
+import lombok.ToString;
 
 import javax.mail.internet.InternetAddress;
 import java.nio.charset.StandardCharsets;
 
+@ToString
 public class MailAddress {
     private final String personal;
     private final String mail;

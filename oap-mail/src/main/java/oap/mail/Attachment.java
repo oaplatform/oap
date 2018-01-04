@@ -25,9 +25,11 @@ package oap.mail;
 
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import lombok.ToString;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+@ToString
 public class Attachment {
     private final String contentId;
     private final String file;
