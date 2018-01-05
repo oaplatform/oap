@@ -40,7 +40,9 @@ import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 public class ValidationTest extends AbstractWebServicesTest {
     @Override
     protected void registerServices( Kernel kernel ) {
-        kernel.register( "validatedWS", new ValidatedWS() );
+        ws.exceptionToHttpCode.put( IllegalAccessException.class, 400 );
+
+        kernel.register( "validatedWS", new TestValidatedWS() );
     }
 
     @Override
@@ -70,5 +72,12 @@ public class ValidationTest extends AbstractWebServicesTest {
                 "missedParam required by validator wrongArgsValidatoris not supplied by web method" );
     }
 
+    @Test
+    public void testException() {
+        assertGet( HTTP_URL( "/vaildation/service/exceptionRuntimeException" ) )
+            .hasCode( 500 );
+        assertGet( HTTP_URL( "/vaildation/service/exceptionIllegalAccessException" ) )
+            .hasCode( 400 );
+    }
 }
 

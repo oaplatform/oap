@@ -79,17 +79,19 @@ public class WsService implements Handler {
     private final Reflection reflection;
     private final WsResponse defaultResponse;
     private final JsonValidators jsonValidators;
+    private final Map<Class, Integer> exceptionToHttpCode;
     private final SessionManager sessionManager;
     private final List<Interceptor> interceptors;
     private Map<String, Pattern> compiledPaths = new HashMap<>();
 
     public WsService( Object impl, boolean sessionAware,
                       SessionManager sessionManager, List<Interceptor> interceptors, WsResponse defaultResponse,
-                      JsonValidators jsonValidators ) {
+                      JsonValidators jsonValidators, Map<Class, Integer> exceptionToHttpCode ) {
         this.impl = impl;
         this.reflection = Reflect.reflect( impl.getClass() );
         this.defaultResponse = defaultResponse;
         this.jsonValidators = jsonValidators;
+        this.exceptionToHttpCode = exceptionToHttpCode;
         this.reflection.methods.forEach( m -> m.findAnnotation( WsMethod.class )
             .ifPresent( a -> compiledPaths.put( a.path(), WsServices.compile( a.path() ) ) )
         );
@@ -120,7 +122,10 @@ public class WsService implements Handler {
             response.respond( wsResponse );
         } else {
             log.error( service() + ": " + e.toString(), e );
-            final HttpResponse wsResponse = HttpResponse.status( HTTP_INTERNAL_ERROR, e.getMessage() );
+
+            val code = exceptionToHttpCode.getOrDefault( e.getClass(), HTTP_INTERNAL_ERROR );
+
+            final HttpResponse wsResponse = HttpResponse.status( code, e.getMessage() );
             if( defaultResponse == TEXT ) {
                 wsResponse.withContent( Throwables.getRootCause( e ).getMessage(), TEXT_PLAIN );
             } else {
@@ -298,7 +303,7 @@ public class WsService implements Handler {
     }
 
     private Object runPostInterceptors( Object value, Pair<String, Session> session, Reflection.Method method ) {
-        if(session == null) return value;
+        if( session == null ) return value;
         for( Interceptor interceptor : interceptors ) {
             value = interceptor.postProcessing( value, session._2, method );
         }

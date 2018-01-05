@@ -46,7 +46,7 @@ import static oap.http.testng.HttpAsserts.reset;
  */
 public class AbstractWebServicesTest extends AbstractTest {
     private Server server;
-    private WebServices ws;
+    protected WebServices ws;
 
     private SynchronizedThread listener;
     private Kernel kernel;

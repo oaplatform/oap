@@ -30,24 +30,34 @@ import oap.ws.validate.WsValidate;
 import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.QUERY;
 
-class ValidatedWS {
+class TestValidatedWS {
 
 
-    @WsMethod(method = GET)
+    @WsMethod( method = GET )
     @WsValidate( "brokenValidator" )
-    public int methodWithBrokenValidator( @WsParam(from = QUERY) int requiredParameter ) {
+    public int methodWithBrokenValidator( @WsParam( from = QUERY ) int requiredParameter ) {
         return requiredParameter;
     }
 
-    @WsMethod(method = GET)
+    @WsMethod( method = GET )
     @WsValidate( "wrongArgsValidator" )
-    public int methodWithWrongValidatorArgs( @WsParam(from = QUERY) int requiredParameter ) {
+    public int methodWithWrongValidatorArgs( @WsParam( from = QUERY ) int requiredParameter ) {
         return requiredParameter;
     }
 
-    @WsMethod(method = GET)
+    @WsMethod( method = GET )
+    public int exceptionIllegalAccessException() throws IllegalAccessException {
+        throw new IllegalAccessException( "" );
+    }
+
+    @WsMethod( method = GET )
+    public int exceptionRuntimeException() {
+        throw new RuntimeException( "" );
+    }
+
+    @WsMethod( method = GET )
     @WsValidate( "wrongValidatorName" )
-    public int methodWithWrongValidatorName( @WsParam(from = QUERY) int requiredParameter ) {
+    public int methodWithWrongValidatorName( @WsParam( from = QUERY ) int requiredParameter ) {
         return requiredParameter;
     }
 
@@ -58,6 +68,5 @@ class ValidatedWS {
     public ValidationErrors wrongArgsValidator( int missedParam ) {
         return ValidationErrors.empty();
     }
-
 
 }

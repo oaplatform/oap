@@ -38,6 +38,7 @@ import oap.util.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -53,6 +54,7 @@ public class WebServices {
     private final HttpServer server;
     private final SessionManager sessionManager;
     private final CorsPolicy globalCorsPolicy;
+    final HashMap<Class, Integer> exceptionToHttpCode = new HashMap<>();
     public WsResponse defaultResponse = WsResponse.TEXT;
 
     public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, JsonValidators jsonValidators ) {
@@ -120,7 +122,9 @@ public class WebServices {
     @VisibleForTesting
     public void bind( String context, CorsPolicy corsPolicy, Object impl, boolean sessionAware, SessionManager sessionManager,
                       List<Interceptor> interceptors, Protocol protocol ) {
-        server.bind( context, corsPolicy, new WsService( impl, sessionAware, sessionManager, interceptors, defaultResponse, jsonValidators ), protocol );
+        server.bind( context, corsPolicy,
+            new WsService( impl, sessionAware, sessionManager, interceptors, defaultResponse, jsonValidators, exceptionToHttpCode ),
+            protocol );
     }
 
 }
