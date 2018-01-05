@@ -107,6 +107,8 @@ public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Opt
 
     void removeDataListener( DataListener<T> dataListener );
 
+    void addConstraint( Constraint<T> constraint );
+
     interface DataListener<T> {
         @Deprecated
         /**
@@ -174,5 +176,9 @@ public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Opt
                 return Threads.synchronizedOn( id, run );
             }
         }
+    }
+
+    interface Constraint<T> {
+        void check( T object, Storage<T> storage, Function<T, String> id ) throws ConstraintException;
     }
 }

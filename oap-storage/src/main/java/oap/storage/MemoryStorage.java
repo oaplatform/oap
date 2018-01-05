@@ -24,6 +24,7 @@
 package oap.storage;
 
 import lombok.val;
+import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Optionals;
 import oap.util.Stream;
@@ -46,6 +47,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     protected final Identifier<T> identifier;
     protected final LockStrategy lockStrategy;
     private final List<DataListener<T>> dataListeners = new ArrayList<>();
+    private final ArrayList<Constraint<T>> constraints = new ArrayList<>();
     volatile protected ConcurrentMap<String, Item<T>> data = new ConcurrentHashMap<>();
 
     public MemoryStorage( Identifier<T> identifier, LockStrategy lockStrategy ) {
@@ -64,12 +66,21 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         String id = identifier.getOrInit( object, this );
         lockStrategy.synchronizedOn( id, () -> {
             val item = data.get( id );
+
+            checkConstraints( object );
+
             if( item != null ) item.update( object );
-            else data.computeIfAbsent( id, id1 -> new Item<>( object, getDefaultMetadata( object ) ) );
+            else {
+                data.computeIfAbsent( id, id1 -> new Item<>( object, getDefaultMetadata( object ) ) );
+            }
             fireUpdated( object, item == null );
         } );
 
         return object;
+    }
+
+    public void checkConstraints( T object ) {
+        constraints.forEach( c -> c.check( object, this, identifier::get ) );
     }
 
     @Override
@@ -78,6 +89,9 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             val item = data.get( id );
             if( item != null ) {
                 identifier.set( object, id );
+
+                checkConstraints( object );
+
                 item.update( object );
                 fireUpdated( object, false );
                 return Optional.of( item.object );
@@ -124,13 +138,19 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
                 m = data.computeIfAbsent( id, ( id1 ) -> {
                     val object = init.get();
+
+                    checkConstraints( object );
+
                     return new Item<>( object, getDefaultMetadata( object ) );
                 } );
                 data.put( id, m );
                 m.update( m.object ); // fix modification time
             } else {
                 if( predicate.test( m.object ) ) {
-                    val newObject = update.apply( m.object );
+                    val newObject = update.apply( Binder.json.clone( m.object ) );
+
+                    checkConstraints( newObject );
+
                     identifier.set( newObject, id );
                     m.update( newObject );
                 } else {
@@ -224,6 +244,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     @Override
     public void removeDataListener( DataListener<T> dataListener ) {
         this.dataListeners.remove( dataListener );
+    }
+
+    @Override
+    public void addConstraint( Constraint<T> constraint ) {
+        this.constraints.add( constraint );
     }
 
     @Override
