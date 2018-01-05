@@ -25,6 +25,7 @@ package oap.mail;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.ToString;
+import oap.util.Id;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +34,7 @@ import static java.util.Collections.emptyList;
 
 @ToString
 public class Message {
-    public String id;
+    @Id public String id;
     private String subject;
     private String body;
     private ArrayList<Attachment> attachments = new ArrayList<Attachment>();
