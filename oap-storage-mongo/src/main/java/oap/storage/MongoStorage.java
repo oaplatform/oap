@@ -92,7 +92,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
             data.put( id, metadata );
         };
 
-        log.info( "[{}] total {}", getStorageId(), collection.count() );
+        log.info( "[{}] total {}", collection.getNamespace(), collection.count() );
 
         collection.find().forEach( cons );
     }
@@ -126,12 +126,8 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
 
             } );
 
-        log.info( "[{}] fsync total: {}, modified: {}", getStorageId(), size(), count.intValue() );
+        log.info( "[{}] fsync total: {}, modified: {}", collection.getNamespace(), size(), count.intValue() );
         lastFsync = System.currentTimeMillis();
-    }
-
-    private String getStorageId() {
-        return database.getName() + "." + collection.getNamespace();
     }
 
     @Override
