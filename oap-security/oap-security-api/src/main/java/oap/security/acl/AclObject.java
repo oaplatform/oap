@@ -43,16 +43,16 @@ import static java.util.Collections.emptyList;
  */
 @ToString
 @EqualsAndHashCode
-public abstract class AclObject implements Serializable, Cloneable {
-    @JsonInclude( JsonInclude.Include.NON_DEFAULT )
-    public AclPrivate acl;
+@JsonInclude( JsonInclude.Include.NON_DEFAULT )
+public class AclObject implements Serializable, Cloneable {
+    public final LinkedHashSet<String> ancestors;
+    public final LinkedHashSet<Acl> acls;
     public String type;
     public LinkedHashSet<String> parents;
     public String id;
     public String owner;
-    @JsonInclude( JsonInclude.Include.NON_DEFAULT )
-    public List<String> permissions;
 
+    @JsonCreator
     public AclObject( String id,
                       String type,
                       List<String> parents,
@@ -62,10 +62,8 @@ public abstract class AclObject implements Serializable, Cloneable {
         this.id = id;
         this.type = type;
         this.parents = new LinkedHashSet<>( parents != null ? parents : emptyList() );
-        acl = new AclPrivate(
-            new LinkedHashSet<>( ancestors != null ? ancestors : emptyList() ),
-            new LinkedHashSet<>( acls != null ? acls : emptyList() )
-        );
+        this.ancestors = new LinkedHashSet<>( ancestors != null ? ancestors : emptyList() );
+        this.acls = new LinkedHashSet<>( acls != null ? acls : emptyList() );
         this.owner = owner;
     }
 
@@ -82,18 +80,6 @@ public abstract class AclObject implements Serializable, Cloneable {
     @Override
     protected AclObject clone() {
         return Binder.json.clone( this );
-    }
-
-    @ToString
-    public static class AclPrivate {
-        public final LinkedHashSet<String> ancestors;
-        public final LinkedHashSet<Acl> acls;
-
-        @JsonCreator
-        public AclPrivate( LinkedHashSet<String> ancestors, LinkedHashSet<Acl> acls ) {
-            this.ancestors = ancestors != null ? ancestors : new LinkedHashSet<>();
-            this.acls = acls != null ? acls : new LinkedHashSet<>();
-        }
     }
 
     @JsonInclude( JsonInclude.Include.NON_DEFAULT )

@@ -22,37 +22,47 @@
  * SOFTWARE.
  */
 
-package oap.security.acl;
+package oap.storage;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.util.Id;
+import oap.json.TypeIdFactory;
+import org.joda.time.DateTimeUtils;
 
 import java.io.Serializable;
-import java.util.List;
 
-/**
- * Created by igor.petrenko on 21.12.2017.
- */
-@ToString
-@EqualsAndHashCode
-public class AclRole implements Serializable {
-    private static final long serialVersionUID = -7844632176452798221L;
-    public final String name;
-    public final List<String> permissions;
-    @Id
-    public String id;
+@EqualsAndHashCode( exclude = { "object", "metadata" } )
+@ToString( exclude = "object" )
+public class Item<T> implements Serializable {
+    public long modified = DateTimeUtils.currentTimeMillis();
+    @JsonTypeIdResolver( TypeIdFactory.class )
+    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
+    public T object;
+
+    @JsonTypeIdResolver( TypeIdFactory.class )
+    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "metadata:type" )
+    @JsonInclude( JsonInclude.Include.NON_NULL )
+    public Object metadata;
 
     @JsonCreator
-    public AclRole( String id, String name, List<String> permissions ) {
-        this.id = id;
-        this.name = name;
-        this.permissions = permissions;
+    protected Item( T object, Object metadata ) {
+        this.object = object;
+        this.metadata = metadata;
     }
 
-    public AclRole( String name, List<String> permissions ) {
-        this( null, name, permissions );
+    protected Item() {
+    }
+
+    public void update( T t ) {
+        this.object = t;
+        setUpdated();
+    }
+
+    public void setUpdated() {
+        this.modified = DateTimeUtils.currentTimeMillis();
     }
 }

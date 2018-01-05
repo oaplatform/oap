@@ -38,8 +38,8 @@ import static java.util.Arrays.asList;
  * Created by igor.petrenko on 20.12.2017.
  */
 public interface AclService {
-    String ROOT = "5a4200fe97684103f0d6bb17";
-    String GLOBAL_ADMIN_ROLE = "5a420121976841048ccd59bd";
+    String ROOT = "aaaaaaaa97684103f0d6bb17";
+    String GLOBAL_ADMIN_ROLE = "eeeeeeeee76841048ccd59bd";
 
     List<SubjectRole> getSubjectRoles( String objectId, boolean inherited );
 
@@ -69,31 +69,9 @@ public interface AclService {
 
     List<String> findChildren( String parentId, String subjectId, String type, String permission );
 
-    <T extends AclObject> Optional<T> registerObject( String parentId, T obj );
-
-    default <T extends AclObject> void refresh( T newObject, T oldObject ) {
-        newObject.id = oldObject.id;
-        newObject.owner = oldObject.owner;
-        newObject.type = oldObject.type;
-
-        newObject.parents.clear();
-        newObject.parents.addAll( oldObject.parents );
-
-        newObject.acl.ancestors.clear();
-        newObject.acl.ancestors.addAll( oldObject.acl.ancestors );
-
-        newObject.acl.acls.clear();
-        newObject.acl.acls.addAll( oldObject.acl.acls );
-        newObject.permissions = null;
-    }
+    Optional<AclObject> addChild( String parentId, String id );
 
     void unregisterObject( String objectId );
-
-    default AclObject removeAcl( AclObject value ) {
-        final AclObject clone = value.clone();
-        clone.acl = null;
-        return clone;
-    }
 
     @ToString
     @EqualsAndHashCode

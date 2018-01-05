@@ -35,6 +35,16 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Optional<T>> {
+    <M> M updateMetadata( String id, Function<M, M> func );
+
+    default Object getDefaultMetadata(T object) {
+        return null;
+    }
+
+    <M> M getMetadata( String id );
+
+    <M> Stream<M> selectMetadata();
+
     Stream<T> select();
 
     T store( T object );

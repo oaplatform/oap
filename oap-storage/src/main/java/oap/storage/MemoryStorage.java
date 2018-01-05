@@ -23,6 +23,7 @@
  */
 package oap.storage;
 
+import lombok.val;
 import oap.util.Maps;
 import oap.util.Optionals;
 import oap.util.Stream;
@@ -45,7 +46,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     protected final Identifier<T> identifier;
     protected final LockStrategy lockStrategy;
     private final List<DataListener<T>> dataListeners = new ArrayList<>();
-    volatile protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
+    volatile protected ConcurrentMap<String, Item<T>> data = new ConcurrentHashMap<>();
 
     public MemoryStorage( Identifier<T> identifier, LockStrategy lockStrategy ) {
         this.identifier = identifier;
@@ -61,10 +62,10 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public T store( T object ) {
         String id = identifier.getOrInit( object, this );
         lockStrategy.synchronizedOn( id, () -> {
-            Metadata<T> metadata = data.get( id );
-            if( metadata != null ) metadata.update( object );
-            else data.computeIfAbsent( id, id1 -> new Metadata<>( object ) );
-            fireUpdated( object, metadata == null );
+            val item = data.get( id );
+            if( item != null ) item.update( object );
+            else data.computeIfAbsent( id, id1 -> new Item<>( object, getDefaultMetadata( object ) ) );
+            fireUpdated( object, item == null );
         } );
 
         return object;
@@ -73,12 +74,12 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     @Override
     public Optional<T> update( String id, T object ) {
         return lockStrategy.synchronizedOn( id, () -> {
-            Metadata<T> metadata = data.get( id );
-            if( metadata != null ) {
+            val item = data.get( id );
+            if( item != null ) {
                 identifier.set( object, id );
-                metadata.update( object );
+                item.update( object );
                 fireUpdated( object, false );
-                return Optional.of( metadata.object );
+                return Optional.of( item.object );
             } else return Optional.empty();
         } );
     }
@@ -91,12 +92,12 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         for( T object : objects ) {
             String id = identifier.getOrInit( object, this );
             lockStrategy.synchronizedOn( id, () -> {
-                Metadata<T> metadata = data.get( id );
-                if( metadata != null ) {
-                    metadata.update( object );
+                val item = data.get( id );
+                if( item != null ) {
+                    item.update( object );
                     updatedObjects.add( object );
                 } else {
-                    data.computeIfAbsent( id, ( id1 ) -> new Metadata<>( object ) );
+                    data.computeIfAbsent( id, ( id1 ) -> new Item<>( object, getDefaultMetadata( object ) ) );
                     newObjects.add( object );
                 }
             } );
@@ -114,13 +115,16 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             } );
     }
 
-    protected Optional<? extends Metadata<T>> updateObject( String id, Predicate<T> predicate, Function<T, T> update, Supplier<T> init ) {
+    protected Optional<? extends Item<T>> updateObject( String id, Predicate<T> predicate, Function<T, T> update, Supplier<T> init ) {
         return lockStrategy.synchronizedOn( id, () -> {
-            Metadata<T> m = data.get( id );
+            Item<T> m = data.get( id );
             if( m == null ) {
                 if( init == null ) return Optional.empty();
 
-                m = data.computeIfAbsent( id, ( id1 ) -> new Metadata<>( init.get() ) );
+                m = data.computeIfAbsent( id, ( id1 ) -> {
+                    val object = init.get();
+                    return new Item<>( object, getDefaultMetadata( object ) );
+                } );
                 data.put( id, m );
                 m.update( m.object ); // fix modification time
             } else {
@@ -156,13 +160,13 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     public Optional<T> delete( String id ) {
-        final Optional<Metadata<T>> metadata = deleteObject( id );
-        metadata.ifPresent( m -> fireDeleted( m.object ) );
+        final Optional<Item<T>> item = deleteObject( id );
+        item.ifPresent( m -> fireDeleted( m.object ) );
 
-        return metadata.map( m -> m.object );
+        return item.map( m -> m.object );
     }
 
-    protected Optional<Metadata<T>> deleteObject( String id ) {
+    protected Optional<Item<T>> deleteObject( String id ) {
         return lockStrategy.synchronizedOn( id, () -> Optional.ofNullable( data.remove( id ) ) );
     }
 
@@ -220,14 +224,14 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public List<Metadata<T>> updatedSince( long time ) {
+    public List<Item<T>> updatedSince( long time ) {
         return Stream.of( data.values() )
             .filter( m -> m.modified > time )
             .toList();
     }
 
     @Override
-    public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
+    public List<Item<T>> updatedSince( long time, int limit, int offset ) {
         return Stream.of( data.values() )
             .filter( m -> m.modified > time )
             .skip( offset )
@@ -258,5 +262,33 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     @Override
     public void forEach( Consumer<? super T> action ) {
         data.forEach( ( k, v ) -> action.accept( v.object ) );
+    }
+
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public <M> M updateMetadata( String id, Function<M, M> func ) {
+        return lockStrategy.synchronizedOn( id, () -> {
+            val item = data.get( id );
+            if( item != null ) {
+                item.metadata = func.apply( ( M ) item.metadata );
+                item.setUpdated();
+                return ( M ) item.metadata;
+            }
+
+            return null;
+        } );
+    }
+
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public <M> M getMetadata( String id ) {
+        val item = data.get( id );
+        return item != null ? ( M ) item.metadata : null;
+    }
+
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public <M> Stream<M> selectMetadata() {
+        return Stream.of( data.values().stream().map( item -> ( M ) item.metadata ) );
     }
 }

@@ -35,11 +35,11 @@ import java.util.stream.Stream;
 public interface AclSchema {
     void validateNewObject( AclObject parent, String newObjectType ) throws AclSecurityException;
 
-    Optional<? extends AclObject> getObject( String id );
+    Optional<AclObject> getObject( String id );
 
     Stream<AclObject> selectObjects();
 
-    Optional<? extends AclObject> updateObject( String id, Consumer<AclObject> cons );
+    Optional<AclObject> updateObject( String id, Consumer<AclObject> cons );
 
     Iterable<AclObject> objects();
 

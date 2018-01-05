@@ -27,6 +27,7 @@ package oap.storage;
 import com.google.common.base.Preconditions;
 import oap.reflect.Reflect;
 import oap.util.Cuid;
+import oap.util.IdFactory;
 import oap.util.Strings;
 
 import java.util.Objects;
@@ -68,6 +69,14 @@ public final class IdentifierBuilder<T> {
         return new IdentifierBuilder<>( object -> Reflect.get( object, path ),
             ( object, value ) -> Reflect.set( object, path, value )
         );
+    }
+
+    public static <T> IdentifierBuilder<T> annotation() {
+        return new IdentifierBuilder<>( IdFactory::getId, IdFactory::setId );
+    }
+
+    public static <T> Identifier<T> annotationBuild() {
+        return new IdentifierBuilder<T>( IdFactory::getId, IdFactory::setId ).build();
     }
 
     /**

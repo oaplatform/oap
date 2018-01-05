@@ -49,11 +49,11 @@ import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
  */
 @Slf4j
 public class DefaultAclSchema implements AclSchema {
-    private final Map<String, Storage<? extends AclObject>> objectStorage;
+    private final Map<String, Storage<?>> objectStorage;
     private final Dictionary schema;
 
     @JsonCreator
-    public DefaultAclSchema( Map<String, Storage<? extends AclObject>> objectStorage, String schema ) {
+    public DefaultAclSchema( Map<String, Storage<?>> objectStorage, String schema ) {
         this.objectStorage = new HashMap<>( objectStorage );
         this.objectStorage.put( "root", new RootStorage() );
 
@@ -75,10 +75,10 @@ public class DefaultAclSchema implements AclSchema {
     }
 
     @Override
-    public Optional<? extends AclObject> getObject( String id ) {
+    public Optional<AclObject> getObject( String id ) {
         for( val storage : objectStorage.values() ) {
             AclObject obj;
-            if( ( obj = storage.get( id ).orElse( null ) ) != null ) return Optional.of( obj );
+            if( ( obj = storage.getMetadata( id ) ) != null ) return Optional.of( obj );
         }
 
         return Optional.empty();
@@ -88,18 +88,18 @@ public class DefaultAclSchema implements AclSchema {
     public Stream<AclObject> selectObjects() {
         return objectStorage.values()
             .stream()
-            .flatMap( Storage::select );
+            .flatMap( Storage::<AclObject>selectMetadata );
     }
 
     @Override
-    public Optional<? extends AclObject> updateObject( String id, Consumer<AclObject> cons ) {
+    public Optional<AclObject> updateObject( String id, Consumer<AclObject> cons ) {
         for( val os : objectStorage.values() ) {
-            val res = os.update( id, ( o ) -> {
+            val res = os.<AclObject>updateMetadata( id, ( o ) -> {
                 cons.accept( o );
                 return o;
             } );
 
-            if( res.isPresent() ) return res;
+            if( res != null ) return Optional.of( res );
         }
 
         return Optional.empty();

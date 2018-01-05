@@ -24,20 +24,26 @@
 
 package oap.security.acl;
 
-import oap.util.Strings;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import lombok.ToString;
+import oap.util.Id;
 
 /**
  * Created by igor.petrenko on 02.01.2018.
  */
-public class TestAclObject extends AclObject {
-    public TestAclObject( String id, String type, List<String> parents, List<String> ancestors ) {
-        super( id, type, parents, ancestors, new ArrayList<>(), Strings.UNKNOWN );
+@ToString
+public class TestAclObject {
+    public final String type;
+    @Id
+    public String id;
+
+    @JsonCreator
+    public TestAclObject( String id, String type ) {
+        this.id = id;
+        this.type = type;
     }
 
     public TestAclObject( String type ) {
-        super( type );
+        this( null, type );
     }
 }

@@ -97,7 +97,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
                     file = migration( file );
                 }
 
-                final Metadata<T> unmarshal = Binder.json.unmarshal( new TypeReference<Metadata<T>>() {
+                final Item<T> unmarshal = Binder.json.unmarshal( new TypeReference<Item<T>>() {
                 }, file );
 
                 final Path newPath = filenameFor( unmarshal.object, this.version );

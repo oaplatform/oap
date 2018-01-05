@@ -22,27 +22,27 @@
  * SOFTWARE.
  */
 
-package oap.security.acl;
+package oap.security.ws;
 
-import oap.storage.IdentifierBuilder;
-import oap.storage.MemoryStorage;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import lombok.ToString;
 
-import static java.util.Collections.emptyList;
-import static oap.security.acl.AclService.ROOT;
-import static oap.storage.Storage.LockStrategy.NoLock;
+import java.io.Serializable;
+import java.util.List;
 
 /**
- * Created by igor.petrenko on 02.01.2018.
+ * Created by igor.petrenko on 04.01.2018.
  */
-class RootStorage extends MemoryStorage<RootObject> {
-    public RootStorage() {
-        super( IdentifierBuilder.identify( root -> ROOT ).build(), NoLock );
+@ToString
+public class ObjectWithPermissions implements Serializable {
+    private static final long serialVersionUID = 6532013786626661364L;
 
-        store( new RootObject() );
-    }
+    public final List<String> permissions;
+    public final Object object;
 
-    @Override
-    public Object getDefaultMetadata( RootObject object ) {
-        return new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT );
+    @JsonCreator
+    public ObjectWithPermissions( List<String> permissions, Object object ) {
+        this.permissions = permissions;
+        this.object = object;
     }
 }

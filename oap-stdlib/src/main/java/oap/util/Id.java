@@ -22,34 +22,17 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.util;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.json.TypeIdFactory;
-import org.joda.time.DateTimeUtils;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import java.io.Serializable;
-
-@EqualsAndHashCode( exclude = "object" )
-@ToString( exclude = "object" )
-public class Metadata<T> implements Serializable {
-    public long modified = DateTimeUtils.currentTimeMillis();
-    @JsonTypeIdResolver( TypeIdFactory.class )
-    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
-    public T object;
-
-    protected Metadata( T object ) {
-        this.object = object;
-    }
-
-    protected Metadata() {
-    }
-
-    public void update( T t ) {
-        this.object = t;
-        this.modified = DateTimeUtils.currentTimeMillis();
-    }
+/**
+ * Created by igor.petrenko on 04.01.2018.
+ */
+@Target( ElementType.FIELD )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface Id {
 }

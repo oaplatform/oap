@@ -26,21 +26,26 @@ package oap.security.acl;
 
 import oap.storage.Storage;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import static java.util.Collections.emptyList;
+import static oap.security.acl.AclService.ROOT;
+
 /**
  * Created by igor.petrenko on 02.01.2018.
  */
 public class MockAclSchema implements AclSchema {
-    private final Storage<AclObject> storage;
+    private final AclObject ROOT_ACL_OBJECT;
+    private final Storage<?> storage;
 
-    public MockAclSchema( Storage<AclObject> storage ) {
+    @SuppressWarnings( "unchecked" )
+    public MockAclSchema( Storage<?> storage ) {
         this.storage = storage;
-        this.storage.store( new RootObject() );
+
+        ROOT_ACL_OBJECT = new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT );
     }
 
     @Override
@@ -49,26 +54,33 @@ public class MockAclSchema implements AclSchema {
     }
 
     @Override
-    public Optional<? extends AclObject> getObject( String id ) {
-        return storage.get( id );
+    public Optional<AclObject> getObject( String id ) {
+        if( ROOT.equals( id ) ) return Optional.of( ROOT_ACL_OBJECT );
+
+        return Optional.ofNullable( storage.getMetadata( id ) );
     }
 
     @Override
     public Stream<AclObject> selectObjects() {
-        return storage.select();
+        return storage.<AclObject>selectMetadata().concat( ROOT_ACL_OBJECT );
     }
 
     @Override
     public Iterable<AclObject> objects() {
-        return () -> storage.select().iterator();
+        return () -> selectObjects().iterator();
     }
 
     @Override
-    public Optional<? extends AclObject> updateObject( String id, Consumer<AclObject> cons ) {
-        return storage.update( id, ( o ) -> {
+    public Optional<AclObject> updateObject( String id, Consumer<AclObject> cons ) {
+        if( AclService.ROOT.equals( id ) ) {
+            cons.accept( ROOT_ACL_OBJECT );
+
+            return Optional.of( ROOT_ACL_OBJECT );
+        }
+        return Optional.ofNullable( storage.<AclObject>updateMetadata( id, ( o ) -> {
             cons.accept( o );
             return o;
-        } );
+        } ) );
     }
 
     @Override
@@ -78,6 +90,6 @@ public class MockAclSchema implements AclSchema {
 
     @Override
     public List<String> getPermissions( String objectId ) {
-        return Collections.emptyList();
+        return emptyList();
     }
 }

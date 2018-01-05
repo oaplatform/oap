@@ -24,6 +24,7 @@
 
 package oap.security.acl;
 
+import lombok.val;
 import oap.storage.IdentifierBuilder;
 import oap.storage.MemoryStorage;
 import oap.storage.Storage;
@@ -34,10 +35,12 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static oap.application.ApplicationUtils.service;
 import static oap.security.acl.AclService.ROOT;
 import static oap.storage.Storage.LockStrategy.Lock;
+import static oap.util.Strings.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -45,9 +48,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Created by igor.petrenko on 21.12.2017.
  */
 public class AclServiceTest {
-    private AclSchema aclSchema;
-
-    private Storage<AclObject> objectStorage;
+    private Storage<TestAclObject> objectStorage;
     private Storage<AclRole> roleStorage;
     private DefaultAclService aclService;
     private String objectId;
@@ -61,30 +62,35 @@ public class AclServiceTest {
     private String subjectId2;
     private String subjectId23;
     private String ga;
-    private AclRole gaRole;
 
     @BeforeMethod
     public void beforeMethod() {
-        objectStorage = service( new MemoryStorage<>( IdentifierBuilder.<AclObject>identify( ao -> ao.id, ( ao, id ) -> ao.id = id ).build(), Lock ) );
-        roleStorage = service( new MemoryStorage<>( IdentifierBuilder.<AclRole>identify( ar -> ar.id, ( ar, id ) -> ar.id = id ).build(), Lock ) );
-        aclSchema = new MockAclSchema( objectStorage );
+        objectStorage = service( new MemoryStorage<TestAclObject>( IdentifierBuilder.annotationBuild(), Lock ) {
+            @Override
+            public Object getDefaultMetadata( TestAclObject object ) {
+                return new AclObject( object.id, object.type, emptyList(), emptyList(), emptyList(), UNKNOWN );
+            }
+        } );
+        roleStorage = service( new MemoryStorage<>( IdentifierBuilder.annotationBuild(), Lock ) );
+
+        val gaRole = roleStorage.store( new AclRole( AclService.GLOBAL_ADMIN_ROLE, "ga", singletonList( "*" ) ) );
+
+        val aclSchema = new MockAclSchema( objectStorage );
         aclService = service( new DefaultAclService( roleStorage, aclSchema ) );
 
-        objectId = aclService.registerObject( ROOT, objectStorage.store( new TestAclObject( "testObject1" ) ) ).get().id;
-        childId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "child" ) ) ).get().id;
-        childId2 = aclService.registerObject( childId, objectStorage.store( new TestAclObject( "child" ) ) ).get().id;
-        subjectId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "subject" ) ) ).get().id;
-        subjectGroupId = aclService.registerObject( objectId, objectStorage.store( new TestAclObject( "subject" ) ) ).get().id;
-        subjectId2 = aclService.registerObject( subjectGroupId, objectStorage.store( new TestAclObject( "subject" ) ) ).get().id;
-        subjectId23 = aclService.registerObject( subjectId2, objectStorage.store( new TestAclObject( "subject" ) ) ).get().id;
+        objectId = aclService.addChild( ROOT, objectStorage.store( new TestAclObject( "testObject1" ) ).id ).get().id;
+        childId = aclService.addChild( objectId, objectStorage.store( new TestAclObject( "child" ) ).id ).get().id;
+        childId2 = aclService.addChild( childId, objectStorage.store( new TestAclObject( "child" ) ).id ).get().id;
+        subjectId = aclService.addChild( objectId, objectStorage.store( new TestAclObject( "subject" ) ).id ).get().id;
+        subjectGroupId = aclService.addChild( objectId, objectStorage.store( new TestAclObject( "subject" ) ).id ).get().id;
+        subjectId2 = aclService.addChild( subjectGroupId, objectStorage.store( new TestAclObject( "subject" ) ).id ).get().id;
+        subjectId23 = aclService.addChild( subjectId2, objectStorage.store( new TestAclObject( "subject" ) ).id ).get().id;
 
-        ga = aclService.registerObject( ROOT, objectStorage.store( new TestAclObject( "user" ) ) ).get().id;
+        ga = aclService.addChild( ROOT, objectStorage.store( new TestAclObject( "user" ) ).id ).get().id;
 
         roleUknown = roleStorage.store( new AclRole( "roleIdUknown", "testRole1", singletonList( "testObjectUnknown.read" ) ) );
         role1 = roleStorage.store( new AclRole( "roleId1", "testRole1", singletonList( "testObject1.read" ) ) );
         role2 = roleStorage.store( new AclRole( "roleId2", "testRole2", singletonList( "testObject2.read" ) ) );
-
-        gaRole = roleStorage.store( new AclRole( AclService.GLOBAL_ADMIN_ROLE, "ga", singletonList( "*" ) ) );
 
         aclService.add( ROOT, ga, gaRole.id, true );
     }

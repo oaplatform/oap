@@ -22,27 +22,40 @@
  * SOFTWARE.
  */
 
-package oap.security.acl;
+package oap.util;
 
-import oap.storage.IdentifierBuilder;
-import oap.storage.MemoryStorage;
+import lombok.SneakyThrows;
+import lombok.val;
 
-import static java.util.Collections.emptyList;
-import static oap.security.acl.AclService.ROOT;
-import static oap.storage.Storage.LockStrategy.NoLock;
+import java.lang.reflect.Field;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Created by igor.petrenko on 02.01.2018.
+ * Created by igor.petrenko on 04.01.2018.
  */
-class RootStorage extends MemoryStorage<RootObject> {
-    public RootStorage() {
-        super( IdentifierBuilder.identify( root -> ROOT ).build(), NoLock );
+public class IdFactory {
+    private static final ConcurrentHashMap<Class, Field> ids = new ConcurrentHashMap<>();
 
-        store( new RootObject() );
+    @SneakyThrows
+    public static String getId( Object value ) {
+        final Field field = getField( value );
+
+        return ( String ) field.get( value );
     }
 
-    @Override
-    public Object getDefaultMetadata( RootObject object ) {
-        return new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT );
+    private static Field getField( Object value ) {
+        return ids.computeIfAbsent( value.getClass(), ( c ) -> {
+            val df = Stream.of( c.getDeclaredFields() )
+                .filter( f -> f.getAnnotation( Id.class ) != null )
+                .findAny()
+                .orElseThrow( () -> new RuntimeException( "no @Id annotation" ) );
+            df.setAccessible( true );
+            return df;
+        } );
+    }
+
+    @SneakyThrows
+    public static void setId( Object value, String id ) {
+        getField( value ).set( value, id );
     }
 }

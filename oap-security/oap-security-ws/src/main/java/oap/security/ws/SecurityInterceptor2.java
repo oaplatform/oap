@@ -31,8 +31,8 @@ import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Session;
 import oap.reflect.Reflection;
-import oap.security.acl.AclObject;
 import oap.security.acl.AclService;
+import oap.util.IdFactory;
 import oap.ws.Interceptor;
 
 import java.util.List;
@@ -112,24 +112,20 @@ public class SecurityInterceptor2 implements Interceptor {
 
     @Override
     public Object postProcessing( Object value, Session session, Reflection.Method method ) {
-        if( value instanceof AclObject ) {
-            val annotation = method.findAnnotation( WsSecurityWithPermissions.class ).orElse( null );
-            if( annotation == null ) return value;
+        val annotation = method.findAnnotation( WsSecurityWithPermissions.class ).orElse( null );
+        if( annotation == null ) return value;
 
-            var userId = ( String ) session.get( USER_ID ).orElse( null );
-
-            val aclObject = ( AclObject ) value;
-
-
-            val res = aclService.checkAll( aclObject.id, userId );
-
-            aclObject.permissions = res;
-
-            return aclService.removeAcl( aclObject );
-        } else if( value instanceof List<?> ) {
+        if( value instanceof List<?> ) {
             return ( ( List<?> ) value ).stream().map( v -> postProcessing( v, session, method ) ).collect( toList() );
         }
-        return value;
+
+        var userId = ( String ) session.get( USER_ID ).orElse( null );
+
+        val id = IdFactory.getId( value );
+
+        val res = aclService.checkAll( id, userId );
+
+        return new ObjectWithPermissions( res, value );
     }
 
     private String getObjectId( Reflection.Method method, WsSecurity2 annotation,

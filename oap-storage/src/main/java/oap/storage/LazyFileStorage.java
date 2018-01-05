@@ -56,7 +56,7 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
-    public List<Metadata<T>> updatedSince( long time ) {
+    public List<Item<T>> updatedSince( long time ) {
         open();
         return super.updatedSince( time );
     }
@@ -110,6 +110,24 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         return null;
     }
 
+    @Override
+    public <M> M updateMetadata( String id, Function<M, M> func ) {
+        open();
+        return super.updateMetadata( id, func );
+    }
+
+    @Override
+    public <M> M getMetadata( String id ) {
+        open();
+        return super.getMetadata( id );
+    }
+
+    @Override
+    public <M> Stream<M> selectMetadata() {
+        open();
+        return super.selectMetadata();
+    }
+
     private synchronized void open() {
         if( data.size() > 0 ) {
             return;
@@ -117,7 +135,7 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         Files.ensureFile( path );
 
         if( java.nio.file.Files.exists( path ) ) {
-            Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {}, path )
+            Binder.json.unmarshal( new TypeReference<List<Item<T>>>() {}, path )
                 .forEach( m -> {
                     val id = identifier.get( m.object );
                     data.put( id, m );

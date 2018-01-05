@@ -24,13 +24,17 @@
 
 package oap.security.acl;
 
-import static java.util.Collections.emptyList;
+import lombok.ToString;
+import oap.util.Id;
 
 /**
  * Created by igor.petrenko on 02.01.2018.
  */
-class RootObject extends AclObject {
+@ToString
+class RootObject {
+    @Id
+    public final String id = AclService.ROOT;
+
     public RootObject() {
-        super( AclService.ROOT, "root", emptyList(), emptyList(), emptyList(), "root" );
     }
 }

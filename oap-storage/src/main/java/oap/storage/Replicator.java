@@ -54,10 +54,10 @@ public class Replicator<T> implements Closeable {
     }
 
     public synchronized void replicate( long last ) {
-        List<Metadata<T>> newUpdates = Lists.empty();
+        List<Item<T>> newUpdates = Lists.empty();
         for( int b = 0; b < 100000; b++ ) {
             int offset = b * batchSize;
-            List<? extends Metadata<T>> updates = master.updatedSince( last, batchSize, offset );
+            List<? extends Item<T>> updates = master.updatedSince( last, batchSize, offset );
             log.trace( "replicate {} to {} last: {}, size {}, batch {}, offset {}",
                 master, slave, last, updates.size(), batchSize, offset );
             if( updates.isEmpty() ) break;
@@ -68,7 +68,7 @@ public class Replicator<T> implements Closeable {
         val newObjects = new ArrayList<T>();
         val updatedObjects = new ArrayList<T>();
 
-        for( Metadata<T> metadata : newUpdates ) {
+        for( Item<T> metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
             val object = metadata.object;
             val id = slave.identifier.get( object );

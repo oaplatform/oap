@@ -28,9 +28,12 @@ import com.google.common.collect.ImmutableMap;
 import lombok.val;
 import oap.storage.IdentifierBuilder;
 import oap.storage.MemoryStorage;
+import oap.storage.Storage;
 import org.testng.annotations.Test;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static oap.security.acl.AclService.ROOT;
 import static oap.storage.Storage.LockStrategy.NoLock;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -39,31 +42,43 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Created by igor.petrenko on 29.12.2017.
  */
 public class DefaultAclSchemaTest {
+    private Storage<TestAclObject> storage;
+    private DefaultAclSchema schema;
+
+    @Test
+    public void beforeMethod() {
+        storage = new MemoryStorage<TestAclObject>( IdentifierBuilder.annotationBuild(), NoLock ) {
+            @Override
+            public Object getDefaultMetadata( TestAclObject object ) {
+                return new AclObject( object.id, object.type, emptyList(), emptyList(), emptyList(), ROOT );
+            }
+        };
+
+        schema = new DefaultAclSchema(
+            ImmutableMap.of(
+                "root", new RootStorage(),
+                "organization", storage,
+                "user", storage ), "/acl/test-acl-schema.conf" );
+    }
+
     @Test
     public void testValidateNewObject() {
-        val storage = new MemoryStorage<TestAclObject>( IdentifierBuilder.<TestAclObject>identify( obj -> obj.id ).build(), NoLock );
-        val schema = new DefaultAclSchema(
-            ImmutableMap.of( "organization", storage, "user", storage ), "/acl/test-acl-schema.conf" );
-
-
         schema.validateNewObject( null, "root" );
 
-        schema.validateNewObject( schema.getObject( AclService.ROOT ).get(), "user" );
-        schema.validateNewObject( schema.getObject( AclService.ROOT ).get(), "organization" );
-        assertThatThrownBy( () -> schema.validateNewObject( schema.getObject( AclService.ROOT ).get(), "unknown" ) ).hasMessageStartingWith( "unknown is not" );
+        schema.validateNewObject( schema.getObject( ROOT ).get(), "user" );
+        schema.validateNewObject( schema.getObject( ROOT ).get(), "organization" );
+        assertThatThrownBy( () -> schema.validateNewObject( schema.getObject( ROOT ).get(), "unknown" ) ).hasMessageStartingWith( "unknown is not" );
 
-        val organization = storage.store( new TestAclObject( "org1", "organization", singletonList( AclService.ROOT ), singletonList( AclService.ROOT ) ) );
-        schema.validateNewObject( organization, "user" );
-        assertThatThrownBy( () -> schema.validateNewObject( organization, "root" ) ).hasMessageStartingWith( "root is not" );
+        val organization = storage.store( new TestAclObject( "org1" ) );
+        val organizationMetadata = storage.<AclObject>updateMetadata( organization.id, ( m ) -> new AclObject( organization.id, "organization", singletonList( ROOT ), singletonList( ROOT ), emptyList(), ROOT ) );
+        schema.validateNewObject( organizationMetadata, "user" );
+        assertThatThrownBy( () -> schema.validateNewObject( organizationMetadata, "root" ) ).hasMessageStartingWith( "root is not" );
     }
 
     @Test
     public void testGetPermissions() {
-        val storage = new MemoryStorage<TestAclObject>( IdentifierBuilder.<TestAclObject>identify( obj -> obj.id ).build(), NoLock );
-        val schema = new DefaultAclSchema(
-            ImmutableMap.of( "organization", storage, "user", storage ), "/acl/test-acl-schema.conf" );
-
-        val organization = storage.store( new TestAclObject( "org1", "organization", singletonList( AclService.ROOT ), singletonList( AclService.ROOT ) ) );
-        assertThat(schema.getPermissions( organization.id )).contains( "organization.read" );
+        val organization = storage.store( new TestAclObject( "org1", "organization" ) );
+        storage.updateMetadata( organization.id, m -> new AclObject( organization.id, "organization", singletonList( ROOT ), singletonList( ROOT ), emptyList(), ROOT ) );
+        assertThat( schema.getPermissions( organization.id ) ).contains( "organization.read" );
     }
 }
