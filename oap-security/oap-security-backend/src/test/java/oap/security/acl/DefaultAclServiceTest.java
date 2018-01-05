@@ -33,6 +33,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -215,7 +216,7 @@ public class DefaultAclServiceTest {
         aclService.add( childId, subjectId2, role2.id, false );
 
         assertThat( aclService.getSubjectRoles( childId, false ) ).containsExactlyInAnyOrder(
-            new AclService.SubjectRole( subjectId, asList( role1, role2 ) ),
+            new AclService.SubjectRole( subjectId, asList( role2, role1 ) ),
             new AclService.SubjectRole( subjectId2, singletonList( role2 ) ) );
 
         assertThat( aclService.getSubjectRoles( childId, true ) ).hasSize( 3 );
@@ -227,8 +228,9 @@ public class DefaultAclServiceTest {
         aclService.add( objectId, subjectId, role2.id, true );
         aclService.add( childId, subjectId, role2.id, false );
 
-        assertThat( aclService.getRoles( subjectId, false ) ).containsExactlyInAnyOrder(
-            new AclService.ObjectRole( objectId, asList( role1, role2 ) ),
+        final List<AclService.ObjectRole> roles = aclService.getRoles( subjectId, false );
+        assertThat( roles ).containsExactlyInAnyOrder(
+            new AclService.ObjectRole( objectId, asList( role2, role1 ) ),
             new AclService.ObjectRole( childId, singletonList( role2 ) ) );
 
         assertThat( aclService.getRoles( subjectId, true ) ).hasSize( 7 );

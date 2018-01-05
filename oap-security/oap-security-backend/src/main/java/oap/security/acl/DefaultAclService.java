@@ -110,7 +110,7 @@ public class DefaultAclService implements AclService {
             ( p ) -> aclObject.acls
                 .stream()
                 .anyMatch( acl -> subjects.contains( acl.subjectId )
-                    && ( acl.role.permissions.contains( "*" ) || acl.role.permissions.contains( p ) ) )
+                    && ( acl.role.containsPermission( p ) ) )
         );
     }
 
@@ -141,7 +141,7 @@ public class DefaultAclService implements AclService {
     public boolean remove( String objectId, String subjectId, String roleId ) {
         log.debug( "remove object = {}, subject = {}, role = {}", objectId, subjectId, roleId );
 
-        return schema.updateObject( objectId, aclObject -> {
+        return schema.updateObject( objectId, aclObject ->
             aclObject.acls.removeIf( acl -> {
                 if( acl.subjectId.equals( subjectId ) && acl.role.id.equals( roleId ) && acl.parent == null ) {
                     if( acl.inheritance ) {
@@ -161,8 +161,7 @@ public class DefaultAclService implements AclService {
 
                 }
                 return false;
-            } );
-        } ).isPresent();
+            } ) ).isPresent();
     }
 
     @Override
@@ -204,10 +203,10 @@ public class DefaultAclService implements AclService {
             obj.ancestors.contains( parentId )
                 && obj.acls
                 .stream()
-                .anyMatch( acl -> subjects.contains( acl.subjectId ) && acl.role.permissions.contains( permission ) );
+                .anyMatch( acl -> subjects.contains( acl.subjectId ) && acl.role.containsPermission( permission ) );
     }
 
-//    @Override
+    //    @Override
     public List<String> findChildren( String parentId, String subjectId, String type, String permission ) {
         val aclSubject = schema.getObject( subjectId ).orElse( null );
         if( aclSubject == null ) {
@@ -224,7 +223,7 @@ public class DefaultAclService implements AclService {
                 obj.ancestors.contains( parentId )
                     && obj.type.equals( type )
                     && obj.acls.stream()
-                    .anyMatch( acl -> subjects.contains( acl.subjectId ) && acl.role.permissions.contains( permission ) ) )
+                    .anyMatch( acl -> subjects.contains( acl.subjectId ) && acl.role.containsPermission( permission ) ) )
             .map( obj -> obj.id )
             .collect( toList() );
     }

@@ -25,12 +25,12 @@
 package oap.security.acl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.Id;
 
 import java.io.Serializable;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
@@ -41,17 +41,22 @@ import java.util.List;
 public class AclRole implements Serializable {
     private static final long serialVersionUID = -7844632176452798221L;
     public final String name;
-    public final List<String> permissions;
-    @Id public String id;
+    public final LinkedHashSet<String> permissions;
+    @Id
+    public String id;
 
     @JsonCreator
     public AclRole( String id, String name, List<String> permissions ) {
         this.id = id;
         this.name = name;
-        this.permissions = permissions;
+        this.permissions = new LinkedHashSet<>( permissions );
     }
 
     public AclRole( String name, List<String> permissions ) {
         this( null, name, permissions );
+    }
+
+    public boolean containsPermission( String permission ) {
+        return permissions.contains( permission ) || permissions.contains( "*" );
     }
 }
