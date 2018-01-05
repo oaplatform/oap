@@ -29,27 +29,39 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Created by igor.petrenko on 05.01.2018.
  */
-public class UniqueField<T> implements Storage.Constraint<T> {
+public class UniqueField<T> implements Constraint<T> {
     private final String type;
     private final Function<T, Object> valueFunc;
+    private final Predicate<?> metadataFilter;
 
     public UniqueField( String type, Function<T, Object> valueFunc ) {
+        this( type, valueFunc, o -> true );
+    }
+
+    public UniqueField( String type, Function<T, Object> valueFunc, Predicate<?> metadataFilter ) {
         this.type = type;
         this.valueFunc = valueFunc;
+        this.metadataFilter = metadataFilter;
     }
 
     @Override
-    public void check( T object, Storage<T> storage, Function<T, String> id ) throws ConstraintException {
+    @SuppressWarnings( "unchecked" )
+    public void check( T object, MemoryStorage<T> storage, Function<T, String> id ) throws ConstraintException {
         val idValue = id.apply( object );
         val value = valueFunc.apply( object );
 
         if( storage
-            .select()
-            .anyMatch( obj -> Objects.equals( value, valueFunc.apply( obj ) ) && !idValue.equals( id.apply( obj ) ) ) ) {
+            .selectItem()
+            .filter( item -> ( ( Predicate<Object> ) metadataFilter ).test( item.metadata ) )
+            .anyMatch( item -> {
+                val itemObject = item.object;
+                return Objects.equals( value, valueFunc.apply( itemObject ) ) && !idValue.equals( id.apply( itemObject ) );
+            } ) ) {
             throw new ConstraintException( StringUtils.capitalize( type ) + " '" + value + "' already exists." );
         }
     }

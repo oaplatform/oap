@@ -319,4 +319,8 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public <M> Stream<M> selectMetadata() {
         return Stream.of( data.values().stream().map( item -> ( M ) item.metadata ) );
     }
+
+    Stream<Item<T>> selectItem() {
+        return Stream.of( data.values().stream() );
+    }
 }

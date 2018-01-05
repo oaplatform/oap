@@ -178,7 +178,4 @@ public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Opt
         }
     }
 
-    interface Constraint<T> {
-        void check( T object, Storage<T> storage, Function<T, String> id ) throws ConstraintException;
-    }
 }
