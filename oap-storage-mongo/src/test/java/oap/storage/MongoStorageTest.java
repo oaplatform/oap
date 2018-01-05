@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.testng.Env;
+import oap.util.Id;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -56,8 +57,7 @@ public class MongoStorageTest {
     }
 
     public MongoStorage<TestMongoBean> reopen() {
-
-        return new MongoStorage<>( mongoClient, dbName, "test", b -> b.id, ( b, id ) -> b.id = id, Lock, TestMongoBean.class );
+        return new MongoStorage<>( mongoClient, dbName, "test", Lock, TestMongoBean.class );
     }
 
     @AfterMethod
@@ -95,6 +95,7 @@ public class MongoStorageTest {
     @ToString
     @EqualsAndHashCode( of = { "id" } )
     public static class TestMongoBean {
+        @Id
         public String id;
 
         @JsonCreator

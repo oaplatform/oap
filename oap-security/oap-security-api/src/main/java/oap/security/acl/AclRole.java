@@ -42,8 +42,7 @@ public class AclRole implements Serializable {
     private static final long serialVersionUID = -7844632176452798221L;
     public final String name;
     public final List<String> permissions;
-    @Id
-    public String id;
+    @Id public String id;
 
     @JsonCreator
     public AclRole( String id, String name, List<String> permissions ) {

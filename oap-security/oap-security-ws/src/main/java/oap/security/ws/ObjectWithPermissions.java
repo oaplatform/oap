@@ -34,14 +34,14 @@ import java.util.List;
  * Created by igor.petrenko on 04.01.2018.
  */
 @ToString
-public class ObjectWithPermissions implements Serializable {
+public class ObjectWithPermissions<T> implements Serializable {
     private static final long serialVersionUID = 6532013786626661364L;
 
     public final List<String> permissions;
-    public final Object object;
+    public final T object;
 
     @JsonCreator
-    public ObjectWithPermissions( List<String> permissions, Object object ) {
+    public ObjectWithPermissions( List<String> permissions, T object ) {
         this.permissions = permissions;
         this.object = object;
     }

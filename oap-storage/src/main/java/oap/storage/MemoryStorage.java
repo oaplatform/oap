@@ -129,7 +129,9 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                 m.update( m.object ); // fix modification time
             } else {
                 if( predicate.test( m.object ) ) {
-                    m.update( update.apply( m.object ) );
+                    val newObject = update.apply( m.object );
+                    identifier.set( newObject, id );
+                    m.update( newObject );
                 } else {
                     return Optional.empty();
                 }

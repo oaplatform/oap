@@ -25,7 +25,7 @@
 package oap.security.acl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import oap.util.Id;
 
 import java.io.Serializable;
 
@@ -34,14 +34,12 @@ import java.io.Serializable;
  */
 public class TemporaryToken implements Serializable {
     private static final long serialVersionUID = -7308648704979898600L;
-    public String id;
     public final String objectId;
     public final long time;
+    @Id public String id;
 
     @JsonCreator
-    public TemporaryToken( @JsonProperty String id,
-                           @JsonProperty String objectId,
-                           @JsonProperty long time ) {
+    public TemporaryToken( String id, String objectId, long time ) {
         this.id = id;
         this.objectId = objectId;
         this.time = time;

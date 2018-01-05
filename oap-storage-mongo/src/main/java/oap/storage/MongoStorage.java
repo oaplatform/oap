@@ -42,9 +42,7 @@ import org.joda.time.DateTimeUtils;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -61,10 +59,9 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
 
     @SuppressWarnings( "unchecked" )
     public MongoStorage( oap.storage.MongoClient mongoClient, String database, String table,
-                         Function<T, String> getId, BiConsumer<T, String> setId,
                          LockStrategy lockStrategy, Class<T> clazz ) {
         super( IdentifierBuilder
-            .identify( getId, setId )
+            .annotation()
             .suggestion( ar -> ObjectId.get().toString() )
             .size( 24 )
             .idOptions()
