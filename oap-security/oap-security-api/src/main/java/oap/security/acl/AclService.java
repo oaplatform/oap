@@ -31,6 +31,7 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import static java.util.Arrays.asList;
 
@@ -67,7 +68,9 @@ public interface AclService {
 
     List<String> getChildren( String parentId, String type, boolean recursive );
 
-    List<String> findChildren( String parentId, String subjectId, String type, String permission );
+    Predicate<AclObject> getAclFilter( String parentId, String subjectId, String permission );
+
+//    List<String> findChildren( String parentId, String subjectId, String type, String permission );
 
     Optional<AclObject> addChild( String parentId, String id );
 

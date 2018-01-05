@@ -54,8 +54,9 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public Stream<T> select() {
-        return Stream.of( data.values() ).map( m -> m.object );
+    @SuppressWarnings( "unchecked" )
+    public <TMetadata> Stream<T> select( Predicate<TMetadata> metadataFilter ) {
+        return Stream.of( data.values() ).filter( i -> metadataFilter.test( ( TMetadata ) i.metadata ) ).map( i -> i.object );
     }
 
     @Override

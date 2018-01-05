@@ -37,7 +37,7 @@ import java.util.function.Supplier;
 public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Optional<T>> {
     <M> M updateMetadata( String id, Function<M, M> func );
 
-    default Object getDefaultMetadata(T object) {
+    default Object getDefaultMetadata( T object ) {
         return null;
     }
 
@@ -45,7 +45,11 @@ public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Opt
 
     <M> Stream<M> selectMetadata();
 
-    Stream<T> select();
+    default Stream<T> select() {
+        return select( ( m ) -> true );
+    }
+
+    <TMetadata> Stream<T> select( Predicate<TMetadata> metadataFilter );
 
     T store( T object );
 

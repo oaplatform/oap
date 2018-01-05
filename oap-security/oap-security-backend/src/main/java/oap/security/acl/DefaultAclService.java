@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -189,7 +190,24 @@ public class DefaultAclService implements AclService {
             .collect( toList() );
     }
 
-    @Override
+    public Predicate<AclObject> getAclFilter( String parentId, String subjectId, String permission ) {
+        val aclSubject = schema.getObject( subjectId ).orElse( null );
+        if( aclSubject == null ) {
+            log.debug( "subject {} not found.", subjectId );
+            return a -> false;
+        }
+        val subjects = new HashSet<String>();
+        subjects.add( subjectId );
+        subjects.addAll( aclSubject.ancestors );
+
+        return obj ->
+            obj.ancestors.contains( parentId )
+                && obj.acls
+                .stream()
+                .anyMatch( acl -> subjects.contains( acl.subjectId ) && acl.role.permissions.contains( permission ) );
+    }
+
+//    @Override
     public List<String> findChildren( String parentId, String subjectId, String type, String permission ) {
         val aclSubject = schema.getObject( subjectId ).orElse( null );
         if( aclSubject == null ) {
@@ -205,7 +223,8 @@ public class DefaultAclService implements AclService {
             .filter( obj ->
                 obj.ancestors.contains( parentId )
                     && obj.type.equals( type )
-                    && obj.acls.stream().anyMatch( acl -> subjects.contains( acl.subjectId ) ) )
+                    && obj.acls.stream()
+                    .anyMatch( acl -> subjects.contains( acl.subjectId ) && acl.role.permissions.contains( permission ) ) )
             .map( obj -> obj.id )
             .collect( toList() );
     }

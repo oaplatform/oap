@@ -62,9 +62,9 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
-    public Stream<T> select() {
+    public <TMetadata> Stream<T> select( Predicate<TMetadata> metadataFilter ) {
         open();
-        return super.select();
+        return super.select( metadataFilter );
     }
 
     @Override

@@ -47,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Created by igor.petrenko on 21.12.2017.
  */
-public class AclServiceTest {
+public class DefaultAclServiceTest {
     private Storage<TestAclObject> objectStorage;
     private Storage<AclRole> roleStorage;
     private DefaultAclService aclService;
@@ -188,6 +188,23 @@ public class AclServiceTest {
         assertThat( aclService.findChildren( subjectGroupId, subjectId, "subject", "testObject1.read" ) ).isEmpty();
         assertThat( aclService.findChildren( subjectGroupId, childId, "subject", "testObject1.read" ) )
             .containsExactlyInAnyOrder( subjectId2, subjectId23 );
+        assertThat( aclService.findChildren( subjectGroupId, childId, "subject", "unknown" ) ).isEmpty();
+    }
+
+    @Test
+    public void testGetAclFilter() {
+        aclService.add( subjectGroupId, childId, role1.id, true );
+
+        assertThat(objectStorage
+            .select(aclService.getAclFilter( subjectGroupId, subjectId, "testObject1.read" ))).isEmpty();
+
+        assertThat(objectStorage
+            .select(aclService.getAclFilter( subjectGroupId, childId, "testObject1.read" ))
+            .map(obj -> obj.id)
+        ).containsExactlyInAnyOrder( subjectId2, subjectId23 );
+
+        assertThat(objectStorage
+            .select(aclService.getAclFilter( subjectGroupId, childId, "unknown" ))).isEmpty();
     }
 
     @Test
