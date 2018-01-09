@@ -31,7 +31,6 @@ import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
-import oap.util.Pair;
 import oap.util.Stream;
 
 import java.io.OutputStream;
@@ -71,21 +70,24 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
-    public <TMetadata> T store( T object, TMetadata metadata ) {
+    public <TMetadata> T store( T object, Function<T, TMetadata> metadata ) {
         open();
         return super.store( object, metadata );
     }
 
     @Override
-    public <TMetadata> Optional<T> update( String id, T object, TMetadata metadata ) {
+    public <TMetadata> Optional<T> update( String id, T object, Function<T, TMetadata> metadata ) {
         open();
         return super.update( id, object, metadata );
     }
 
     @Override
-    public <TMetadata> Optional<T> update( String id, BiPredicate<T, TMetadata> predicate, BiFunction<T, TMetadata, T> update, Supplier<Pair<T, TMetadata>> init ) {
+    public <TMetadata> Optional<T> update( String id, BiPredicate<T, TMetadata> predicate,
+                                           BiFunction<T, TMetadata, T> update,
+                                           Supplier<T> init,
+                                           Function<T, TMetadata> initMetadata ) {
         open();
-        return super.update( id, predicate, update, init );
+        return super.update( id, predicate, update, init, initMetadata );
     }
 
     @Override

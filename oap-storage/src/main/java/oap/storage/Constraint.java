@@ -29,6 +29,6 @@ import java.util.function.Function;
 /**
  * Created by igor.petrenko on 05.01.2018.
  */
-public interface Constraint<T, TMetadata> {
-    void check( T object, TMetadata metadata, MemoryStorage<T> storage, Function<T, String> id ) throws ConstraintException;
+public interface Constraint<T> {
+    void check( T object, MemoryStorage<T> storage, Function<T, String> id ) throws ConstraintException;
 }

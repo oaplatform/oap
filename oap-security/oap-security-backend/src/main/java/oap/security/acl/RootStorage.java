@@ -28,7 +28,6 @@ import oap.storage.Constraint;
 import oap.storage.IdentifierBuilder;
 import oap.storage.MemoryStorage;
 import oap.storage.Storage;
-import oap.util.Pair;
 import oap.util.Stream;
 
 import java.util.Collection;
@@ -54,7 +53,7 @@ class RootStorage implements Storage<RootObject> {
     public RootStorage() {
         this.storage = new MemoryStorage<>( IdentifierBuilder.identify( root -> ROOT ).build(), NoLock );
 
-        storage.store( new RootObject(), new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT ) );
+        storage.store( new RootObject(), r -> new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT ) );
     }
 
     @Override
@@ -78,22 +77,25 @@ class RootStorage implements Storage<RootObject> {
     }
 
     @Override
-    public <TMetadata> RootObject store( RootObject object, TMetadata metadata ) {
+    public <TMetadata> RootObject store( RootObject object, Function<RootObject, TMetadata> metadata ) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <TMetadata> void store( Collection<RootObject> objects, Collection<TMetadata> metadata ) {
+    public <TMetadata> void store( Collection<RootObject> objects, Function<RootObject, TMetadata> metadata ) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <TMetadata> Optional<RootObject> update( String id, RootObject object, TMetadata metadata ) {
+    public <TMetadata> Optional<RootObject> update( String id, RootObject object, Function<RootObject, TMetadata> metadata ) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <TMetadata> Optional<RootObject> update( String id, BiPredicate<RootObject, TMetadata> predicate, BiFunction<RootObject, TMetadata, RootObject> update, Supplier<Pair<RootObject, TMetadata>> init ) {
+    public <TMetadata> Optional<RootObject> update( String id, BiPredicate<RootObject, TMetadata> predicate,
+                                                    BiFunction<RootObject, TMetadata, RootObject> update,
+                                                    Supplier<RootObject> init,
+                                                    Function<RootObject, TMetadata> initMetadata ) {
         throw new UnsupportedOperationException();
     }
 
@@ -148,7 +150,7 @@ class RootStorage implements Storage<RootObject> {
     }
 
     @Override
-    public void addConstraint( Constraint<RootObject, ?> constraint ) {
+    public void addConstraint( Constraint<RootObject> constraint ) {
         storage.addConstraint( constraint );
     }
 

@@ -58,7 +58,12 @@ public class Item<T> implements Serializable {
     }
 
     public void update( T t ) {
+        update( t, null );
+    }
+
+    public void update( T t, Object metadata ) {
         this.object = t;
+        if( metadata != null ) this.metadata = metadata;
         setUpdated();
     }
 

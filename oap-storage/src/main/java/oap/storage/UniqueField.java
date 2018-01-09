@@ -28,22 +28,22 @@ import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Created by igor.petrenko on 05.01.2018.
  */
-public class UniqueField<T, TMetadata> implements Constraint<T, TMetadata> {
+public class UniqueField<T> implements Constraint<T> {
     private final String type;
     private final Function<T, Object> valueFunc;
-    private final BiPredicate<TMetadata, TMetadata> metadataFilter;
+    private final Predicate<?> metadataFilter;
 
     public UniqueField( String type, Function<T, Object> valueFunc ) {
-        this( type, valueFunc, ( o1, o2 ) -> true );
+        this( type, valueFunc, o -> true );
     }
 
-    public UniqueField( String type, Function<T, Object> valueFunc, BiPredicate<TMetadata, TMetadata> metadataFilter ) {
+    public UniqueField( String type, Function<T, Object> valueFunc, Predicate<?> metadataFilter ) {
         this.type = type;
         this.valueFunc = valueFunc;
         this.metadataFilter = metadataFilter;
@@ -51,13 +51,13 @@ public class UniqueField<T, TMetadata> implements Constraint<T, TMetadata> {
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public void check( T object, TMetadata metadata, MemoryStorage<T> storage, Function<T, String> id ) throws ConstraintException {
+    public void check( T object, MemoryStorage<T> storage, Function<T, String> id ) throws ConstraintException {
         val idValue = id.apply( object );
         val value = valueFunc.apply( object );
 
         if( storage
             .selectItem()
-            .filter( item -> metadataFilter.test( metadata, ( TMetadata ) item.metadata ) )
+            .filter( item -> ( ( Predicate<Object> ) metadataFilter ).test( item.metadata ) )
             .anyMatch( item -> {
                 val itemObject = item.object;
                 return Objects.equals( value, valueFunc.apply( itemObject ) ) && !idValue.equals( id.apply( itemObject ) );
