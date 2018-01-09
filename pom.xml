@@ -133,7 +133,7 @@
                     <forkedProcessTimeoutInSeconds>4800</forkedProcessTimeoutInSeconds>
                     <!--<forkMode>once</forkMode>-->
                     <useSystemClassLoader>false</useSystemClassLoader>
-                    <runOrder>balanced</runOrder>
+                    <runOrder>failedfirst</runOrder>
                     <includes>
                         <include>**/*Test.*</include>
                         <include>**/*TestCase.*</include>
