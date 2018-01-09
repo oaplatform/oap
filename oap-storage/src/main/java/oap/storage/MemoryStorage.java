@@ -64,11 +64,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public <TMetadata> T store( T object, Function<T, TMetadata> metadata ) {
+    public <TMetadata> T store( T object, BiFunction<T, TMetadata, TMetadata> metadata ) {
         String id = identifier.getOrInit( object, this );
         lockStrategy.synchronizedOn( id, () -> {
             val item = data.get( id );
-            val m = metadata.apply( object );
+            val m = metadata.apply( object, getDefaultMetadata( object ) );
 
             if( item != null ) {
 
@@ -90,13 +90,13 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public <TMetadata> Optional<T> update( String id, T object, Function<T, TMetadata> metadata ) {
+    public <TMetadata> Optional<T> update( String id, T object, BiFunction<T, TMetadata, TMetadata> metadata ) {
         return lockStrategy.synchronizedOn( id, () -> {
             val item = data.get( id );
             if( item != null ) {
                 identifier.set( object, id );
 
-                val m = metadata.apply( object );
+                val m = metadata.apply( object, getDefaultMetadata( object ) );
 
                 checkConstraints( object, m != null ? m : item.metadata );
 
@@ -108,7 +108,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public <TMetadata> void store( Collection<T> objects, Function<T, TMetadata> metadata ) {
+    public <TMetadata> void store( Collection<T> objects, BiFunction<T, TMetadata, TMetadata> metadata ) {
         ArrayList<T> newObjects = new ArrayList<>();
         ArrayList<T> updatedObjects = new ArrayList<>();
 
@@ -118,11 +118,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                 val item = data.get( id );
                 if( item != null ) {
                     item.update( object );
-                    val m = metadata.apply( object );
+                    val m = metadata.apply( object, getDefaultMetadata( object ) );
                     if( m != null ) item.metadata = m;
                     updatedObjects.add( object );
                 } else {
-                    data.computeIfAbsent( id, ( id1 ) -> new Item<>( object, metadata.apply( object ) ) );
+                    data.computeIfAbsent( id, ( id1 ) -> new Item<>( object, metadata.apply( object, getDefaultMetadata( object ) ) ) );
                     newObjects.add( object );
                 }
             } );
@@ -135,7 +135,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public <TMetadata> Optional<T> update( String id, BiPredicate<T, TMetadata> predicate,
                                            BiFunction<T, TMetadata, T> update,
                                            Supplier<T> init,
-                                           Function<T, TMetadata> initMetadata ) {
+                                           BiFunction<T, TMetadata, TMetadata> initMetadata ) {
         return updateObject( id, predicate, update, init, initMetadata )
             .map( m -> {
                 fireUpdated( m.object, false );
@@ -147,7 +147,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                                                                     BiPredicate<T, TMetadata> predicate,
                                                                     BiFunction<T, TMetadata, T> update,
                                                                     Supplier<T> init,
-                                                                    Function<T, TMetadata> initMetadata ) {
+                                                                    BiFunction<T, TMetadata, TMetadata> initMetadata ) {
         return lockStrategy.synchronizedOn( id, () -> {
             Item<T> item = data.get( id );
             if( item == null ) {
@@ -157,7 +157,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                     val object = init.get();
                     identifier.set( object, id );
 
-                    val m = initMetadata.apply( object );
+                    val m = initMetadata.apply( object, getDefaultMetadata( object ) );
 
                     checkConstraints( object, m );
 
@@ -169,7 +169,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                 if( predicate.test( item.object, ( TMetadata ) item.metadata ) ) {
                     val newObject = update.apply( Binder.json.clone( item.object ), ( TMetadata ) item.metadata );
 
-                    val m = initMetadata.apply( newObject );
+                    val m = initMetadata.apply( newObject, getDefaultMetadata( newObject ) );
 
                     checkConstraints( newObject, m != null ? m : item.metadata );
 
@@ -191,7 +191,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         return updateObject( id, ( o, m ) -> predicate.test( o ),
             ( o, m ) -> update.apply( o ),
             init,
-            this::getDefaultMetadata );
+            ( o, m ) -> m );
     }
 
     @Override

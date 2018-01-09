@@ -53,7 +53,7 @@ class RootStorage implements Storage<RootObject> {
     public RootStorage() {
         this.storage = new MemoryStorage<>( IdentifierBuilder.identify( root -> ROOT ).build(), NoLock );
 
-        storage.store( new RootObject(), r -> new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT ) );
+        storage.store( new RootObject(), ( r, m ) -> new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT ) );
     }
 
     @Override
@@ -77,17 +77,17 @@ class RootStorage implements Storage<RootObject> {
     }
 
     @Override
-    public <TMetadata> RootObject store( RootObject object, Function<RootObject, TMetadata> metadata ) {
+    public <TMetadata> RootObject store( RootObject object, BiFunction<RootObject, TMetadata, TMetadata> metadata ) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <TMetadata> void store( Collection<RootObject> objects, Function<RootObject, TMetadata> metadata ) {
+    public <TMetadata> void store( Collection<RootObject> objects, BiFunction<RootObject, TMetadata, TMetadata> metadata ) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public <TMetadata> Optional<RootObject> update( String id, RootObject object, Function<RootObject, TMetadata> metadata ) {
+    public <TMetadata> Optional<RootObject> update( String id, RootObject object, BiFunction<RootObject, TMetadata, TMetadata> metadata ) {
         throw new UnsupportedOperationException();
     }
 
@@ -95,7 +95,7 @@ class RootStorage implements Storage<RootObject> {
     public <TMetadata> Optional<RootObject> update( String id, BiPredicate<RootObject, TMetadata> predicate,
                                                     BiFunction<RootObject, TMetadata, RootObject> update,
                                                     Supplier<RootObject> init,
-                                                    Function<RootObject, TMetadata> initMetadata ) {
+                                                    BiFunction<RootObject, TMetadata, TMetadata> initMetadata ) {
         throw new UnsupportedOperationException();
     }
 

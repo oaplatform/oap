@@ -70,13 +70,13 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
-    public <TMetadata> T store( T object, Function<T, TMetadata> metadata ) {
+    public <TMetadata> T store( T object, BiFunction<T, TMetadata, TMetadata> metadata ) {
         open();
         return super.store( object, metadata );
     }
 
     @Override
-    public <TMetadata> Optional<T> update( String id, T object, Function<T, TMetadata> metadata ) {
+    public <TMetadata> Optional<T> update( String id, T object, BiFunction<T, TMetadata, TMetadata> metadata ) {
         open();
         return super.update( id, object, metadata );
     }
@@ -85,7 +85,7 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     public <TMetadata> Optional<T> update( String id, BiPredicate<T, TMetadata> predicate,
                                            BiFunction<T, TMetadata, T> update,
                                            Supplier<T> init,
-                                           Function<T, TMetadata> initMetadata ) {
+                                           BiFunction<T, TMetadata, TMetadata> initMetadata ) {
         open();
         return super.update( id, predicate, update, init, initMetadata );
     }
