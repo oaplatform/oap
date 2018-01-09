@@ -28,8 +28,8 @@ import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 /**
  * Created by igor.petrenko on 05.01.2018.
@@ -37,13 +37,13 @@ import java.util.function.Predicate;
 public class UniqueField<T> implements Constraint<T> {
     private final String type;
     private final Function<T, Object> valueFunc;
-    private final Predicate<?> metadataFilter;
+    private final BiPredicate<?, ?> metadataFilter;
 
     public UniqueField( String type, Function<T, Object> valueFunc ) {
-        this( type, valueFunc, o -> true );
+        this( type, valueFunc, ( om, o ) -> true );
     }
 
-    public UniqueField( String type, Function<T, Object> valueFunc, Predicate<?> metadataFilter ) {
+    public <TMetadata> UniqueField( String type, Function<T, Object> valueFunc, BiPredicate<TMetadata, TMetadata> metadataFilter ) {
         this.type = type;
         this.valueFunc = valueFunc;
         this.metadataFilter = metadataFilter;
@@ -51,13 +51,13 @@ public class UniqueField<T> implements Constraint<T> {
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public void check( T object, MemoryStorage<T> storage, Function<T, String> id ) throws ConstraintException {
+    public <TMetadata> void check( T object, TMetadata metadata, MemoryStorage<T> storage, Function<T, String> id ) throws ConstraintException {
         val idValue = id.apply( object );
         val value = valueFunc.apply( object );
 
         if( storage
             .selectItem()
-            .filter( item -> ( ( Predicate<Object> ) metadataFilter ).test( item.metadata ) )
+            .filter( item -> ( ( BiPredicate<TMetadata, TMetadata> ) metadataFilter ).test( metadata, ( TMetadata ) item.metadata ) )
             .anyMatch( item -> {
                 val itemObject = item.object;
                 return Objects.equals( value, valueFunc.apply( itemObject ) ) && !idValue.equals( id.apply( itemObject ) );

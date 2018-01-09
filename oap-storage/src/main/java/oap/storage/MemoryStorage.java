@@ -72,13 +72,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
             if( item != null ) {
 
-                checkConstraints( object );
+                checkConstraints( object, m != null ? m : item.metadata );
 
-                item.update( object );
-                item.metadata = m;
-                item.metadata = m;
+                item.update( object, m );
             } else {
-                checkConstraints( object );
+                checkConstraints( object, m );
                 data.computeIfAbsent( id, id1 -> new Item<>( object, m ) );
             }
             fireUpdated( object, item == null );
@@ -87,8 +85,8 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         return object;
     }
 
-    private void checkConstraints( T object ) {
-        constraints.forEach( c -> c.check( object, this, identifier::get ) );
+    private void checkConstraints( T object, Object metadata ) {
+        constraints.forEach( c -> c.check( object, metadata, this, identifier::get ) );
     }
 
     @Override
@@ -100,7 +98,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
                 val m = metadata.apply( object );
 
-                checkConstraints( object );
+                checkConstraints( object, m != null ? m : item.metadata );
 
                 item.update( object, m );
                 fireUpdated( object, false );
@@ -161,7 +159,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
                     val m = initMetadata.apply( object );
 
-                    checkConstraints( object );
+                    checkConstraints( object, m );
 
                     return new Item<>( object, m );
                 } );
@@ -173,7 +171,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
                     val m = initMetadata.apply( newObject );
 
-                    checkConstraints( newObject );
+                    checkConstraints( newObject, m != null ? m : item.metadata );
 
                     identifier.set( newObject, id );
                     item.update( newObject );
