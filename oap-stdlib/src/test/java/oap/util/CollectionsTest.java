@@ -28,6 +28,7 @@ import lombok.val;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -99,5 +100,11 @@ public class CollectionsTest {
         val list = asList( 1, 2, 1, 4 );
 
         assertThat( Collections.max( list ) ).isEqualTo( 4 );
+    }
+
+    @Test
+    public void testHead2() {
+        assertThat( Collections.head2( new LinkedHashSet<>( asList( 3, 6, 8 ) ) ) ).isEqualTo( 3 );
+        assertThat( Collections.head2( new LinkedHashSet<Integer>() ) ).isNull();
     }
 }

@@ -98,4 +98,8 @@ public class Collections {
 
         return max;
     }
+
+    public static <E> E head2( Collection<E> collection ) {
+        return collection.isEmpty() ? null : collection.iterator().next();
+    }
 }
