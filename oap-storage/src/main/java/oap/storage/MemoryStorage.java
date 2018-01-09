@@ -27,6 +27,7 @@ import lombok.val;
 import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Optionals;
+import oap.util.Pair;
 import oap.util.Stream;
 
 import java.util.ArrayList;
@@ -37,17 +38,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static oap.util.Pair.__;
+
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     protected final Identifier<T> identifier;
     protected final LockStrategy lockStrategy;
     private final List<DataListener<T>> dataListeners = new ArrayList<>();
-    private final ArrayList<Constraint<T>> constraints = new ArrayList<>();
+    private final ArrayList<Constraint<T, ?>> constraints = new ArrayList<>();
     volatile protected ConcurrentMap<String, Item<T>> data = new ConcurrentHashMap<>();
 
     public MemoryStorage( Identifier<T> identifier, LockStrategy lockStrategy ) {
@@ -62,35 +67,35 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public T store( T object ) {
+    public <TMetadata> T store( T object, TMetadata metadata ) {
         String id = identifier.getOrInit( object, this );
         lockStrategy.synchronizedOn( id, () -> {
             val item = data.get( id );
 
-            checkConstraints( object );
+            checkConstraints( object, metadata );
 
-            if( item != null ) item.update( object );
-            else {
-                data.computeIfAbsent( id, id1 -> new Item<>( object, getDefaultMetadata( object ) ) );
-            }
+            if( item != null )
+                item.update( object );
+            else
+                data.computeIfAbsent( id, id1 -> new Item<>( object, metadata ) );
             fireUpdated( object, item == null );
         } );
 
         return object;
     }
 
-    public void checkConstraints( T object ) {
-        constraints.forEach( c -> c.check( object, this, identifier::get ) );
+    private void checkConstraints( T object, Object metadata ) {
+        constraints.forEach( c -> ( ( Constraint<T, Object> ) c ).check( object, metadata, this, identifier::get ) );
     }
 
     @Override
-    public Optional<T> update( String id, T object ) {
+    public <TMetadata> Optional<T> update( String id, T object, TMetadata metadata ) {
         return lockStrategy.synchronizedOn( id, () -> {
             val item = data.get( id );
             if( item != null ) {
                 identifier.set( object, id );
 
-                checkConstraints( object );
+                checkConstraints( object, metadata != null ? metadata : item.metadata );
 
                 item.update( object );
                 fireUpdated( object, false );
@@ -100,9 +105,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public void store( Collection<T> objects ) {
+    public <TMetadata> void store( Collection<T> objects, Collection<TMetadata> metadata ) {
         ArrayList<T> newObjects = new ArrayList<>();
         ArrayList<T> updatedObjects = new ArrayList<>();
+
+        val it = metadata != null ? metadata.iterator() : null;
 
         for( T object : objects ) {
             String id = identifier.getOrInit( object, this );
@@ -110,9 +117,10 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                 val item = data.get( id );
                 if( item != null ) {
                     item.update( object );
+                    if( it != null ) item.metadata = it.next();
                     updatedObjects.add( object );
                 } else {
-                    data.computeIfAbsent( id, ( id1 ) -> new Item<>( object, getDefaultMetadata( object ) ) );
+                    data.computeIfAbsent( id, ( id1 ) -> new Item<>( object, it != null ? it.next() : null ) );
                     newObjects.add( object );
                 }
             } );
@@ -122,7 +130,9 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public Optional<T> update( String id, Predicate<T> predicate, Function<T, T> update, Supplier<T> init ) {
+    public <TMetadata> Optional<T> update( String id, BiPredicate<T, TMetadata> predicate,
+                                           BiFunction<T, TMetadata, T> update,
+                                           Supplier<Pair<T, TMetadata>> init ) {
         return updateObject( id, predicate, update, init )
             .map( m -> {
                 fireUpdated( m.object, false );
@@ -130,7 +140,10 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             } );
     }
 
-    protected Optional<? extends Item<T>> updateObject( String id, Predicate<T> predicate, Function<T, T> update, Supplier<T> init ) {
+    protected <TMetadata> Optional<? extends Item<T>> updateObject( String id,
+                                                                    BiPredicate<T, TMetadata> predicate,
+                                                                    BiFunction<T, TMetadata, T> update,
+                                                                    Supplier<Pair<T, TMetadata>> init ) {
         return lockStrategy.synchronizedOn( id, () -> {
             Item<T> m = data.get( id );
             if( m == null ) {
@@ -139,17 +152,17 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                 m = data.computeIfAbsent( id, ( id1 ) -> {
                     val object = init.get();
 
-                    checkConstraints( object );
+                    checkConstraints( object._1, object._2 );
 
-                    return new Item<>( object, getDefaultMetadata( object ) );
+                    return new Item<>( object._1, object._2 );
                 } );
                 data.put( id, m );
                 m.update( m.object ); // fix modification time
             } else {
-                if( predicate.test( m.object ) ) {
-                    val newObject = update.apply( Binder.json.clone( m.object ) );
+                if( predicate.test( m.object, ( TMetadata ) m.metadata ) ) {
+                    val newObject = update.apply( Binder.json.clone( m.object ), ( TMetadata ) m.metadata );
 
-                    checkConstraints( newObject );
+                    checkConstraints( newObject, m.metadata );
 
                     identifier.set( newObject, id );
                     m.update( newObject );
@@ -159,6 +172,13 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
             }
             return Optional.of( m );
         } );
+    }
+
+    protected Optional<? extends Item<T>> updateObject( String id,
+                                                        Predicate<T> predicate,
+                                                        Function<T, T> update,
+                                                        Supplier<T> init ) {
+        return updateObject( id, ( o, m ) -> predicate.test( o ), ( o, m ) -> update.apply( o ), () -> __( init.get(), null ) );
     }
 
     @Override
@@ -247,7 +267,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public void addConstraint( Constraint<T> constraint ) {
+    public void addConstraint( Constraint<T, ?> constraint ) {
         this.constraints.add( constraint );
     }
 

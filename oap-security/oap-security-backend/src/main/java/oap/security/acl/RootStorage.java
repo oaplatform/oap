@@ -24,8 +24,22 @@
 
 package oap.security.acl;
 
+import oap.storage.Constraint;
 import oap.storage.IdentifierBuilder;
 import oap.storage.MemoryStorage;
+import oap.storage.Storage;
+import oap.util.Pair;
+import oap.util.Stream;
+
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import static java.util.Collections.emptyList;
 import static oap.security.acl.AclService.ROOT;
@@ -34,15 +48,117 @@ import static oap.storage.Storage.LockStrategy.NoLock;
 /**
  * Created by igor.petrenko on 02.01.2018.
  */
-class RootStorage extends MemoryStorage<RootObject> {
-    public RootStorage() {
-        super( IdentifierBuilder.identify( root -> ROOT ).build(), NoLock );
+class RootStorage implements Storage<RootObject> {
+    private final MemoryStorage<RootObject> storage;
 
-        store( new RootObject() );
+    public RootStorage() {
+        this.storage = new MemoryStorage<>( IdentifierBuilder.identify( root -> ROOT ).build(), NoLock );
+
+        storage.store( new RootObject(), new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT ) );
     }
 
     @Override
-    public Object getDefaultMetadata( RootObject object ) {
-        return new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT );
+    public <M> M updateMetadata( String id, Function<M, M> func ) {
+        return storage.updateMetadata( id, func );
+    }
+
+    @Override
+    public <M> M getMetadata( String id ) {
+        return storage.getMetadata( id );
+    }
+
+    @Override
+    public <M> Stream<M> selectMetadata() {
+        return storage.selectMetadata();
+    }
+
+    @Override
+    public <TMetadata> Stream<RootObject> select( Predicate<TMetadata> metadataFilter ) {
+        return storage.select( metadataFilter );
+    }
+
+    @Override
+    public <TMetadata> RootObject store( RootObject object, TMetadata metadata ) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <TMetadata> void store( Collection<RootObject> objects, Collection<TMetadata> metadata ) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <TMetadata> Optional<RootObject> update( String id, RootObject object, TMetadata metadata ) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <TMetadata> Optional<RootObject> update( String id, BiPredicate<RootObject, TMetadata> predicate, BiFunction<RootObject, TMetadata, RootObject> update, Supplier<Pair<RootObject, TMetadata>> init ) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void update( Collection<String> ids, Predicate<RootObject> predicate, Function<RootObject, RootObject> update, Supplier<RootObject> init ) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Optional<RootObject> get( String id ) {
+        return storage.get( id );
+    }
+
+    @Override
+    public Optional<RootObject> delete( String id ) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void deleteAll() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long size() {
+        return storage.size();
+    }
+
+    @Override
+    public Storage<RootObject> copyAndClean() {
+        return storage.copyAndClean();
+    }
+
+    @Override
+    public void fsync() {
+        storage.fsync();
+    }
+
+    @Override
+    public Map<String, RootObject> toMap() {
+        return storage.toMap();
+    }
+
+    @Override
+    public void addDataListener( DataListener<RootObject> dataListener ) {
+        storage.addDataListener( dataListener );
+    }
+
+    @Override
+    public void removeDataListener( DataListener<RootObject> dataListener ) {
+        storage.removeDataListener( dataListener );
+    }
+
+    @Override
+    public void addConstraint( Constraint<RootObject, ?> constraint ) {
+        storage.addConstraint( constraint );
+    }
+
+    @Override
+    public void close() {
+        storage.close();
+    }
+
+    @Override
+    public Iterator<RootObject> iterator() {
+        return storage.iterator();
     }
 }

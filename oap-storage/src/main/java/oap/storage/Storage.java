@@ -24,15 +24,20 @@
 package oap.storage;
 
 import oap.concurrent.Threads;
+import oap.util.Pair;
 import oap.util.Stream;
 
 import java.io.Closeable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+
+import static oap.util.Pair.__;
 
 public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Optional<T>> {
     <M> M updateMetadata( String id, Function<M, M> func );
@@ -51,21 +56,45 @@ public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Opt
 
     <TMetadata> Stream<T> select( Predicate<TMetadata> metadataFilter );
 
-    T store( T object );
+    <TMetadata> T store( T object, TMetadata metadata );
 
-    void store( Collection<T> objects );
+    default T store( T object ) {
+        return store( object, null );
+    }
+
+    <TMetadata> void store( Collection<T> objects, Collection<TMetadata> metadata );
+
+    default void store( Collection<T> objects ) {
+        store( objects, null );
+    }
 
     default Optional<T> update( String id, Function<T, T> update ) {
         return update( id, update, null );
+    }
+
+    default <TMetadata> Optional<T> update( String id, BiPredicate<T, TMetadata> predicate, BiFunction<T, TMetadata, T> update ) {
+        return update( id, predicate, update, null );
     }
 
     default Optional<T> update( String id, Predicate<T> predicate, Function<T, T> update ) {
         return update( id, predicate, update, null );
     }
 
-    Optional<T> update( String id, T object );
+    <TMetadata> Optional<T> update( String id, T object, TMetadata metadata );
 
-    Optional<T> update( String id, Predicate<T> predicate, Function<T, T> update, Supplier<T> init );
+    default Optional<T> update( String id, T object ) {
+        return update( id, object, null );
+    }
+
+    <TMetadata> Optional<T> update( String id, BiPredicate<T, TMetadata> predicate, BiFunction<T, TMetadata, T> update, Supplier<Pair<T, TMetadata>> init );
+
+    default Optional<T> update( String id, Predicate<T> predicate, Function<T, T> update, Supplier<T> init ) {
+        return update( id, ( o, m ) -> predicate.test( o ), ( o, m ) -> update.apply( o ), () -> __( init.get(), null ) );
+    }
+
+    default <TMetadata> Optional<T> update( String id, BiFunction<T, TMetadata, T> update, Supplier<Pair<T, TMetadata>> init ) {
+        return update( id, ( o, m ) -> true, update, init );
+    }
 
     default Optional<T> update( String id, Function<T, T> update, Supplier<T> init ) {
         return update( id, t -> true, update, init );
@@ -107,7 +136,7 @@ public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Opt
 
     void removeDataListener( DataListener<T> dataListener );
 
-    void addConstraint( Constraint<T> constraint );
+    void addConstraint( Constraint<T, ?> constraint );
 
     interface DataListener<T> {
         @Deprecated
