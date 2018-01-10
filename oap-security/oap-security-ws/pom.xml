@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>3.6.6</version>
+        <version>3.6.7</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
