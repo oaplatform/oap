@@ -279,13 +279,8 @@ public class DefaultAclService implements AclService {
             .map( acl -> acl.parent == null ? acl.cloneWithParent( parent.id ) : acl )
             .collect( toList() );
 
-        obj.parents.clear();
         obj.parents.addAll( parents );
-
-        obj.ancestors.clear();
         obj.ancestors.addAll( ancestors );
-
-        obj.acls.clear();
         obj.acls.addAll( acls );
 
         return Optional.of( obj );
