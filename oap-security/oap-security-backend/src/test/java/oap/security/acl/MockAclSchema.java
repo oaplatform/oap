@@ -39,10 +39,9 @@ import static oap.security.acl.AclService.ROOT;
  */
 public class MockAclSchema implements AclSchema {
     private final AclObject ROOT_ACL_OBJECT;
-    private final Storage<?> storage;
+    private final Storage<? extends SecurityContainer<?>> storage;
 
-    @SuppressWarnings( "unchecked" )
-    public MockAclSchema( Storage<?> storage ) {
+    public MockAclSchema( Storage<? extends SecurityContainer<?>> storage ) {
         this.storage = storage;
 
         ROOT_ACL_OBJECT = new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT );
@@ -57,12 +56,12 @@ public class MockAclSchema implements AclSchema {
     public Optional<AclObject> getObject( String id ) {
         if( ROOT.equals( id ) ) return Optional.of( ROOT_ACL_OBJECT );
 
-        return Optional.ofNullable( storage.getMetadata( id ) );
+        return storage.get( id ).map( cs -> cs.acl );
     }
 
     @Override
     public Stream<AclObject> selectObjects() {
-        return storage.<AclObject>selectMetadata().concat( ROOT_ACL_OBJECT );
+        return storage.select().map( cs -> cs.acl ).concat( ROOT_ACL_OBJECT );
     }
 
     @Override
@@ -77,10 +76,10 @@ public class MockAclSchema implements AclSchema {
 
             return Optional.of( ROOT_ACL_OBJECT );
         }
-        return Optional.ofNullable( storage.<AclObject>updateMetadata( id, ( o ) -> {
-            cons.accept( o );
-            return o;
-        } ) );
+        return storage.update( id, cs -> {
+            cons.accept( cs.acl );
+            return cs;
+        } ).map( cs -> cs.acl );
     }
 
     @Override

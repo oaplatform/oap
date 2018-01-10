@@ -27,6 +27,7 @@ package oap.security.acl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.util.IdBean;
 
 import java.io.Serializable;
 import java.util.List;
@@ -68,9 +69,11 @@ public interface AclService {
 
     List<String> getChildren( String parentId, String type, boolean recursive );
 
-    Predicate<AclObject> getAclFilter( String parentId, String subjectId, String permission );
+    Predicate<SecurityContainer<?>> getAclFilter( String parentId, String subjectId, String permission );
 
 //    List<String> findChildren( String parentId, String subjectId, String type, String permission );
+
+    <T extends IdBean> Optional<SecurityContainer<T>> addChild( String parentId, T object, String type, String owner );
 
     Optional<AclObject> addChild( String parentId, String id );
 

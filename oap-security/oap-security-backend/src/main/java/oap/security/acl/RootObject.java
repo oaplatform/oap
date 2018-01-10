@@ -24,17 +24,21 @@
 
 package oap.security.acl;
 
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.util.Id;
+import oap.util.IdBean;
+
+import static oap.security.acl.AclService.ROOT;
 
 /**
  * Created by igor.petrenko on 02.01.2018.
  */
-@ToString
-class RootObject {
-    @Id
-    public final String id = AclService.ROOT;
+@ToString( callSuper = true )
+@EqualsAndHashCode( callSuper = true )
+class RootObject extends IdBean {
+    private static final long serialVersionUID = -3662657142321391837L;
 
     public RootObject() {
+        super( ROOT );
     }
 }

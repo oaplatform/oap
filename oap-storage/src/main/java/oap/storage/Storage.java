@@ -30,78 +30,27 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Optional<T>> {
-    <M> M updateMetadata( String id, Function<M, M> func );
+    Stream<T> select();
 
-    default <TMetadata> TMetadata getDefaultMetadata( T object ) {
-        return null;
-    }
+    T store( T object );
 
-    <M> M getMetadata( String id );
-
-    <M> Stream<M> selectMetadata();
-
-    default Stream<T> select() {
-        return select( ( m ) -> true );
-    }
-
-    <TMetadata> Stream<T> select( Predicate<TMetadata> metadataFilter );
-
-    <TMetadata> T store( T object, BiFunction<T, TMetadata, TMetadata> metadata );
-
-    default T store( T object ) {
-        return store( object, ( o, m ) -> m );
-    }
-
-    <TMetadata> void store( Collection<T> objects, BiFunction<T, TMetadata, TMetadata> metadata );
-
-    default void store( Collection<T> objects ) {
-        store( objects, ( o, m ) -> m );
-    }
+    void store( Collection<T> objects );
 
     default Optional<T> update( String id, Function<T, T> update ) {
         return update( id, update, null );
     }
 
-    default <TMetadata> Optional<T> update( String id, BiPredicate<T, TMetadata> predicate, BiFunction<T, TMetadata, T> update ) {
-        return update( id, predicate, update, null, null );
-    }
+    Optional<T> update( String id, T object );
 
-    default Optional<T> update( String id, Predicate<T> predicate, Function<T, T> update ) {
-        return update( id, predicate, update, null );
-    }
-
-    <TMetadata> Optional<T> update( String id, T object, BiFunction<T, TMetadata, TMetadata> metadata );
-
-    default Optional<T> update( String id, T object ) {
-        return update( id, object, ( o, m ) -> m );
-    }
-
-    <TMetadata> Optional<T> update( String id,
-                                    BiPredicate<T, TMetadata> predicate,
-                                    BiFunction<T, TMetadata, T> update,
-                                    Supplier<T> init,
-                                    BiFunction<T, TMetadata, TMetadata> initMetadata );
-
-    default Optional<T> update( String id, Predicate<T> predicate, Function<T, T> update, Supplier<T> init ) {
-        return update( id,
-            ( o, m ) -> predicate.test( o ),
-            ( o, m ) -> update.apply( o ),
-            init,
-            ( o, m ) -> m );
-    }
-
-    default <TMetadata> Optional<T> update( String id, BiFunction<T, TMetadata, T> update,
-                                            Supplier<T> init, BiFunction<T, TMetadata, TMetadata> initMetadata ) {
-        return update( id, ( o, m ) -> true, update, init, initMetadata );
-    }
+    Optional<T> update( String id,
+                        Predicate<T> predicate,
+                        Function<T, T> update,
+                        Supplier<T> init );
 
     default Optional<T> update( String id, Function<T, T> update, Supplier<T> init ) {
         return update( id, t -> true, update, init );

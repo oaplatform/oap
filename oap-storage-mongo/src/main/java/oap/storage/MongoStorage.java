@@ -52,7 +52,7 @@ import static com.mongodb.client.model.Filters.eq;
 @Slf4j
 public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
     public static final UpdateOptions UPDATE_OPTIONS_UPSERT = new UpdateOptions().upsert( true );
-    public final MongoCollection<Item<T>> collection;
+    public final MongoCollection<Metadata<T>> collection;
     public final MongoDatabase database;
     public int bulkSize = 1000;
     private long lastFsync = -1;
@@ -69,17 +69,17 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
         this.database = mongoClient.getDatabase( database );
 
 
-        final Object o = new TypeReference<Item<T>>() {};
+        final Object o = new TypeReference<Metadata<T>>() {};
         final CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
-            CodecRegistries.fromCodecs( new JsonCodec<>( ( TypeReference<Item> ) o,
-                Item.class, clazz, ( m ) -> identifier.get( ( T ) m.object ) ) ),
+            CodecRegistries.fromCodecs( new JsonCodec<>( ( TypeReference<Metadata> ) o,
+                Metadata.class, clazz, ( m ) -> identifier.get( ( T ) m.object ) ) ),
             this.database.getCodecRegistry()
         );
 
         final Object metadataMongoCollection = this.database
-            .getCollection( table, Item.class )
+            .getCollection( table, Metadata.class )
             .withCodecRegistry( codecRegistry );
-        this.collection = ( MongoCollection<Item<T>> ) metadataMongoCollection;
+        this.collection = ( MongoCollection<Metadata<T>> ) metadataMongoCollection;
 
         load();
     }
@@ -87,7 +87,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
     private void load() {
         lastFsync = DateTimeUtils.currentTimeMillis();
 
-        final Consumer<Item<T>> cons = metadata -> {
+        final Consumer<Metadata<T>> cons = metadata -> {
             val id = identifier.get( metadata.object );
             data.put( id, metadata );
         };
@@ -117,7 +117,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
             .forEach( list -> {
                 count.add( list.size() );
 
-                final List<? extends WriteModel<Item<T>>> bulk = Lists.map( list,
+                final List<? extends WriteModel<Metadata<T>>> bulk = Lists.map( list,
                     metadata -> {
                         val id = identifier.get( metadata.object );
                         return new ReplaceOneModel<>( eq( "_id", new ObjectId( id ) ), metadata, UPDATE_OPTIONS_UPSERT );

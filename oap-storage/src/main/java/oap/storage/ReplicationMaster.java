@@ -27,9 +27,9 @@ package oap.storage;
 import java.util.List;
 
 public interface ReplicationMaster<T> {
-    List<Item<T>> updatedSince( long time );
+    List<Metadata<T>> updatedSince( long time );
 
-    default List<Item<T>> updatedSince( long time, int limit, int offset ) {
+    default List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
         return updatedSince( time );
     }
 

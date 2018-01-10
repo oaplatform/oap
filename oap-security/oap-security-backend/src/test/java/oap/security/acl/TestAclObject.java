@@ -25,25 +25,24 @@
 package oap.security.acl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.util.Id;
+import oap.util.IdBean;
 
 /**
  * Created by igor.petrenko on 02.01.2018.
  */
-@ToString
-public class TestAclObject {
-    public final String type;
-    @Id
-    public String id;
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class TestAclObject extends IdBean {
+    private static final long serialVersionUID = 7994106300424465617L;
 
     @JsonCreator
-    public TestAclObject( String id, String type ) {
-        this.id = id;
-        this.type = type;
+    public TestAclObject( String id ) {
+        super( id );
     }
 
-    public TestAclObject( String type ) {
-        this( null, type );
+    public TestAclObject() {
+        this( null );
     }
 }

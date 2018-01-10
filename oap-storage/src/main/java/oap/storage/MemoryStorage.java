@@ -37,8 +37,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -50,7 +48,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     protected final LockStrategy lockStrategy;
     private final List<DataListener<T>> dataListeners = new ArrayList<>();
     private final ArrayList<Constraint<T>> constraints = new ArrayList<>();
-    volatile protected ConcurrentMap<String, Item<T>> data = new ConcurrentHashMap<>();
+    volatile protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
 
     public MemoryStorage( Identifier<T> identifier, LockStrategy lockStrategy ) {
         this.identifier = identifier;
@@ -59,70 +57,66 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public <TMetadata> Stream<T> select( Predicate<TMetadata> metadataFilter ) {
-        return Stream.of( data.values() ).filter( i -> metadataFilter.test( ( TMetadata ) i.metadata ) ).map( i -> i.object );
+    public Stream<T> select() {
+        return Stream.of( data.values() ).map( i -> i.object );
     }
 
     @Override
-    public <TMetadata> T store( T object, BiFunction<T, TMetadata, TMetadata> metadata ) {
+    public T store( T object ) {
         String id = identifier.getOrInit( object, this );
         lockStrategy.synchronizedOn( id, () -> {
-            val item = data.get( id );
-            val m = metadata.apply( object, getDefaultMetadata( object ) );
+            val metadata = data.get( id );
 
-            if( item != null ) {
+            if( metadata != null ) {
 
-                checkConstraints( object, m != null ? m : item.metadata );
+                checkConstraints( object );
 
-                item.update( object, m );
+                metadata.update( object );
             } else {
-                checkConstraints( object, m );
-                data.computeIfAbsent( id, id1 -> new Item<>( object, m ) );
+                checkConstraints( object );
+                data.computeIfAbsent( id, id1 -> new Metadata<>( object ) );
             }
-            fireUpdated( object, item == null );
+            fireUpdated( object, metadata == null );
         } );
 
         return object;
     }
 
-    private void checkConstraints( T object, Object metadata ) {
-        constraints.forEach( c -> c.check( object, metadata, this, identifier::get ) );
+    private void checkConstraints( T object ) {
+        constraints.forEach( c -> c.check( object, this, identifier::get ) );
     }
 
     @Override
-    public <TMetadata> Optional<T> update( String id, T object, BiFunction<T, TMetadata, TMetadata> metadata ) {
+    public Optional<T> update( String id, T object ) {
         return lockStrategy.synchronizedOn( id, () -> {
-            val item = data.get( id );
-            if( item != null ) {
+            val metadata = data.get( id );
+            if( metadata != null ) {
                 identifier.set( object, id );
 
-                val m = metadata.apply( object, getDefaultMetadata( object ) );
+                checkConstraints( object );
 
-                checkConstraints( object, m != null ? m : item.metadata );
-
-                item.update( object, m );
+                metadata.update( object );
                 fireUpdated( object, false );
-                return Optional.of( item.object );
+                return Optional.of( metadata.object );
             } else return Optional.empty();
         } );
     }
 
     @Override
-    public <TMetadata> void store( Collection<T> objects, BiFunction<T, TMetadata, TMetadata> metadata ) {
+    public void store( Collection<T> objects ) {
         ArrayList<T> newObjects = new ArrayList<>();
         ArrayList<T> updatedObjects = new ArrayList<>();
 
         for( T object : objects ) {
             String id = identifier.getOrInit( object, this );
             lockStrategy.synchronizedOn( id, () -> {
-                val item = data.get( id );
-                if( item != null ) {
-                    item.update( object );
-                    val m = metadata.apply( object, getDefaultMetadata( object ) );
-                    if( m != null ) item.metadata = m;
+                val metadata = data.get( id );
+                if( metadata != null ) {
+                    metadata.update( object );
+
                     updatedObjects.add( object );
                 } else {
-                    data.computeIfAbsent( id, ( id1 ) -> new Item<>( object, metadata.apply( object, getDefaultMetadata( object ) ) ) );
+                    data.computeIfAbsent( id, id1 -> new Metadata<>( object ) );
                     newObjects.add( object );
                 }
             } );
@@ -132,66 +126,49 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public <TMetadata> Optional<T> update( String id, BiPredicate<T, TMetadata> predicate,
-                                           BiFunction<T, TMetadata, T> update,
-                                           Supplier<T> init,
-                                           BiFunction<T, TMetadata, TMetadata> initMetadata ) {
-        return updateObject( id, predicate, update, init, initMetadata )
+    public Optional<T> update( String id, Predicate<T> predicate,
+                               Function<T, T> update,
+                               Supplier<T> init ) {
+        return updateObject( id, predicate, update, init )
             .map( m -> {
                 fireUpdated( m.object, false );
                 return m.object;
             } );
     }
 
-    protected <TMetadata> Optional<? extends Item<T>> updateObject( String id,
-                                                                    BiPredicate<T, TMetadata> predicate,
-                                                                    BiFunction<T, TMetadata, T> update,
-                                                                    Supplier<T> init,
-                                                                    BiFunction<T, TMetadata, TMetadata> initMetadata ) {
+    protected Optional<? extends Metadata<T>> updateObject( String id,
+                                                            Predicate<T> predicate,
+                                                            Function<T, T> update,
+                                                            Supplier<T> init ) {
         return lockStrategy.synchronizedOn( id, () -> {
-            Item<T> item = data.get( id );
-            if( item == null ) {
+            Metadata<T> metadata = data.get( id );
+            if( metadata == null ) {
                 if( init == null ) return Optional.empty();
 
-                item = data.computeIfAbsent( id, ( id1 ) -> {
+                metadata = data.computeIfAbsent( id, ( id1 ) -> {
                     val object = init.get();
                     identifier.set( object, id );
 
-                    val m = initMetadata.apply( object, getDefaultMetadata( object ) );
+                    checkConstraints( object );
 
-                    checkConstraints( object, m );
-
-                    return new Item<>( object, m );
+                    return new Metadata<>( object );
                 } );
-                data.put( id, item );
-                item.setUpdated();
+                data.put( id, metadata );
+                metadata.setUpdated();
             } else {
-                if( predicate.test( item.object, ( TMetadata ) item.metadata ) ) {
-                    val newObject = update.apply( Binder.json.clone( item.object ), ( TMetadata ) item.metadata );
+                if( predicate.test( metadata.object ) ) {
+                    val newObject = update.apply( Binder.json.clone( metadata.object ) );
 
-                    val m = initMetadata.apply( newObject, getDefaultMetadata( newObject ) );
-
-                    checkConstraints( newObject, m != null ? m : item.metadata );
+                    checkConstraints( newObject );
 
                     identifier.set( newObject, id );
-                    item.update( newObject );
-                    if( m != null ) item.metadata = m;
+                    metadata.update( newObject );
                 } else {
                     return Optional.empty();
                 }
             }
-            return Optional.of( item );
+            return Optional.of( metadata );
         } );
-    }
-
-    protected Optional<? extends Item<T>> updateObject( String id,
-                                                        Predicate<T> predicate,
-                                                        Function<T, T> update,
-                                                        Supplier<T> init ) {
-        return updateObject( id, ( o, m ) -> predicate.test( o ),
-            ( o, m ) -> update.apply( o ),
-            init,
-            ( o, m ) -> m );
     }
 
     @Override
@@ -216,13 +193,13 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     public Optional<T> delete( String id ) {
-        final Optional<Item<T>> item = deleteObject( id );
+        final Optional<Metadata<T>> item = deleteObject( id );
         item.ifPresent( m -> fireDeleted( m.object ) );
 
         return item.map( m -> m.object );
     }
 
-    protected Optional<Item<T>> deleteObject( String id ) {
+    protected Optional<Metadata<T>> deleteObject( String id ) {
         return lockStrategy.synchronizedOn( id, () -> Optional.ofNullable( data.remove( id ) ) );
     }
 
@@ -285,14 +262,14 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
-    public List<Item<T>> updatedSince( long time ) {
+    public List<Metadata<T>> updatedSince( long time ) {
         return Stream.of( data.values() )
             .filter( m -> m.modified > time )
             .toList();
     }
 
     @Override
-    public List<Item<T>> updatedSince( long time, int limit, int offset ) {
+    public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
         return Stream.of( data.values() )
             .filter( m -> m.modified > time )
             .skip( offset )
@@ -323,37 +300,5 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     @Override
     public void forEach( Consumer<? super T> action ) {
         data.forEach( ( k, v ) -> action.accept( v.object ) );
-    }
-
-    @Override
-    @SuppressWarnings( "unchecked" )
-    public <M> M updateMetadata( String id, Function<M, M> func ) {
-        return lockStrategy.synchronizedOn( id, () -> {
-            val item = data.get( id );
-            if( item != null ) {
-                item.metadata = func.apply( ( M ) item.metadata );
-                item.setUpdated();
-                return ( M ) item.metadata;
-            }
-
-            return null;
-        } );
-    }
-
-    @Override
-    @SuppressWarnings( "unchecked" )
-    public <M> M getMetadata( String id ) {
-        val item = data.get( id );
-        return item != null ? ( M ) item.metadata : null;
-    }
-
-    @Override
-    @SuppressWarnings( "unchecked" )
-    public <M> Stream<M> selectMetadata() {
-        return Stream.of( data.values().stream().map( item -> ( M ) item.metadata ) );
-    }
-
-    Stream<Item<T>> selectItem() {
-        return Stream.of( data.values().stream() );
     }
 }

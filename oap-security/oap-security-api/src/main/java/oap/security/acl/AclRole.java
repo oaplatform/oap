@@ -27,27 +27,25 @@ package oap.security.acl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.util.Id;
+import oap.util.IdBean;
 
-import java.io.Serializable;
 import java.util.LinkedHashSet;
 import java.util.List;
 
 /**
  * Created by igor.petrenko on 21.12.2017.
  */
-@ToString
-@EqualsAndHashCode
-public class AclRole implements Serializable {
+@ToString( callSuper = true )
+@EqualsAndHashCode( callSuper = true )
+public class AclRole extends IdBean {
     private static final long serialVersionUID = -7844632176452798221L;
+
     public final String name;
     public final LinkedHashSet<String> permissions;
-    @Id
-    public String id;
 
     @JsonCreator
     public AclRole( String id, String name, List<String> permissions ) {
-        this.id = id;
+        super( id );
         this.name = name;
         this.permissions = new LinkedHashSet<>( permissions );
     }

@@ -67,6 +67,14 @@ public class AclObject implements Serializable, Cloneable {
         this.owner = owner;
     }
 
+    public AclObject( String type,
+                      List<String> parents,
+                      List<String> ancestors,
+                      List<Acl> acls,
+                      String owner ) {
+        this( null, type, parents, ancestors, acls, owner );
+    }
+
 
     public AclObject( String type ) {
         this( null, type, new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), Strings.UNKNOWN );

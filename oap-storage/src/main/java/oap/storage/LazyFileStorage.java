@@ -38,8 +38,6 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -58,36 +56,35 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
-    public List<Item<T>> updatedSince( long time ) {
+    public List<Metadata<T>> updatedSince( long time ) {
         open();
         return super.updatedSince( time );
     }
 
     @Override
-    public <TMetadata> Stream<T> select( Predicate<TMetadata> metadataFilter ) {
+    public Stream<T> select() {
         open();
-        return super.select( metadataFilter );
+        return super.select();
     }
 
     @Override
-    public <TMetadata> T store( T object, BiFunction<T, TMetadata, TMetadata> metadata ) {
+    public T store( T object ) {
         open();
-        return super.store( object, metadata );
+        return super.store( object );
     }
 
     @Override
-    public <TMetadata> Optional<T> update( String id, T object, BiFunction<T, TMetadata, TMetadata> metadata ) {
+    public Optional<T> update( String id, T object ) {
         open();
-        return super.update( id, object, metadata );
+        return super.update( id, object );
     }
 
     @Override
-    public <TMetadata> Optional<T> update( String id, BiPredicate<T, TMetadata> predicate,
-                                           BiFunction<T, TMetadata, T> update,
-                                           Supplier<T> init,
-                                           BiFunction<T, TMetadata, TMetadata> initMetadata ) {
+    public Optional<T> update( String id, Predicate<T> predicate,
+                               Function<T, T> update,
+                               Supplier<T> init ) {
         open();
-        return super.update( id, predicate, update, init, initMetadata );
+        return super.update( id, predicate, update, init );
     }
 
     @Override
@@ -115,24 +112,6 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         return null;
     }
 
-    @Override
-    public <M> M updateMetadata( String id, Function<M, M> func ) {
-        open();
-        return super.updateMetadata( id, func );
-    }
-
-    @Override
-    public <M> M getMetadata( String id ) {
-        open();
-        return super.getMetadata( id );
-    }
-
-    @Override
-    public <M> Stream<M> selectMetadata() {
-        open();
-        return super.selectMetadata();
-    }
-
     private synchronized void open() {
         if( data.size() > 0 ) {
             return;
@@ -140,7 +119,7 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         Files.ensureFile( path );
 
         if( java.nio.file.Files.exists( path ) ) {
-            Binder.json.unmarshal( new TypeReference<List<Item<T>>>() {}, path )
+            Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {}, path )
                 .forEach( m -> {
                     val id = identifier.get( m.object );
                     data.put( id, m );

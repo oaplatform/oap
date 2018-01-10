@@ -22,52 +22,57 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.security.acl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
-import lombok.EqualsAndHashCode;
+import com.google.common.base.Preconditions;
 import lombok.ToString;
 import oap.json.TypeIdFactory;
-import org.joda.time.DateTimeUtils;
+import oap.util.Id;
+import oap.util.IdBean;
 
 import java.io.Serializable;
 
-@EqualsAndHashCode( exclude = { "object", "metadata" } )
-@ToString( exclude = "object" )
-public class Item<T> implements Serializable {
-    public long modified = DateTimeUtils.currentTimeMillis();
+/**
+ * Created by igor.petrenko on 10.01.2018.
+ */
+@ToString
+public class SecurityContainer<T extends IdBean> implements Serializable {
+    private static final long serialVersionUID = 8477473083613051099L;
+    public AclObject acl;
+    public String id;
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
     public T object;
 
-    @JsonTypeIdResolver( TypeIdFactory.class )
-    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "metadata:type" )
-    @JsonInclude( JsonInclude.Include.NON_NULL )
-    public Object metadata;
-
     @JsonCreator
-    protected Item( T object, Object metadata ) {
+    public SecurityContainer( String id, T object, AclObject acl ) {
+        Preconditions.checkNotNull( object );
+        Preconditions.checkNotNull( acl );
+
+        this.id = id;
+        this.acl = acl;
         this.object = object;
-        this.metadata = metadata;
+
+        this.acl.id = this.id;
+        this.object.id = this.id;
     }
 
-    protected Item() {
+    public SecurityContainer( T object, AclObject acl ) {
+        this( null, object, acl );
     }
 
-    public void update( T t ) {
-        update( t, null );
+    @Id
+    public String getId() {
+        return id;
     }
 
-    public void update( T t, Object metadata ) {
-        this.object = t;
-        if( metadata != null ) this.metadata = metadata;
-        setUpdated();
-    }
-
-    public void setUpdated() {
-        this.modified = DateTimeUtils.currentTimeMillis();
+    @Id
+    public void setId( String id ) {
+        this.id = id;
+        this.object.id = id;
+        this.acl.id = id;
     }
 }

@@ -28,6 +28,7 @@ import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.storage.Storage;
+import oap.util.IdBean;
 import oap.util.Lists;
 import org.testng.collections.SetMultiMap;
 
@@ -189,7 +190,7 @@ public class DefaultAclService implements AclService {
             .collect( toList() );
     }
 
-    public Predicate<AclObject> getAclFilter( String parentId, String subjectId, String permission ) {
+    public Predicate<SecurityContainer<?>> getAclFilter( String parentId, String subjectId, String permission ) {
         val aclSubject = schema.getObject( subjectId ).orElse( null );
         if( aclSubject == null ) {
             log.debug( "subject {} not found.", subjectId );
@@ -199,11 +200,13 @@ public class DefaultAclService implements AclService {
         subjects.add( subjectId );
         subjects.addAll( aclSubject.ancestors );
 
-        return obj ->
-            obj.ancestors.contains( parentId )
-                && obj.acls
+        return sc -> {
+            val scAcl = sc.acl;
+            return scAcl.ancestors.contains( parentId )
+                && scAcl.acls
                 .stream()
                 .anyMatch( acl -> subjects.contains( acl.subjectId ) && acl.role.containsPermission( permission ) );
+        };
     }
 
     //    @Override
@@ -226,6 +229,30 @@ public class DefaultAclService implements AclService {
                     .anyMatch( acl -> subjects.contains( acl.subjectId ) && acl.role.containsPermission( permission ) ) )
             .map( obj -> obj.id )
             .collect( toList() );
+    }
+
+    @Override
+    public <T extends IdBean> Optional<SecurityContainer<T>> addChild( String parentId, T object, String type, String owner ) {
+        Preconditions.checkNotNull( parentId );
+
+        val parent = schema.getObject( parentId ).orElse( null );
+        if( parent == null ) return Optional.empty();
+
+        schema.validateNewObject( parent, type );
+
+        val parents = new ArrayList<String>();
+        parents.add( parentId );
+
+        val ancestors = new ArrayList<String>( parent.ancestors );
+        ancestors.add( parentId );
+
+        val acls = parent.acls
+            .stream()
+            .filter( acl -> acl.inheritance )
+            .map( acl -> acl.parent == null ? acl.cloneWithParent( parent.id ) : acl )
+            .collect( toList() );
+
+        return Optional.of( new SecurityContainer<>( object, new AclObject( type, parents, ancestors, acls, owner ) ) );
     }
 
     @Override

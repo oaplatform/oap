@@ -26,36 +26,98 @@ package oap.util;
 
 import lombok.SneakyThrows;
 import lombok.val;
+import org.reflections.ReflectionUtils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static oap.util.Collections.head2;
 
 /**
  * Created by igor.petrenko on 04.01.2018.
  */
 public class IdFactory {
-    private static final ConcurrentHashMap<Class, Field> ids = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Class, IdAccess> ids = new ConcurrentHashMap<>();
 
-    @SneakyThrows
     public static String getId( Object value ) {
-        final Field field = getField( value );
+        val idAccess = get( value );
 
-        return ( String ) field.get( value );
+        return idAccess.get( value );
     }
 
-    private static Field getField( Object value ) {
+    private static IdAccess get( Object value ) {
         return ids.computeIfAbsent( value.getClass(), ( c ) -> {
-            val df = Stream.of( c.getDeclaredFields() )
-                .filter( f -> f.getAnnotation( Id.class ) != null )
-                .findAny()
-                .orElseThrow( () -> new RuntimeException( "no @Id annotation" ) );
-            df.setAccessible( true );
-            return df;
+            val idFields = ReflectionUtils.getAllFields( c, ( f ) -> f.getAnnotation( Id.class ) != null );
+            if( !idFields.isEmpty() ) return new FieldIdAccess( head2( idFields ) );
+
+            val idMethods = ReflectionUtils.getAllMethods( c, ( m ) -> m.getAnnotation( Id.class ) != null );
+
+            Method setter = null;
+            Method getter = null;
+
+
+            for( val m : idMethods ) {
+                if( String.class.equals( m.getReturnType() ) ) getter = m;
+                else setter = m;
+            }
+
+            if( setter == null || getter == null ) throw new RuntimeException( "no @Id annotation" );
+
+            return new MethodIdAccess( setter, getter );
         } );
     }
 
-    @SneakyThrows
     public static void setId( Object value, String id ) {
-        getField( value ).set( value, id );
+        get( value ).set( value, id );
+    }
+
+    public interface IdAccess {
+        void set( Object object, String id );
+
+        String get( Object object );
+    }
+
+    private static class FieldIdAccess implements IdAccess {
+        private final Field field;
+
+        public FieldIdAccess( Field field ) {
+            this.field = field;
+            this.field.setAccessible( true );
+        }
+
+        @Override
+        @SneakyThrows
+        public void set( Object object, String id ) {
+            field.set( object, id );
+        }
+
+        @Override
+        @SneakyThrows
+        public String get( Object object ) {
+            return ( String ) field.get( object );
+        }
+    }
+
+    private static class MethodIdAccess implements IdAccess {
+        private final Method setter;
+        private final Method getter;
+
+        public MethodIdAccess( Method setter, Method getter ) {
+            this.setter = setter;
+            this.getter = getter;
+        }
+
+        @Override
+        @SneakyThrows
+        public void set( Object object, String id ) {
+            setter.invoke( object, id );
+        }
+
+        @Override
+        @SneakyThrows
+        public String get( Object object ) {
+            return ( String ) getter.invoke( object );
+        }
     }
 }

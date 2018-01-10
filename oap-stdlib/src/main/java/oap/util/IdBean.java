@@ -22,36 +22,27 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.util;
 
-import lombok.val;
-import org.apache.commons.lang3.StringUtils;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-import java.util.Objects;
-import java.util.function.Function;
+import java.io.Serializable;
 
 /**
- * Created by igor.petrenko on 05.01.2018.
+ * Created by igor.petrenko on 10.01.2018.
  */
-public class UniqueField<T> implements Constraint<T> {
-    private final String type;
-    private final Function<T, Object> valueFunc;
+@ToString
+@EqualsAndHashCode
+public class IdBean implements Serializable {
+    @Id
+    public String id;
 
-    public UniqueField( String type, Function<T, Object> valueFunc ) {
-        this.type = type;
-        this.valueFunc = valueFunc;
+    public IdBean( String id ) {
+        this.id = id;
     }
 
-    @Override
-    @SuppressWarnings( "unchecked" )
-    public void check( T object, Storage<T> storage, Function<T, String> id ) throws ConstraintException {
-        val idValue = id.apply( object );
-        val value = valueFunc.apply( object );
-
-        if( storage
-            .select()
-            .anyMatch( itemObject -> Objects.equals( value, valueFunc.apply( itemObject ) ) && !idValue.equals( id.apply( itemObject ) ) ) ) {
-            throw new ConstraintException( StringUtils.capitalize( type ) + " '" + value + "' already exists." );
-        }
+    public IdBean() {
+        this( null );
     }
 }

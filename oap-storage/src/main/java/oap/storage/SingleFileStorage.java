@@ -71,7 +71,7 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
         Files.ensureFile( path );
 
         if( java.nio.file.Files.exists( path ) ) {
-            Binder.json.unmarshal( new TypeReference<List<Item<T>>>() {
+            Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
             }, IoStreams.in( path ) )
                 .forEach( m -> {
                     val id = identifier.get( m.object );
@@ -91,9 +91,9 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
             OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), DEFAULT_BUFFER, false, true );
             out.write( BEGIN_ARRAY );
 
-            Iterator<Item<T>> it = data.values().iterator();
+            Iterator<Metadata<T>> it = data.values().iterator();
             while( it.hasNext() ) {
-                Item<T> metadata = it.next();
+                Metadata<T> metadata = it.next();
                 val id = identifier.get( metadata.object );
                 synchronizedOn( id, () -> Binder.json.marshal( out, metadata ) );
                 if( it.hasNext() ) out.write( ITEM_SEP );

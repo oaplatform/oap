@@ -24,34 +24,38 @@
 
 package oap.storage;
 
-import lombok.val;
-import org.apache.commons.lang3.StringUtils;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import oap.json.TypeIdFactory;
+import org.joda.time.DateTimeUtils;
 
-import java.util.Objects;
-import java.util.function.Function;
+import java.io.Serializable;
 
-/**
- * Created by igor.petrenko on 05.01.2018.
- */
-public class UniqueField<T> implements Constraint<T> {
-    private final String type;
-    private final Function<T, Object> valueFunc;
+@EqualsAndHashCode( exclude = { "object" } )
+@ToString( exclude = "object" )
+public class Metadata<T> implements Serializable {
+    public long modified = DateTimeUtils.currentTimeMillis();
+    @JsonTypeIdResolver( TypeIdFactory.class )
+    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
+    public T object;
 
-    public UniqueField( String type, Function<T, Object> valueFunc ) {
-        this.type = type;
-        this.valueFunc = valueFunc;
+    @JsonCreator
+    protected Metadata( T object ) {
+        this.object = object;
     }
 
-    @Override
-    @SuppressWarnings( "unchecked" )
-    public void check( T object, Storage<T> storage, Function<T, String> id ) throws ConstraintException {
-        val idValue = id.apply( object );
-        val value = valueFunc.apply( object );
+    protected Metadata() {
+    }
 
-        if( storage
-            .select()
-            .anyMatch( itemObject -> Objects.equals( value, valueFunc.apply( itemObject ) ) && !idValue.equals( id.apply( itemObject ) ) ) ) {
-            throw new ConstraintException( StringUtils.capitalize( type ) + " '" + value + "' already exists." );
-        }
+    public void update( T t ) {
+        this.object = t;
+        setUpdated();
+    }
+
+    public void setUpdated() {
+        this.modified = DateTimeUtils.currentTimeMillis();
     }
 }

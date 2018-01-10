@@ -42,17 +42,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Created by igor.petrenko on 29.12.2017.
  */
 public class DefaultAclSchemaTest {
-    private Storage<TestAclObject> storage;
+    private Storage<SecurityContainer<TestAclObject>> storage;
     private DefaultAclSchema schema;
 
     @Test
     public void beforeMethod() {
-        storage = new MemoryStorage<TestAclObject>( IdentifierBuilder.annotationBuild(), NoLock ) {
-            @Override
-            public Object getDefaultMetadata( TestAclObject object ) {
-                return new AclObject( object.id, object.type, emptyList(), emptyList(), emptyList(), ROOT );
-            }
-        };
+        storage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), NoLock );
 
         schema = new DefaultAclSchema(
             ImmutableMap.of(
@@ -69,16 +64,14 @@ public class DefaultAclSchemaTest {
         schema.validateNewObject( schema.getObject( ROOT ).get(), "organization" );
         assertThatThrownBy( () -> schema.validateNewObject( schema.getObject( ROOT ).get(), "unknown" ) ).hasMessageStartingWith( "unknown is not" );
 
-        val organization = storage.store( new TestAclObject( "org1" ) );
-        val organizationMetadata = storage.<AclObject>updateMetadata( organization.id, ( m ) -> new AclObject( organization.id, "organization", singletonList( ROOT ), singletonList( ROOT ), emptyList(), ROOT ) );
-        schema.validateNewObject( organizationMetadata, "user" );
-        assertThatThrownBy( () -> schema.validateNewObject( organizationMetadata, "root" ) ).hasMessageStartingWith( "root is not" );
+        val organization = storage.store( new SecurityContainer<>( new TestAclObject( "org1" ), new AclObject( "organization", singletonList( ROOT ), singletonList( ROOT ), emptyList(), ROOT ) ) );
+        schema.validateNewObject( organization.acl, "user" );
+        assertThatThrownBy( () -> schema.validateNewObject( organization.acl, "root" ) ).hasMessageStartingWith( "root is not" );
     }
 
     @Test
     public void testGetPermissions() {
-        val organization = storage.store( new TestAclObject( "org1", "organization" ) );
-        storage.updateMetadata( organization.id, m -> new AclObject( organization.id, "organization", singletonList( ROOT ), singletonList( ROOT ), emptyList(), ROOT ) );
+        val organization = storage.store( new SecurityContainer<>( new TestAclObject( "org1" ), new AclObject( "organization", singletonList( ROOT ), singletonList( ROOT ), emptyList(), ROOT ) ) );
         assertThat( schema.getPermissions( organization.id ) ).contains( "organization.read" );
     }
 }
