@@ -69,7 +69,7 @@ public interface AclService {
 
     List<String> getChildren( String parentId, String type, boolean recursive );
 
-    Predicate<SecurityContainer<?>> getAclFilter( String parentId, String subjectId, String permission );
+    <T extends IdBean> Predicate<SecurityContainer<T>> getAclFilter( String parentId, String subjectId, String permission );
 
 //    List<String> findChildren( String parentId, String subjectId, String type, String permission );
 

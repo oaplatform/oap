@@ -190,7 +190,7 @@ public class DefaultAclService implements AclService {
             .collect( toList() );
     }
 
-    public Predicate<SecurityContainer<?>> getAclFilter( String parentId, String subjectId, String permission ) {
+    public <T extends IdBean> Predicate<SecurityContainer<T>> getAclFilter( String parentId, String subjectId, String permission ) {
         val aclSubject = schema.getObject( subjectId ).orElse( null );
         if( aclSubject == null ) {
             log.debug( "subject {} not found.", subjectId );
