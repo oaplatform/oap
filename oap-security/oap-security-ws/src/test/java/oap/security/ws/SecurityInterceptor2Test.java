@@ -149,6 +149,7 @@ public class SecurityInterceptor2Test {
     @Test
     public void testPostProcessingList() {
         when( mockAclService.checkAll( "1", "testUser" ) ).thenReturn( asList( "test1.read" ) );
+        when( mockAclService.checkAll( AclService.ROOT, "testUser" ) ).thenReturn( asList( "gl.create" ) );
 
         final Session session = new Session();
         session.set( USER_ID, "testUser" );
@@ -158,10 +159,29 @@ public class SecurityInterceptor2Test {
         assertThat( op.permissions ).containsExactlyInAnyOrder( "test1.read" );
     }
 
+    @Test
+    public void testPostProcessingIncludeRootPermissions() {
+        when( mockAclService.checkAll( "1", "testUser" ) ).thenReturn( asList( "test1.read" ) );
+        when( mockAclService.checkAll( AclService.ROOT, "testUser" ) ).thenReturn( asList( "gl.create" ) );
+
+        final Session session = new Session();
+        session.set( USER_ID, "testUser" );
+
+        val methodWithAnnotation2 = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation2" ) ).get();
+        val op = ( ObjectWithPermissions ) securityInterceptor.postProcessing( new TestAPI.Res( "1" ), session, methodWithAnnotation2 );
+        assertThat( op.permissions ).containsExactlyInAnyOrder( "test1.read", "gl.create" );
+    }
+
     private static class TestAPI {
         @WsSecurity2( object = "{parent}", permission = "parent.read" )
         @WsSecurityWithPermissions()
         public Res methodWithAnnotation( @WsParam String parent ) {
+            return new Res( "1" );
+        }
+
+        @WsSecurity2( object = "{parent}", permission = "parent.read" )
+        @WsSecurityWithPermissions(includeRootPermissions = true)
+        public Res methodWithAnnotation2( @WsParam String parent ) {
             return new Res( "1" );
         }
 

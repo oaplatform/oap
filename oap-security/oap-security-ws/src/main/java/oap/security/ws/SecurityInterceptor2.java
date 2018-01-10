@@ -35,6 +35,7 @@ import oap.security.acl.AclService;
 import oap.util.IdFactory;
 import oap.ws.Interceptor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -123,9 +124,13 @@ public class SecurityInterceptor2 implements Interceptor {
 
         val id = IdFactory.getId( value );
 
-        val res = aclService.checkAll( id, userId );
+        List<String> res = aclService.checkAll( id, userId );
+        if( annotation.includeRootPermissions() ) {
+            res = new ArrayList<>( res );
+            res.addAll( aclService.checkAll( AclService.ROOT, userId ) );
+        }
 
-        return new ObjectWithPermissions( res, value );
+        return new ObjectWithPermissions<>( res, value );
     }
 
     private String getObjectId( Reflection.Method method, WsSecurity2 annotation,
