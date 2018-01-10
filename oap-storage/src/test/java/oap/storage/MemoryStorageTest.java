@@ -31,6 +31,10 @@ import oap.util.Id;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
+import java.util.List;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static oap.storage.Storage.LockStrategy.NoLock;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -52,9 +56,22 @@ public class MemoryStorageTest {
     }
 
     @Test
+    public void testConstraintStoreAddList() {
+        try( val storage = new MemoryStorage<TestClass>( IdentifierBuilder.annotationBuild(), NoLock ) ) {
+            storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.names ) );
+
+            storage.store( new TestClass( "id1", "name1", asList("1", "2") ) );
+            storage.store( new TestClass( "id2", "name2", asList("3", "4") ) );
+
+            Assertions.assertThatThrownBy( () -> storage.store( new TestClass( "id3", "name1", asList( "2", "5" ) ) ) )
+                .hasMessage( "Objtype '[2, 5]' already exists." );
+        }
+    }
+
+    @Test
     public void testConstraintStoreAddFilter() {
         try( val storage = new MemoryStorage<TestClass>( IdentifierBuilder.annotationBuild(), NoLock ) ) {
-            storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name, (n,o) -> false ) );
+            storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name, ( n, o ) -> false ) );
 
             storage.store( new TestClass( "id1", "name1" ) );
             storage.store( new TestClass( "id1", "name1" ) );
@@ -134,11 +151,17 @@ public class MemoryStorageTest {
         @Id
         public String id;
         public String name;
+        public List<String> names;
 
         @JsonCreator
-        public TestClass( String id, String name ) {
+        public TestClass( String id, String name, List<String> names ) {
             this.id = id;
             this.name = name;
+            this.names = names;
+        }
+
+        public TestClass( String id, String name ) {
+            this( id, name, emptyList() );
         }
     }
 }

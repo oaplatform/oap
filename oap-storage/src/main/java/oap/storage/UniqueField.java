@@ -27,6 +27,7 @@ package oap.storage;
 import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -58,8 +59,20 @@ public class UniqueField<T> implements Constraint<T> {
         if( storage
             .select()
             .filter( obj -> filter.test( object, obj ) )
-            .anyMatch( itemObject -> Objects.equals( value, valueFunc.apply( itemObject ) ) && !idValue.equals( id.apply( itemObject ) ) ) ) {
+            .anyMatch( itemObject -> equals( value, valueFunc.apply( itemObject ) ) && !idValue.equals( id.apply( itemObject ) ) ) ) {
             throw new ConstraintException( StringUtils.capitalize( type ) + " '" + value + "' already exists." );
         }
+    }
+
+    private boolean equals( Object value, Object v2 ) {
+        if( value instanceof List<?> ) {
+            return !( ( List ) value ).stream().noneMatch( v -> equals( v, v2 ) );
+        }
+
+        if( v2 instanceof List<?> ) {
+            return !( ( List ) v2 ).stream().noneMatch( v -> equals( value, v ) );
+        }
+
+        return Objects.equals( value, v2 );
     }
 }
