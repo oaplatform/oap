@@ -50,14 +50,12 @@ import java.util.function.Function;
 public class JsonCodec<T> implements Codec<T> {
     private final DocumentCodec documentCodec;
     private final Class<T> clazz;
-    private final Class<?> objectTypeClass;
     private final Function<T, String> idFunc;
     private ObjectWriter fileWriter;
     private ObjectReader fileReader;
 
-    public JsonCodec( TypeReference<T> tr, Class<T> clazz, Class<?> objectTypeClass, Function<T, String> idFunc) {
+    public JsonCodec( TypeReference<T> tr, Class<T> clazz, Function<T, String> idFunc ) {
         this.clazz = clazz;
-        this.objectTypeClass = objectTypeClass;
         this.idFunc = idFunc;
         documentCodec = new DocumentCodec();
         fileReader = Binder.json.readerFor( tr );
@@ -72,8 +70,6 @@ public class JsonCodec<T> implements Codec<T> {
 
         val modified = doc.get( "modified" );
         doc.put( "modified", ( ( Date ) modified ).getTime() );
-
-        doc.put( "object:type", TypeIdFactory.get( objectTypeClass ) );
 
         return fileReader.readValue( Binder.json.marshal( doc ) );
     }
@@ -90,7 +86,6 @@ public class JsonCodec<T> implements Codec<T> {
         val modified = doc.get( "modified" );
         doc.put( "modified", new BsonDateTime( ( Long ) modified ) );
 
-        doc.remove( "object:type" );
         documentCodec.encode( bsonWriter, doc, encoderContext );
     }
 

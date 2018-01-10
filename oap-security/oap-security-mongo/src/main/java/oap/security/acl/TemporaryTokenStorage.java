@@ -34,6 +34,6 @@ import static oap.storage.Storage.LockStrategy.Lock;
  */
 public class TemporaryTokenStorage extends MongoStorage<TemporaryToken> {
     public TemporaryTokenStorage( MongoClient mongoClient, String database, String table ) {
-        super( mongoClient, database, table, Lock, TemporaryToken.class );
+        super( mongoClient, database, table, Lock );
     }
 }

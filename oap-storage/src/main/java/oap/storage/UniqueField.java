@@ -28,6 +28,7 @@ import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 
 /**
@@ -36,10 +37,16 @@ import java.util.function.Function;
 public class UniqueField<T> implements Constraint<T> {
     private final String type;
     private final Function<T, Object> valueFunc;
+    private final BiPredicate<T, T> filter;
 
-    public UniqueField( String type, Function<T, Object> valueFunc ) {
+    public UniqueField( String type, Function<T, Object> valueFunc, BiPredicate<T, T> filter ) {
         this.type = type;
         this.valueFunc = valueFunc;
+        this.filter = filter;
+    }
+
+    public UniqueField( String type, Function<T, Object> valueFunc ) {
+        this( type, valueFunc, ( t1, t2 ) -> true );
     }
 
     @Override
@@ -50,6 +57,7 @@ public class UniqueField<T> implements Constraint<T> {
 
         if( storage
             .select()
+            .filter( obj -> filter.test( obj, obj ) )
             .anyMatch( itemObject -> Objects.equals( value, valueFunc.apply( itemObject ) ) && !idValue.equals( id.apply( itemObject ) ) ) ) {
             throw new ConstraintException( StringUtils.capitalize( type ) + " '" + value + "' already exists." );
         }

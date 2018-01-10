@@ -57,7 +57,7 @@ public class MongoStorageTest {
     }
 
     public MongoStorage<TestMongoBean> reopen() {
-        return new MongoStorage<>( mongoClient, dbName, "test", Lock, TestMongoBean.class );
+        return new MongoStorage<>( mongoClient, dbName, "test", Lock );
     }
 
     @AfterMethod

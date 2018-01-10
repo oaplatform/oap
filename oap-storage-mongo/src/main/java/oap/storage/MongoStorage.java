@@ -59,7 +59,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
 
     @SuppressWarnings( "unchecked" )
     public MongoStorage( oap.storage.MongoClient mongoClient, String database, String table,
-                         LockStrategy lockStrategy, Class<T> clazz ) {
+                         LockStrategy lockStrategy ) {
         super( IdentifierBuilder
             .annotation()
             .suggestion( ar -> ObjectId.get().toString() )
@@ -72,7 +72,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
         final Object o = new TypeReference<Metadata<T>>() {};
         final CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JsonCodec<>( ( TypeReference<Metadata> ) o,
-                Metadata.class, clazz, ( m ) -> identifier.get( ( T ) m.object ) ) ),
+                Metadata.class, ( m ) -> identifier.get( ( T ) m.object ) ) ),
             this.database.getCodecRegistry()
         );
 
