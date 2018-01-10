@@ -57,7 +57,7 @@ public class UniqueField<T> implements Constraint<T> {
 
         if( storage
             .select()
-            .filter( obj -> filter.test( obj, obj ) )
+            .filter( obj -> filter.test( object, obj ) )
             .anyMatch( itemObject -> Objects.equals( value, valueFunc.apply( itemObject ) ) && !idValue.equals( id.apply( itemObject ) ) ) ) {
             throw new ConstraintException( StringUtils.capitalize( type ) + " '" + value + "' already exists." );
         }

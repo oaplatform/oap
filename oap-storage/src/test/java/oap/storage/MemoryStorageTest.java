@@ -52,6 +52,18 @@ public class MemoryStorageTest {
     }
 
     @Test
+    public void testConstraintStoreAddFilter() {
+        try( val storage = new MemoryStorage<TestClass>( IdentifierBuilder.annotationBuild(), NoLock ) ) {
+            storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name, (n,o) -> false ) );
+
+            storage.store( new TestClass( "id1", "name1" ) );
+            storage.store( new TestClass( "id1", "name1" ) );
+            storage.store( new TestClass( "id2", "name2" ) );
+            storage.store( new TestClass( "id2", "name2" ) );
+        }
+    }
+
+    @Test
     public void testConstraintStoreUpdate() {
         try( val storage = new MemoryStorage<TestClass>( IdentifierBuilder.annotationBuild(), NoLock ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name ) );
