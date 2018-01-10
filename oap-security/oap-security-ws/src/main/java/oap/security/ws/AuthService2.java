@@ -74,7 +74,7 @@ public class AuthService2 {
     public synchronized Optional<Token2> generateToken( String id ) {
         return providers
             .stream()
-            .map( p -> p.get( id ).map( this::generateToken ) )
+            .map( p -> p.getById( id ).map( this::generateToken ) )
             .filter( Optional::isPresent )
             .findFirst()
             .flatMap( p -> p );

@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>3.6.2</version>
+    <version>3.6.3</version>
 
     <name>oap</name>
 
@@ -89,7 +89,7 @@
         <project.reporting.outputEncoding>${project.build.sourceEncoding}</project.reporting.outputEncoding>
 
         <testng.version>6.11</testng.version>
-        <assertj.version>3.6.2</assertj.version>
+        <assertj.version>3.6.3</assertj.version>
         <guava.version>21.0</guava.version>
         <logback.version>1.2.3</logback.version>
         <slf4j.version>1.7.21</slf4j.version>

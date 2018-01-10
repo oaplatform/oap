@@ -32,5 +32,5 @@ import java.util.Optional;
 public interface AuthProvider<T extends User2> {
     Optional<T> getByEmail( String email );
 
-    Optional<T> get( String id );
+    Optional<T> getById( String id );
 }
