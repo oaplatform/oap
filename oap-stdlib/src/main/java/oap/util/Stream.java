@@ -440,6 +440,13 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return underlying.findAny();
     }
 
+    public <R> Optional<R> findFirstWithMap( Function<E, Optional<R>> mapper ) {
+        return this.map( mapper )
+            .filter( Optional::isPresent )
+            .findFirst()
+            .flatMap( e -> e );
+    }
+
     public Optional<E> random() {
         return Lists.random( toList() );
     }

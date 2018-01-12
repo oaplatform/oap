@@ -29,8 +29,8 @@ import java.util.Optional;
 /**
  * Created by igor.petrenko on 22.12.2017.
  */
-public interface AuthProvider<T extends User2> {
-    Optional<T> getByEmail( String email );
+public interface AuthProvider<User2> {
+    Optional<User2> getByEmail( String email );
 
-    Optional<T> getById( String id );
+    Optional<User2> getById( String id );
 }
