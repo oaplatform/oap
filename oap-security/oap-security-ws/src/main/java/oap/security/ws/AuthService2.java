@@ -27,98 +27,95 @@ package oap.security.ws;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import oap.util.Stream;
 import oap.ws.security.PasswordHasher;
 import org.joda.time.DateTimeUtils;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Created by igor.petrenko on 22.12.2017.
  */
-@Slf4j
 public class AuthService2 {
-    private final List<AuthProvider<? extends User2>> providers;
+    private final List<AuthProvider<User2>> providers;
     private final PasswordHasher passwordHasher;
-    private final Cache<String, Token2> tokenStorage;
+    private final TokenCache tokens;
 
-    public AuthService2( List<AuthProvider<? extends User2>> providers, PasswordHasher passwordHasher, int expirationTime ) {
+    public AuthService2( List<AuthProvider<User2>> providers, PasswordHasher passwordHasher, int expirationTime ) {
         this.providers = providers;
         this.passwordHasher = passwordHasher;
-        this.tokenStorage = CacheBuilder.newBuilder()
-            .expireAfterAccess( expirationTime, TimeUnit.MILLISECONDS )
-            .build();
+        this.tokens = new TokenCache( expirationTime );
     }
 
     public synchronized Optional<Token2> generateToken( String email, String password ) {
-        final User2 user = providers
-            .stream()
-            .map( p -> p.getByEmail( email ).orElse( null ) )
-            .filter( Objects::nonNull )
-            .findFirst()
-            .orElse( null );
-        if( user == null ) return Optional.empty();
-
-        val inputPassword = passwordHasher.hashPassword( password );
-        if( !user.getPassword().equals( inputPassword ) ) return Optional.empty();
-
-        return Optional.of( generateToken( user ) );
+        return Stream.of( providers )
+            .findFirstWithMap( p -> p.getByEmail( email ) )
+            .filter( user -> passwordHasher.hashPassword( password ).equals( user.getPassword() ) )
+            .map( this::generateToken );
     }
 
     public synchronized Optional<Token2> generateToken( String id ) {
-        return providers
-            .stream()
-            .map( p -> p.getById( id ).map( this::generateToken ) )
-            .filter( Optional::isPresent )
-            .findFirst()
-            .flatMap( p -> p );
+        return Stream.of( providers )
+            .findFirstWithMap( p -> p.getById( id ) )
+            .map( this::generateToken );
     }
 
     public synchronized Token2 generateToken( User2 user ) {
-        Token2 token = null;
+        return tokens.getByUserId( user.getId(),
+            () -> new Token2( UUID.randomUUID().toString(), user.getId(), DateTimeUtils.currentTimeMillis() ) );
 
-        for( Token2 t : tokenStorage.asMap().values() ) {
-            if( t.userId.equals( user.getId() ) ) {
-                token = t;
-                break;
-            }
-        }
-
-        if( token != null ) {
-            log.debug( "Updating existing token for user [{}]...", user.getId() );
-            tokenStorage.put( token.id, token );
-
-            return token;
-        }
-
-        log.debug( "Generating new token for user [{}]...", user.getId() );
-        token = new Token2( UUID.randomUUID().toString(), user.getId(), DateTimeUtils.currentTimeMillis() );
-
-        tokenStorage.put( token.id, token );
-
-        return token;
     }
 
     public synchronized Optional<Token2> getToken( String tokenId ) {
-        return Optional.ofNullable( tokenStorage.getIfPresent( tokenId ) );
+        return tokens.get( tokenId );
     }
 
     public void invalidateUser( String id ) {
-        final ConcurrentMap<String, Token2> tokens = tokenStorage.asMap();
+        tokens.invaidateByUserId( id );
+    }
 
-        for( Map.Entry<String, Token2> entry : tokens.entrySet() ) {
-            if( Objects.equals( entry.getValue().userId, id ) ) {
-                log.debug( "Deleting token [{}]...", entry.getKey() );
-                tokenStorage.invalidate( entry.getKey() );
+    @Slf4j
+    private static class TokenCache {
+        private final Cache<String, Token2> cache;
 
-                return;
-            }
+        public TokenCache( long expirationTime ) {
+            this.cache = CacheBuilder.newBuilder()
+                .expireAfterAccess( expirationTime, TimeUnit.MILLISECONDS )
+                .build();
+        }
+
+        public Optional<Token2> get( String tokenId ) {
+            return Optional.ofNullable( cache.getIfPresent( tokenId ) );
+        }
+
+        public synchronized Optional<Token2> getByUserId( String userId ) {
+            for( Token2 t : cache.asMap().values() )
+                if( t.userId.equals( userId ) ) return Optional.of( t );
+            return Optional.empty();
+        }
+
+        public synchronized Token2 getByUserId( String userId, Supplier<Token2> init ) {
+            Optional<Token2> byUserId = getByUserId( userId );
+            if( byUserId.isPresent() )
+                log.debug( "updating existing token for user [{}]...", userId );
+            Token2 token = byUserId.orElseGet( () -> {
+                log.debug( "generating new token for user [{}]...", userId );
+                return init.get();
+            } );
+            cache.put( token.id, token );
+            return token;
+        }
+
+        public synchronized void invaidateByUserId( String userId ) {
+            getByUserId( userId ).ifPresent( token -> {
+                    log.debug( "deleting token [{}]...", token.id );
+                    cache.invalidate( token.id );
+                }
+            );
         }
     }
 }
