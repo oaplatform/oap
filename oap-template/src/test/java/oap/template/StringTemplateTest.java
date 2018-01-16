@@ -99,7 +99,7 @@ public class StringTemplateTest extends AbstractTest {
     public void testProcessWithoutVariables() throws Exception {
         assertThat( engine.getTemplate( "test", Container.class, "d" ) )
             .isExactlyInstanceOf( ConstTemplate.class );
-        assertThat( engine.getTemplate( "test", Container.class, "d" )
+        assertThat( engine.getTemplate( "test- s%;\\/:", Container.class, "d" )
             .renderString( new Container( new Tst() ) ) ).isEqualTo( "d" );
     }
 
@@ -108,7 +108,7 @@ public class StringTemplateTest extends AbstractTest {
         Tst test = new Tst();
         Test1 test1 = new Test1( "a i/d" );
         test.test1 = Optional.of( test1 );
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencode(0)}" )
+        assertThat( engine.getTemplate( "tmp- s%;\\/:", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencode(0)}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=a i/d" );
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=a i/d" );
