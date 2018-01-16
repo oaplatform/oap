@@ -29,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.joda.time.DateTimeUtils;
 
+import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
@@ -38,12 +39,14 @@ import javax.tools.JavaFileObject;
 import javax.tools.SimpleJavaFileObject;
 import javax.tools.ToolProvider;
 import java.io.ByteArrayOutputStream;
+import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -82,14 +85,24 @@ public class MemoryClassLoader extends ClassLoader {
         }
 
         if( !list.isEmpty() ) {
-            compiler.getTask( null, manager, diagnostics, null, null, list ).call();
-
-            if( diskCache != null ) {
-                for( Source source : list ) {
-                    oap.io.Files.writeString( diskCache.resolve( source.originalName + ".java" ), source.content );
-                    final byte[] bytes = manager.map.get( source.originalName ).toByteArray();
-                    oap.io.Files.write( diskCache.resolve( source.originalName + ".class" ), bytes );
+            val out = new StringWriter();
+            val task = compiler.getTask( out, manager, diagnostics, null, null, list );
+            if( task.call() ) {
+                if( diskCache != null ) {
+                    for( Source source : list ) {
+                        oap.io.Files.writeString( diskCache.resolve( source.originalName + ".java" ), source.content );
+                        final byte[] bytes = manager.map.get( source.originalName ).toByteArray();
+                        oap.io.Files.write( diskCache.resolve( source.originalName + ".class" ), bytes );
+                    }
                 }
+                if( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
+            } else {
+                diagnostics.getDiagnostics().stream().forEach( a -> {
+                    if( a.getKind() == Diagnostic.Kind.ERROR ) {
+                        log.error( "{}", a );
+                    }
+                } );
+                if( out.toString().length() > 0 ) log.error( out.toString() );
             }
         }
     }
