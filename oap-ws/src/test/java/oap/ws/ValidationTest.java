@@ -41,6 +41,7 @@ public class ValidationTest extends AbstractWebServicesTest {
     @Override
     protected void registerServices( Kernel kernel ) {
         ws.exceptionToHttpCode.put( IllegalAccessException.class.getName(), 400 );
+        ws.exceptionToHttpCode.put( "unknownclass", 400 );
 
         kernel.register( "validatedWS", new TestValidatedWS() );
     }
