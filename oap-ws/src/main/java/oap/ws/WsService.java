@@ -79,25 +79,32 @@ public class WsService implements Handler {
     private final Reflection reflection;
     private final WsResponse defaultResponse;
     private final JsonValidators jsonValidators;
-    private final Map<Class, Integer> exceptionToHttpCode;
+    private final HashMap<Class<?>, Integer> exceptionToHttpCode = new HashMap<>();
     private final SessionManager sessionManager;
     private final List<Interceptor> interceptors;
     private Map<String, Pattern> compiledPaths = new HashMap<>();
 
     public WsService( Object impl, boolean sessionAware,
                       SessionManager sessionManager, List<Interceptor> interceptors, WsResponse defaultResponse,
-                      JsonValidators jsonValidators, Map<Class, Integer> exceptionToHttpCode ) {
+                      JsonValidators jsonValidators, Map<String, Integer> exceptionToHttpCode ) {
         this.impl = impl;
         this.reflection = Reflect.reflect( impl.getClass() );
         this.defaultResponse = defaultResponse;
         this.jsonValidators = jsonValidators;
-        this.exceptionToHttpCode = exceptionToHttpCode;
         this.reflection.methods.forEach( m -> m.findAnnotation( WsMethod.class )
             .ifPresent( a -> compiledPaths.put( a.path(), WsServices.compile( a.path() ) ) )
         );
         this.sessionAware = sessionAware;
         this.sessionManager = sessionManager;
         this.interceptors = interceptors;
+
+        exceptionToHttpCode.forEach( ( clazz, code ) -> {
+            try {
+                this.exceptionToHttpCode.put( Class.forName( clazz ), code );
+            } catch( ClassNotFoundException e ) {
+                log.trace( e.getMessage(), e );
+            }
+        } );
     }
 
     private void wsError( Response response, Throwable e ) {
