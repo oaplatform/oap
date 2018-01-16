@@ -76,6 +76,7 @@ public abstract class Configuration {
             log.info( "resourceLocation = {}", resourceLocation );
 
             logConfigs.addAll( Resources.urls( resourceLocation, "json" ) );
+            logConfigs.addAll( Resources.urls( resourceLocation, "conf" ) );
         }
 
         Preconditions.checkState( !logConfigs.isEmpty(), "couldn't load configs from default path " + defaultPath +

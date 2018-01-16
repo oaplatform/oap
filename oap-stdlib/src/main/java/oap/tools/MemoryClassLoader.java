@@ -46,7 +46,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -97,7 +96,7 @@ public class MemoryClassLoader extends ClassLoader {
                 }
                 if( log.isDebugEnabled() && out.toString().length() > 0 ) log.debug( out.toString() );
             } else {
-                diagnostics.getDiagnostics().stream().forEach( a -> {
+                diagnostics.getDiagnostics().forEach( a -> {
                     if( a.getKind() == Diagnostic.Kind.ERROR ) {
                         log.error( "{}", a );
                     }
