@@ -34,13 +34,11 @@ import oap.template.StringTemplateTest.Tst.Test4;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
-import oap.util.Maps;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -122,13 +120,6 @@ public class StringTemplateTest extends AbstractTest {
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id ; urlencode(2)}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=a%2Bi%252Fd" );
     }
-
-    @Test
-    public void testMap() {
-        assertThat( engine.getTemplate( "tmp", Map.class, "id=${tst.test2.id}" )
-            .renderString( Maps.of2( "tst", Maps.of2( "test2", "a i/d" ) ) ) ).isEqualTo( "id=a i/d" );
-    }
-
 
     @Test
     public void testOtherJoinStrategy() {
