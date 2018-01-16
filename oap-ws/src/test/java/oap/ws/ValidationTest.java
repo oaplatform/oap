@@ -40,7 +40,7 @@ import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 public class ValidationTest extends AbstractWebServicesTest {
     @Override
     protected void registerServices( Kernel kernel ) {
-        ws.exceptionToHttpCode.put( IllegalAccessException.class.toString(), 400 );
+        ws.exceptionToHttpCode.put( IllegalAccessException.class.getName(), 400 );
 
         kernel.register( "validatedWS", new TestValidatedWS() );
     }
