@@ -72,6 +72,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
     JavaCTemplate( String name, Class<T> clazz, List<TLine> pathAndDefault, String delimiter, TemplateStrategy<TLine> map,
                    Map<String, String> overrides, Map<String, Supplier<String>> mapper,
                    Path cacheFile ) {
+        name = name.replaceAll( "[\\s%\\-;\\\\/:*?\"<>|]", "_" );
         this.map = map;
         this.overrides = overrides;
         this.mapper = mapper;

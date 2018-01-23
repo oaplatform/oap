@@ -54,7 +54,7 @@ public class WebServices {
     private final HttpServer server;
     private final SessionManager sessionManager;
     private final CorsPolicy globalCorsPolicy;
-    final HashMap<Class, Integer> exceptionToHttpCode = new HashMap<>();
+    final HashMap<String, Integer> exceptionToHttpCode = new HashMap<>();
     public WsResponse defaultResponse = WsResponse.TEXT;
 
     public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, JsonValidators jsonValidators ) {
