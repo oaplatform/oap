@@ -46,14 +46,6 @@ public class OptionalList<T> {
         return list.isEmpty() ? Optional.empty() : Optional.of( list );
     }
 
-    public <B> Either<List<T>, B> toEigher( Supplier<B> value ) {
-        return toOptional().map( Either::<List<T>, B>left ).orElse( Either.right( value.get() ) );
-    }
-
-    public <B> Either<List<T>, B> toEigher( B value ) {
-        return toOptional().map( Either::<List<T>, B>left ).orElse( Either.right( value ) );
-    }
-
     public static <V> OptionalList<V> create() {
         return new OptionalList<>();
     }

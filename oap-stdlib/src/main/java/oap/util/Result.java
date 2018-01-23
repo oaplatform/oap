@@ -91,11 +91,6 @@ public final class Result<S, F> implements Serializable {
         return isSuccess() ? Optional.of( successValue ) : Optional.empty();
     }
 
-    @Deprecated
-    public Either<F, S> toEither() {
-        return new Either<>( failureValue, successValue, !isSuccess() );
-    }
-
     public <X extends Throwable> S orElseThrow( Function<F, ? extends X> f ) throws X {
         if( success ) return successValue;
         else throw f.apply( failureValue );
