@@ -32,6 +32,7 @@ import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -243,6 +244,18 @@ public class Reflection extends Annotated<Class<?>> {
         return this.underlying.isPrimitive();
     }
 
+    public List<Field> annotatedFields( Class<? extends Annotation> annotation ) {
+        return Stream.of( fields.values() )
+            .filter( f -> f.isAnnotatedWith( annotation ) )
+            .toList();
+    }
+
+    public List<Method> annotatedMethods( Class<? extends Annotation> annotation ) {
+        return Stream.of( methods )
+            .filter( m -> m.isAnnotatedWith( annotation ) )
+            .toList();
+    }
+
     public class Field extends Annotated<java.lang.reflect.Field> implements Comparable<Field> {
         private final Supplier<Reflection> type = Functions.memoize( () ->
             Reflect.reflect( typeToken.resolveType( this.underlying.getGenericType() ) ) );
@@ -297,6 +310,8 @@ public class Reflection extends Annotated<Class<?>> {
 
     public class Method extends Annotated<java.lang.reflect.Method> {
         public List<Parameter> parameters;
+        private final Supplier<Reflection> returnType = Functions.memoize( () ->
+            Reflect.reflect( typeToken.resolveType( this.underlying.getGenericReturnType() ) ) );
 
         Method( java.lang.reflect.Method method ) {
             super( method );
@@ -331,6 +346,10 @@ public class Reflection extends Annotated<Class<?>> {
 
         public boolean isVoid() {
             return underlying.getReturnType().equals( Void.TYPE );
+        }
+
+        public Reflection returnType() {
+            return returnType.get();
         }
     }
 

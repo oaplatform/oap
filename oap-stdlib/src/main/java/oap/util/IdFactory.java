@@ -24,15 +24,11 @@
 
 package oap.util;
 
-import lombok.SneakyThrows;
 import lombok.val;
-import org.reflections.ReflectionUtils;
+import oap.reflect.Reflect;
+import oap.reflect.Reflection;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static oap.util.Collections.head2;
 
 /**
  * Created by igor.petrenko on 04.01.2018.
@@ -48,17 +44,19 @@ public class IdFactory {
 
     private static IdAccess get( Object value ) {
         return ids.computeIfAbsent( value.getClass(), ( c ) -> {
-            val idFields = ReflectionUtils.getAllFields( c, ( f ) -> f.getAnnotation( Id.class ) != null );
-            if( !idFields.isEmpty() ) return new FieldIdAccess( head2( idFields ) );
+            Reflection reflect = Reflect.reflect( c );
 
-            val idMethods = ReflectionUtils.getAllMethods( c, ( m ) -> m.getAnnotation( Id.class ) != null );
+            val idFields = reflect.annotatedFields( Id.class );
+            if( !idFields.isEmpty() ) return new FieldIdAccess( Lists.head( idFields ) );
 
-            Method setter = null;
-            Method getter = null;
+            val idMethods = reflect.annotatedMethods( Id.class );
+
+            Reflection.Method setter = null;
+            Reflection.Method getter = null;
 
 
-            for( val m : idMethods ) {
-                if( String.class.equals( m.getReturnType() ) ) getter = m;
+            for( Reflection.Method m : idMethods ) {
+                if( m.returnType().assignableTo( String.class ) ) getter = m;
                 else setter = m;
             }
 
@@ -79,43 +77,38 @@ public class IdFactory {
     }
 
     private static class FieldIdAccess implements IdAccess {
-        private final Field field;
+        private final Reflection.Field field;
 
-        public FieldIdAccess( Field field ) {
+        public FieldIdAccess( Reflection.Field field ) {
             this.field = field;
-            this.field.setAccessible( true );
         }
 
         @Override
-        @SneakyThrows
         public void set( Object object, String id ) {
             field.set( object, id );
         }
 
         @Override
-        @SneakyThrows
         public String get( Object object ) {
             return ( String ) field.get( object );
         }
     }
 
     private static class MethodIdAccess implements IdAccess {
-        private final Method setter;
-        private final Method getter;
+        private final Reflection.Method setter;
+        private final Reflection.Method getter;
 
-        public MethodIdAccess( Method setter, Method getter ) {
+        public MethodIdAccess( Reflection.Method setter, Reflection.Method getter ) {
             this.setter = setter;
             this.getter = getter;
         }
 
         @Override
-        @SneakyThrows
         public void set( Object object, String id ) {
             setter.invoke( object, id );
         }
 
         @Override
-        @SneakyThrows
         public String get( Object object ) {
             return ( String ) getter.invoke( object );
         }
