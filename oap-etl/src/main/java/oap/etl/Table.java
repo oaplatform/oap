@@ -24,8 +24,8 @@
 package oap.etl;
 
 import oap.etl.accumulator.Accumulator;
-import oap.tsv.Model;
 import oap.tsv.Tsv;
+import oap.tsv.TypedListModel;
 import oap.util.Pair;
 import oap.util.Stream;
 
@@ -51,32 +51,8 @@ public class Table {
     private Stream<List<Object>> lines;
     private List<Runnable> closeHandlers = new ArrayList<>();
 
-    private Table( Stream<List<Object>> lines ) {
+    public Table( Stream<List<Object>> lines ) {
         this.lines = lines;
-    }
-
-    public static Optional<Table> fromResource( Class<?> contextClass, String name, Model model ) {
-        return Tsv.fromResource( contextClass, name, model ).map( Table::new );
-    }
-
-    public static Table fromString( String tsv, Model model ) {
-        return new Table( Tsv.fromString( tsv, model ) );
-    }
-
-    public static Table fromPath( Path path, Model model ) {
-        return new Table( Tsv.fromPath( path, model ) );
-    }
-
-    public static Table fromPaths( List<Path> paths, Model.Complex complexModel ) {
-        return new Table( Tsv.fromPaths( paths, complexModel ) );
-    }
-
-    public static Table fromURLs( List<URL> urls, Model.Complex complexModel ) {
-        return new Table( Tsv.fromURLs( urls, complexModel ) );
-    }
-
-    public static Table fromPaths( List<Path> paths, Model model ) {
-        return new Table( Tsv.fromPaths( paths, model ) );
     }
 
     @SuppressWarnings( "unchecked" )

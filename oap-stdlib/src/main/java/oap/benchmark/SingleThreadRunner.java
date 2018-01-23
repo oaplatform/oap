@@ -42,16 +42,20 @@ class SingleThreadRunner extends Runner {
     @Override
     public Result run( Benchmark benchmark ) {
         return Teamcity.progress( benchmark.name + "...", () -> {
+            System.out.println( "warming up..." );
+            for( int i = 0; i < benchmark.samples; i++ )
+                benchmark.code.accept( i );
+
             List<Result> results = IntStream.range( 0, benchmark.experiments )
                 .mapToObj( x -> Teamcity.progress( benchmark.name + " e=" + x + "...", () -> {
                     benchmark.beforeExperiment.run();
-                    long total = IntStream.range( 0, benchmark.samples )
-                        .mapToLong( time -> {
-                            long start = System.nanoTime();
-                            benchmark.code.accept( time );
-                            return System.nanoTime() - start;
-                        } ).sum();
+                    long total = 0;
+                    for( int i = 0; i < benchmark.samples; i++ ) {
+                        long start = System.nanoTime();
+                        benchmark.code.accept( i );
+                        total += System.nanoTime() - start;
 
+                    }
                     Result r = benchmark.toResult( total );
                     benchmark.printResult( total, r );
                     benchmark.afterExperiment.run();

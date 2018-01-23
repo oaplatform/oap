@@ -22,46 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.etl.accumulator;
-
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.tsv.TypedListModel;
+package oap.tsv;
 
 import java.util.List;
+import java.util.function.Function;
 
-@ToString
-@EqualsAndHashCode( exclude = { "sum" } )
-public class LongSumAccumulator implements Accumulator {
-    private int field;
-    private long sum;
+public class MappingModel<T> extends Model<T> {
+    private final int maxOffset;
+    private final Function<List<String>, T> mapper;
 
-    public LongSumAccumulator( int field ) {
-        this.field = field;
+    protected MappingModel( boolean withHeader, int maxOffset, Function<List<String>, T> mapper ) {
+        super( withHeader );
+        this.maxOffset = maxOffset;
+        this.mapper = mapper;
     }
 
     @Override
-    public void accumulate( List<Object> values ) {
-        this.sum += ( ( Number ) values.get( this.field ) ).longValue();
+    public int maxOffset() {
+        return maxOffset;
     }
 
     @Override
-    public void reset() {
-        this.sum = 0;
-    }
-
-    @Override
-    public Long result() {
-        return this.sum;
-    }
-
-    @Override
-    public LongSumAccumulator clone() {
-        return new LongSumAccumulator( field );
-    }
-
-    @Override
-    public TypedListModel.ColumnType getModelType() {
-        return TypedListModel.ColumnType.LONG;
+    public T map( List<String> line ) {
+        return mapper.apply( line );
     }
 }

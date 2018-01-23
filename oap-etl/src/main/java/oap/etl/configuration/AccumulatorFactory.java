@@ -31,7 +31,7 @@ import oap.etl.accumulator.CountAccumulator;
 import oap.etl.accumulator.DoubleSumAccumulator;
 import oap.etl.accumulator.IntegerSumAccumulator;
 import oap.etl.accumulator.LongSumAccumulator;
-import oap.tsv.Model;
+import oap.tsv.TypedListModel;
 import oap.util.Pair;
 
 import java.util.Optional;
@@ -40,7 +40,7 @@ import java.util.Optional;
  * Created by Admin on 31.05.2016.
  */
 public class AccumulatorFactory {
-    public static Accumulator create( oap.etl.configuration.Accumulator accumulator, Optional<Pair<Integer, Model.ColumnType>> field ) {
+    public static Accumulator create( oap.etl.configuration.Accumulator accumulator, Optional<Pair<Integer, TypedListModel.ColumnType>> field ) {
         switch( accumulator.type ) {
             case COUNT:
                 return new CountAccumulator();

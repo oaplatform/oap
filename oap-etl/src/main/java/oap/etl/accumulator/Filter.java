@@ -26,7 +26,7 @@ package oap.etl.accumulator;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.tsv.Model;
+import oap.tsv.TypedListModel;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -66,7 +66,7 @@ public class Filter<T> implements Accumulator {
     }
 
     @Override
-    public Model.ColumnType getModelType() {
+    public TypedListModel.ColumnType getModelType() {
         return accumulator.getModelType();
     }
 }

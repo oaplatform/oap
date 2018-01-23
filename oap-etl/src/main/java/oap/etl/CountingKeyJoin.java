@@ -23,39 +23,19 @@
  */
 package oap.etl;
 
-import oap.tsv.Model;
-import oap.tsv.Tsv;
 import oap.util.Stream;
 import org.apache.commons.lang3.mutable.MutableLong;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 
 import static java.util.Collections.singletonList;
 
 public class CountingKeyJoin implements Join {
     private HashMap<String, MutableLong> map = new HashMap<>();
 
-    public static Optional<CountingKeyJoin> fromResource( Class<?> contextClass, String name, Model model ) {
-        return Tsv.fromResource( contextClass, name, model )
-            .map( CountingKeyJoin::fromTsv );
-    }
-
-    public static CountingKeyJoin fromPaths( List<Path> paths, Model.Complex complexModel ) {
-        return fromTsv( Tsv.fromPaths( paths, complexModel ) );
-    }
-
-    public static CountingKeyJoin fromPaths( List<Path> paths, Model model ) {
-        return fromTsv( Tsv.fromPaths( paths, model ) );
-    }
-
-    private static CountingKeyJoin fromTsv( Stream<List<Object>> tsv ) {
-        return tsv.foldLeft( new CountingKeyJoin(), ( j, list ) -> {
-            j.map.computeIfAbsent( ( String ) list.get( 0 ), k -> new MutableLong() ).increment();
-            return j;
-        } );
+    public CountingKeyJoin( Stream<List<Object>> lines ) {
+        lines.forEach( list -> map.computeIfAbsent( ( String ) list.get( 0 ), k -> new MutableLong() ).increment() );
     }
 
     @Override

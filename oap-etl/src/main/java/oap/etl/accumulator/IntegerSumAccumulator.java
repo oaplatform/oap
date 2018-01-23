@@ -26,7 +26,7 @@ package oap.etl.accumulator;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.tsv.Model;
+import oap.tsv.TypedListModel;
 
 import java.util.List;
 
@@ -61,7 +61,7 @@ public class IntegerSumAccumulator implements Accumulator {
     }
 
     @Override
-    public Model.ColumnType getModelType() {
-        return Model.ColumnType.INT;
+    public TypedListModel.ColumnType getModelType() {
+        return TypedListModel.ColumnType.INT;
     }
 }

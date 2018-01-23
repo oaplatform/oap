@@ -32,13 +32,13 @@
             <Ad id="{$id}">
                 <InLine>
                     <AdSystem version="v2.2.0">Madberry</AdSystem>
-                    <AdTitle><xsl:value-of select="/ffprobe/format/@filename"/></AdTitle>
+                    <AdTitle><xsl:value-of select="/ffprobe/model/@filename"/></AdTitle>
                     <Impression id="someImpId">https://tests.quple.rocks/rtb/someImpId/i?price=AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==</Impression>
                 </InLine>
                 <Creatives>
                     <Creative sequence="1" id="${$id}">
                         <Linear>
-                            <Duration><xsl:value-of select="/ffprobe/format/@duration"/></Duration>
+                            <Duration><xsl:value-of select="/ffprobe/model/@duration"/></Duration>
                             <VideoClicks />
                             <TrackingEvents />
                             <MediaFiles>

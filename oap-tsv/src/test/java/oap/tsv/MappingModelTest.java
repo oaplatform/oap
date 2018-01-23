@@ -22,46 +22,17 @@
  * SOFTWARE.
  */
 
-package oap.etl.accumulator;
+package oap.tsv;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.tsv.TypedListModel;
+import org.testng.annotations.Test;
 
-import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@ToString
-@EqualsAndHashCode( exclude = { "sum" } )
-public class LongSumAccumulator implements Accumulator {
-    private int field;
-    private long sum;
-
-    public LongSumAccumulator( int field ) {
-        this.field = field;
+public class MappingModelTest {
+    @Test
+    public void map() {
+        MappingModel<String> model = new MappingModel<>( false, 1, l -> l.get( 0 ) );
+        assertThat( Tsv.csv.fromString( "a,1\nb,2", model ).toList() ).containsExactly( "a", "b" );
     }
 
-    @Override
-    public void accumulate( List<Object> values ) {
-        this.sum += ( ( Number ) values.get( this.field ) ).longValue();
-    }
-
-    @Override
-    public void reset() {
-        this.sum = 0;
-    }
-
-    @Override
-    public Long result() {
-        return this.sum;
-    }
-
-    @Override
-    public LongSumAccumulator clone() {
-        return new LongSumAccumulator( field );
-    }
-
-    @Override
-    public TypedListModel.ColumnType getModelType() {
-        return TypedListModel.ColumnType.LONG;
-    }
 }

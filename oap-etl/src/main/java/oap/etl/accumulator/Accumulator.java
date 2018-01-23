@@ -24,7 +24,7 @@
 
 package oap.etl.accumulator;
 
-import oap.tsv.Model;
+import oap.tsv.TypedListModel;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -63,5 +63,5 @@ public interface Accumulator {
 
     Accumulator clone();
 
-    Model.ColumnType getModelType();
+    TypedListModel.ColumnType getModelType();
 }

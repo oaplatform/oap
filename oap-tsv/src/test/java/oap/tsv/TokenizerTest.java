@@ -22,46 +22,40 @@
  * SOFTWARE.
  */
 
-package oap.etl.accumulator;
+package oap.tsv;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.tsv.TypedListModel;
+import org.testng.annotations.Test;
 
-import java.util.List;
+import static oap.tsv.Delimiters.COMMA;
+import static oap.tsv.Delimiters.TAB;
+import static oap.tsv.Tokenizer.parse;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@ToString
-@EqualsAndHashCode( exclude = { "sum" } )
-public class LongSumAccumulator implements Accumulator {
-    private int field;
-    private long sum;
+public class TokenizerTest {
 
-    public LongSumAccumulator( int field ) {
-        this.field = field;
+    @Test
+    public void parseSimple() {
+        assertThat( parse( "1,22,33,44", COMMA ) )
+            .containsExactly( "1", "22", "33", "44" );
+        assertThat( parse( "1,22,33,", COMMA ) )
+            .containsExactly( "1", "22", "33", "" );
+        assertThat( parse( "1\t22\t33\t", TAB ) )
+            .containsExactly( "1", "22", "33", "" );
     }
 
-    @Override
-    public void accumulate( List<Object> values ) {
-        this.sum += ( ( Number ) values.get( this.field ) ).longValue();
+    @Test
+    public void parseLimited() {
+        assertThat( parse( "1,22,33,44", COMMA, 3, false ) )
+            .containsExactly( "1", "22", "33" );
     }
 
-    @Override
-    public void reset() {
-        this.sum = 0;
-    }
-
-    @Override
-    public Long result() {
-        return this.sum;
-    }
-
-    @Override
-    public LongSumAccumulator clone() {
-        return new LongSumAccumulator( field );
-    }
-
-    @Override
-    public TypedListModel.ColumnType getModelType() {
-        return TypedListModel.ColumnType.LONG;
+    @Test
+    public void parseQuoted() {
+        assertThat( parse( "1,\"22\",33,44", COMMA, true ) )
+            .containsExactly( "1", "22", "33", "44" );
+        assertThat( parse( "1,\"2,2\",33,44", COMMA, true ) )
+            .containsExactly( "1", "2,2", "33", "44" );
+        assertThat( parse( "1,\"2\"\"2\",33,44", COMMA, true ) )
+            .containsExactly( "1", "2\"2", "33", "44" );
     }
 }

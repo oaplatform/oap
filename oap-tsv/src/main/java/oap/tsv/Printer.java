@@ -24,36 +24,42 @@
 
 package oap.tsv;
 
-import oap.testng.Env;
 import oap.util.Stream;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
 
-import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import static oap.testng.Asserts.assertFile;
+public class Printer implements Delimiters {
 
-public class TsvTest {
-    @DataProvider( name = "files" )
-    public Object[][] files() {
-        return new Object[][] {
-            { "1.tsv" },
-            { "1.tsv.gz" },
-            { "1.tsv.zip" }
-        };
+    public static String print( Stream<List<Object>> stream, char delimiter ) {
+        return stream.map( l -> print( l, delimiter ) ).collect( Collectors.joining() );
     }
 
-    @Test( dataProvider = "files" )
-    public void loadTsv( String file ) {
-        TypedListModel model = Model.typedList( false )
-            .s( "c1", 1 )
-            .i( "c3", 3 )
-            .filterColumnCount( 4 );
-        Path path = Env.deployTestData( getClass() );
+    public static String print( List<?> list, char delimiter ) {
+        return Stream.of( list )
+            .map( e -> {
+                String value = e == null ? "" : String.valueOf( e );
+                String result = "";
+                for( int i = 0; i < value.length(); i++ ) {
+                    char c = value.charAt( i );
+                    switch( c ) {
+                        case '\r':
+                            result += "\\r";
+                            break;
+                        case '\n':
+                            result += "\\n";
+                            break;
+                        case '\t':
+                            result += "\\t";
+                            break;
+                        default:
+                            result += c;
+                    }
+                }
+                return result;
+            } )
+            .collect( Collectors.joining( String.valueOf( delimiter ) ) ) + "\n";
 
-        Stream<List<Object>> tsv = Tsv.tsv.fromPath( path.resolve( file ), model );
-        assertFile( path.resolve( "result.tsv" ) ).hasContent( Tsv.print( tsv ) );
     }
 
 }

@@ -31,6 +31,8 @@ import oap.etl.StringExport;
 import oap.etl.Table;
 import oap.testng.AbstractTest;
 import oap.tsv.Model;
+import oap.tsv.Tsv;
+import oap.tsv.TypedListModel;
 import org.testng.annotations.Test;
 
 import static oap.etl.accumulator.AccumulatorType.AVG;
@@ -97,9 +99,10 @@ public class ConfigurationTest extends AbstractTest {
             .custom()
             .withModel( dictionaryModel )
             .withConfiguration( aggregatorConfiguration )
-            .withTable( "table", Table.fromString( "a\tb\t10\n"
-                + "a\tb\t20\n"
-                + "a1\tb1\t10\n", dictionaryModel.toModel( "table" ) ) )
+            .withTable( "table", new Table(
+                Tsv.tsv.fromString( "a\tb\t10\n"
+                    + "a\tb\t20\n"
+                    + "a1\tb1\t10\n", dictionaryModel.toModel( "table" ) ) ) )
             .withExport( "export", ( s ) -> export )
             .build();
 
@@ -119,16 +122,17 @@ public class ConfigurationTest extends AbstractTest {
             .export( "export" )
             .build();
 
-        final Model model = new Model( false ).s( "column1", 0 ).i( "valuei", 1 ).l( "valuel", 2 ).d( "valued", 3 );
+        final TypedListModel model = Model.typedList( false ).s( "column1", 0 ).i( "valuei", 1 ).l( "valuel", 2 ).d( "valued", 3 );
 
         StringExport export = new StringExport();
 
         AggregatorBuilder
             .custom()
             .withModel( "table", model )
-            .withTable( "table", Table.fromString( "a\t10\t11\t1.1\n"
-                + "a\t20\t21\t2.2\n"
-                + "a1\t10\t10\t1.1\n", model ) )
+            .withTable( "table", new Table(
+                Tsv.tsv.fromString( "a\t10\t11\t1.1\n"
+                    + "a\t20\t21\t2.2\n"
+                    + "a1\t10\t10\t1.1\n", model ) ) )
             .withConfiguration( aggregatorConfiguration )
             .withExport( "export", ( s ) -> export )
             .build();
@@ -146,15 +150,16 @@ public class ConfigurationTest extends AbstractTest {
             .export( "export" )
             .build();
 
-        val model = new Model( false ).s( "column1", 0 ).i( "value", 1 );
+        val model = Model.typedList( false ).s( "column1", 0 ).i( "value", 1 );
         val export = new StringExport();
 
         AggregatorBuilder
             .custom()
             .withModel( "table", model )
-            .withTable( "table", Table.fromString( "a\t10\n"
-                + "a\t20\n"
-                + "a1\t10\n", model ) )
+            .withTable( "table", new Table(
+                Tsv.tsv.fromString( "a\t10\n"
+                    + "a\t20\n"
+                    + "a1\t10\n", model ) ) )
             .withConfiguration( aggregatorConfiguration )
             .withExport( "export", ( s ) -> export )
             .build();
@@ -172,15 +177,16 @@ public class ConfigurationTest extends AbstractTest {
             .export( "export" )
             .build();
 
-        val model = new Model( false ).s( "column1", 0 ).i( "value", 1 ).s( "filter", 2 );
+        val model = Model.typedList( false ).s( "column1", 0 ).i( "value", 1 ).s( "filter", 2 );
         val export = new StringExport();
 
         AggregatorBuilder
             .custom()
             .withModel( "table", model )
-            .withTable( "table", Table.fromString( "a\t10\ttest\n"
-                + "a\t20\tunknown\n"
-                + "a1\t10\ttest\n", model ) )
+            .withTable( "table", new Table(
+                Tsv.tsv.fromString( "a\t10\ttest\n"
+                    + "a\t20\tunknown\n"
+                    + "a1\t10\ttest\n", model ) ) )
             .withConfiguration( aggregatorConfiguration )
             .withExport( "export", ( s ) -> export )
             .build();

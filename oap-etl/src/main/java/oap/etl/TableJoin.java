@@ -23,39 +23,18 @@
  */
 package oap.etl;
 
-import oap.tsv.Model;
-import oap.tsv.Tsv;
 import oap.util.Stream;
 
-import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
 
 public class TableJoin implements Join {
     private HashMap<String, List<Object>> map = new HashMap<>();
     private List<Object> defaults;
 
-    public TableJoin( List<Object> defaults ) {
+    public TableJoin( Stream<List<Object>> lines, List<Object> defaults ) {
+        lines.forEach( line -> map.put( ( String ) line.remove( line.size() - 1 ), line ) );
         this.defaults = defaults;
-    }
-
-    public static Optional<TableJoin> fromResource( Class<?> contextClass, String name,
-                                                    Model model, List<Object> defaults ) {
-        return Tsv.fromResource( contextClass, name, model )
-            .map( tsv -> fromTsv( tsv, defaults ) );
-    }
-
-    public static TableJoin fromPaths( List<Path> paths,
-                                       Model.Complex complexModel, List<Object> defaults ) {
-        return fromTsv( Tsv.fromPaths( paths, complexModel ), defaults );
-    }
-
-    private static TableJoin fromTsv( Stream<List<Object>> tsv, List<Object> defaults ) {
-        return tsv.foldLeft( new TableJoin( defaults ), ( t, line ) -> {
-            t.map.put( ( String ) line.remove( line.size() - 1 ), line );
-            return t;
-        } );
     }
 
     public List<Object> on( String key ) {

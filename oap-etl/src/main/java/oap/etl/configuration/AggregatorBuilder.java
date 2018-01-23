@@ -26,13 +26,14 @@ package oap.etl.configuration;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import oap.dictionary.DictionaryModel;
 import oap.etl.Export;
 import oap.etl.Join;
 import oap.etl.Table;
 import oap.etl.Table.GroupBy;
 import oap.etl.accumulator.Filter;
-import oap.dictionary.DictionaryModel;
 import oap.tsv.Model;
+import oap.tsv.TypedListModel;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
@@ -56,7 +57,7 @@ public class AggregatorBuilder {
         return new AggregatorBuilder();
     }
 
-    public AggregatorBuilder withModel( String name, Model model ) {
+    public AggregatorBuilder withModel( String name, TypedListModel model ) {
         tables.put( name, new TableModel( model ) );
 
         return this;
@@ -117,7 +118,7 @@ public class AggregatorBuilder {
             for( int i = 0; i < acs.size(); i++ ) {
                 final Accumulator ac = acs.get( i );
 
-                final Optional<Pair<Integer, Model.ColumnType>> fieldInfo = ac.field.map( f -> {
+                final Optional<Pair<Integer, TypedListModel.ColumnType>> fieldInfo = ac.field.map( f -> {
                     final int index = fieldPathToIndex( f, tableModel );
                     final TableModel fieldTableModel = fieldPathToTableModel( f, tableModel );
 
@@ -138,7 +139,7 @@ public class AggregatorBuilder {
         return table.groupBy( result.toArray( new GroupBy[result.size()] ) );
     }
 
-    private oap.etl.accumulator.Accumulator getAccumulator( TableModel tableModel, Accumulator ac, Optional<Pair<Integer, Model.ColumnType>> fieldInfo ) {
+    private oap.etl.accumulator.Accumulator getAccumulator( TableModel tableModel, Accumulator ac, Optional<Pair<Integer, TypedListModel.ColumnType>> fieldInfo ) {
         val accumulator = AccumulatorFactory.create( ac, fieldInfo );
 
         final Accumulator.Filter filter = ac.filter.orElse( null );
@@ -163,7 +164,7 @@ public class AggregatorBuilder {
             .toArray();
     }
 
-    private Pair<Table, Integer> join( Table table, Model joinModel,
+    private Pair<Table, Integer> join( Table table, TypedListModel joinModel,
                                        int offset, String joinName, oap.etl.configuration.Join join ) {
         final TableModel joinTableModel = getTable( join.getTable() );
 
@@ -171,8 +172,7 @@ public class AggregatorBuilder {
 
         val fromModel = joinTableModel.model;
 
-        val model = new Model( false );
-        Map<String, Integer> mapping = new HashMap<>();
+        val model = Model.typedList( false );
 
         final ArrayList<Integer> indexes = Lists.of( groupByStream.fields[0] );
 
@@ -180,14 +180,13 @@ public class AggregatorBuilder {
         for( int i = 0; i < accumulators.size(); i++ ) {
             final Accumulator ac = accumulators.get( i );
 
-            final Optional<Pair<Integer, Model.ColumnType>> fieldInfo = ac.field.map( f -> {
+            final Optional<Pair<Integer, TypedListModel.ColumnType>> fieldInfo = ac.field.map( f -> {
                 final int index = fieldPathToIndex( f, joinTableModel );
 
                 return __( index, joinTableModel.model.getType( index ) );
             } );
 
             model.column( ac.name, AccumulatorFactory.create( ac, fieldInfo ).getModelType(), i + offset );
-            mapping.put( ac.name, i + offset );
         }
 
         for( int index : indexes ) {
@@ -239,10 +238,10 @@ public class AggregatorBuilder {
     }
 
     private static class TableModel {
-        private Model model;
+        private TypedListModel model;
         private Table table;
 
-        public TableModel( Model model ) {
+        public TableModel( TypedListModel model ) {
             this.model = model;
         }
     }
