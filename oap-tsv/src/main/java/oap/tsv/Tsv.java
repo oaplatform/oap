@@ -128,8 +128,7 @@ public class Tsv {
     }
 
 
-    private static List<String> splitByWholeSeparatorPreserveAllTokens(
-        final String str, final int max ) {
+    private static List<String> splitByWholeSeparatorPreserveAllTokens( final String str, final int max ) {
         final int len = str.length();
 
         final ArrayList<String> substrings = new ArrayList<>();
@@ -139,22 +138,18 @@ public class Tsv {
         while( end < len ) {
             end = str.indexOf( '\t', beg );
 
-            if( end > -1 ) {
+            if( end > -1 )
                 if( end > beg ) {
                     numberOfSubstrings += 1;
-
                     substrings.add( str.substring( beg, end ) );
-                    if( numberOfSubstrings == max ) {
-                        end = len;
-                    } else {
-                        beg = end + 1;
-                    }
+                    if( numberOfSubstrings == max ) end = len;
+                    else beg = end + 1;
                 } else {
                     numberOfSubstrings += 1;
                     substrings.add( StringUtils.EMPTY );
                     beg = end + 1;
                 }
-            } else {
+            else {
                 substrings.add( str.substring( beg ) );
                 end = len;
             }

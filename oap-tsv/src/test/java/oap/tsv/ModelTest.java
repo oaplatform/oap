@@ -68,7 +68,7 @@ public class ModelTest {
     }
 
     @Test
-    public void testDatatypes() {
+    public void datatypes() {
         Model model = Model.withoutHeader().b( "c0", 0 ).i( "c1", 1 ).d( "c2", 2 ).s( "c3", 3 ).l( "c4", 4 );
         Path datatypesTsv = path.resolve( Paths.get( "datatypes.tsv" ) );
         Tsv.fromPath( datatypesTsv, model ).forEach( row -> {
@@ -81,7 +81,7 @@ public class ModelTest {
     }
 
     @Test
-    public void testFilter() {
+    public void filter() {
         Model model = Model.withoutHeader().b( "c0", 0 ).i( "c1", 1 ).d( "c2", 2 ).s( "c3", 3 ).l( "c4", 4 );
         final Model newModel = model.filter( "c1", "c3" );
 
@@ -92,7 +92,7 @@ public class ModelTest {
     }
 
     @Test
-    public void testSyncOffsetToIndex() {
+    public void syncOffsetToIndex() {
         Model model = Model.withoutHeader().b( "c0", 10 ).i( "c1", 2 ).v( "c2", STRING, "str" );
         final Model newModel = model.syncOffsetToIndex();
 
