@@ -44,6 +44,11 @@
         </dependency>
         <dependency>
             <groupId>oap</groupId>
+            <artifactId>oap-dictionary</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
             <artifactId>oap-json</artifactId>
             <version>${project.parent.version}</version>
         </dependency>

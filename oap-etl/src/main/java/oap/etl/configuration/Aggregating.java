@@ -27,12 +27,12 @@ package oap.etl.configuration;
 import java.util.List;
 import java.util.Map;
 
-public interface IAggregator {
-   String getTable();
+public interface Aggregating {
+    String getTable();
 
-   Map<String, Join> getJoins();
+    Map<String, Join> getJoins();
 
-   List<Accumulator> getAccumulators();
+    List<Accumulator> getAccumulators();
 
-   Map<String, List<String>> getAggregates();
+    Map<String, List<String>> getAggregates();
 }

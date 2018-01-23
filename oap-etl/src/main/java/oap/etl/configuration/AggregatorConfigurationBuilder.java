@@ -35,150 +35,150 @@ import java.util.function.Consumer;
 import static java.util.Arrays.asList;
 
 public class AggregatorConfigurationBuilder {
-   private final ArrayList<Accumulator> accumulators = new ArrayList<>();
-   private final HashMap<String, Join> joins = new HashMap<>();
-   private final HashMap<String, List<String>> aggregates = new HashMap<>();
-   private String export;
-   private String table;
+    private final ArrayList<Accumulator> accumulators = new ArrayList<>();
+    private final HashMap<String, Join> joins = new HashMap<>();
+    private final HashMap<String, List<String>> aggregates = new HashMap<>();
+    private String export;
+    private String table;
 
-   public static AggregatorConfigurationBuilder custom() {
-      return new AggregatorConfigurationBuilder();
-   }
+    public static AggregatorConfigurationBuilder custom() {
+        return new AggregatorConfigurationBuilder();
+    }
 
-   public AggregatorConfigurationBuilder table( String table ) {
-      this.table = table;
-      return this;
-   }
+    public AggregatorConfigurationBuilder table( String table ) {
+        this.table = table;
+        return this;
+    }
 
-   public AggregatorConfigurationAggregatorBuilder aggregator( String name ) {
-      return new AggregatorConfigurationAggregatorBuilder( name );
-   }
+    public AggregatorConfigurationAggregatorBuilder aggregator( String name ) {
+        return new AggregatorConfigurationAggregatorBuilder( name );
+    }
 
-   public AggregatorConfigurationAccumulatorBuilder accumulator( String name ) {
-      return new AggregatorConfigurationAccumulatorBuilder( name, accumulators::add, () -> {} );
-   }
+    public AggregatorConfigurationAccumulatorBuilder accumulator( String name ) {
+        return new AggregatorConfigurationAccumulatorBuilder( name, accumulators::add, () -> {} );
+    }
 
-   public Aggregator build() {
-      return new Aggregator( table, aggregates, accumulators, joins, export );
-   }
+    public Aggregator build() {
+        return new Aggregator( table, aggregates, accumulators, joins, export );
+    }
 
-   public AggregatorConfigurationJoinBuilder join( String name ) {
-      return new AggregatorConfigurationJoinBuilder( name );
-   }
+    public AggregatorConfigurationJoinBuilder join( String name ) {
+        return new AggregatorConfigurationJoinBuilder( name );
+    }
 
-   public AggregatorConfigurationBuilder export( String export ) {
-      this.export = export;
-      return this;
-   }
+    public AggregatorConfigurationBuilder export( String export ) {
+        this.export = export;
+        return this;
+    }
 
-   public class AggregatorConfigurationAggregatorBuilder {
-      private final String name;
+    public class AggregatorConfigurationAggregatorBuilder {
+        private final String name;
 
-      public AggregatorConfigurationAggregatorBuilder( String name ) {
-         this.name = name;
-      }
+        public AggregatorConfigurationAggregatorBuilder( String name ) {
+            this.name = name;
+        }
 
-      public AggregatorConfigurationBuilder fields( String... fields ) {
-         AggregatorConfigurationBuilder.this.aggregates.put( name, asList( fields ) );
+        public AggregatorConfigurationBuilder fields( String... fields ) {
+            AggregatorConfigurationBuilder.this.aggregates.put( name, asList( fields ) );
 
-         return AggregatorConfigurationBuilder.this;
-      }
-   }
+            return AggregatorConfigurationBuilder.this;
+        }
+    }
 
-   public class AggregatorConfigurationAccumulatorBuilder {
-      private final String name;
-      private final Consumer<Accumulator> c;
-      private final Runnable done;
-      private AccumulatorType type;
-      private Optional<String> field = Optional.empty();
-      private Optional<Accumulator.Filter> filter = Optional.empty();
+    public class AggregatorConfigurationAccumulatorBuilder {
+        private final String name;
+        private final Consumer<Accumulator> c;
+        private final Runnable done;
+        private AccumulatorType type;
+        private Optional<String> field = Optional.empty();
+        private Optional<Accumulator.Filter> filter = Optional.empty();
 
-      public AggregatorConfigurationAccumulatorBuilder( String name, Consumer<Accumulator> c, Runnable done ) {
-         this.name = name;
-         this.c = c;
-         this.done = done;
-      }
+        public AggregatorConfigurationAccumulatorBuilder( String name, Consumer<Accumulator> c, Runnable done ) {
+            this.name = name;
+            this.c = c;
+            this.done = done;
+        }
 
-      public AggregatorConfigurationAccumulatorBuilder operation( AccumulatorType type ) {
-         this.type = type;
-         return this;
-      }
+        public AggregatorConfigurationAccumulatorBuilder operation( AccumulatorType type ) {
+            this.type = type;
+            return this;
+        }
 
-      public AggregatorConfigurationAccumulatorBuilder accumulator( String name ) {
-         add();
+        public AggregatorConfigurationAccumulatorBuilder accumulator( String name ) {
+            add();
 
-         return new AggregatorConfigurationAccumulatorBuilder( name, c, () -> {} );
-      }
+            return new AggregatorConfigurationAccumulatorBuilder( name, c, () -> {} );
+        }
 
-      public AggregatorConfigurationBuilder export( String export ) {
-         add();
+        public AggregatorConfigurationBuilder export( String export ) {
+            add();
 
-         return AggregatorConfigurationBuilder.this.export( export );
-      }
+            return AggregatorConfigurationBuilder.this.export( export );
+        }
 
-      private void add() {
-         assert type != null;
+        private void add() {
+            assert type != null;
 
-         c.accept( new Accumulator( name, type, field, filter ) );
-      }
+            c.accept( new Accumulator( name, type, field, filter ) );
+        }
 
-      public AggregatorConfigurationAccumulatorBuilder field( String field ) {
-         this.field = Optional.of( field );
+        public AggregatorConfigurationAccumulatorBuilder field( String field ) {
+            this.field = Optional.of( field );
 
-         return this;
-      }
+            return this;
+        }
 
-      public AggregatorConfigurationAccumulatorBuilder filter( String field, String operation, String value ) {
-         this.filter = Optional.of( new Accumulator.Filter( field, operation, value ) );
+        public AggregatorConfigurationAccumulatorBuilder filter( String field, String operation, String value ) {
+            this.filter = Optional.of( new Accumulator.Filter( field, operation, value ) );
 
-         return this;
-      }
+            return this;
+        }
 
-      public Aggregator build() {
-         add();
-         done.run();
+        public Aggregator build() {
+            add();
+            done.run();
 
-         return AggregatorConfigurationBuilder.this.build();
-      }
-   }
+            return AggregatorConfigurationBuilder.this.build();
+        }
+    }
 
-   public class AggregatorConfigurationJoinBuilder {
-      public final String name;
-      private final ArrayList<Accumulator> accumulators = new ArrayList<>();
-      private String table;
-      private String field;
+    public class AggregatorConfigurationJoinBuilder {
+        public final String name;
+        private final ArrayList<Accumulator> accumulators = new ArrayList<>();
+        private String table;
+        private String field;
 
-      public AggregatorConfigurationJoinBuilder( String name ) {
-         this.name = name;
-      }
+        public AggregatorConfigurationJoinBuilder( String name ) {
+            this.name = name;
+        }
 
-      public AggregatorConfigurationJoinBuilder table( String table ) {
-         this.table = table;
+        public AggregatorConfigurationJoinBuilder table( String table ) {
+            this.table = table;
 
-         return this;
-      }
+            return this;
+        }
 
-      public AggregatorConfigurationJoinBuilder field( String field ) {
-         this.field = field;
+        public AggregatorConfigurationJoinBuilder field( String field ) {
+            this.field = field;
 
-         return this;
-      }
+            return this;
+        }
 
-      public AggregatorConfigurationJoinBuilder join( String name ) {
-         add();
+        public AggregatorConfigurationJoinBuilder join( String name ) {
+            add();
 
-         return new AggregatorConfigurationJoinBuilder( name );
-      }
+            return new AggregatorConfigurationJoinBuilder( name );
+        }
 
-      private void add() {
-         assert table != null;
-         assert field != null;
+        private void add() {
+            assert table != null;
+            assert field != null;
 
-         AggregatorConfigurationBuilder.this.joins.put( name, new Join( table, field, accumulators ) );
-      }
+            AggregatorConfigurationBuilder.this.joins.put( name, new Join( table, field, accumulators ) );
+        }
 
-      public AggregatorConfigurationAccumulatorBuilder accumulator( String name ) {
-         return new AggregatorConfigurationAccumulatorBuilder( name, accumulators::add, this::add );
-      }
-   }
+        public AggregatorConfigurationAccumulatorBuilder accumulator( String name ) {
+            return new AggregatorConfigurationAccumulatorBuilder( name, accumulators::add, this::add );
+        }
+    }
 }

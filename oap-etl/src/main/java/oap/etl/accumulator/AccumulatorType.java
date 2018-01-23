@@ -25,5 +25,5 @@
 package oap.etl.accumulator;
 
 public enum AccumulatorType {
-   SUM, COUNT, AVG;
+    SUM, COUNT, AVG;
 }

@@ -40,29 +40,29 @@ import java.util.Optional;
  * Created by Admin on 31.05.2016.
  */
 public class AccumulatorFactory {
-   public static Accumulator create( oap.etl.configuration.Accumulator accumulator, Optional<Pair<Integer, Model.ColumnType>> field ) {
-      switch( accumulator.type ) {
-         case COUNT:
-            return new CountAccumulator();
-         case SUM: {
-            val f = field.orElseThrow( () -> new IllegalArgumentException( "SUM/" + accumulator.name + ": Unknown fields" ) );
-            switch( f._2 ) {
-               case INT:
-                  return new IntegerSumAccumulator( f._1 );
-               case LONG:
-                  return new LongSumAccumulator( f._1 );
-               case DOUBLE:
-                  return new DoubleSumAccumulator( f._1 );
-               default:
-                  throw new IllegalArgumentException( "SUM/" + accumulator.name + " : Unknown type " + f._2 );
+    public static Accumulator create( oap.etl.configuration.Accumulator accumulator, Optional<Pair<Integer, Model.ColumnType>> field ) {
+        switch( accumulator.type ) {
+            case COUNT:
+                return new CountAccumulator();
+            case SUM: {
+                val f = field.orElseThrow( () -> new IllegalArgumentException( "SUM/" + accumulator.name + ": Unknown fields" ) );
+                switch( f._2 ) {
+                    case INT:
+                        return new IntegerSumAccumulator( f._1 );
+                    case LONG:
+                        return new LongSumAccumulator( f._1 );
+                    case DOUBLE:
+                        return new DoubleSumAccumulator( f._1 );
+                    default:
+                        throw new IllegalArgumentException( "SUM/" + accumulator.name + " : Unknown type " + f._2 );
+                }
             }
-         }
-         case AVG: {
-            val f = field.orElseThrow( () -> new IllegalArgumentException( "AVG/" + accumulator.name + ": Unknown fields" ) );
-            return new AvgAccumulator( f._1 );
-         }
-         default:
-            throw new IllegalArgumentException( accumulator.name + " Unknown accumulator type " + accumulator.type );
-      }
-   }
+            case AVG: {
+                val f = field.orElseThrow( () -> new IllegalArgumentException( "AVG/" + accumulator.name + ": Unknown fields" ) );
+                return new AvgAccumulator( f._1 );
+            }
+            default:
+                throw new IllegalArgumentException( accumulator.name + " Unknown accumulator type " + accumulator.type );
+        }
+    }
 }

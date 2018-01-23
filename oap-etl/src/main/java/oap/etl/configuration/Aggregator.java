@@ -34,47 +34,47 @@ import java.util.Map;
 
 @ToString
 @EqualsAndHashCode
-public class Aggregator implements IAggregator {
-   public final Map<String, List<String>> aggregates;
-   public final String export;
-   private final String table;
-   private final Map<String, Join> joins;
-   private final List<Accumulator> accumulators;
+public class Aggregator implements Aggregating {
+    public final Map<String, List<String>> aggregates;
+    public final String export;
+    private final String table;
+    private final Map<String, Join> joins;
+    private final List<Accumulator> accumulators;
 
-   @JsonCreator
-   public Aggregator( @JsonProperty("table") String table,
-                      @JsonProperty("aggregates") Map<String, List<String>> aggregates,
-                      @JsonProperty("accumulators") List<Accumulator> accumulators,
-                      @JsonProperty("joins") Map<String, Join> joins,
-                      @JsonProperty("export") String export ) {
-      this.table = table;
-      this.accumulators = accumulators;
-      this.aggregates = aggregates;
-      this.joins = joins;
-      this.export = export;
-   }
+    @JsonCreator
+    public Aggregator( @JsonProperty( "table" ) String table,
+                       @JsonProperty( "aggregates" ) Map<String, List<String>> aggregates,
+                       @JsonProperty( "accumulators" ) List<Accumulator> accumulators,
+                       @JsonProperty( "joins" ) Map<String, Join> joins,
+                       @JsonProperty( "export" ) String export ) {
+        this.table = table;
+        this.accumulators = accumulators;
+        this.aggregates = aggregates;
+        this.joins = joins;
+        this.export = export;
+    }
 
-   @Override
-   public String getTable() {
-      return table;
-   }
+    @Override
+    public String getTable() {
+        return table;
+    }
 
-   @Override
-   public Map<String, Join> getJoins() {
-      return joins;
-   }
+    @Override
+    public Map<String, Join> getJoins() {
+        return joins;
+    }
 
-   @Override
-   public List<Accumulator> getAccumulators() {
-      return accumulators;
-   }
+    @Override
+    public List<Accumulator> getAccumulators() {
+        return accumulators;
+    }
 
-   @Override
-   public Map<String, List<String>> getAggregates() {
-      return aggregates;
-   }
+    @Override
+    public Map<String, List<String>> getAggregates() {
+        return aggregates;
+    }
 
-   public String getExport() {
-      return export;
-   }
+    public String getExport() {
+        return export;
+    }
 }

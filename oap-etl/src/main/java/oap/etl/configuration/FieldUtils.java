@@ -27,19 +27,19 @@ package oap.etl.configuration;
 import java.util.Optional;
 
 public class FieldUtils {
-   public static Optional<String> getTable( String reference ) {
-      final int i = reference.indexOf( '.' );
+    public static Optional<String> getTable( String reference ) {
+        final int i = reference.indexOf( '.' );
 
-      if( i > 0 ) return Optional.of( reference.substring( 0, i ) );
+        if( i > 0 ) return Optional.of( reference.substring( 0, i ) );
 
-      return Optional.empty();
-   }
+        return Optional.empty();
+    }
 
-   public static String getField( String reference ) {
-      final int i = reference.indexOf( '.' );
+    public static String getField( String reference ) {
+        final int i = reference.indexOf( '.' );
 
-      if( i > 0 ) return reference.substring( i + 1 );
+        if( i > 0 ) return reference.substring( i + 1 );
 
-      return reference;
-   }
+        return reference;
+    }
 }

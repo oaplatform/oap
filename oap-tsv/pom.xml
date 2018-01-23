@@ -39,7 +39,7 @@
     <dependencies>
         <dependency>
             <groupId>oap</groupId>
-            <artifactId>oap-dictionary</artifactId>
+            <artifactId>oap-stdlib</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 

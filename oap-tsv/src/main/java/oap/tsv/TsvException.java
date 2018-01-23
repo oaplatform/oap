@@ -25,7 +25,7 @@
 package oap.tsv;
 
 public class TsvException extends RuntimeException {
-   public TsvException( String message, Throwable cause ) {
-      super( message, cause );
-   }
+    public TsvException( String message, Throwable cause ) {
+        super( message, cause );
+    }
 }

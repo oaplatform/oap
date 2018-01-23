@@ -33,43 +33,43 @@ import java.util.List;
 import java.util.Optional;
 
 public class TableJoin implements Join {
-   private HashMap<String, List<Object>> map = new HashMap<>();
-   private List<Object> defaults;
+    private HashMap<String, List<Object>> map = new HashMap<>();
+    private List<Object> defaults;
 
-   public TableJoin( List<Object> defaults ) {
-      this.defaults = defaults;
-   }
+    public TableJoin( List<Object> defaults ) {
+        this.defaults = defaults;
+    }
 
-   public static Optional<TableJoin> fromResource( Class<?> contextClass, String name,
-                                                   Model model, List<Object> defaults ) {
-      return Tsv.fromResource( contextClass, name, model )
-         .map( tsv -> fromTsv( tsv, defaults ) );
-   }
+    public static Optional<TableJoin> fromResource( Class<?> contextClass, String name,
+                                                    Model model, List<Object> defaults ) {
+        return Tsv.fromResource( contextClass, name, model )
+            .map( tsv -> fromTsv( tsv, defaults ) );
+    }
 
-   public static TableJoin fromPaths( List<Path> paths,
-                                      Model.Complex complexModel, List<Object> defaults ) {
-      return fromTsv( Tsv.fromPaths( paths, complexModel ), defaults );
-   }
+    public static TableJoin fromPaths( List<Path> paths,
+                                       Model.Complex complexModel, List<Object> defaults ) {
+        return fromTsv( Tsv.fromPaths( paths, complexModel ), defaults );
+    }
 
-   private static TableJoin fromTsv( Stream<List<Object>> tsv, List<Object> defaults ) {
-      return tsv.foldLeft( new TableJoin( defaults ), ( t, line ) -> {
-         t.map.put( ( String ) line.remove( line.size() - 1 ), line );
-         return t;
-      } );
-   }
+    private static TableJoin fromTsv( Stream<List<Object>> tsv, List<Object> defaults ) {
+        return tsv.foldLeft( new TableJoin( defaults ), ( t, line ) -> {
+            t.map.put( ( String ) line.remove( line.size() - 1 ), line );
+            return t;
+        } );
+    }
 
-   public List<Object> on( String key ) {
-      return map.getOrDefault( key, defaults );
-   }
+    public List<Object> on( String key ) {
+        return map.getOrDefault( key, defaults );
+    }
 
-   public TableJoin withFlag( Object flag, Object defaultFlag ) {
-      map.forEach( ( key, value ) -> value.add( flag ) );
-      defaults.add( defaultFlag );
-      return this;
-   }
+    public TableJoin withFlag( Object flag, Object defaultFlag ) {
+        map.forEach( ( key, value ) -> value.add( flag ) );
+        defaults.add( defaultFlag );
+        return this;
+    }
 
-   @Override
-   public String toString() {
-      return map.toString();
-   }
+    @Override
+    public String toString() {
+        return map.toString();
+    }
 }

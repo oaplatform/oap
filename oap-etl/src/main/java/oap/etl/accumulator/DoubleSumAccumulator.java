@@ -33,35 +33,35 @@ import java.util.List;
 @ToString
 @EqualsAndHashCode( exclude = { "sum" } )
 public class DoubleSumAccumulator implements Accumulator {
-   private int field;
-   private double sum;
+    private int field;
+    private double sum;
 
-   public DoubleSumAccumulator( int field ) {
-      this.field = field;
-   }
+    public DoubleSumAccumulator( int field ) {
+        this.field = field;
+    }
 
-   @Override
-   public void accumulate( List<Object> values ) {
-      this.sum += ( ( Number ) values.get( this.field ) ).doubleValue();
-   }
+    @Override
+    public void accumulate( List<Object> values ) {
+        this.sum += ( ( Number ) values.get( this.field ) ).doubleValue();
+    }
 
-   @Override
-   public void reset() {
-      this.sum = 0;
-   }
+    @Override
+    public void reset() {
+        this.sum = 0;
+    }
 
-   @Override
-   public Double result() {
-      return this.sum;
-   }
+    @Override
+    public Double result() {
+        return this.sum;
+    }
 
-   @Override
-   public DoubleSumAccumulator clone() {
-      return new DoubleSumAccumulator( field );
-   }
+    @Override
+    public DoubleSumAccumulator clone() {
+        return new DoubleSumAccumulator( field );
+    }
 
-   @Override
-   public Model.ColumnType getModelType() {
-      return Model.ColumnType.DOUBLE;
-   }
+    @Override
+    public Model.ColumnType getModelType() {
+        return Model.ColumnType.DOUBLE;
+    }
 }

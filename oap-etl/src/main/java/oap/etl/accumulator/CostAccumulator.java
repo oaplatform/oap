@@ -33,40 +33,40 @@ import java.util.List;
 @ToString
 @EqualsAndHashCode( exclude = { "money", "events" } )
 public class CostAccumulator implements Accumulator {
-   private int moneyField;
-   private int eventField;
-   private long money;
-   private int events;
+    private int moneyField;
+    private int eventField;
+    private long money;
+    private int events;
 
-   public CostAccumulator( int moneyField, int eventField ) {
-      this.moneyField = moneyField;
-      this.eventField = eventField;
-   }
+    public CostAccumulator( int moneyField, int eventField ) {
+        this.moneyField = moneyField;
+        this.eventField = eventField;
+    }
 
-   @Override
-   public void accumulate( List<Object> values ) {
-      this.money += ( ( Number ) values.get( this.moneyField ) ).longValue();
-      this.events += ( ( Number ) values.get( this.eventField ) ).longValue();
-   }
+    @Override
+    public void accumulate( List<Object> values ) {
+        this.money += ( ( Number ) values.get( this.moneyField ) ).longValue();
+        this.events += ( ( Number ) values.get( this.eventField ) ).longValue();
+    }
 
-   @Override
-   public void reset() {
-      this.money = 0;
-      this.events = 0;
-   }
+    @Override
+    public void reset() {
+        this.money = 0;
+        this.events = 0;
+    }
 
-   @Override
-   public Double result() {
-      return this.events > 0 ? this.money / this.events : 0.0;
-   }
+    @Override
+    public Double result() {
+        return this.events > 0 ? this.money / this.events : 0.0;
+    }
 
-   @Override
-   public CostAccumulator clone() {
-      return new CostAccumulator( moneyField, eventField );
-   }
+    @Override
+    public CostAccumulator clone() {
+        return new CostAccumulator( moneyField, eventField );
+    }
 
-   @Override
-   public Model.ColumnType getModelType() {
-      return Model.ColumnType.DOUBLE;
-   }
+    @Override
+    public Model.ColumnType getModelType() {
+        return Model.ColumnType.DOUBLE;
+    }
 }

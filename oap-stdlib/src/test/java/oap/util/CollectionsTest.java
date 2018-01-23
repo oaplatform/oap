@@ -83,19 +83,6 @@ public class CollectionsTest {
     }
 
     @Test
-    public void testPartition() {
-        val list = asList( 1, 2, 1, 4 );
-
-        val left = new ArrayList<Integer>();
-        val right = new ArrayList<Integer>();
-
-        Collections.partition( list, left, right, ( v ) -> v > 2 );
-
-        assertThat( right ).containsExactly( 4 );
-        assertThat( left ).containsExactly( 1, 2, 1 );
-    }
-
-    @Test
     public void testMax() {
         val list = asList( 1, 2, 1, 4 );
 

@@ -34,39 +34,39 @@ import java.util.function.Predicate;
 @ToString
 @EqualsAndHashCode()
 public class Filter<T> implements Accumulator {
-   final Accumulator accumulator;
-   private final Predicate<T> filter;
-   private int field;
+    final Accumulator accumulator;
+    private final Predicate<T> filter;
+    private int field;
 
-   public Filter( Accumulator accumulator, int field, Predicate<T> filter ) {
-      this.accumulator = accumulator;
-      this.field = field;
-      this.filter = filter;
-   }
+    public Filter( Accumulator accumulator, int field, Predicate<T> filter ) {
+        this.accumulator = accumulator;
+        this.field = field;
+        this.filter = filter;
+    }
 
-   @SuppressWarnings( "unchecked" )
-   @Override
-   public void accumulate( List<Object> values ) {
-      if( filter.test( ( T ) values.get( field ) ) ) accumulator.accumulate( values );
-   }
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public void accumulate( List<Object> values ) {
+        if( filter.test( ( T ) values.get( field ) ) ) accumulator.accumulate( values );
+    }
 
-   @Override
-   public void reset() {
-      accumulator.reset();
-   }
+    @Override
+    public void reset() {
+        accumulator.reset();
+    }
 
-   @Override
-   public Object result() {
-      return accumulator.result();
-   }
+    @Override
+    public Object result() {
+        return accumulator.result();
+    }
 
-   @Override
-   public Filter<T> clone() {
-      return new Filter<>( accumulator.clone(), field, filter );
-   }
+    @Override
+    public Filter<T> clone() {
+        return new Filter<>( accumulator.clone(), field, filter );
+    }
 
-   @Override
-   public Model.ColumnType getModelType() {
-      return accumulator.getModelType();
-   }
+    @Override
+    public Model.ColumnType getModelType() {
+        return accumulator.getModelType();
+    }
 }

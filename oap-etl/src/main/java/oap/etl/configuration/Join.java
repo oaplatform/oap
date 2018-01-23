@@ -41,45 +41,45 @@ import static oap.util.Pair.__;
 
 @ToString
 @EqualsAndHashCode
-public class Join implements IAggregator {
-   public final String field;
-   private final List<Accumulator> accumulators;
-   private final String table;
-   private final List<Object> defaultLine;
+public class Join implements Aggregating {
+    public final String field;
+    private final List<Accumulator> accumulators;
+    private final String table;
+    private final List<Object> defaultLine;
 
-   @JsonCreator
-   public Join( @JsonProperty("table") String table,
-                @JsonProperty("field") String field,
-                @JsonProperty("accumulators") List<Accumulator> accumulators ) {
-      this.table = table;
-      this.field = field;
-      this.accumulators = accumulators;
-      this.defaultLine = accumulators.stream().map( a -> 0L ).collect( toList() );
-   }
+    @JsonCreator
+    public Join( @JsonProperty( "table" ) String table,
+                 @JsonProperty( "field" ) String field,
+                 @JsonProperty( "accumulators" ) List<Accumulator> accumulators ) {
+        this.table = table;
+        this.field = field;
+        this.accumulators = accumulators;
+        this.defaultLine = accumulators.stream().map( a -> 0L ).collect( toList() );
+    }
 
-   @Override
-   public String getTable() {
-      return table;
-   }
+    @Override
+    public String getTable() {
+        return table;
+    }
 
-   @Override
-   public Map<String, Join> getJoins() {
-      return emptyMap();
-   }
+    @Override
+    public Map<String, Join> getJoins() {
+        return emptyMap();
+    }
 
-   @Override
-   public List<Accumulator> getAccumulators() {
-      return accumulators;
-   }
+    @Override
+    public List<Accumulator> getAccumulators() {
+        return accumulators;
+    }
 
-   @Override
-   @JsonIgnore
-   public Map<String, List<String>> getAggregates() {
-      return Maps.of( __( "default", singletonList( field ) ) );
-   }
+    @Override
+    @JsonIgnore
+    public Map<String, List<String>> getAggregates() {
+        return Maps.of( __( "default", singletonList( field ) ) );
+    }
 
-   @JsonIgnore
-   public List<Object> getDefaultLine() {
-      return defaultLine;
-   }
+    @JsonIgnore
+    public List<Object> getDefaultLine() {
+        return defaultLine;
+    }
 }

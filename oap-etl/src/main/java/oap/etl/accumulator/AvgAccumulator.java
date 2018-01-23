@@ -33,38 +33,38 @@ import java.util.List;
 @ToString
 @EqualsAndHashCode( exclude = { "sum", "count" } )
 public class AvgAccumulator implements Accumulator {
-   private int field;
-   private double sum;
-   private int count;
+    private int field;
+    private double sum;
+    private int count;
 
-   public AvgAccumulator( int field ) {
-      this.field = field;
-   }
+    public AvgAccumulator( int field ) {
+        this.field = field;
+    }
 
-   @Override
-   public void accumulate( List<Object> values ) {
-      this.sum += ( ( Number ) values.get( this.field ) ).doubleValue();
-      this.count++;
-   }
+    @Override
+    public void accumulate( List<Object> values ) {
+        this.sum += ( ( Number ) values.get( this.field ) ).doubleValue();
+        this.count++;
+    }
 
-   @Override
-   public void reset() {
-      this.sum = 0;
-      this.count = 0;
-   }
+    @Override
+    public void reset() {
+        this.sum = 0;
+        this.count = 0;
+    }
 
-   @Override
-   public Double result() {
-      return this.count > 0 ? this.sum / this.count : 0.0;
-   }
+    @Override
+    public Double result() {
+        return this.count > 0 ? this.sum / this.count : 0.0;
+    }
 
-   @Override
-   public AvgAccumulator clone() {
-      return new AvgAccumulator( field );
-   }
+    @Override
+    public AvgAccumulator clone() {
+        return new AvgAccumulator( field );
+    }
 
-   @Override
-   public Model.ColumnType getModelType() {
-      return Model.ColumnType.DOUBLE;
-   }
+    @Override
+    public Model.ColumnType getModelType() {
+        return Model.ColumnType.DOUBLE;
+    }
 }

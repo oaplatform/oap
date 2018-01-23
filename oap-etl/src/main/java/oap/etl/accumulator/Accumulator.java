@@ -31,37 +31,37 @@ import java.util.function.Predicate;
 
 public interface Accumulator {
 
-   static Accumulator count() {
-      return new CountAccumulator();
-   }
+    static Accumulator count() {
+        return new CountAccumulator();
+    }
 
-   static Accumulator intSum( int field ) {
-      return new IntegerSumAccumulator( field );
-   }
+    static Accumulator intSum( int field ) {
+        return new IntegerSumAccumulator( field );
+    }
 
-   static Accumulator longSum( int field ) {
-      return new LongSumAccumulator( field );
-   }
+    static Accumulator longSum( int field ) {
+        return new LongSumAccumulator( field );
+    }
 
-   static Accumulator avg( int field ) {
-      return new AvgAccumulator( field );
-   }
+    static Accumulator avg( int field ) {
+        return new AvgAccumulator( field );
+    }
 
-   static Accumulator cost( int moneyField, int eventField ) {
-      return new CostAccumulator( moneyField, eventField );
-   }
+    static Accumulator cost( int moneyField, int eventField ) {
+        return new CostAccumulator( moneyField, eventField );
+    }
 
-   static <T> Accumulator filter( Accumulator accumulator, int fileld, Predicate<T> filter ) {
-      return new Filter<>( accumulator, fileld, filter );
-   }
+    static <T> Accumulator filter( Accumulator accumulator, int fileld, Predicate<T> filter ) {
+        return new Filter<>( accumulator, fileld, filter );
+    }
 
-   void accumulate( List<Object> values );
+    void accumulate( List<Object> values );
 
-   void reset();
+    void reset();
 
-   Object result();
+    Object result();
 
-   Accumulator clone();
+    Accumulator clone();
 
-   Model.ColumnType getModelType();
+    Model.ColumnType getModelType();
 }

@@ -37,29 +37,29 @@ import static oap.testng.Asserts.assertFile;
 import static org.testng.Assert.assertEquals;
 
 public class TsvTest {
-   @Test
-   public void tabs() {
-      String tsv = "aaaa\tbbbb\txxxx\tddd\t19/11/2011\t33.3\taaaa\t11\txxx\tvvvv\tS\tS\t444\txxx\t4444\t1234\tN\tN";
-      List<String> delimited = Tsv.parse( tsv );
-      assertEquals( delimited.size(), 18 );
-   }
+    @Test
+    public void tabs() {
+        String tsv = "aaaa\tbbbb\txxxx\tddd\t19/11/2011\t33.3\taaaa\t11\txxx\tvvvv\tS\tS\t444\txxx\t4444\t1234\tN\tN";
+        List<String> delimited = Tsv.parse( tsv );
+        assertEquals( delimited.size(), 18 );
+    }
 
-   @DataProvider( name = "files" )
-   public Object[][] files() {
-      return new Object[][]{
-         { "1.tsv", IoStreams.Encoding.PLAIN },
-         { "1.tsv.gz", IoStreams.Encoding.GZIP },
-         { "1.tsv.zip", IoStreams.Encoding.ZIP }
-      };
-   }
+    @DataProvider( name = "files" )
+    public Object[][] files() {
+        return new Object[][] {
+            { "1.tsv", IoStreams.Encoding.PLAIN },
+            { "1.tsv.gz", IoStreams.Encoding.GZIP },
+            { "1.tsv.zip", IoStreams.Encoding.ZIP }
+        };
+    }
 
-   @Test( dataProvider = "files" )
-   public void loadTsv( String file, IoStreams.Encoding encoding ) {
-      Model model = Model.withoutHeader().s( "c1", 1 ).i( "c3", 3 ).filterColumnCount( 4 );
-      Path path = Env.deployTestData( getClass() );
+    @Test( dataProvider = "files" )
+    public void loadTsv( String file, IoStreams.Encoding encoding ) {
+        Model model = Model.withoutHeader().s( "c1", 1 ).i( "c3", 3 ).filterColumnCount( 4 );
+        Path path = Env.deployTestData( getClass() );
 
-      Stream<List<Object>> tsv = Tsv.fromPath( path.resolve( file ), model );
-      assertFile( path.resolve( "result.tsv" ) ).hasContent( Tsv.print( tsv ) );
-   }
+        Stream<List<Object>> tsv = Tsv.fromPath( path.resolve( file ), model );
+        assertFile( path.resolve( "result.tsv" ) ).hasContent( Tsv.print( tsv ) );
+    }
 
 }

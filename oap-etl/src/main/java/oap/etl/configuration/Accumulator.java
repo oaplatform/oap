@@ -38,52 +38,52 @@ import java.util.function.Predicate;
 @ToString
 @EqualsAndHashCode
 public class Accumulator {
-   public String name;
-   public AccumulatorType type;
-   public Optional<String> field = Optional.empty();
-   public Optional<Filter> filter = Optional.empty();
+    public String name;
+    public AccumulatorType type;
+    public Optional<String> field = Optional.empty();
+    public Optional<Filter> filter = Optional.empty();
 
-   @JsonCreator
-   public Accumulator( @JsonProperty( "name" ) String name,
-                       @JsonProperty( "type" ) AccumulatorType type,
-                       @JsonProperty( "field" ) Optional<String> field,
-                       @JsonProperty( "filter" ) Optional<Filter> filter ) {
-      this.name = name;
-      this.type = type;
-      this.field = field;
-      this.filter = filter;
-   }
+    @JsonCreator
+    public Accumulator( @JsonProperty( "name" ) String name,
+                        @JsonProperty( "type" ) AccumulatorType type,
+                        @JsonProperty( "field" ) Optional<String> field,
+                        @JsonProperty( "filter" ) Optional<Filter> filter ) {
+        this.name = name;
+        this.type = type;
+        this.field = field;
+        this.filter = filter;
+    }
 
-   @ToString
-   @EqualsAndHashCode
-   public static class Filter {
-      public String field;
-      public String operation;
-      public Object value;
+    @ToString
+    @EqualsAndHashCode
+    public static class Filter {
+        public String field;
+        public String operation;
+        public Object value;
 
-      @JsonCreator
-      public Filter( @JsonProperty( "field" ) String field,
-                     @JsonProperty( "operation" ) String operation,
-                     @JsonProperty( "value" ) Object value ) {
-         this.field = field;
-         this.operation = operation;
-         this.value = value;
-      }
+        @JsonCreator
+        public Filter( @JsonProperty( "field" ) String field,
+                       @JsonProperty( "operation" ) String operation,
+                       @JsonProperty( "value" ) Object value ) {
+            this.field = field;
+            this.operation = operation;
+            this.value = value;
+        }
 
-      @JsonIgnore
-      public Predicate<Object> getFunction() {
-         switch( operation ) {
-            case "=":
-            case "eq":
-            case "==":
-               return ( v ) -> Objects.equals( v, value );
-            case "!=":
-            case "ne":
-            case "<>":
-               return ( v ) -> !Objects.equals( v, value );
-            default:
-               throw new IllegalArgumentException( "Unknown operation " + operation );
-         }
-      }
-   }
+        @JsonIgnore
+        public Predicate<Object> getFunction() {
+            switch( operation ) {
+                case "=":
+                case "eq":
+                case "==":
+                    return ( v ) -> Objects.equals( v, value );
+                case "!=":
+                case "ne":
+                case "<>":
+                    return ( v ) -> !Objects.equals( v, value );
+                default:
+                    throw new IllegalArgumentException( "Unknown operation " + operation );
+            }
+        }
+    }
 }

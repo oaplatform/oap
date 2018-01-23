@@ -33,30 +33,30 @@ import java.util.List;
 @ToString
 @EqualsAndHashCode( exclude = { "count" } )
 public class CountAccumulator implements Accumulator {
-   private long count;
+    private long count;
 
-   @Override
-   public void accumulate( List<Object> values ) {
-      this.count++;
-   }
+    @Override
+    public void accumulate( List<Object> values ) {
+        this.count++;
+    }
 
-   @Override
-   public void reset() {
-      this.count = 0;
-   }
+    @Override
+    public void reset() {
+        this.count = 0;
+    }
 
-   @Override
-   public Long result() {
-      return this.count;
-   }
+    @Override
+    public Long result() {
+        return this.count;
+    }
 
-   @Override
-   public CountAccumulator clone() {
-      return new CountAccumulator();
-   }
+    @Override
+    public CountAccumulator clone() {
+        return new CountAccumulator();
+    }
 
-   @Override
-   public Model.ColumnType getModelType() {
-      return Model.ColumnType.LONG;
-   }
+    @Override
+    public Model.ColumnType getModelType() {
+        return Model.ColumnType.LONG;
+    }
 }

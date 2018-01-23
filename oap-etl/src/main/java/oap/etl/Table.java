@@ -48,251 +48,250 @@ import java.util.function.LongConsumer;
 import static oap.util.Pair.__;
 
 public class Table {
-   private Stream<List<Object>> lines;
-   private List<Runnable> closeHandlers = new ArrayList<>();
+    private Stream<List<Object>> lines;
+    private List<Runnable> closeHandlers = new ArrayList<>();
 
-   private Table( Stream<List<Object>> lines ) {
-      this.lines = lines;
-   }
+    private Table( Stream<List<Object>> lines ) {
+        this.lines = lines;
+    }
 
-   public static Optional<Table> fromResource( Class<?> contextClass, String name, Model model ) {
-      return Tsv.fromResource( contextClass, name, model ).map( Table::new );
-   }
+    public static Optional<Table> fromResource( Class<?> contextClass, String name, Model model ) {
+        return Tsv.fromResource( contextClass, name, model ).map( Table::new );
+    }
 
-   public static Table fromString( String tsv, Model model ) {
-      return new Table( Tsv.fromString( tsv, model ) );
-   }
+    public static Table fromString( String tsv, Model model ) {
+        return new Table( Tsv.fromString( tsv, model ) );
+    }
 
-   public static Table fromPath( Path path, Model model ) {
-      return new Table( Tsv.fromPath( path, model ) );
-   }
+    public static Table fromPath( Path path, Model model ) {
+        return new Table( Tsv.fromPath( path, model ) );
+    }
 
-   public static Table fromPaths( List<Path> paths, Model.Complex complexModel ) {
-      return new Table( Tsv.fromPaths( paths, complexModel ) );
-   }
+    public static Table fromPaths( List<Path> paths, Model.Complex complexModel ) {
+        return new Table( Tsv.fromPaths( paths, complexModel ) );
+    }
 
-   public static Table fromURLs( List<URL> urls, Model.Complex complexModel ) {
-      return new Table( Tsv.fromURLs( urls, complexModel ) );
-   }
+    public static Table fromURLs( List<URL> urls, Model.Complex complexModel ) {
+        return new Table( Tsv.fromURLs( urls, complexModel ) );
+    }
 
-   public static Table fromPaths( List<Path> paths, Model model ) {
-      return new Table( Tsv.fromPaths( paths, model ) );
-   }
+    public static Table fromPaths( List<Path> paths, Model model ) {
+        return new Table( Tsv.fromPaths( paths, model ) );
+    }
 
-   @SuppressWarnings( "unchecked" )
-   public Table sort( int[] fields ) {
-      this.lines = lines.sorted( ( l1, l2 ) -> {
-         for( int field : fields ) {
-            int result = ( ( Comparable ) l1.get( field ) ).compareTo( l2.get( field ) );
-            if( result != 0 ) return result;
-         }
-         return 0;
-      } );
-      return this;
-   }
+    @SuppressWarnings( "unchecked" )
+    public Table sort( int[] fields ) {
+        this.lines = lines.sorted( ( l1, l2 ) -> {
+            for( int field : fields ) {
+                int result = ( ( Comparable ) l1.get( field ) ).compareTo( l2.get( field ) );
+                if( result != 0 ) return result;
+            }
+            return 0;
+        } );
+        return this;
+    }
 
-   public Table export( Export export ) {
-      closeHandlers.add( export::close );
-      return transform( export::line );
-   }
+    public Table export( Export export ) {
+        closeHandlers.add( export::close );
+        return transform( export::line );
+    }
 
-   public Table progress( long step, LongConsumer report ) {
-      AtomicLong total = new AtomicLong( 0 );
-      closeHandlers.add( () -> report.accept( total.get() ) );
-      return transform( l -> {
-         if( total.incrementAndGet() % step == 0 ) report.accept( total.get() );
-      } );
-   }
+    public Table progress( long step, LongConsumer report ) {
+        AtomicLong total = new AtomicLong( 0 );
+        closeHandlers.add( () -> report.accept( total.get() ) );
+        return transform( l -> {
+            if( total.incrementAndGet() % step == 0 ) report.accept( total.get() );
+        } );
+    }
 
-   public Table transform( Consumer<List<Object>> consumer ) {
-      this.lines = this.lines.map( l -> {
-         consumer.accept( l );
-         return l;
-      } );
-      return this;
-   }
+    public Table transform( Consumer<List<Object>> consumer ) {
+        this.lines = this.lines.map( l -> {
+            consumer.accept( l );
+            return l;
+        } );
+        return this;
+    }
 
-   public GroupByStream groupBy( GroupBy... groups ) {
-      final AggregatorData[] agg = new AggregatorData[groups.length];
-      final Object[][] keys = new Object[groups.length][];
-      final HashCodeCache[] hashCodeCache = new HashCodeCache[groups.length];
+    public GroupByStream groupBy( GroupBy... groups ) {
+        final AggregatorData[] agg = new AggregatorData[groups.length];
+        final Object[][] keys = new Object[groups.length][];
+        final HashCodeCache[] hashCodeCache = new HashCodeCache[groups.length];
 
-      for( int i = 0; i < groups.length; i++ ) {
-         final GroupBy gb = groups[i];
-
-         agg[i] = new AggregatorData( gb.name );
-         keys[i] = new Object[gb.fields.length];
-         hashCodeCache[i] = new HashCodeCache();
-      }
-
-      final Iterator<List<Object>> iterator = lines.iterator();
-      while( iterator.hasNext() ) {
-         final List<Object> row = iterator.next();
-
-         for( int i = 0; i < groups.length; i++ ) {
+        for( int i = 0; i < groups.length; i++ ) {
             final GroupBy gb = groups[i];
-            final int[] fields = gb.fields;
-            final Accumulator[] accumulators = gb.accumulators;
 
-            final HashCodeCache gHashCodeCache = hashCodeCache[i];
-            final Object[] gkeys = keys[i];
-            fillKey( fields, row, gkeys );
-            gHashCodeCache.reset( gkeys );
+            agg[i] = new AggregatorData( gb.name );
+            keys[i] = new Object[gb.fields.length];
+            hashCodeCache[i] = new HashCodeCache();
+        }
 
-            final HashMap<HashCodeCache, Data> map = agg[i];
-            Data d = map.get( gHashCodeCache );
-            if( d == null ) {
-               d = new Data( gkeys, accumulators );
-               map.put( gHashCodeCache, d );
-               hashCodeCache[i] = new HashCodeCache();
-               keys[i] = new Object[fields.length];
+        final Iterator<List<Object>> iterator = lines.iterator();
+        while( iterator.hasNext() ) {
+            final List<Object> row = iterator.next();
+
+            for( int i = 0; i < groups.length; i++ ) {
+                final GroupBy gb = groups[i];
+                final int[] fields = gb.fields;
+                final Accumulator[] accumulators = gb.accumulators;
+
+                final HashCodeCache gHashCodeCache = hashCodeCache[i];
+                final Object[] gkeys = keys[i];
+                fillKey( fields, row, gkeys );
+                gHashCodeCache.reset( gkeys );
+
+                final HashMap<HashCodeCache, Data> map = agg[i];
+                Data d = map.get( gHashCodeCache );
+                if( d == null ) {
+                    d = new Data( gkeys, accumulators );
+                    map.put( gHashCodeCache, d );
+                    hashCodeCache[i] = new HashCodeCache();
+                    keys[i] = new Object[fields.length];
+                }
+
+                for( Accumulator accumulator : d.accumulators )
+                    accumulator.accumulate( row );
             }
 
-            for( Accumulator accumulator : d.accumulators )
-               accumulator.accumulate( row );
-         }
+        }
 
-      }
+        return new GroupByStream( agg, Stream.of( groups ).map( g -> g.fields ).toArray( int[][]::new ) );
+    }
 
-      return new GroupByStream( agg, Stream.of( groups ).map( g -> g.fields ).toArray( int[][]::new ) );
-   }
+    private void fillKey( int[] fields, List<Object> row, Object[] key ) {
+        for( int i = 0; i < fields.length; i++ ) {
+            key[i] = row.get( fields[i] );
+        }
+    }
 
-   private void fillKey( int[] fields, List<Object> row, Object[] key ) {
-      for( int i = 0; i < fields.length; i++ ) {
-         key[i] = row.get( fields[i] );
-      }
-   }
+    public Table join( int keyPos, List<Join> joins ) {
+        return transform( line -> {
+            for( Join join : joins ) line.addAll( join.on( ( String ) line.get( keyPos ) ) );
+        } );
+    }
 
-   public Table join( int keyPos, List<Join> joins ) {
-      return transform( line -> {
-         for( Join join : joins ) line.addAll( join.on( ( String ) line.get( keyPos ) ) );
-      } );
-   }
+    public Table join( int keyPos, Join... joins ) {
+        return join( keyPos, Arrays.asList( joins ) );
+    }
 
-   public Table join( int keyPos, Join... joins ) {
-      return join( keyPos, Arrays.asList( joins ) );
-   }
+    public void compute() {
+        lines.drain();
+        closeHandlers.forEach( Runnable::run );
+    }
 
-   public void compute() {
-      lines.drain();
-      closeHandlers.forEach( Runnable::run );
-   }
+    private static class AggregatorData extends HashMap<HashCodeCache, Data> {
+        private final String name;
 
-   private static class AggregatorData extends HashMap<HashCodeCache, Data> {
-      private final String name;
+        public AggregatorData( String name ) {
+            this.name = name;
+        }
+    }
 
-      public AggregatorData( String name ) {
-         this.name = name;
-      }
-   }
+    public static class GroupBy {
+        public final String name;
+        public final int[] fields;
+        public final Accumulator[] accumulators;
 
-   public static class GroupBy {
-      public final String name;
-      public final int[] fields;
-      public final Accumulator[] accumulators;
-
-      public GroupBy( String name, int[] fields, Accumulator... accumulators ) {
-         this.name = name;
-         this.fields = fields;
-         this.accumulators = accumulators;
-      }
-   }
+        public GroupBy( String name, int[] fields, Accumulator... accumulators ) {
+            this.name = name;
+            this.fields = fields;
+            this.accumulators = accumulators;
+        }
+    }
 
 
-   private static class HashCodeCache {
-      public Object[] values;
-      private int hashCode;
+    private static class HashCodeCache {
+        public Object[] values;
+        private int hashCode;
 
-      public void reset( Object[] values ) {
-         this.values = values;
+        public void reset( Object[] values ) {
+            this.values = values;
 
-         int result = 1;
+            int result = 1;
 
-         for( Object element : values )
-            result = 31 * result + element.hashCode();
+            for( Object element : values )
+                result = 31 * result + element.hashCode();
 
-         hashCode = result;
-      }
+            hashCode = result;
+        }
 
-      @Override
-      public boolean equals( Object obj ) {
-         final HashCodeCache obj1 = ( HashCodeCache ) obj;
-         final Object[] values = obj1.values;
+        @Override
+        public boolean equals( Object obj ) {
+            final HashCodeCache obj1 = ( HashCodeCache ) obj;
+            final Object[] values = obj1.values;
 
-         for( int i = 0; i < values.length; i++ ) {
-            if( !values[i].equals( this.values[i] ) ) return false;
-         }
+            for( int i = 0; i < values.length; i++ ) {
+                if( !values[i].equals( this.values[i] ) ) return false;
+            }
 
-         return true;
-      }
+            return true;
+        }
 
-      @Override
-      public int hashCode() {
-         return hashCode;
-      }
-   }
+        @Override
+        public int hashCode() {
+            return hashCode;
+        }
+    }
 
-   private static class Data {
-      final Object[] keys;
-      final Accumulator[] accumulators;
+    private static class Data {
+        final Object[] keys;
+        final Accumulator[] accumulators;
 
-      public Data( Object[] keys, Accumulator[] accumulators ) {
-         this.keys = keys;
-         this.accumulators = new Accumulator[accumulators.length];
-         for( int i = 0; i < accumulators.length; i++ ) {
-            this.accumulators[i] = accumulators[i].clone();
-         }
-      }
+        public Data( Object[] keys, Accumulator[] accumulators ) {
+            this.keys = keys;
+            this.accumulators = new Accumulator[accumulators.length];
+            for( int i = 0; i < accumulators.length; i++ ) {
+                this.accumulators[i] = accumulators[i].clone();
+            }
+        }
 
-      public List<Object> values() {
-         final ArrayList<Object> result = new ArrayList<>( keys.length + accumulators.length );
-         Collections.addAll( result, keys );
-         for( Accumulator accumulator : accumulators ) result.add( accumulator.result() );
-         return result;
-      }
+        public List<Object> values() {
+            final ArrayList<Object> result = new ArrayList<>( keys.length + accumulators.length );
+            Collections.addAll( result, keys );
+            for( Accumulator accumulator : accumulators ) result.add( accumulator.result() );
+            return result;
+        }
 
-      public List<Object> calculatedValues() {
-         final ArrayList<Object> result = new ArrayList<>( accumulators.length );
-         for( Accumulator accumulator : accumulators ) result.add( accumulator.result() );
-         return result;
-      }
-   }
-
-
-   public static class GroupByStream {
-      public final int[][] fields;
-      private final AggregatorData[] agg;
-
-      public GroupByStream( AggregatorData[] agg, int[][] fields ) {
-         this.agg = agg;
-         this.fields = fields;
-      }
-
-      public List<Pair<String, Table>> getTables() {
-         final ArrayList<Pair<String, Table>> result = new ArrayList<>( agg.length );
-
-         for( int i = 0; i < agg.length; i++ ) {
-            final AggregatorData aggregatorData = agg[i];
-            final Collection<Data> values = aggregatorData.values();
-            result.add( __( aggregatorData.name, new Table( Stream.of( values.stream().map( Data::values ) ) ) ) );
-         }
-
-         return result;
-      }
-
-      public Map<String, List<Object>>[] getMaps( Function<Object[], String> str ) {
-         @SuppressWarnings( "unchecked" )
-         final Map<String, List<Object>>[] maps = new Map[agg.length];
-
-         for( int i = 0; i < agg.length; i++ ) {
-            final HashMap<String, List<Object>> map = new HashMap<>();
-            maps[i] = map;
-
-            agg[i].forEach( ( hc, value ) -> map.put( str.apply( hc.values ), value.calculatedValues() ) );
-         }
+        public List<Object> calculatedValues() {
+            final ArrayList<Object> result = new ArrayList<>( accumulators.length );
+            for( Accumulator accumulator : accumulators ) result.add( accumulator.result() );
+            return result;
+        }
+    }
 
 
-         return maps;
-      }
-   }
+    public static class GroupByStream {
+        public final int[][] fields;
+        private final AggregatorData[] agg;
+
+        public GroupByStream( AggregatorData[] agg, int[][] fields ) {
+            this.agg = agg;
+            this.fields = fields;
+        }
+
+        public List<Pair<String, Table>> getTables() {
+            final ArrayList<Pair<String, Table>> result = new ArrayList<>( agg.length );
+
+            for( int i = 0; i < agg.length; i++ ) {
+                final AggregatorData aggregatorData = agg[i];
+                final Collection<Data> values = aggregatorData.values();
+                result.add( __( aggregatorData.name, new Table( Stream.of( values.stream().map( Data::values ) ) ) ) );
+            }
+
+            return result;
+        }
+
+        public Map<String, List<Object>>[] getMaps( Function<Object[], String> str ) {
+            @SuppressWarnings( "unchecked" ) final Map<String, List<Object>>[] maps = new Map[agg.length];
+
+            for( int i = 0; i < agg.length; i++ ) {
+                final HashMap<String, List<Object>> map = new HashMap<>();
+                maps[i] = map;
+
+                agg[i].forEach( ( hc, value ) -> map.put( str.apply( hc.values ), value.calculatedValues() ) );
+            }
+
+
+            return maps;
+        }
+    }
 }
