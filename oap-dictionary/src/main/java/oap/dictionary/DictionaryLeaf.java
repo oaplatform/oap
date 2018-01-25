@@ -24,8 +24,11 @@
 
 package oap.dictionary;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
@@ -39,11 +42,13 @@ import java.util.Optional;
  */
 @EqualsAndHashCode
 @ToString
+@JsonPropertyOrder({ "id", "externalId", "enabled", "properties" })
 public class DictionaryLeaf implements Dictionary {
-    @JsonInclude( JsonInclude.Include.NON_DEFAULT )
+    @JsonIgnore
     private final boolean enabled;
     private final int externalId;
     @JsonInclude( JsonInclude.Include.NON_DEFAULT )
+    @JsonProperty
     private final Map<String, Object> properties;
     private final String id;
 
@@ -123,6 +128,12 @@ public class DictionaryLeaf implements Dictionary {
     @JsonIgnore
     public boolean isEnabled() {
         return enabled;
+    }
+
+    @JsonInclude( JsonInclude.Include.NON_NULL )
+    @JsonProperty( value = "enabled" )
+    private Boolean isEnabledJackson() {
+        return enabled ? null : false;
     }
 
     public int getExternalId() {
