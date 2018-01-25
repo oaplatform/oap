@@ -53,7 +53,6 @@
         <module>oap-storage</module>
         <module>oap-storage-mongo</module>
         <module>oap-tsv</module>
-        <module>oap-etl</module>
         <module>oap-logstream</module>
         <module>oap-ws-cat</module>
         <module>oap-alert</module>
