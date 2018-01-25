@@ -42,6 +42,7 @@ import java.io.Serializable;
 public class SecurityContainer<T extends IdBean> implements Serializable {
     private static final long serialVersionUID = 8477473083613051099L;
     public AclObject acl;
+    @Id
     public String id;
     @JsonTypeIdResolver( TypeIdFactory.class )
     @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.EXTERNAL_PROPERTY, property = "object:type" )
