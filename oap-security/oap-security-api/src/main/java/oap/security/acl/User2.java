@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.security.ws;
+package oap.security.acl;
 
 /**
  * Created by igor.petrenko on 22.12.2017.

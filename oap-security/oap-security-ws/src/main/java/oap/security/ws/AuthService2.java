@@ -27,6 +27,7 @@ package oap.security.ws;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
+import oap.security.acl.User2;
 import oap.util.Stream;
 import oap.ws.security.PasswordHasher;
 import org.joda.time.DateTimeUtils;

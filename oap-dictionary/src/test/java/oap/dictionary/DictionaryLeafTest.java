@@ -22,25 +22,32 @@
  * SOFTWARE.
  */
 
-package oap.etl.accumulator;
+package oap.dictionary;
 
-import oap.testng.AbstractTest;
+import lombok.val;
+import oap.json.Binder;
+import oap.util.Maps;
 import org.testng.annotations.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static java.util.Collections.emptyMap;
+import static oap.testng.Asserts.assertString;
 
 /**
- * Created by Admin on 31.05.2016.
+ * Created by igor.petrenko on 25.01.2018.
  */
-public class FilterTest extends AbstractTest {
+public class DictionaryLeafTest {
     @Test
-    public void cloneFilter() {
-        LongSumAccumulator accumulator = new LongSumAccumulator( 1 );
-        Filter<String> filter = new Filter<>( accumulator, 2, ( c ) -> true );
+    public void testSerializeProperties() {
+        val dictionaryLeaf = new DictionaryLeaf( "id", true, 1, Maps.of2( "p1", "v1" ) );
+        assertString( Binder.json.marshal( dictionaryLeaf ) )
+            .isEqualTo( "{\"id\":\"id\",\"externalId\":1,\"properties\":{\"p1\":\"v1\"}}" );
+    }
 
-        Filter<String> clone = filter.clone();
-        assertThat( clone ).isEqualTo( filter ).isNotSameAs( filter );
-        assertThat( clone.accumulator ).isEqualTo( accumulator ).isNotSameAs( accumulator );
+    @Test
+    public void testSerializeEnabled() {
+        val dictionaryLeaf = new DictionaryLeaf( "id", false, 1, emptyMap() );
+        assertString( Binder.json.marshal( dictionaryLeaf ) )
+            .isEqualTo( "{\"id\":\"id\",\"externalId\":1,\"enabled\":false}" );
     }
 
 }
