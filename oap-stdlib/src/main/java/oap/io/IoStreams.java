@@ -105,7 +105,7 @@ public class IoStreams {
     public static Stream<String> lines( InputStream stream, boolean autoClose ) {
         BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, StandardCharsets.UTF_8 ) );
         java.util.stream.Stream<String> ustream = bufferedReader.lines();
-        if( autoClose ) {
+        if(autoClose) {
             ustream = ustream.onClose( Try.run( bufferedReader::close ) );
         }
 
@@ -215,25 +215,6 @@ public class IoStreams {
                 bufferSize > 0 ? new BufferedInputStream( fileInputStream, bufferSize ) : fileInputStream, encoding );
         } catch( IOException e ) {
             throw new IOException( "couldn't open file " + path.toString(), e );
-        }
-    }
-
-    public static InputStream in( URL url ) {
-        return in( url, DEFAULT_BUFFER );
-    }
-
-    public static InputStream in( URL url, int bufferSIze ) {
-        return in( url, Encoding.from( url ), bufferSIze );
-    }
-
-    @SneakyThrows
-    public static InputStream in( URL url, Encoding encoding, int bufferSize ) {
-        try {
-            val is = url.openStream();
-            return getInputStream(
-                bufferSize > 0 ? new BufferedInputStream( is, bufferSize ) : is, encoding );
-        } catch( IOException e ) {
-            throw new IOException( "couldn't open URL " + url, e );
         }
     }
 

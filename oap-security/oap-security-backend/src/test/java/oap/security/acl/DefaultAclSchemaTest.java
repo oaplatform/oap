@@ -29,7 +29,6 @@ import lombok.val;
 import oap.storage.IdentifierBuilder;
 import oap.storage.MemoryStorage;
 import oap.storage.Storage;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static java.util.Collections.emptyList;
@@ -46,7 +45,7 @@ public class DefaultAclSchemaTest {
     private Storage<SecurityContainer<TestAclObject>> storage;
     private DefaultAclSchema schema;
 
-    @BeforeMethod
+    @Test
     public void beforeMethod() {
         storage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), NoLock );
 
@@ -54,7 +53,7 @@ public class DefaultAclSchemaTest {
             ImmutableMap.of(
                 "root", new RootStorage(),
                 "organization", storage,
-                "user", storage ), "acl/test-acl-schema.conf" );
+                "user", storage ), "/acl/test-acl-schema.conf" );
     }
 
     @Test

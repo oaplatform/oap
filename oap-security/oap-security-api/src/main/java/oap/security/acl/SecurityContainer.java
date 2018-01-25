@@ -61,7 +61,7 @@ public class SecurityContainer<T extends IdBean> implements Serializable {
     }
 
     public SecurityContainer( T object, AclObject acl ) {
-        this( object.id, object, acl );
+        this( null, object, acl );
     }
 
     @Id

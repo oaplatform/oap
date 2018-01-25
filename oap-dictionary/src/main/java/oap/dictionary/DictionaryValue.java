@@ -24,7 +24,6 @@
 
 package oap.dictionary;
 
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
@@ -41,90 +40,89 @@ import static java.util.stream.Collectors.toList;
  */
 @EqualsAndHashCode( callSuper = true )
 @ToString( callSuper = true )
-@JsonPropertyOrder( { "id", "externalId", "enabled", "properties", "values" } )
 public class DictionaryValue extends DictionaryLeaf implements Dictionary {
-    public final List<? extends Dictionary> values;
+   public final List<? extends Dictionary> values;
 
-    public DictionaryValue( String id, boolean enabled, int externalId ) {
-        this( id, enabled, externalId, emptyList(), emptyMap() );
-    }
+   public DictionaryValue( String id, boolean enabled, int externalId ) {
+      this( id, enabled, externalId, emptyList(), emptyMap() );
+   }
 
-    public DictionaryValue( String id, boolean enabled, int externalId, List<? extends Dictionary> values ) {
-        this( id, enabled, externalId, values, emptyMap() );
-    }
+   public DictionaryValue( String id, boolean enabled, int externalId, List<? extends Dictionary> values ) {
+      this( id, enabled, externalId, values, emptyMap() );
+   }
 
-    public DictionaryValue(
-        String id,
-        boolean enabled,
-        int externalId,
-        Map<String, Object> properties
-    ) {
-        this( id, enabled, externalId, emptyList(), properties );
-    }
+   public DictionaryValue(
+      String id,
+      boolean enabled,
+      int externalId,
+      Map<String, Object> properties
+   ) {
+      this( id, enabled, externalId, emptyList(), properties );
+   }
 
-    public DictionaryValue(
-        String id,
-        boolean enabled,
-        int externalId,
-        List<? extends Dictionary> values,
-        Map<String, Object> properties
-    ) {
-        super( id, enabled, externalId, properties );
-        this.values = values;
-    }
+   public DictionaryValue(
+      String id,
+      boolean enabled,
+      int externalId,
+      List<? extends Dictionary> values,
+      Map<String, Object> properties
+   ) {
+      super( id, enabled, externalId, properties );
+      this.values = values;
+   }
 
-    @Override
-    public int getOrDefault( String id, int defaultValue ) {
-        return getValueOpt( id ).map( Dictionary::getExternalId ).orElse( defaultValue );
-    }
+   @Override
+   public int getOrDefault( String id, int defaultValue ) {
+      return getValueOpt( id ).map( Dictionary::getExternalId ).orElse( defaultValue );
+   }
 
-    @Override
-    public Integer get( String id ) {
-        return getValueOpt( id ).map( Dictionary::getExternalId ).orElse( null );
-    }
+   @Override
+   public Integer get( String id ) {
+      return getValueOpt( id ).map( Dictionary::getExternalId ).orElse( null );
+   }
 
-    @Override
-    public String getOrDefault( int externlId, String defaultValue ) {
-        return values
-            .stream()
-            .filter( v -> v.getExternalId() == externlId )
-            .findAny()
-            .map( Dictionary::getId )
-            .orElse( defaultValue );
-    }
+   @Override
+   public String getOrDefault( int externlId, String defaultValue ) {
+      return values
+         .stream()
+         .filter( v -> v.getExternalId() == externlId )
+         .findAny()
+         .map( Dictionary::getId )
+         .orElse( defaultValue );
+   }
 
-    @Override
-    public boolean containsValueWithId( String id ) {
-        return getValueOpt( id ).isPresent();
-    }
+   @Override
+   public boolean containsValueWithId( String id ) {
+      return getValueOpt( id ).isPresent();
+   }
 
-    @Override
-    public List<String> ids() {
-        return values.stream().map( Dictionary::getId ).collect( toList() );
-    }
+   @Override
+   public List<String> ids() {
+      return values.stream().map( Dictionary::getId ).collect( toList() );
+   }
 
-    @Override
-    public int[] externalIds() {
-        return values.stream().mapToInt( Dictionary::getExternalId ).toArray();
-    }
+   @Override
+   public int[] externalIds() {
+      return values.stream().mapToInt( Dictionary::getExternalId ).toArray();
+   }
 
-    @Override
-    public List<? extends Dictionary> getValues() {
-        return values;
-    }
+   @Override
+   public List<? extends Dictionary> getValues() {
+      return values;
+   }
 
-    @Override
-    public Optional<? extends Dictionary> getValueOpt( String name ) {
-        return values.stream().filter( l -> l.getId().equals( name ) ).findAny();
-    }
+   @Override
+   public Optional<? extends Dictionary> getValueOpt( String name ) {
+      return values.stream().filter( l -> l.getId().equals( name ) ).findAny();
+   }
 
-    @Override
-    public Dictionary getValue( String name ) {
-        return getValueOpt( name ).orElse( null );
-    }
+   @Override
+   public Dictionary getValue( String name ) {
+      return getValueOpt( name ).orElse( null );
+   }
 
-    @Override
-    public Dictionary getValue( int externalId ) {
-        return values.stream().filter( l -> l.getExternalId() == externalId ).findAny().orElse( null );
-    }
+   @Override
+   public Dictionary getValue( int externalId ) {
+      return values.stream().filter( l -> l.getExternalId() == externalId ).findAny().orElse( null );
+   }
 }

@@ -22,22 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.io;
-
-import lombok.SneakyThrows;
-import oap.util.Strings;
-
-import java.io.InputStream;
-import java.net.URL;
+package oap.security.ws;
 
 /**
- * Created by igor.petrenko on 25.01.2018.
+ * Created by igor.petrenko on 22.12.2017.
  */
-public class URLs {
-    @SneakyThrows
-    public static String readString( URL url ) {
-        try( InputStream in = IoStreams.in( url ) ) {
-            return Strings.readString( in );
-        }
-    }
+public interface User2 {
+    String getPassword();
+
+    String getId();
 }
