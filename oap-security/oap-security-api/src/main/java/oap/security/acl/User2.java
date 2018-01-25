@@ -22,46 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.etl.accumulator;
+package oap.security.acl;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.tsv.TypedListModel;
+/**
+ * Created by igor.petrenko on 22.12.2017.
+ */
+public interface User2 {
+    String getPassword();
 
-import java.util.List;
-
-@ToString
-@EqualsAndHashCode( exclude = { "sum" } )
-public class LongSumAccumulator implements Accumulator {
-    private int field;
-    private long sum;
-
-    public LongSumAccumulator( int field ) {
-        this.field = field;
-    }
-
-    @Override
-    public void accumulate( List<Object> values ) {
-        this.sum += ( ( Number ) values.get( this.field ) ).longValue();
-    }
-
-    @Override
-    public void reset() {
-        this.sum = 0;
-    }
-
-    @Override
-    public Long result() {
-        return this.sum;
-    }
-
-    @Override
-    public LongSumAccumulator clone() {
-        return new LongSumAccumulator( field );
-    }
-
-    @Override
-    public TypedListModel.ColumnType getModelType() {
-        return TypedListModel.ColumnType.LONG;
-    }
+    String getId();
 }
