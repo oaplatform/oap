@@ -130,7 +130,6 @@ public class DefaultAclSchema implements AclSchema {
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
     public List<String> getPermissions( String objectId ) {
         val object = getObject( objectId ).orElse( null );
         if( object == null ) return emptyList();
