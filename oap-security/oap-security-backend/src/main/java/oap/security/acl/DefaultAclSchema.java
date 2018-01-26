@@ -36,7 +36,6 @@ import oap.util.Strings;
 
 import java.net.URL;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -58,9 +57,8 @@ public class DefaultAclSchema implements AclSchema {
 
     @JsonCreator
     public DefaultAclSchema( Map<String, Storage<? extends SecurityContainer<?>>> objectStorage, String schema, AclSchema remoteSchema ) {
-        this.objectStorage = new HashMap<>( objectStorage );
+        this.objectStorage = objectStorage;
         this.remoteSchema = Optional.ofNullable( remoteSchema );
-        this.objectStorage.put( "root", new RootStorage() );
 
         log.info( "acl schema path = {}", schema );
 

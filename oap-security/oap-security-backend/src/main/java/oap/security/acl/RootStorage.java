@@ -34,7 +34,7 @@ import static oap.storage.Storage.LockStrategy.NoLock;
 /**
  * Created by igor.petrenko on 02.01.2018.
  */
-class RootStorage extends MemoryStorage<SecurityContainer<RootObject>> {
+public class RootStorage extends MemoryStorage<SecurityContainer<RootObject>> {
     public RootStorage() {
         super( IdentifierBuilder.identify( root -> ROOT ).build(), NoLock );
 
