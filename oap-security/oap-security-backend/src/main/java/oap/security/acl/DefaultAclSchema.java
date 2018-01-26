@@ -53,11 +53,13 @@ import static java.util.stream.Collectors.toList;
 @Slf4j
 public class DefaultAclSchema implements AclSchema {
     private final Map<String, Storage<? extends SecurityContainer<?>>> objectStorage;
+    private final Optional<AclSchema> remoteSchema;
     private final AclSchemaBean schema;
 
     @JsonCreator
-    public DefaultAclSchema( Map<String, Storage<? extends SecurityContainer<?>>> objectStorage, String schema ) {
+    public DefaultAclSchema( Map<String, Storage<? extends SecurityContainer<?>>> objectStorage, String schema, Optional<AclSchema> remoteSchema ) {
         this.objectStorage = new HashMap<>( objectStorage );
+        this.remoteSchema = remoteSchema;
         this.objectStorage.put( "root", new RootStorage() );
 
         log.info( "acl schema path = {}", schema );
@@ -92,11 +94,18 @@ public class DefaultAclSchema implements AclSchema {
             if( ( con = storage.get( id ) ).isPresent() ) return con.map( c -> c.acl );
         }
 
-        return Optional.empty();
+        return remoteSchema.flatMap( rs -> rs.getObject( id ) );
     }
 
     @Override
     public Stream<AclObject> selectObjects() {
+        return remoteSchema
+            .map( rs -> Stream.concat( selectLocalObjects(), rs.selectObjects() ) )
+            .orElse( selectLocalObjects() );
+    }
+
+    @Override
+    public Stream<AclObject> selectLocalObjects() {
         return objectStorage.values()
             .stream()
             .flatMap( Storage::select )
@@ -104,7 +113,7 @@ public class DefaultAclSchema implements AclSchema {
     }
 
     @Override
-    public Optional<AclObject> updateObject( String id, Consumer<AclObject> cons ) {
+    public Optional<AclObject> updateLocalObject( String id, Consumer<AclObject> cons ) {
         for( val os : objectStorage.values() ) {
             val res = os.update( id, con -> {
                 cons.accept( con.acl );
@@ -123,10 +132,17 @@ public class DefaultAclSchema implements AclSchema {
     }
 
     @Override
+    public Iterable<AclObject> localObjects() {
+        return () -> selectLocalObjects().iterator();
+    }
+
+    @Override
     public void deleteObject( String id ) {
         for( val os : objectStorage.values() ) {
             if( os.delete( id ).isPresent() ) return;
         }
+
+        remoteSchema.ifPresent( rs -> rs.deleteObject( id ) );
     }
 
     @Override

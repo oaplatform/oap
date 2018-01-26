@@ -65,12 +65,22 @@ public class MockAclSchema implements AclSchema {
     }
 
     @Override
+    public Stream<AclObject> selectLocalObjects() {
+        return selectObjects();
+    }
+
+    @Override
     public Iterable<AclObject> objects() {
         return () -> selectObjects().iterator();
     }
 
     @Override
-    public Optional<AclObject> updateObject( String id, Consumer<AclObject> cons ) {
+    public Iterable<AclObject> localObjects() {
+        return objects();
+    }
+
+    @Override
+    public Optional<AclObject> updateLocalObject( String id, Consumer<AclObject> cons ) {
         if( AclService.ROOT.equals( id ) ) {
             cons.accept( ROOT_ACL_OBJECT );
 

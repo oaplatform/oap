@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static oap.application.ApplicationUtils.service;
 import static oap.security.acl.AclService.ROOT;
@@ -71,7 +70,7 @@ public class DefaultAclServiceTest {
         val gaRole = roleStorage.store( new AclRole( AclService.GLOBAL_ADMIN_ROLE, "ga", singletonList( "*" ) ) );
 
         val aclSchema = new MockAclSchema( objectStorage );
-        aclService = service( new DefaultAclService( roleStorage, aclSchema, emptyList() ) );
+        aclService = service( new DefaultAclService( roleStorage, aclSchema ) );
 
         rootId = register( ROOT, "testObject1", ROOT );
         childId = register( rootId, "child", ROOT );
