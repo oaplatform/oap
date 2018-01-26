@@ -26,10 +26,10 @@ package oap.ws.cat;
 
 import oap.http.HttpResponse;
 import oap.testng.AbstractTest;
-import org.apache.commons.io.IOUtils;
+import oap.util.Lists;
+import oap.util.Strings;
 import org.testng.annotations.Test;
 
-import static java.util.Arrays.asList;
 import static oap.testng.Asserts.assertString;
 import static oap.ws.cat.CatApi.table;
 
@@ -37,12 +37,12 @@ import static oap.ws.cat.CatApi.table;
  * Created by Admin on 09.06.2016.
  */
 public class CatApiTest extends AbstractTest {
-   @Test
-   public void testTable() throws Exception {
-      final HttpResponse table = table( asList( "1", "test23" ), asList( "bbbb", "2" ) );
+    @Test
+    public void testTable() throws Exception {
+        final HttpResponse table = table( Lists.of( "1", "test23" ), Lists.of( "bbbb", "2" ) );
 
-      assertString( IOUtils.toString( table.contentEntity.getContent() ) ).isEqualTo( "1    test23\n" +
-         "bbbb 2     \n" );
-   }
+        assertString( Strings.readString( table.contentEntity.getContent() ) ).isEqualTo( "1    test23\n"
+            + "bbbb 2     \n" );
+    }
 
 }

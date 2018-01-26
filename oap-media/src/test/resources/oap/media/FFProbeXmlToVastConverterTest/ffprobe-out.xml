@@ -39,11 +39,11 @@
         </stream>
     </streams>
 
-    <format filename="SampleVideo_1280x720_1mb.mp4" nb_streams="2" nb_programs="0" format_name="mov,mp4,m4a,3gp,3g2,mj2" format_long_name="QuickTime / MOV" start_time="0:00:00.000000" duration="0:00:05.312000" size="1055736" bit_rate="1589963" probe_score="100">
+    <model filename="SampleVideo_1280x720_1mb.mp4" nb_streams="2" nb_programs="0" format_name="mov,mp4,m4a,3gp,3g2,mj2" format_long_name="QuickTime / MOV" start_time="0:00:00.000000" duration="0:00:05.312000" size="1055736" bit_rate="1589963" probe_score="100">
         <tag key="major_brand" value="isom"/>
         <tag key="minor_version" value="512"/>
         <tag key="compatible_brands" value="isomiso2avc1mp41"/>
         <tag key="creation_time" value="1970-01-01T00:00:00.000000Z"/>
         <tag key="encoder" value="Lavf53.24.2"/>
-    </format>
+    </model>
 </ffprobe>

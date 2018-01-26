@@ -22,22 +22,46 @@
  * SOFTWARE.
  */
 
-package oap.io;
+package oap.etl.accumulator;
 
-import lombok.SneakyThrows;
-import oap.util.Strings;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import oap.tsv.TypedListModel;
 
-import java.io.InputStream;
-import java.net.URL;
+import java.util.List;
 
-/**
- * Created by igor.petrenko on 25.01.2018.
- */
-public class URLs {
-    @SneakyThrows
-    public static String readString( URL url ) {
-        try( InputStream in = IoStreams.in( url ) ) {
-            return Strings.readString( in );
-        }
+@ToString
+@EqualsAndHashCode( exclude = { "sum" } )
+public class LongSumAccumulator implements Accumulator {
+    private int field;
+    private long sum;
+
+    public LongSumAccumulator( int field ) {
+        this.field = field;
+    }
+
+    @Override
+    public void accumulate( List<Object> values ) {
+        this.sum += ( ( Number ) values.get( this.field ) ).longValue();
+    }
+
+    @Override
+    public void reset() {
+        this.sum = 0;
+    }
+
+    @Override
+    public Long result() {
+        return this.sum;
+    }
+
+    @Override
+    public LongSumAccumulator clone() {
+        return new LongSumAccumulator( field );
+    }
+
+    @Override
+    public TypedListModel.ColumnType getModelType() {
+        return TypedListModel.ColumnType.LONG;
     }
 }

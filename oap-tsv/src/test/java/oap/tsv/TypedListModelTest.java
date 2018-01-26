@@ -35,12 +35,12 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static oap.testng.Asserts.assertFile;
-import static oap.tsv.Model.ColumnType.INT;
-import static oap.tsv.Model.ColumnType.STRING;
+import static oap.tsv.TypedListModel.ColumnType.INT;
+import static oap.tsv.TypedListModel.ColumnType.STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 
-public class ModelTest {
+public class TypedListModelTest {
     private Path path;
 
     @BeforeMethod
@@ -51,27 +51,27 @@ public class ModelTest {
     @Test
     public void load() {
         List<Path> paths = Stream.of( "1.tsv", "2.tsv", "3.tsv" ).map( path::resolve ).toList();
-        Model.Complex complexModel = Model.complex( file -> {
+        Model.Complex<List<Object>> complexModel = TypedListModel.complex( file -> {
             switch( FilenameUtils.getName( file ) ) {
                 case "1.tsv":
-                    return Model.withoutHeader().s( "c0", 1 ).i( "c1", 3 );
+                    return Model.typedList( false ).s( "c0", 1 ).i( "c1", 3 );
                 case "2.tsv":
-                    return Model.withoutHeader().s( "c0", 1 ).i( "c1", 4 );
+                    return Model.typedList( false ).s( "c0", 1 ).i( "c1", 4 );
                 case "3.tsv":
-                    return Model.withHeader().s( "c0", 1 ).v( "c1", INT, 0 );
+                    return Model.typedList( true ).s( "c0", 1 ).v( "c1", INT, 0 );
                 default:
                     throw new IllegalArgumentException();
 
             }
         } );
-        assertFile( path.resolve( "result.tsv" ) ).hasContent( Tsv.print( Tsv.fromPaths( paths, complexModel ) ) );
+        assertFile( path.resolve( "result.tsv" ) ).hasContent( Tsv.print( Tsv.tsv.fromPaths( paths, complexModel ) ) );
     }
 
     @Test
     public void datatypes() {
-        Model model = Model.withoutHeader().b( "c0", 0 ).i( "c1", 1 ).d( "c2", 2 ).s( "c3", 3 ).l( "c4", 4 );
+        TypedListModel model = Model.typedList( false ).b( "c0", 0 ).i( "c1", 1 ).d( "c2", 2 ).s( "c3", 3 ).l( "c4", 4 );
         Path datatypesTsv = path.resolve( Paths.get( "datatypes.tsv" ) );
-        Tsv.fromPath( datatypesTsv, model ).forEach( row -> {
+        Tsv.tsv.fromPath( datatypesTsv, model ).forEach( row -> {
             assertEquals( true, row.get( 0 ) );
             assertEquals( 1, row.get( 1 ) );
             assertEquals( 1.6, row.get( 2 ) );
@@ -82,8 +82,8 @@ public class ModelTest {
 
     @Test
     public void filter() {
-        Model model = Model.withoutHeader().b( "c0", 0 ).i( "c1", 1 ).d( "c2", 2 ).s( "c3", 3 ).l( "c4", 4 );
-        final Model newModel = model.filter( "c1", "c3" );
+        TypedListModel model = Model.typedList( false ).b( "c0", 0 ).i( "c1", 1 ).d( "c2", 2 ).s( "c3", 3 ).l( "c4", 4 );
+        final TypedListModel newModel = model.filter( "c1", "c3" );
 
         assertThat( newModel.size() ).isEqualTo( 2 );
         assertThat( newModel.getColumn( 0 ).name ).isEqualTo( "c1" );
@@ -93,8 +93,8 @@ public class ModelTest {
 
     @Test
     public void syncOffsetToIndex() {
-        Model model = Model.withoutHeader().b( "c0", 10 ).i( "c1", 2 ).v( "c2", STRING, "str" );
-        final Model newModel = model.syncOffsetToIndex();
+        TypedListModel model = Model.typedList( false ).b( "c0", 10 ).i( "c1", 2 ).v( "c2", STRING, "str" );
+        TypedListModel newModel = model.syncOffsetToIndex();
 
         assertThat( newModel.size() ).isEqualTo( 3 );
         assertThat( newModel.getOffset( "c0" ) ).isEqualTo( 0 );

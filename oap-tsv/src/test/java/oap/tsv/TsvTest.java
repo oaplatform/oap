@@ -24,7 +24,6 @@
 
 package oap.tsv;
 
-import oap.io.IoStreams;
 import oap.testng.Env;
 import oap.util.Stream;
 import org.testng.annotations.DataProvider;
@@ -34,31 +33,26 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static oap.testng.Asserts.assertFile;
-import static org.testng.Assert.assertEquals;
 
 public class TsvTest {
-    @Test
-    public void tabs() {
-        String tsv = "aaaa\tbbbb\txxxx\tddd\t19/11/2011\t33.3\taaaa\t11\txxx\tvvvv\tS\tS\t444\txxx\t4444\t1234\tN\tN";
-        List<String> delimited = Tsv.parse( tsv );
-        assertEquals( delimited.size(), 18 );
-    }
-
     @DataProvider( name = "files" )
     public Object[][] files() {
         return new Object[][] {
-            { "1.tsv", IoStreams.Encoding.PLAIN },
-            { "1.tsv.gz", IoStreams.Encoding.GZIP },
-            { "1.tsv.zip", IoStreams.Encoding.ZIP }
+            { "1.tsv" },
+            { "1.tsv.gz" },
+            { "1.tsv.zip" }
         };
     }
 
     @Test( dataProvider = "files" )
-    public void loadTsv( String file, IoStreams.Encoding encoding ) {
-        Model model = Model.withoutHeader().s( "c1", 1 ).i( "c3", 3 ).filterColumnCount( 4 );
+    public void loadTsv( String file ) {
+        TypedListModel model = Model.typedList( false )
+            .s( "c1", 1 )
+            .i( "c3", 3 )
+            .filterColumnCount( 4 );
         Path path = Env.deployTestData( getClass() );
 
-        Stream<List<Object>> tsv = Tsv.fromPath( path.resolve( file ), model );
+        Stream<List<Object>> tsv = Tsv.tsv.fromPath( path.resolve( file ), model );
         assertFile( path.resolve( "result.tsv" ) ).hasContent( Tsv.print( tsv ) );
     }
 

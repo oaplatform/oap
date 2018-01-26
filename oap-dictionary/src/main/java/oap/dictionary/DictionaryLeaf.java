@@ -24,7 +24,6 @@
 
 package oap.dictionary;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -42,7 +41,7 @@ import java.util.Optional;
  */
 @EqualsAndHashCode
 @ToString
-@JsonPropertyOrder({ "id", "externalId", "enabled", "properties" })
+@JsonPropertyOrder( { "id", "externalId", "enabled", "properties" } )
 public class DictionaryLeaf implements Dictionary {
     @JsonIgnore
     private final boolean enabled;

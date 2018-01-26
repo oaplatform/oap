@@ -1,0 +1,67 @@
+{
+  "table": "bid",
+  "aggregates": {
+    "by_exchange": [
+      "EXCHANGE"
+    ]
+  },
+  "joins": {
+    "impression": {
+      "table": "impression",
+      "field": "BID_ID",
+      "accumulators": [
+        {
+          "name": "count",
+          "type": "COUNT"
+        },
+        {
+          "name": "price",
+          "type": "SUM",
+          "field": "PRICE"
+        }
+      ]
+    },
+    "click": {
+      "field": "BID_ID",
+      "accumulators": [
+        {
+          "type": "COUNT",
+          "name": "count"
+        }
+      ],
+      "table": "click"
+    }
+  },
+  "accumulators": [
+    {
+      "name": "bids_count",
+      "type": "COUNT"
+    },
+    {
+      "name": "imps_count",
+      "type": "SUM",
+      "field": "impression.count"
+    },
+    {
+      "name": "sum_of_wins",
+      "type": "SUM",
+      "field": "impression.price"
+    },
+    {
+      "name": "sum_of_bids_won",
+      "type": "SUM",
+      "field": "BID_PRICE",
+      "filter": {
+        "field": "impression.count",
+        "operation": "!=",
+        "value": 0
+      }
+    },
+    {
+      "name": "clicks_count",
+      "type": "SUM",
+      "field": "click.count"
+    }
+  ],
+  "export": "export"
+}
