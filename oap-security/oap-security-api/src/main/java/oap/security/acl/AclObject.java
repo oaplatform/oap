@@ -93,7 +93,9 @@ public class AclObject implements Serializable, Cloneable {
     @JsonInclude( JsonInclude.Include.NON_DEFAULT )
     @ToString
     @EqualsAndHashCode
-    public static class Acl {
+    public static class Acl implements Serializable {
+        private static final long serialVersionUID = -5311615235702193446L;
+
         public final AclRole role;
         public final String subjectId;
         public final String parent;
