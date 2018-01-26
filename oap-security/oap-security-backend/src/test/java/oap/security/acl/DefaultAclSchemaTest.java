@@ -32,8 +32,6 @@ import oap.storage.Storage;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.Optional;
-
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static oap.security.acl.AclService.ROOT;
@@ -54,9 +52,9 @@ public class DefaultAclSchemaTest {
 
         schema = new DefaultAclSchema(
             ImmutableMap.of( "root", new RootStorage() ), "acl/test-acl-schema.conf",
-            Optional.of( new DefaultAclSchema( ImmutableMap.of(
+            new DefaultAclSchema( ImmutableMap.of(
                 "organization", storage,
-                "user", storage ), "acl/test-acl-schema.conf", null ) ) );
+                "user", storage ), "acl/test-acl-schema.conf", null ) );
     }
 
     @Test
