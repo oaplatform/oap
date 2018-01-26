@@ -154,7 +154,7 @@ public class DefaultAclSchema implements AclSchema {
         return parent.parents
             .stream()
             .flatMap( id ->
-                getSchemas( getObject( id ).get() )
+                getSchemas( getObject( id ).orElseThrow( () -> new IllegalStateException( "Unknown object " + id ) ) )
                     .stream()
                     .flatMap( aclType ->
                         aclType.getChild( parent.type )
