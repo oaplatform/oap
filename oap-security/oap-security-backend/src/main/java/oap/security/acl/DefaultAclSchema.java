@@ -57,9 +57,9 @@ public class DefaultAclSchema implements AclSchema {
     private final AclSchemaBean schema;
 
     @JsonCreator
-    public DefaultAclSchema( Map<String, Storage<? extends SecurityContainer<?>>> objectStorage, String schema, Optional<AclSchema> remoteSchema ) {
+    public DefaultAclSchema( Map<String, Storage<? extends SecurityContainer<?>>> objectStorage, String schema, AclSchema remoteSchema ) {
         this.objectStorage = new HashMap<>( objectStorage );
-        this.remoteSchema = remoteSchema;
+        this.remoteSchema = Optional.ofNullable( remoteSchema );
         this.objectStorage.put( "root", new RootStorage() );
 
         log.info( "acl schema path = {}", schema );
