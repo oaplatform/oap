@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Created by igor.petrenko on 30.01.2018.
  */
-public class MigrationTest extends AbstractMongoTest {
+public class DirectoryMigrationTest extends AbstractMongoTest {
     @Override
     @BeforeMethod
     public void beforeMethod() throws Exception {
@@ -45,23 +45,22 @@ public class MigrationTest extends AbstractMongoTest {
 
     @Test
     public void testStart() throws Exception {
-        val migration = new Migration( Env.deployTestData( getClass() ), "localhost", 27017, dbName );
-        migration.start();
+        val migration = new DirectoryMigration( Env.deployTestData( getClass() ) );
 
-        final Document version = database.getCollection( "version" ).find( eq( "_id", "version" ) ).first();
+        final Document version = mongoClient.database.getCollection( "version" ).find( eq( "_id", "version" ) ).first();
         assertThat( version ).isNotNull();
         assertThat( version.get( "value" ) ).isEqualTo( 10 );
 
         testValue( "test", "test", "c", 17 );
         testValue( "test", "test3", "v", 1 );
 
-        migration.start();
+        migration.run( mongoClient.database );
         testValue( "test", "test", "c", 17 );
         testValue( "test", "test3", "v", 1 );
     }
 
     public void testValue( String collection, String id, String actual, int expected ) {
-        assertThat( database.getCollection( collection ).find( eq( "_id", id ) ).first().getInteger( actual ) )
+        assertThat( mongoClient.database.getCollection( collection ).find( eq( "_id", id ) ).first().getInteger( actual ) )
             .isEqualTo( expected );
     }
 }

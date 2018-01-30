@@ -24,89 +24,18 @@
 
 package oap.storage.mongo;
 
-import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.FindOneAndUpdateOptions;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import oap.io.Files;
-import oap.util.Maps;
-import org.bson.Document;
-
-import java.nio.file.Path;
-
-import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Updates.set;
 
 /**
  * Created by igor.petrenko on 30.01.2018.
  */
-@Slf4j
-public class Migration {
-    private static final FindOneAndUpdateOptions UPSERT = new FindOneAndUpdateOptions().upsert( true );
+public interface Migration {
+    Migration NONE = new Migration() {
+        @Override
+        public void run( MongoDatabase database ) {
 
-    private final Path directory;
-    private final String host;
-    private final int port;
-    private final String database;
-
-    public Migration( Path directory, String host, int port, String database ) {
-        this.directory = directory;
-
-        this.host = host;
-        this.port = port;
-        this.database = database;
-    }
-
-    public void start() {
-        val toVersion = Integer.parseInt( Files.readString( directory.resolve( "version.txt" ) ) );
-        try( val mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ) ) ) {
-            val db = mongoClient.getDatabase( database );
-            val versionCollection = db.getCollection( "version" );
-            Document versionDocument = versionCollection.find( eq( "_id", "version" ) ).first();
-            if( versionDocument == null ) {
-                versionDocument = new Document( Maps.of2( "_id", "version", "value", 0 ) );
-            }
-            int fromVersion = versionDocument.getInteger( "value" );
-
-            log.info( "migration version = {}, database version = {}", toVersion, fromVersion );
-
-            String func = "";
-            final Path functions = directory.resolve( "functions.js" );
-            if( java.nio.file.Files.exists( functions ) ) {
-                func = Files.readString( functions );
-            }
-
-            while( toVersion >= fromVersion + 1 ) {
-                log.info( "migration from {} to {}", fromVersion, fromVersion + 1 );
-                fromVersion = fromVersion + 1;
-                nextMigration( db, fromVersion, func );
-                versionCollection.findOneAndUpdate( eq( "_id", "version" ), set( "value", fromVersion ), UPSERT );
-            }
         }
-    }
+    };
 
-    private void nextMigration( MongoDatabase db, int fromVersion, String functions ) {
-        val versionDirectory = directory.resolve( String.valueOf( fromVersion ) );
-        if( java.nio.file.Files.isDirectory( versionDirectory ) ) {
-            log.info( "directory {} ...", versionDirectory );
-            for( val file : Files.fastWildcard( versionDirectory, "*.js" ) ) {
-                log.info( "file {} ...", file );
-
-                val script = Files.readString( file );
-                val eval = new Document( "eval", "function() {\n" + functions + "\n" + script + "\n}\n" );
-                log.trace( "eval = {}", eval );
-                final Document response = db.runCommand( eval );
-                val ok = response.getDouble( "ok" );
-                if( ok < 1.0 ) {
-                    log.debug( "response ok={}, code={}, errmsg={}", response.get( "ok" ), response.get( "code" ), response.get( "errmsg" ) );
-                    throw new MigrationExceptin( response.get( "code" ) + ": " + response.get( "errmsg" ) );
-                }
-
-                log.info( "file {} ... Done", file );
-            }
-
-            log.info( "directory {} ... Done", versionDirectory );
-        }
-    }
+    void run( MongoDatabase database );
 }

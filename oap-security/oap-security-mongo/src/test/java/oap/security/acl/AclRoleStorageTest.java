@@ -25,6 +25,7 @@
 package oap.security.acl;
 
 import lombok.val;
+import oap.storage.mongo.Migration;
 import oap.storage.mongo.MongoClient;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
@@ -49,10 +50,10 @@ public class AclRoleStorageTest extends AbstractTest {
     public void beforeMethod() {
         val dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
-        mongoClient = new MongoClient( "localhost", 27017 );
-        mongoClient.getDatabase( dbName ).drop();
+        mongoClient = new MongoClient( "localhost", 27017, dbName, Migration.NONE );
+        mongoClient.database.drop();
 
-        storage = new AclRoleStorage( mongoClient, dbName, "roles" );
+        storage = new AclRoleStorage( mongoClient, "roles" );
     }
 
     @Test
@@ -67,7 +68,7 @@ public class AclRoleStorageTest extends AbstractTest {
     @Override
     @AfterMethod
     public void afterMethod() {
-        storage.database.drop();
+        mongoClient.database.drop();
         storage.close();
         mongoClient.close();
     }

@@ -41,7 +41,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class MongoStorageTest extends AbstractMongoTest {
     private MongoStorage<TestMongoBean> storage;
-    private MongoClient mongoClient;
     private TestMongoBean bean1;
 
     @BeforeMethod
@@ -52,7 +51,7 @@ public class MongoStorageTest extends AbstractMongoTest {
     }
 
     public MongoStorage<TestMongoBean> reopen() {
-        return new MongoStorage<>( mongoClient, dbName, "test", Lock );
+        return new MongoStorage<>( mongoClient, "test", Lock );
     }
 
     @AfterMethod

@@ -33,7 +33,7 @@ import static oap.storage.Storage.LockStrategy.Lock;
  * Created by igor.petrenko on 21.12.2017.
  */
 public class AclRoleStorage extends MongoStorage<AclRole> {
-    public AclRoleStorage( MongoClient mongoClient, String database, String table ) {
-        super( mongoClient, database, table, Lock );
+    public AclRoleStorage( MongoClient mongoClient, String table ) {
+        super( mongoClient, table, Lock );
     }
 }

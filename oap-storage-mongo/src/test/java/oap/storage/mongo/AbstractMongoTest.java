@@ -24,7 +24,6 @@
 
 package oap.storage.mongo;
 
-import com.mongodb.client.MongoDatabase;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.AfterMethod;
@@ -35,7 +34,6 @@ import org.testng.annotations.AfterMethod;
 public class AbstractMongoTest extends AbstractTest {
     protected String dbName;
     protected MongoClient mongoClient;
-    protected MongoDatabase database;
 
     @Override
     public void beforeMethod() throws Exception {
@@ -43,15 +41,14 @@ public class AbstractMongoTest extends AbstractTest {
 
         dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
-        mongoClient = new MongoClient( "localhost", 27017 );
-        database = mongoClient.getDatabase( dbName );
-        database.drop();
+        mongoClient = new MongoClient( "localhost", 27017, dbName, Migration.NONE );
+        mongoClient.database.drop();
     }
 
     @AfterMethod
     @Override
     public void afterMethod() throws Exception {
-        database.drop();
+        mongoClient.database.drop();
         mongoClient.close();
 
         super.afterMethod();

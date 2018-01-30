@@ -36,13 +36,16 @@ import java.io.Closeable;
  * Created by igor.petrenko on 21.12.2017.
  */
 public class MongoClient implements Closeable {
+    public final MongoDatabase database;
     protected final com.mongodb.MongoClient mongoClient;
     private final String host;
     private final int port;
+    private final Migration migration;
 
-    public MongoClient( String host, int port ) {
+    public MongoClient( String host, int port, String database, Migration migration ) {
         this.host = host;
         this.port = port;
+        this.migration = migration;
 
         val codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JodaTimeCodec() ),
@@ -51,6 +54,11 @@ public class MongoClient implements Closeable {
         val options = MongoClientOptions.builder().codecRegistry( codecRegistry ).build();
 
         mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ), options );
+        this.database = mongoClient.getDatabase( database );
+    }
+
+    public void start() {
+        migration.run( database );
     }
 
     @Override

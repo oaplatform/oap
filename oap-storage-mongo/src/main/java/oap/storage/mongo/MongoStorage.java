@@ -26,7 +26,6 @@ package oap.storage.mongo;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
@@ -56,12 +55,11 @@ import static com.mongodb.client.model.Filters.eq;
 public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
     public static final UpdateOptions UPDATE_OPTIONS_UPSERT = new UpdateOptions().upsert( true );
     public final MongoCollection<Metadata<T>> collection;
-    public final MongoDatabase database;
     public int bulkSize = 1000;
     private long lastFsync = -1;
 
     @SuppressWarnings( "unchecked" )
-    public MongoStorage( MongoClient mongoClient, String database, String table,
+    public MongoStorage( MongoClient mongoClient, String table,
                          LockStrategy lockStrategy ) {
         super( IdentifierBuilder
             .annotation()
@@ -69,17 +67,16 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
             .size( 24 )
             .idOptions()
             .build(), lockStrategy );
-        this.database = mongoClient.getDatabase( database );
 
 
         final Object o = new TypeReference<Metadata<T>>() {};
         final CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JsonCodec<>( ( TypeReference<Metadata> ) o,
                 Metadata.class, ( m ) -> identifier.get( ( T ) m.object ) ) ),
-            this.database.getCodecRegistry()
+            mongoClient.database.getCodecRegistry()
         );
 
-        final Object metadataMongoCollection = this.database
+        final Object metadataMongoCollection = mongoClient.database
             .getCollection( table, Metadata.class )
             .withCodecRegistry( codecRegistry );
         this.collection = ( MongoCollection<Metadata<T>> ) metadataMongoCollection;
