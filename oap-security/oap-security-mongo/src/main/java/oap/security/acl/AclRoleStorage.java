@@ -24,8 +24,8 @@
 
 package oap.security.acl;
 
-import oap.storage.MongoClient;
-import oap.storage.MongoStorage;
+import oap.storage.mongo.MongoClient;
+import oap.storage.mongo.MongoStorage;
 
 import static oap.storage.Storage.LockStrategy.Lock;
 

@@ -22,18 +22,43 @@
  * SOFTWARE.
  */
 
-package oap.security.acl;
+package oap.storage.mongo;
 
-import oap.storage.mongo.MongoClient;
-import oap.storage.mongo.MongoStorage;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoDatabase;
+import lombok.val;
+import org.bson.codecs.configuration.CodecRegistries;
 
-import static oap.storage.Storage.LockStrategy.Lock;
+import java.io.Closeable;
 
 /**
- * Created by igor.petrenko on 27.12.2017.
+ * Created by igor.petrenko on 21.12.2017.
  */
-public class TemporaryTokenStorage extends MongoStorage<TemporaryToken> {
-    public TemporaryTokenStorage( MongoClient mongoClient, String database, String table ) {
-        super( mongoClient, database, table, Lock );
+public class MongoClient implements Closeable {
+    protected final com.mongodb.MongoClient mongoClient;
+    private final String host;
+    private final int port;
+
+    public MongoClient( String host, int port ) {
+        this.host = host;
+        this.port = port;
+
+        val codecRegistry = CodecRegistries.fromRegistries(
+            CodecRegistries.fromCodecs( new JodaTimeCodec() ),
+            com.mongodb.MongoClient.getDefaultCodecRegistry() );
+
+        val options = MongoClientOptions.builder().codecRegistry( codecRegistry ).build();
+
+        mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ), options );
+    }
+
+    @Override
+    public void close() {
+        mongoClient.close();
+    }
+
+    public MongoDatabase getDatabase( String database ) {
+        return mongoClient.getDatabase( database );
     }
 }

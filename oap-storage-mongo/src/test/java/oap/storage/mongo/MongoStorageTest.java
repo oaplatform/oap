@@ -22,13 +22,12 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.storage.mongo;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.testng.Env;
 import oap.util.Id;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -40,18 +39,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Created by igor.petrenko on 19.09.2017.
  */
-public class MongoStorageTest {
-    private String dbName;
+public class MongoStorageTest extends AbstractMongoTest {
     private MongoStorage<TestMongoBean> storage;
     private MongoClient mongoClient;
     private TestMongoBean bean1;
 
     @BeforeMethod
-    public void beforeMethod() {
-        dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
-
-        mongoClient = new MongoClient( "localhost", 27017 );
-        mongoClient.getDatabase( dbName ).drop();
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
 
         storage = reopen();
     }
@@ -61,10 +56,11 @@ public class MongoStorageTest {
     }
 
     @AfterMethod
-    public void afterMethod() {
-        storage.database.drop();
+    @Override
+    public void afterMethod() throws Exception {
+        super.afterMethod();
+
         storage.close();
-        mongoClient.close();
     }
 
     @Test

@@ -22,28 +22,38 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.storage.mongo;
 
-import org.bson.BsonReader;
-import org.bson.BsonWriter;
-import org.bson.codecs.Codec;
-import org.bson.codecs.DecoderContext;
-import org.bson.codecs.EncoderContext;
-import org.joda.time.DateTime;
+import com.mongodb.client.MongoDatabase;
+import oap.testng.AbstractTest;
+import oap.testng.Env;
+import org.testng.annotations.AfterMethod;
 
-public class JodaTimeCodec implements Codec<DateTime> {
+/**
+ * Created by igor.petrenko on 30.01.2018.
+ */
+public class AbstractMongoTest extends AbstractTest {
+    protected String dbName;
+    protected MongoClient mongoClient;
+    protected MongoDatabase database;
+
     @Override
-    public DateTime decode( BsonReader bsonReader, DecoderContext decoderContext ) {
-        return new DateTime( bsonReader.readDateTime() );
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
+
+        dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
+
+        mongoClient = new MongoClient( "localhost", 27017 );
+        database = mongoClient.getDatabase( dbName );
+        database.drop();
     }
 
+    @AfterMethod
     @Override
-    public void encode( BsonWriter bsonWriter, DateTime dateTime, EncoderContext encoderContext ) {
-        bsonWriter.writeDateTime( dateTime.getMillis() );
-    }
+    public void afterMethod() throws Exception {
+        database.drop();
+        mongoClient.close();
 
-    @Override
-    public Class<DateTime> getEncoderClass() {
-        return DateTime.class;
+        super.afterMethod();
     }
 }

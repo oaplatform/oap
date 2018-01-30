@@ -22,53 +22,46 @@
  * SOFTWARE.
  */
 
-package oap.security.acl;
+package oap.storage.mongo;
 
 import lombok.val;
-import oap.storage.mongo.MongoClient;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
-import org.bson.types.ObjectId;
-import org.testng.annotations.AfterMethod;
+import org.bson.Document;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static com.mongodb.client.model.Filters.eq;
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Created by igor.petrenko on 22.12.2017.
+ * Created by igor.petrenko on 30.01.2018.
  */
-public class AclRoleStorageTest extends AbstractTest {
-    private AclRoleStorage storage;
-    private MongoClient mongoClient;
-
+public class MigrationTest extends AbstractMongoTest {
     @Override
     @BeforeMethod
-    public void beforeMethod() {
-        val dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
-
-        mongoClient = new MongoClient( "localhost", 27017 );
-        mongoClient.getDatabase( dbName ).drop();
-
-        storage = new AclRoleStorage( mongoClient, dbName, "roles" );
+    public void beforeMethod() throws Exception {
+        super.beforeMethod();
     }
 
     @Test
-    public void testId() {
-        val role = storage.store( new AclRole( "role1", singletonList( "test.permission" ) ) );
-        storage.fsync();
-        val role2 = storage.collection.find( eq( "_id", new ObjectId( role.id ) ) ).first();
+    public void testStart() throws Exception {
+        val migration = new Migration( Env.deployTestData( getClass() ), "localhost", 27017, dbName );
+        migration.start();
 
-        assertThat( role2.object ).isEqualTo( role );
+        final Document version = database.getCollection( "version" ).find( eq( "_id", "version" ) ).first();
+        assertThat( version ).isNotNull();
+        assertThat( version.get( "value" ) ).isEqualTo( 10 );
+
+        testValue( "test", "test", "c", 17 );
+        testValue( "test", "test3", "v", 1 );
+
+        migration.start();
+        testValue( "test", "test", "c", 17 );
+        testValue( "test", "test3", "v", 1 );
     }
 
-    @Override
-    @AfterMethod
-    public void afterMethod() {
-        storage.database.drop();
-        storage.close();
-        mongoClient.close();
+    public void testValue( String collection, String id, String actual, int expected ) {
+        assertThat( database.getCollection( collection ).find( eq( "_id", id ) ).first().getInteger( actual ) )
+            .isEqualTo( expected );
     }
 }

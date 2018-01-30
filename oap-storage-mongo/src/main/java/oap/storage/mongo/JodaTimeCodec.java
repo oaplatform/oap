@@ -22,18 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.security.acl;
+package oap.storage.mongo;
 
-import oap.storage.mongo.MongoClient;
-import oap.storage.mongo.MongoStorage;
+import org.bson.BsonReader;
+import org.bson.BsonWriter;
+import org.bson.codecs.Codec;
+import org.bson.codecs.DecoderContext;
+import org.bson.codecs.EncoderContext;
+import org.joda.time.DateTime;
 
-import static oap.storage.Storage.LockStrategy.Lock;
+public class JodaTimeCodec implements Codec<DateTime> {
+    @Override
+    public DateTime decode( BsonReader bsonReader, DecoderContext decoderContext ) {
+        return new DateTime( bsonReader.readDateTime() );
+    }
 
-/**
- * Created by igor.petrenko on 27.12.2017.
- */
-public class TemporaryTokenStorage extends MongoStorage<TemporaryToken> {
-    public TemporaryTokenStorage( MongoClient mongoClient, String database, String table ) {
-        super( mongoClient, database, table, Lock );
+    @Override
+    public void encode( BsonWriter bsonWriter, DateTime dateTime, EncoderContext encoderContext ) {
+        bsonWriter.writeDateTime( dateTime.getMillis() );
+    }
+
+    @Override
+    public Class<DateTime> getEncoderClass() {
+        return DateTime.class;
     }
 }

@@ -22,43 +22,13 @@
  * SOFTWARE.
  */
 
-package oap.storage;
-
-import com.mongodb.MongoClientOptions;
-import com.mongodb.ServerAddress;
-import com.mongodb.client.MongoDatabase;
-import lombok.val;
-import org.bson.codecs.configuration.CodecRegistries;
-
-import java.io.Closeable;
+package oap.storage.mongo;
 
 /**
- * Created by igor.petrenko on 21.12.2017.
+ * Created by igor.petrenko on 30.01.2018.
  */
-public class MongoClient implements Closeable {
-    protected final com.mongodb.MongoClient mongoClient;
-    private final String host;
-    private final int port;
-
-    public MongoClient( String host, int port ) {
-        this.host = host;
-        this.port = port;
-
-        val codecRegistry = CodecRegistries.fromRegistries(
-            CodecRegistries.fromCodecs( new JodaTimeCodec() ),
-            com.mongodb.MongoClient.getDefaultCodecRegistry() );
-
-        val options = MongoClientOptions.builder().codecRegistry( codecRegistry ).build();
-
-        mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ), options );
-    }
-
-    @Override
-    public void close() {
-        mongoClient.close();
-    }
-
-    public MongoDatabase getDatabase( String database ) {
-        return mongoClient.getDatabase( database );
+public class MigrationExceptin extends RuntimeException {
+    public MigrationExceptin( String message ) {
+        super( message );
     }
 }

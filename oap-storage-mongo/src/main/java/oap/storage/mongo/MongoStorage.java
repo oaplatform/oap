@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.storage.mongo;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.mongodb.client.MongoCollection;
@@ -32,6 +32,9 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import oap.storage.IdentifierBuilder;
+import oap.storage.MemoryStorage;
+import oap.storage.Metadata;
 import oap.util.Lists;
 import oap.util.Stream;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -58,7 +61,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
     private long lastFsync = -1;
 
     @SuppressWarnings( "unchecked" )
-    public MongoStorage( oap.storage.MongoClient mongoClient, String database, String table,
+    public MongoStorage( MongoClient mongoClient, String database, String table,
                          LockStrategy lockStrategy ) {
         super( IdentifierBuilder
             .annotation()
