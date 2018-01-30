@@ -238,13 +238,13 @@ public class DefaultAclServiceTest {
 
     @Test
     public void testAddChild() {
-        assertThat(aclService.getChildren( rootId, "child", false )).hasSize( 1 );
-        assertThat(aclService.getChildren( childId, "child", false )).hasSize( 1 );
+        assertThat( aclService.getChildren( rootId, "child", false ) ).hasSize( 1 );
+        assertThat( aclService.getChildren( childId, "child", false ) ).hasSize( 1 );
 
         aclService.addChild( rootId, childId2 );
 
-        assertThat(aclService.getChildren( rootId, "child", false )).hasSize( 2 );
-        assertThat(aclService.getChildren( childId, "child", false )).hasSize( 1 );
+        assertThat( aclService.getChildren( rootId, "child", false ) ).hasSize( 2 );
+        assertThat( aclService.getChildren( childId, "child", false ) ).hasSize( 1 );
     }
 
     @AfterMethod

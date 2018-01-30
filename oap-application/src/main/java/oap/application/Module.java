@@ -23,6 +23,7 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -54,12 +55,15 @@ public class Module {
     public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
     @SuppressWarnings( "unchecked" )
     static final Coercions coersions = Coercions.basic().withIdentity();
+    @JsonAlias( { "name", "%name" } )
     public String name;
+    @JsonAlias( { "dependsOn", "%dependsOn" } )
     public ArrayList<String> dependsOn = new ArrayList<>();
-    @JsonProperty( "extends" )
+    @JsonAlias( { "extends", "%extends" } )
     public ArrayList<String> extendsModules = new ArrayList<>();
-    @JsonProperty( "abstract" )
+    @JsonAlias( { "abstract", "%abstract" } )
     public boolean isAbstract = false;
+    @JsonAlias( { "services", "%services" } )
     public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
 
     @JsonCreator
@@ -71,20 +75,28 @@ public class Module {
     @ToString( exclude = "remoteCache" )
     @Slf4j
     public static class Service {
+        @JsonAlias( { "implementation", "%implementation" } )
         public String implementation;
+        @JsonAlias( { "parameters", "%parameters" } )
         public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
+        @JsonAlias( { "supervision", "%supervision" } )
         public Supervision supervision = new Supervision();
+        @JsonAlias( { "dependsOn", "%dependsOn" } )
         public ArrayList<String> dependsOn = new ArrayList<>();
         public URI remoteUrl;
+        @JsonAlias( { "remoteName", "%remoteName" } )
         public String remoteName;
         public Path certificateLocation;
         public String certificatePassword;
+        @JsonAlias( { "profile", "%profile" } )
         public String profile;
+        @JsonAlias( { "name", "%name" } )
         public String name;
         public long timeout = RemoteLocation.DEFAULT_TIMEOUT;
         public FST.SerializationMethod serialization = FST.SerializationMethod.DEFAULT;
         public LinkedHashMap<String, Object> listen = new LinkedHashMap<>();
         public RemoteLocation remote;
+        @JsonAlias( { "enabled", "%enabled" } )
         public boolean enabled = true;
         @JsonIgnore
         private Supplier<RemoteLocation> remoteCache = Functions.memoize( () -> {

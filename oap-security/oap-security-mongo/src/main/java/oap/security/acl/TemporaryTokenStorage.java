@@ -24,8 +24,8 @@
 
 package oap.security.acl;
 
-import oap.storage.MongoClient;
-import oap.storage.MongoStorage;
+import oap.storage.mongo.MongoClient;
+import oap.storage.mongo.MongoStorage;
 
 import static oap.storage.Storage.LockStrategy.Lock;
 
@@ -33,7 +33,7 @@ import static oap.storage.Storage.LockStrategy.Lock;
  * Created by igor.petrenko on 27.12.2017.
  */
 public class TemporaryTokenStorage extends MongoStorage<TemporaryToken> {
-    public TemporaryTokenStorage( MongoClient mongoClient, String database, String table ) {
-        super( mongoClient, database, table, Lock );
+    public TemporaryTokenStorage( MongoClient mongoClient, String table ) {
+        super( mongoClient, table, Lock );
     }
 }

@@ -122,14 +122,14 @@ public class DefaultAclService implements AclService {
         final AclRole aclRole = roleStorage.get( roleId ).orElse( null );
         if( aclRole == null ) return false;
 
-        return schema.updateObject( objectId, aclObject -> {
+        return schema.updateLocalObject( objectId, aclObject -> {
             aclObject.acls.add( new AclObject.Acl( aclRole, subjectId, null, inherit ) );
             if( inherit ) {
                 schema
-                    .selectObjects()
+                    .selectLocalObjects()
                     .filter( child -> child.ancestors.contains( objectId ) )
                     .forEach( childs ->
-                        schema.updateObject(
+                        schema.updateLocalObject(
                             childs.id,
                             child -> child.acls.add( new AclObject.Acl( aclRole, subjectId, objectId, false ) )
                         )
@@ -142,13 +142,13 @@ public class DefaultAclService implements AclService {
     public boolean remove( String objectId, String subjectId, String roleId ) {
         log.debug( "remove object = {}, subject = {}, role = {}", objectId, subjectId, roleId );
 
-        return schema.updateObject( objectId, aclObject ->
+        return schema.updateLocalObject( objectId, aclObject ->
             aclObject.acls.removeIf( acl -> {
                 if( acl.subjectId.equals( subjectId ) && acl.role.id.equals( roleId ) && acl.parent == null ) {
                     if( acl.inheritance ) {
-                        for( val ao : schema.objects() ) {
+                        for( val ao : schema.localObjects() ) {
                             if( ao.ancestors.contains( objectId ) ) {
-                                schema.updateObject(
+                                schema.updateLocalObject(
                                     ao.id,
                                     aos -> {
                                         aos.acls.removeIf( aclc -> aclc.subjectId.equals( subjectId ) && aclc.role.id.equals( roleId ) );
@@ -181,8 +181,7 @@ public class DefaultAclService implements AclService {
 
     @Override
     public List<String> getChildren( String parentId, String type, boolean recursive ) {
-        return schema
-            .selectObjects()
+        return schema.selectObjects()
             .filter( obj ->
                 ( recursive ? obj.ancestors.contains( parentId ) : obj.parents.contains( parentId ) )
                     && obj.type.equals( type ) )
@@ -220,8 +219,7 @@ public class DefaultAclService implements AclService {
         subjects.add( subjectId );
         subjects.addAll( aclSubject.ancestors );
 
-        return schema
-            .selectObjects()
+        return schema.selectObjects()
             .filter( obj ->
                 obj.ancestors.contains( parentId )
                     && obj.type.equals( type )
@@ -291,12 +289,12 @@ public class DefaultAclService implements AclService {
         if( !schema.getObject( objectId ).isPresent() )
             throw new AclSecurityException( "Object '" + objectId + "' not found" );
 
-        if( schema.selectObjects().anyMatch( obj -> obj.parents.contains( objectId ) ) )
+        if( schema.selectLocalObjects().anyMatch( obj -> obj.parents.contains( objectId ) ) )
             throw new AclSecurityException( "Group '" + objectId + "' not empty" );
 
-        for( val obj : schema.objects() ) {
+        for( val obj : schema.localObjects() ) {
             if( obj.acls.stream().anyMatch( acl -> acl.subjectId.equals( objectId ) ) ) {
-                schema.updateObject( obj.id, o -> {
+                schema.updateLocalObject( obj.id, o -> {
                     o.acls.removeIf( acl -> acl.subjectId.equals( objectId ) );
                 } );
             }
@@ -328,13 +326,13 @@ public class DefaultAclService implements AclService {
     public List<ObjectRole> getRoles( String userId, boolean inherited ) {
         val map = new SetMultiMap<String, AclRole>( false );
 
-        for( val obj : schema.objects() ) {
+        schema.objects().forEach( obj -> {
             for( val acl : obj.acls ) {
                 if( acl.subjectId.equals( userId ) )
                     if( inherited || acl.parent == null )
                         map.put( obj.id, acl.role );
             }
-        }
+        } );
 
         return map
             .entrySet()

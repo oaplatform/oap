@@ -108,8 +108,6 @@ public class KernelTest extends AbstractTest {
                 ServiceTwo two = Application.service( ServiceTwo.class );
                 ServiceOne.ComplexMap complexMap = Application.service( ServiceOne.ComplexMap.class );
 
-                assertThat( one.complexMap ).isSameAs( complexMap );
-
                 assertNotNull( one );
                 assertThat( one.i ).isEqualTo( 2 );
                 assertThat( one.i2 ).isEqualTo( 100 );
@@ -130,6 +128,8 @@ public class KernelTest extends AbstractTest {
                 assertThat( depsList.deps ).contains( one, two );
 
                 assertThat( one.listener ).isSameAs( two );
+
+                assertThat( one.complexMap ).isSameAs( complexMap );
             } );
         } finally {
             kernel.stop();

@@ -39,9 +39,13 @@ public interface AclSchema {
 
     Stream<AclObject> selectObjects();
 
-    Optional<AclObject> updateObject( String id, Consumer<AclObject> cons );
+    Stream<AclObject> selectLocalObjects();
+
+    Optional<AclObject> updateLocalObject( String id, Consumer<AclObject> cons );
 
     Iterable<AclObject> objects();
+
+    Iterable<AclObject> localObjects();
 
     void deleteObject( String id );
 

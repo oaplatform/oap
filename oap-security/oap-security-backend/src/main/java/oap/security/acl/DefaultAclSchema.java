@@ -27,12 +27,15 @@ package oap.security.acl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import oap.dictionary.Dictionary;
-import oap.dictionary.DictionaryParser;
+import oap.io.Resources;
+import oap.json.Binder;
+import oap.reflect.TypeRef;
 import oap.storage.Storage;
+import oap.util.Lists;
+import oap.util.Strings;
 
+import java.net.URL;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,7 +45,6 @@ import java.util.stream.Stream;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
-import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 
 /**
  * Created by igor.petrenko on 29.12.2017.
@@ -50,16 +52,25 @@ import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 @Slf4j
 public class DefaultAclSchema implements AclSchema {
     private final Map<String, Storage<? extends SecurityContainer<?>>> objectStorage;
-    private final Dictionary schema;
+    private final Optional<AclSchema> remoteSchema;
+    private final AclSchemaBean schema;
 
     @JsonCreator
-    public DefaultAclSchema( Map<String, Storage<? extends SecurityContainer<?>>> objectStorage, String schema ) {
-        this.objectStorage = new HashMap<>( objectStorage );
-        this.objectStorage.put( "root", new RootStorage() );
+    public DefaultAclSchema( Map<String, Storage<? extends SecurityContainer<?>>> objectStorage, String schema, AclSchema remoteSchema ) {
+        this.objectStorage = objectStorage;
+        this.remoteSchema = Optional.ofNullable( remoteSchema );
 
         log.info( "acl schema path = {}", schema );
 
-        this.schema = DictionaryParser.parse( schema, INCREMENTAL_ID_STRATEGY );
+        final List<URL> urls = Resources.urls( schema );
+        log.debug( "found {}", urls );
+
+        final Optional<URL> url = Resources.url( getClass(), schema );
+        log.debug( "found2 {}", url );
+
+        val configs = Lists.tail( urls ).stream().map( Strings::readString ).toArray( String[]::new );
+
+        this.schema = Binder.hoconWithConfig( configs ).unmarshal( new TypeRef<AclSchemaBean>() {}, Lists.head( urls ) );
 
         log.info( "acl schema = {}", this.schema );
     }
@@ -69,7 +80,7 @@ public class DefaultAclSchema implements AclSchema {
         log.trace( "validateNewObject parent = {}, newObjectType = {}", parent, newObjectType );
 
         val parentSchema = getSchemas( parent );
-        if( parentSchema.stream().noneMatch( schema -> schema.containsValueWithId( newObjectType ) ) ) {
+        if( parentSchema.stream().noneMatch( schema -> schema.containsChild( newObjectType ) ) ) {
             throw new AclSecurityException( newObjectType + " is not allowed here." );
         }
     }
@@ -81,11 +92,18 @@ public class DefaultAclSchema implements AclSchema {
             if( ( con = storage.get( id ) ).isPresent() ) return con.map( c -> c.acl );
         }
 
-        return Optional.empty();
+        return remoteSchema.flatMap( rs -> rs.getObject( id ) );
     }
 
     @Override
     public Stream<AclObject> selectObjects() {
+        return remoteSchema
+            .map( rs -> Stream.concat( selectLocalObjects(), rs.selectObjects() ) )
+            .orElse( selectLocalObjects() );
+    }
+
+    @Override
+    public Stream<AclObject> selectLocalObjects() {
         return objectStorage.values()
             .stream()
             .flatMap( Storage::select )
@@ -93,7 +111,7 @@ public class DefaultAclSchema implements AclSchema {
     }
 
     @Override
-    public Optional<AclObject> updateObject( String id, Consumer<AclObject> cons ) {
+    public Optional<AclObject> updateLocalObject( String id, Consumer<AclObject> cons ) {
         for( val os : objectStorage.values() ) {
             val res = os.update( id, con -> {
                 cons.accept( con.acl );
@@ -112,10 +130,17 @@ public class DefaultAclSchema implements AclSchema {
     }
 
     @Override
+    public Iterable<AclObject> localObjects() {
+        return () -> selectLocalObjects().iterator();
+    }
+
+    @Override
     public void deleteObject( String id ) {
         for( val os : objectStorage.values() ) {
             if( os.delete( id ).isPresent() ) return;
         }
+
+        remoteSchema.ifPresent( rs -> rs.deleteObject( id ) );
     }
 
     @Override
@@ -127,29 +152,48 @@ public class DefaultAclSchema implements AclSchema {
 
         return objectSchema
             .stream()
-            .flatMap( os -> ( ( List<String> ) os.getProperty( "permissions" ).orElse( emptyList() ) ).stream() )
+            .flatMap( os -> os.permissions.stream() )
             .distinct()
             .collect( toList() );
     }
 
     @SuppressWarnings( "unchecked" )
-    private List<Dictionary> getSchemas( AclObject parent ) {
+    private List<AclSchemaBean> getSchemas( AclObject parent ) {
         if( parent == null ) return singletonList( schema );
         if( parent.parents.isEmpty() )
-            return Optional.ofNullable( schema.getValue( parent.type ) )
-                .map( Collections::singletonList ).orElse( emptyList() );
+            return schema.getChild( parent.type )
+                .map( Collections::singletonList )
+                .orElse( Collections.emptyList() );
 
         return parent.parents
             .stream()
             .flatMap( id ->
-                getSchemas( getObject( id ).get() )
+                getSchemas( getObject( id ).orElseThrow( () -> new IllegalStateException( "Unknown object " + id ) ) )
                     .stream()
                     .flatMap( aclType ->
-                        Optional.ofNullable( aclType.getValue( parent.type ) )
+                        aclType.getChild( parent.type )
                             .map( Stream::of )
                             .orElse( Stream.empty() ) )
             )
             .collect( toList() );
     }
 
+    private static class AclSchemaBean {
+        public final List<String> permissions;
+        public final Map<String, AclSchemaBean> children;
+
+        @JsonCreator
+        public AclSchemaBean( List<String> permissions, Map<String, AclSchemaBean> children ) {
+            this.permissions = permissions;
+            this.children = children;
+        }
+
+        public Optional<AclSchemaBean> getChild( String type ) {
+            return Optional.ofNullable( children.get( type ) );
+        }
+
+        public boolean containsChild( String objectType ) {
+            return children.containsKey( objectType );
+        }
+    }
 }

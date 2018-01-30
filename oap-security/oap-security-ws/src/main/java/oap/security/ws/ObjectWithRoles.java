@@ -22,43 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.security.ws;
 
-import com.mongodb.MongoClientOptions;
-import com.mongodb.ServerAddress;
-import com.mongodb.client.MongoDatabase;
-import lombok.val;
-import org.bson.codecs.configuration.CodecRegistries;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import lombok.ToString;
+import oap.security.acl.AclRole;
 
-import java.io.Closeable;
+import java.io.Serializable;
+import java.util.List;
 
 /**
- * Created by igor.petrenko on 21.12.2017.
+ * Created by igor.petrenko on 04.01.2018.
  */
-public class MongoClient implements Closeable {
-    protected final com.mongodb.MongoClient mongoClient;
-    private final String host;
-    private final int port;
+@ToString
+public class ObjectWithRoles<T> implements Serializable {
+    private static final long serialVersionUID = 6532013786626661364L;
 
-    public MongoClient( String host, int port ) {
-        this.host = host;
-        this.port = port;
+    public final List<AclRole> roles;
+    public final T object;
 
-        val codecRegistry = CodecRegistries.fromRegistries(
-            CodecRegistries.fromCodecs( new JodaTimeCodec() ),
-            com.mongodb.MongoClient.getDefaultCodecRegistry() );
-
-        val options = MongoClientOptions.builder().codecRegistry( codecRegistry ).build();
-
-        mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ), options );
-    }
-
-    @Override
-    public void close() {
-        mongoClient.close();
-    }
-
-    public MongoDatabase getDatabase( String database ) {
-        return mongoClient.getDatabase( database );
+    @JsonCreator
+    public ObjectWithRoles( List<AclRole> roles, T object ) {
+        this.roles = roles;
+        this.object = object;
     }
 }
