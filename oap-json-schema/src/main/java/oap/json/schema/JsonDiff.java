@@ -28,8 +28,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.json.Binder;
-import oap.json.schema._array.ArraySchemaAST;
-import oap.json.schema._object.ObjectSchemaAST;
+import oap.json.schema.validator.array.ArraySchemaAST;
+import oap.json.schema.validator.object.ObjectSchemaAST;
 
 import java.util.*;
 

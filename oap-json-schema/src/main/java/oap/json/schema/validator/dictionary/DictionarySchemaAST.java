@@ -21,17 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package oap.json.schema.validator.dictionary;
 
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.ANNOTATION_TYPE )
-public @interface Peer {
-    Class<? extends ValidatorPeer> value();
+import oap.json.schema.SchemaAST;
 
-    boolean applyBeforeUnmarshaling() default false;
+import java.util.Optional;
+
+/**
+ * Created by Igor Petrenko on 12.04.2016.
+ */
+public class DictionarySchemaAST extends SchemaAST<DictionarySchemaAST> {
+   public final String name;
+   public final Optional<DictionarySchemaAST> parent;
+
+   public DictionarySchemaAST( CommonSchemaAST common, String name, Optional<DictionarySchemaAST> parent, String path ) {
+      super( common, path );
+      this.name = name;
+      this.parent = parent;
+   }
+
+   @Override
+   public DictionarySchemaAST merge( DictionarySchemaAST cs ) {
+      return new DictionarySchemaAST( common.merge( cs.common ), name, parent, path );
+   }
 }

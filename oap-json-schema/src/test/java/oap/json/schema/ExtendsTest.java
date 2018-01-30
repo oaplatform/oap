@@ -47,10 +47,9 @@ public class ExtendsTest extends AbstractSchemaTest {
          "}" +
          "}";
 
-      assertOk( schema, "{'a': 'test'}", ( url ) -> schema2, false );
+      assertOk( schema, "{'a': 'test'}", false );
       assertFailure( schema, "{'a': 1}",
-         "/a: instance is resolve type number, which is none resolve the allowed primitive types ([string])",
-         ( url ) -> schema2
+         "/a: instance is resolve type number, which is none resolve the allowed primitive types ([string])"
       );
    }
 
@@ -82,8 +81,8 @@ public class ExtendsTest extends AbstractSchemaTest {
          "}" +
          "}";
 
-      assertOk( schema, "{'o': {'a1':'test'}}", ( url ) -> schema2, false );
-      assertOk( schema, "{'o': {'a2':'test'}}", ( url ) -> schema2, false );
+      assertOk( schema, "{'o': {'a1':'test'}}", false );
+      assertOk( schema, "{'o': {'a2':'test'}}", false );
    }
 
    @Test
@@ -120,8 +119,8 @@ public class ExtendsTest extends AbstractSchemaTest {
          "}" +
          "}";
 
-      assertOk( schema, "{'o': [{'a1':'test'}]}", ( url ) -> schema2, false );
-      assertOk( schema, "{'o': [{'a2':'test'}]}", ( url ) -> schema2, false );
+      assertOk( schema, "{'o': [{'a1':'test'}]}", false );
+      assertOk( schema, "{'o': [{'a2':'test'}]}", false );
    }
 
    @Test
@@ -188,11 +187,11 @@ public class ExtendsTest extends AbstractSchemaTest {
          }
       };
 
-      assertOk( schema, "{'o': [{'a1':'test'}]}", func, false );
-      assertOk( schema, "{'o': [{'a2':'test'}]}", func, false );
-      assertOk( schema, "{'o': [{'a11':'test'}]}", func, false );
-      assertOk( schema, "{'o': [{'a21':'test'}]}", func, false );
+      assertOk( schema, "{'o': [{'a1':'test'}]}", false );
+      assertOk( schema, "{'o': [{'a2':'test'}]}", false );
+      assertOk( schema, "{'o': [{'a11':'test'}]}", false );
+      assertOk( schema, "{'o': [{'a21':'test'}]}", false );
 
-      assertFailure( schema, "{'o': [{'unknown':'test'}]}", "/o/0: additional properties are not permitted [unknown]", func );
+      assertFailure( schema, "{'o': [{'unknown':'test'}]}", "/o/0: additional properties are not permitted [unknown]" );
    }
 }

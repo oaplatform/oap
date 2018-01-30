@@ -21,17 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
+package oap.json.schema.validator.number;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+public class DoubleJsonValidator extends NumberJsonValidator<Double> {
+    public DoubleJsonValidator() {
+        super( "double" );
+    }
 
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.ANNOTATION_TYPE )
-public @interface Peer {
-    Class<? extends ValidatorPeer> value();
-
-    boolean applyBeforeUnmarshaling() default false;
+    @Override
+    protected boolean valid( Object value ) {
+        return value instanceof Number;
+    }
 }

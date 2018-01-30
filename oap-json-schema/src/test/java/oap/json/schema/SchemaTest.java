@@ -41,7 +41,7 @@ public class SchemaTest extends AbstractSchemaTest {
    public void testRequiredNullIgnoreRequiredDefault() {
       String schema = "{type: boolean, required: true}";
 
-      assertOk( schema, "null", NO_STORAGE, true );
+      assertOk( schema, "null", true );
    }
 
    @Test
@@ -69,13 +69,13 @@ public class SchemaTest extends AbstractSchemaTest {
    public void testDefaultIgnoreRequiredDefault() {
       String schema = "{type: boolean, default: true}";
 
-      assertOk( schema, "null", NO_STORAGE, true );
+      assertOk( schema, "null", true );
    }
 
    @Test
    public void testFixDefault() {
       String schema = "{type: object, properties: {a: {type: boolean, default: true}}}";
 
-      assertThat( assertOk( schema, "{}", NO_STORAGE, true ) ).isEqualTo( Maps.of( __( "a", true ) ) );
+      assertThat( assertOk( schema, "{}", true ) ).isEqualTo( Maps.of( __( "a", true ) ) );
    }
 }

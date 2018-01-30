@@ -30,12 +30,12 @@ import lombok.SneakyThrows;
 import lombok.val;
 import oap.json.schema.DefaultSchemaAST;
 import oap.json.schema.SchemaAST;
-import oap.json.schema._array.ArraySchemaAST;
-import oap.json.schema._dictionary.DictionarySchemaAST;
-import oap.json.schema._number.NumberSchemaAST;
-import oap.json.schema._object.Dynamic;
-import oap.json.schema._object.ObjectSchemaAST;
-import oap.json.schema._string.StringSchemaAST;
+import oap.json.schema.validator.array.ArraySchemaAST;
+import oap.json.schema.validator.dictionary.DictionarySchemaAST;
+import oap.json.schema.validator.number.NumberSchemaAST;
+import oap.json.schema.validator.object.Dynamic;
+import oap.json.schema.validator.object.ObjectSchemaAST;
+import oap.json.schema.validator.string.StringSchemaAST;
 import oap.util.Try;
 import org.apache.commons.io.output.StringBuilderWriter;
 

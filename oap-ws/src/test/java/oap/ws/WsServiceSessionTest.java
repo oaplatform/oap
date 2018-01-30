@@ -32,7 +32,6 @@ import oap.http.Session;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.testng.HttpAsserts;
 import oap.json.Binder;
-import oap.json.schema.TestJsonValidators;
 import oap.metrics.Metrics;
 import oap.testng.Env;
 import oap.util.Maps;
@@ -40,7 +39,6 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -55,7 +53,7 @@ public class WsServiceSessionTest {
     private final SessionManager sessionManager = new SessionManager( 10, null, "/" );
 
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, sessionManager, GenericCorsPolicy.DEFAULT, TestJsonValidators.jsonValidatos() );
+    private final WebServices ws = new WebServices( server, sessionManager, GenericCorsPolicy.DEFAULT );
 
     private SynchronizedThread listener;
 
@@ -82,7 +80,7 @@ public class WsServiceSessionTest {
     }
 
     @Test
-    public void testShouldVerifySessionPropagation() throws IOException {
+    public void testShouldVerifySessionPropagation() {
 
         final Session session = new Session();
         LinkedHashMap<Integer, Integer> map = Maps.of( __( 1, 2 ) );

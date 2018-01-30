@@ -26,7 +26,6 @@ package oap.ws.validate;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.json.schema.JsonValidators;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 
@@ -43,33 +42,31 @@ public class Validators {
     public static Validator forParameter( Reflection.Method method,
                                           Reflection.Parameter parameter,
                                           Object instance,
-                                          boolean originalParameters,
-                                          JsonValidators jsonValidators ) {
-        return forParams.computeIfAbsent( new Key<>( parameter, instance, originalParameters ),
+                                          boolean beforeUnmarshaling ) {
+        return forParams.computeIfAbsent( new Key<>( parameter, instance, beforeUnmarshaling ),
             p -> getValidator( method, instance, parameter.annotations(),
-                ValidatorPeer.Type.PARAMETER, originalParameters, jsonValidators ) );
+                ValidatorPeer.Type.PARAMETER, beforeUnmarshaling ) );
     }
 
     public static Validator forMethod( Reflection.Method method,
                                        Object instance,
-                                       boolean originalParameters,
-                                       JsonValidators jsonValidators ) {
-        return forMethods.computeIfAbsent( new Key<>( method, instance, originalParameters ),
+                                       boolean beforeUnmarshaling ) {
+        return forMethods.computeIfAbsent( new Key<>( method, instance, beforeUnmarshaling ),
             p -> getValidator( method, instance, method.annotations(),
-                ValidatorPeer.Type.METHOD, originalParameters, jsonValidators ) );
+                ValidatorPeer.Type.METHOD, beforeUnmarshaling ) );
 
     }
 
     private static Validator getValidator( Reflection.Method method,
                                            Object instance, List<Annotation> annotations,
                                            ValidatorPeer.Type type,
-                                           boolean originalParameters,
-                                           JsonValidators jsonValidators ) {
+                                           boolean beforeUnmarshaling ) {
         final Validator validator = new Validator();
         for( Annotation annotation : annotations )
-            Reflect.reflect( annotation.annotationType() ).findAnnotation( Peer.class )
-                .filter( va -> va.originalParameters() == originalParameters )
-                .ifPresent( va -> validator.peers.add( Reflect.newInstance( va.value(), annotation, method, instance, type, jsonValidators ) ) );
+            Reflect.reflect( annotation.annotationType() )
+                .findAnnotation( Peer.class )
+                .filter( v -> v.applyBeforeUnmarshaling() == beforeUnmarshaling )
+                .ifPresent( v -> validator.peers.add( Reflect.newInstance( v.value(), annotation, method, instance, type ) ) );
         return validator;
     }
 
@@ -79,7 +76,7 @@ public class Validators {
     private static class Key<T> {
         public final T parameter;
         public final Object instance;
-        public final boolean originalParameters;
+        public final boolean beforeUnmashaling;
     }
 
     public static class Validator {

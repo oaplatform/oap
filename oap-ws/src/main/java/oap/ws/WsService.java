@@ -32,7 +32,6 @@ import oap.http.Response;
 import oap.http.Session;
 import oap.json.Binder;
 import oap.json.JsonException;
-import oap.json.schema.JsonValidators;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
 import oap.reflect.Reflect;
@@ -74,11 +73,10 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @Slf4j
 public class WsService implements Handler {
-    private final Object impl;
+    private Object impl;
     private final boolean sessionAware;
     private final Reflection reflection;
     private final WsResponse defaultResponse;
-    private final JsonValidators jsonValidators;
     private final HashMap<Class<?>, Integer> exceptionToHttpCode = new HashMap<>();
     private final SessionManager sessionManager;
     private final List<Interceptor> interceptors;
@@ -86,11 +84,10 @@ public class WsService implements Handler {
 
     public WsService( Object impl, boolean sessionAware,
                       SessionManager sessionManager, List<Interceptor> interceptors, WsResponse defaultResponse,
-                      JsonValidators jsonValidators, Map<String, Integer> exceptionToHttpCode ) {
+                      Map<String, Integer> exceptionToHttpCode ) {
         this.impl = impl;
         this.reflection = Reflect.reflect( impl.getClass() );
         this.defaultResponse = defaultResponse;
-        this.jsonValidators = jsonValidators;
         this.reflection.methods.forEach( m -> m.findAnnotation( WsMethod.class )
             .ifPresent( a -> compiledPaths.put( a.path(), WsServices.compile( a.path() ) ) )
         );
@@ -122,7 +119,7 @@ public class WsService implements Handler {
                 if( defaultResponse == TEXT ) {
                     wsResponse.withContent( String.join( "\n", clientException.errors ), TEXT_PLAIN );
                 } else {
-                    final String json = Binder.json.marshal( new JsonErrorResponse( clientException.errors ) );
+                    String json = Binder.json.marshal( new JsonErrorResponse( clientException.errors ) );
                     wsResponse.withContent( json, APPLICATION_JSON );
                 }
             }
@@ -132,11 +129,11 @@ public class WsService implements Handler {
 
             val code = exceptionToHttpCode.getOrDefault( e.getClass(), HTTP_INTERNAL_ERROR );
 
-            final HttpResponse wsResponse = HttpResponse.status( code, e.getMessage() );
+            HttpResponse wsResponse = HttpResponse.status( code, e.getMessage() );
             if( defaultResponse == TEXT ) {
                 wsResponse.withContent( Throwables.getRootCause( e ).getMessage(), TEXT_PLAIN );
             } else {
-                final String json = Binder.json.marshal( new JsonStackTraceResponse( e ) );
+                String json = Binder.json.marshal( new JsonStackTraceResponse( e ) );
                 wsResponse.withContent( json, APPLICATION_JSON );
             }
 
@@ -205,16 +202,16 @@ public class WsService implements Handler {
                                  Name name, Pair<String, Session> session ) {
         log.trace( "{}: Internal session status: [{}]", service(), session );
 
-        final Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
+        Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
 
-        final Function<Reflection.Parameter, Object> func = ( p ) -> {
+        Function<Reflection.Parameter, Object> func = ( p ) -> {
             val ret = getValue( session, request, wsMethod, p ).orElse( Optional.empty() );
             if( ret instanceof Optional ) return ( ( Optional<?> ) ret ).orElse( null );
 
             return ret;
         };
 
-        final HttpResponse interceptorResponse =
+        HttpResponse interceptorResponse =
             session != null
                 ? runInterceptors( request, session._2, method, func )
                 : null;
@@ -223,38 +220,38 @@ public class WsService implements Handler {
             response.respond( interceptorResponse );
         } else {
             Metrics.measureTimer( name, () -> {
-                final List<Reflection.Parameter> parameters = method.parameters;
-                final LinkedHashMap<Reflection.Parameter, Object> originalValues = getOriginalValues( session, parameters, request, wsMethod );
+                List<Reflection.Parameter> parameters = method.parameters;
+                LinkedHashMap<Reflection.Parameter, Object> originalValues = getOriginalValues( session, parameters, request, wsMethod );
 
-                final ValidationErrors paramValidation = ValidationErrors.empty();
+                ValidationErrors paramValidation = ValidationErrors.empty();
 
                 originalValues.forEach( ( parameter, value ) ->
                     paramValidation.merge(
                         Validators
-                            .forParameter( method, parameter, impl, true, jsonValidators )
+                            .forParameter( method, parameter, impl, true )
                             .validate( value, originalValues )
                     )
                 );
 
                 paramValidation.throwIfInvalid();
 
-                Validators.forMethod( method, impl, true, jsonValidators )
+                Validators.forMethod( method, impl, true )
                     .validate( originalValues.values().toArray( new Object[originalValues.size()] ), originalValues )
                     .throwIfInvalid();
 
-                final LinkedHashMap<Reflection.Parameter, Object> values = getValues( originalValues );
-                final Object[] paramValues = values.values().toArray( new Object[values.size()] );
+                LinkedHashMap<Reflection.Parameter, Object> values = getValues( originalValues );
+                Object[] paramValues = values.values().toArray( new Object[values.size()] );
 
                 values.forEach( ( parameter, value ) ->
                     paramValidation.merge(
                         Validators
-                            .forParameter( method, parameter, impl, false, jsonValidators )
+                            .forParameter( method, parameter, impl, false )
                             .validate( value, values )
                     ) );
 
                 paramValidation.throwIfInvalid();
 
-                Validators.forMethod( method, impl, false, jsonValidators )
+                Validators.forMethod( method, impl, false )
                     .validate( paramValues, values )
                     .throwIfInvalid();
 
@@ -266,13 +263,13 @@ public class WsService implements Handler {
                         .withCharset( UTF_8 ) )
                         .orElse( APPLICATION_JSON );
 
-                final String cookie = session != null ?
-                    new HttpResponse.CookieBuilder()
-                        .withSID( session._1 )
-                        .withPath( sessionManager.cookiePath )
-                        .withExpires( DateTime.now().plusMinutes( sessionManager.cookieExpiration ) )
-                        .withDomain( sessionManager.cookieDomain )
-                        .build()
+                String cookie = session != null
+                    ? new HttpResponse.CookieBuilder()
+                    .withSID( session._1 )
+                    .withPath( sessionManager.cookiePath )
+                    .withExpires( DateTime.now().plusMinutes( sessionManager.cookieExpiration ) )
+                    .withDomain( sessionManager.cookieDomain )
+                    .build()
                     : null;
 
                 if( method.isVoid() ) response.respond( NO_CONTENT );
@@ -286,7 +283,7 @@ public class WsService implements Handler {
                             .orElse( NOT_FOUND )
                     );
                 } else if( result instanceof Result<?, ?> ) {
-                    final Result<HttpResponse, HttpResponse> resp = ( ( Result<?, ?> ) result )
+                    Result<HttpResponse, HttpResponse> resp = ( ( Result<?, ?> ) result )
                         .mapSuccess( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) )
                         .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r )
                             .withCookie( cookie ) );
@@ -311,11 +308,10 @@ public class WsService implements Handler {
 
     private Object runPostInterceptors( Object value, Pair<String, Session> session, Reflection.Method method ) {
         if( session == null ) return value;
-        for( Interceptor interceptor : interceptors ) {
-            value = interceptor.postProcessing( value, session._2, method );
-        }
+        Object result = value;
+        for( Interceptor interceptor : interceptors ) result = interceptor.postProcessing( value, session._2, method );
 
-        return value;
+        return result;
     }
 
     private LinkedHashMap<Reflection.Parameter, Object> getValues( LinkedHashMap<Reflection.Parameter, Object> values ) {
@@ -323,7 +319,7 @@ public class WsService implements Handler {
             val res = new LinkedHashMap<Reflection.Parameter, Object>();
 
             values.forEach( ( key, value ) -> {
-                final Object map = map( key.type(), value );
+                Object map = map( key.type(), value );
                 res.put( key, map );
             } );
 
@@ -383,9 +379,9 @@ public class WsService implements Handler {
         return parameters.stream().collect( toLinkedHashMap(
             parameter -> parameter,
             parameter -> getValue( session, request, wsMethod, parameter )
-                .orElseGet( () -> parameter.type().assignableTo( List.class ) ?
-                    request.parameters( parameter.name() ) :
-                    unwrap( parameter, request.parameter( parameter.name() ) )
+                .orElseGet( () -> parameter.type().assignableTo( List.class )
+                    ? request.parameters( parameter.name() )
+                    : unwrap( parameter, request.parameter( parameter.name() ) )
                 ) ) );
     }
 
@@ -401,29 +397,28 @@ public class WsService implements Handler {
                         return request;
                     case SESSION:
                         if( session == null ) return null;
-                        return parameter.type().isOptional() ?
-                            session._2.get( parameter.name() ) :
-                            session._2.get( parameter.name() ).orElse( null );
+                        return parameter.type().isOptional()
+                            ? session._2.get( parameter.name() )
+                            : session._2.get( parameter.name() ).orElse( null );
                     case HEADER:
                         return unwrap( parameter, request.header( parameter.name() ) );
                     case PATH:
                         return wsMethod.map( wsm -> WsServices.pathParam( wsm.path(), request.requestLine,
                             parameter.name() ) )
                             .orElseThrow( () -> new WsException(
-                                "path parameter " + parameter.name() + " without " +
-                                    WsMethod.class.getName() + " annotation" ) );
+                                "path parameter " + parameter.name() + " without "
+                                    + WsMethod.class.getName() + " annotation" ) );
                     case BODY:
-                        return parameter.type().assignableFrom( byte[].class ) ?
-                            ( parameter.type().isOptional() ? request.readBody() :
-                                request.readBody()
-                                    .orElseThrow( () -> new WsClientException(
-                                        "no body for " + parameter.name() ) )
-                            ) :
-                            unwrap( parameter, request.readBody().map( String::new ) );
+                        return parameter.type().assignableFrom( byte[].class )
+                            ? ( parameter.type().isOptional() ? request.readBody()
+                            : request.readBody()
+                                .orElseThrow( () -> new WsClientException(
+                                    "no body for " + parameter.name() ) )
+                        ) : unwrap( parameter, request.readBody().map( String::new ) );
                     default:
-                        return parameter.type().assignableTo( List.class ) ?
-                            request.parameters( parameter.name() ) :
-                            unwrap( parameter, request.parameter( parameter.name() ) );
+                        return parameter.type().assignableTo( List.class )
+                            ? request.parameters( parameter.name() )
+                            : unwrap( parameter, request.parameter( parameter.name() ) );
 
                 }
             } );
@@ -431,7 +426,7 @@ public class WsService implements Handler {
 
 
     private static class JsonErrorResponse implements Serializable {
-        private static final long serialVersionUID = 4949051855248389697L;
+        private static long serialVersionUID = 4949051855248389697L;
         public List<String> errors;
 
         public JsonErrorResponse( List<String> errors ) {
@@ -440,9 +435,9 @@ public class WsService implements Handler {
     }
 
     private static class JsonStackTraceResponse implements Serializable {
-        private static final long serialVersionUID = 8431608226448804296L;
+        private static long serialVersionUID = 8431608226448804296L;
 
-        public final String message;
+        public String message;
 
         public JsonStackTraceResponse( Throwable t ) {
             message = Throwables.getRootCause( t ).getMessage();

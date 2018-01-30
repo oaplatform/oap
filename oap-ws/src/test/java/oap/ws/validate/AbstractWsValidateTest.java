@@ -31,7 +31,6 @@ import oap.http.Protocol;
 import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.testng.HttpAsserts;
-import oap.json.schema.TestJsonValidators;
 import oap.metrics.Metrics;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
@@ -50,18 +49,17 @@ public abstract class AbstractWsValidateTest extends AbstractTest {
     private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
 
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT, TestJsonValidators.jsonValidatos() );
+    private final WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
     private SynchronizedThread listener;
 
 
     @BeforeClass
-    public void beforeClass() throws Exception {
+    public void beforeClass() {
         Env.resetPorts();
         Metrics.resetAll();
         server.start();
-        for( val wsInstance : getWsInstances() ) {
+        for( val wsInstance : getWsInstances() )
             ws.bind( "test", GenericCorsPolicy.DEFAULT, wsInstance, false, SESSION_MANAGER, Collections.emptyList(), Protocol.HTTP );
-        }
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );
         listener = new SynchronizedThread( http );

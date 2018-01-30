@@ -21,36 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
 
-import oap.json.Binder;
-import oap.json.JsonException;
-import oap.json.schema.JsonSchema;
-import oap.json.schema.ResourceSchemaStorage;
-import oap.reflect.Reflection;
-import oap.ws.WsClientException;
+package oap.json.schema.validator.array;
 
-import java.util.LinkedHashMap;
+import oap.json.schema.ContainerSchemaASTWrapper;
+import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.SchemaASTWrapper;
+import oap.json.schema.SchemaId;
+
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-public class JsonValidatorPeer implements ValidatorPeer {
-    private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
-    private final JsonSchema factory;
-    private final WsValidateJson validate;
+import static java.util.Collections.singletonList;
 
-    public JsonValidatorPeer( WsValidateJson validate, Reflection.Method targetMethod, Object instance, Type type ) {
-        this.factory = JsonSchema.schema( validate.schema() );
-        this.validate = validate;
-    }
+public class ArraySchemaASTWrapper extends SchemaASTWrapper<ArraySchemaAST> implements ContainerSchemaASTWrapper {
 
-    @Override
-    public ValidationErrors validate( Object value, LinkedHashMap<Reflection.Parameter, Object> originalValues ) {
-        try {
-            final Map mapValue = Binder.json.unmarshal( Map.class, ( String ) value );
+   public SchemaASTWrapper items;
+   Optional<Boolean> additionalProperties;
+   Optional<Integer> minItems;
+   Optional<Integer> maxItems;
+   Optional<String> idField;
 
-            return ValidationErrors.errors( factory.validate( mapValue, validate.ignoreRequired() ) );
-        } catch( JsonException e ) {
-            throw new WsClientException( e.getMessage(), e );
-        }
-    }
+   public ArraySchemaASTWrapper( SchemaId id ) {
+      super( id );
+   }
+
+   @Override
+   public ArraySchemaAST unwrap( JsonSchemaParserContext context ) {
+      return new ArraySchemaAST( common, additionalProperties, minItems, maxItems, idField,
+         context.computeIfAbsent( items.id, () -> items.unwrap( context ) ), id.toString() );
+   }
+
+   @Override
+   public Map<String, List<SchemaASTWrapper>> getChildren() {
+      return new HashMap<String, List<SchemaASTWrapper>>() {{
+         put( "items", singletonList( items ) );
+      }};
+   }
 }

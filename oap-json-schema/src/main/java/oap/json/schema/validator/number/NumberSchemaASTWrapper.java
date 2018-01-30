@@ -21,17 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+package oap.json.schema.validator.number;
 
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.ANNOTATION_TYPE )
-public @interface Peer {
-    Class<? extends ValidatorPeer> value();
+import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.SchemaASTWrapper;
+import oap.json.schema.SchemaId;
 
-    boolean applyBeforeUnmarshaling() default false;
+import java.util.Optional;
+
+public class NumberSchemaASTWrapper extends SchemaASTWrapper<NumberSchemaAST> {
+   Optional<Boolean> exclusiveMinimum;
+   Optional<Boolean> exclusiveMaximum;
+   Optional<Double> minimum;
+   Optional<Double> maximum;
+
+   public NumberSchemaASTWrapper( SchemaId id ) {
+      super( id );
+   }
+
+   @Override
+   public NumberSchemaAST unwrap( JsonSchemaParserContext context ) {
+      return new NumberSchemaAST( common, exclusiveMinimum, exclusiveMaximum, minimum, maximum, id.toString() );
+   }
 }

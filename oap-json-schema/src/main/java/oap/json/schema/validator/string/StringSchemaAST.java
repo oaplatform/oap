@@ -21,17 +21,34 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
+package oap.json.schema.validator.string;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import oap.json.schema.SchemaAST;
 
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.ANNOTATION_TYPE )
-public @interface Peer {
-    Class<? extends ValidatorPeer> value();
+import java.util.Optional;
+import java.util.regex.Pattern;
 
-    boolean applyBeforeUnmarshaling() default false;
+public class StringSchemaAST extends SchemaAST<StringSchemaAST> {
+   public final Optional<Integer> minLength;
+   public final Optional<Integer> maxLength;
+   public final Optional<Pattern> pattern;
+
+   public StringSchemaAST( SchemaAST.CommonSchemaAST common, Optional<Integer> minLength, Optional<Integer> maxLength,
+                           Optional<Pattern> pattern, String path ) {
+      super( common, path );
+      this.minLength = minLength;
+      this.maxLength = maxLength;
+      this.pattern = pattern;
+   }
+
+   @Override
+   public StringSchemaAST merge( StringSchemaAST cs ) {
+      return new StringSchemaAST(
+         common.merge( cs.common ),
+         minLength.isPresent() ? minLength : cs.minLength,
+         maxLength.isPresent() ? maxLength : cs.maxLength,
+         pattern.isPresent() ? pattern : cs.pattern,
+         path
+      );
+   }
 }

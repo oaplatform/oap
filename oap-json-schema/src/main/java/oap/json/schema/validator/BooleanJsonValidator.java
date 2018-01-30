@@ -21,17 +21,31 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws.validate;
+package oap.json.schema.validator;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import oap.json.schema.DefaultSchemaAST;
+import oap.json.schema.DefaultSchemaASTWrapper;
+import oap.json.schema.JsonSchemaParserContext;
+import oap.json.schema.JsonSchemaValidator;
+import oap.json.schema.JsonValidatorProperties;
+import oap.util.Lists;
 
-@Retention( RetentionPolicy.RUNTIME )
-@Target( ElementType.ANNOTATION_TYPE )
-public @interface Peer {
-    Class<? extends ValidatorPeer> value();
+import java.util.List;
 
-    boolean applyBeforeUnmarshaling() default false;
+public class BooleanJsonValidator extends JsonSchemaValidator<DefaultSchemaAST> {
+   public BooleanJsonValidator() {
+      super( "boolean" );
+   }
+
+   @Override
+   public List<String> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
+      if( !( value instanceof Boolean ) ) return typeFailed( properties, schema, value );
+
+      return Lists.empty();
+   }
+
+   @Override
+   public DefaultSchemaASTWrapper parse( JsonSchemaParserContext context ) {
+      return defaultParse( context );
+   }
 }

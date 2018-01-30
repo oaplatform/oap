@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
 
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.PARAMETER )
-@Peer( value = JsonPartialValidatorPeer.class, originalParameters = true )
+@Peer( value = JsonPartialValidatorPeer.class, applyBeforeUnmarshaling = true )
 public @interface WsPartialValidateJson {
     String schema();
 
