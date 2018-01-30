@@ -27,6 +27,7 @@ package oap.storage.mongo;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 /**
  * Created by igor.petrenko on 30.01.2018.
@@ -35,6 +36,7 @@ public class AbstractMongoTest extends AbstractTest {
     protected String dbName;
     protected MongoClient mongoClient;
 
+    @BeforeMethod
     @Override
     public void beforeMethod() throws Exception {
         super.beforeMethod();

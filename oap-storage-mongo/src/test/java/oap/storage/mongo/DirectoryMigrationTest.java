@@ -41,11 +41,14 @@ public class DirectoryMigrationTest extends AbstractMongoTest {
     @BeforeMethod
     public void beforeMethod() throws Exception {
         super.beforeMethod();
+
+        Env.deployTestData( getClass() );
     }
 
     @Test
-    public void testStart() throws Exception {
+    public void testMigration() {
         val migration = new DirectoryMigration( Env.deployTestData( getClass() ) );
+        migration.run( mongoClient.database );
 
         final Document version = mongoClient.database.getCollection( "version" ).find( eq( "_id", "version" ) ).first();
         assertThat( version ).isNotNull();
