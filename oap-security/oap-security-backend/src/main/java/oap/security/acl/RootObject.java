@@ -35,7 +35,7 @@ import static oap.security.acl.AclService.ROOT;
  */
 @ToString( callSuper = true )
 @EqualsAndHashCode( callSuper = true )
-class RootObject extends IdBean {
+public class RootObject extends IdBean {
     private static final long serialVersionUID = -3662657142321391837L;
 
     public RootObject() {

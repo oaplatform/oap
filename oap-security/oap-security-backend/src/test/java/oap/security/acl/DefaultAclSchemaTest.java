@@ -51,7 +51,7 @@ public class DefaultAclSchemaTest {
         storage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), NoLock );
 
         schema = new DefaultAclSchema(
-            ImmutableMap.of( "root", new RootStorage() ), "acl/test-acl-schema.conf",
+            ImmutableMap.of( "root", new MemoryRootStorage() ), "acl/test-acl-schema.conf",
             new DefaultAclSchema( ImmutableMap.of(
                 "organization", storage,
                 "user", storage ), "acl/test-acl-schema.conf", null ) );
