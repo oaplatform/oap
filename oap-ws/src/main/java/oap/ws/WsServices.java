@@ -33,11 +33,11 @@ import java.util.regex.Pattern;
 
 final class WsServices {
     private static Pattern rxParamPattern = Pattern.compile( "\\{([^:]+):([^\\)]+\\))\\}" );
-    private static Pattern namedParamPattern = Pattern.compile( "/\\{([^\\}]+)\\}" );
+    private static Pattern namedParamPattern = Pattern.compile( "\\{([^\\}]+)\\}" );
 
     public static Pattern compile( String mapping ) {
         val pattern = namedParamPattern.matcher( rxParamPattern.matcher( mapping ).replaceAll( "$2" ) )
-            .replaceAll( "/([^/]+)" );
+            .replaceAll( "([^/]+)" );
         return Pattern.compile( '^' + ( pattern.equals( "/" ) ? "/?" : pattern ).replace( "=", "\\=" ) + '$' );
     }
 
@@ -49,7 +49,7 @@ final class WsServices {
         Matcher matcher = namedParamPattern.matcher( filter( mapping ) );
         return Stream.of( matcher::find, matcher::group )
             .zipWithIndex()
-            .filter( p -> p._1.equals( "/{" + name + "}" ) )
+            .filter( p -> p._1.equals( "{" + name + "}" ) )
             .map( p -> p._2 )
             .findFirst()
             .flatMap( group -> {

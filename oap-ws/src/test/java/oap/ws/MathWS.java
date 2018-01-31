@@ -53,7 +53,7 @@ class MathWS {
         return id;
     }
 
-    @WsMethod( method = GET, path = "/test/sort=5/{id}" )
+    @WsMethod( method = GET, path = "/test/sort={id}/test" )
     public String testEqual( @WsParam( from = PATH ) String id ) {
         return id;
     }
