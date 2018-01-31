@@ -30,168 +30,169 @@ import org.testng.annotations.Test;
  * Created by Igor Petrenko on 13.04.2016.
  */
 public class ExtendsTest extends AbstractSchemaTest {
-   @Test
-   public void testExtends() {
-      String schema = "{" +
-         "type: object," +
-         "extends: \"schema/test2.json\"," +
-         "properties: {}" +
-         "}";
+    @Test
+    public void testExtends() {
+        String schema = "{"
+            + "type: object,"
+            + "extends: \"schema/test2.json\","
+            + "properties: {}"
+            + "}";
 
-      String schema2 = "{" +
-         "type:object," +
-         "properties: {" +
-         "  a: {" +
-         "    type: string" +
-         "  }" +
-         "}" +
-         "}";
+        String schema2 = "{"
+            + "type:object,"
+            + "properties: {"
+            + "  a: {"
+            + "    type: string"
+            + "  }"
+            + "}"
+            + "}";
 
-      assertOk( schema, "{'a': 'test'}", false );
-      assertFailure( schema, "{'a': 1}",
-         "/a: instance is resolve type number, which is none resolve the allowed primitive types ([string])"
-      );
-   }
+        assertOk( schema, "{'a': 'test'}", ( url ) -> schema2, false );
+        assertFailure( schema, "{'a': 1}",
+            "/a: instance is resolve type number, which is none resolve the allowed primitive types ([string])",
+            ( url ) -> schema2
+        );
+    }
 
-   @Test
-   public void testMergeInnerObject() {
-      String schema = "{" +
-         "type: object," +
-         "additionalProperties: false," +
-         "extends: test2," +
-         "properties: {" +
-         "  o: {" +
-         "    type:object," +
-         "    properties: {" +
-         "      a1: {type:string}" +
-         "    }" +
-         "}" +
-         "}" +
-         "}";
+    @Test
+    public void testMergeInnerObject() {
+        String schema = "{"
+            + "type: object,"
+            + "additionalProperties: false,"
+            + "extends: test2,"
+            + "properties: {"
+            + "  o: {"
+            + "    type:object,"
+            + "    properties: {"
+            + "      a1: {type:string}"
+            + "    }"
+            + "}"
+            + "}"
+            + "}";
 
-      String schema2 = "{" +
-         "type:object," +
-         "properties: {" +
-         "  o: {" +
-         "    type:object," +
-         "    properties: {" +
-         "      a2: {type:string}" +
-         "    }" +
-         "}" +
-         "}" +
-         "}";
+        String schema2 = "{"
+            + "type:object,"
+            + "properties: {"
+            + "  o: {"
+            + "    type:object,"
+            + "    properties: {"
+            + "      a2: {type:string}"
+            + "    }"
+            + "}"
+            + "}"
+            + "}";
 
-      assertOk( schema, "{'o': {'a1':'test'}}", false );
-      assertOk( schema, "{'o': {'a2':'test'}}", false );
-   }
+        assertOk( schema, "{'o': {'a1':'test'}}", ( url ) -> schema2, false );
+        assertOk( schema, "{'o': {'a2':'test'}}", ( url ) -> schema2, false );
+    }
 
-   @Test
-   public void testMergeInnerArray() {
-      String schema = "{" +
-         "type: object," +
-         "additionalProperties: false," +
-         "extends: test2," +
-         "properties: {" +
-         "  o: {" +
-         "    type:array," +
-         "    items {" +
-         "      type: object," +
-         "      properties {" +
-         "        a1: {type:string}" +
-         "      }" +
-         "    }" +
-         "}" +
-         "}" +
-         "}";
+    @Test
+    public void testMergeInnerArray() {
+        String schema = "{"
+            + "type: object,"
+            + "additionalProperties: false,"
+            + "extends: test2,"
+            + "properties: {"
+            + "  o: {"
+            + "    type:array,"
+            + "    items {"
+            + "      type: object,"
+            + "      properties {"
+            + "        a1: {type:string}"
+            + "      }"
+            + "    }"
+            + "}"
+            + "}"
+            + "}";
 
-      String schema2 = "{" +
-         "type:object," +
-         "properties: {" +
-         "  o: {" +
-         "    type:array," +
-         "    items {" +
-         "      type: object," +
-         "      properties {" +
-         "        a2: {type:string}" +
-         "      }" +
-         "    }" +
-         "}" +
-         "}" +
-         "}";
+        String schema2 = "{"
+            + "type:object,"
+            + "properties: {"
+            + "  o: {"
+            + "    type:array,"
+            + "    items {"
+            + "      type: object,"
+            + "      properties {"
+            + "        a2: {type:string}"
+            + "      }"
+            + "    }"
+            + "}"
+            + "}"
+            + "}";
 
-      assertOk( schema, "{'o': [{'a1':'test'}]}", false );
-      assertOk( schema, "{'o': [{'a2':'test'}]}", false );
-   }
+        assertOk( schema, "{'o': [{'a1':'test'}]}", ( url ) -> schema2, false );
+        assertOk( schema, "{'o': [{'a2':'test'}]}", ( url ) -> schema2, false );
+    }
 
-   @Test
-   public void testMergeInnerSchema() {
-      String schema = "{" +
-         "type: object," +
-         "additionalProperties: false," +
-         "extends: test2," +
-         "properties: {" +
-         "  o: {" +
-         "    type:array," +
-         "    items {" +
-         "      type: object," +
-         "      extends: test11," +
-         "      properties {" +
-         "        a1: {type:string}" +
-         "      }" +
-         "    }" +
-         "}" +
-         "}" +
-         "}";
+    @Test
+    public void testMergeInnerSchema() {
+        String schema = "{"
+            + "type: object,"
+            + "additionalProperties: false,"
+            + "extends: test2,"
+            + "properties: {"
+            + "  o: {"
+            + "    type:array,"
+            + "    items {"
+            + "      type: object,"
+            + "      extends: test11,"
+            + "      properties {"
+            + "        a1: {type:string}"
+            + "      }"
+            + "    }"
+            + "}"
+            + "}"
+            + "}";
 
-      String schema2 = "{" +
-         "type:object," +
-         "properties: {" +
-         "  o: {" +
-         "    type:array," +
-         "    items {" +
-         "      type: object," +
-         "      extends: test22," +
-         "      properties {" +
-         "        a2: {type:string}" +
-         "      }" +
-         "    }" +
-         "}" +
-         "}" +
-         "}";
+        String schema2 = "{"
+            + "type:object,"
+            + "properties: {"
+            + "  o: {"
+            + "    type:array,"
+            + "    items {"
+            + "      type: object,"
+            + "      extends: test22,"
+            + "      properties {"
+            + "        a2: {type:string}"
+            + "      }"
+            + "    }"
+            + "}"
+            + "}"
+            + "}";
 
-      String schema11 = "{" +
-         "type:object," +
-         "extends: test22," +
-         "properties: {" +
-         "  a11: {type:string}" +
-         "}" +
-         "}";
+        String schema11 = "{"
+            + "type:object,"
+            + "extends: test22,"
+            + "properties: {"
+            + "  a11: {type:string}"
+            + "}"
+            + "}";
 
-      String schema22 = "{" +
-         "type:object," +
-         "properties: {" +
-         "  a21: {type:string}" +
-         "}" +
-         "}";
+        String schema22 = "{"
+            + "type:object,"
+            + "properties: {"
+            + "  a21: {type:string}"
+            + "}"
+            + "}";
 
-      SchemaStorage func = ( url ) -> {
-         switch( url ) {
-            case "test2":
-               return schema2;
-            case "test11":
-               return schema11;
-            case "test22":
-               return schema22;
-            default:
-               throw new IllegalAccessError();
-         }
-      };
+        SchemaStorage func = ( url ) -> {
+            switch( url ) {
+                case "test2":
+                    return schema2;
+                case "test11":
+                    return schema11;
+                case "test22":
+                    return schema22;
+                default:
+                    throw new IllegalAccessError();
+            }
+        };
 
-      assertOk( schema, "{'o': [{'a1':'test'}]}", false );
-      assertOk( schema, "{'o': [{'a2':'test'}]}", false );
-      assertOk( schema, "{'o': [{'a11':'test'}]}", false );
-      assertOk( schema, "{'o': [{'a21':'test'}]}", false );
+        assertOk( schema, "{'o': [{'a1':'test'}]}", func, false );
+        assertOk( schema, "{'o': [{'a2':'test'}]}", func, false );
+        assertOk( schema, "{'o': [{'a11':'test'}]}", func, false );
+        assertOk( schema, "{'o': [{'a21':'test'}]}", func, false );
 
-      assertFailure( schema, "{'o': [{'unknown':'test'}]}", "/o/0: additional properties are not permitted [unknown]" );
-   }
+        assertFailure( schema, "{'o': [{'unknown':'test'}]}", "/o/0: additional properties are not permitted [unknown]", func );
+    }
 }

@@ -48,7 +48,6 @@ import static oap.io.Resources.readStringOrThrow;
 public class JsonSchema {
     private static final Map<String, JsonSchemaValidator<?>> validators = new HashMap<>();
     private static Map<String, JsonSchema> schemas = new ConcurrentHashMap<>();
-    public final SchemaAST schema;
 
     static {
         JsonSchema.add( new BooleanJsonValidator() );
@@ -64,12 +63,18 @@ public class JsonSchema {
         JsonSchema.add( new DictionaryJsonValidator() );
     }
 
+    public final SchemaAST schema;
+
 
     JsonSchema( String schemaJson ) {
+        this( schemaJson, path -> readStringOrThrow( JsonSchema.class, path ) );
+    }
+
+    JsonSchema( String schemaJson, SchemaStorage storage ) {
         final JsonSchemaParserContext context = new JsonSchemaParserContext(
             "", null, "",
             this::parse,
-            ( rp, schemaPath ) -> parse( schemaPath, readStringOrThrow( getClass(), schemaPath ), rp ),
+            ( rp, schemaPath ) -> parse( schemaPath, storage.get( schemaPath ), rp, storage ),
             "", "", new HashMap<>(), new HashMap<>() );
 
         this.schema = parse( schemaJson, context ).unwrap( context );
@@ -77,6 +82,10 @@ public class JsonSchema {
 
     public static JsonSchema schema( String schemaPath ) {
         return schemas.computeIfAbsent( schemaPath, u -> schemaFromString( readStringOrThrow( JsonSchema.class, schemaPath ) ) );
+    }
+
+    public static JsonSchema schemaFromString( String schemaJson, SchemaStorage storage ) {
+        return new JsonSchema( schemaJson, storage );
     }
 
     public static JsonSchema schemaFromString( String schemaJson ) {
@@ -114,16 +123,16 @@ public class JsonSchema {
         }
     }
 
-    SchemaASTWrapper parse( String schema ) {
-        return parse( "", schema, "" );
+    SchemaASTWrapper parse( String schema, SchemaStorage storage ) {
+        return parse( "", schema, "", storage );
     }
 
-    SchemaASTWrapper parse( String schemaName, String schema, String rootPath ) {
+    SchemaASTWrapper parse( String schemaName, String schema, String rootPath, SchemaStorage storage ) {
         final JsonSchemaParserContext context = new JsonSchemaParserContext(
             schemaName,
             null, "",
             this::parse,
-            ( rp, schemaPath ) -> parse( schemaPath, readStringOrThrow( getClass(), schemaPath ), rp ),
+            ( rp, schemaPath ) -> parse( schemaPath, storage.get( schemaPath ), rp, storage ),
             rootPath, "", new HashMap<>(), new HashMap<>() );
         return parse( schema, context );
     }

@@ -28,21 +28,22 @@ import org.testng.annotations.Test;
 
 import java.util.Optional;
 
+import static oap.json.schema.ResourceStorage.INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by Igor Petrenko on 19.04.2016.
  */
 public class SchemaWrapperPathTest extends AbstractSchemaTest {
-    private SchemaASTWrapper wrapper( String schema ) {
-        return JsonSchema.schemaFromString( schema ).parse( schema );
+    private SchemaASTWrapper wrapper( String schema, SchemaStorage storage ) {
+        return JsonSchema.schemaFromString( schema ).parse( schema, storage );
     }
 
     @Test
     public void traverseObject() {
         String schema = "{type: object, properties: {a: {type: object, properties: {b: {type: string}}}}}";
 
-        Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( wrapper( schema ) );
+        Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( wrapper( schema, INSTANCE ) );
         assertThat( traverse ).hasValueSatisfying( s -> assertThat( s.common.schemaType ).isEqualTo( "string" ) );
     }
 
@@ -50,7 +51,7 @@ public class SchemaWrapperPathTest extends AbstractSchemaTest {
     public void traverseArray() throws Exception {
         String schema = "{type: object, properties: {a: {type: array, items: {type: object, properties: {b: {type: string}}}}}}";
 
-        Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.items.b" ).traverse( wrapper( schema ) );
+        Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.items.b" ).traverse( wrapper( schema, INSTANCE ) );
         assertThat( traverse ).hasValueSatisfying( s -> assertThat( s.common.schemaType ).isEqualTo( "string" ) );
     }
 
@@ -58,7 +59,7 @@ public class SchemaWrapperPathTest extends AbstractSchemaTest {
     public void traverseNotFound() throws Exception {
         String schema = "{type: object, properties: {a: {type: string}}}";
 
-        Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( wrapper( schema ) );
+        Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( wrapper( schema, INSTANCE ) );
         assertThat( traverse ).isEmpty();
     }
 }

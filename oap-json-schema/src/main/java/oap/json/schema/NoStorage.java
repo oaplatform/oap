@@ -24,9 +24,19 @@
 
 package oap.json.schema;
 
-@FunctionalInterface
-public interface SchemaStorage {
+import org.apache.commons.lang3.NotImplementedException;
 
-    String get( String name );
+/**
+ * Created by igor.petrenko on 31.01.2018.
+ */
+public class NoStorage implements SchemaStorage {
+    public static final SchemaStorage INSTANCE = new NoStorage();
 
+    private NoStorage() {
+    }
+
+    @Override
+    public String get( String name ) {
+        throw new NotImplementedException( "" );
+    }
 }

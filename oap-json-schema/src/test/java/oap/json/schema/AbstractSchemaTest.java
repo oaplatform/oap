@@ -25,16 +25,14 @@ package oap.json.schema;
 
 import oap.json.Binder;
 import oap.testng.AbstractTest;
-import org.apache.commons.lang3.NotImplementedException;
 import org.testng.Assert;
 
 import java.util.List;
 
+import static oap.json.schema.ResourceStorage.INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class AbstractSchemaTest extends AbstractTest {
-    static final SchemaStorage NO_STORAGE = new NoStorage();
-
     protected static SchemaAST schema( String schema ) {
         return JsonSchema.schemaFromString( schema ).schema;
     }
@@ -44,9 +42,13 @@ public abstract class AbstractSchemaTest extends AbstractTest {
     }
 
     protected static Object assertOk( String schema, String json, boolean ignoreRequiredDefault ) {
+        return assertOk( schema, json, INSTANCE, ignoreRequiredDefault );
+    }
+
+    protected static Object assertOk( String schema, String json, SchemaStorage storage, boolean ignoreRequiredDefault ) {
         final Object obj = Binder.json.unmarshal( Object.class, json );
         List<String> result =
-            JsonSchema.schemaFromString( schema )
+            JsonSchema.schemaFromString( schema, storage )
                 .validate( obj, ignoreRequiredDefault );
         if( !result.isEmpty() ) throw new AssertionError( String.join( "\n", result ) );
 
@@ -63,8 +65,12 @@ public abstract class AbstractSchemaTest extends AbstractTest {
     }
 
     protected static void assertFailure( String schema, String json, String error ) {
+        assertFailure( schema, json, error, INSTANCE );
+    }
+
+    protected static void assertFailure( String schema, String json, String error, SchemaStorage storage ) {
         List<String> result =
-            JsonSchema.schemaFromString( schema )
+            JsonSchema.schemaFromString( schema, storage )
                 .validate( Binder.json.unmarshal( Object.class, json ), false );
         if( result.isEmpty() ) Assert.fail( json + " -> " + error );
         assertThat( result ).containsOnly( error );
@@ -79,12 +85,5 @@ public abstract class AbstractSchemaTest extends AbstractTest {
                 .partialValidate( root, partial, path, false );
         if( result.isEmpty() ) Assert.fail( json + " -> " + error );
         assertThat( result ).containsOnly( error );
-    }
-
-    private static class NoStorage implements SchemaStorage {
-        @Override
-        public String get( String name ) {
-            throw new NotImplementedException( "" );
-        }
     }
 }
