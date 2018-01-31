@@ -42,8 +42,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static oap.io.Resources.readStringOrThrow;
-
 @Slf4j
 public class JsonSchema {
     private static final Map<String, JsonSchemaValidator<?>> validators = new HashMap<>();
@@ -67,7 +65,7 @@ public class JsonSchema {
 
 
     JsonSchema( String schemaJson ) {
-        this( schemaJson, path -> readStringOrThrow( JsonSchema.class, path ) );
+        this( schemaJson, ResourceStorage.INSTANCE );
     }
 
     JsonSchema( String schemaJson, SchemaStorage storage ) {
@@ -81,7 +79,7 @@ public class JsonSchema {
     }
 
     public static JsonSchema schema( String schemaPath ) {
-        return schemas.computeIfAbsent( schemaPath, u -> schemaFromString( readStringOrThrow( JsonSchema.class, schemaPath ) ) );
+        return schemas.computeIfAbsent( schemaPath, u -> schemaFromString( ResourceStorage.INSTANCE.get( u ) ) );
     }
 
     public static JsonSchema schemaFromString( String schemaJson, SchemaStorage storage ) {
