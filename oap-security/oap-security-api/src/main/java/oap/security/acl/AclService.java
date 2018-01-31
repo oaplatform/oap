@@ -63,7 +63,7 @@ public interface AclService {
 
     boolean add( String objectId, String subjectId, String roleId, boolean inherit );
 
-    boolean remove( String objectId, String subjectId, String roleId );
+    boolean remove( String objectId, String subjectId, Optional<String> roleId );
 
     List<AclRole> list( String objectId, String subjectId );
 
