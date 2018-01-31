@@ -32,6 +32,7 @@ import oap.util.IdBean;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import static java.util.Arrays.asList;
@@ -69,7 +70,9 @@ public interface AclService {
 
     List<String> getChildren( String parentId, String type, boolean recursive );
 
-    <T extends IdBean> Predicate<SecurityContainer<T>> getAclFilter( String parentId, String subjectId, String permission );
+    List<String> getChildren( String parentId, String type, boolean recursive, String subjectId, String permission );
+
+    Predicate<SecurityContainer<? extends IdBean>> getAclFilter( String parentId, String subjectId, String permission );
 
 //    List<String> findChildren( String parentId, String subjectId, String type, String permission );
 
