@@ -29,7 +29,7 @@ import oap.io.Resources;
 /**
  * Created by igor.petrenko on 31.01.2018.
  */
-public class ResourceStorage implements SchemaStorage {
+public final class ResourceStorage implements SchemaStorage {
     public static final SchemaStorage INSTANCE = new ResourceStorage();
 
     private ResourceStorage() {
