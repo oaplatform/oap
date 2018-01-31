@@ -53,6 +53,11 @@ class MathWS {
         return id;
     }
 
+    @WsMethod( method = GET, path = "/test/sort=5/{id}" )
+    public String testEqual( @WsParam( from = PATH ) String id ) {
+        return id;
+    }
+
     @WsMethod( method = GET, path = "/test/sort/default" )
     public String test2() {
         return "__default__";

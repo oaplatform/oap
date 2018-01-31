@@ -73,6 +73,13 @@ public class WebServicesTest extends AbstractWebServicesTest {
     }
 
     @Test
+    public void testEqual() {
+        assertGet( HTTP_URL( "/x/v/math/test/sort=5/3" ) )
+            .responded( 200, "OK", APPLICATION_JSON, "\"3\"" );
+    }
+
+
+    @Test
     public void invocations() {
         assertGet( HTTP_URL( "/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );

@@ -38,7 +38,7 @@ final class WsServices {
     public static Pattern compile( String mapping ) {
         val pattern = namedParamPattern.matcher( rxParamPattern.matcher( mapping ).replaceAll( "$2" ) )
             .replaceAll( "/([^/]+)" );
-        return Pattern.compile( '^' + ( pattern.equals( "/" ) ? "/?" : pattern ) + '$' );
+        return Pattern.compile( '^' + ( pattern.equals( "/" ) ? "/?" : pattern ).replace( "=", "\\=" ) + '$' );
     }
 
     private static String filter( String mapping ) {
