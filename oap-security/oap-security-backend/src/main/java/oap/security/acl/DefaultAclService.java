@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static java.util.Arrays.asList;
@@ -139,19 +140,21 @@ public class DefaultAclService implements AclService {
     }
 
     @Override
-    public boolean remove( String objectId, String subjectId, String roleId ) {
+    public boolean remove( String objectId, String subjectId, Optional<String> roleId ) {
         log.debug( "remove object = {}, subject = {}, role = {}", objectId, subjectId, roleId );
+
+        Predicate<AclObject.Acl> roleIdFunc = acl -> roleId.map( rid -> acl.role.id.equals( rid ) ).orElse( true );
 
         return schema.updateLocalObject( objectId, aclObject ->
             aclObject.acls.removeIf( acl -> {
-                if( acl.subjectId.equals( subjectId ) && acl.role.id.equals( roleId ) && acl.parent == null ) {
+                if( acl.subjectId.equals( subjectId ) && roleIdFunc.test( acl ) && acl.parent == null ) {
                     if( acl.inheritance ) {
                         for( val ao : schema.localObjects() ) {
                             if( ao.ancestors.contains( objectId ) ) {
                                 schema.updateLocalObject(
                                     ao.id,
                                     aos -> {
-                                        aos.acls.removeIf( aclc -> aclc.subjectId.equals( subjectId ) && aclc.role.id.equals( roleId ) );
+                                        aos.acls.removeIf( aclc -> aclc.subjectId.equals( subjectId ) && roleIdFunc.test( acl ) );
                                     }
                                 );
                             }
@@ -181,15 +184,26 @@ public class DefaultAclService implements AclService {
 
     @Override
     public List<String> getChildren( String parentId, String type, boolean recursive ) {
+        return getChildren( parentId, type, recursive, ( v ) -> true );
+    }
+
+    private List<String> getChildren( String parentId, String type, boolean recursive, Predicate<AclObject> filter ) {
         return schema.selectObjects()
-            .filter( obj ->
-                ( recursive ? obj.ancestors.contains( parentId ) : obj.parents.contains( parentId ) )
-                    && obj.type.equals( type ) )
+            .filter( obj -> ( recursive ? obj.ancestors.contains( parentId ) : obj.parents.contains( parentId ) )
+                && obj.type.equals( type )
+                && filter.test( obj )
+            )
             .map( obj -> obj.id )
             .collect( toList() );
     }
 
-    public <T extends IdBean> Predicate<SecurityContainer<T>> getAclFilter( String parentId, String subjectId, String permission ) {
+    @Override
+    public List<String> getChildren( String parentId, String type, boolean recursive, String subjectId, String permission ) {
+        val aclFilter = this.<AclObject>getAclFilter( parentId, subjectId, permission, ao -> ao );
+        return getChildren( parentId, type, recursive, aclFilter );
+    }
+
+    private <T> Predicate<T> getAclFilter( String parentId, String subjectId, String permission, Function<T, AclObject> func ) {
         val aclSubject = schema.getObject( subjectId ).orElse( null );
         if( aclSubject == null ) {
             log.debug( "subject {} not found.", subjectId );
@@ -200,12 +214,18 @@ public class DefaultAclService implements AclService {
         subjects.addAll( aclSubject.ancestors );
 
         return sc -> {
-            val scAcl = sc.acl;
+            val scAcl = func.apply( sc );
             return scAcl.ancestors.contains( parentId )
                 && scAcl.acls
                 .stream()
                 .anyMatch( acl -> subjects.contains( acl.subjectId ) && acl.role.containsPermission( permission ) );
         };
+
+    }
+
+
+    public Predicate<SecurityContainer<? extends IdBean>> getAclFilter( String parentId, String subjectId, String permission ) {
+        return getAclFilter( parentId, subjectId, permission, sc -> sc.acl );
     }
 
     //    @Override
@@ -293,10 +313,8 @@ public class DefaultAclService implements AclService {
             throw new AclSecurityException( "Group '" + objectId + "' not empty" );
 
         for( val obj : schema.localObjects() ) {
-            if( obj.acls.stream().anyMatch( acl -> acl.subjectId.equals( objectId ) ) ) {
-                schema.updateLocalObject( obj.id, o -> {
-                    o.acls.removeIf( acl -> acl.subjectId.equals( objectId ) );
-                } );
+            if( obj.acls.stream().anyMatch( a -> a.subjectId.equals( objectId ) ) ) {
+                schema.updateLocalObject( obj.id, o -> o.acls.removeIf( a -> a.subjectId.equals( objectId ) ) );
             }
         }
 
