@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 
 final class WsServices {
     private static Pattern rxParamPattern = Pattern.compile( "\\{([^:]+):([^\\)]+\\))\\}" );
-    private static Pattern namedParamPattern = Pattern.compile( "\\{([^\\}]+)\\}" );
+    private static Pattern namedParamPattern = Pattern.compile( "(?<=[/=])\\{([^\\}]+)\\}" );
 
     public static Pattern compile( String mapping ) {
         val pattern = namedParamPattern.matcher( rxParamPattern.matcher( mapping ).replaceAll( "$2" ) )
