@@ -24,12 +24,18 @@
 package oap.util;
 
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import static com.google.common.collect.Iterators.concat;
+
 public class Iterators {
+
+
     public static <T> Iterator<T> of( Supplier<Boolean> hasNext, Supplier<T> next ) {
         return new Iterator<T>() {
             @Override
@@ -50,8 +56,17 @@ public class Iterators {
     }
 
     public static <T> Iterator<T> traverse( T initialState, UnaryOperator<T> traverse ) {
-        AtomicReference<T> state = new AtomicReference<>( initialState );
-        return of( () -> state.get() != null, () -> state.getAndSet( traverse.apply( state.get() ) ) );
+        return of( initialState, Objects::nonNull, traverse );
     }
 
+    public static <T> Iterator<T> flatTraverse( T initialState, Function<T, Iterator<T>> traverse ) {
+        return concat( Lists.of( initialState ).iterator(),
+            concat( Stream.of( traverse.apply( initialState ) )
+                .map( t -> flatTraverse( t, traverse ) )
+                .iterator() ) );
+    }
+
+    public static <T> Iterator<T> empty() {
+        return of( () -> false, () -> null );
+    }
 }

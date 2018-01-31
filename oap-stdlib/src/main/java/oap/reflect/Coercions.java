@@ -44,6 +44,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
@@ -127,7 +128,9 @@ public final class Coercions {
         } );
         with( ( r, v ) -> r.assignableTo( Map.class ), ( r, v ) -> {
             Pair<Reflection, Reflection> componentType = r.getMapComponentsType();
-            return componentType == null ? r.newInstance() : BiStream.of( ( Map<?, ?> ) v )
+            Objects.requireNonNull( componentType._1 );
+            Objects.requireNonNull( componentType._2 );
+            return BiStream.of( ( Map<?, ?> ) v )
                 .map( ( k, o ) -> __( cast( componentType._1, k ), cast( componentType._2, o ) ) )
                 .collect( Maps.Collectors.toMap( () -> r.isInterface()
                     ? r.assignableFrom( ConcurrentMap.class ) ? new ConcurrentHashMap<>() : Maps.of()

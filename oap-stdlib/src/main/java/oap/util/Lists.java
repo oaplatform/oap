@@ -24,6 +24,7 @@
 package oap.util;
 
 import com.google.common.base.Preconditions;
+import it.unimi.dsi.fastutil.ints.AbstractIntCollection;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import lombok.val;
 
@@ -57,9 +58,7 @@ public class Lists extends oap.util.Collections {
     public static <E> ArrayList<E> concat( List<? extends E>... lists ) {
         final ArrayList<E> concatenated = new ArrayList<>();
 
-        for( List<? extends E> list : lists ) {
-            concatenated.addAll( list );
-        }
+        for( List<? extends E> list : lists ) concatenated.addAll( list );
         return concatenated;
     }
 
@@ -196,7 +195,7 @@ public class Lists extends oap.util.Collections {
         }
 
         public static Collector<Integer, ?, IntArrayList> toIntArrayList() {
-            return new oap.util.Collectors.CollectorImpl<>( IntArrayList::new, ( v, c ) -> v.add( c ),
+            return new oap.util.Collectors.CollectorImpl<>( IntArrayList::new, AbstractIntCollection::add,
                 ( left, right ) -> {
                     left.addAll( right );
                     return left;
