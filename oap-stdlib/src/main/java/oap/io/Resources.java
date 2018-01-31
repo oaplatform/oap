@@ -84,6 +84,10 @@ public final class Resources {
         }
     }
 
+    public static String readStringOrThrow( Class<?> contextClass, String name ) {
+        return Resources.readString( contextClass, name )
+            .orElseThrow( () -> new IllegalArgumentException( "resource not found " + name + " for context class " + contextClass ) );
+    }
 
     public static Optional<byte[]> read( Class<?> contextClass, String name ) {
         try( InputStream is = contextClass.getResourceAsStream( name ) ) {

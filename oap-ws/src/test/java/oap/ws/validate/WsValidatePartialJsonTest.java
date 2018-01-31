@@ -137,11 +137,8 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
                 ignoreRequired = true )
             @WsParam( from = BODY ) TestBean.TestItem.SubTestItem body
         ) {
-            for( TestBean.TestItem t : testBean.a ) {
-                if( t.id.equals( bId ) ) {
-                    t.b.add( body );
-                }
-            }
+            for( TestBean.TestItem t : testBean.a )
+                if( t.id.equals( bId ) ) t.b.add( body );
 
             return testBean;
         }

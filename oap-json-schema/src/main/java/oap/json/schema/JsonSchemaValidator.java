@@ -46,8 +46,8 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
     public static String getType( Object object ) {
         if( object instanceof Boolean ) return "boolean";
         else if( object instanceof String ) return "string";
-        else if( object instanceof Integer || object instanceof Long || object instanceof Float ||
-            object instanceof Double ) return "number";
+        else if( object instanceof Integer || object instanceof Long || object instanceof Float
+            || object instanceof Double ) return "number";
         else if( object instanceof Map<?, ?> ) return "object";
         else if( object instanceof List<?> ) return "array";
         else
@@ -55,12 +55,12 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
     }
 
     public static List<String> typeFailed( JsonValidatorProperties properties, SchemaAST<?> schema, Object value ) {
-        return Lists.of( properties.error( "instance is resolve type " + getType( value ) +
-            ", which is none resolve the allowed primitive types ([" + schema.common.schemaType + "])" ) );
+        return Lists.of( properties.error( "instance is resolve type " + getType( value )
+            + ", which is none resolve the allowed primitive types ([" + schema.common.schemaType + "])" ) );
     }
 
     public static DefaultSchemaASTWrapper defaultParse( JsonSchemaParserContext context ) {
-        final DefaultSchemaASTWrapper wrapper = new DefaultSchemaASTWrapper( context.getId() );
+        DefaultSchemaASTWrapper wrapper = new DefaultSchemaASTWrapper( context.getId() );
         wrapper.common = node( context ).asCommon();
 
         return wrapper;
@@ -75,7 +75,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
     public abstract SchemaASTWrapper<A> parse( JsonSchemaParserContext context );
 
     public static class PropertyParser<A> {
-        private final Optional<A> value;
+        private Optional<A> value;
         private JsonSchemaParserContext properties;
         private String property;
 
@@ -95,7 +95,7 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
     }
 
     public static class NodeParser {
-        private final JsonSchemaParserContext properties;
+        private JsonSchemaParserContext properties;
 
         public NodeParser( JsonSchemaParserContext properties ) {
             this.properties = properties;
@@ -136,9 +136,9 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
         public PropertyParser<SchemaASTWrapper> asAST( String property, JsonSchemaParserContext context ) {
             return new PropertyParser<>( property, properties,
                 Optional.ofNullable( context.node.get( property ) ).map( n -> {
-                    final JsonSchemaParserContext newContext = context.withNode( property, n );
-                    final SchemaASTWrapper aw = context.mapParser.apply( newContext );
-                    newContext.astW.computeIfAbsent( aw.id, ( key ) -> aw );
+                    JsonSchemaParserContext newContext = context.withNode( property, n );
+                    SchemaASTWrapper aw = context.mapParser.apply( newContext );
+                    newContext.astW.putIfAbsent( aw.id, aw );
                     return aw;
                 } ) );
         }
@@ -150,18 +150,18 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
             } else if( anEnum instanceof List<?> ) {
                 return Optional.of( new ListObjectEnumFunction( ( List<Object> ) anEnum ) );
             } else if( anEnum instanceof Map<?, ?> ) {
-                final Map<?, ?> map = ( Map<?, ?> ) anEnum;
+                Map<?, ?> map = ( Map<?, ?> ) anEnum;
 
-                final String jsonPath = ( String ) map.get( JSON_PATH );
-                final Function<Object, List<Object>> sourceFunc = ( obj ) -> new JsonPath( jsonPath ).traverse( obj );
+                String jsonPath = ( String ) map.get( JSON_PATH );
+                Function<Object, List<Object>> sourceFunc = ( obj ) -> new JsonPath( jsonPath ).traverse( obj );
 
                 val of = getOperationFunction( map );
 
-                final Map filterMap = ( Map ) map.get( "filter" );
+                Map filterMap = ( Map ) map.get( "filter" );
                 if( filterMap != null ) {
-                    final Map source = ( Map ) filterMap.get( "source" );
-                    final String filterJsonPath = ( String ) source.get( JSON_PATH );
-                    final Function<Object, List<Object>> filterSourceFunc = ( obj ) -> new JsonPath( filterJsonPath ).traverse( obj );
+                    Map source = ( Map ) filterMap.get( "source" );
+                    String filterJsonPath = ( String ) source.get( JSON_PATH );
+                    Function<Object, List<Object>> filterSourceFunc = ( obj ) -> new JsonPath( filterJsonPath ).traverse( obj );
                     val filterOf = getOperationFunction( filterMap );
 
                     return Optional.of( new FilteredEnumFunction( sourceFunc, of, Pair.__( filterSourceFunc, filterOf ) ) );
@@ -178,20 +178,20 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
 
         @SuppressWarnings( "unchecked" )
         public SchemaAST.CommonSchemaAST asCommon() {
-            final Optional<BooleanReference> required = asBooleanReference( "required" );
-            final Optional<BooleanReference> enabled = asBooleanReference( "enabled" );
-            final Optional<Object> defaultValue = Optional.ofNullable( properties.node.get( "default" ) );
-            final Object anEnum = properties.node.get( "enum" );
-            final Optional<Boolean> index = asBoolean( "index" ).optional();
-            final Optional<Boolean> include_in_all = asBoolean( "include_in_all" ).optional();
-            final Optional<String> denormalized = asString( "denormalized" ).optional();
-            final Optional<String> analyzer = asString( "analyzer" ).optional();
-            final Optional<Boolean> norms = asBoolean( "norms" ).optional();
+            Optional<BooleanReference> required = asBooleanReference( "required" );
+            Optional<BooleanReference> enabled = asBooleanReference( "enabled" );
+            Optional<Object> defaultValue = Optional.ofNullable( properties.node.get( "default" ) );
+            Object anEnum = properties.node.get( "enum" );
+            Optional<Boolean> index = asBoolean( "index" ).optional();
+            Optional<Boolean> includeInAll = asBoolean( "include_in_all" ).optional();
+            Optional<String> denormalized = asString( "denormalized" ).optional();
+            Optional<String> analyzer = asString( "analyzer" ).optional();
+            Optional<Boolean> norms = asBoolean( "norms" ).optional();
 
             return new SchemaAST.CommonSchemaAST(
                 properties.schemaType, required, enabled,
                 defaultValue, toEnum( anEnum ),
-                index, include_in_all,
+                index, includeInAll,
                 denormalized, analyzer, norms
             );
         }
@@ -205,9 +205,9 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
 
             map.ifPresent(
                 m -> m.forEach( ( okey, value ) -> {
-                    final String key = ( String ) okey;
-                    final JsonSchemaParserContext newContext = context.withNode( key, value );
-                    final SchemaASTWrapper astw = newContext.astW.computeIfAbsent( newContext.getId(), ( id ) -> context.mapParser.apply( newContext ) );
+                    String key = ( String ) okey;
+                    JsonSchemaParserContext newContext = context.withNode( key, value );
+                    SchemaASTWrapper astw = newContext.astW.computeIfAbsent( newContext.getId(), ( id ) -> context.mapParser.apply( newContext ) );
                     p.put( key, astw );
                 } )
             );
@@ -216,16 +216,16 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
         }
 
         public Optional<BooleanReference> asBooleanReference( String field ) {
-            final Object enabled = properties.node.get( field );
+            Object enabled = properties.node.get( field );
             if( enabled == null ) return Optional.empty();
 
             if( enabled instanceof Boolean ) {
                 return Optional.of( ( Boolean ) enabled ? BooleanReference.TRUE : BooleanReference.FALSE );
             } else {
-                final Map map = ( Map ) enabled;
-                final String jsonPath = ( String ) map.get( JSON_PATH );
+                Map map = ( Map ) enabled;
+                String jsonPath = ( String ) map.get( JSON_PATH );
 
-                final OperationFunction of = getOperationFunction( map );
+                OperationFunction of = getOperationFunction( map );
 
                 return Optional.of( new DynamicBooleanReference( jsonPath, of ) );
             }

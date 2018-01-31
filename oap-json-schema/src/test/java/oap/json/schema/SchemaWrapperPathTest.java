@@ -35,30 +35,30 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class SchemaWrapperPathTest extends AbstractSchemaTest {
     private SchemaASTWrapper wrapper( String schema ) {
-        return jsonValidators.schemaFromString( schema, NO_STORAGE ).parse( schema, NO_STORAGE );
+        return JsonSchema.schemaFromString( schema ).parse( schema );
     }
 
     @Test
-    public void testTraverseObject() throws Exception {
-        final String schema = "{type: object, properties: {a: {type: object, properties: {b: {type: string}}}}}";
+    public void traverseObject() {
+        String schema = "{type: object, properties: {a: {type: object, properties: {b: {type: string}}}}}";
 
-        final Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( wrapper( schema ) );
+        Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( wrapper( schema ) );
         assertThat( traverse ).hasValueSatisfying( s -> assertThat( s.common.schemaType ).isEqualTo( "string" ) );
     }
 
     @Test
-    public void testTraverseArray() throws Exception {
-        final String schema = "{type: object, properties: {a: {type: array, items: {type: object, properties: {b: {type: string}}}}}}";
+    public void traverseArray() throws Exception {
+        String schema = "{type: object, properties: {a: {type: array, items: {type: object, properties: {b: {type: string}}}}}}";
 
-        final Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.items.b" ).traverse( wrapper( schema ) );
+        Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.items.b" ).traverse( wrapper( schema ) );
         assertThat( traverse ).hasValueSatisfying( s -> assertThat( s.common.schemaType ).isEqualTo( "string" ) );
     }
 
     @Test
-    public void testTraverseNotFound() throws Exception {
-        final String schema = "{type: object, properties: {a: {type: string}}}";
+    public void traverseNotFound() throws Exception {
+        String schema = "{type: object, properties: {a: {type: string}}}";
 
-        final Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( wrapper( schema ) );
+        Optional<SchemaASTWrapper> traverse = new SchemaWrapperPath( "a.b" ).traverse( wrapper( schema ) );
         assertThat( traverse ).isEmpty();
     }
 }

@@ -23,10 +23,8 @@
  */
 package oap.ws.validate.testng;
 
-import oap.json.schema.TestJsonValidators;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
-import oap.util.Stream;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.assertj.core.api.AbstractAssert;
@@ -120,7 +118,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
         }
 
         @Override
-        public Object invoke( Object proxy, Method jmethod, Object[] args ) throws Throwable {
+        public Object invoke( Object proxy, Method jmethod, Object[] args ) {
             Optional<Reflection.Method> methodOpt = Reflect.reflect( instance.getClass() )
                 .method( jmethod );
             if( !methodOpt.isPresent() ) throw new NoSuchMethodError( jmethod.toString() );
@@ -131,14 +129,12 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                     List<Reflection.Parameter> parameters = method.parameters;
 
                     LinkedHashMap<Reflection.Parameter, Object> values = new LinkedHashMap<>();
-                    for( int i = 0; i < parameters.size(); i++ ) {
-                        values.put( parameters.get( i ), args[i] );
-                    }
+                    for( int i = 0; i < parameters.size(); i++ ) values.put( parameters.get( i ), args[i] );
 
                     for( int i = 0; i < parameters.size(); i++ ) {
                         Reflection.Parameter parameter = parameters.get( i );
                         paramErrors.merge( Validators
-                            .forParameter( method, parameter, instance, false, TestJsonValidators.jsonValidatos() )
+                            .forParameter( method, parameter, instance, false )
                             .validate( args[i], values ) );
                     }
                     if( paramErrors.isFailed() ) {
@@ -146,7 +142,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                         return null;
                     } else {
                         ValidationErrors methodErrors = Validators
-                            .forMethod( method, instance, false, TestJsonValidators.jsonValidatos() )
+                            .forMethod( method, instance, false )
                             .validate( args, values );
                         runAsserts( methodErrors );
                         if( methodErrors.isFailed() ) return null;
@@ -158,8 +154,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
 
         private void runAsserts( ValidationErrors errors ) {
             ValidationErrorsAssertion assertion = ValidationErrorsAssertion.assertValidationErrors( errors );
-            Stream.of( assertions )
-                .foldLeft( assertion, ( a, f ) -> f.apply( a ) );
+            assertions.forEach( f -> f.apply( assertion ) );
         }
 
         public I forInstance( I instance ) {

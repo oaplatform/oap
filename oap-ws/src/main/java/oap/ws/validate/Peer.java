@@ -33,5 +33,5 @@ import java.lang.annotation.Target;
 public @interface Peer {
     Class<? extends ValidatorPeer> value();
 
-    boolean originalParameters() default false;
+    boolean applyBeforeUnmarshaling() default false;
 }

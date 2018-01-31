@@ -26,8 +26,8 @@ package oap.json.schema;
 
 import lombok.AllArgsConstructor;
 import lombok.val;
-import oap.json.schema._array.ArraySchemaAST;
-import oap.json.schema._object.ObjectSchemaAST;
+import oap.json.schema.validator.array.ArraySchemaAST;
+import oap.json.schema.validator.object.ObjectSchemaAST;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -38,20 +38,20 @@ import java.util.function.Supplier;
  * Created by Admin on 24.05.2016.
  */
 public final class SchemaPath {
-    public static String resolve( String path1, String... paths ) {
-        if( paths.length == 0 ) return path1;
+    public static String resolve( String path, String... paths ) {
+        if( paths.length == 0 ) return path;
 
-        String res = path1;
+        StringBuilder res = new StringBuilder( path );
 
         for( String p : paths ) {
-            if( res.isEmpty() && p.isEmpty() ) continue;
+            if( ( res.length() == 0 ) && p.isEmpty() ) continue;
             if( p.isEmpty() ) continue;
 
-            if( res.isEmpty() ) res = p;
-            else res += "." + p;
+            if( res.length() == 0 ) res = new StringBuilder( p );
+            else res.append( "." ).append( p );
         }
 
-        return res;
+        return res.toString();
     }
 
     public static String rightTrimItems( String path ) {

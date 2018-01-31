@@ -24,7 +24,6 @@
 
 package oap.ws.validate;
 
-import oap.json.schema.TestJsonValidators;
 import oap.reflect.Reflect;
 import org.testng.annotations.Test;
 
@@ -34,9 +33,9 @@ public class ValidatorsTest {
     @Test
     public void caching() {
         Validators.Validator v1 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(),
-            new Validatee(), false, TestJsonValidators.jsonValidatos() );
+            new Validatee(), false );
         Validators.Validator v2 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(),
-            new Validatee(), false, TestJsonValidators.jsonValidatos() );
+            new Validatee(), false );
 
         assertThat( v1 ).isNotSameAs( v2 );
     }

@@ -29,8 +29,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
 import oap.json.JsonException;
-import oap.json.schema.JsonValidatorFactory;
-import oap.json.schema.JsonValidators;
+import oap.json.schema.JsonSchema;
 import oap.json.schema.ResourceSchemaStorage;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
@@ -46,14 +45,13 @@ import java.util.Optional;
 @Slf4j
 public class JsonPartialValidatorPeer implements ValidatorPeer {
     private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
-    private final JsonValidatorFactory factory;
+    private final JsonSchema factory;
     private final WsPartialValidateJson validate;
     private final Reflection.Method method;
     private final Object instance;
 
-    public JsonPartialValidatorPeer( WsPartialValidateJson validate,
-                                     Reflection.Method targetMethod, Object instance, Type type, JsonValidators jsonValidators ) {
-        factory = jsonValidators.schema( validate.schema(), storage );
+    public JsonPartialValidatorPeer( WsPartialValidateJson validate, Reflection.Method targetMethod, Object instance, Type type ) {
+        this.factory = JsonSchema.schema( validate.schema() );
         this.validate = validate;
         this.instance = instance;
         this.method = Reflect.reflect( instance.getClass() )
@@ -76,8 +74,8 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
         try {
             final Object objectId = getValue( originalValues, validate.idParameterName() );
 
-            final String id = objectId instanceof Optional ?
-                ( ( Optional ) objectId ).get().toString() : objectId.toString();
+            final String id = objectId instanceof Optional
+                ? ( ( Optional ) objectId ).get().toString() : objectId.toString();
 
             final Object root = method.invoke( instance, id );
 
