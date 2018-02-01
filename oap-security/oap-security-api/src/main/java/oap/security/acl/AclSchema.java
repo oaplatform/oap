@@ -31,9 +31,12 @@ import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -64,15 +67,15 @@ public interface AclSchema {
     @ToString
     class AclSchemaBean implements Serializable {
         private static final long serialVersionUID = 6385590066545729318L;
-        public final List<String> permissions;
+        public final Set<String> permissions;
         public final Map<String, AclSchemaBean> children;
         @JsonInclude( JsonInclude.Include.NON_NULL )
         public String parentPath;
 
         @JsonCreator
-        public AclSchemaBean( List<String> permissions, Map<String, AclSchemaBean> children ) {
-            this.permissions = permissions;
-            this.children = children;
+        public AclSchemaBean( Set<String> permissions, Map<String, AclSchemaBean> children ) {
+            this.permissions = permissions != null ? permissions : new HashSet<>();
+            this.children = children != null ? children : new HashMap<>();
         }
 
         public Optional<AclSchemaBean> getChild( String type ) {
