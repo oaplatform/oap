@@ -141,7 +141,7 @@ public class ReflectionTest {
     @Test
     public void get() {
         Bean bean = new Bean( 1, "bbb" );
-        DeepBean deepBean = new DeepBean( bean, Optional.of( bean ), Maps.of(
+        DeepBean deepBean = new DeepBean( bean, Optional.of( bean ), Lists.of( bean ), Maps.of(
             __( "x", Maps.of(
                 __( "1", 1 ),
                 __( "2", 2 )
@@ -150,6 +150,8 @@ public class ReflectionTest {
         assertThat( Reflect.<Integer>get( deepBean, "bean.x" ) ).isEqualTo( 1 );
         assertString( Reflect.<String>get( deepBean, "bean.str" ) ).isEqualTo( "bbb" );
         assertString( Reflect.<String>get( deepBean, "beanOptional.str" ) ).isEqualTo( "bbb" );
+        assertThat( Reflect.<Bean>get( deepBean, "list.[0]" ) ).isEqualTo( bean );
+        assertThat( Reflect.<Bean>get( deepBean, "list.[2]" ) ).isNull();
         assertThat( Reflect.<Integer>get( deepBean, "map.[x].[1]" ) ).isEqualTo( 1 );
         assertThat( Reflect.<Integer>get( deepBean, "map.[x].[2]" ) ).isEqualTo( 2 );
         assertThat( Reflect.<Integer>get( deepBean, "map.[x].[3]" ) ).isNull();
@@ -164,6 +166,8 @@ public class ReflectionTest {
 
         Reflect.set( deepBean, "bean.str", "new string" );
         Reflect.set( deepBean, "bean.x.y.z", "anything" );
+        Reflect.set( deepBean, "list.[0]", new Bean( 10, "aaa" ) );
+        Reflect.set( deepBean, "list.[1]", new Bean( 10, "aaa" ) );
         Reflect.set( deepBean, "map.[x]", Maps.empty() );
         Reflect.set( deepBean, "map.[x].[1]", 1 );
         Reflect.set( deepBean, "bean.optional", "optional present" );
@@ -174,6 +178,7 @@ public class ReflectionTest {
             .isEqualTo( new DeepBean(
                 new Bean( 42, "new string", Optional.of( "optional present" ) ),
                 Optional.empty(),
+                Lists.of( new Bean( 10, "aaa" ), new Bean( 10, "aaa" ) ),
                 Maps.of( __( "x", Maps.of( __( "1", 1 ) ) ) )
             ) );
     }
@@ -277,6 +282,7 @@ class StringList extends ArrayList<String> {
 class DeepBean {
     public Bean bean = new Bean();
     public Optional<Bean> beanOptional = Optional.of( new Bean() );
+    public List<Bean> list = new ArrayList<>();
     public Map<String, Map<String, Integer>> map = Maps.empty();
 
     public DeepBean( Bean bean, Optional<Bean> beanOptional ) {
@@ -284,9 +290,10 @@ class DeepBean {
         this.beanOptional = beanOptional;
     }
 
-    public DeepBean( Bean bean, Optional<Bean> beanOptional, Map<String, Map<String, Integer>> map ) {
+    public DeepBean( Bean bean, Optional<Bean> beanOptional, List<Bean> list, Map<String, Map<String, Integer>> map ) {
         this.bean = bean;
         this.beanOptional = beanOptional;
+        this.list = list;
         this.map = map;
     }
 

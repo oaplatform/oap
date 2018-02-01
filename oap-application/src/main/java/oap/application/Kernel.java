@@ -35,11 +35,9 @@ import oap.metrics.Metrics;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
-import oap.util.Optionals;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.net.URL;
@@ -49,9 +47,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -72,6 +68,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     private final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
     private final Supervisor supervisor = new Supervisor();
     private final List<DynamicConfig.Control> dynamicConfigurations = new ArrayList<>();
+    private final Linker linker = new Linker( this );
 
     public Kernel( String name, List<URL> configurations ) {
         this.name = name;
@@ -89,12 +86,12 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
 
         for( Map.Entry<String, Module.Service> entry : services.entrySet() ) {
             Module.Service service = entry.getValue();
+            service.name = service.name != null ? service.name : entry.getKey();
             if( !service.enabled ) {
                 initialized.add( service.name );
                 log.debug( "service {} is disabled.", entry.getKey() );
                 continue;
             }
-            String serviceName = service.name != null ? service.name : entry.getKey();
             if( service.profile != null && !config.profiles.contains( service.profile ) ) {
                 log.debug( "skipping " + entry.getKey() + " with profile " + service.profile );
                 continue;
@@ -103,10 +100,10 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
             List<String> dependsOn = Stream.of( service.dependsOn ).filter( this::serviceEnabled ).toList();
 
             if( initialized.containsAll( dependsOn ) ) {
-                log.debug( "initializing {} as {}", entry.getKey(), serviceName );
+                log.debug( "initializing {} as {}", entry.getKey(), service.name );
 
                 if( service.implementation == null ) {
-                    throw new ApplicationException( "failed to initialize service: " + serviceName + ". implementation == null" );
+                    throw new ApplicationException( "failed to initialize service: " + service.name + ". implementation == null" );
                 }
                 @SuppressWarnings( "unchecked" )
                 Reflection reflect = Reflect.reflect( service.implementation, Module.coersions );
@@ -114,39 +111,37 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
                 Object instance;
                 if( !service.isRemoteService() ) {
                     try {
-                        initializeServiceLinks( serviceName, service );
-                        instance = reflect.newInstance( service.parameters );
+                        instance = linker.link( service, () -> reflect.newInstance( service.parameters ) );
                         initializeDynamicConfigurations( reflect, instance );
-                        initializeListeners( service.listen, instance );
                     } catch( ReflectException e ) {
-                        log.info( "service name = {}, remoteName = {}, profile = {}", service.name, service.remoteName, service.profile );
+                        log.info( "service name = {}, remote = {}, profile = {}", service.name, service.remote, service.profile );
                         throw e;
                     }
                 } else instance = RemoteInvocationHandler.proxy(
-                    service.remoting(),
+                    service.remote,
                     reflect.underlying );
-                register( serviceName, instance );
-                if( !serviceName.equals( entry.getKey() ) )
+                register( service.name, instance );
+                if( !service.name.equals( entry.getKey() ) )
                     register( entry.getKey(), instance );
 
                 if( service.supervision.supervise )
-                    supervisor.startSupervised( serviceName, instance,
+                    supervisor.startSupervised( service.name, instance,
                         service.supervision.startWith,
                         service.supervision.stopWith,
                         service.supervision.reloadWith );
                 if( service.supervision.thread )
-                    supervisor.startThread( serviceName, instance );
+                    supervisor.startThread( service.name, instance );
                 else {
                     if( service.supervision.schedule && service.supervision.cron != null )
-                        supervisor.scheduleCron( serviceName, ( Runnable ) instance,
+                        supervisor.scheduleCron( service.name, ( Runnable ) instance,
                             service.supervision.cron );
                     else if( service.supervision.schedule && service.supervision.delay != 0 )
-                        supervisor.scheduleWithFixedDelay( serviceName, ( Runnable ) instance,
+                        supervisor.scheduleWithFixedDelay( service.name, ( Runnable ) instance,
                             service.supervision.delay, MILLISECONDS );
                 }
-                initialized.add( serviceName );
+                initialized.add( service.name );
             } else {
-                log.debug( "dependencies are not ready - deferring " + serviceName + ": "
+                log.debug( "dependencies are not ready - deferring " + service.name + ": "
                     + subtract( service.dependsOn, initialized ) );
                 deferred.put( entry.getKey(), service );
             }
@@ -167,66 +162,6 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
             } );
     }
 
-    @SuppressWarnings( "unchecked" )
-    private void initializeServiceLinks( String name, Module.Service service ) {
-        initializeServiceLinks( name, service.parameters );
-        initializeServiceLinks( name, service.listen );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private void initializeServiceLinks( String name, LinkedHashMap<String, Object> map ) {
-        for( Map.Entry<String, Object> entry : map.entrySet() ) {
-            final Object value = entry.getValue();
-            final String key = entry.getKey();
-
-            if( value instanceof String ) entry.setValue( resolve( name, key, value, true ) );
-            else if( value instanceof List<?> ) {
-                ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
-                while( it.hasNext() ) {
-                    final Object link = resolve( name, key, it.next(), false );
-
-                    if( link != null ) it.set( link );
-                    else it.remove();
-                }
-            } else if( value instanceof Map<?, ?> ) {
-                final Iterator<Map.Entry> it = ( ( Map ) value ).entrySet().iterator();
-                while( it.hasNext() ) {
-                    final Map.Entry e = it.next();
-                    final Object link = resolve( name, key, e.getValue(), false );
-
-                    if( link != null ) e.setValue( link );
-                    else it.remove();
-                }
-            }
-        }
-    }
-
-    private void initializeListeners( Map<String, Object> listeners, Object instance ) {
-        listeners.forEach( ( listener, service ) -> {
-            log.debug( "setting " + instance + " to listen to " + service + " with " + listener );
-            String methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
-            Optionals.fork( Reflect.reflect( service.getClass() ).method( methodName ) )
-                .ifPresent( m -> m.invoke( service, instance ) )
-                .ifAbsentThrow( () -> new ReflectException( "listener " + listener
-                    + " should have method " + methodName + " in " + service ) );
-        } );
-    }
-
-    private Object resolve( String name, String key, Object value, boolean throwErrorIfNotFound ) {
-        if( isLink( value ) ) {
-            final String linkName = ( ( String ) value ).substring( "@service:".length() );
-            Object link = service( linkName );
-            log.debug( "for {} linking {} -> {} as {}", name, key, value, link );
-            if( link == null && throwErrorIfNotFound && serviceEnabled( linkName ) )
-                throw new ApplicationException( "for " + name + " service link " + value + " is not found" );
-            return link;
-        }
-        return value;
-    }
-
-    private boolean isLink( Object value ) {
-        return value instanceof String && ( ( String ) value ).startsWith( "@service:" );
-    }
 
     private Set<Module> initialize( Set<Module> modules, Set<String> initialized, Set<String> initializedServices, ApplicationConfiguration config ) {
         HashSet<Module> deferred = new HashSet<>();
@@ -394,7 +329,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         this.profiles.addAll( Sets.of( profiles ) );
     }
 
-    private boolean serviceEnabled( String name ) {
+    boolean serviceEnabled( String name ) {
         for( Module module : this.modules ) {
             Module.Service service = module.services.get( name );
             if( service != null && !service.enabled ) return false;
