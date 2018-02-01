@@ -114,11 +114,11 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
                         instance = linker.link( service, () -> reflect.newInstance( service.parameters ) );
                         initializeDynamicConfigurations( reflect, instance );
                     } catch( ReflectException e ) {
-                        log.info( "service name = {}, remoteName = {}, profile = {}", service.name, service.remoteName, service.profile );
+                        log.info( "service name = {}, remote = {}, profile = {}", service.name, service.remote, service.profile );
                         throw e;
                     }
                 } else instance = RemoteInvocationHandler.proxy(
-                    service.remoting(),
+                    service.remote,
                     reflect.underlying );
                 register( service.name, instance );
                 if( !service.name.equals( entry.getKey() ) )

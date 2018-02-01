@@ -36,8 +36,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 
@@ -192,7 +190,7 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void testBoot() throws URISyntaxException {
+    public void testBoot() {
         Boot.main( new String[] { "--config=classpath:oap/application/KernelTest/application.conf" } );
 
         val service = Application.service( TestService.class );

@@ -29,23 +29,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.application.remote.FST;
 import oap.application.remote.RemoteLocation;
 import oap.reflect.Coercions;
-import oap.reflect.Reflect;
-import oap.reflect.Reflection;
-import oap.util.Functions;
 import oap.util.Strings;
 
-import java.net.URI;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static java.util.Arrays.asList;
-import static java.util.stream.Collectors.joining;
 
 @EqualsAndHashCode
 @ToString
@@ -70,56 +62,23 @@ public class Module {
         this.name = name;
     }
 
-    @EqualsAndHashCode( exclude = "remoteCache" )
-    @ToString( exclude = "remoteCache" )
+    @EqualsAndHashCode()
+    @ToString()
     @Slf4j
     public static class Service {
-        @JsonAlias( { "implementation", "%implementation" } )
         public String implementation;
-        @JsonAlias( { "parameters", "%parameters" } )
         public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
-        @JsonAlias( { "supervision", "%supervision" } )
         public Supervision supervision = new Supervision();
-        @JsonAlias( { "dependsOn", "%dependsOn" } )
         public ArrayList<String> dependsOn = new ArrayList<>();
-        public URI remoteUrl;
-        @JsonAlias( { "remoteName", "%remoteName" } )
-        public String remoteName;
-        public Path certificateLocation;
-        public String certificatePassword;
-        @JsonAlias( { "profile", "%profile" } )
         public String profile;
-        @JsonAlias( { "name", "%name" } )
         public String name;
-        public long timeout = RemoteLocation.DEFAULT_TIMEOUT;
-        public FST.SerializationMethod serialization = FST.SerializationMethod.DEFAULT;
         public LinkedHashMap<String, String> listen = new LinkedHashMap<>();
         public RemoteLocation remote;
-        @JsonAlias( { "enabled", "%enabled" } )
         public boolean enabled = true;
-        @JsonIgnore
-        private Supplier<RemoteLocation> remoteCache = Functions.memoize( () -> {
-            log.warn( "service attributes remoteUrl, remoteName, cerrificateLocation, certificatePassword,"
-                + " timeout, serialization are deprecated. Use remote { "
-                + Reflect.reflect( RemoteLocation.class )
-                .fields
-                .values()
-                .stream()
-                .filter( f -> !f.isStatic() )
-                .map( Reflection.Field::name )
-                .collect( joining( ", " ) )
-                + " } instead." );
-            return new RemoteLocation( remoteUrl, remoteName, certificateLocation,
-                certificatePassword, timeout, serialization );
-        } );
-
-        public RemoteLocation remoting() {
-            return remoteName != null ? remoteCache.get() : remote;
-        }
 
         @JsonIgnore
         public boolean isRemoteService() {
-            return remoting() != null;
+            return remote != null;
         }
 
     }

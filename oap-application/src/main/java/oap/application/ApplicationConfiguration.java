@@ -56,7 +56,7 @@ public class ApplicationConfiguration {
     }
 
     public static ApplicationConfiguration load( URL appConfigPath, String[] configs ) {
-        log.debug( "application configurations: {}, configs = {}", appConfigPath, asList( configs ) );
+        log.trace( "application configurations: {}, configs = {}", appConfigPath, asList( configs ) );
         return Binder.hoconWithConfig( configs )
             .unmarshal( ApplicationConfiguration.class, appConfigPath );
     }
