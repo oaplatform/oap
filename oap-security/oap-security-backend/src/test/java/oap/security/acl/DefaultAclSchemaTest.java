@@ -34,6 +34,7 @@ import org.testng.annotations.Test;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static oap.application.ApplicationUtils.service;
 import static oap.security.acl.AclService.ROOT;
 import static oap.storage.Storage.LockStrategy.NoLock;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,11 +51,11 @@ public class DefaultAclSchemaTest {
     public void beforeMethod() {
         storage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), NoLock );
 
-        schema = new DefaultAclSchema(
+        schema = service( new DefaultAclSchema(
             ImmutableMap.of( "root", new MemoryRootStorage() ), "acl/child-test-acl-schema.conf",
-            new DefaultAclSchema( ImmutableMap.of(
+            service( new DefaultAclSchema( ImmutableMap.of(
                 "organization", storage,
-                "user", storage ), "acl/parent-test-acl-schema.conf", null ) );
+                "user", storage ), "acl/parent-test-acl-schema.conf", null ) ) ) );
     }
 
     @Test
