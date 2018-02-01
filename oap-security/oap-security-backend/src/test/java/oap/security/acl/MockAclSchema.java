@@ -25,6 +25,7 @@
 package oap.security.acl;
 
 import oap.storage.Storage;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.List;
 import java.util.Optional;
@@ -100,5 +101,10 @@ public class MockAclSchema implements AclSchema {
     @Override
     public List<String> getPermissions( String objectId ) {
         return emptyList();
+    }
+
+    @Override
+    public AclSchemaBean getSchema() {
+        throw new NotImplementedException( "" );
     }
 }

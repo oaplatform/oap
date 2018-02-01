@@ -24,8 +24,19 @@
 
 package oap.security.acl;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.ToString;
+import lombok.val;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -50,4 +61,49 @@ public interface AclSchema {
     void deleteObject( String id );
 
     List<String> getPermissions( String objectId );
+
+    AclSchemaBean getSchema();
+
+    @ToString
+    class AclSchemaBean implements Serializable {
+        private static final long serialVersionUID = 6385590066545729318L;
+        public final Set<String> permissions;
+        public final Map<String, AclSchemaBean> children;
+        @JsonInclude( JsonInclude.Include.NON_NULL )
+        public String parentPath;
+
+        @JsonCreator
+        public AclSchemaBean( Set<String> permissions, Map<String, AclSchemaBean> children ) {
+            this.permissions = permissions != null ? permissions : new HashSet<>();
+            this.children = children != null ? children : new HashMap<>();
+        }
+
+        public Optional<AclSchemaBean> getChild( String type ) {
+            return Optional.ofNullable( children.get( type ) );
+        }
+
+        public boolean containsChild( String objectType ) {
+            return children.containsKey( objectType );
+        }
+
+        public void merge( AclSchemaBean bean ) {
+            this.permissions.addAll( bean.permissions );
+            this.children.putAll( bean.children );
+        }
+
+        public AclSchemaBean findByPath( String path ) {
+            val nodes = StringUtils.split( path, '.' );
+
+            return findByPath( this, nodes, 0 );
+        }
+
+        private AclSchemaBean findByPath( AclSchemaBean schema, String[] nodes, int index ) {
+            if( index >= nodes.length ) return schema;
+
+            val node = nodes[index];
+            val nodeBean = schema.children.get( node );
+            if( nodeBean == null ) throw new IllegalArgumentException( "Unknown node " + node );
+            return findByPath( nodeBean, nodes, index + 1 );
+        }
+    }
 }
