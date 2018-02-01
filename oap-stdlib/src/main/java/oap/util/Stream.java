@@ -100,6 +100,10 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         return of( Iterators.traverse( initialState, traverse ) );
     }
 
+    public static <T> Stream<T> flatTraverse( T initialState, Function<T, java.util.stream.Stream<T>> traverse ) {
+        return of( Iterators.flatTraverse( initialState, e -> traverse.apply( e ).iterator() ) );
+    }
+
     @SafeVarargs
     public static <T> Stream<T> of( T... values ) {
         return values == null ? empty() : of( java.util.stream.Stream.of( values ) );

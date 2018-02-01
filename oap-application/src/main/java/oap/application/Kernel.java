@@ -213,7 +213,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     }
 
     private Object resolve( String name, String key, Object value, boolean throwErrorIfNotFound ) {
-        if( value instanceof String && ( ( String ) value ).startsWith( "@service:" ) ) {
+        if( isLink( value ) ) {
             final String linkName = ( ( String ) value ).substring( "@service:".length() );
             Object link = service( linkName );
             log.debug( "for {} linking {} -> {} as {}", name, key, value, link );
@@ -222,6 +222,10 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
             return link;
         }
         return value;
+    }
+
+    private boolean isLink( Object value ) {
+        return value instanceof String && ( ( String ) value ).startsWith( "@service:" );
     }
 
     private Set<Module> initialize( Set<Module> modules, Set<String> initialized, Set<String> initializedServices, ApplicationConfiguration config ) {
@@ -342,8 +346,9 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         log.debug( "application kernel stopped" );
     }
 
+    @Deprecated
     public void reload() {
-//@todo rething this
+//@todo rethink this
         log.debug( "reloading application kernel" + name + "..." );
         supervisor.reload();
         log.debug( "application kernel reloaded" );

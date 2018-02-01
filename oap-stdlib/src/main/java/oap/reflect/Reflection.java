@@ -199,8 +199,9 @@ public class Reflection extends Annotated<Class<?>> {
         return typeToken.getType();
     }
 
+//    @todo check implementation via typetoken
     public Reflection getCollectionComponentType() {
-        return Stream.<Class<?>>traverse( typeToken.getRawType(), Class::getSuperclass )
+        return baseOf( typeToken.getRawType() )
             .filter( i -> Collection.class.isAssignableFrom( i ) && i.getTypeParameters().length > 0 )
             .map( i -> resolve( i.getTypeParameters()[0] ) )
             .findAny()
@@ -208,11 +209,19 @@ public class Reflection extends Annotated<Class<?>> {
     }
 
     public Pair<Reflection, Reflection> getMapComponentsType() {
-        return Stream.<Class<?>>traverse( typeToken.getRawType(), Class::getSuperclass )
+        return baseOf( typeToken.getRawType() )
             .filter( i -> Map.class.isAssignableFrom( i ) && i.getTypeParameters().length > 1 )
             .map( i -> __( resolve( i.getTypeParameters()[0] ), resolve( i.getTypeParameters()[1] ) ) )
             .findAny()
             .orElse( null );
+    }
+
+    private static Stream<Class<?>> baseOf( Class<?> clazz ) {
+        return Stream.flatTraverse( clazz,
+            c -> {
+                Stream<Class<?>> result = Stream.of( clazz.getInterfaces() );
+                return c.getSuperclass() != null ? result.concat( c.getSuperclass() ) : result;
+            } );
     }
 
     @Override

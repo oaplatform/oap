@@ -27,6 +27,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.Lists;
 import oap.util.Maps;
+import oap.util.Pair;
 import org.testng.annotations.Test;
 
 import java.lang.annotation.ElementType;
@@ -34,10 +35,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -191,6 +196,15 @@ public class ReflectionTest {
             .method( I.class.getDeclaredMethod( "m", String.class ) ) )
             .isNotNull();
     }
+
+    @Test
+    public void castMap() {
+        Pair<Reflection, Reflection> params = Reflect.reflect( CForComponentType.class ).field( "map" ).type().getMapComponentsType();
+        assertThat( params ).isNotNull();
+        assertThat( params._1 ).isEqualTo( Reflect.reflect( String.class ) );
+        assertThat( params._2 ).isEqualTo( Reflect.reflect( String.class ) );
+    }
+
 }
 
 interface I {
@@ -276,10 +290,12 @@ class DeepBean {
         this.map = map;
     }
 
+    @SuppressWarnings( "unused" )
     public DeepBean() {
     }
 }
 
+@SuppressWarnings( "unused" )
 class MatchingConstructor {
     public MatchingConstructor( int i, List<Integer> list ) {}
 
@@ -287,3 +303,72 @@ class MatchingConstructor {
 }
 
 class NoConstructors {}
+
+
+@SuppressWarnings( "unused" )
+class CForComponentType {
+    ForComponentType map;
+}
+
+class ForComponentType implements Map<String, String> {
+
+    @Override
+    public int size() {
+        return 0;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return true;
+    }
+
+    @Override
+    public boolean containsKey( Object key ) {
+        return false;
+    }
+
+    @Override
+    public boolean containsValue( Object value ) {
+        return false;
+    }
+
+    @Override
+    public String get( Object key ) {
+        return null;
+    }
+
+    @Override
+    public String put( String key, String value ) {
+        return null;
+    }
+
+    @Override
+    public String remove( Object key ) {
+        return null;
+    }
+
+    @Override
+    public void putAll( Map<? extends String, ? extends String> m ) {
+
+    }
+
+    @Override
+    public void clear() {
+
+    }
+
+    @Override
+    public Set<String> keySet() {
+        return emptySet();
+    }
+
+    @Override
+    public Collection<String> values() {
+        return emptyList();
+    }
+
+    @Override
+    public Set<Entry<String, String>> entrySet() {
+        return emptySet();
+    }
+}
