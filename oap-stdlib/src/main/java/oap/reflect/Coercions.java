@@ -133,7 +133,7 @@ public final class Coercions {
             return BiStream.of( ( Map<?, ?> ) v )
                 .map( ( k, o ) -> __( cast( componentType._1, k ), cast( componentType._2, o ) ) )
                 .collect( Maps.Collectors.toMap( () -> r.isInterface()
-                    ? r.assignableFrom( ConcurrentMap.class ) ? new ConcurrentHashMap<>() : Maps.of()
+                    ? r.implementationOf( ConcurrentMap.class ) ? new ConcurrentHashMap<>() : Maps.of()
                     : r.newInstance() ) );
         } );
     }

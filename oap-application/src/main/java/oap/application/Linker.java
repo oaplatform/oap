@@ -101,8 +101,8 @@ public class Linker {
             } else if( value instanceof Map<?, ?> )
                 for( Map.Entry<String, Object> item : ( ( Map<String, Object> ) value ).entrySet() )
                     if( isLink( item.getValue() ) ) {
-                        links.add( new KeyLink( serviceName, key, entry.getKey(), ( String ) entry.getValue(), false ) );
-                        entry.setValue( null );
+                        links.add( new KeyLink( serviceName, key, item.getKey(), ( String ) item.getValue(), false ) );
+                        item.setValue( null );
                     }
         }
         return links;

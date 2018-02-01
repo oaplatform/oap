@@ -124,7 +124,7 @@ public class Reflection extends Annotated<Class<?>> {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T newInstance( Map<String, Object> args ) throws ReflectException {
+    public <T> T newInstance( Map<String, Object> args ) {
         for( Constructor constructor : constructors )
             if( constructor.nameMatch( args ) ) return constructor.invoke( args );
 
@@ -199,7 +199,7 @@ public class Reflection extends Annotated<Class<?>> {
         return typeToken.getType();
     }
 
-//    @todo check implementation via typetoken
+    //    @todo check implementation via typetoken
     public Reflection getCollectionComponentType() {
         return baseOf( typeToken.getRawType() )
             .filter( i -> Collection.class.isAssignableFrom( i ) && i.getTypeParameters().length > 0 )
@@ -263,6 +263,10 @@ public class Reflection extends Annotated<Class<?>> {
         return Stream.of( methods )
             .filter( m -> m.isAnnotatedWith( annotation ) )
             .toList();
+    }
+
+    public boolean implementationOf( Class<?> clazz ) {
+        return this.typeToken.getTypes().interfaces().rawTypes().contains( clazz );
     }
 
     public class Field extends Annotated<java.lang.reflect.Field> implements Comparable<Field> {

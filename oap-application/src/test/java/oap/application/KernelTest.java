@@ -59,7 +59,7 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void testStopCloseable() {
+    public void stopCloseable() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/start_stop.conf" ) );
 
@@ -151,7 +151,7 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void testMap() {
+    public void map() {
         List<URL> modules = Lists.of( urlOfTestResource( getClass(), "modules/m4.conf" ) );
 
         Kernel kernel = new Kernel( modules );
@@ -159,15 +159,15 @@ public class KernelTest extends AbstractTest {
             kernel.start();
 
             assertThat( Application.<ServiceOne>service( "s1" ).map ).hasSize( 2 );
-            assertThat( Application.<ServiceOne>service( "s1" ).map.get( "test1" ) ).isInstanceOf(ServiceOne.class);
-            assertThat( Application.<ServiceOne>service( "s1" ).map.get( "test2" ) ).isInstanceOf(ServiceOne.class);
+            assertThat( Application.<ServiceOne>service( "s1" ).map.get( "test1" ) ).isInstanceOf( ServiceOne.class );
+            assertThat( Application.<ServiceOne>service( "s1" ).map.get( "test2" ) ).isInstanceOf( ServiceOne.class );
         } finally {
             kernel.stop();
         }
     }
 
     @Test
-    public void testAbstractModules() {
+    public void abstractModules() {
         List<URL> modules = asList(
             urlOfTestResource( getClass(), "modules/abs.conf" ),
             urlOfTestResource( getClass(), "modules/impl.conf" )
@@ -190,7 +190,7 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void testBoot() {
+    public void boot() {
         Boot.main( new String[] { "--config=classpath:oap/application/KernelTest/application.conf" } );
 
         val service = Application.service( TestService.class );
