@@ -53,29 +53,34 @@ import static java.util.stream.Collectors.toList;
 public class DefaultAclSchema implements AclSchema {
     private final Map<String, Storage<? extends SecurityContainer<?>>> objectStorage;
     private final Optional<AclSchema> remoteSchema;
-    private final AclSchemaBean schema;
+    private final String schemaPath;
+    private AclSchemaBean schema;
 
     @JsonCreator
     public DefaultAclSchema( Map<String, Storage<? extends SecurityContainer<?>>> objectStorage, String schema, AclSchema remoteSchema ) {
         this.objectStorage = objectStorage;
         this.remoteSchema = Optional.ofNullable( remoteSchema );
+        this.schemaPath = schema;
+    }
 
+    public void start() {
         log.info( "acl schema path = {}", schema );
 
-        final List<URL> urls = Resources.urls( schema );
+        final List<URL> urls = Resources.urls( schemaPath );
         log.debug( "found {}", urls );
 
-        final Optional<URL> url = Resources.url( getClass(), schema );
+        final Optional<URL> url = Resources.url( getClass(), schemaPath );
         log.debug( "found2 {}", url );
 
         val configs = Lists.tail( urls ).stream().map( Strings::readString ).toArray( String[]::new );
 
         val lSchema = Binder.hoconWithConfig( configs ).unmarshal( new TypeRef<AclSchemaBean>() {}, Lists.head( urls ) );
-        if( remoteSchema != null ) {
-            this.schema = remoteSchema.getSchema();
-            this.schema.findByPath( lSchema.parentPath ).merge( lSchema );
-        } else
-            this.schema = lSchema;
+        this.schema = remoteSchema
+            .map( rs -> {
+                val s = rs.getSchema();
+                s.findByPath( lSchema.parentPath ).merge( lSchema );
+                return s;
+            } ).orElse( lSchema );
 
         log.info( "acl schema = {}", this.schema );
     }
