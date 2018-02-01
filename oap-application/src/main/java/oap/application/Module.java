@@ -26,7 +26,6 @@ package oap.application;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -94,7 +93,7 @@ public class Module {
         public String name;
         public long timeout = RemoteLocation.DEFAULT_TIMEOUT;
         public FST.SerializationMethod serialization = FST.SerializationMethod.DEFAULT;
-        public LinkedHashMap<String, Object> listen = new LinkedHashMap<>();
+        public LinkedHashMap<String, String> listen = new LinkedHashMap<>();
         public RemoteLocation remote;
         @JsonAlias( { "enabled", "%enabled" } )
         public boolean enabled = true;

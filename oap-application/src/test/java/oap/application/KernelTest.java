@@ -208,7 +208,7 @@ public class KernelTest extends AbstractTest {
         public boolean closed;
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             this.closed = true;
         }
     }
@@ -223,7 +223,7 @@ public class KernelTest extends AbstractTest {
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             this.closed = true;
         }
     }

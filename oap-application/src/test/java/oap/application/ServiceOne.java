@@ -27,7 +27,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.extern.slf4j.Slf4j;
 
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -79,11 +78,10 @@ public class ServiceOne {
     }
 
     @ToString
-    @Slf4j
     public static class ComplexMap implements Map<String, Complex> {
 
         public ComplexMap() {
-            log.info( "init()" );
+            ;
         }
 
         @Override

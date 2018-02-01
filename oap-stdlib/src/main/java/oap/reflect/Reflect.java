@@ -31,6 +31,7 @@ import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -100,6 +101,10 @@ public class Reflect {
                 Map<?, ?> map = ( Map<?, ?> ) next;
                 String key = field.substring( 1, field.length() - 1 );
                 next = map.getOrDefault( key, null );
+            } else if( field.startsWith( "[" ) && next instanceof List<?> ) {
+                List<?> list = ( List<?> ) next;
+                int key = Integer.parseInt( field.substring( 1, field.length() - 1 ) );
+                next = list.size() < key ? null : list.get( key );
             } else {
                 Object instance = next;
                 val f = reflect( next.getClass() ).field( field );
@@ -117,6 +122,10 @@ public class Reflect {
 
     @SuppressWarnings( "unchecked" )
     public static void set( Object object, String path, Object value ) {
+        set( object, path, value, false );
+    }
+
+    public static void set( Object object, String path, Object value, boolean removeNullValues ) {
         String[] splittedPath = StringUtils.split( path, '.' );
         Pair<String[], String[]> split = Arrays.splitAt( splittedPath.length - 1, splittedPath );
         String field = split._2[0];
@@ -125,7 +134,17 @@ public class Reflect {
         if( field.startsWith( "[" ) && next instanceof Map<?, ?> ) {
             Map<Object, Object> map = ( Map<Object, Object> ) next;
             String key = field.substring( 1, field.length() - 1 );
-            map.put( key, value );
+            if( value == null && removeNullValues ) map.remove( key );
+            else map.put( key, value );
+        } else if( field.startsWith( "[" ) && next instanceof List<?> ) {
+            List<Object> list = ( List<Object> ) next;
+            int key = Integer.parseInt( field.substring( 1, field.length() - 1 ) );
+            if( value == null && removeNullValues ) {
+                if( key < list.size() ) list.remove( key );
+            } else {
+                while( list.size() <= key ) list.add( null );
+                list.set( key, value );
+            }
         } else {
             val f = reflect( next.getClass() ).field( field );
             if( f != null ) {

@@ -98,20 +98,14 @@ public class Supervisor {
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
-                    long start = System.currentTimeMillis();
                     service.stop();
-                    long end = System.currentTimeMillis();
-                    log.debug( "stopping {}... Done ({}ms)", name, end - start );
                 } );
             this.scheduled.clear();
             BiStream.of( this.supervised )
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
-                    long start = System.currentTimeMillis();
                     service.stop();
-                    long end = System.currentTimeMillis();
-                    log.debug( "stopping {}... Done. ({}ms)", name, end - start );
                 } );
             this.supervised.clear();
         }
