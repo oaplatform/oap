@@ -25,6 +25,7 @@
 package oap.security.acl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.io.Resources;
@@ -178,6 +179,7 @@ public class DefaultAclSchema implements AclSchema {
             .collect( toList() );
     }
 
+    @ToString
     private static class AclSchemaBean {
         public final List<String> permissions;
         public final Map<String, AclSchemaBean> children;
