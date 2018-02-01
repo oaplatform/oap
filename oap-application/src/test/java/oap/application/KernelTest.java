@@ -127,7 +127,7 @@ public class KernelTest extends AbstractTest {
 
 //                dont do this kind of things now.
 //                ServiceOne.ComplexMap complexMap = Application.service( ServiceOne.ComplexMap.class );
-//                assertThat( one.complexMap ).isSameAs( complexMap );
+    //                assertThat( one.complexMap ).isSameAs( complexMap );
             } );
         } finally {
             kernel.stop();
