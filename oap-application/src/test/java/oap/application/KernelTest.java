@@ -126,7 +126,8 @@ public class KernelTest extends AbstractTest {
 
                 assertThat( one.listener ).isSameAs( two );
 
-                assertThat( one.complexMap ).isSameAs( complexMap );
+//                dont do this kind of thing now.
+//                assertThat( one.complexMap ).isSameAs( complexMap );
             } );
         } finally {
             kernel.stop();
