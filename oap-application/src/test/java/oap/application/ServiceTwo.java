@@ -41,8 +41,8 @@ public class ServiceTwo implements Hello, ActionListener {
     List<TestBean> beans = new ArrayList<>();
 
 
-    public ServiceTwo() {
-        ServiceOne.instances++;
+    public ServiceTwo( ServiceOne one ) {
+        this.one = one;
     }
 
     public void start() {

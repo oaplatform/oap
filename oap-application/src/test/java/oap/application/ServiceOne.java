@@ -42,7 +42,6 @@ import static java.util.Collections.emptySet;
 @ToString( exclude = "listener" )
 @EqualsAndHashCode
 public class ServiceOne {
-    static volatile int instances;
     int i;
     int i2;
     Complex complex;

@@ -30,9 +30,10 @@ import oap.reflect.ReflectException;
 import oap.util.Optionals;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -55,9 +56,8 @@ public class Linker {
 
 
     Object link( Module.Service service, Supplier<Object> instantiate ) {
-        List<Link> parameterLinks = collectLinks( service.name, service.parameters );
+        resolveLinks( service.name, service.parameters );
         Object instance = instantiate.get();
-        for( Link link : parameterLinks ) link.link( instance );
         linkListeners( service, instance );
         return instance;
     }
@@ -79,85 +79,45 @@ public class Linker {
 
     }
 
+    protected Object resolve( String serviceName, String field, String reference, boolean required ) {
+        String linkName = linkedServiceName( reference );
+        Object linkedService = kernel.service( linkName );
+        log.debug( "for {} linking {} -> {} with {}", serviceName, field, reference, linkedService );
+        if( linkedService == null && required && kernel.serviceEnabled( linkName ) )
+            throw new ApplicationException( "for " + serviceName + " service link " + reference + " is not found" );
+        return linkedService;
+    }
+
+
     @SuppressWarnings( "unchecked" )
-    private List<Link> collectLinks( String serviceName, LinkedHashMap<String, Object> map ) {
-        List<Link> links = new ArrayList<>();
+    private void resolveLinks( String serviceName, LinkedHashMap<String, Object> map ) {
         for( Map.Entry<String, Object> entry : map.entrySet() ) {
             Object value = entry.getValue();
             String key = entry.getKey();
 
-            if( isLink( value ) ) {
-                links.add( new FieldLink( serviceName, key, ( String ) value, true ) );
-                entry.setValue( null );
-            } else if( value instanceof List<?> ) {
-                List<Object> list = ( List<Object> ) value;
-                for( int i = 0; i < list.size(); i++ ) {
-                    Object item = list.get( i );
+            if( isLink( value ) ) entry.setValue( resolve( serviceName, key, ( String ) value, true ) );
+            else if( value instanceof List<?> ) {
+                ListIterator<Object> iterator = ( ( List<Object> ) value ).listIterator();
+                while( iterator.hasNext() ) {
+                    Object item = iterator.next();
                     if( isLink( item ) ) {
-                        links.add( new KeyLink( serviceName, key, i, ( String ) item, false ) );
-                        list.set( i, null );
+                        Object linkedService = resolve( serviceName, key, ( String ) item, false );
+                        if( linkedService == null ) iterator.remove();
+                        else iterator.set( linkedService );
                     }
                 }
-            } else if( value instanceof Map<?, ?> )
-                for( Map.Entry<String, Object> item : ( ( Map<String, Object> ) value ).entrySet() )
+            } else if( value instanceof Map<?, ?> ) {
+
+                Iterator<Map.Entry<String, Object>> iterator = ( ( Map<String, Object> ) value ).entrySet().iterator();
+                while( iterator.hasNext() ) {
+                    Map.Entry<String, Object> item = iterator.next();
                     if( isLink( item.getValue() ) ) {
-                        links.add( new KeyLink( serviceName, key, item.getKey(), ( String ) item.getValue(), false ) );
-                        item.setValue( null );
+                        Object linkedService = resolve( serviceName, key, ( String ) item.getValue(), false );
+                        if( linkedService == null ) iterator.remove();
+                        else item.setValue( linkedService );
                     }
-        }
-        return links;
-    }
-
-    private abstract class Link {
-        protected final String serviceName;
-        protected final String field;
-        protected final String reference;
-        protected final boolean required;
-
-        public Link( String serviceName, String field, String reference, boolean required ) {
-            this.serviceName = serviceName;
-            this.field = field;
-            this.reference = reference;
-            this.required = required;
-        }
-
-        protected Object resolve() {
-            String linkName = linkedServiceName( reference );
-            Object linkedService = kernel.service( linkName );
-            log.debug( "for {} linking {} -> {} with {}", serviceName, field, reference, linkedService );
-            if( linkedService == null && required && kernel.serviceEnabled( linkName ) )
-                throw new ApplicationException( "for " + serviceName + " service link " + reference + " is not found" );
-            return linkedService;
-        }
-
-        public abstract void link( Object instance );
-
-    }
-
-    private class FieldLink extends Link {
-
-        public FieldLink( String serviceName, String field, String reference, boolean required ) {
-            super( serviceName, field, reference, required );
-        }
-
-        @Override
-        public void link( Object instance ) {
-            Reflect.set( instance, field, resolve() );
-        }
-
-    }
-
-    private class KeyLink extends Link {
-        private final Object key;
-
-        public KeyLink( String serviceName, String field, Object key, String reference, boolean required ) {
-            super( serviceName, field, reference, required );
-            this.key = key;
-        }
-
-        @Override
-        public void link( Object instance ) {
-            Reflect.set( instance, field + ".[" + key + "]", resolve(), true );
+                }
+            }
         }
 
     }
