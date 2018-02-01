@@ -103,7 +103,6 @@ public class KernelTest extends AbstractTest {
             assertEventually( 50, 1, () -> {
                 ServiceOne one = Application.service( ServiceOne.class );
                 ServiceTwo two = Application.service( ServiceTwo.class );
-                ServiceOne.ComplexMap complexMap = Application.service( ServiceOne.ComplexMap.class );
 
                 assertNotNull( one );
                 assertThat( one.i ).isEqualTo( 2 );
@@ -126,7 +125,8 @@ public class KernelTest extends AbstractTest {
 
                 assertThat( one.listener ).isSameAs( two );
 
-//                dont do this kind of thing now.
+//                dont do this kind of things now.
+//                ServiceOne.ComplexMap complexMap = Application.service( ServiceOne.ComplexMap.class );
 //                assertThat( one.complexMap ).isSameAs( complexMap );
             } );
         } finally {
