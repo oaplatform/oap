@@ -25,7 +25,6 @@
 package oap.security.acl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.io.Resources;
@@ -71,7 +70,9 @@ public class DefaultAclSchema implements AclSchema {
 
         val configs = Lists.tail( urls ).stream().map( Strings::readString ).toArray( String[]::new );
 
-        this.schema = Binder.hoconWithConfig( configs ).unmarshal( new TypeRef<AclSchemaBean>() {}, Lists.head( urls ) );
+        val lSchema = Binder.hoconWithConfig( configs ).unmarshal( new TypeRef<AclSchemaBean>() {}, Lists.head( urls ) );
+        this.schema = remoteSchema.getSchema();
+        this.schema.findByPath( lSchema.parentPath ).merge( lSchema );
 
         log.info( "acl schema = {}", this.schema );
     }
@@ -158,6 +159,11 @@ public class DefaultAclSchema implements AclSchema {
             .collect( toList() );
     }
 
+    @Override
+    public AclSchemaBean getSchema() {
+        return schema;
+    }
+
     @SuppressWarnings( "unchecked" )
     private List<AclSchemaBean> getSchemas( AclObject parent ) {
         if( parent == null ) return singletonList( schema );
@@ -177,25 +183,5 @@ public class DefaultAclSchema implements AclSchema {
                             .orElse( Stream.empty() ) )
             )
             .collect( toList() );
-    }
-
-    @ToString
-    private static class AclSchemaBean {
-        public final List<String> permissions;
-        public final Map<String, AclSchemaBean> children;
-
-        @JsonCreator
-        public AclSchemaBean( List<String> permissions, Map<String, AclSchemaBean> children ) {
-            this.permissions = permissions;
-            this.children = children;
-        }
-
-        public Optional<AclSchemaBean> getChild( String type ) {
-            return Optional.ofNullable( children.get( type ) );
-        }
-
-        public boolean containsChild( String objectType ) {
-            return children.containsKey( objectType );
-        }
     }
 }
