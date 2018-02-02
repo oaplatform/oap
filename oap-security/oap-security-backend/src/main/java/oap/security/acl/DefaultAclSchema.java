@@ -25,6 +25,7 @@
 package oap.security.acl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.io.Resources;
@@ -68,6 +69,8 @@ public class DefaultAclSchema implements AclSchema {
 
         final List<URL> urls = Resources.urls( schemaPath );
         log.debug( "found {}", urls );
+
+        Preconditions.checkState( urls.size() == 1, "only one " + schemaPath + " allowed, but found " + urls );
 
         final Optional<URL> url = Resources.url( getClass(), schemaPath );
         log.debug( "found2 {}", url );
