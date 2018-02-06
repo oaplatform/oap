@@ -24,36 +24,20 @@
 
 package oap.http;
 
-import lombok.SneakyThrows;
 import lombok.val;
 import oap.util.Maps;
-import oap.util.Pair;
-import org.apache.http.client.utils.URIBuilder;
+import org.testng.annotations.Test;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.Map;
+import static java.util.Arrays.asList;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class Uri {
-    @SneakyThrows
-    public static URI uri( String uri, Map<String, Object> params ) {
-        URIBuilder uriBuilder = new URIBuilder( uri );
-        params.forEach( ( name, value ) -> {
-                if( value instanceof Collection<?> ) {
-                    for( val v : ( Collection<?> ) value ) {
-                        uriBuilder.addParameter( name, v == null ? "" : v.toString() );
-                    }
-                } else {
-                    uriBuilder.addParameter( name, value == null ? "" : value.toString() );
-                }
-            }
-        );
-        return uriBuilder.build();
-
-    }
-
-    @SafeVarargs
-    public static URI uri( String uri, Pair<String, Object>... params ) {
-        return uri( uri, Maps.of( params ) );
+/**
+ * Created by igor.petrenko on 06.02.2018.
+ */
+public class UriTest {
+    @Test
+    public void testUri() {
+        val uri = Uri.uri( "http://test", Maps.of2( "id", asList( 1, 2 ) ) );
+        assertThat( uri ).hasQuery( "id=1&id=2" );
     }
 }
