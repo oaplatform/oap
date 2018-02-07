@@ -67,6 +67,8 @@ public class WsFileUploader extends FileUploader implements Handler {
         super( postprocessing );
         log.info( "file uploader path = {}", path );
 
+        oap.io.Files.ensureDirectory( path );
+
         val factory = new DiskFileItemFactory();
         factory.setSizeThreshold( ( int ) maxMemorySize );
         factory.setRepository( path.toFile() );
