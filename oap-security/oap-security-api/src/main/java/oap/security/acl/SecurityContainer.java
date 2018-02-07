@@ -57,7 +57,7 @@ public class SecurityContainer<T extends IdBean> implements Serializable {
         this.object = object;
 
         this.acl.id = this.id;
-        this.object.id = this.id;
+        this.object.setId( this.id );
     }
 
     public SecurityContainer( T object, AclObject acl ) {
@@ -72,7 +72,7 @@ public class SecurityContainer<T extends IdBean> implements Serializable {
     @Id
     public void setId( String id ) {
         this.id = id;
-        this.object.id = id;
+        this.object.setId( id );
         this.acl.id = id;
     }
 }

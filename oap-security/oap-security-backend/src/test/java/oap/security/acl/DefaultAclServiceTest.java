@@ -89,7 +89,7 @@ public class DefaultAclServiceTest {
         role2 = roleStorage.store( new AclRole( "roleId2", "testRole2", singletonList( "testObject2.read" ) ) );
         role3 = roleStorage.store( new AclRole( "roleId3", "testRole3", singletonList( "testObject3.read" ) ) );
 
-        aclService.add( ROOT, ga, gaRole.id, true );
+        aclService.add( ROOT, ga, gaRole.getId(), true );
     }
 
     private String register( String parent, String type, String owner ) {
@@ -105,10 +105,10 @@ public class DefaultAclServiceTest {
     public void testAddAcl() {
         assertThat( aclService.check( rootId, subjectId, "testObject1.read" ) ).containsExactly( false );
 
-        aclService.add( rootId, subjectId, roleUknown.id, false );
+        aclService.add( rootId, subjectId, roleUknown.getId(), false );
         assertThat( aclService.check( rootId, subjectId, "testObject1.read" ) ).containsExactly( false );
 
-        aclService.add( rootId, subjectId, role1.id, false );
+        aclService.add( rootId, subjectId, role1.getId(), false );
         assertThat( aclService.check( rootId, subjectId, "testObject1.read" ) ).containsExactly( true );
         assertThat( aclService.check( rootId, subjectId2, "testObject1.read" ) ).containsExactly( false );
 
@@ -119,10 +119,10 @@ public class DefaultAclServiceTest {
     public void testRemoveAcl() {
         testAddAcl();
 
-        aclService.add( rootId, subjectId, role2.id, false );
-        aclService.add( rootId, subjectId, role3.id, false );
+        aclService.add( rootId, subjectId, role2.getId(), false );
+        aclService.add( rootId, subjectId, role3.getId(), false );
 
-        aclService.remove( rootId, subjectId, Optional.of( role1.id ) );
+        aclService.remove( rootId, subjectId, Optional.of( role1.getId() ) );
         assertThat( aclService.check( rootId, subjectId, "testObject1.read" ) ).containsExactly( false );
         assertThat( aclService.check( rootId, subjectId, "testObject2.read" ) ).containsExactly( true );
         assertThat( aclService.list( rootId, subjectId ) ).containsExactly( roleUknown, role2, role3 );
@@ -134,25 +134,25 @@ public class DefaultAclServiceTest {
 
     @Test
     public void testInheritance() {
-        aclService.add( rootId, subjectId, role1.id, true );
+        aclService.add( rootId, subjectId, role1.getId(), true );
         assertThat( aclService.check( childId, subjectId, "testObject1.read" ) ).containsExactly( true );
         assertThat( aclService.check( childId2, subjectId, "testObject1.read" ) ).containsExactly( true );
 
         assertThat( aclService.list( childId, subjectId ) ).containsExactly( role1 );
         assertThat( aclService.list( childId2, subjectId ) ).containsExactly( role1 );
 
-        aclService.remove( childId, subjectId, Optional.of( role1.id ) );
+        aclService.remove( childId, subjectId, Optional.of( role1.getId() ) );
         assertThat( aclService.check( childId, subjectId, "testObject1.read" ) ).containsExactly( true );
         assertThat( aclService.check( childId2, subjectId, "testObject1.read" ) ).containsExactly( true );
 
-        aclService.remove( rootId, subjectId, Optional.of( role1.id ) );
+        aclService.remove( rootId, subjectId, Optional.of( role1.getId() ) );
         assertThat( aclService.check( childId, subjectId, "testObject1.read" ) ).containsExactly( false );
         assertThat( aclService.check( childId2, subjectId, "testObject1.read" ) ).containsExactly( false );
     }
 
     @Test
     public void testSubjectGroup() {
-        aclService.add( rootId, subjectGroupId, role1.id, true );
+        aclService.add( rootId, subjectGroupId, role1.getId(), true );
         assertThat( aclService.check( rootId, subjectId2, "testObject1.read" ) ).containsExactly( true );
         assertThat( aclService.check( childId, subjectId2, "testObject1.read" ) ).containsExactly( true );
     }
@@ -180,7 +180,7 @@ public class DefaultAclServiceTest {
             .hasMessage( "Object 'unknown' not found" )
             .isInstanceOf( AclSecurityException.class );
 
-        aclService.add( rootId, childId2, role1.id, true );
+        aclService.add( rootId, childId2, role1.getId(), true );
 
         assertThat( objectStorage.get( childId2 ) ).isPresent();
         assertThat( aclService.list( subjectId2, childId2 ) ).isNotEmpty();
@@ -191,7 +191,7 @@ public class DefaultAclServiceTest {
 
     @Test
     public void testFindChildren() {
-        aclService.add( subjectGroupId, childId, role1.id, true );
+        aclService.add( subjectGroupId, childId, role1.getId(), true );
 
         assertThat( aclService.findChildren( subjectGroupId, subjectId, "subject", "testObject1.read" ) ).isEmpty();
         assertThat( aclService.findChildren( subjectGroupId, childId, "subject", "testObject1.read" ) )
@@ -201,7 +201,7 @@ public class DefaultAclServiceTest {
 
     @Test
     public void testGetAclFilter() {
-        aclService.add( subjectGroupId, childId, role1.id, true );
+        aclService.add( subjectGroupId, childId, role1.getId(), true );
 
         assertThat( objectStorage
             .select()
@@ -220,10 +220,10 @@ public class DefaultAclServiceTest {
 
     @Test
     public void testGetSubjectRoles() {
-        aclService.add( childId, subjectId, role1.id, false );
-        aclService.add( childId, subjectId, role2.id, false );
-        aclService.add( rootId, subjectId, role2.id, true );
-        aclService.add( childId, subjectId2, role2.id, false );
+        aclService.add( childId, subjectId, role1.getId(), false );
+        aclService.add( childId, subjectId, role2.getId(), false );
+        aclService.add( rootId, subjectId, role2.getId(), true );
+        aclService.add( childId, subjectId2, role2.getId(), false );
 
         assertThat( aclService.getSubjectRoles( childId, false ) ).containsExactlyInAnyOrder(
             new AclService.SubjectRole( subjectId, asList( role2, role1 ) ),
@@ -234,9 +234,9 @@ public class DefaultAclServiceTest {
 
     @Test
     public void testGetRoles() {
-        aclService.add( rootId, subjectId, role1.id, false );
-        aclService.add( rootId, subjectId, role2.id, true );
-        aclService.add( childId, subjectId, role2.id, false );
+        aclService.add( rootId, subjectId, role1.getId(), false );
+        aclService.add( rootId, subjectId, role2.getId(), true );
+        aclService.add( childId, subjectId, role2.getId(), false );
 
         final List<AclService.ObjectRole> roles = aclService.getRoles( subjectId, false );
         assertThat( roles ).containsExactlyInAnyOrder(
