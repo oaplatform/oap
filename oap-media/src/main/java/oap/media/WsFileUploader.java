@@ -118,12 +118,17 @@ public class WsFileUploader extends FileUploader implements Handler {
 
                 val mediaInfo = new MediaInfo();
 
-                val media = Stream.of( postprocessing ).foldLeft( file, ( f, p ) -> p.process( f, mediaInfo ) );
+                val mediaContext = new MediaContext();
 
-                log.trace( "media = {}", media );
-                log.trace( "info = {}", mediaInfo );
+                val media = Stream.of( postprocessing ).foldLeft( file, ( f, p ) -> p.process( f, mediaInfo, mediaContext ) );
 
-                fireUploaded( media, mediaInfo );
+                if( log.isTraceEnabled() ) {
+                    log.trace( "media = {}", media );
+                    log.trace( "info = {}", mediaInfo );
+                    log.trace( "context = {}", mediaContext );
+                }
+
+                fireUploaded( media, mediaInfo, mediaContext );
 
                 response.respond( HttpResponse.ok( new MediaResponse( media.id, mediaInfo ) ) );
             } finally {

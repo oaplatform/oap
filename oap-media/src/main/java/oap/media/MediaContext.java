@@ -24,9 +24,10 @@
 
 package oap.media;
 
+import java.util.HashMap;
+
 /**
- * Created by igor.petrenko on 10.02.2017.
+ * Created by igor.petrenko on 08.02.2018.
  */
-public interface MediaProcessing {
-    Media process( Media media, MediaInfo mediaInfo, MediaContext mediaContext );
+public class MediaContext extends HashMap<String, Object> {
 }

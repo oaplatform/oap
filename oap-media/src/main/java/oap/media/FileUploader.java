@@ -46,12 +46,12 @@ public abstract class FileUploader {
         listeners.remove( listener );
     }
 
-    protected synchronized void fireUploaded( Media media, MediaInfo mediaInfo ) {
-        listeners.forEach( l -> l.uploaded( media, mediaInfo ) );
+    protected synchronized void fireUploaded( Media media, MediaInfo mediaInfo, MediaContext mediaContext ) {
+        listeners.forEach( l -> l.uploaded( media, mediaInfo, mediaContext ) );
     }
 
     public interface FileUploaderListener {
-        void uploaded( Media file, MediaInfo mediaInfo );
+        void uploaded( Media file, MediaInfo mediaInfo, MediaContext mediaContext );
     }
 
 }

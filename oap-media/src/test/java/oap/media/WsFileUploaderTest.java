@@ -92,7 +92,7 @@ public class WsFileUploaderTest extends AbstractTest {
                 shell( "ffprobe -v quiet -print_format xml -show_format -sexagesimal -show_streams {FILE}" ), 10000L
             ) )
         );
-        service.addListener( ( media, mediaInfo ) -> WsFileUploaderTest.this.medias.add( __( media, mediaInfo ) ) );
+        service.addListener( ( media, mediaInfo, mediaContext ) -> WsFileUploaderTest.this.medias.add( __( media, mediaInfo ) ) );
         kernel.register( "upload", service );
         ws.start();
         listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
