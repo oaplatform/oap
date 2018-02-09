@@ -1,1 +1,3 @@
-db.test.insert({_id: "test", b: NumberInt(10), c: NumberInt(20)})
+if( testB ) {
+    db.test.insert({_id: "test", b: NumberInt(10), c: NumberInt(20)})
+}

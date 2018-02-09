@@ -48,6 +48,9 @@ public class DirectoryMigrationTest extends AbstractMongoTest {
     @Test
     public void testMigration() {
         val migration = new DirectoryMigration( Env.deployTestData( getClass() ) );
+        migration.variables.put( "testB", "true" );
+        migration.variables.put( "testS", "\"true\"" );
+
         migration.run( mongoClient.database );
 
         final Document version = mongoClient.database.getCollection( "version" ).find( eq( "_id", "version" ) ).first();

@@ -33,6 +33,8 @@ import oap.util.Maps;
 import org.bson.Document;
 
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.set;
@@ -45,6 +47,7 @@ public class DirectoryMigration implements Migration {
     private static final FindOneAndUpdateOptions UPSERT = new FindOneAndUpdateOptions().upsert( true );
 
     private final Path directory;
+    public HashMap<String, String> variables = new HashMap<>();
 
     public DirectoryMigration( Path directory ) {
         this.directory = directory;
@@ -58,7 +61,14 @@ public class DirectoryMigration implements Migration {
                 log.info( "file {} ...", file );
 
                 val script = Files.readString( file );
-                val eval = new Document( "eval", "function() {\n" + functions + "\n" + script + "\n}\n" );
+
+                val vars = variables
+                    .entrySet()
+                    .stream()
+                    .map( entry -> "var " + entry.getKey() + " = " + entry.getValue() + ";" )
+                    .collect( Collectors.joining( "\n" ) );
+
+                val eval = new Document( "eval", "function() {\n" + functions + "\n" + vars + "\n" + script + "\n}\n" );
                 log.trace( "eval = {}", eval );
                 final Document response = db.runCommand( eval );
                 val ok = response.getDouble( "ok" );
