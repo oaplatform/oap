@@ -25,15 +25,18 @@
 package oap.security.ws;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.http.HttpResponse;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
 import oap.ws.security.User;
 import oap.ws.validate.ValidationErrors;
+import org.joda.time.DateTime;
 
 import java.util.Objects;
 
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.SESSION;
 
@@ -50,10 +53,21 @@ public class Logout2WS {
 
     @WsMethod( method = GET, path = "/" )
     @WsSecurity2
-    public void logout( @WsParam( from = SESSION ) String userid ) {
+    public HttpResponse logout( @WsParam( from = SESSION ) String userid ) {
         log.debug( "Invalidating token for user [{}]", userid );
 
         authService.invalidateUser( userid );
+
+
+        return HttpResponse
+            .status( HTTP_NO_CONTENT )
+            .withCookie( new HttpResponse.CookieBuilder()
+                .withCustomValue( "Authorization", "" )
+                .withDomain( "" )
+                .withPath( "/" )
+                .withExpires( DateTime.now() )
+                .build()
+            );
     }
 
     @SuppressWarnings( "unused" )
