@@ -24,6 +24,7 @@
 
 package oap.storage.mongo;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.AfterMethod;
@@ -32,6 +33,7 @@ import org.testng.annotations.BeforeMethod;
 /**
  * Created by igor.petrenko on 30.01.2018.
  */
+@Slf4j
 public class AbstractMongoTest extends AbstractTest {
     protected String dbName;
     protected MongoClient mongoClient;
@@ -45,6 +47,7 @@ public class AbstractMongoTest extends AbstractTest {
 
         mongoClient = new MongoClient( "localhost", 27017, dbName, Migration.NONE );
         mongoClient.database.drop();
+        log.debug( "drop database {}", mongoClient.database.getName() );
     }
 
     @AfterMethod

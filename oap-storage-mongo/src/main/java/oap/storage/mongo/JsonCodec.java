@@ -68,9 +68,6 @@ public class JsonCodec<T> implements Codec<T> {
         val doc = documentCodec.decode( bsonReader, decoderContext );
         doc.remove( "_id" );
 
-        val modified = doc.get( "modified" );
-        doc.put( "modified", ( ( Date ) modified ).getTime() );
-
         return fileReader.readValue( Binder.json.marshal( doc ) );
     }
 
@@ -82,9 +79,6 @@ public class JsonCodec<T> implements Codec<T> {
         val id = idFunc.apply( data );
 
         doc.put( "_id", new ObjectId( id ) );
-
-        val modified = doc.get( "modified" );
-        doc.put( "modified", new BsonDateTime( ( Long ) modified ) );
 
         documentCodec.encode( bsonWriter, doc, encoderContext );
     }
