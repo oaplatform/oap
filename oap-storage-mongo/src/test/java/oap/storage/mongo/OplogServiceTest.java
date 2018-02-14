@@ -28,8 +28,6 @@ import lombok.val;
 import org.bson.Document;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
-
 import static oap.application.ApplicationUtils.service;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,12 +37,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OplogServiceTest extends AbstractMongoTest {
     @Test
-    public void testOplog() throws IOException, InterruptedException {
+    public void testOplog() {
         try( val oplogListener = service( new OplogService( mongoClient ) ) ) {
 
             val sb = new StringBuilder();
 
-            oplogListener.addListener( "test", new OplogService.OplogListener() {
+            oplogListener.addListener( "test_OplogServiceTest", new OplogService.OplogListener() {
                 @Override
                 public void updated( String table, Object id ) {
                     sb.append( 'u' );
@@ -61,11 +59,11 @@ public class OplogServiceTest extends AbstractMongoTest {
                 }
             } );
 
-            mongoClient.database.getCollection( "test" ).insertOne( new Document( "test", "test" ) );
-            mongoClient.database.getCollection( "test2" ).updateOne( new Document( "test", "test" ), new Document( "$set", new Document( "test", "test2" ) ) );
-            mongoClient.database.getCollection( "test" ).updateOne( new Document( "test", "test" ), new Document( "$set", new Document( "test", "test2" ) ) );
-            mongoClient.database.getCollection( "test" ).updateOne( new Document( "test", "test2" ), new Document( "$set", new Document( "test", "test3" ) ) );
-            mongoClient.database.getCollection( "test" ).deleteOne( new Document( "test", "test3" ) );
+            mongoClient.database.getCollection( "test_OplogServiceTest" ).insertOne( new Document( "test", "test" ) );
+            mongoClient.database.getCollection( "test_OplogServiceTest2" ).updateOne( new Document( "test", "test" ), new Document( "$set", new Document( "test", "test2" ) ) );
+            mongoClient.database.getCollection( "test_OplogServiceTest" ).updateOne( new Document( "test", "test" ), new Document( "$set", new Document( "test", "test2" ) ) );
+            mongoClient.database.getCollection( "test_OplogServiceTest" ).updateOne( new Document( "test", "test2" ), new Document( "$set", new Document( "test", "test3" ) ) );
+            mongoClient.database.getCollection( "test_OplogServiceTest" ).deleteOne( new Document( "test", "test3" ) );
 
             assertEventually( 100, 100, () -> assertThat( sb.toString() ).isEqualTo( "iuud" ) );
         }
