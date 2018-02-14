@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bson.BsonTimestamp;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
@@ -56,7 +57,7 @@ public class OplogService implements Runnable, Closeable {
         this.mongoClient = mongoClient;
     }
 
-    public void addListener( String table, OplogListener listener ) {
+    public synchronized void addListener( String table, OplogListener listener ) {
         listeners.put( table, listener );
 
         if( cursor != null ) {
@@ -66,7 +67,7 @@ public class OplogService implements Runnable, Closeable {
         }
     }
 
-    public void start() {
+    public synchronized void start() {
         initCursor();
 
         thread = new Thread( this );
@@ -75,16 +76,19 @@ public class OplogService implements Runnable, Closeable {
 
     public void initCursor() {
         val oplogRs = mongoClient.mongoClient.getDatabase( "local" ).getCollection( "oplog.rs" );
+        final Bson filter = and(
+            in( "op", "i", "u", "d" ),
+            gt( "ts", new BsonTimestamp( ( int ) ( DateTimeUtils.currentTimeMillis() / 1000 ), 0 ) ),
+            regex( "ns", "^" + mongoClient.database.getName() + "\\." )
+        );
         cursor = oplogRs
-            .find( and(
-                in( "op", "i", "u", "d" ),
-                gt( "ts", new BsonTimestamp( ( int ) ( DateTimeUtils.currentTimeMillis() / 1000 ), 0 ) ),
-                regex( "ns", "^" + mongoClient.database.getName() + "\\." )
-            ) )
+            .find( filter )
             .sort( new Document( "$natural", 1 ) )
             .cursorType( CursorType.TailableAwait )
             .noCursorTimeout( true )
             .iterator();
+
+        log.debug( "filter = {}", filter );
     }
 
     @Override
