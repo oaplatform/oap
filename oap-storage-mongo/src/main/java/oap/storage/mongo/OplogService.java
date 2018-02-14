@@ -49,6 +49,7 @@ public class OplogService implements Runnable, Closeable {
     private final MongoClient mongoClient;
     private final ListMultimap<String, OplogListener> listeners = MultimapBuilder.hashKeys().arrayListValues().build();
     private MongoCursor<Document> cursor;
+    private Thread thread;
 
 
     public OplogService( MongoClient mongoClient ) {
@@ -57,9 +58,22 @@ public class OplogService implements Runnable, Closeable {
 
     public void addListener( String table, OplogListener listener ) {
         listeners.put( table, listener );
+
+        if( cursor != null ) {
+            val oldCursor = cursor;
+            initCursor();
+            oldCursor.close();
+        }
     }
 
     public void start() {
+        initCursor();
+
+        thread = new Thread( this );
+        thread.start();
+    }
+
+    public void initCursor() {
         val oplogRs = mongoClient.mongoClient.getDatabase( "local" ).getCollection( "oplog.rs" );
         cursor = oplogRs
             .find( and(
@@ -75,7 +89,9 @@ public class OplogService implements Runnable, Closeable {
 
     @Override
     public void close() {
+        thread.interrupt();
         cursor.close();
+        thread.stop();
     }
 
     @Override
@@ -114,6 +130,8 @@ public class OplogService implements Runnable, Closeable {
             }
         } catch( IllegalStateException ise ) {
             log.debug( ise.getMessage() );
+        } catch( ThreadDeath td ) {
+
         }
     }
 

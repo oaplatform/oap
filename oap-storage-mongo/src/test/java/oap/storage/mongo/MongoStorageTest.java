@@ -111,8 +111,6 @@ public class MongoStorageTest extends AbstractMongoTest {
             storage.oplogService = oplogService;
             storage.start();
 
-            new Thread( oplogService ).start();
-
             storage.collection.updateOne(
                 eq( "_id", new ObjectId( bean1.id ) ),
                 and( set( "object.c", 1 ), inc( "modified", 1 ) )

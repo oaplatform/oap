@@ -61,8 +61,6 @@ public class OplogServiceTest extends AbstractMongoTest {
                 }
             } );
 
-            new Thread( oplogListener ).start();
-
             mongoClient.database.getCollection( "test" ).insertOne( new Document( "test", "test" ) );
             mongoClient.database.getCollection( "test2" ).updateOne( new Document( "test", "test" ), new Document( "$set", new Document( "test", "test2" ) ) );
             mongoClient.database.getCollection( "test" ).updateOne( new Document( "test", "test" ), new Document( "$set", new Document( "test", "test2" ) ) );
