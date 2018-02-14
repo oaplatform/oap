@@ -62,7 +62,7 @@ public class Logout2WS {
         return HttpResponse
             .status( HTTP_NO_CONTENT )
             .withCookie( new HttpResponse.CookieBuilder()
-                .withCustomValue( "Authorization", "" )
+                .withCustomValue( "Authorization", "expired" )
                 .withDomain( "" )
                 .withPath( "/" )
                 .withExpires( DateTime.now() )
