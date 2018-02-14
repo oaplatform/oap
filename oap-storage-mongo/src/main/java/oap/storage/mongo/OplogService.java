@@ -61,20 +61,12 @@ public class OplogService implements Runnable, Closeable {
         listeners.put( table, listener );
 
         if( cursor != null ) {
-            val oldCursor = cursor;
-            initCursor();
-            oldCursor.close();
+            close();
+            start();
         }
     }
 
     public synchronized void start() {
-        initCursor();
-
-        thread = new Thread( this );
-        thread.start();
-    }
-
-    public void initCursor() {
         val oplogRs = mongoClient.mongoClient.getDatabase( "local" ).getCollection( "oplog.rs" );
         final Bson filter = and(
             in( "op", "i", "u", "d" ),
@@ -89,13 +81,20 @@ public class OplogService implements Runnable, Closeable {
             .iterator();
 
         log.debug( "filter = {}", filter );
+
+        thread = new Thread( this );
+        thread.start();
     }
 
     @Override
     public void close() {
-        thread.interrupt();
-        cursor.close();
-        thread.stop();
+        stop();
+    }
+
+    public synchronized void stop() {
+        if( thread != null ) thread.interrupt();
+        if( cursor != null ) cursor.close();
+        if( thread != null ) thread.stop();
     }
 
     @Override
