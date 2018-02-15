@@ -33,7 +33,6 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public interface Interceptor {
-    String SESSION_TOKEN = "sessionToken";
     String USER_ID = "userid";
 
     Optional<HttpResponse> intercept( Request request, Session session,

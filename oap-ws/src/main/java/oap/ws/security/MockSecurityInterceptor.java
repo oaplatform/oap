@@ -36,13 +36,11 @@ import java.util.function.Function;
 
 @Slf4j
 public class MockSecurityInterceptor implements Interceptor {
-    public static final String SESSION_TOKEN = "sessionToken";
     public static User USER = new DefaultUser( Role.ADMIN, "orgId", "admin@admin.com" );
 
     @Override
     public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
                                              Function<Reflection.Parameter, Object> getParameterValueFunc ) {
-        session.set( Interceptor.SESSION_TOKEN, SESSION_TOKEN );
         session.set( Interceptor.USER_ID, USER.getEmail() );
 
         return Optional.empty();

@@ -34,6 +34,7 @@ import oap.reflect.Reflection;
 import oap.security.acl.AclService;
 import oap.util.IdFactory;
 import oap.ws.Interceptor;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -70,16 +71,25 @@ public class SecurityInterceptor2 implements Interceptor {
             return Optional.of( httpResponse );
         }
 
+        val sessionToken = request.header( "Authorization" ).orElse( request.cookie( "Authorization" ).orElse( null ) );
+        if( sessionToken == null ) {
+            final HttpResponse httpResponse = HttpResponse.status( 401, "Session token is missing in header or cookie" );
+
+            log.debug( httpResponse.toString() );
+
+            return Optional.of( httpResponse );
+        }
+
         var userId = ( String ) session.get( USER_ID ).orElse( null );
+        if( userId != null ) {
+            val s = StringUtils.split( userId, '/' );
+            if( s.length == 2 ) {
+                if( sessionToken.equals( s[2] ) ) userId = s[1];
+                else userId = null;
+
+            } else userId = null;
+        }
         if( userId == null ) {
-            val sessionToken = request.header( "Authorization" ).orElse( request.cookie( "Authorization" ).orElse( null ) );
-            if( sessionToken == null ) {
-                final HttpResponse httpResponse = HttpResponse.status( 401, "Session token is missing in header or cookie" );
-
-                log.debug( httpResponse.toString() );
-
-                return Optional.of( httpResponse );
-            }
             val token = tokenService.getToken( sessionToken ).orElse( null );
             if( token == null ) {
                 final HttpResponse httpResponse = HttpResponse.status( 401, format( "Token id [%s] expired or was "
@@ -90,8 +100,7 @@ public class SecurityInterceptor2 implements Interceptor {
                 return Optional.of( httpResponse );
             }
             userId = token.userId;
-            session.set( SESSION_TOKEN, token.id );
-            session.set( USER_ID, userId );
+            session.set( USER_ID, userId + "/" + sessionToken );
         } else {
             log.trace( "User [{}] found in session", userId );
         }
