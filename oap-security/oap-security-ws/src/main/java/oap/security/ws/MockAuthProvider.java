@@ -24,36 +24,29 @@
 
 package oap.security.ws;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.util.Id;
+import oap.security.acl.User2;
+import org.apache.commons.lang3.NotImplementedException;
 
-import java.io.Serializable;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Created by igor.petrenko on 22.12.2017.
+ * Created by igor.petrenko on 15.02.2018.
  */
-@ToString
-@EqualsAndHashCode
-public class Token2 implements Serializable {
-    private static final long serialVersionUID = 8208126956380561231L;
+public class MockAuthProvider implements AuthProvider<User2> {
+    private final ConcurrentHashMap<String, User2> map = new ConcurrentHashMap<>();
 
-    @Id
-    public String id;
-    public String userId;
-    public long created;
-    public long lastAccess;
-
-    @JsonCreator
-    public Token2( String id, String userId, long created, long lastAccess ) {
-        this.id = id;
-        this.userId = userId;
-        this.created = created;
-        this.lastAccess = lastAccess;
+    @Override
+    public Optional<User2> getByEmail( String email ) {
+        throw new NotImplementedException( "" );
     }
 
-    public Token2( String id, String userId, long created ) {
-        this( id, userId, created, created );
+    @Override
+    public Optional<User2> getById( String id ) {
+        return Optional.ofNullable( map.get( id ) );
+    }
+
+    public void addUser( User2 user ) {
+        map.put( user.getId(), user );
     }
 }

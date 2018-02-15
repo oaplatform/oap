@@ -22,38 +22,37 @@
  * SOFTWARE.
  */
 
-package oap.security.ws;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.util.Id;
-
-import java.io.Serializable;
+package oap.security.acl;
 
 /**
- * Created by igor.petrenko on 22.12.2017.
+ * Created by igor.petrenko on 15.02.2018.
  */
-@ToString
-@EqualsAndHashCode
-public class Token2 implements Serializable {
-    private static final long serialVersionUID = 8208126956380561231L;
+public class MockUser2 implements User2 {
+    public final String email;
+    private final String password;
+    private final String id;
 
-    @Id
-    public String id;
-    public String userId;
-    public long created;
-    public long lastAccess;
-
-    @JsonCreator
-    public Token2( String id, String userId, long created, long lastAccess ) {
-        this.id = id;
-        this.userId = userId;
-        this.created = created;
-        this.lastAccess = lastAccess;
+    public MockUser2( String id_email_password ) {
+        this( id_email_password, id_email_password, id_email_password );
     }
 
-    public Token2( String id, String userId, long created ) {
-        this( id, userId, created, created );
+    public MockUser2( String id, String email ) {
+        this( id, email, email );
+    }
+
+    public MockUser2( String id, String email, String password ) {
+        this.password = password;
+        this.id = id;
+        this.email = email;
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    public String getId() {
+        return id;
     }
 }
