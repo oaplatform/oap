@@ -73,7 +73,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
         final Object o = new TypeReference<Metadata<T>>() {};
         final CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JsonCodec<>( ( TypeReference<Metadata> ) o,
-                Metadata.class, ( m ) -> identifier.get( ( T ) m.object ) ) ),
+                Metadata.class, ( m ) -> getIdentifier().get( ( T ) m.object ) ) ),
             mongoClient.database.getCodecRegistry()
         );
 
@@ -89,7 +89,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
         lastFsync = DateTimeUtils.currentTimeMillis();
 
         final Consumer<Metadata<T>> cons = metadata -> {
-            val id = identifier.get( metadata.object );
+            val id = getIdentifier().get( metadata.object );
             data.put( id, metadata );
         };
 
@@ -126,7 +126,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
 
                 final List<? extends WriteModel<Metadata<T>>> bulk = Lists.map( list,
                     metadata -> {
-                        val id = identifier.get( metadata.object );
+                        val id = getIdentifier().get( metadata.object );
                         return new ReplaceOneModel<>( eq( "_id", new ObjectId( id ) ), metadata, UPDATE_OPTIONS_UPSERT );
                     } );
                 collection.bulkWrite( bulk );

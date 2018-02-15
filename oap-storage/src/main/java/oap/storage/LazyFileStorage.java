@@ -121,7 +121,7 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         if( java.nio.file.Files.exists( path ) ) {
             Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {}, path )
                 .forEach( m -> {
-                    val id = identifier.get( m.object );
+                    val id = getIdentifier().get( m.object );
                     data.put( id, m );
                 } );
         }

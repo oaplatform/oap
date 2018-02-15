@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.security.acl.User2;
 import oap.storage.Storage;
-import oap.util.Cuid;
 import oap.util.Stream;
 import oap.ws.security.PasswordHasher;
 import org.joda.time.DateTimeUtils;
@@ -71,7 +70,7 @@ public class AuthService2 implements Runnable {
 
     public synchronized Token2 generateToken( User2 user ) {
         return getTokenByUserId( user.getId(),
-            () -> new Token2( Cuid.next(), user.getId(), DateTimeUtils.currentTimeMillis() ) );
+            () -> new Token2( null, user.getId(), DateTimeUtils.currentTimeMillis() ) );
 
     }
 
@@ -105,15 +104,14 @@ public class AuthService2 implements Runnable {
 
     private Token2 getTokenByUserId( String userId, Supplier<Token2> init ) {
         Optional<Token2> byUserId = getTokenByUserId( userId );
-        Token2 token = byUserId.orElseGet( () -> {
-            log.debug( "generating new token for user [{}]...", userId );
-            return init.get();
-        } );
-        storage.update( token.id, ( t ) -> {
+        Token2 token = byUserId.map( t -> {
             log.debug( "updating existing token for user [{}]...", userId );
-            token.lastAccess = DateTimeUtils.currentTimeMillis();
-            return token;
-        }, () -> token );
+            t.lastAccess = DateTimeUtils.currentTimeMillis();
+            return t;
+        } ).orElseGet( () -> {
+            log.debug( "generating new token for user [{}]...", userId );
+            return storage.store( init.get() );
+        } );
 
         return token;
     }

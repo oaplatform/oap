@@ -44,7 +44,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
-    protected final Identifier<T> identifier;
+    private final Identifier<T> identifier;
     protected final LockStrategy lockStrategy;
     private final List<DataListener<T>> dataListeners = new ArrayList<>();
     private final ArrayList<Constraint<T>> constraints = new ArrayList<>();
@@ -53,6 +53,10 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public MemoryStorage( Identifier<T> identifier, LockStrategy lockStrategy ) {
         this.identifier = identifier;
         this.lockStrategy = lockStrategy;
+    }
+
+    public Identifier<T> getIdentifier() {
+        return identifier;
     }
 
     @Override

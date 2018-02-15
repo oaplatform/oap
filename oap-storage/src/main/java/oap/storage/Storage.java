@@ -35,6 +35,8 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Optional<T>> {
+    Identifier<T> getIdentifier();
+
     Stream<T> select();
 
     T store( T object );

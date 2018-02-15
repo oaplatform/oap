@@ -71,7 +71,7 @@ public class Replicator<T> implements Closeable {
         for( Metadata<T> metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
             val object = metadata.object;
-            val id = slave.identifier.get( object );
+            val id = slave.getIdentifier().get( object );
             if( slave.data.put( id, metadata ) != null ) {
                 updatedObjects.add( object );
             } else {
