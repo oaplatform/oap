@@ -84,7 +84,7 @@ public class SecurityInterceptor2 implements Interceptor {
         if( userId != null ) {
             val s = StringUtils.split( userId, '/' );
             if( s.length == 2 ) {
-                if( sessionToken.equals( s[2] ) ) userId = s[1];
+                if( sessionToken.equals( s[1] ) ) userId = s[0];
                 else userId = null;
 
             } else userId = null;
