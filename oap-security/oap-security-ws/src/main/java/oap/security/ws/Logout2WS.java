@@ -46,9 +46,11 @@ import static oap.ws.WsParam.From.SESSION;
 @Slf4j
 public class Logout2WS {
     private final AuthService2 authService;
+    private final String cookieDomain;
 
-    public Logout2WS( AuthService2 authService ) {
+    public Logout2WS( AuthService2 authService, String cookieDomain ) {
         this.authService = authService;
+        this.cookieDomain = cookieDomain;
     }
 
     @WsMethod( method = GET, path = "/" )
@@ -63,7 +65,7 @@ public class Logout2WS {
             .status( HTTP_NO_CONTENT )
             .withCookie( new HttpResponse.CookieBuilder()
                 .withCustomValue( "Authorization", "expired" )
-                .withDomain( "" )
+                .withDomain( cookieDomain )
                 .withPath( "/" )
                 .withExpires( DateTime.now() )
                 .build()
