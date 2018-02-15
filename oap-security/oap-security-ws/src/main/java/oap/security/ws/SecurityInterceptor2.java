@@ -130,6 +130,7 @@ public class SecurityInterceptor2 implements Interceptor {
         }
 
         var userId = ( String ) session.get( USER_ID ).orElse( null );
+        if( userId != null ) userId = userId.substring( 0, userId.indexOf( '/' ) );
 
         val id = IdFactory.getId( value );
 
