@@ -93,12 +93,29 @@ public class WsServiceSessionTest {
             .hasBody( Binder.json.marshal( map ) );
     }
 
+    @Test
+    public void testUSER_ID() {
+
+        final Session session = new Session();
+        session.set( Interceptor.USER_ID, "user_id/987654321" );
+
+        sessionManager.put( "123456", session );
+
+        assertGet( HttpAsserts.HTTP_URL( "/test/2" ), Maps.empty(), Maps.of( __( "Cookie", "Authorization=987654321; SID=123456" ) ) )
+            .hasCode( 200 )
+            .hasBody( Binder.json.marshal( "user_id" ) );
+    }
+
 
     private class TestWS {
 
         @WsMethod( path = "/", method = GET )
         public Map<Integer, Integer> test( @WsParam( from = SESSION ) Map<Integer, Integer> map ) {
             return map;
+        }
+        @WsMethod( path = "/2", method = GET )
+        public String test2( @WsParam( from = SESSION ) String userid ) {
+            return userid;
         }
     }
 }

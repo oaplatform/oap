@@ -23,6 +23,7 @@
  */
 package oap.ws;
 
+import lombok.experimental.var;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.http.Handler;
@@ -73,13 +74,13 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @Slf4j
 public class WsService implements Handler {
-    private Object impl;
     private final boolean sessionAware;
     private final Reflection reflection;
     private final WsResponse defaultResponse;
     private final HashMap<Class<?>, Integer> exceptionToHttpCode = new HashMap<>();
     private final SessionManager sessionManager;
     private final List<Interceptor> interceptors;
+    private Object impl;
     private Map<String, Pattern> compiledPaths = new HashMap<>();
 
     public WsService( Object impl, boolean sessionAware,
@@ -269,6 +270,7 @@ public class WsService implements Handler {
                     .withPath( sessionManager.cookiePath )
                     .withExpires( DateTime.now().plusMinutes( sessionManager.cookieExpiration ) )
                     .withDomain( sessionManager.cookieDomain )
+                    .withDomain( sessionManager.cookieDomain )
                     .build()
                     : null;
 
@@ -397,9 +399,12 @@ public class WsService implements Handler {
                         return request;
                     case SESSION:
                         if( session == null ) return null;
-                        return parameter.type().isOptional()
+                        var v = parameter.type().isOptional()
                             ? session._2.get( parameter.name() )
                             : session._2.get( parameter.name() ).orElse( null );
+                        if( parameter.name().equals( "userid" ) && v instanceof String )
+                            v = ( ( String ) v ).substring( 0, ( ( String ) v ).indexOf( '/' ) );
+                        return v;
                     case HEADER:
                         return unwrap( parameter, request.header( parameter.name() ) );
                     case PATH:
