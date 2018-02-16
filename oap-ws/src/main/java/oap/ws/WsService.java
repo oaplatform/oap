@@ -172,12 +172,11 @@ public class WsService implements Handler {
                     handleInternal( request, response, method, name, null );
                 } else {
                     String cookieId = request.cookie( SessionManager.COOKIE_ID ).orElse( null );
-                    String authToken = null;
+                    val authToken = Interceptor.getSessionToken( request );
                     Session session;
                     if( cookieId != null
                         && ( session = sessionManager.getSessionById( cookieId ) ) != null
-                        && ( authToken = Interceptor.getSessionToken( request ) ) != null
-                        && authToken.equals( session.get( Interceptor.AUTHORIZATION ).orElse( null ) )
+                        && Objects.equals( authToken, session.get( Interceptor.AUTHORIZATION ).orElse( null ) )
                         ) {
                         log.debug( "{}: Valid SID [{}] found in cookie", service(), cookieId );
 
@@ -188,7 +187,7 @@ public class WsService implements Handler {
                         log.debug( "{}: Creating new session with SID [{}]", service(), cookieId );
 
                         session = new Session();
-                        session.set( Interceptor.AUTHORIZATION, authToken );
+                        if( authToken != null ) session.set( Interceptor.AUTHORIZATION, authToken );
                         sessionManager.put( cookieId, session );
 
                         handleInternal( request, response, method, name, __( cookieId, session ) );
