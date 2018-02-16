@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Id;
 
 /**
  * Created by igor.petrenko on 05.09.2017.
@@ -39,6 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 public class IdNode extends Node {
     private static final long serialVersionUID = -1085389239945330686L;
 
+    @Id
     public final String id;
 
     public IdNode( String id ) {
@@ -47,7 +49,7 @@ public class IdNode extends Node {
     }
 
     @JsonCreator
-    public IdNode( @JsonProperty String id, @JsonProperty long ct ) {
+    public IdNode( String id, long ct ) {
         super( ct );
         this.id = id;
     }

@@ -63,7 +63,7 @@ public class Node implements Serializable {
     }
 
     @JsonCreator
-    public Node( @JsonProperty long ct ) {
+    public Node( long ct ) {
         this.mt = this.ct = ct;
     }
 
