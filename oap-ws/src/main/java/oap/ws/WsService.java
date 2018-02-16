@@ -23,7 +23,6 @@
  */
 package oap.ws;
 
-import lombok.experimental.var;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.http.Handler;
@@ -172,9 +171,14 @@ public class WsService implements Handler {
                 if( !sessionAware ) {
                     handleInternal( request, response, method, name, null );
                 } else {
-                    String cookieId = request.cookie( "SID" ).orElse( null );
+                    String cookieId = request.cookie( SessionManager.COOKIE_ID ).orElse( null );
+                    String authToken = null;
                     Session session;
-                    if( cookieId != null && ( session = sessionManager.getSessionById( cookieId ) ) != null ) {
+                    if( cookieId != null
+                        && ( session = sessionManager.getSessionById( cookieId ) ) != null
+                        && ( authToken = Interceptor.getSessionToken( request ) ) != null
+                        && authToken.equals( session.get( Interceptor.AUTHORIZATION ).orElse( null ) )
+                        ) {
                         log.debug( "{}: Valid SID [{}] found in cookie", service(), cookieId );
 
                         handleInternal( request, response, method, name, __( cookieId, session ) );
@@ -184,6 +188,7 @@ public class WsService implements Handler {
                         log.debug( "{}: Creating new session with SID [{}]", service(), cookieId );
 
                         session = new Session();
+                        session.set( Interceptor.AUTHORIZATION, authToken );
                         sessionManager.put( cookieId, session );
 
                         handleInternal( request, response, method, name, __( cookieId, session ) );
@@ -399,12 +404,9 @@ public class WsService implements Handler {
                         return request;
                     case SESSION:
                         if( session == null ) return null;
-                        var v = parameter.type().isOptional()
+                        return parameter.type().isOptional()
                             ? session._2.get( parameter.name() )
                             : session._2.get( parameter.name() ).orElse( null );
-                        if( parameter.name().equals( "userid" ) && v instanceof String )
-                            v = ( ( String ) v ).substring( 0, ( ( String ) v ).indexOf( '/' ) );
-                        return v;
                     case HEADER:
                         return unwrap( parameter, request.header( parameter.name() ) );
                     case PATH:

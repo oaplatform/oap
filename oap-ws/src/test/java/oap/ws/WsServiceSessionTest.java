@@ -85,6 +85,7 @@ public class WsServiceSessionTest {
         final Session session = new Session();
         LinkedHashMap<Integer, Integer> map = Maps.of( __( 1, 2 ) );
         session.set( "map", map );
+        session.set( Interceptor.AUTHORIZATION, "987654321" );
 
         sessionManager.put( "123456", session );
 
@@ -97,7 +98,8 @@ public class WsServiceSessionTest {
     public void testUSER_ID() {
 
         final Session session = new Session();
-        session.set( Interceptor.USER_ID, "user_id/987654321" );
+        session.set( Interceptor.USER_ID, "user_id" );
+        session.set( Interceptor.AUTHORIZATION, "987654321" );
 
         sessionManager.put( "123456", session );
 
@@ -113,6 +115,7 @@ public class WsServiceSessionTest {
         public Map<Integer, Integer> test( @WsParam( from = SESSION ) Map<Integer, Integer> map ) {
             return map;
         }
+
         @WsMethod( path = "/2", method = GET )
         public String test2( @WsParam( from = SESSION ) String userid ) {
             return userid;

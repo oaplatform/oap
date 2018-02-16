@@ -79,7 +79,7 @@ public class SecurityInterceptor2Test {
         val userId = "testUser";
 
         final Session session = new Session();
-        session.set( USER_ID, userId + "/token1" );
+        session.set( USER_ID, userId );
 
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( true );
 
@@ -117,7 +117,7 @@ public class SecurityInterceptor2Test {
             session, methodWithAnnotation, p -> "obj" );
 
         assertThat( httpResponse ).isEmpty();
-        assertThat( session.get( USER_ID ) ).contains( userId + "/" + tokenId );
+        assertThat( session.get( USER_ID ) ).contains( userId );
     }
 
     @Test
@@ -127,7 +127,7 @@ public class SecurityInterceptor2Test {
         val userId = "testUser";
 
         final Session session = new Session();
-        session.set( USER_ID, userId + "/1" );
+        session.set( USER_ID, userId );
 
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( false );
 
@@ -141,7 +141,7 @@ public class SecurityInterceptor2Test {
         when( mockAclService.checkAll( "1", "testUser" ) ).thenReturn( asList( "test1.read" ) );
 
         final Session session = new Session();
-        session.set( USER_ID, "testUser/1" );
+        session.set( USER_ID, "testUser" );
 
         val methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
         val op = ( ObjectWithPermissions ) securityInterceptor.postProcessing( new TestAPI.Res( "1" ), session, methodWithAnnotation );
@@ -154,7 +154,7 @@ public class SecurityInterceptor2Test {
         when( mockAclService.checkAll( AclService.ROOT, "testUser" ) ).thenReturn( asList( "gl.create" ) );
 
         final Session session = new Session();
-        session.set( USER_ID, "testUser/1" );
+        session.set( USER_ID, "testUser" );
 
         val methodList = REFLECTION.method( method -> method.name().equals( "methodList" ) ).get();
         val op = ( ( List<ObjectWithPermissions> ) securityInterceptor.postProcessing( singletonList( new TestAPI.Res( "1" ) ), session, methodList ) ).get( 0 );
@@ -167,7 +167,7 @@ public class SecurityInterceptor2Test {
         when( mockAclService.checkAll( AclService.ROOT, "testUser" ) ).thenReturn( asList( "gl.create" ) );
 
         final Session session = new Session();
-        session.set( USER_ID, "testUser/1" );
+        session.set( USER_ID, "testUser" );
 
         val methodWithAnnotation2 = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation2" ) ).get();
         val op = ( ObjectWithPermissions ) securityInterceptor.postProcessing( new TestAPI.Res( "1" ), session, methodWithAnnotation2 );
