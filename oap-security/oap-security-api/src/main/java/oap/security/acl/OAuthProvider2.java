@@ -28,5 +28,7 @@ package oap.security.acl;
  * Created by igor.petrenko on 12.10.2017.
  */
 public enum OAuthProvider2 {
-    LinkedIn
+    LinkedIn,
+    Facebook,
+    Google
 }
