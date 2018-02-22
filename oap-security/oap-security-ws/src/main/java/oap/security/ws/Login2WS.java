@@ -77,7 +77,7 @@ public class Login2WS {
     }
 
     @WsMethod( method = GET, path = "/{tokenId}" )
-    public HttpResponse loginByTemporaryToken( @WsParam(from = PATH) String tokenId ) {
+    public HttpResponse loginByTemporaryToken( @WsParam( from = PATH ) String tokenId ) {
         log.debug( "loginByTemporaryToken tokenId = {}", tokenId );
 
         return login( temporaryTokenService.get( tokenId ).flatMap( tt -> authService.generateToken( tt.objectId ) ) );
@@ -92,5 +92,13 @@ public class Login2WS {
                 .withExpires( DateTime.now().plusMinutes( cookieExpiration ) )
                 .build()
             );
+    }
+
+    @WsMethod( method = GET, path = "/as/{loginAs}" )
+    @WsSecurity2( object = "{loginAs}", permission = "user.adminLogin" )
+    public HttpResponse adminLogin( @WsParam( from = PATH ) String loginAs ) {
+        log.debug( "admin login as = {}", loginAs );
+
+        return login( authService.generateToken( loginAs ) );
     }
 }
