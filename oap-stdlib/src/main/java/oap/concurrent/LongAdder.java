@@ -87,9 +87,7 @@ public class LongAdder extends java.util.concurrent.atomic.LongAdder {
         }
 
         private Object readResolve() {
-            LongAdder a = new LongAdder();
-            a.setValue( value );
-            return a;
+            return new LongAdder( value );
         }
     }
 }
