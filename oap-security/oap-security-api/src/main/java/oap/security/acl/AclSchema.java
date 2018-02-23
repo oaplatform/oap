@@ -62,7 +62,7 @@ public interface AclSchema {
 
     List<String> getPermissions( String objectId );
 
-    AclSchemaBean registerSchema(AclSchemaBean client);
+    AclSchemaBean updateSchema( AclSchemaBean clientSchema );
 
     @ToString
     class AclSchemaBean implements Serializable {
