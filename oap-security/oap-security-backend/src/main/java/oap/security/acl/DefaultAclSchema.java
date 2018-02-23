@@ -167,7 +167,9 @@ public class DefaultAclSchema implements AclSchema {
 
     @Override
     public AclSchemaBean updateSchema( AclSchemaBean clientSchema ) {
+        log.info( "update schema client = {}", clientSchema );
         schema.findByPath( clientSchema.parentPath ).merge( clientSchema );
+        log.debug( "result schema = {}", schema );
         return schema;
     }
 
