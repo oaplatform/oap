@@ -104,7 +104,7 @@ public class MockAclSchema implements AclSchema {
     }
 
     @Override
-    public AclSchemaBean getSchema() {
+    public AclSchemaBean registerSchema( AclSchemaBean client ) {
         throw new NotImplementedException( "" );
     }
 }

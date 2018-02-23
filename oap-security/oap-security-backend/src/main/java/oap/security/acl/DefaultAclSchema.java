@@ -78,12 +78,7 @@ public class DefaultAclSchema implements AclSchema {
         val configs = Lists.tail( urls ).stream().map( Strings::readString ).toArray( String[]::new );
 
         val lSchema = Binder.hoconWithConfig( configs ).unmarshal( new TypeRef<AclSchemaBean>() {}, Lists.head( urls ) );
-        this.schema = remoteSchema
-            .map( rs -> {
-                val s = rs.getSchema();
-                s.findByPath( lSchema.parentPath ).merge( lSchema );
-                return s;
-            } ).orElse( lSchema );
+        this.schema = remoteSchema.map( rs -> rs.registerSchema( lSchema ) ).orElse( lSchema );
 
         log.info( "acl schema = {}", this.schema );
     }
@@ -171,7 +166,8 @@ public class DefaultAclSchema implements AclSchema {
     }
 
     @Override
-    public AclSchemaBean getSchema() {
+    public AclSchemaBean registerSchema( AclSchemaBean client ) {
+        schema.findByPath( client.parentPath ).merge( client );
         return schema;
     }
 
