@@ -115,6 +115,15 @@ public class DefaultAclServiceTest {
         assertThat( aclService.list( rootId, subjectId ) ).containsExactlyInAnyOrder( roleUknown, role1 );
     }
 
+    @Test
+    public void testPattern() {
+        val role = roleStorage.store( new AclRole( "pr", "pr", singletonList( "object" ) ) ).getId();
+        aclService.add( childId, subjectId, role, true );
+
+        assertThat(aclService.checkOne( childId2, subjectId, "object.child.read" )).isTrue();
+        assertThat(aclService.checkOne( childId2, subjectId, "child.read" )).isFalse();
+    }
+
     @Test( dependsOnMethods = { "testAddAcl" } )
     public void testRemoveAcl() {
         testAddAcl();
