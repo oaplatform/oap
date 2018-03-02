@@ -138,7 +138,7 @@ public abstract class Configuration {
 
     public Dictionary getDictionary( int version ) {
         final DictionaryRoot d = mappings.get( version );
-        if( d == null ) throw new RuntimeException( "No log-config found!!!" );
+        if( d == null ) throw new RuntimeException( "[version:" + version + "] No log-config found!!!" );
         return d;
     }
 
