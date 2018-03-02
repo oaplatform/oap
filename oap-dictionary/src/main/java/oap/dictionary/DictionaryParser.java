@@ -134,8 +134,12 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( URL resource ) {
+        return parse( resource, PROPERTY_ID_STRATEGY );
+    }
+
+    public static DictionaryRoot parse( URL resource, IdStrategy idStrategy ) {
         final Map map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, resource );
-        return parse( map, PROPERTY_ID_STRATEGY );
+        return parse( map, idStrategy );
     }
 
     public static DictionaryRoot parse( String resource ) {
