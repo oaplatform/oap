@@ -52,13 +52,21 @@ import static java.util.stream.Collectors.toList;
  */
 @Slf4j
 public class DefaultAclSchema implements AclSchema {
+    private final String identity;
     private final Map<String, Storage<? extends SecurityContainer<?>>> objectStorage;
+    private final Storage<AclSchemaContainer> schemaStorage;
     private final Optional<AclSchema> remoteSchema;
     private final String schemaPath;
     private AclSchemaBean schema;
 
     @JsonCreator
-    public DefaultAclSchema( Map<String, Storage<? extends SecurityContainer<?>>> objectStorage, String schema, AclSchema remoteSchema ) {
+    public DefaultAclSchema(
+        String identity,
+        Storage<AclSchemaContainer> schemaStorage,
+        Map<String, Storage<? extends SecurityContainer<?>>> objectStorage,
+        String schema, AclSchema remoteSchema ) {
+        this.identity = identity;
+        this.schemaStorage = schemaStorage;
         this.objectStorage = objectStorage;
         this.remoteSchema = Optional.ofNullable( remoteSchema );
         this.schemaPath = schema;
@@ -78,7 +86,18 @@ public class DefaultAclSchema implements AclSchema {
         val configs = Lists.tail( urls ).stream().map( Strings::readString ).toArray( String[]::new );
 
         val lSchema = Binder.hoconWithConfig( configs ).unmarshal( new TypeRef<AclSchemaBean>() {}, Lists.head( urls ) );
-        this.schema = remoteSchema.map( rs -> rs.updateSchema( lSchema ) ).orElse( lSchema );
+
+
+        for( val aclSchemaContainer : schemaStorage ) {
+            if( log.isDebugEnabled() )
+                log.debug( "found children schema {}", aclSchemaContainer );
+            else
+                log.info( "found children schema {}", aclSchemaContainer.owner );
+
+            lSchema.findByPath( aclSchemaContainer.schema.parentPath ).merge( aclSchemaContainer.schema );
+        }
+
+        this.schema = remoteSchema.map( rs -> rs.addSchema( identity, lSchema ) ).orElse( lSchema );
 
         log.info( "acl schema = {}", this.schema );
     }
@@ -166,8 +185,9 @@ public class DefaultAclSchema implements AclSchema {
     }
 
     @Override
-    public AclSchemaBean updateSchema( AclSchemaBean clientSchema ) {
-        log.info( "update schema client = {}", clientSchema );
+    public AclSchemaBean addSchema( String owner, AclSchemaBean clientSchema ) {
+        log.info( "add schema owner={}, schema={}", owner, clientSchema );
+        schemaStorage.store( new AclSchemaContainer( owner, clientSchema ) );
         schema.findByPath( clientSchema.parentPath ).merge( clientSchema );
         log.debug( "result schema = {}", schema );
         return schema;
