@@ -45,9 +45,14 @@ import static oap.util.Pair.__;
 @Slf4j
 public class MockAclService implements AclService {
     private final HashMap<Pair<String, String>, List<String>> checks = new HashMap<>();
+    private final HashMap<String, List<String>> children = new HashMap<>();
 
     public void addCheck( String objectId, String subjectId, List<String> permissions ) {
         checks.put( __( objectId, subjectId ), permissions );
+    }
+
+    public void addChildren( String parentId, String type, boolean recursive, String subjectId, String permission, List<String> children ) {
+        this.children.put( parentId + "_" + type + "_" + recursive + "_" + subjectId + "_" + permission, children );
     }
 
     @Override
@@ -100,12 +105,16 @@ public class MockAclService implements AclService {
 
     @Override
     public List<String> getChildren( String parentId, String type, boolean recursive ) {
-        return emptyList();
+        return children.entrySet()
+            .stream()
+            .filter( e -> e.getKey().startsWith( parentId + "_" + type + "_" + recursive ) )
+            .flatMap( e -> e.getValue().stream() )
+            .collect( java.util.stream.Collectors.toList() );
     }
 
     @Override
     public List<String> getChildren( String parentId, String type, boolean recursive, String subjectId, String permission ) {
-        return emptyList();
+        return children.get( parentId + "_" + type + "_" + recursive + "_" + subjectId + "_" + permission );
     }
 
     @Override
