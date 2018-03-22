@@ -62,6 +62,7 @@ public class MockAclService implements AclService {
 
     @Override
     public void validate( String objectId, String subjectId, String... permissions ) throws AclSecurityException {
+        log.debug( "validate objectId={}, subjectId={}, permissions={}", objectId, subjectId, asList( permissions ) );
         val p = checkAll( objectId, subjectId );
 
         if( !p.containsAll( asList( permissions ) ) ) {
@@ -71,6 +72,7 @@ public class MockAclService implements AclService {
 
     @Override
     public List<Boolean> check( String objectId, String subjectId, List<String> permissions ) {
+        log.debug( "check objectId={}, subjectId={}, permissions={}", objectId, subjectId, permissions );
         val p = checkAll( objectId, subjectId );
 
         return permissions.stream().map( p::contains ).collect( toList() );
