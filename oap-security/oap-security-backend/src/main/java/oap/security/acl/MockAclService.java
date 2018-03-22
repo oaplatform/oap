@@ -65,7 +65,7 @@ public class MockAclService implements AclService {
         log.debug( "validate objectId={}, subjectId={}, permissions={}", objectId, subjectId, asList( permissions ) );
         val p = checkAll( objectId, subjectId );
 
-        if( !p.containsAll( asList( permissions ) ) ) {
+        if( p.isEmpty() || !p.containsAll( asList( permissions ) ) ) {
             throw new AclSecurityException();
         }
     }
