@@ -114,7 +114,8 @@ public class MockAclService implements AclService {
 
     @Override
     public List<String> getChildren( String parentId, String type, boolean recursive, String subjectId, String permission ) {
-        return children.get( parentId + "_" + type + "_" + recursive + "_" + subjectId + "_" + permission );
+        val ret = children.get( parentId + "_" + type + "_" + recursive + "_" + subjectId + "_" + permission );
+        return ret != null ? ret : emptyList();
     }
 
     @Override
