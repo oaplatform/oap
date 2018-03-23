@@ -59,6 +59,8 @@ public class SecurityInterceptor2 implements Interceptor {
     @Override
     public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
                                              Function<Reflection.Parameter, Object> getParameterValueFunc ) {
+        log.trace( "intercept method={}, request={}", method, request.requestLine );
+
         val annotation = method.findAnnotation( WsSecurity2.class ).orElse( null );
         if( annotation == null ) return Optional.empty();
 
