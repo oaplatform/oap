@@ -67,7 +67,7 @@ public class SecurityInterceptor2Test {
     public void testShouldNotCheckMethodWithoutAnnotation() {
         val methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithoutAnnotation" ) ).get();
 
-        val httpResponse = securityInterceptor.intercept( null, null, methodWithAnnotation, p -> null );
+        val httpResponse = securityInterceptor.intercept( new MockRequest(), new Session(), methodWithAnnotation, p -> null );
 
         assertThat( httpResponse ).isEmpty();
     }
