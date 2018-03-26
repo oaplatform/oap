@@ -125,8 +125,16 @@ public class DefaultAclSchema implements AclSchema {
     @Override
     public Stream<AclObject> selectObjects() {
         return remoteSchema
-            .map( rs -> Stream.concat( selectLocalObjects(), rs.selectObjects() ) )
+            .map( rs -> Stream.concat( selectLocalObjects(), rs.listObjects().stream() ) )
             .orElse( selectLocalObjects() );
+    }
+
+    @Override
+    public List<AclObject> listObjects() {
+        return remoteSchema
+            .map( rs -> Stream.concat( selectLocalObjects(), rs.listObjects().stream() ) )
+            .orElse( selectLocalObjects() )
+            .collect( toList() );
     }
 
     @Override

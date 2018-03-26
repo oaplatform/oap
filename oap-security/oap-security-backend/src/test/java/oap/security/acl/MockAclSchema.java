@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
 import static oap.security.acl.AclService.ROOT;
 
 /**
@@ -63,6 +64,11 @@ public class MockAclSchema implements AclSchema {
     @Override
     public Stream<AclObject> selectObjects() {
         return storage.select().map( cs -> cs.acl ).concat( ROOT_ACL_OBJECT );
+    }
+
+    @Override
+    public List<AclObject> listObjects() {
+        return storage.select().map( cs -> cs.acl ).concat( ROOT_ACL_OBJECT ).collect( toList() );
     }
 
     @Override

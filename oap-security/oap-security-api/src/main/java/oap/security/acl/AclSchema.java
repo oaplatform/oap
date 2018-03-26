@@ -50,6 +50,8 @@ public interface AclSchema {
 
     Stream<AclObject> selectObjects();
 
+    List<AclObject> listObjects();
+
     Stream<AclObject> selectLocalObjects();
 
     Optional<AclObject> updateLocalObject( String id, Consumer<AclObject> cons );

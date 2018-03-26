@@ -57,6 +57,11 @@ public class RemoteAclSchema implements AclSchema {
     }
 
     @Override
+    public List<AclObject> listObjects() {
+        return remoteSchema.listObjects();
+    }
+
+    @Override
     public Stream<AclObject> selectLocalObjects() {
         throw new NotImplementedException( "Stream" );
     }
@@ -88,6 +93,6 @@ public class RemoteAclSchema implements AclSchema {
 
     @Override
     public AclSchemaBean addSchema( String owner, AclSchemaBean clientSchema ) {
-        return remoteSchema.addSchema( owner,clientSchema );
+        return remoteSchema.addSchema( owner, clientSchema );
     }
 }
