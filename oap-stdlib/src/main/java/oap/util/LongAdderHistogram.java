@@ -29,61 +29,59 @@ import lombok.val;
 import oap.concurrent.LongAdder;
 import org.joda.time.DateTimeUtils;
 
+import javax.annotation.concurrent.ThreadSafe;
 import java.io.Serializable;
 
 /**
  * Created by igor.petrenko on 16.02.2018.
  */
-public class Histogram implements Serializable {
+@ThreadSafe
+public class LongAdderHistogram implements Serializable {
     private static final long serialVersionUID = 2085517363901568734L;
 
     private final LongAdder[] values;
-    private final long period;
     private volatile long lastTick;
 
-    public Histogram() {
-        this( new LongAdder[0], 0, 0 );
+    public LongAdderHistogram() {
+        this( new LongAdder[0], 0 );
     }
 
-    public Histogram( LongAdder[] values, long period, long lastTick ) {
+    public LongAdderHistogram( LongAdder[] values, long lastTick ) {
         this.values = values;
-        this.period = period;
         this.lastTick = lastTick;
     }
 
-    public Histogram( int count, long period ) {
+    public LongAdderHistogram( int count, long period ) {
         values = new LongAdder[count];
         for( int i = 0; i < count; i++ ) values[i] = new LongAdder();
 
-        this.period = period;
-        lastTick = currentTick();
+        lastTick = currentTick( period );
     }
 
-    private long currentTick() {
+    private long currentTick( long period ) {
         return DateTimeUtils.currentTimeMillis() / period;
     }
 
-    public void inc( long value ) {
-        shift();
+    public void inc( long period, long value ) {
+        shift( period );
         values[0].add( value );
     }
 
-    public Histogram merge( Histogram update ) {
+    public void merge( long period, LongAdderHistogram update ) {
         synchronized( this ) {
-            shift();
-            update.shift();
+            shift( period );
+            update.shift( period );
             for( int i = 0; i < values.length; i++ ) {
                 values[i].add( update.values[i].longValue() );
             }
         }
-        return this;
     }
 
-    private void shift() {
-        var ct = currentTick();
+    private void shift( long period ) {
+        var ct = currentTick( period );
         if( ct == lastTick ) return;
         synchronized( this ) {
-            ct = currentTick();
+            ct = currentTick( period );
             if( ct == lastTick ) return;
 
             val sc = ( int ) ( ct - lastTick );
@@ -105,13 +103,8 @@ public class Histogram implements Serializable {
         }
     }
 
-    public final void inc() {
-        inc( 1 );
-    }
-
-
-    public long[] get() {
-        shift();
+    public long[] get( long period ) {
+        shift( period );
 
         val length = values.length;
         val ret = new long[length];
