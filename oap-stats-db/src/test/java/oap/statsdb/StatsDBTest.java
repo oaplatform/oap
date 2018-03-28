@@ -284,6 +284,7 @@ public class StatsDBTest extends AbstractTest {
         @Override
         public MockChild merge( MockChild other ) {
             ci += other.ci;
+
             return this;
         }
 

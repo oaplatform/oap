@@ -25,7 +25,6 @@
 package oap.statsdb;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
@@ -33,6 +32,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.json.TypeIdFactory;
+import oap.util.Mergeable;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Serializable;
@@ -107,8 +107,7 @@ public class Node implements Serializable {
         return true;
     }
 
-    public interface Value<T extends Value<T>> extends Serializable {
-        T merge( T other );
+    public interface Value<T extends Value<T>> extends Mergeable<T>, Serializable {
     }
 
     public interface Container<T extends Value<T>, TChild extends Value<TChild>> extends Value<T> {

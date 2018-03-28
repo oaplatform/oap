@@ -119,8 +119,10 @@ public class ObjectHistogramTest {
         }
 
         @Override
-        public void merge( TestObject object ) {
+        public TestObject merge( TestObject object ) {
             this.value += object.value;
+
+            return this;
         }
     }
 

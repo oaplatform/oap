@@ -26,6 +26,7 @@ package oap.ws.validate;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.Lists;
+import oap.util.Mergeable;
 import oap.ws.WsClientException;
 
 import java.util.ArrayList;
@@ -35,72 +36,72 @@ import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 
 @ToString
 @EqualsAndHashCode
-public class ValidationErrors {
-   public int code;
-   public final List<String> errors = new ArrayList<>();
-   public static final int DEFAULT_CODE = HTTP_BAD_REQUEST;
+public class ValidationErrors implements Mergeable<ValidationErrors> {
+    public static final int DEFAULT_CODE = HTTP_BAD_REQUEST;
+    public final List<String> errors = new ArrayList<>();
+    public int code;
 
-   private ValidationErrors( int code, List<String> errors ) {
-      this.code = code;
-      this.errors.addAll( errors );
-   }
+    private ValidationErrors( int code, List<String> errors ) {
+        this.code = code;
+        this.errors.addAll( errors );
+    }
 
-   public static ValidationErrors empty() {
-      return errors( Lists.empty() );
-   }
+    public static ValidationErrors empty() {
+        return errors( Lists.empty() );
+    }
 
-   @Deprecated
-   public static ValidationErrors create( String error ) {
-      return errors( Lists.of( error ) );
-   }
+    @Deprecated
+    public static ValidationErrors create( String error ) {
+        return errors( Lists.of( error ) );
+    }
 
-   public static ValidationErrors error( String error ) {
-      return errors( Lists.of( error ) );
-   }
+    public static ValidationErrors error( String error ) {
+        return errors( Lists.of( error ) );
+    }
 
-   @Deprecated
-   public static ValidationErrors create( List<String> errors ) {
-      return new ValidationErrors( DEFAULT_CODE, errors );
-   }
+    @Deprecated
+    public static ValidationErrors create( List<String> errors ) {
+        return new ValidationErrors( DEFAULT_CODE, errors );
+    }
 
-   public static ValidationErrors errors( List<String> errors ) {
-      return new ValidationErrors( DEFAULT_CODE, errors );
-   }
+    public static ValidationErrors errors( List<String> errors ) {
+        return new ValidationErrors( DEFAULT_CODE, errors );
+    }
 
-   @Deprecated
-   public static ValidationErrors create( int code, List<String> errors ) {
-      return new ValidationErrors( code, errors );
-   }
+    @Deprecated
+    public static ValidationErrors create( int code, List<String> errors ) {
+        return new ValidationErrors( code, errors );
+    }
 
-   public static ValidationErrors errors( int code, List<String> errors ) {
-      return new ValidationErrors( code, errors );
-   }
+    public static ValidationErrors errors( int code, List<String> errors ) {
+        return new ValidationErrors( code, errors );
+    }
 
-   @Deprecated
-   public static ValidationErrors create( int code, String error ) {
-      return errors( code, Lists.of( error ) );
-   }
+    @Deprecated
+    public static ValidationErrors create( int code, String error ) {
+        return errors( code, Lists.of( error ) );
+    }
 
-   public static ValidationErrors error( int code, String error ) {
-      return errors( code, Lists.of( error ) );
-   }
+    public static ValidationErrors error( int code, String error ) {
+        return errors( code, Lists.of( error ) );
+    }
 
-   public ValidationErrors merge( ValidationErrors result ) {
-      if( hasDefaultCode() ) this.code = result.code;
-      this.errors.addAll( result.errors );
-      return this;
-   }
+    public ValidationErrors merge( ValidationErrors result ) {
+        if( hasDefaultCode() ) this.code = result.code;
+        this.errors.addAll( result.errors );
+        return this;
+    }
 
-   public boolean isFailed() {
-      return !errors.isEmpty();
-   }
+    public boolean isFailed() {
+        return !errors.isEmpty();
+    }
 
-   public boolean hasDefaultCode() {
-      return code == DEFAULT_CODE;
-   }
+    public boolean hasDefaultCode() {
+        return code == DEFAULT_CODE;
+    }
 
-   public void throwIfInvalid() throws WsClientException {
-      if( isFailed() )
-         throw new WsClientException( errors.size() > 1 ? "validation failed" : errors.get( 0 ), code, errors );
-   }
+    public void throwIfInvalid() throws WsClientException {
+        if( isFailed() )
+            throw new WsClientException( errors.size() > 1 ? "validation failed" : errors.get( 0 ), code, errors );
+    }
 }

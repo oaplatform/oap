@@ -37,7 +37,7 @@ import java.io.Serializable;
  */
 @EqualsAndHashCode
 @ToString
-public abstract class Counter<T extends Counter<T>> implements Serializable {
+public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter<T>>, Serializable {
     public long tick = -1;
     public long value = 0;
 
@@ -54,12 +54,14 @@ public abstract class Counter<T extends Counter<T>> implements Serializable {
         return this.tick == tick ? value : 0;
     }
 
+    @Override
     public synchronized Counter<T> merge( Counter<T> other ) {
         if( this.tick == other.tick ) this.value += other.value;
         else if( this.tick < other.tick ) {
             this.value = other.value;
             this.tick = other.tick;
         }
+
         return this;
     }
 

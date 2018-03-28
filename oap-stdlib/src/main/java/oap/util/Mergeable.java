@@ -28,5 +28,5 @@ package oap.util;
  * Created by igor.petrenko on 27.03.2018.
  */
 public interface Mergeable<T extends Mergeable<T>> {
-    void merge( T object );
+    T merge( T object );
 }
