@@ -70,6 +70,19 @@ public abstract class ObjectHistogram<T extends Mergeable<T>> implements Seriali
         } else obj.merge( value );
     }
 
+    public void update( long period, long time, T value ) {
+        shift( period );
+
+        val count = ( int ) ( ( DateTimeUtils.currentTimeMillis() - time ) / period );
+
+        if( count >= values.length ) return;
+
+        var obj = values[count];
+        if( obj == null ) {
+            values[count] = value;
+        } else obj.merge( value );
+    }
+
     private void shift( long period ) {
         var ct = currentTick( period );
         if( ct == lastTick ) return;

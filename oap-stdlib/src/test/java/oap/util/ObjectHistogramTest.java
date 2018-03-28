@@ -56,6 +56,18 @@ public class ObjectHistogramTest {
     }
 
     @Test
+    public void testUpdateForTime() {
+        DateTimeUtils.setCurrentMillisFixed( 10000000 );
+        val histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
+        histogram.update( PERIOD_HOUR, new TestObject( 1 ) );
+
+        histogram.update( PERIOD_HOUR, 10000000 - PERIOD_HOUR, new TestObject( 2 ) );
+        histogram.update( PERIOD_HOUR, 10000000 - PERIOD_HOUR * 10, new TestObject( 2 ) );
+
+        assertThat( histogram.get( PERIOD_HOUR ) ).isEqualTo( new TestObject[] { new TestObject( 1 ), new TestObject( 2 ), null, null, null } );
+    }
+
+    @Test
     public void testHourShiftOne() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
         val histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
