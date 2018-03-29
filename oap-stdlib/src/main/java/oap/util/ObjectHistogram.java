@@ -40,9 +40,8 @@ public abstract class ObjectHistogram<T extends Mergeable<T>> implements Seriali
     private final T[] values;
     private volatile long lastTick;
 
-    @SuppressWarnings( "unchecked" )
-    protected ObjectHistogram( Class<T> clazz ) {
-        this( ( T[] ) Array.newInstance( clazz ), 0 );
+    protected ObjectHistogram() {
+        this( null, 0 );
     }
 
     public ObjectHistogram( T[] values, long lastTick ) {
