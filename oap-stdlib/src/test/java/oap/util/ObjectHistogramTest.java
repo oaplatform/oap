@@ -144,8 +144,8 @@ public class ObjectHistogramTest {
             super( values, lastTick );
         }
 
-        protected TestObjectHistogram() {
-            super( TestObject.class );
+        public TestObjectHistogram() {
+            super();
         }
 
         protected TestObjectHistogram( int count, long period ) {
