@@ -56,12 +56,6 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     }
 
     @Override
-    public List<Metadata<T>> updatedSince( long time ) {
-        open();
-        return super.updatedSince( time );
-    }
-
-    @Override
     public Stream<T> select() {
         open();
         return super.select();
@@ -148,4 +142,15 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         log.debug( "storing {}... done", path );
     }
 
+    @Override
+    public ReplicationSlave<Metadata<T>> slave() {
+        open();
+        return super.slave();
+    }
+
+    @Override
+    public ReplicationMaster<Metadata<T>> master() {
+        open();
+        return super.master();
+    }
 }

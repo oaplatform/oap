@@ -22,16 +22,42 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.replication;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
-public interface ReplicationMaster<T> {
-    List<Metadata<T>> updatedSince( long time );
+/**
+ * Created by igor.petrenko on 06.04.2018.
+ */
+public interface Replication<M> {
+    ReplicationSlave<M> slave();
 
-    default List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
-        return updatedSince( time );
+    ReplicationMaster<M> master();
+
+
+    interface ReplicationSlave<M> {
+        void fireUpdated( Collection<M> objects, boolean isNew );
+
+        void fireDeleted( List<M> objects );
+
+        Optional<M> deleteObject( String id );
+
+        Collection<String> keys();
+
+        boolean putMetadata( String id, M metadata );
+
+        String getIdFor( M metadata );
     }
 
-    List<String> ids();
+    interface ReplicationMaster<M> {
+        List<M> updatedSince( long time );
+
+        default List<M> updatedSince( long time, int limit, int offset ) {
+            return updatedSince( time );
+        }
+
+        Collection<String> ids();
+    }
 }
