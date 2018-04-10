@@ -31,6 +31,8 @@ import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
+import oap.replication.ReplicationMaster;
+import oap.replication.ReplicationSlave;
 import oap.util.Stream;
 
 import java.io.OutputStream;

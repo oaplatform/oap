@@ -26,6 +26,8 @@ package oap.storage;
 import lombok.val;
 import oap.json.Binder;
 import oap.replication.Replication;
+import oap.replication.ReplicationMaster;
+import oap.replication.ReplicationSlave;
 import oap.util.Maps;
 import oap.util.Optionals;
 import oap.util.Stream;

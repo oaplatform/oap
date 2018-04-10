@@ -24,13 +24,23 @@
 
 package oap.replication;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+
 /**
- * Created by igor.petrenko on 06.04.2018.
+ * Created by igor.petrenko on 10.04.2018.
  */
-public interface Replication<M> {
-    ReplicationSlave<M> slave();
+public interface ReplicationSlave<M> {
+    void fireUpdated( Collection<M> objects, boolean isNew );
 
-    ReplicationMaster<M> master();
+    void fireDeleted( List<M> objects );
 
+    Optional<M> deleteObject( String id );
 
+    Collection<String> keys();
+
+    boolean putMetadata( String id, M metadata );
+
+    String getIdFor( M metadata );
 }

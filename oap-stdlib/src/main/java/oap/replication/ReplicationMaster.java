@@ -24,13 +24,18 @@
 
 package oap.replication;
 
+import java.util.Collection;
+import java.util.List;
+
 /**
- * Created by igor.petrenko on 06.04.2018.
+ * Created by igor.petrenko on 10.04.2018.
  */
-public interface Replication<M> {
-    ReplicationSlave<M> slave();
+public interface ReplicationMaster<M> {
+    List<M> updatedSince( long time );
 
-    ReplicationMaster<M> master();
+    default List<M> updatedSince( long time, int limit, int offset ) {
+        return updatedSince( time );
+    }
 
-
+    Collection<String> ids();
 }

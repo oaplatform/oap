@@ -28,8 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
-import oap.replication.Replication.ReplicationMaster;
-import oap.replication.Replication.ReplicationSlave;
 import oap.util.Lists;
 import oap.util.Optionals;
 import oap.util.Stream;
