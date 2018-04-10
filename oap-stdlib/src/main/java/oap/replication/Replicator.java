@@ -61,6 +61,10 @@ public class Replicator<M> implements Closeable {
         this( slave, master, interval, 1000 );
     }
 
+    public Replicator( Replication<M> slave, ReplicationMaster<M> master, long interval ) {
+        this( slave.slave(), master, interval, 1000 );
+    }
+
     public synchronized void replicate( long last ) {
         List<M> newUpdates = Lists.empty();
         for( int b = 0; b < 100000; b++ ) {

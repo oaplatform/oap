@@ -31,6 +31,4 @@ public interface Replication<M> {
     ReplicationSlave<M> slave();
 
     ReplicationMaster<M> master();
-
-
 }
