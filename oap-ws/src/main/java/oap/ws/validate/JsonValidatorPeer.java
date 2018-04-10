@@ -23,23 +23,29 @@
  */
 package oap.ws.validate;
 
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.json.schema.JsonSchema;
-import oap.json.schema.ResourceSchemaStorage;
 import oap.reflect.Reflection;
+import oap.util.Strings;
 import oap.ws.WsClientException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
 public class JsonValidatorPeer implements ValidatorPeer {
-    private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
-    private final JsonSchema factory;
+    private final ConcurrentHashMap<String, JsonSchema> factory = new ConcurrentHashMap<>();
     private final WsValidateJson validate;
+    private final String schemaRef;
+    private final boolean dynamic;
 
     public JsonValidatorPeer( WsValidateJson validate, Reflection.Method targetMethod, Object instance, Type type ) {
-        this.factory = JsonSchema.schema( validate.schema() );
+        this.schemaRef = validate.schema();
+        dynamic = this.schemaRef.contains( "${" );
         this.validate = validate;
     }
 
@@ -48,9 +54,35 @@ public class JsonValidatorPeer implements ValidatorPeer {
         try {
             final Map mapValue = Binder.json.unmarshal( Map.class, ( String ) value );
 
+            val factory = getJsonSchema( originalValues );
+
             return ValidationErrors.errors( factory.validate( mapValue, validate.ignoreRequired() ) );
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
         }
+    }
+
+    private JsonSchema getJsonSchema( LinkedHashMap<Reflection.Parameter, Object> originalValues ) {
+        if( !dynamic ) return factory.computeIfAbsent( Strings.UNDEFINED, ( s ) -> JsonSchema.schema( schemaRef ) );
+
+        log.trace( "dynamic schema ref {}", schemaRef );
+
+        StringBuilder id = new StringBuilder();
+
+        val ref = Strings.substitute( schemaRef, ( key ) -> originalValues
+            .entrySet()
+            .stream()
+            .filter( e -> key.equals( e.getKey().name() ) )
+            .map( e -> {
+                val value = e.getValue().toString();
+                log.trace( "key={}, value={}", e.getKey(), e.getValue() );
+
+                id.append( value );
+                return value;
+            } )
+            .findAny()
+            .orElse( Strings.UNKNOWN ) );
+
+        return factory.computeIfAbsent( id.toString(), ( i ) -> JsonSchema.schema( ref ) );
     }
 }
