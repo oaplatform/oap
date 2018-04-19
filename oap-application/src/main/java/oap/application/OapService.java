@@ -58,7 +58,7 @@ public class OapService {
     @PostConstruct
     public void start() {
         try {
-            log.info( "config = {}, config-directory = {}", config, confd );
+            log.info( "config = {}, config-directory = {}, hosts = {}", config, confd, hosts );
 
             kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
             kernel.start( config, confd, hosts );
