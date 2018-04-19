@@ -26,16 +26,21 @@ package oap.application;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.io.Files;
 import oap.json.Binder;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Stream;
+import oap.util.Strings;
+import oap.util.Try;
 
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -57,20 +62,24 @@ public class ApplicationConfiguration {
 
     public static ApplicationConfiguration load( URL appConfigPath, String[] configs ) {
         log.trace( "application configurations: {}, configs = {}", appConfigPath, asList( configs ) );
+
         return Binder.hoconWithConfig( configs )
             .unmarshal( ApplicationConfiguration.class, appConfigPath );
     }
 
     @SneakyThrows
-    public static ApplicationConfiguration load( Path appConfigPath, Path confd ) {
-        return load( appConfigPath.toUri().toURL(), confd.toString() );
+    public static ApplicationConfiguration load( Path appConfigPath, Path confd, Optional<Path> hosts ) {
+        return load( appConfigPath.toUri().toURL(), confd.toString(), hosts.map( Try.map( h -> h.toUri().toURL() ) ) );
     }
 
-    public static ApplicationConfiguration load( URL appConfigPath, String confd ) {
+    public static ApplicationConfiguration load( URL appConfigPath, String confd, Optional<URL> hosts ) {
         List<Path> paths = confd != null ? Files.wildcard( confd, "*.conf" ) : emptyList();
         log.info( "global configurations: {}", paths );
-        return load( appConfigPath, Stream.of( paths )
-            .map( Files::readString )
-            .toArray( String[]::new ) );
+
+        val confs = new ArrayList<String>();
+        hosts.ifPresent( h -> confs.add( Strings.readString( h ) ) );
+        Stream.of( paths ).map( Files::readString ).forEach( confs::add );
+
+        return load( appConfigPath, confs.toArray( new String[0] ) );
     }
 }

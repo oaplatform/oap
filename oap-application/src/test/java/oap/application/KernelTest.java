@@ -99,7 +99,8 @@ public class KernelTest extends AbstractTest {
         Kernel kernel = new Kernel( modules );
         try {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ),
-                pathOfTestResource( getClass(), "conf.d" ) );
+                pathOfTestResource( getClass(), "conf.d" ),
+                pathOfTestResource( getClass(), "hosts.conf" ) );
             assertEventually( 50, 1, () -> {
                 ServiceOne one = Application.service( ServiceOne.class );
                 ServiceTwo two = Application.service( ServiceTwo.class );
@@ -127,7 +128,7 @@ public class KernelTest extends AbstractTest {
 
 //                dont do this kind of things now.
 //                ServiceOne.ComplexMap complexMap = Application.service( ServiceOne.ComplexMap.class );
-    //                assertThat( one.complexMap ).isSameAs( complexMap );
+                //                assertThat( one.complexMap ).isSameAs( complexMap );
             } );
         } finally {
             kernel.stop();
@@ -191,7 +192,9 @@ public class KernelTest extends AbstractTest {
 
     @Test
     public void boot() {
-        Boot.main( new String[] { "--config=classpath:oap/application/KernelTest/application.conf" } );
+        Boot.main( new String[] {
+            "--config=classpath:oap/application/KernelTest/application.conf",
+            "--hosts=classpath:oap/application/KernelTest/hosts.conf" } );
 
         val service = Application.service( TestService.class );
         assertThat( service ).isNotNull();

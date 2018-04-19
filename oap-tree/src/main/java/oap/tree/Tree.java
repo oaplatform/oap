@@ -225,15 +225,15 @@ public class Tree<T> {
 
         final Dimension dimension = dimensions.get( splitDimension.dimension );
 
-        final List<ArrayBitSet> sets = Lists.map( Lists.groupBy(
-            splitDimension.sets,
-            s -> s.data.get( splitDimension.dimension )
-        ).entrySet(), es -> {
-            final Array key = ( Array ) es.getKey();
-            return new ArrayBitSet( dimension.toBitSet( key ), key.include, toNode( es.getValue(), uniqueCount, bitSetWithDimension ) );
-        } );
 
         if( splitDimension.hash.isEmpty() ) {
+            final List<ArrayBitSet> sets = Lists.map( Lists.groupBy(
+                splitDimension.sets,
+                s -> s.data.get( splitDimension.dimension )
+            ).entrySet(), es -> {
+                final Array key = ( Array ) es.getKey();
+                return new ArrayBitSet( dimension.toBitSet( key ), key.include, toNode( es.getValue(), uniqueCount, bitSetWithDimension ) );
+            } );
 
             return new Node(
                 splitDimension.dimension,

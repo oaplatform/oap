@@ -49,6 +49,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -207,22 +208,28 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     }
 
     @SneakyThrows
-    public void start( String appConfigPath, String confd ) {
+    public void start( String appConfigPath, String confd, String hosts ) {
         val configURL =
             appConfigPath.startsWith( "classpath:" )
                 ? Thread.currentThread().getContextClassLoader().getResource( appConfigPath.substring( 10 ) )
                 : new File( appConfigPath ).toURI().toURL();
+
+        val hostsUrl = hosts != null ?
+            ( hosts.startsWith( "classpath:" )
+                ? Thread.currentThread().getContextClassLoader().getResource( hosts.substring( 10 ) )
+                : new File( hosts ).toURI().toURL() )
+            : null;
 
         Preconditions.checkNotNull( configURL, appConfigPath + " not found" );
 
         val confdPath = confd != null ? Paths.get( confd )
             : new File( configURL.toURI() ).toPath().getParent().resolve( "conf.d" );
 
-        start( ApplicationConfiguration.load( configURL, confdPath.toString() ) );
+        start( ApplicationConfiguration.load( configURL, confdPath.toString(), Optional.ofNullable( hostsUrl ) ) );
     }
 
-    public void start( Path appConfigPath, Path confd ) {
-        start( ApplicationConfiguration.load( appConfigPath, confd ) );
+    public void start( Path appConfigPath, Path confd, Path hosts ) {
+        start( ApplicationConfiguration.load( appConfigPath, confd, Optional.of( hosts ) ) );
     }
 
     public void start( Path appConfigPath ) {
