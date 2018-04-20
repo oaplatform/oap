@@ -31,16 +31,11 @@ import oap.io.Files;
 import oap.json.Binder;
 import oap.util.Lists;
 import oap.util.Maps;
-import oap.util.Stream;
-import oap.util.Strings;
-import oap.util.Try;
 
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -68,18 +63,16 @@ public class ApplicationConfiguration {
     }
 
     @SneakyThrows
-    public static ApplicationConfiguration load( Path appConfigPath, Path confd, Optional<Path> hosts ) {
-        return load( appConfigPath.toUri().toURL(), confd.toString(), hosts.map( Try.map( h -> h.toUri().toURL() ) ) );
+    public static ApplicationConfiguration load( Path appConfigPath, Path confd ) {
+        return load( appConfigPath.toUri().toURL(), confd.toString() );
     }
 
-    public static ApplicationConfiguration load( URL appConfigPath, String confd, Optional<URL> hosts ) {
+    public static ApplicationConfiguration load( URL appConfigPath, String confd ) {
         List<Path> paths = confd != null ? Files.wildcard( confd, "*.conf" ) : emptyList();
         log.info( "global configurations: {}", paths );
 
-        val confs = new ArrayList<String>();
-        hosts.ifPresent( h -> confs.add( Strings.readString( h ) ) );
-        Stream.of( paths ).map( Files::readString ).forEach( confs::add );
+        val confs = paths.stream().map( Files::readString ).toArray( String[]::new );
 
-        return load( appConfigPath, confs.toArray( new String[0] ) );
+        return load( appConfigPath, confs );
     }
 }

@@ -49,19 +49,16 @@ public class OapService {
     @Value( "${config-directory:#{null}}" )
     private String confd;
 
-    @Value( "${hosts:#{null}}" )
-    private String hosts;
-
     @Autowired
     private ApplicationContext applicationContext;
 
     @PostConstruct
     public void start() {
         try {
-            log.info( "config = {}, config-directory = {}, hosts = {}", config, confd, hosts );
+            log.info( "config = {}, config-directory = {}", config, confd );
 
             kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
-            kernel.start( config, confd, hosts );
+            kernel.start( config, confd );
 
             val factory = ( ConfigurableListableBeanFactory ) applicationContext.getAutowireCapableBeanFactory();
 

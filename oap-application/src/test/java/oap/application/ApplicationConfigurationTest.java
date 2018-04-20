@@ -26,8 +26,6 @@ package oap.application;
 
 import org.testng.annotations.Test;
 
-import java.util.Optional;
-
 import static oap.testng.Asserts.pathOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,8 +34,7 @@ public class ApplicationConfigurationTest {
     public void load() {
         ApplicationConfiguration config = ApplicationConfiguration.load(
             pathOfTestResource( KernelTest.class, "application.conf" ),
-            pathOfTestResource( KernelTest.class, "conf.d" ),
-            Optional.of( pathOfTestResource( KernelTest.class, "hosts.conf" ) )
+            pathOfTestResource( KernelTest.class, "conf.d" )
         );
         assertThat( config.services ).hasSize( 2 );
         config.services.forEach( ( k, v ) -> System.out.println( k + " -> " + v ) );

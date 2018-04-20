@@ -99,8 +99,7 @@ public class KernelTest extends AbstractTest {
         Kernel kernel = new Kernel( modules );
         try {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ),
-                pathOfTestResource( getClass(), "conf.d" ),
-                pathOfTestResource( getClass(), "hosts.conf" ) );
+                pathOfTestResource( getClass(), "conf.d" ) );
             assertEventually( 50, 1, () -> {
                 ServiceOne one = Application.service( ServiceOne.class );
                 ServiceTwo two = Application.service( ServiceTwo.class );
