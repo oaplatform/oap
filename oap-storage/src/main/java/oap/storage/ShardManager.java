@@ -33,14 +33,14 @@ import java.util.function.Function;
  * Created by igor.petrenko on 22.09.2016.
  */
 public interface ShardManager<T, ShardID> extends Closeable {
-   Storage<T> getOrCreate( ShardID shard, Function<ShardID, ROStorage<T>> cons );
+    Storage<T> getOrCreate( ShardID shard, Function<ShardID, Storage<T>> cons );
 
-   Set<ShardID> shards();
+    Set<ShardID> shards();
 
-   Collection<ROStorage<T>> select();
+    Collection<Storage<T>> select();
 
-   boolean contains( ShardID shard );
+    boolean contains( ShardID shard );
 
-   @Override
-   void close();
+    @Override
+    void close();
 }

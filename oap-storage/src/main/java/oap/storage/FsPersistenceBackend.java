@@ -58,7 +58,7 @@ import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static org.slf4j.LoggerFactory.getLogger;
 
-class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, ROStorage.DataListener<T> {
+class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Storage.DataListener<T> {
     private final Path path;
     private final BiFunction<Path, T, Path> fsResolve;
     private final int version;

@@ -24,7 +24,6 @@
 
 package oap.storage;
 
-import oap.concurrent.Threads;
 import oap.util.Stream;
 
 import java.io.Closeable;
@@ -32,7 +31,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 /**
  * Created by igor.petrenko on 23.04.2018.
@@ -86,40 +84,6 @@ public interface ROStorage<T> extends Closeable, Iterable<T>, Function<String, O
 
         default void deleted( Collection<T2> objects ) {
             objects.forEach( this::deleted );
-        }
-
-    }
-
-    interface LockStrategy {
-        LockStrategy NoLock = new NoLock();
-        LockStrategy Lock = new Lock();
-
-        void synchronizedOn( String id, Runnable run );
-
-        <R> R synchronizedOn( String id, Supplier<R> run );
-
-        final class NoLock implements LockStrategy {
-            @Override
-            public final void synchronizedOn( String id, Runnable run ) {
-                run.run();
-            }
-
-            @Override
-            public final <R> R synchronizedOn( String id, Supplier<R> run ) {
-                return run.get();
-            }
-        }
-
-        final class Lock implements LockStrategy {
-            @Override
-            public final void synchronizedOn( String id, Runnable run ) {
-                Threads.synchronizedOn( id, run );
-            }
-
-            @Override
-            public final <R> R synchronizedOn( String id, Supplier<R> run ) {
-                return Threads.synchronizedOn( id, run );
-            }
         }
     }
 }

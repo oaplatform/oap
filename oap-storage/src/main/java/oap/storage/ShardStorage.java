@@ -38,9 +38,9 @@ import java.util.function.Supplier;
  */
 public class ShardStorage<T, ShardID> implements Closeable {
     private ShardManager<T, ShardID> sm;
-    private Function<ShardID, ROStorage<T>> cons;
+    private Function<ShardID, Storage<T>> cons;
 
-    public ShardStorage( ShardManager<T, ShardID> sm, Function<ShardID, ROStorage<T>> cons ) {
+    public ShardStorage( ShardManager<T, ShardID> sm, Function<ShardID, Storage<T>> cons ) {
         this.sm = sm;
         this.cons = cons;
     }

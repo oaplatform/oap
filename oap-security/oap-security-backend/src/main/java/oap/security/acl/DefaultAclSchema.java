@@ -54,7 +54,7 @@ import static java.util.stream.Collectors.toList;
 @Slf4j
 public class DefaultAclSchema implements AclSchema {
     private final String identity;
-    private final Map<String, ROStorage<? extends oap.security.acl.SecurityContainer<?>>> objectStorage;
+    private final Map<String, Storage<? extends oap.security.acl.SecurityContainer<?>>> objectStorage;
     private final Storage<AclSchemaContainer> schemaStorage;
     private final Optional<AclSchema> remoteSchema;
     private final String schemaPath;
@@ -64,7 +64,7 @@ public class DefaultAclSchema implements AclSchema {
     public DefaultAclSchema(
         String identity,
         Storage<AclSchemaContainer> schemaStorage,
-        Map<String, ROStorage<? extends oap.security.acl.SecurityContainer<?>>> objectStorage,
+        Map<String, Storage<? extends oap.security.acl.SecurityContainer<?>>> objectStorage,
         String schema, AclSchema remoteSchema ) {
         this.identity = identity;
         this.schemaStorage = schemaStorage;

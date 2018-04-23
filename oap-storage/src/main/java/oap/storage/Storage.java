@@ -23,6 +23,8 @@
  */
 package oap.storage;
 
+import oap.concurrent.Threads;
+
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Function;
@@ -30,7 +32,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public interface Storage<T> extends ROStorage<T> {
-
     T store( T object );
 
     void store( Collection<T> objects );
@@ -79,4 +80,36 @@ public interface Storage<T> extends ROStorage<T> {
 
     void addConstraint( Constraint<T> constraint );
 
+    interface LockStrategy {
+        LockStrategy NoLock = new NoLock();
+        LockStrategy Lock = new Lock();
+
+        void synchronizedOn( String id, Runnable run );
+
+        <R> R synchronizedOn( String id, Supplier<R> run );
+
+        final class NoLock implements LockStrategy {
+            @Override
+            public final void synchronizedOn( String id, Runnable run ) {
+                run.run();
+            }
+
+            @Override
+            public final <R> R synchronizedOn( String id, Supplier<R> run ) {
+                return run.get();
+            }
+        }
+
+        final class Lock implements LockStrategy {
+            @Override
+            public final void synchronizedOn( String id, Runnable run ) {
+                Threads.synchronizedOn( id, run );
+            }
+
+            @Override
+            public final <R> R synchronizedOn( String id, Supplier<R> run ) {
+                return Threads.synchronizedOn( id, run );
+            }
+        }
+    }
 }
