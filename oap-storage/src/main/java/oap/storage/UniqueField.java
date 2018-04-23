@@ -52,7 +52,7 @@ public class UniqueField<T> implements Constraint<T> {
 
     @Override
     @SuppressWarnings( "unchecked" )
-    public void check( T object, Storage<T> storage, Function<T, String> id ) throws ConstraintException {
+    public void check( T object, ROStorage<T> storage, Function<T, String> id ) throws ConstraintException {
         val idValue = id.apply( object );
         val value = valueFunc.apply( object );
 

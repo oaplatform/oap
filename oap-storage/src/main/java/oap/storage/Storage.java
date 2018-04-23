@@ -23,21 +23,13 @@
  */
 package oap.storage;
 
-import oap.concurrent.Threads;
-import oap.util.Stream;
-
-import java.io.Closeable;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Optional<T>> {
-    Identifier<T> getIdentifier();
-
-    Stream<T> select();
+public interface Storage<T> extends ROStorage<T> {
 
     T store( T object );
 
@@ -72,8 +64,7 @@ public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Opt
 
     void update( Collection<String> ids, Predicate<T> predicate, Function<T, T> update, Supplier<T> init );
 
-    Optional<T> get( String id );
-
+    @Override
     default Optional<T> apply( String id ) {
         return get( id );
     }
@@ -82,87 +73,10 @@ public interface Storage<T> extends Closeable, Iterable<T>, Function<String, Opt
 
     void deleteAll();
 
-    long size();
-
-    Storage<T> copyAndClean();
+    ROStorage<T> copyAndClean();
 
     void fsync();
 
-    Map<String, T> toMap();
-
-    void addDataListener( DataListener<T> dataListener );
-
-    void removeDataListener( DataListener<T> dataListener );
-
     void addConstraint( Constraint<T> constraint );
-
-    interface DataListener<T> {
-        @Deprecated
-        /**
-         * updated( T object, boolean isNew )
-         */
-        default void updated( T object ) {
-        }
-
-        default void updated( T object, boolean added ) {
-            updated( object );
-        }
-
-
-        @Deprecated
-        /**
-         * updated( Collection<T> objects, boolean isNew )
-         */
-        default void updated( Collection<T> objects ) {
-        }
-
-        default void updated( Collection<T> objects, boolean added ) {
-            updated( objects );
-
-            objects.forEach( obj -> updated( obj, added ) );
-        }
-
-
-        default void deleted( T object ) {
-        }
-
-        default void deleted( Collection<T> objects ) {
-            objects.forEach( this::deleted );
-        }
-
-    }
-
-    interface LockStrategy {
-        LockStrategy NoLock = new NoLock();
-        LockStrategy Lock = new Lock();
-
-        void synchronizedOn( String id, Runnable run );
-
-        <R> R synchronizedOn( String id, Supplier<R> run );
-
-        final class NoLock implements LockStrategy {
-            @Override
-            public final void synchronizedOn( String id, Runnable run ) {
-                run.run();
-            }
-
-            @Override
-            public final <R> R synchronizedOn( String id, Supplier<R> run ) {
-                return run.get();
-            }
-        }
-
-        final class Lock implements LockStrategy {
-            @Override
-            public final void synchronizedOn( String id, Runnable run ) {
-                Threads.synchronizedOn( id, run );
-            }
-
-            @Override
-            public final <R> R synchronizedOn( String id, Supplier<R> run ) {
-                return Threads.synchronizedOn( id, run );
-            }
-        }
-    }
 
 }

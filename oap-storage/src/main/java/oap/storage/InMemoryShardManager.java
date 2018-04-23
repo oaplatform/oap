@@ -36,10 +36,10 @@ import java.util.function.Function;
  * Created by igor.petrenko on 22.09.2016.
  */
 public class InMemoryShardManager<T, ShardID> implements ShardManager<T, ShardID> {
-   private final ConcurrentHashMap<ShardID, Storage<T>> storages = new ConcurrentHashMap<>();
+   private final ConcurrentHashMap<ShardID, ROStorage<T>> storages = new ConcurrentHashMap<>();
 
    @Override
-   public Storage<T> getOrCreate( ShardID shard, Function<ShardID, Storage<T>> cons ) {
+   public Storage<T> getOrCreate( ShardID shard, Function<ShardID, ROStorage<T>> cons ) {
       return storages.computeIfAbsent( shard, cons::apply );
    }
 
@@ -49,7 +49,7 @@ public class InMemoryShardManager<T, ShardID> implements ShardManager<T, ShardID
    }
 
    @Override
-   public Collection<Storage<T>> select() {
+   public Collection<ROStorage<T>> select() {
       return storages.values();
    }
 

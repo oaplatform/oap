@@ -31,6 +31,7 @@ import lombok.val;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
+import oap.storage.ROStorage;
 import oap.storage.Storage;
 import oap.util.Lists;
 import oap.util.Strings;
@@ -53,7 +54,7 @@ import static java.util.stream.Collectors.toList;
 @Slf4j
 public class DefaultAclSchema implements AclSchema {
     private final String identity;
-    private final Map<String, Storage<? extends SecurityContainer<?>>> objectStorage;
+    private final Map<String, ROStorage<? extends oap.security.acl.SecurityContainer<?>>> objectStorage;
     private final Storage<AclSchemaContainer> schemaStorage;
     private final Optional<AclSchema> remoteSchema;
     private final String schemaPath;
@@ -63,7 +64,7 @@ public class DefaultAclSchema implements AclSchema {
     public DefaultAclSchema(
         String identity,
         Storage<AclSchemaContainer> schemaStorage,
-        Map<String, Storage<? extends SecurityContainer<?>>> objectStorage,
+        Map<String, ROStorage<? extends oap.security.acl.SecurityContainer<?>>> objectStorage,
         String schema, AclSchema remoteSchema ) {
         this.identity = identity;
         this.schemaStorage = schemaStorage;
@@ -141,7 +142,7 @@ public class DefaultAclSchema implements AclSchema {
     public Stream<AclObject> selectLocalObjects() {
         return objectStorage.values()
             .stream()
-            .flatMap( Storage::select )
+            .flatMap( ROStorage::select )
             .map( con -> con.acl );
     }
 
