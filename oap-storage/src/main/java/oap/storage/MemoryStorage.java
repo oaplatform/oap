@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
-public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>> {
+public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, ReplicationMaster<Metadata<T>> {
     protected final LockStrategy lockStrategy;
     private final Identifier<T> identifier;
     private final List<DataListener<T>> dataListeners = new ArrayList<>();
@@ -292,28 +292,27 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>> {
 
     @Override
     public ReplicationMaster<Metadata<T>> master() {
-        return new ReplicationMaster<Metadata<T>>() {
-            @Override
-            public List<Metadata<T>> updatedSince( long time ) {
-                return Stream.of( data.values() )
-                    .filter( m -> m.modified > time )
-                    .toList();
-            }
+        return this;
+    }
 
-            @Override
-            public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
-                return Stream.of( data.values() )
-                    .filter( m -> m.modified > time )
-                    .skip( offset )
-                    .limit( limit )
-                    .toList();
-            }
+    public List<Metadata<T>> updatedSince( long time ) {
+        return Stream.of( data.values() )
+            .filter( m -> m.modified > time )
+            .toList();
+    }
 
-            @Override
-            public Collection<String> ids() {
-                return MemoryStorage.this.data.keySet();
-            }
-        };
+    @Override
+    public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
+        return Stream.of( data.values() )
+            .filter( m -> m.modified > time )
+            .skip( offset )
+            .limit( limit )
+            .toList();
+    }
+
+    @Override
+    public Collection<String> ids() {
+        return MemoryStorage.this.data.keySet();
     }
 
     @Override
