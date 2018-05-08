@@ -50,6 +50,8 @@ public class SafeFileOutputStream extends FileOutputStream {
 
     @Override
     public void close() throws IOException {
+        // https://stackoverflow.com/questions/25910173/fileoutputstream-close-is-not-always-writing-bytes-to-file-system
+        getFD().sync();
         super.close();
         final Path unsafePath = Paths.get( this.path + ".unsafe" );
         if( !java.nio.file.Files.exists( unsafePath ) || java.nio.file.Files.size( unsafePath ) == 0 )
