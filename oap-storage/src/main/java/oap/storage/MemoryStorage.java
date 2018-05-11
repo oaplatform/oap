@@ -166,12 +166,17 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, R
                 metadata.setUpdated();
             } else {
                 if( predicate.test( metadata.object ) ) {
-                    val newObject = update.apply( Binder.json.clone( metadata.object ) );
+                    if( constraints.isEmpty() ) {
+                        metadata.update( update.apply( metadata.object ) );
+                    } else {
+                        val newObject = update.apply( Binder.json.clone( metadata.object ) );
 
-                    checkConstraints( newObject );
+                        checkConstraints( newObject );
 
-                    identifier.set( newObject, id );
-                    metadata.update( newObject );
+                        identifier.set( newObject, id );
+
+                        metadata.update( newObject );
+                    }
                 } else {
                     return Optional.empty();
                 }
