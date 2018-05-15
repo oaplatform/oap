@@ -161,8 +161,10 @@ public class WsService implements Handler {
             } )
                 .orElse( null );
 
-            if( method == null ) response.respond( NOT_FOUND );
-            else {
+            if( method == null ) {
+                log.trace( "[{}] not found", request.requestLine );
+                response.respond( NOT_FOUND );
+            } else {
                 Name name = Metrics
                     .name( "rest_timer" )
                     .tag( "service", service() )
