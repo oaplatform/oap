@@ -54,9 +54,11 @@ public class DirectoryMigration implements Migration {
     }
 
     private void nextMigration( MongoDatabase db, int fromVersion, String functions ) {
+        log.info( "directory {} ...", directory );
         val versionDirectory = directory.resolve( String.valueOf( fromVersion ) );
+        log.debug( "try version directory {} ...", versionDirectory );
         if( java.nio.file.Files.isDirectory( versionDirectory ) ) {
-            log.info( "directory {} ...", versionDirectory );
+            log.info( "{} exists", versionDirectory );
             for( val file : Files.fastWildcard( versionDirectory, "*.js" ) ) {
                 log.info( "file {} ...", file );
 
