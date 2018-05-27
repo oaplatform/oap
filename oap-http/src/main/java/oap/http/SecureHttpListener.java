@@ -20,16 +20,17 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 
 @Slf4j
 public class SecureHttpListener extends AbstractHttpListener {
-    public final boolean private_network = false;
     private final Path keystoreLocation;
     private final String keystorePassword;
     private final int port;
+    private final boolean private_network;
 
-    public SecureHttpListener( HttpServer server, Path keystoreLocation, String keystorePassword, int port ) {
+    public SecureHttpListener( HttpServer server, Path keystoreLocation, String keystorePassword, int port, boolean private_network ) {
         super( server );
         this.keystoreLocation = keystoreLocation;
         this.keystorePassword = keystorePassword;
         this.port = port;
+        this.private_network = private_network;
         log.info( "Secure HTTP listener configured to use {} and bind to port {}",
             keystoreLocation,
             port );
@@ -38,7 +39,7 @@ public class SecureHttpListener extends AbstractHttpListener {
     @SneakyThrows
     @Override
     protected ServerSocket createSocket() {
-        if( Files.exists( keystoreLocation ) ) {
+        if( Files.exists( keystoreLocation ) && !private_network ) {
             try( val inputStream = IoStreams.in( keystoreLocation, PLAIN ) ) {
                 log.info( "Keystore {} exists, trying to initialize", keystoreLocation );
                 KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
