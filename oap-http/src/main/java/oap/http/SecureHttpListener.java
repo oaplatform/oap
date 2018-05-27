@@ -43,7 +43,7 @@ public class SecureHttpListener extends AbstractHttpListener {
     @SneakyThrows
     @Override
     protected ServerSocket createSocket() {
-        if( Files.exists( keystoreLocation ) && !private_network ) {
+        if( !private_network && keystoreLocation != null && Files.exists( keystoreLocation ) ) {
             try( val inputStream = IoStreams.in( keystoreLocation, PLAIN ) ) {
                 log.info( "Keystore {} exists, trying to initialize", keystoreLocation );
                 KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
