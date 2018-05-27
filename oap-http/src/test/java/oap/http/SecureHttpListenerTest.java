@@ -47,14 +47,13 @@ public class SecureHttpListenerTest {
             response.respond( new HttpResponse( 200 ) );
         }, Protocol.HTTPS );
 
-        SecureHttpListener http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port() );
+        SecureHttpListener http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port(), false );
         listener = new SynchronizedThread( http );
         listener.start();
     }
 
     @Test
-    public void testShouldVerifySSLCommunication() throws KeyStoreException, IOException, CertificateException,
-        NoSuchAlgorithmException, KeyManagementException, UnrecoverableKeyException {
+    public void testShouldVerifySSLCommunication() throws Exception {
 
         try( val inputStream = IoStreams.in( pathOfTestResource( getClass(), "client_truststore.jks" ), PLAIN ) ) {
             KeyStore keyStore = KeyStore.getInstance( "JKS" );
