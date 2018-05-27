@@ -25,6 +25,10 @@ public class SecureHttpListener extends AbstractHttpListener {
     private final int port;
     private final boolean private_network;
 
+    public SecureHttpListener( HttpServer server, int port, boolean private_network ) {
+        this( server, null, null, port, private_network );
+    }
+
     public SecureHttpListener( HttpServer server, Path keystoreLocation, String keystorePassword, int port, boolean private_network ) {
         super( server );
         this.keystoreLocation = keystoreLocation;
