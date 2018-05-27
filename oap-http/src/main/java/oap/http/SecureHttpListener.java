@@ -7,6 +7,7 @@ import oap.io.IoStreams;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import java.io.IOException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -19,7 +20,7 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 
 @Slf4j
 public class SecureHttpListener extends AbstractHttpListener {
-
+    public final boolean private_network = false;
     private final Path keystoreLocation;
     private final String keystorePassword;
     private final int port;
@@ -51,18 +52,30 @@ public class SecureHttpListener extends AbstractHttpListener {
                 sslContext.init( keyManagerFactory.getKeyManagers(), null, null );
 
                 ServerSocket serverSocket = sslContext.getServerSocketFactory().createServerSocket();
-                serverSocket.setReuseAddress( true );
-                serverSocket.setSoTimeout( timeout );
-                serverSocket.bind( new InetSocketAddress( port ) );
+                init( serverSocket );
 
-                log.info( "Successfully initialized secure http listener" );
+                log.info( "Successfully initialized secure https listener" );
                 return serverSocket;
             } catch( BindException e ) {
                 log.error( "Cannot bind to port [{}]", port );
                 throw e;
             }
         } else {
+            if( private_network ) {
+                ServerSocket serverSocket = new ServerSocket();
+                init( serverSocket );
+
+                log.info( "Successfully initialized secure http listener" );
+                return serverSocket;
+            }
+
             throw new CertificateException( keystoreLocation + " not found" );
         }
+    }
+
+    private void init( ServerSocket serverSocket ) throws IOException {
+        serverSocket.setReuseAddress( true );
+        serverSocket.setSoTimeout( timeout );
+        serverSocket.bind( new InetSocketAddress( port ) );
     }
 }
