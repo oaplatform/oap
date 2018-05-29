@@ -524,7 +524,7 @@ public class Client implements Closeable {
             val contentString = contentString();
             if( contentString == null ) return Optional.empty();
 
-            return Binder.json.unmarshal( clazz, contentString );
+            return Optional.of( Binder.json.unmarshal( clazz, contentString ) );
         }
 
         public <T> Optional<T> unmarshal( TypeRef<T> ref ) {
