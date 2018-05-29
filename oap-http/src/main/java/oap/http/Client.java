@@ -353,7 +353,7 @@ public class Client implements Closeable {
     }
 
     private Optional<Response> execute( HttpUriRequest request, Map<String, Object> headers, long timeout ) {
-        return execute( request, headers, timeout );
+        return execute( request, headers, timeout, () -> {} );
     }
 
     @SneakyThrows
