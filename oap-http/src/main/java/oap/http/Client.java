@@ -513,6 +513,14 @@ public class Client implements Closeable {
         }
 
         public <T> Optional<T> unmarshal( Class<?> clazz ) {
+            if( inputStream != null ) {
+                synchronized( this ) {
+                    if( inputStream != null ) {
+                        return Binder.json.unmarshal( clazz, inputStream );
+                    }
+                }
+            }
+
             val contentString = contentString();
             if( contentString == null ) return Optional.empty();
 
@@ -520,6 +528,14 @@ public class Client implements Closeable {
         }
 
         public <T> Optional<T> unmarshal( TypeRef<T> ref ) {
+            if( inputStream != null ) {
+                synchronized( this ) {
+                    if( inputStream != null ) {
+                        return Optional.of( Binder.json.unmarshal( ref, inputStream ) );
+                    }
+                }
+            }
+
             val contentString = contentString();
             if( contentString == null ) return Optional.empty();
 
