@@ -88,6 +88,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -270,25 +272,36 @@ public class Client implements Closeable {
         return execute( request, Maps.empty(), timeout );
     }
 
-    public Response post( String uri, InputStream content, ContentType contentType ) {
+    @SneakyThrows
+    public Response post( String uri, Consumer<OutputStream> outputStream, ContentType contentType ) {
         HttpPost request = new HttpPost( uri );
-        request.setEntity( new InputStreamEntity( content, contentType ) );
-        return execute( request, Maps.empty(), FOREVER )
+
+        return post( outputStream, contentType, request );
+    }
+
+    @SneakyThrows
+    public Response post( URI uri, Consumer<OutputStream> outputStream, ContentType contentType ) {
+        HttpPost request = new HttpPost( uri );
+
+        return post( outputStream, contentType, request );
+    }
+
+    private Response post( Consumer<OutputStream> outputStream, ContentType contentType, HttpPost request ) throws IOException {
+        val pos = new PipedOutputStream();
+        val pis = new PipedInputStream( pos );
+        request.setEntity( new InputStreamEntity( pis, contentType ) );
+
+        return execute( request, Maps.empty(), FOREVER, Try.run( () -> {
+            outputStream.accept( pos );
+            pos.close();
+        } ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
-    public Response post( String uri, Consumer<OutputStream> content, ContentType contentType ) {
-        HttpPost request = new HttpPost( uri );
-        return post( content, contentType, request );
-    }
 
-    public Response post( URI uri, Consumer<OutputStream> content, ContentType contentType ) {
+    public Response post( String uri, InputStream content, ContentType contentType ) {
         HttpPost request = new HttpPost( uri );
-        return post( content, contentType, request );
-    }
-
-    private Response post( Consumer<OutputStream> content, ContentType contentType, HttpPost request ) {
-        request.setEntity( new HttpOutputStreamEntity( content, contentType ) );
+        request.setEntity( new InputStreamEntity( content, contentType ) );
         return execute( request, Maps.empty(), FOREVER )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
@@ -339,12 +352,17 @@ public class Client implements Closeable {
         basicCookieStore.clear();
     }
 
-    @SneakyThrows
     private Optional<Response> execute( HttpUriRequest request, Map<String, Object> headers, long timeout ) {
+        return execute( request, headers, timeout );
+    }
+
+    @SneakyThrows
+    private Optional<Response> execute( HttpUriRequest request, Map<String, Object> headers, long timeout, Runnable asyncRunnable ) {
         try {
             headers.forEach( ( name, value ) -> request.setHeader( name, value == null ? "" : value.toString() ) );
 
             Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
+            asyncRunnable.run();
             HttpResponse response = timeout == FOREVER ? future.get()
                 : future.get( timeout, MILLISECONDS );
 
