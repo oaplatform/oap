@@ -335,16 +335,14 @@ public class Client implements Closeable {
             Response result;
             if( response.getEntity() != null ) {
                 HttpEntity entity = response.getEntity();
-                try( InputStream is = entity.getContent() ) {
-                    result = new Response(
-                        response.getStatusLine().getStatusCode(),
-                        response.getStatusLine().getReasonPhrase(),
-                        responsHeaders,
-                        Optional.ofNullable( entity.getContentType() )
-                            .map( ct -> ContentType.parse( entity.getContentType().getValue() ) ),
-                        is
-                    );
-                }
+                result = new Response(
+                    response.getStatusLine().getStatusCode(),
+                    response.getStatusLine().getReasonPhrase(),
+                    responsHeaders,
+                    Optional.ofNullable( entity.getContentType() )
+                        .map( ct -> ContentType.parse( entity.getContentType().getValue() ) ),
+                    entity.getContent()
+                );
             } else result = new Response(
                 response.getStatusLine().getStatusCode(),
                 response.getStatusLine().getReasonPhrase(),
@@ -466,15 +464,16 @@ public class Client implements Closeable {
             responseBody.byteStream() );
     }
 
-    @ToString
+    @ToString( exclude = { "inputStream", "content" } )
     public static class Response implements Closeable {
         public final int code;
         public final String reasonPhrase;
         public final Optional<ContentType> contentType;
         public final Map<String, String> headers;
-        private final InputStream inputStream;
-        private byte[] content;
+        private InputStream inputStream;
+        private byte[] content = null;
 
+        @SneakyThrows
         public Response( int code, String reasonPhrase, Map<String, String> headers, Optional<ContentType> contentType, InputStream inputStream ) {
             this.code = code;
             this.reasonPhrase = reasonPhrase;
@@ -490,17 +489,15 @@ public class Client implements Closeable {
         @Nullable
         @SneakyThrows
         public byte[] content() {
-            if( inputStream == null ) return null;
-
-            if( content != null ) return content;
-
-            synchronized( this ) {
-                if( content != null ) return content;
-
-                content = ByteStreams.toByteArray( inputStream );
-
-                return content;
+            if( content == null && inputStream != null ) {
+                synchronized( this ) {
+                    if( content == null ) {
+                        content = ByteStreams.toByteArray( inputStream );
+                        close();
+                    }
+                }
             }
+            return content;
         }
 
         public InputStream getInputStream() {
@@ -531,8 +528,9 @@ public class Client implements Closeable {
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             Closeables.close( inputStream );
+            inputStream = null;
         }
     }
 
