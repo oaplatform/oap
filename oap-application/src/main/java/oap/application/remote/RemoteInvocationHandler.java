@@ -37,6 +37,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
@@ -105,12 +106,12 @@ public class RemoteInvocationHandler implements InvocationHandler {
                 timeout )
                 .<Result<Object, Throwable>>map( response -> {
                     if( response.code == HTTP_OK ) {
-                        return response.content
+                        return Optional.ofNullable( response.content() )
                             .map( b -> ( Result<Object, Throwable> ) fst.conf.asObject( b ) )
                             .orElse( Result.failure( new RemoteInvocationException( "no content " + uri ) ) );
                     } else
                         return Result.failure( new RemoteInvocationException( response.code + " " + response.reasonPhrase
-                            + "\n" + response.contentString ) );
+                            + "\n" + response.contentString() ) );
                 } )
                 .orElseThrow( () -> new RemoteInvocationException( "invocation failed " + uri ) )
                 .orElseThrow( t -> t );
