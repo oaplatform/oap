@@ -87,6 +87,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -272,6 +273,22 @@ public class Client implements Closeable {
     public Response post( String uri, InputStream content, ContentType contentType ) {
         HttpPost request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, contentType ) );
+        return execute( request, Maps.empty(), FOREVER )
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
+    }
+
+    public Response post( String uri, Consumer<OutputStream> content, ContentType contentType ) {
+        HttpPost request = new HttpPost( uri );
+        return post( content, contentType, request );
+    }
+
+    public Response post( URI uri, Consumer<OutputStream> content, ContentType contentType ) {
+        HttpPost request = new HttpPost( uri );
+        return post( content, contentType, request );
+    }
+
+    private Response post( Consumer<OutputStream> content, ContentType contentType, HttpPost request ) {
+        request.setEntity( new HttpOutputStreamEntity( content, contentType ) );
         return execute( request, Maps.empty(), FOREVER )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
