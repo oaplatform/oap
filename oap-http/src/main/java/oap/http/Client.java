@@ -551,7 +551,7 @@ public class Client implements Closeable {
             if( inputStream != null ) {
                 synchronized( this ) {
                     if( inputStream != null ) {
-                        return Binder.json.unmarshal( clazz, inputStream );
+                        return Optional.of( Binder.json.unmarshal( clazz, inputStream ) );
                     }
                 }
             }
