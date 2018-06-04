@@ -79,6 +79,8 @@ public class WsFileUploader extends FileUploader implements Handler {
     @Override
     @SneakyThrows
     public void handle( Request request, Response response ) {
+        log.trace( "request = {}", request );
+
         val ctx = new RequestUploadContext( request );
         if( FileUpload.isMultipartContent( ctx ) ) {
             val items = upload.parseRequest( ctx );
