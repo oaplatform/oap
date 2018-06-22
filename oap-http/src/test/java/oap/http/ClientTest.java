@@ -27,7 +27,6 @@ package oap.http;
 import lombok.extern.slf4j.Slf4j;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import oap.util.Try;
 import org.apache.http.entity.ContentType;
 import org.mockserver.integration.ClientAndServer;
 import org.testng.annotations.AfterMethod;
@@ -129,12 +128,12 @@ public class ClientTest extends AbstractTest {
             once()
         ).respond( response().withStatusCode( HTTP_OK ).withBody( "ok" ) );
 
-        response = Client.DEFAULT.post( "http://localhost:" + PORT + "/test", Try.consume( os -> {
+        response = Client.DEFAULT.post( "http://localhost:" + PORT + "/test", os -> {
             os.write( "test".getBytes() );
             os.write( '\n' );
             os.write( "test1".getBytes() );
 
-        } ), ContentType.TEXT_PLAIN );
+        }, ContentType.TEXT_PLAIN );
 
         assertThat( response ).isNotNull();
         assertThat( response.contentString() ).isEqualTo( "ok" );
