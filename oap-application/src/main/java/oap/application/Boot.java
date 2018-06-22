@@ -23,15 +23,26 @@
  */
 package oap.application;
 
-import org.springframework.boot.SpringApplication;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.event.ApplicationFailedEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 
 @SpringBootApplication
+@Slf4j
 public class Boot {
     static ConfigurableApplicationContext applicationContext;
 
     public static void main( String[] args ) {
-        applicationContext = SpringApplication.run( Boot.class, args );
+        applicationContext = new SpringApplicationBuilder( Boot.class )
+            .listeners( ( ApplicationListener<ApplicationFailedEvent> ) event -> {
+                if( event.getException() != null ) {
+                    log.error( "!!!!!!Looks like something not working as expected so stoping application.!!!!!!", event.getException() );
+                    event.getApplicationContext().close();
+                    System.exit( -1 );
+                }
+            } ).run( args );
     }
 }
