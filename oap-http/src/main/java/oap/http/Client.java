@@ -32,12 +32,14 @@ import oap.concurrent.AsyncCallbacks;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.IoStreams;
+import oap.io.IoStreams.ThrowingIOExceptionConsumer;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Try;
+import oap.util.Try.ThrowingRunnable;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -273,29 +275,33 @@ public class Client implements Closeable {
     }
 
     @SneakyThrows
-    public Response post( String uri, Consumer<OutputStream> outputStream, ContentType contentType ) {
+    public Response post( String uri, ThrowingIOExceptionConsumer<OutputStream> outputStream, ContentType contentType ) throws UncheckedIOException {
         HttpPost request = new HttpPost( uri );
 
         return post( outputStream, contentType, request );
     }
 
     @SneakyThrows
-    public Response post( URI uri, Consumer<OutputStream> outputStream, ContentType contentType ) {
+    public Response post( URI uri, ThrowingIOExceptionConsumer<OutputStream> outputStream, ContentType contentType ) throws UncheckedIOException {
         HttpPost request = new HttpPost( uri );
 
         return post( outputStream, contentType, request );
     }
 
-    private Response post( Consumer<OutputStream> outputStream, ContentType contentType, HttpPost request ) throws IOException {
-        val pos = new PipedOutputStream();
-        val pis = new PipedInputStream( pos );
-        request.setEntity( new InputStreamEntity( pis, contentType ) );
+    private Response post( ThrowingIOExceptionConsumer<OutputStream> outputStream, ContentType contentType, HttpPost request ) throws UncheckedIOException {
+        try {
+            val pos = new PipedOutputStream();
+            val pis = new PipedInputStream( pos );
+            request.setEntity( new InputStreamEntity( pis, contentType ) );
 
-        return execute( request, Maps.empty(), FOREVER, Try.run( () -> {
-            outputStream.accept( pos );
-            pos.close();
-        } ) )
-            .orElseThrow( () -> new RuntimeException( "no response" ) );
+            return execute( request, Maps.empty(), FOREVER, () -> {
+                outputStream.accept( pos );
+                pos.close();
+            } )
+                .orElseThrow( () -> new UncheckedIOException( new IOException( "no response" ) ) );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
     }
 
 
@@ -357,7 +363,8 @@ public class Client implements Closeable {
     }
 
     @SneakyThrows
-    private Optional<Response> execute( HttpUriRequest request, Map<String, Object> headers, long timeout, Runnable asyncRunnable ) {
+    private Optional<Response> execute( HttpUriRequest request, Map<String, Object> headers,
+                                        long timeout, ThrowingRunnable<IOException> asyncRunnable ) throws UncheckedIOException {
         try {
             headers.forEach( ( name, value ) -> request.setHeader( name, value == null ? "" : value.toString() ) );
 
@@ -386,11 +393,11 @@ public class Client implements Closeable {
             builder.onSuccess.accept( this );
             return Optional.of( result );
         } catch( ExecutionException e ) {
-            final ExecutionException newEx = new ExecutionException( request.getURI().toString(), e.getCause() );
+            val newEx = new UncheckedIOException( request.getURI().toString(), new IOException( e.getCause().getMessage(), e.getCause() ) );
             builder.onError.accept( this, newEx );
             throw newEx;
         } catch( IOException e ) {
-            final ExecutionException newEx = new ExecutionException( request.getURI().toString(), e );
+            val newEx = new UncheckedIOException( request.getURI().toString(), e );
             builder.onError.accept( this, newEx );
             throw newEx;
         } catch( InterruptedException | TimeoutException e ) {
