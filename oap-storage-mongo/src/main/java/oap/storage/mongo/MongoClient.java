@@ -38,6 +38,7 @@ import java.io.Closeable;
 public class MongoClient implements Closeable {
     public final MongoDatabase database;
     public final com.mongodb.MongoClient mongoClient;
+    public final boolean dropDatabaseBeforeMigration = false;
 
     public MongoClient( String host, int port, String database, Migration migration ) {
         val codecRegistry = CodecRegistries.fromRegistries(
@@ -48,6 +49,8 @@ public class MongoClient implements Closeable {
 
         mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ), options );
         this.database = mongoClient.getDatabase( database );
+
+        if( dropDatabaseBeforeMigration ) this.database.drop();
 
         migration.run( this.database );
     }
