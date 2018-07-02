@@ -38,7 +38,7 @@ import java.io.Closeable;
 public class MongoClient implements Closeable {
     public final MongoDatabase database;
     public final com.mongodb.MongoClient mongoClient;
-    public final boolean dropDatabaseBeforeMigration = false;
+    public boolean dropDatabaseBeforeMigration = false;
     private final Migration migration;
 
     public MongoClient( String host, int port, String database, Migration migration ) {
