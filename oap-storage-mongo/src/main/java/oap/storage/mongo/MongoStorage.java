@@ -81,8 +81,6 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
             .getCollection( table, Metadata.class )
             .withCodecRegistry( codecRegistry );
         this.collection = ( MongoCollection<Metadata<T>> ) metadataMongoCollection;
-
-        load();
     }
 
     private void load() {
@@ -99,6 +97,8 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
     }
 
     public void start() {
+        load();
+
         if( oplogService != null ) {
             oplogService.addListener( collection.getNamespace().getCollectionName(), this );
         }
