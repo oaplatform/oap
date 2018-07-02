@@ -58,11 +58,12 @@ public class MongoStorageTest extends AbstractMongoTest {
     public void beforeMethod() throws Exception {
         super.beforeMethod();
 
-        storage = reopen();
+        reopen();
     }
 
-    public MongoStorage<TestMongoBean> reopen() {
-        return new MongoStorage<>( mongoClient, "test", Lock );
+    public void reopen() {
+        if( storage != null ) storage.close();
+        storage = service( new MongoStorage<>( mongoClient, "test", Lock ) );
     }
 
     @AfterMethod
@@ -82,9 +83,7 @@ public class MongoStorageTest extends AbstractMongoTest {
         log.debug( "bean1 = {}", bean1 );
         log.debug( "bean2 = {}", bean2 );
 
-        storage.close();
-
-        storage = reopen();
+        reopen();
 
         assertThat( storage ).hasSize( 2 );
         assertThat( storage.collection.count() ).isEqualTo( 2 );
