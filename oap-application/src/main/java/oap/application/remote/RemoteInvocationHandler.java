@@ -106,7 +106,9 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
         Throwable retException = null;
 
-        for( int i = 0; i <= retry; i++ ) {
+        for( int i = 0; i < retry; i++ ) {
+            if( retException != null )
+                log.trace( retException.getMessage(), retException );
             try {
                 val response = client.post( uri.toString(), content, timeout ).orElse( null );
                 if( response == null ) continue;

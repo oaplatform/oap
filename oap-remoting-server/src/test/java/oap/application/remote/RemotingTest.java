@@ -32,28 +32,32 @@ import org.testng.annotations.Test;
 import java.net.URL;
 import java.util.List;
 
-import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertTrue;
 
 
 public class RemotingTest {
     @Test
-    public void start() {
+    public void testInvoke() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( RemotingTest.class, "module.conf" ) );
 
         Kernel kernel = new Kernel( modules );
         try {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ) );
-            assertEventually( 50, 1, () -> {
 
-                RemoteClient remote = Application.service( "remote-client" );
-                assertTrue( remote.accessible() );
-                assertString( remote.toString() ).isEqualTo( "remote:remote-service-impl@https://localhost:8980/remote/" );
-            } );
+            RemoteClient remote1 = Application.service( "remote-client1" );
+            assertTrue( remote1.accessible() );
+            assertString( remote1.toString() ).isEqualTo( "remote:remote-service-impl1@https://localhost:8980/remote/" );
+
+            assertTrue( Application.<RemoteClient>service( "remote-client2" ).accessible() );
+
+            assertThatThrownBy( () -> Application.<RemoteClient>service( "remote-client3" ).accessible() )
+                .isInstanceOf( IllegalStateException.class );
+
         } finally {
             kernel.stop();
         }

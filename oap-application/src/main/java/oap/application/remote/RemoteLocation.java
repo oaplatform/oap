@@ -35,7 +35,7 @@ public class RemoteLocation {
     public String certificatePassword;
     public long timeout = DEFAULT_TIMEOUT;
     public FST.SerializationMethod serialization = FST.SerializationMethod.DEFAULT;
-    public int retry = 0;
+    public int retry = 1;
 
     public RemoteLocation() {
     }
