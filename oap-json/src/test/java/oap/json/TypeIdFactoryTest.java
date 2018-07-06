@@ -24,13 +24,21 @@
 
 package oap.json;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.val;
 import oap.testng.AbstractTest;
+import oap.util.Maps;
 import org.testng.annotations.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -40,12 +48,34 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TypeIdFactoryTest extends AbstractTest {
     @Test
     public void testClassMapping() {
-        final TestBean b = new TestBean( "1" );
-        final String marshal = Binder.json.marshal( new TestContainer( b ) );
+        val b = new TestBean( "1" );
+        val marshal = Binder.json.marshal( new TestContainer( b ) );
         assertThat( marshal ).isEqualTo( "{\"ref\":{\"@object:type\":\"b\",\"id\":\"1\"}}" );
 
-        final TestContainer unmarshal = Binder.json.unmarshal( TestContainer.class, marshal );
+        val unmarshal = Binder.json.<TestContainer>unmarshal( TestContainer.class, marshal );
         assertThat( unmarshal.ref ).isEqualTo( b );
+    }
+
+    @Test
+    public void testAnySetterWithCustomValueWithTypeId() {
+        val json = "{\"b\":{\"id\":\"val\"}}";
+
+        val vm = Binder.json.<TestCustomValueMap>unmarshal( TestCustomValueMap.class, json );
+        assertThat( vm.properties )
+            .isNotNull()
+            .containsKey( "b" )
+            .containsValue( new TestBean( "val" ) );
+    }
+
+    @Test
+    public void testAnySetterWithCustomValueWithoutTypeId() {
+        val json = "{\"unknown-typeid1\":\"10\", \"unknown-typeid2\":{\"a\":\"10\"}}";
+
+        val vm = Binder.json.<TestCustomValueMap>unmarshal( TestCustomValueMap.class, json );
+        assertThat( vm.properties )
+            .isNotNull()
+            .containsEntry( "unknown-typeid1", "10" )
+            .containsEntry( "unknown-typeid2", Maps.of2( "a", "10" ) );
     }
 
     @ToString
@@ -67,6 +97,22 @@ public class TypeIdFactoryTest extends AbstractTest {
 
         public TestBean( @JsonProperty( "id" ) String id ) {
             this.id = id;
+        }
+    }
+
+    @ToString
+    public static class TestCustomValueMap {
+        @JsonIgnore
+        public final HashMap<String, Object> properties = new HashMap<>();
+
+        @JsonAnySetter
+        public void putProperty( String name, CustomValue<?> customValue ) {
+            properties.put( name, customValue.getValue() );
+        }
+
+        @JsonAnyGetter
+        public Map<String, Object> getProperties() {
+            return properties;
         }
     }
 }

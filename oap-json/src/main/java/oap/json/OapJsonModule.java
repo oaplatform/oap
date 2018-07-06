@@ -62,6 +62,8 @@ public class OapJsonModule extends Module {
         context.addSerializers( new LongAdderModule.LongAdderSerializers() );
         context.addDeserializers( new LongAdderModule.LongAdderDeserializers() );
 
+        context.addDeserializers( new CustomValueModule.CustomValueDeserializers() );
+
         SimpleDeserializers deserializers = new SimpleDeserializers();
         deserializers.addDeserializer( Long.TYPE, new LongDeserializer( Long.TYPE, 0L ) );
         deserializers.addDeserializer( Long.class, new LongDeserializer( Long.class, null ) );
