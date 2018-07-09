@@ -24,6 +24,8 @@
 
 package oap.application;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.val;
 import oap.application.ServiceOne.Complex;
 import oap.testng.AbstractTest;
@@ -37,9 +39,12 @@ import org.testng.annotations.Test;
 
 import java.io.Closeable;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.pathOfTestResource;
@@ -63,7 +68,7 @@ public class KernelTest extends AbstractTest {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/start_stop.conf" ) );
 
-        Kernel kernel = new Kernel( modules );
+        Kernel kernel = new Kernel( modules, emptyList() );
         kernel.start();
         TestCloseable tc = Application.service( "c1" );
         TestCloseable2 tc2 = Application.service( "c2" );
@@ -78,7 +83,7 @@ public class KernelTest extends AbstractTest {
     public void dynamicConfigurations() {
         List<URL> modules = Lists.of( urlOfTestResource( getClass(), "dynaconf/dynaconf.conf" ) );
         Env.deployTestData( getClass(), "dynaconf" );
-        Kernel kernel = new Kernel( modules );
+        Kernel kernel = new Kernel( modules, emptyList() );
         try {
             kernel.start( pathOfTestResource( getClass(), "dynaconf/application.conf" ) );
             Dynaconf dynaconf = Application.service( "c1" );
@@ -96,7 +101,7 @@ public class KernelTest extends AbstractTest {
             urlOfTestResource( getClass(), "modules/m2.json" )
         );
 
-        Kernel kernel = new Kernel( modules );
+        Kernel kernel = new Kernel( modules, emptyList() );
         try {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ),
                 pathOfTestResource( getClass(), "conf.d" ) );
@@ -138,7 +143,7 @@ public class KernelTest extends AbstractTest {
     public void disabledServices() {
         List<URL> modules = Lists.of( urlOfTestResource( getClass(), "modules/m3.conf" ) );
 
-        Kernel kernel = new Kernel( modules );
+        Kernel kernel = new Kernel( modules, emptyList() );
         try {
             kernel.start();
 
@@ -154,7 +159,7 @@ public class KernelTest extends AbstractTest {
     public void map() {
         List<URL> modules = Lists.of( urlOfTestResource( getClass(), "modules/m4.conf" ) );
 
-        Kernel kernel = new Kernel( modules );
+        Kernel kernel = new Kernel( modules, emptyList() );
         try {
             kernel.start();
 
@@ -173,7 +178,7 @@ public class KernelTest extends AbstractTest {
             urlOfTestResource( getClass(), "modules/impl.conf" )
         );
 
-        Kernel kernel = new Kernel( modules );
+        Kernel kernel = new Kernel( modules, emptyList() );
         try {
             kernel.start();
 
@@ -201,6 +206,26 @@ public class KernelTest extends AbstractTest {
         assertThat( Boot.applicationContext.getBean( "test" ) ).isSameAs( service );
 
         SpringApplication.exit( Boot.applicationContext, new JobExecutionExitCodeGenerator() );
+    }
+
+    @Test
+    public void testPlugins() {
+        val kernel = new Kernel(
+            singletonList( urlOfTestResource( getClass(), "plugins/oap-module.conf" ) ),
+            singletonList( urlOfTestResource( getClass(), "plugins/oap-plugin.conf" ) )
+        );
+
+        try {
+            kernel.start();
+            val service1 = Application.service( Service1.class );
+            val service2 = Application.service( Service2.class );
+
+            assertThat( service1.ref ).isSameAs( service2 );
+            assertThat( service1.list ).hasSize( 1 );
+            assertThat( service1.list.get( 0 ) ).isSameAs( service2 );
+        } finally {
+            kernel.stop();
+        }
     }
 
     public static class TestCloseable implements Closeable {
@@ -238,6 +263,21 @@ public class KernelTest extends AbstractTest {
 
     public static class TestService {
 
+    }
+
+    public static class Service1 {
+        public final List<Object> list = new ArrayList<>();
+        public Object ref = null;
+    }
+
+    @ToString
+    @EqualsAndHashCode
+    public static class Service2 {
+        private final String val;
+
+        public Service2( String val ) {
+            this.val = val;
+        }
     }
 }
 
