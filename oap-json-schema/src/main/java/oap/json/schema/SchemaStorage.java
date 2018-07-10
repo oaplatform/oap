@@ -26,7 +26,5 @@ package oap.json.schema;
 
 @FunctionalInterface
 public interface SchemaStorage {
-
     String get( String name );
-
 }

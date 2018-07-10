@@ -32,7 +32,7 @@
     <parent>
         <artifactId>oap</artifactId>
         <groupId>oap</groupId>
-        <version>3.13.14</version>
+        <version>3.13.15</version>
     </parent>
     <dependencies>
         <dependency>

@@ -106,19 +106,23 @@ public class Binder {
     }
 
     public static Binder hoconWithConfig( String... config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false, false ) );
+        return hoconWithConfig( true, config );
+    }
+
+    public static Binder hoconWithConfig( boolean withSystemProperties, String... config ) {
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( withSystemProperties, log, config ) ), false, false ) );
     }
 
     public static Binder hoconWithConfig( Map<String, Object> config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false, false ) );
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, false ) );
     }
 
     private static Binder hoconWithConfigWithNullInclusion( Map<String, Object> config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false, true ) );
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, true ) );
     }
 
     private static Binder hoconWithConfigWithNullInclusion( String... config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( log, config ) ), false, true ) );
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, true ) );
     }
 
     private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping, boolean nonNullInclusion ) {
