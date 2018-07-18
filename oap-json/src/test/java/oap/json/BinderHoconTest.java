@@ -24,28 +24,40 @@
 
 package oap.json;
 
-import oap.testng.AbstractTest;
+import lombok.val;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.regex.Pattern;
 
-import static org.testng.Assert.assertEquals;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
 
 
 /**
  * Created by Igor Petrenko on 01.12.2015.
  */
-public class BinderPatternTest extends AbstractTest {
+public class BinderHoconTest {
     @Test
     public void testPattern() {
-        final String pattern = "{test = \"[^a]+\"}";
+        val pattern = "{test = \"[^a]+\"}";
+        val obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, pattern );
 
-        final BeanPattern unmarshal = Binder.hocon.unmarshal( BeanPattern.class, pattern );
+        assertThat( obj.test.pattern() ).isEqualTo( "[^a]+" );
+    }
 
-        assertEquals( unmarshal.test.pattern(), "[^a]+" );
+    @Test
+    public void testEnvList() {
+        val json = "{list = [${?LIST_ENV}]}";
+        System.setProperty( "LIST_ENV", "1a,2a" );
+
+        val obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, json );
+
+        assertThat( obj.list ).isEqualTo( singletonList( "1a,2a" ) );
     }
 
     public static class BeanPattern {
         public Pattern test;
+        public List<String> list;
     }
 }
