@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Optional;
 
 abstract class Annotated<T extends java.lang.reflect.AnnotatedElement> {
-    protected T underlying;
+    public final T underlying;
 
     Annotated( T underlying ) {
         this.underlying = underlying;
