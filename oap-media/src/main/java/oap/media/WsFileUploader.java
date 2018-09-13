@@ -67,6 +67,8 @@ public class WsFileUploader extends FileUploader implements Handler {
         super( postprocessing );
         log.info( "file uploader path = {}", path );
 
+        oap.io.Files.ensureDirectory( path );
+
         val factory = new DiskFileItemFactory();
         factory.setSizeThreshold( ( int ) maxMemorySize );
         factory.setRepository( path.toFile() );
@@ -77,6 +79,8 @@ public class WsFileUploader extends FileUploader implements Handler {
     @Override
     @SneakyThrows
     public void handle( Request request, Response response ) {
+        log.trace( "request = {}", request );
+
         val ctx = new RequestUploadContext( request );
         if( FileUpload.isMultipartContent( ctx ) ) {
             val items = upload.parseRequest( ctx );
@@ -116,12 +120,17 @@ public class WsFileUploader extends FileUploader implements Handler {
 
                 val mediaInfo = new MediaInfo();
 
-                val media = Stream.of( postprocessing ).foldLeft( file, ( f, p ) -> p.process( f, mediaInfo ) );
+                val mediaContext = new MediaContext();
 
-                log.trace( "media = {}", media );
-                log.trace( "info = {}", mediaInfo );
+                val media = Stream.of( postprocessing ).foldLeft( file, ( f, p ) -> p.process( f, mediaInfo, mediaContext ) );
 
-                fireUploaded( media, mediaInfo );
+                if( log.isTraceEnabled() ) {
+                    log.trace( "media = {}", media );
+                    log.trace( "info = {}", mediaInfo );
+                    log.trace( "context = {}", mediaContext );
+                }
+
+                fireUploaded( media, mediaInfo, mediaContext );
 
                 response.respond( HttpResponse.ok( new MediaResponse( media.id, mediaInfo ) ) );
             } finally {

@@ -22,30 +22,18 @@
  * SOFTWARE.
  */
 
-package oap.json;
+package oap.security.acl;
 
-import oap.testng.AbstractTest;
-import org.testng.annotations.Test;
+import oap.storage.mongo.MongoClient;
+import oap.storage.mongo.MongoStorage;
 
-import java.util.regex.Pattern;
-
-import static org.testng.Assert.assertEquals;
-
+import static oap.storage.Storage.LockStrategy.Lock;
 
 /**
- * Created by Igor Petrenko on 01.12.2015.
+ * Created by igor.petrenko on 22.12.2017.
  */
-public class BinderPatternTest extends AbstractTest {
-    @Test
-    public void testPattern() {
-        final String pattern = "{test = \"[^a]+\"}";
-
-        final BeanPattern unmarshal = Binder.hocon.unmarshal( BeanPattern.class, pattern );
-
-        assertEquals( unmarshal.test.pattern(), "[^a]+" );
-    }
-
-    public static class BeanPattern {
-        public Pattern test;
+public class MongoSchemaStorage extends MongoStorage<AclSchemaContainer> {
+    public MongoSchemaStorage( MongoClient mongoClient, String table ) {
+        super( mongoClient, table, Lock );
     }
 }

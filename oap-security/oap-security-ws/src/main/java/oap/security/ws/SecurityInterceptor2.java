@@ -59,6 +59,8 @@ public class SecurityInterceptor2 implements Interceptor {
     @Override
     public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
                                              Function<Reflection.Parameter, Object> getParameterValueFunc ) {
+        log.trace( "intercept method={}, request={}", method, request.requestLine );
+
         val annotation = method.findAnnotation( WsSecurity2.class ).orElse( null );
         if( annotation == null ) return Optional.empty();
 
@@ -70,16 +72,17 @@ public class SecurityInterceptor2 implements Interceptor {
             return Optional.of( httpResponse );
         }
 
+        val sessionToken = Interceptor.getSessionToken( request );
+        if( sessionToken == null ) {
+            final HttpResponse httpResponse = HttpResponse.status( 401, "Session token is missing in header or cookie" );
+
+            log.debug( httpResponse.toString() );
+
+            return Optional.of( httpResponse );
+        }
+
         var userId = ( String ) session.get( USER_ID ).orElse( null );
         if( userId == null ) {
-            val sessionToken = request.header( "Authorization" ).orElse( request.cookie( "Authorization" ).orElse( null ) );
-            if( sessionToken == null ) {
-                final HttpResponse httpResponse = HttpResponse.status( 401, "Session token is missing in header or cookie" );
-
-                log.debug( httpResponse.toString() );
-
-                return Optional.of( httpResponse );
-            }
             val token = tokenService.getToken( sessionToken ).orElse( null );
             if( token == null ) {
                 final HttpResponse httpResponse = HttpResponse.status( 401, format( "Token id [%s] expired or was "
@@ -90,7 +93,6 @@ public class SecurityInterceptor2 implements Interceptor {
                 return Optional.of( httpResponse );
             }
             userId = token.userId;
-            session.set( SESSION_TOKEN, token.id );
             session.set( USER_ID, userId );
         } else {
             log.trace( "User [{}] found in session", userId );
@@ -120,7 +122,7 @@ public class SecurityInterceptor2 implements Interceptor {
             return ( ( List<?> ) value ).stream().map( v -> postProcessing( v, session, method ) ).collect( toList() );
         }
 
-        var userId = ( String ) session.get( USER_ID ).orElse( null );
+        val userId = ( String ) session.get( USER_ID ).orElse( null );
 
         val id = IdFactory.getId( value );
 

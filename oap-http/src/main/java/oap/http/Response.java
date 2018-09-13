@@ -23,16 +23,12 @@
  */
 package oap.http;
 
-import oap.http.cors.CorsPolicy;
+import lombok.extern.slf4j.Slf4j;
 import oap.http.cors.RequestCors;
 import oap.util.Pair;
-import org.slf4j.Logger;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
+@Slf4j
 public class Response {
-    private static Logger logger = getLogger( Response.class );
-
     private org.apache.http.HttpResponse resp;
     private RequestCors cors;
 
@@ -42,7 +38,7 @@ public class Response {
     }
 
     public void respond( HttpResponse response ) {
-        if( logger.isTraceEnabled() ) logger.trace( "responding " + response.code + " " + response.reasonPhrase );
+        log.trace( "responding {} {}", response.code, response.reasonPhrase );
 
         cors.setHeaders( resp );
 

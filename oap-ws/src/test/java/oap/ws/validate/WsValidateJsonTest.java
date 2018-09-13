@@ -36,6 +36,7 @@ import static oap.http.Request.HttpMethod.POST;
 import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertPost;
 import static oap.ws.WsParam.From.BODY;
+import static oap.ws.WsParam.From.QUERY;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 /**
@@ -65,6 +66,16 @@ public class WsValidateJsonTest extends AbstractWsValidateTest {
             .responded( 400, "additional properties are not permitted [b]", TEXT_PLAIN, "additional properties are not permitted [b]" );
     }
 
+    @Test
+    public void testValidation3() {
+        assertPost( HTTP_URL( "/test/run/validation/3?type=type1" ), "{\"a\":1}", APPLICATION_JSON )
+            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":1}" );
+        assertPost( HTTP_URL( "/test/run/validation/3?type=type2" ), "{\"b\":1}", APPLICATION_JSON )
+            .responded( 200, "OK", APPLICATION_JSON, "{\"b\":1}" );
+        assertPost( HTTP_URL( "/test/run/validation/3?type=type1" ), "{\"b\":1}", APPLICATION_JSON )
+            .responded( 400, "/a: required property is missing", TEXT_PLAIN, "/a: required property is missing" );
+    }
+
     public static class TestWS {
         @WsMethod( path = "/run/validation/1", method = POST )
         public TestBean validation1(
@@ -81,9 +92,19 @@ public class WsValidateJsonTest extends AbstractWsValidateTest {
         ) {
             return body;
         }
+
+        @WsMethod( path = "/run/validation/3", method = POST )
+        public TestBean validation3(
+            @WsValidateJson( schema = "/oap/ws/validate/WsValidateJsonTest/${type}-schema.conf" )
+            @WsParam( from = BODY ) TestBean body,
+            @WsParam( from = QUERY ) String type
+        ) {
+            return body;
+        }
     }
 
     public static class TestBean {
         public Integer a;
+        public Integer b;
     }
 }

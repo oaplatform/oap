@@ -30,13 +30,13 @@ import static oap.testng.Asserts.pathOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ApplicationConfigurationTest {
-   @Test
-   public void load() {
-      ApplicationConfiguration config = ApplicationConfiguration.load(
-         pathOfTestResource( KernelTest.class, "application.conf" ),
-         pathOfTestResource( KernelTest.class, "conf.d" )
-      );
-      assertThat( config.services ).hasSize( 2 );
-      config.services.forEach( ( k, v ) -> System.out.println( k + " -> " + v ) );
-   }
+    @Test
+    public void load() {
+        ApplicationConfiguration config = ApplicationConfiguration.load(
+            pathOfTestResource( KernelTest.class, "application.conf" ),
+            pathOfTestResource( KernelTest.class, "conf.d" )
+        );
+        assertThat( config.services ).hasSize( 2 );
+        config.services.forEach( ( k, v ) -> System.out.println( k + " -> " + v ) );
+    }
 }

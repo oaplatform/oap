@@ -26,11 +26,11 @@ package oap.application;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.io.Files;
 import oap.json.Binder;
 import oap.util.Lists;
 import oap.util.Maps;
-import oap.util.Stream;
 
 import java.net.URL;
 import java.nio.file.Path;
@@ -57,6 +57,7 @@ public class ApplicationConfiguration {
 
     public static ApplicationConfiguration load( URL appConfigPath, String[] configs ) {
         log.trace( "application configurations: {}, configs = {}", appConfigPath, asList( configs ) );
+
         return Binder.hoconWithConfig( configs )
             .unmarshal( ApplicationConfiguration.class, appConfigPath );
     }
@@ -69,8 +70,9 @@ public class ApplicationConfiguration {
     public static ApplicationConfiguration load( URL appConfigPath, String confd ) {
         List<Path> paths = confd != null ? Files.wildcard( confd, "*.conf" ) : emptyList();
         log.info( "global configurations: {}", paths );
-        return load( appConfigPath, Stream.of( paths )
-            .map( Files::readString )
-            .toArray( String[]::new ) );
+
+        val confs = paths.stream().map( Files::readString ).toArray( String[]::new );
+
+        return load( appConfigPath, confs );
     }
 }

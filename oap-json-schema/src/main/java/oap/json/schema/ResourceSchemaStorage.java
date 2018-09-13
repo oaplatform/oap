@@ -24,12 +24,42 @@
 
 package oap.json.schema;
 
+import lombok.val;
 import oap.io.Resources;
+import oap.json.Binder;
+import org.apache.commons.io.FilenameUtils;
 
-public class ResourceSchemaStorage implements SchemaStorage {
+import java.util.ArrayList;
+import java.util.Map;
+
+/**
+ * Created by igor.petrenko on 31.01.2018.
+ */
+public final class ResourceSchemaStorage implements SchemaStorage {
+    public static final SchemaStorage INSTANCE = new ResourceSchemaStorage();
+
+    private ResourceSchemaStorage() {
+    }
+
     @Override
     public String get( String name ) {
-        return Resources.readString( getClass(), name )
-                .orElseThrow( () -> new IllegalArgumentException( "not found " + name ) );
+
+        val prefix = FilenameUtils.removeExtension( name );
+        val fileName = FilenameUtils.removeExtension( FilenameUtils.getName( name ) );
+
+        val conf = Resources.readStringOrThrow( getClass(), name );
+
+        val extConf = Resources.readString( getClass(), prefix + "/" + fileName + ".conf" );
+        val extJson = Resources.readString( getClass(), prefix + "/" + fileName + ".json" );
+
+        if( !extConf.isPresent() && !extJson.isPresent() ) return conf;
+
+        val list = new ArrayList<String>();
+        extConf.ifPresent( list::add );
+        extJson.ifPresent( list::add );
+
+
+        return Binder.json.marshal( Binder.hoconWithConfig( false, list.toArray( new String[0] ) )
+            .unmarshal( Map.class, conf ) );
     }
 }

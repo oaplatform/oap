@@ -106,7 +106,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
                     Files.move( file, newPath, StandardCopyOption.REPLACE_EXISTING );
                 }
 
-                val id = storage.identifier.get( unmarshal.object );
+                val id = storage.getIdentifier().get( unmarshal.object );
 
                 storage.data.put( id, unmarshal );
 
@@ -194,7 +194,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
         return Threads.synchronously( lock, () -> {
             final String ver = this.version > 0 ? ".v" + version : "";
             return fsResolve.apply( this.path, object )
-                .resolve( this.storage.identifier.get( object ) + ver + ".json" );
+                .resolve( this.storage.getIdentifier().get( object ) + ver + ".json" );
         } );
     }
 

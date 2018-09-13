@@ -25,11 +25,13 @@
 package oap.security.acl;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
+import oap.storage.ROStorage;
 import oap.storage.Storage;
 import oap.util.Lists;
 import oap.util.Strings;
@@ -51,13 +53,21 @@ import static java.util.stream.Collectors.toList;
  */
 @Slf4j
 public class DefaultAclSchema implements AclSchema {
-    private final Map<String, Storage<? extends SecurityContainer<?>>> objectStorage;
+    private final String identity;
+    private final Map<String, Storage<? extends oap.security.acl.SecurityContainer<?>>> objectStorage;
+    private final Storage<AclSchemaContainer> schemaStorage;
     private final Optional<AclSchema> remoteSchema;
     private final String schemaPath;
     private AclSchemaBean schema;
 
     @JsonCreator
-    public DefaultAclSchema( Map<String, Storage<? extends SecurityContainer<?>>> objectStorage, String schema, AclSchema remoteSchema ) {
+    public DefaultAclSchema(
+        String identity,
+        Storage<AclSchemaContainer> schemaStorage,
+        Map<String, Storage<? extends oap.security.acl.SecurityContainer<?>>> objectStorage,
+        String schema, AclSchema remoteSchema ) {
+        this.identity = identity;
+        this.schemaStorage = schemaStorage;
         this.objectStorage = objectStorage;
         this.remoteSchema = Optional.ofNullable( remoteSchema );
         this.schemaPath = schema;
@@ -69,18 +79,26 @@ public class DefaultAclSchema implements AclSchema {
         final List<URL> urls = Resources.urls( schemaPath );
         log.debug( "found {}", urls );
 
+        Preconditions.checkState( urls.size() == 1, "only one " + schemaPath + " allowed, but found " + urls );
+
         final Optional<URL> url = Resources.url( getClass(), schemaPath );
         log.debug( "found2 {}", url );
 
         val configs = Lists.tail( urls ).stream().map( Strings::readString ).toArray( String[]::new );
 
         val lSchema = Binder.hoconWithConfig( configs ).unmarshal( new TypeRef<AclSchemaBean>() {}, Lists.head( urls ) );
-        this.schema = remoteSchema
-            .map( rs -> {
-                val s = rs.getSchema();
-                s.findByPath( lSchema.parentPath ).merge( lSchema );
-                return s;
-            } ).orElse( lSchema );
+
+
+        for( val aclSchemaContainer : schemaStorage ) {
+            if( log.isDebugEnabled() )
+                log.debug( "found children schema {}", aclSchemaContainer );
+            else
+                log.info( "found children schema {}", aclSchemaContainer.owner );
+
+            lSchema.findByPath( aclSchemaContainer.schema.parentPath ).merge( aclSchemaContainer.schema );
+        }
+
+        this.schema = remoteSchema.map( rs -> rs.addSchema( identity, lSchema ) ).orElse( lSchema );
 
         log.info( "acl schema = {}", this.schema );
     }
@@ -108,15 +126,23 @@ public class DefaultAclSchema implements AclSchema {
     @Override
     public Stream<AclObject> selectObjects() {
         return remoteSchema
-            .map( rs -> Stream.concat( selectLocalObjects(), rs.selectObjects() ) )
+            .map( rs -> Stream.concat( selectLocalObjects(), rs.listObjects().stream() ) )
             .orElse( selectLocalObjects() );
+    }
+
+    @Override
+    public List<AclObject> listObjects() {
+        return remoteSchema
+            .map( rs -> Stream.concat( selectLocalObjects(), rs.listObjects().stream() ) )
+            .orElse( selectLocalObjects() )
+            .collect( toList() );
     }
 
     @Override
     public Stream<AclObject> selectLocalObjects() {
         return objectStorage.values()
             .stream()
-            .flatMap( Storage::select )
+            .flatMap( ROStorage::select )
             .map( con -> con.acl );
     }
 
@@ -168,7 +194,11 @@ public class DefaultAclSchema implements AclSchema {
     }
 
     @Override
-    public AclSchemaBean getSchema() {
+    public AclSchemaBean addSchema( String owner, AclSchemaBean clientSchema ) {
+        log.info( "add schema owner={}, schema={}", owner, clientSchema );
+        schemaStorage.store( new AclSchemaContainer( owner, clientSchema ) );
+        schema.findByPath( clientSchema.parentPath ).merge( clientSchema );
+        log.debug( "result schema = {}", schema );
         return schema;
     }
 

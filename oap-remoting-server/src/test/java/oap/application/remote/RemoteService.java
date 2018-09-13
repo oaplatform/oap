@@ -25,8 +25,17 @@
 package oap.application.remote;
 
 public class RemoteService implements RemoteClient {
+    private final int ok;
+    private int count = 0;
+
+    public RemoteService( int ok ) {
+        this.ok = ok;
+    }
+
     @Override
     public boolean accessible() {
-        return true;
+        count++;
+        if( count >= ok ) return true;
+        throw new IllegalStateException( "count(" + count + ") < ok(" + ok + ")" );
     }
 }

@@ -22,21 +22,31 @@
  * SOFTWARE.
  */
 
-package oap.json.schema;
+package oap.security.ws;
 
-import oap.io.Resources;
+import oap.security.acl.User2;
+import org.apache.commons.lang3.NotImplementedException;
+
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Created by igor.petrenko on 31.01.2018.
+ * Created by igor.petrenko on 15.02.2018.
  */
-public final class ResourceStorage implements SchemaStorage {
-    public static final SchemaStorage INSTANCE = new ResourceStorage();
+public class MockAuthProvider implements AuthProvider<User2> {
+    private final ConcurrentHashMap<String, User2> map = new ConcurrentHashMap<>();
 
-    private ResourceStorage() {
+    @Override
+    public Optional<User2> getByEmail( String email ) {
+        throw new NotImplementedException( "" );
     }
 
     @Override
-    public String get( String name ) {
-        return Resources.readStringOrThrow( getClass(), name );
+    public Optional<User2> getById( String id ) {
+        return Optional.ofNullable( map.get( id ) );
+    }
+
+    public void addUser( User2 user ) {
+        map.put( user.getId(), user );
     }
 }

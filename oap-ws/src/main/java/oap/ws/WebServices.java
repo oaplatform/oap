@@ -48,11 +48,11 @@ public class WebServices {
         HttpResponse.registerProducer( ContentType.APPLICATION_JSON.getMimeType(), Binder.json::marshal );
     }
 
+    final HashMap<String, Integer> exceptionToHttpCode = new HashMap<>();
     private final List<WsConfig> wsConfigs;
     private final HttpServer server;
     private final SessionManager sessionManager;
     private final CorsPolicy globalCorsPolicy;
-    final HashMap<String, Integer> exceptionToHttpCode = new HashMap<>();
     public WsResponse defaultResponse = WsResponse.TEXT;
 
     public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy ) {
@@ -76,6 +76,8 @@ public class WebServices {
         Kernel kernel = Application.kernel( Kernel.DEFAULT );
 
         for( WsConfig config : wsConfigs ) {
+            log.trace( "config = {}", config );
+
             final List<Interceptor> interceptors = config.interceptors.stream()
                 .map( Application::service )
                 .map( Interceptor.class::cast )
@@ -83,6 +85,8 @@ public class WebServices {
 
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
                 final WsConfig.Service serviceConfig = entry.getValue();
+
+                log.trace( "service = {}", entry );
 
                 if( StringUtils.isNotEmpty( serviceConfig.profile ) && !kernel.profileEnabled( serviceConfig.profile ) ) {
                     log.debug( "skipping " + entry.getKey() + " web service initialization with "
@@ -101,6 +105,7 @@ public class WebServices {
 
             for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
                 final WsConfig.Service handlerConfig = entry.getValue();
+                log.trace( "handler = {}", entry );
 
                 CorsPolicy corsPolicy = handlerConfig.corsPolicy != null ? handlerConfig.corsPolicy : globalCorsPolicy;
 

@@ -32,11 +32,12 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
 public class SessionManager {
+    public static final String COOKIE_ID = "SID";
 
-    private final Cache<String, Session> sessions;
     public final String cookieDomain;
     public final String cookiePath;
     public final int cookieExpiration;
+    private final Cache<String, Session> sessions;
 
     public SessionManager( int expirationTime, String cookieDomain, String cookiePath ) {
         this.sessions = CacheBuilder.newBuilder()

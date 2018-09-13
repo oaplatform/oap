@@ -33,8 +33,12 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public interface Interceptor {
-    String SESSION_TOKEN = "sessionToken";
     String USER_ID = "userid";
+    String AUTHORIZATION = "Authorization";
+
+    static String getSessionToken( Request request ) {
+        return request.header( AUTHORIZATION ).orElse( request.cookie( AUTHORIZATION ).orElse( null ) );
+    }
 
     Optional<HttpResponse> intercept( Request request, Session session,
                                       Reflection.Method method,

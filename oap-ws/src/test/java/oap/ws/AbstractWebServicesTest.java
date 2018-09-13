@@ -38,22 +38,22 @@ import org.testng.annotations.BeforeClass;
 import java.util.List;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static oap.http.testng.HttpAsserts.reset;
 
 /**
  * Created by igor.petrenko on 16.02.2017.
  */
 public class AbstractWebServicesTest extends AbstractTest {
-    private Server server;
     protected WebServices ws;
-
+    private Server server;
     private SynchronizedThread listener;
     private Kernel kernel;
 
     @BeforeClass
     public void startServer() {
         Env.resetPorts();
-        kernel = new Kernel( Lists.empty() );
+        kernel = new Kernel( emptyList(), emptyList() );
         server = new Server( 100 );
         ws = new WebServices( server, new SessionManager( 10, null, "/" ),
             GenericCorsPolicy.DEFAULT,

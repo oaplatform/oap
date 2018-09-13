@@ -25,6 +25,9 @@ package oap.storage;
 
 import lombok.val;
 import oap.json.Binder;
+import oap.replication.Replication;
+import oap.replication.ReplicationMaster;
+import oap.replication.ReplicationSlave;
 import oap.util.Maps;
 import oap.util.Optionals;
 import oap.util.Stream;
@@ -43,9 +46,11 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
-    protected final Identifier<T> identifier;
+import static java.util.stream.Collectors.toList;
+
+public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, ReplicationMaster<Metadata<T>> {
     protected final LockStrategy lockStrategy;
+    private final Identifier<T> identifier;
     private final List<DataListener<T>> dataListeners = new ArrayList<>();
     private final ArrayList<Constraint<T>> constraints = new ArrayList<>();
     volatile protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
@@ -53,6 +58,10 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public MemoryStorage( Identifier<T> identifier, LockStrategy lockStrategy ) {
         this.identifier = identifier;
         this.lockStrategy = lockStrategy;
+    }
+
+    public Identifier<T> getIdentifier() {
+        return identifier;
     }
 
     @Override
@@ -157,12 +166,17 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                 metadata.setUpdated();
             } else {
                 if( predicate.test( metadata.object ) ) {
-                    val newObject = update.apply( Binder.json.clone( metadata.object ) );
+                    if( constraints.isEmpty() ) {
+                        metadata.update( update.apply( metadata.object ) );
+                    } else {
+                        val newObject = update.apply( Binder.json.clone( metadata.object ) );
 
-                    checkConstraints( newObject );
+                        checkConstraints( newObject );
 
-                    identifier.set( newObject, id );
-                    metadata.update( newObject );
+                        identifier.set( newObject, id );
+
+                        metadata.update( newObject );
+                    }
                 } else {
                     return Optional.empty();
                 }
@@ -261,27 +275,6 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         this.constraints.add( constraint );
     }
 
-    @Override
-    public List<Metadata<T>> updatedSince( long time ) {
-        return Stream.of( data.values() )
-            .filter( m -> m.modified > time )
-            .toList();
-    }
-
-    @Override
-    public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
-        return Stream.of( data.values() )
-            .filter( m -> m.modified > time )
-            .skip( offset )
-            .limit( limit )
-            .toList();
-    }
-
-    @Override
-    public List<String> ids() {
-        return new ArrayList<>( data.keySet() );
-    }
-
     public void clear() {
         List<String> keys = new ArrayList<>( data.keySet() );
         List<T> deleted = Stream.of( keys ).flatMapOptional( this::deleteObject ).map( m -> m.object ).toList();
@@ -300,5 +293,65 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     @Override
     public void forEach( Consumer<? super T> action ) {
         data.forEach( ( k, v ) -> action.accept( v.object ) );
+    }
+
+    @Override
+    public ReplicationMaster<Metadata<T>> master() {
+        return this;
+    }
+
+    public List<Metadata<T>> updatedSince( long time ) {
+        return Stream.of( data.values() )
+            .filter( m -> m.modified > time )
+            .toList();
+    }
+
+    @Override
+    public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
+        return Stream.of( data.values() )
+            .filter( m -> m.modified > time )
+            .skip( offset )
+            .limit( limit )
+            .toList();
+    }
+
+    @Override
+    public Collection<String> ids() {
+        return MemoryStorage.this.data.keySet();
+    }
+
+    @Override
+    public ReplicationSlave<Metadata<T>> slave() {
+        return new ReplicationSlave<Metadata<T>>() {
+            @Override
+            public String getIdFor( Metadata<T> metadata ) {
+                return MemoryStorage.this.getIdentifier().get( metadata.object );
+            }
+
+            @Override
+            public void fireUpdated( Collection<Metadata<T>> objects, boolean isNew ) {
+                MemoryStorage.this.fireUpdated( objects.stream().map( m -> m.object ).collect( toList() ), isNew );
+            }
+
+            @Override
+            public void fireDeleted( List<Metadata<T>> objects ) {
+                MemoryStorage.this.fireDeleted( objects.stream().map( m -> m.object ).collect( toList() ) );
+            }
+
+            @Override
+            public Optional<Metadata<T>> deleteObject( String id ) {
+                return MemoryStorage.this.deleteObject( id );
+            }
+
+            @Override
+            public Collection<String> keys() {
+                return MemoryStorage.this.data.keySet();
+            }
+
+            @Override
+            public boolean putMetadata( String id, Metadata<T> metadata ) {
+                return MemoryStorage.this.data.put( id, metadata ) != null;
+            }
+        };
     }
 }

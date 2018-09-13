@@ -37,7 +37,7 @@ import static org.testng.Assert.assertEquals;
 public class FSTTest extends AbstractTest {
     @Test
     public void testOptional() {
-        final FST fst = new FST(FST.SerializationMethod.DEFAULT);
+        final FST fst = new FST( FST.SerializationMethod.DEFAULT );
 
         assertEquals( fst.conf.asObject( fst.conf.asByteArray( Optional.empty() ) ), Optional.empty() );
         assertEquals( fst.conf.asObject( fst.conf.asByteArray( Optional.of( "1" ) ) ), Optional.of( "1" ) );

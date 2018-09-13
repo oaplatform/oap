@@ -34,7 +34,6 @@ import oap.media.postprocessing.VastMediaProcessing;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Cuid;
-import oap.util.Lists;
 import oap.util.Pair;
 import oap.ws.SessionManager;
 import oap.ws.WebServices;
@@ -47,6 +46,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertUploadFile;
@@ -73,7 +73,7 @@ public class WsFileUploaderTest extends AbstractTest {
         Env.resetPorts();
         super.beforeMethod();
 
-        kernel = new Kernel( Lists.empty() );
+        kernel = new Kernel( emptyList(), emptyList() );
         kernel.start();
         path = Env.tmpPath( "/tmp" );
 
@@ -92,7 +92,7 @@ public class WsFileUploaderTest extends AbstractTest {
                 shell( "ffprobe -v quiet -print_format xml -show_format -sexagesimal -show_streams {FILE}" ), 10000L
             ) )
         );
-        service.addListener( ( media, mediaInfo ) -> WsFileUploaderTest.this.medias.add( __( media, mediaInfo ) ) );
+        service.addListener( ( media, mediaInfo, mediaContext ) -> WsFileUploaderTest.this.medias.add( __( media, mediaInfo ) ) );
         kernel.register( "upload", service );
         ws.start();
         listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );

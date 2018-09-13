@@ -30,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.json.schema.JsonSchema;
-import oap.json.schema.ResourceSchemaStorage;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.ws.WsClientException;
@@ -44,7 +43,6 @@ import java.util.Optional;
 
 @Slf4j
 public class JsonPartialValidatorPeer implements ValidatorPeer {
-    private static final ResourceSchemaStorage storage = new ResourceSchemaStorage();
     private final JsonSchema factory;
     private final WsPartialValidateJson validate;
     private final Reflection.Method method;

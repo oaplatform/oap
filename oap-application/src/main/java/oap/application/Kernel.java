@@ -63,6 +63,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     public static final String DEFAULT = Strings.DEFAULT;
     final String name;
     private final List<URL> configurations;
+    private final List<URL> plugins;
     private final Set<String> profiles = Sets.empty();
     private final Set<Module> modules = Sets.empty();
     private final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
@@ -70,13 +71,14 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     private final List<DynamicConfig.Control> dynamicConfigurations = new ArrayList<>();
     private final Linker linker = new Linker( this );
 
-    public Kernel( String name, List<URL> configurations ) {
+    public Kernel( String name, List<URL> configurations, List<URL> plugins ) {
         this.name = name;
         this.configurations = configurations;
+        this.plugins = plugins;
     }
 
-    public Kernel( List<URL> configurations ) {
-        this( DEFAULT, configurations );
+    public Kernel( List<URL> configurations, List<URL> plugins ) {
+        this( DEFAULT, configurations, plugins );
     }
 
     private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
@@ -155,7 +157,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         reflect.fields
             .values()
             .stream()
-            .filter( field -> field.type().assignableFrom( DynamicConfig.class ) )
+            .filter( field -> field.type().assignableFrom( DynamicConfig.class ) && !field.type().underlying.equals( Object.class ) )
             .forEach( f -> {
                 DynamicConfig<?> config = ( DynamicConfig<?> ) f.get( instance );
                 if( config.isUpdateable() ) dynamicConfigurations.add( config.control );
@@ -258,10 +260,42 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
 
         this.dynamicConfigurations.forEach( DynamicConfig.Control::start );
 
+        initPlugins();
+
         this.supervisor.start();
 
         this.modules.add( new Module( Module.DEFAULT ) );
         log.debug( "application kernel started" );
+    }
+
+    private void initPlugins() {
+        for( val url : plugins ) {
+            val plugin = Plugin.CONFIGURATION.fromHocon( url );
+
+            for( val export : plugin.export ) {
+                for( val serviceName : export.service ) {
+                    val service = Application.service( serviceName );
+                    Preconditions.checkNotNull( service, "Unknown service " + serviceName );
+                    val reflect = Reflect.reflect( service.getClass() );
+                    export.parameters.forEach( ( name, services ) -> {
+                        val field = reflect.field( name );
+                        if( field.type().assignableTo( List.class ) ) {
+                            for( val refServiceName : services ) {
+                                val refService = Application.service( refServiceName );
+                                Preconditions.checkNotNull( service, "Unknown service " + serviceName );
+                                ( ( List ) field.get( service ) ).add( refService );
+                            }
+                        } else {
+                            Preconditions.checkArgument( services.size() == 1 );
+
+                            val refService = Application.service( services.get( 0 ) );
+                            Preconditions.checkNotNull( service, "Unknown service " + serviceName );
+                            field.set( service, refService );
+                        }
+                    } );
+                }
+            }
+        }
     }
 
     public void stop( String service ) {

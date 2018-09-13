@@ -52,10 +52,11 @@ import static com.mongodb.client.model.Filters.eq;
  * Created by igor.petrenko on 15.09.2017.
  */
 @Slf4j
-public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
+public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, OplogService.OplogListener {
     public static final UpdateOptions UPDATE_OPTIONS_UPSERT = new UpdateOptions().upsert( true );
     public final MongoCollection<Metadata<T>> collection;
     public int bulkSize = 1000;
+    public OplogService oplogService;
     private long lastFsync = -1;
 
     @SuppressWarnings( "unchecked" )
@@ -72,7 +73,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
         final Object o = new TypeReference<Metadata<T>>() {};
         final CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JsonCodec<>( ( TypeReference<Metadata> ) o,
-                Metadata.class, ( m ) -> identifier.get( ( T ) m.object ) ) ),
+                Metadata.class, ( m ) -> getIdentifier().get( ( T ) m.object ) ) ),
             mongoClient.database.getCodecRegistry()
         );
 
@@ -80,21 +81,27 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
             .getCollection( table, Metadata.class )
             .withCodecRegistry( codecRegistry );
         this.collection = ( MongoCollection<Metadata<T>> ) metadataMongoCollection;
-
-        load();
     }
 
     private void load() {
         lastFsync = DateTimeUtils.currentTimeMillis();
 
         final Consumer<Metadata<T>> cons = metadata -> {
-            val id = identifier.get( metadata.object );
+            val id = getIdentifier().get( metadata.object );
             data.put( id, metadata );
         };
 
         log.info( "[{}] total {}", collection.getNamespace(), collection.count() );
 
         collection.find().forEach( cons );
+    }
+
+    public void start() {
+        load();
+
+        if( oplogService != null ) {
+            oplogService.addListener( collection.getNamespace().getCollectionName(), this );
+        }
     }
 
     @Override
@@ -119,7 +126,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
 
                 final List<? extends WriteModel<Metadata<T>>> bulk = Lists.map( list,
                     metadata -> {
-                        val id = identifier.get( metadata.object );
+                        val id = getIdentifier().get( metadata.object );
                         return new ReplaceOneModel<>( eq( "_id", new ObjectId( id ) ), metadata, UPDATE_OPTIONS_UPSERT );
                     } );
                 collection.bulkWrite( bulk );
@@ -140,5 +147,37 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable {
         collection.deleteOne( eq( "_id", new ObjectId( id ) ) );
 
         return super.delete( id );
+    }
+
+    @Override
+    public void updated( String table, Object id ) {
+        update( id );
+    }
+
+    public void update( Object id ) {
+        val m = collection.find( eq( "_id", id ) ).first();
+        if( m != null ) {
+            val strId = id.toString();
+            lockStrategy.synchronizedOn( strId, () -> {
+                val oldM = data.get( strId );
+                if( oldM == null || m.modified > oldM.modified ) {
+                    log.debug( "update from mongo {}", id );
+                    data.put( strId, m );
+                    fireUpdated( m.object, false );
+                } else {
+                    log.debug( "[{}] m.modified <= oldM.modified", id );
+                }
+            } );
+        }
+    }
+
+    @Override
+    public void deleted( String table, Object id ) {
+        delete( id.toString() );
+    }
+
+    @Override
+    public void inserted( String table, Object id ) {
+        update( id );
     }
 }

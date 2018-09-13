@@ -55,6 +55,8 @@ public class AclRole extends IdBean {
     }
 
     public boolean containsPermission( String permission ) {
-        return permissions.contains( permission ) || permissions.contains( "*" );
+        return permissions.contains( permission )
+            || permissions.contains( "*" )
+            || permissions.stream().anyMatch( permission::startsWith );
     }
 }

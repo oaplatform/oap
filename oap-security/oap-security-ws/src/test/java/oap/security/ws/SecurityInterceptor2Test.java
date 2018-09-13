@@ -29,6 +29,7 @@ import oap.http.Context;
 import oap.http.Protocol;
 import oap.http.Request;
 import oap.http.Session;
+import oap.http.testng.MockRequest;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.security.acl.AclService;
@@ -66,7 +67,7 @@ public class SecurityInterceptor2Test {
     public void testShouldNotCheckMethodWithoutAnnotation() {
         val methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithoutAnnotation" ) ).get();
 
-        val httpResponse = securityInterceptor.intercept( null, null, methodWithAnnotation, p -> null );
+        val httpResponse = securityInterceptor.intercept( new MockRequest(), new Session(), methodWithAnnotation, p -> null );
 
         assertThat( httpResponse ).isEmpty();
     }
@@ -82,7 +83,9 @@ public class SecurityInterceptor2Test {
 
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( true );
 
-        val httpResponse = securityInterceptor.intercept( null,
+        final MockRequest request = new MockRequest();
+        request.headers.put( "authorization", "token1" );
+        val httpResponse = securityInterceptor.intercept( request,
             session, methodWithAnnotation, p -> "obj" );
 
         assertThat( httpResponse ).isEmpty();
@@ -128,8 +131,7 @@ public class SecurityInterceptor2Test {
 
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( false );
 
-        val httpResponse = securityInterceptor.intercept( null,
-            session, methodWithAnnotation, p -> "obj" );
+        val httpResponse = securityInterceptor.intercept( new MockRequest(), session, methodWithAnnotation, p -> "obj" );
 
         assertThat( httpResponse ).isPresent();
     }
@@ -180,7 +182,7 @@ public class SecurityInterceptor2Test {
         }
 
         @WsSecurity2( object = "{parent}", permission = "parent.read" )
-        @WsSecurityWithPermissions(includeRootPermissions = true)
+        @WsSecurityWithPermissions( includeRootPermissions = true )
         public Res methodWithAnnotation2( @WsParam String parent ) {
             return new Res( "1" );
         }

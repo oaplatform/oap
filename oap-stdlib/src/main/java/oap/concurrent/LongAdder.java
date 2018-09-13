@@ -27,6 +27,7 @@ package oap.concurrent;
 import lombok.SneakyThrows;
 import oap.util.Throwables;
 
+import java.io.Serializable;
 import java.lang.reflect.Field;
 
 /**
@@ -67,4 +68,26 @@ public class LongAdder extends java.util.concurrent.atomic.LongAdder {
         return Long.hashCode( sum() );
     }
 
+    private Object writeReplace() {
+        return new SerializationProxy( this );
+    }
+
+    private void readObject( java.io.ObjectInputStream s )
+        throws java.io.InvalidObjectException {
+        throw new java.io.InvalidObjectException( "Proxy required" );
+    }
+
+    private static class SerializationProxy implements Serializable {
+        private static final long serialVersionUID = 5418714082658153445L;
+
+        private final long value;
+
+        SerializationProxy( LongAdder a ) {
+            value = a.sum();
+        }
+
+        private Object readResolve() {
+            return new LongAdder( value );
+        }
+    }
 }

@@ -25,15 +25,18 @@
 package oap.security.ws;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.http.HttpResponse;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
 import oap.ws.security.User;
 import oap.ws.validate.ValidationErrors;
+import org.joda.time.DateTime;
 
 import java.util.Objects;
 
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.SESSION;
 
@@ -43,17 +46,30 @@ import static oap.ws.WsParam.From.SESSION;
 @Slf4j
 public class Logout2WS {
     private final AuthService2 authService;
+    private final String cookieDomain;
 
-    public Logout2WS( AuthService2 authService ) {
+    public Logout2WS( AuthService2 authService, String cookieDomain ) {
         this.authService = authService;
+        this.cookieDomain = cookieDomain;
     }
 
     @WsMethod( method = GET, path = "/" )
     @WsSecurity2
-    public void logout( @WsParam( from = SESSION ) String userid ) {
+    public HttpResponse logout( @WsParam( from = SESSION ) String userid ) {
         log.debug( "Invalidating token for user [{}]", userid );
 
         authService.invalidateUser( userid );
+
+
+        return HttpResponse
+            .status( HTTP_NO_CONTENT )
+            .withCookie( new HttpResponse.CookieBuilder()
+                .withCustomValue( "Authorization", "expired" )
+                .withDomain( cookieDomain )
+                .withPath( "/" )
+                .withExpires( DateTime.now() )
+                .build()
+            );
     }
 
     @SuppressWarnings( "unused" )

@@ -24,10 +24,11 @@
 package oap.json.schema;
 
 import lombok.ToString;
+import oap.util.Mergeable;
 
 import java.util.Optional;
 
-public abstract class SchemaAST<T extends SchemaAST<T>> {
+public abstract class SchemaAST<T extends SchemaAST<T>> implements Mergeable<T> {
     public final String path;
     public final CommonSchemaAST common;
 
@@ -36,10 +37,8 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
         this.path = path;
     }
 
-    public abstract T merge( T cs );
-
     @ToString
-    public static class CommonSchemaAST {
+    public static class CommonSchemaAST implements Mergeable<CommonSchemaAST> {
         public final String schemaType;
         public final Optional<BooleanReference> required;
         public final Optional<BooleanReference> enabled;
@@ -73,6 +72,7 @@ public abstract class SchemaAST<T extends SchemaAST<T>> {
             this.norms = norms;
         }
 
+        @Override
         public CommonSchemaAST merge( CommonSchemaAST common ) {
             return new CommonSchemaAST(
                 schemaType,

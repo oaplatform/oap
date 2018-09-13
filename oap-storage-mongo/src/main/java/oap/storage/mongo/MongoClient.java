@@ -38,8 +38,11 @@ import java.io.Closeable;
 public class MongoClient implements Closeable {
     public final MongoDatabase database;
     public final com.mongodb.MongoClient mongoClient;
+    public boolean dropDatabaseBeforeMigration = false;
+    private final Migration migration;
 
     public MongoClient( String host, int port, String database, Migration migration ) {
+        this.migration = migration;
         val codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JodaTimeCodec() ),
             com.mongodb.MongoClient.getDefaultCodecRegistry() );
@@ -48,6 +51,10 @@ public class MongoClient implements Closeable {
 
         mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ), options );
         this.database = mongoClient.getDatabase( database );
+    }
+
+    public void start() {
+        if( dropDatabaseBeforeMigration ) this.database.drop();
 
         migration.run( this.database );
     }

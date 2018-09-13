@@ -25,9 +25,9 @@
 package oap.security.ws;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.util.Id;
 
 import java.io.Serializable;
 
@@ -39,16 +39,21 @@ import java.io.Serializable;
 public class Token2 implements Serializable {
     private static final long serialVersionUID = 8208126956380561231L;
 
+    @Id
     public String id;
     public String userId;
     public long created;
+    public long lastAccess;
 
     @JsonCreator
-    public Token2( @JsonProperty String id,
-                  @JsonProperty String userId,
-                  @JsonProperty long created ) {
+    public Token2( String id, String userId, long created, long lastAccess ) {
         this.id = id;
         this.userId = userId;
         this.created = created;
+        this.lastAccess = lastAccess;
+    }
+
+    public Token2( String id, String userId, long created ) {
+        this( id, userId, created, created );
     }
 }

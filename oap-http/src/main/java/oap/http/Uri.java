@@ -25,19 +25,28 @@
 package oap.http;
 
 import lombok.SneakyThrows;
+import lombok.val;
 import oap.util.Maps;
 import oap.util.Pair;
 import org.apache.http.client.utils.URIBuilder;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.Map;
 
 public class Uri {
     @SneakyThrows
     public static URI uri( String uri, Map<String, Object> params ) {
         URIBuilder uriBuilder = new URIBuilder( uri );
-        params.forEach( ( name, value ) ->
-            uriBuilder.addParameter( name, value == null ? "" : value.toString() )
+        params.forEach( ( name, value ) -> {
+                if( value instanceof Collection<?> ) {
+                    for( val v : ( Collection<?> ) value ) {
+                        uriBuilder.addParameter( name, v == null ? "" : v.toString() );
+                    }
+                } else {
+                    uriBuilder.addParameter( name, value == null ? "" : value.toString() );
+                }
+            }
         );
         return uriBuilder.build();
 

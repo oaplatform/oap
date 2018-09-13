@@ -30,12 +30,7 @@ import com.mongodb.client.MongoDatabase;
  * Created by igor.petrenko on 30.01.2018.
  */
 public interface Migration {
-    Migration NONE = new Migration() {
-        @Override
-        public void run( MongoDatabase database ) {
-
-        }
-    };
+    Migration NONE = database -> {};
 
     void run( MongoDatabase database );
 }

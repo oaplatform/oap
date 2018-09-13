@@ -26,6 +26,7 @@ package oap.storage;
 
 import lombok.val;
 import oap.json.TypeIdFactory;
+import oap.replication.Replicator;
 import oap.testng.AbstractTest;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
@@ -39,7 +40,7 @@ import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ReplicatorTest extends AbstractTest {
+public class MemoryStorageReplicationTest extends AbstractTest {
 
     @Test
     public void masterSlave() {
@@ -48,7 +49,7 @@ public class ReplicatorTest extends AbstractTest {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
         MemoryStorage<Bean> slave = new MemoryStorage<>( Bean.identifier, NoLock );
         try( FileStorage<Bean> master = new FileStorage<>( tmpPath( "master" ), Bean.identifier, 50, NoLock );
-             Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 0 ) ) {
+             val ignored = new Replicator<Metadata<Bean>>( slave, master, 50, 0 ) ) {
 
             val updates = new AtomicInteger();
             val creates = new AtomicInteger();

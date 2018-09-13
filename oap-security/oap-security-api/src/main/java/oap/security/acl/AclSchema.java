@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.ToString;
 import lombok.val;
+import oap.util.Mergeable;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
@@ -50,6 +51,8 @@ public interface AclSchema {
 
     Stream<AclObject> selectObjects();
 
+    List<AclObject> listObjects();
+
     Stream<AclObject> selectLocalObjects();
 
     Optional<AclObject> updateLocalObject( String id, Consumer<AclObject> cons );
@@ -62,10 +65,10 @@ public interface AclSchema {
 
     List<String> getPermissions( String objectId );
 
-    AclSchemaBean getSchema();
+    AclSchemaBean addSchema( String owner, AclSchemaBean clientSchema );
 
     @ToString
-    class AclSchemaBean implements Serializable {
+    class AclSchemaBean implements Mergeable<AclSchemaBean>, Serializable {
         private static final long serialVersionUID = 6385590066545729318L;
         public final Set<String> permissions;
         public final Map<String, AclSchemaBean> children;
@@ -86,9 +89,12 @@ public interface AclSchema {
             return children.containsKey( objectType );
         }
 
-        public void merge( AclSchemaBean bean ) {
+        @Override
+        public AclSchemaBean merge( AclSchemaBean bean ) {
             this.permissions.addAll( bean.permissions );
             this.children.putAll( bean.children );
+
+            return this;
         }
 
         public AclSchemaBean findByPath( String path ) {

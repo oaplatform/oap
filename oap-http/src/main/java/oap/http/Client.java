@@ -32,13 +32,14 @@ import oap.concurrent.AsyncCallbacks;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.IoStreams;
+import oap.io.IoStreams.ThrowingIOExceptionConsumer;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Try;
-import okhttp3.Headers;
+import oap.util.Try.ThrowingRunnable;
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
@@ -80,6 +81,7 @@ import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
 import org.apache.http.nio.reactor.IOReactorException;
 import org.apache.http.ssl.SSLContexts;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.BufferedInputStream;
@@ -87,6 +89,9 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -269,6 +274,37 @@ public class Client implements Closeable {
         return execute( request, Maps.empty(), timeout );
     }
 
+    @SneakyThrows
+    public Response post( String uri, ThrowingIOExceptionConsumer<OutputStream> outputStream, ContentType contentType ) throws UncheckedIOException {
+        HttpPost request = new HttpPost( uri );
+
+        return post( outputStream, contentType, request );
+    }
+
+    @SneakyThrows
+    public Response post( URI uri, ThrowingIOExceptionConsumer<OutputStream> outputStream, ContentType contentType ) throws UncheckedIOException {
+        HttpPost request = new HttpPost( uri );
+
+        return post( outputStream, contentType, request );
+    }
+
+    private Response post( ThrowingIOExceptionConsumer<OutputStream> outputStream, ContentType contentType, HttpPost request ) throws UncheckedIOException {
+        try {
+            val pos = new PipedOutputStream();
+            val pis = new PipedInputStream( pos );
+            request.setEntity( new InputStreamEntity( pis, contentType ) );
+
+            return execute( request, Maps.empty(), FOREVER, () -> {
+                outputStream.accept( pos );
+                pos.close();
+            } )
+                .orElseThrow( () -> new UncheckedIOException( new IOException( "no response" ) ) );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+
     public Response post( String uri, InputStream content, ContentType contentType ) {
         HttpPost request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, contentType ) );
@@ -322,29 +358,33 @@ public class Client implements Closeable {
         basicCookieStore.clear();
     }
 
-    @SneakyThrows
     private Optional<Response> execute( HttpUriRequest request, Map<String, Object> headers, long timeout ) {
+        return execute( request, headers, timeout, () -> {} );
+    }
+
+    @SneakyThrows
+    private Optional<Response> execute( HttpUriRequest request, Map<String, Object> headers,
+                                        long timeout, ThrowingRunnable<IOException> asyncRunnable ) throws UncheckedIOException {
         try {
             headers.forEach( ( name, value ) -> request.setHeader( name, value == null ? "" : value.toString() ) );
 
             Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
-            HttpResponse response = timeout == FOREVER ? future.get() :
-                future.get( timeout, MILLISECONDS );
+            asyncRunnable.run();
+            HttpResponse response = timeout == FOREVER ? future.get()
+                : future.get( timeout, MILLISECONDS );
 
             Map<String, String> responsHeaders = headers( response );
             Response result;
             if( response.getEntity() != null ) {
                 HttpEntity entity = response.getEntity();
-                try( InputStream is = entity.getContent() ) {
-                    result = new Response(
-                        response.getStatusLine().getStatusCode(),
-                        response.getStatusLine().getReasonPhrase(),
-                        responsHeaders,
-                        Optional.ofNullable( entity.getContentType() )
-                            .map( ct -> ContentType.parse( entity.getContentType().getValue() ) ),
-                        ByteStreams.toByteArray( is )
-                    );
-                }
+                result = new Response(
+                    response.getStatusLine().getStatusCode(),
+                    response.getStatusLine().getReasonPhrase(),
+                    responsHeaders,
+                    Optional.ofNullable( entity.getContentType() )
+                        .map( ct -> ContentType.parse( entity.getContentType().getValue() ) ),
+                    entity.getContent()
+                );
             } else result = new Response(
                 response.getStatusLine().getStatusCode(),
                 response.getStatusLine().getReasonPhrase(),
@@ -353,11 +393,11 @@ public class Client implements Closeable {
             builder.onSuccess.accept( this );
             return Optional.of( result );
         } catch( ExecutionException e ) {
-            final ExecutionException newEx = new ExecutionException( request.getURI().toString(), e.getCause() );
+            val newEx = new UncheckedIOException( request.getURI().toString(), new IOException( e.getCause().getMessage(), e.getCause() ) );
             builder.onError.accept( this, newEx );
             throw newEx;
         } catch( IOException e ) {
-            final ExecutionException newEx = new ExecutionException( request.getURI().toString(), e );
+            val newEx = new UncheckedIOException( request.getURI().toString(), e );
             builder.onError.accept( this, newEx );
             throw newEx;
         } catch( InterruptedException | TimeoutException e ) {
@@ -405,7 +445,7 @@ public class Client implements Closeable {
         }
     }
 
-    private Optional<HttpResponse> resolve( String url ) throws InterruptedException, ExecutionException, IOException {
+    private Optional<HttpResponse> resolve( String url ) {
         return resolve( url );
     }
 
@@ -455,46 +495,100 @@ public class Client implements Closeable {
             .build();
 
 
-        final okhttp3.Response response = client.newCall( request ).execute();
+        val response = client.newCall( request ).execute();
 
-        final Headers headers = response.headers();
+        val headers = response.headers();
         final java.util.stream.Stream<String> stream = headers.names().stream();
         final Map<String, String> h = stream.collect( Collectors.toMap( n -> n, headers::get ) );
+        val responseBody = response.body();
         return new Response( response.code(), response.message(), h,
-            Optional.ofNullable( response.body().contentType() ).map( mt -> ContentType.create( mt.type() + "/" + mt.subtype(), mt.charset() ) ),
-            response.body().bytes() );
+            Optional.ofNullable( responseBody.contentType() ).map( mt -> ContentType.create( mt.type() + "/" + mt.subtype(), mt.charset() ) ),
+            responseBody.byteStream() );
     }
 
-    @ToString
-    public static class Response {
+    @ToString( exclude = { "inputStream", "content" } )
+    public static class Response implements Closeable {
         public final int code;
         public final String reasonPhrase;
         public final Optional<ContentType> contentType;
         public final Map<String, String> headers;
-        public final Optional<byte[]> content;
-        public final Optional<String> contentString;
+        private InputStream inputStream;
+        private byte[] content = null;
 
-        public Response( int code, String reasonPhrase, Map<String, String> headers, Optional<ContentType> contentType, byte[] content ) {
+        @SneakyThrows
+        public Response( int code, String reasonPhrase, Map<String, String> headers, Optional<ContentType> contentType, InputStream inputStream ) {
             this.code = code;
             this.reasonPhrase = reasonPhrase;
             this.headers = headers;
             this.contentType = contentType;
-            this.content = Optional.ofNullable( content );
-            this.contentString = this.content.map( bytes ->
-                new String( bytes, contentType.map( ContentType::getCharset )
-                    .orElse( StandardCharsets.UTF_8 ) ) );
+            this.inputStream = inputStream;
         }
 
         public Response( int code, String reasonPhrase, Map<String, String> headers ) {
             this( code, reasonPhrase, headers, Optional.empty(), null );
         }
 
+        @Nullable
+        @SneakyThrows
+        public byte[] content() {
+            if( content == null && inputStream != null ) {
+                synchronized( this ) {
+                    if( content == null ) {
+                        content = ByteStreams.toByteArray( inputStream );
+                        close();
+                    }
+                }
+            }
+            return content;
+        }
+
+        public InputStream getInputStream() {
+            return inputStream;
+        }
+
+        public String contentString() {
+            val content = content();
+
+            if( content == null ) return null;
+
+            return new String( content, contentType.map( ContentType::getCharset ).orElse( StandardCharsets.UTF_8 ) );
+        }
+
         public <T> Optional<T> unmarshal( Class<?> clazz ) {
-            return this.contentString.map( json -> Binder.json.unmarshal( clazz, json ) );
+            if( inputStream != null ) {
+                synchronized( this ) {
+                    if( inputStream != null ) {
+                        return Optional.of( Binder.json.unmarshal( clazz, inputStream ) );
+                    }
+                }
+            }
+
+            val contentString = contentString();
+            if( contentString == null ) return Optional.empty();
+
+            return Optional.of( Binder.json.unmarshal( clazz, contentString ) );
         }
 
         public <T> Optional<T> unmarshal( TypeRef<T> ref ) {
-            return this.contentString.map( json -> Binder.json.unmarshal( ref, json ) );
+            if( inputStream != null ) {
+                synchronized( this ) {
+                    if( inputStream != null ) {
+                        return Optional.of( Binder.json.unmarshal( ref, inputStream ) );
+                    }
+                }
+            }
+
+            val contentString = contentString();
+            if( contentString == null ) return Optional.empty();
+
+
+            return Optional.of( Binder.json.unmarshal( ref, contentString ) );
+        }
+
+        @Override
+        public void close() {
+            Closeables.close( inputStream );
+            inputStream = null;
         }
     }
 
@@ -529,8 +623,8 @@ public class Client implements Closeable {
                     RegistryBuilder.<SchemeIOSessionStrategy>create()
                         .register( "http", NoopIOSessionStrategy.INSTANCE )
                         .register( "https",
-                            new SSLIOSessionStrategy( certificateLocation != null ?
-                                createSSLContext( certificateLocation, certificatePassword )
+                            new SSLIOSessionStrategy( certificateLocation != null
+                                ? createSSLContext( certificateLocation, certificatePassword )
                                 : SSLContexts.createDefault(),
                                 split( System.getProperty( "https.protocols" ) ),
                                 split( System.getProperty( "https.cipherSuites" ) ),
@@ -540,9 +634,9 @@ public class Client implements Closeable {
                 connManager.setMaxTotal( maxConnTotal );
                 connManager.setDefaultMaxPerRoute( maxConnPerRoute );
 
-                return ( certificateLocation != null ?
-                    HttpAsyncClients.custom()
-                        .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
+                return ( certificateLocation != null
+                    ? HttpAsyncClients.custom()
+                    .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
                     : HttpAsyncClients.custom() )
                     .setMaxConnPerRoute( maxConnPerRoute )
                     .setConnectionManager( connManager )

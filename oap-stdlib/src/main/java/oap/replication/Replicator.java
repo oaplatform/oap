@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.storage;
+package oap.replication;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -37,27 +37,39 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public class Replicator<T> implements Closeable {
-    private final MemoryStorage<T> slave;
-    private final ReplicationMaster<T> master;
+public class Replicator<M> implements Closeable {
+    private final ReplicationSlave<M> slave;
+    private final ReplicationMaster<M> master;
     private final Scheduled scheduled;
     protected int batchSize = 10;
 
-    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval, long safeModificationTime ) {
+    public Replicator( ReplicationSlave<M> slave, ReplicationMaster<M> master, long interval, long safeModificationTime ) {
         this.slave = slave;
         this.master = master;
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), interval, safeModificationTime, this::replicate );
     }
 
-    public Replicator( MemoryStorage<T> slave, ReplicationMaster<T> master, long interval ) {
+    public Replicator( Replication<M> slave, Replication<M> master, long interval, long safeModificationTime ) {
+        this( slave.slave(), master.master(), interval, safeModificationTime );
+    }
+
+    public Replicator( Replication<M> slave, Replication<M> master, long interval ) {
+        this( slave.slave(), master.master(), interval );
+    }
+
+    public Replicator( ReplicationSlave<M> slave, ReplicationMaster<M> master, long interval ) {
         this( slave, master, interval, 1000 );
     }
 
+    public Replicator( Replication<M> slave, ReplicationMaster<M> master, long interval ) {
+        this( slave.slave(), master, interval, 1000 );
+    }
+
     public synchronized void replicate( long last ) {
-        List<Metadata<T>> newUpdates = Lists.empty();
+        List<M> newUpdates = Lists.empty();
         for( int b = 0; b < 100000; b++ ) {
             int offset = b * batchSize;
-            List<? extends Metadata<T>> updates = master.updatedSince( last, batchSize, offset );
+            List<M> updates = master.updatedSince( last, batchSize, offset );
             log.trace( "replicate {} to {} last: {}, size {}, batch {}, offset {}",
                 master, slave, last, updates.size(), batchSize, offset );
             if( updates.isEmpty() ) break;
@@ -65,27 +77,26 @@ public class Replicator<T> implements Closeable {
         }
         log.trace( "updated objects {}", newUpdates.size() );
 
-        val newObjects = new ArrayList<T>();
-        val updatedObjects = new ArrayList<T>();
+        val newObjects = new ArrayList<M>();
+        val updatedObjects = new ArrayList<M>();
 
-        for( Metadata<T> metadata : newUpdates ) {
+        for( M metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
-            val object = metadata.object;
-            val id = slave.identifier.get( object );
-            if( slave.data.put( id, metadata ) != null ) {
-                updatedObjects.add( object );
+            val id = slave.getIdFor( metadata );
+            if( slave.putMetadata( id, metadata ) ) {
+                updatedObjects.add( metadata );
             } else {
-                newObjects.add( object );
+                newObjects.add( metadata );
             }
         }
         if( !newObjects.isEmpty() ) slave.fireUpdated( newObjects, true );
         if( !updatedObjects.isEmpty() ) slave.fireUpdated( updatedObjects, false );
 
-        List<String> ids = master.ids();
+        val ids = master.ids();
         log.trace( "master ids {}", ids );
-        List<T> deletedObjects = Stream.of( slave.data.keySet() )
+        List<M> deletedObjects = Stream.of( slave.keys() )
             .filter( id -> !ids.contains( id ) )
-            .flatMap( id -> Optionals.toStream( slave.deleteObject( id ).map( m -> m.object ) ) )
+            .flatMap( id -> Optionals.toStream( slave.deleteObject( id ) ) )
             .toList();
         log.trace( "deleted {}", deletedObjects );
         slave.fireDeleted( deletedObjects );

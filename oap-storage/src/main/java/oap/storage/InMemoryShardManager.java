@@ -36,30 +36,30 @@ import java.util.function.Function;
  * Created by igor.petrenko on 22.09.2016.
  */
 public class InMemoryShardManager<T, ShardID> implements ShardManager<T, ShardID> {
-   private final ConcurrentHashMap<ShardID, Storage<T>> storages = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<ShardID, Storage<T>> storages = new ConcurrentHashMap<>();
 
-   @Override
-   public Storage<T> getOrCreate( ShardID shard, Function<ShardID, Storage<T>> cons ) {
-      return storages.computeIfAbsent( shard, cons::apply );
-   }
+    @Override
+    public Storage<T> getOrCreate( ShardID shard, Function<ShardID, Storage<T>> cons ) {
+        return storages.computeIfAbsent( shard, cons::apply );
+    }
 
-   @Override
-   public Set<ShardID> shards() {
-      return storages.keySet();
-   }
+    @Override
+    public Set<ShardID> shards() {
+        return storages.keySet();
+    }
 
-   @Override
-   public Collection<Storage<T>> select() {
-      return storages.values();
-   }
+    @Override
+    public Collection<Storage<T>> select() {
+        return storages.values();
+    }
 
-   @Override
-   public boolean contains( ShardID shard ) {
-      return storages.containsKey( shard );
-   }
+    @Override
+    public boolean contains( ShardID shard ) {
+        return storages.containsKey( shard );
+    }
 
-   @Override
-   public void close() {
-      storages.values().forEach( Try.consume( Closeable::close ) );
-   }
+    @Override
+    public void close() {
+        storages.values().forEach( Try.consume( Closeable::close ) );
+    }
 }

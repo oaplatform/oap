@@ -24,32 +24,35 @@
 
 package oap.security.ws;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.security.acl.User2;
+import oap.storage.Storage;
 import oap.util.Stream;
 import oap.ws.security.PasswordHasher;
 import org.joda.time.DateTimeUtils;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
  * Created by igor.petrenko on 22.12.2017.
  */
-public class AuthService2 {
+@Slf4j
+public class AuthService2 implements Runnable {
     private final List<AuthProvider<User2>> providers;
     private final PasswordHasher passwordHasher;
-    private final TokenCache tokens;
+    private final Storage<Token2> storage;
+    private final long expirationTime;
 
-    public AuthService2( List<AuthProvider<User2>> providers, PasswordHasher passwordHasher, int expirationTime ) {
+    public AuthService2( List<AuthProvider<User2>> providers,
+                         PasswordHasher passwordHasher,
+                         Storage<Token2> storage, long expirationTime ) {
         this.providers = providers;
         this.passwordHasher = passwordHasher;
-        this.tokens = new TokenCache( expirationTime );
+        this.storage = storage;
+        this.expirationTime = expirationTime;
     }
 
     public synchronized Optional<Token2> generateToken( String email, String password ) {
@@ -66,57 +69,50 @@ public class AuthService2 {
     }
 
     public synchronized Token2 generateToken( User2 user ) {
-        return tokens.getByUserId( user.getId(),
-            () -> new Token2( UUID.randomUUID().toString(), user.getId(), DateTimeUtils.currentTimeMillis() ) );
+        return getTokenByUserId( user.getId(),
+            () -> new Token2( null, user.getId(), DateTimeUtils.currentTimeMillis() ) );
 
     }
 
     public synchronized Optional<Token2> getToken( String tokenId ) {
-        return tokens.get( tokenId );
+        return storage.get( tokenId );
     }
 
     public void invalidateUser( String id ) {
-        tokens.invaidateByUserId( id );
+        getTokenByUserId( id ).ifPresent( token -> {
+                log.debug( "deleting token [{}]...", token.id );
+                storage.delete( token.id );
+            }
+        );
     }
 
-    @Slf4j
-    private static class TokenCache {
-        private final Cache<String, Token2> cache;
+    @Override
+    public void run() {
+        val now = DateTimeUtils.currentTimeMillis();
 
-        public TokenCache( long expirationTime ) {
-            this.cache = CacheBuilder.newBuilder()
-                .expireAfterAccess( expirationTime, TimeUnit.MILLISECONDS )
-                .build();
-        }
+        storage
+            .select()
+            .filter( t -> now - t.lastAccess > expirationTime )
+            .forEach( t -> storage.delete( t.id ) );
+    }
 
-        public Optional<Token2> get( String tokenId ) {
-            return Optional.ofNullable( cache.getIfPresent( tokenId ) );
-        }
+    private Optional<Token2> getTokenByUserId( String userId ) {
+        for( Token2 t : storage )
+            if( t.userId.equals( userId ) ) return Optional.of( t );
+        return Optional.empty();
+    }
 
-        public synchronized Optional<Token2> getByUserId( String userId ) {
-            for( Token2 t : cache.asMap().values() )
-                if( t.userId.equals( userId ) ) return Optional.of( t );
-            return Optional.empty();
-        }
+    private Token2 getTokenByUserId( String userId, Supplier<Token2> init ) {
+        Optional<Token2> byUserId = getTokenByUserId( userId );
+        Token2 token = byUserId.map( t -> {
+            log.debug( "updating existing token for user [{}]...", userId );
+            t.lastAccess = DateTimeUtils.currentTimeMillis();
+            return t;
+        } ).orElseGet( () -> {
+            log.debug( "generating new token for user [{}]...", userId );
+            return storage.store( init.get() );
+        } );
 
-        public synchronized Token2 getByUserId( String userId, Supplier<Token2> init ) {
-            Optional<Token2> byUserId = getByUserId( userId );
-            if( byUserId.isPresent() )
-                log.debug( "updating existing token for user [{}]...", userId );
-            Token2 token = byUserId.orElseGet( () -> {
-                log.debug( "generating new token for user [{}]...", userId );
-                return init.get();
-            } );
-            cache.put( token.id, token );
-            return token;
-        }
-
-        public synchronized void invaidateByUserId( String userId ) {
-            getByUserId( userId ).ifPresent( token -> {
-                    log.debug( "deleting token [{}]...", token.id );
-                    cache.invalidate( token.id );
-                }
-            );
-        }
+        return token;
     }
 }

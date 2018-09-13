@@ -103,14 +103,14 @@ public class HttpAsserts {
 
         public HttpAssertion hasCode( int code ) {
             assertThat( response.code )
-                .as( "check http code (code = %s, reasonPhrase = %s, body = %s)", response.code, response.reasonPhrase, response.contentString )
+                .as( "check http code (code = %s, reasonPhrase = %s, body = %s)", response.code, response.reasonPhrase, response.contentString() )
                 .isEqualTo( code );
             return this;
         }
 
         public JsonAsserts.JsonAssertion isJson() {
             hasContentType( ContentType.APPLICATION_JSON );
-            return assertJson( response.contentString.orElse( null ) );
+            return assertJson( response.contentString() );
         }
 
         public HttpAssertion isJson( String json ) {
@@ -132,7 +132,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion hasBody( String body ) {
-            assertString( response.contentString.orElse( null ) ).isEqualTo( body );
+            assertString( response.contentString() ).isEqualTo( body );
             return this;
         }
 

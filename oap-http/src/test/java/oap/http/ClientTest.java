@@ -27,11 +27,13 @@ package oap.http;
 import lombok.extern.slf4j.Slf4j;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
+import org.apache.http.entity.ContentType;
 import org.mockserver.integration.ClientAndServer;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,6 +50,7 @@ import static org.mockserver.model.HttpResponse.response;
 public class ClientTest extends AbstractTest {
     private static final int PORT = Env.port( ClientTest.class.toString() );
     private ClientAndServer mockServer;
+    private Client.Response response;
 
     @BeforeMethod
     @Override
@@ -55,6 +58,7 @@ public class ClientTest extends AbstractTest {
         super.beforeMethod();
 
         mockServer = startClientAndServer( PORT );
+        response = null;
     }
 
     @AfterMethod
@@ -113,5 +117,26 @@ public class ClientTest extends AbstractTest {
         assertFile( download.get() ).exists().hasSize( 5 );
         assertFile( download.get() ).hasExtension( "gz" );
         assertThat( progress.get() ).isEqualTo( 100 );
+    }
+
+    @Test
+    public void testPostOutputStream() throws IOException, InterruptedException {
+        mockServer.when( request()
+                .withMethod( "POST" )
+                .withPath( "/test" )
+                .withBody( "test\ntest1" ),
+            once()
+        ).respond( response().withStatusCode( HTTP_OK ).withBody( "ok" ) );
+
+        response = Client.DEFAULT.post( "http://localhost:" + PORT + "/test", os -> {
+            os.write( "test".getBytes() );
+            os.write( '\n' );
+            os.write( "test1".getBytes() );
+
+        }, ContentType.TEXT_PLAIN );
+
+        assertThat( response ).isNotNull();
+        assertThat( response.contentString() ).isEqualTo( "ok" );
+
     }
 }

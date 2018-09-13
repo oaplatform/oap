@@ -175,7 +175,7 @@ public class WebServicesTest extends AbstractWebServicesTest {
                 APPLICATION_JSON, Maps.of( Pair.__( "Content-Encoding", "gzip" ) ) );
 
         assertThat( response.code ).isEqualTo( 200 );
-        assertThat( response.contentString.get() ).isEqualTo( "{\"i\":1,\"s\":\"sss\"}" );
+        assertThat( response.contentString() ).isEqualTo( "{\"i\":1,\"s\":\"sss\"}" );
     }
 
     static class TestHandler implements Handler {

@@ -28,6 +28,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.media.FFProbeXmlToVastConverter;
 import oap.media.Media;
+import oap.media.MediaContext;
 import oap.media.MediaInfo;
 import oap.media.MediaProcessing;
 import oap.media.MediaUtils;
@@ -55,7 +56,7 @@ public class VastMediaProcessing implements MediaProcessing {
 
     @Override
     @SneakyThrows
-    public Media process( Media media, MediaInfo mediaInfo ) {
+    public Media process( Media media, MediaInfo mediaInfo, MediaContext mediaContext ) {
         log.debug( "ffprobe {}...", media.path );
         final ProcessBuilder builder = new ProcessBuilder();
         builder.redirectErrorStream( true );

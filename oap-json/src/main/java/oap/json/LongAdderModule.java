@@ -26,7 +26,6 @@ package oap.json;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.BeanDescription;
 import com.fasterxml.jackson.databind.DeserializationConfig;
@@ -47,9 +46,9 @@ import oap.util.Numbers;
 import java.io.IOException;
 import java.util.concurrent.atomic.LongAdder;
 
-public class LongAdderModule {
+class LongAdderModule {
     public static class LongAdderSerializer extends StdScalarSerializer<LongAdder> {
-        protected LongAdderSerializer() {
+        private LongAdderSerializer() {
             super( LongAdder.class );
         }
 
@@ -74,15 +73,15 @@ public class LongAdderModule {
     static class LongAdderDeserializer extends StdScalarDeserializer<LongAdder> {
         private NumberDeserializers.LongDeserializer deserializer;
 
-        public LongAdderDeserializer() {
+        private LongAdderDeserializer() {
             super( LongAdder.class );
             deserializer = new NumberDeserializers.LongDeserializer( long.class, null );
         }
 
         @Override
-        public LongAdder deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException, JsonProcessingException {
-            final long l = p.hasToken( JsonToken.VALUE_STRING ) ?
-                Numbers.parseLongWithUnits( p.getText().trim() )
+        public LongAdder deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
+            final long l = p.hasToken( JsonToken.VALUE_STRING )
+                ? Numbers.parseLongWithUnits( p.getText().trim() )
                 : deserializer.deserialize( p, ctxt );
             return new oap.concurrent.LongAdder( l );
         }

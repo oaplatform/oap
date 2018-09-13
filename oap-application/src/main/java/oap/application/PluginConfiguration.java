@@ -21,17 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package oap.application;
 
-package oap.storage;
+import oap.util.Strings;
 
-import java.util.List;
+import java.net.URL;
 
-public interface ReplicationMaster<T> {
-    List<Metadata<T>> updatedSince( long time );
-
-    default List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
-        return updatedSince( time );
+public class PluginConfiguration extends Configuration<Plugin> {
+    public PluginConfiguration() {
+        super( Plugin.class, "oap-plugin" );
     }
 
-    List<String> ids();
+    public Plugin fromHocon( URL hocon ) {
+        return fromHocon( Strings.readString( hocon ) );
+    }
 }

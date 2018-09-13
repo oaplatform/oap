@@ -57,7 +57,7 @@ public class OapService {
         try {
             log.info( "config = {}, config-directory = {}", config, confd );
 
-            kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
+            kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath(), Plugin.CONFIGURATION.urlsFromClassPath() );
             kernel.start( config, confd );
 
             val factory = ( ConfigurableListableBeanFactory ) applicationContext.getAutowireCapableBeanFactory();

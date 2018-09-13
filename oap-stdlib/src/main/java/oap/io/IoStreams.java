@@ -31,6 +31,7 @@ import oap.archive.Archiver;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
 import oap.util.Strings;
+import oap.util.Throwables;
 import oap.util.Try;
 import org.apache.commons.io.IOUtils;
 
@@ -44,6 +45,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -105,7 +107,7 @@ public class IoStreams {
     public static Stream<String> lines( InputStream stream, boolean autoClose ) {
         BufferedReader bufferedReader = new BufferedReader( new InputStreamReader( stream, StandardCharsets.UTF_8 ) );
         java.util.stream.Stream<String> ustream = bufferedReader.lines();
-        if(autoClose) {
+        if( autoClose ) {
             ustream = ustream.onClose( Try.run( bufferedReader::close ) );
         }
 
@@ -292,6 +294,21 @@ public class IoStreams {
         public Path resolve( Path path ) {
             String s = path.toString();
             return Paths.get( s.substring( 0, s.length() - from( path ).extension.length() ) + extension );
+        }
+    }
+
+    @FunctionalInterface
+    public interface ThrowingIOExceptionConsumer<T> {
+        void accept( T t ) throws IOException;
+
+        default Consumer<T> asConsumer() {
+            return t -> {
+                try {
+                    this.accept( t );
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                }
+            };
         }
     }
 }

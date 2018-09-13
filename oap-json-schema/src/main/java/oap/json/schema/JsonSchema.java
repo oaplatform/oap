@@ -65,7 +65,7 @@ public class JsonSchema {
 
 
     JsonSchema( String schemaJson ) {
-        this( schemaJson, ResourceStorage.INSTANCE );
+        this( schemaJson, ResourceSchemaStorage.INSTANCE );
     }
 
     JsonSchema( String schemaJson, SchemaStorage storage ) {
@@ -79,7 +79,7 @@ public class JsonSchema {
     }
 
     public static JsonSchema schema( String schemaPath ) {
-        return schemas.computeIfAbsent( schemaPath, u -> schemaFromString( ResourceStorage.INSTANCE.get( u ) ) );
+        return schemas.computeIfAbsent( schemaPath, u -> schemaFromString( ResourceSchemaStorage.INSTANCE.get( u ) ) );
     }
 
     public static JsonSchema schemaFromString( String schemaJson, SchemaStorage storage ) {

@@ -28,5 +28,5 @@ package oap.media;
  * Created by igor.petrenko on 10.02.2017.
  */
 public interface MediaProcessing {
-    Media process( Media media, MediaInfo mediaInfo );
+    Media process( Media media, MediaInfo mediaInfo, MediaContext mediaContext );
 }

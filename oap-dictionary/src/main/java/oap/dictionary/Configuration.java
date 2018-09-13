@@ -53,7 +53,10 @@ public abstract class Configuration {
     protected final Map<Integer, DictionaryRoot> mappings;
     private int latestVersion = -1;
 
-    public Configuration( Path mappingLocation, String defaultPath, String resourceLocation, int maxVersionsToLoad ) {
+    public Configuration(
+        Path mappingLocation, String defaultPath,
+        String resourceLocation, int maxVersionsToLoad,
+        DictionaryParser.IdStrategy idStrategy ) {
 
         List<URL> logConfigs = Collections.emptyList();
         if( mappingLocation != null ) {
@@ -91,7 +94,7 @@ public abstract class Configuration {
         long minimumVersion = versionedDics.stream().mapToLong( p -> p._1 ).max().orElse( maxVersionsToLoad ) - maxVersionsToLoad;
 
         mappings = versionedDics.stream().filter( lc -> lc._1 > minimumVersion )
-            .map( this::parseDictionary )
+            .map( p -> parseDictionary( p, idStrategy ) )
             .collect( toMap() );
 
         //mappings.values().stream().forEach(this::validateSupportedTypes);
@@ -107,9 +110,10 @@ public abstract class Configuration {
         latestVersion = -1;
     }
 
-    private Pair<Integer, DictionaryRoot> parseDictionary( Pair<Integer, URL> versionAndPath ) {
+    private Pair<Integer, DictionaryRoot> parseDictionary( Pair<Integer, URL> versionAndPath,
+                                                           DictionaryParser.IdStrategy idStrategy ) {
         log.debug( "loading {}", versionAndPath );
-        final DictionaryRoot dictionaryRoot = DictionaryParser.parse( versionAndPath._2 );
+        final DictionaryRoot dictionaryRoot = DictionaryParser.parse( versionAndPath._2, idStrategy );
         if( !Objects.equals( dictionaryRoot.name, FilenameUtils.getBaseName( versionAndPath._2.getPath() ) ) ) {
             throw new IllegalArgumentException( versionAndPath._2 + " name is wrong" );
         }
@@ -138,7 +142,7 @@ public abstract class Configuration {
 
     public Dictionary getDictionary( int version ) {
         final DictionaryRoot d = mappings.get( version );
-        if( d == null ) throw new RuntimeException( "No log-config found!!!" );
+        if( d == null ) throw new RuntimeException( "[version:" + version + "] No log-config found!!!" );
         return d;
     }
 

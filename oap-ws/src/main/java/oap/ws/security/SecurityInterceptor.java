@@ -96,7 +96,6 @@ public class SecurityInterceptor implements Interceptor {
 
                 user = token.user;
 
-                session.set( SESSION_TOKEN, token.id );
                 session.set( "user", user );
                 session.set( USER_ID, user.getEmail() );
 

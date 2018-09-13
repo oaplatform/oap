@@ -24,11 +24,11 @@
 
 package oap.security.acl;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.val;
 import oap.storage.IdentifierBuilder;
 import oap.storage.MemoryStorage;
 import oap.storage.Storage;
+import oap.util.Maps;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -45,17 +45,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 public class DefaultAclSchemaTest {
     private Storage<SecurityContainer<TestAclObject>> storage;
+    private Storage<AclSchemaContainer> schemaStorage;
     private DefaultAclSchema schema;
 
     @BeforeMethod
     public void beforeMethod() {
         storage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), NoLock );
+        schemaStorage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), NoLock );
 
         schema = service( new DefaultAclSchema(
-            ImmutableMap.of( "root", new MemoryRootStorage() ), "acl/child-test-acl-schema.conf",
-            service( new DefaultAclSchema( ImmutableMap.of(
-                "organization", storage,
-                "user", storage ), "acl/parent-test-acl-schema.conf", null ) ) ) );
+            "local", schemaStorage,
+            Maps.of2( "root", new MemoryRootStorage() ), "acl/child-test-acl-schema.conf",
+            service( new DefaultAclSchema(
+                "remote", schemaStorage,
+                Maps.of2( "organization", storage,
+                    "user", storage ), "acl/parent-test-acl-schema.conf", null ) ) ) );
     }
 
     @Test

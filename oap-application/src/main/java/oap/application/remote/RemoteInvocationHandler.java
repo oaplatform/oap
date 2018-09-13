@@ -25,10 +25,10 @@ package oap.application.remote;
 
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.http.Client;
 import oap.util.Result;
 
-import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -41,10 +41,11 @@ import java.util.List;
 import static java.net.HttpURLConnection.HTTP_OK;
 
 @Slf4j
-public class RemoteInvocationHandler implements InvocationHandler {
+public final class RemoteInvocationHandler implements InvocationHandler {
 
     private final URI uri;
     private final FST fst;
+    private final int retry;
     private final String service;
     private final Client client;
     private final long timeout;
@@ -54,11 +55,13 @@ public class RemoteInvocationHandler implements InvocationHandler {
                                      Path certificateLocation,
                                      String certificatePassword,
                                      long timeout,
-                                     FST.SerializationMethod serialization ) {
+                                     FST.SerializationMethod serialization,
+                                     int retry ) {
         this.uri = uri;
         this.service = service;
         this.timeout = timeout;
         this.fst = new FST( serialization );
+        this.retry = retry;
         this.client = Client.custom( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
             .onTimeout( client -> {
                 log.error( "timeout invoking {}", uri );
@@ -71,15 +74,16 @@ public class RemoteInvocationHandler implements InvocationHandler {
     }
 
     public static Object proxy( RemoteLocation remote, Class<?> clazz ) {
-        return proxy( remote.url, remote.name, clazz, remote.certificateLocation, remote.certificatePassword, remote.timeout, remote.serialization );
+        return proxy( remote.url, remote.name, clazz, remote.certificateLocation,
+            remote.certificatePassword, remote.timeout, remote.serialization, remote.retry );
     }
 
-    public static Object proxy( URI uri, String service, Class<?> clazz,
-                                Path certificateLocation, String certificatePassword,
-                                long timeout, FST.SerializationMethod serialization ) {
+    private static Object proxy( URI uri, String service, Class<?> clazz,
+                                 Path certificateLocation, String certificatePassword,
+                                 long timeout, FST.SerializationMethod serialization, int retry ) {
         log.debug( "remote interface for {} at {} wich certs {}", service, uri, certificateLocation );
         return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[] { clazz },
-            new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout, serialization ) );
+            new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout, serialization, retry ) );
     }
 
     @Override
@@ -96,28 +100,48 @@ public class RemoteInvocationHandler implements InvocationHandler {
                 parameters[i].getType(), args[i] ) );
         }
 
-        Preconditions.checkNotNull( uri, "uri == null" );
+        Preconditions.checkNotNull( uri, "uri == null, service name = " + service + ", method name = " + method.getName() );
 
-        try {
-            final byte[] content = fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) );
-            return client.post( uri.toString(),
-                content,
-                timeout )
-                .<Result<Object, Throwable>>map( response -> {
-                    if( response.code == HTTP_OK ) {
-                        return response.content
-                            .map( b -> ( Result<Object, Throwable> ) fst.conf.asObject( b ) )
-                            .orElse( Result.failure( new RemoteInvocationException( "no content " + uri ) ) );
-                    } else
-                        return Result.failure( new RemoteInvocationException( response.code + " " + response.reasonPhrase
-                            + "\n" + response.contentString ) );
-                } )
-                .orElseThrow( () -> new RemoteInvocationException( "invocation failed " + uri ) )
-                .orElseThrow( t -> t );
-        } catch( IOException e ) {
-            log.error( "remote service uri = {}, service name = {}, method name = {}", uri, service, method.getName() );
-            throw e;
+        final byte[] content = fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) );
+
+        Throwable retException = null;
+
+        for( int i = 0; i < retry; i++ ) {
+            if( retException != null )
+                log.trace( retException.getMessage(), retException );
+            try {
+                val response = client.post( uri.toString(), content, timeout ).orElse( null );
+                if( response == null ) continue;
+
+                if( response.code == HTTP_OK ) {
+                    val b = response.content();
+                    if( b != null ) {
+                        val res = ( Result<Object, Throwable> ) fst.conf.asObject( b );
+
+                        if( res.isSuccess() ) return res.successValue;
+
+                        retException = res.failureValue;
+                        continue;
+                    }
+
+                    retException = new RemoteInvocationException( "remote service uri = " + uri
+                        + ", service name = " + service
+                        + ", method name = " + method.getName() + ": no content" );
+                } else
+                    retException = new RemoteInvocationException( "remote service uri = " + uri
+                        + ", service name = " + service
+                        + ", method name = " + method.getName()
+                        + ": response code = " + response.code
+                        + ", phrase = " + response.reasonPhrase
+                        + "\n content = " + response.contentString() );
+            } catch( Exception e ) {
+                retException = e;
+            }
+
+            log.trace( "retrying... remote service uri = {}, service name = {}, method name = {}", uri, service, method.getName() );
         }
+
+        throw retException != null ? retException : new RemoteInvocationException( "invocation failed " + uri );
     }
 
     @Override

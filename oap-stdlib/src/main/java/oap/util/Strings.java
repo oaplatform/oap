@@ -168,6 +168,12 @@ public final class Strings {
         return joiner.toString();
     }
 
+    public static String join( String delimiter, Collection<?> items, String prefix, String suffix, String quotes ) {
+        StringJoiner joiner = new StringJoiner( delimiter, prefix, suffix );
+        items.forEach( e -> joiner.add( quotes + e + quotes ) );
+        return joiner.toString();
+    }
+
     public static void join( StringBuilder builder, Collection<?> items ) {
         join( builder, ",", items );
     }

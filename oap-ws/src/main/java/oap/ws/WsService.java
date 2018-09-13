@@ -73,13 +73,13 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @Slf4j
 public class WsService implements Handler {
-    private Object impl;
     private final boolean sessionAware;
     private final Reflection reflection;
     private final WsResponse defaultResponse;
     private final HashMap<Class<?>, Integer> exceptionToHttpCode = new HashMap<>();
     private final SessionManager sessionManager;
     private final List<Interceptor> interceptors;
+    private Object impl;
     private Map<String, Pattern> compiledPaths = new HashMap<>();
 
     public WsService( Object impl, boolean sessionAware,
@@ -161,8 +161,10 @@ public class WsService implements Handler {
             } )
                 .orElse( null );
 
-            if( method == null ) response.respond( NOT_FOUND );
-            else {
+            if( method == null ) {
+                log.trace( "[{}] not found", request.requestLine );
+                response.respond( NOT_FOUND );
+            } else {
                 Name name = Metrics
                     .name( "rest_timer" )
                     .tag( "service", service() )
@@ -171,9 +173,13 @@ public class WsService implements Handler {
                 if( !sessionAware ) {
                     handleInternal( request, response, method, name, null );
                 } else {
-                    String cookieId = request.cookie( "SID" ).orElse( null );
+                    String cookieId = request.cookie( SessionManager.COOKIE_ID ).orElse( null );
+                    val authToken = Interceptor.getSessionToken( request );
                     Session session;
-                    if( cookieId != null && ( session = sessionManager.getSessionById( cookieId ) ) != null ) {
+                    if( cookieId != null
+                        && ( session = sessionManager.getSessionById( cookieId ) ) != null
+                        && Objects.equals( authToken, session.get( Interceptor.AUTHORIZATION ).orElse( null ) )
+                        ) {
                         log.debug( "{}: Valid SID [{}] found in cookie", service(), cookieId );
 
                         handleInternal( request, response, method, name, __( cookieId, session ) );
@@ -183,6 +189,7 @@ public class WsService implements Handler {
                         log.debug( "{}: Creating new session with SID [{}]", service(), cookieId );
 
                         session = new Session();
+                        if( authToken != null ) session.set( Interceptor.AUTHORIZATION, authToken );
                         sessionManager.put( cookieId, session );
 
                         handleInternal( request, response, method, name, __( cookieId, session ) );
@@ -268,6 +275,7 @@ public class WsService implements Handler {
                     .withSID( session._1 )
                     .withPath( sessionManager.cookiePath )
                     .withExpires( DateTime.now().plusMinutes( sessionManager.cookieExpiration ) )
+                    .withDomain( sessionManager.cookieDomain )
                     .withDomain( sessionManager.cookieDomain )
                     .build()
                     : null;

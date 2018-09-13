@@ -29,7 +29,7 @@ import org.testng.Assert;
 
 import java.util.List;
 
-import static oap.json.schema.ResourceStorage.INSTANCE;
+import static oap.json.schema.ResourceSchemaStorage.INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class AbstractSchemaTest extends AbstractTest {
