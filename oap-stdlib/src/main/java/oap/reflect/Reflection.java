@@ -55,7 +55,6 @@ public class Reflection extends Annotated<Class<?>> {
     public final LinkedHashMap<String, Field> fields = new LinkedHashMap<>();
     private final Coercions coercions;
     private final TypeToken<?> typeToken;
-    public Class<?> underlying;
     public List<Method> methods;
     public List<Reflection> typeParameters;
     public List<Constructor> constructors;
@@ -102,7 +101,6 @@ public class Reflection extends Annotated<Class<?>> {
                         .sorted( Comparator.comparingInt( Constructor::parameterCount ).reversed() )
                         .toList();
 
-                    this.underlying = typeToken.getRawType();
                     this.typeParameters = Lists.map( typeToken.getRawType().getTypeParameters(), this::resolve );
                 }
             }
