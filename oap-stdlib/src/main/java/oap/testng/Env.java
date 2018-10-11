@@ -122,6 +122,11 @@ public class Env {
         } );
     }
 
+    public static String getEnvOrDefault( String name, String defaultValue ) {
+        val res = System.getenv( name );
+        return res != null ? res : defaultValue;
+    }
+
     public static void resetPorts() {
         System.out.println( "ENV::ports = []" );
         ports.clear();

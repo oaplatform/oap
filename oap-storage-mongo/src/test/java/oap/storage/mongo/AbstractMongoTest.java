@@ -45,7 +45,7 @@ public class AbstractMongoTest extends AbstractTest {
 
         dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
-        mongoClient = new MongoClient( "localhost", 27017, dbName, Migration.NONE );
+        mongoClient = new MongoClient( Env.getEnvOrDefault( "MONGO_HOST", "localhost" ), 27017, dbName, Migration.NONE );
         mongoClient.database.drop();
         log.debug( "drop database {}", mongoClient.database.getName() );
     }
