@@ -41,13 +41,13 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-security-backend</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-storage-mongo</artifactId>
-            <version>${parent.version}</version>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>
