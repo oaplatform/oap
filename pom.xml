@@ -76,10 +76,10 @@
     </repositories>
 
     <distributionManagement>
-        <snapshotRepository>
+        <repository>
             <id>mvn</id>
             <url>http://localhost:8081/nexus/content/repositories/snapshots</url>
-        </snapshotRepository>
+        </repository>
     </distributionManagement>
 
     <properties>
@@ -181,7 +181,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <serverId>mvn</serverId>
+                    <serverId>nexus</serverId>
                     <nexusUrl>http://localhost:8081/nexus/</nexusUrl>
                     <skipStaging>true</skipStaging>
                 </configuration>
