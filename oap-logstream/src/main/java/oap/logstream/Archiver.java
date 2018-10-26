@@ -24,6 +24,7 @@
 package oap.logstream;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams.Encoding;
 import oap.metrics.Metrics;
@@ -41,30 +42,32 @@ public abstract class Archiver implements Runnable {
     public final Encoding encoding;
     public final String mask;
     public final Path corruptedDirectory;
+    private final Timestamp timestamp;
     protected int bufferSize = 1024 * 256 * 4 * 4;
 
 
-    protected Archiver( Path sourceDirectory, long safeInterval, String mask, Encoding encoding ) {
+    protected Archiver( Path sourceDirectory, long safeInterval, String mask, Encoding encoding, Timestamp timestamp ) {
         this.sourceDirectory = sourceDirectory;
         this.safeInterval = safeInterval;
         this.mask = mask;
         this.encoding = encoding;
         this.corruptedDirectory = sourceDirectory.resolve( CORRUPTED_DIRECTORY );
+        this.timestamp = timestamp;
     }
 
     @Override
     public void run() {
         log.debug( "let's start packing of {} in {}", mask, sourceDirectory );
-        String timestamp = Timestamp.format( DateTime.now() );
+        val timestampStr = timestamp.format( DateTime.now() );
 
-        log.debug( "current timestamp is {}", timestamp );
-        final long bucketStartTime = Timestamp.currentBucketStartMillis();
+        log.debug( "current timestamp is {}", timestampStr );
+        final long bucketStartTime = timestamp.currentBucketStartMillis();
         long elapsed = DateTimeUtils.currentTimeMillis() - bucketStartTime;
         if( elapsed < safeInterval )
             log.debug( "not safe to process yet ({}ms), some of the files could still be open, waiting...", elapsed );
         else for( Path path : Files.wildcard( sourceDirectory, mask ) ) {
             if( path.startsWith( corruptedDirectory ) ) continue;
-            Optionals.fork( Timestamp.parse( path ) )
+            Optionals.fork( timestamp.parse( path ) )
                 .ifAbsent( () -> log.error( "what a hell is that {}", path ) )
                 .ifPresent( dt -> {
                     if( dt.isBefore( bucketStartTime ) ) archive( path );

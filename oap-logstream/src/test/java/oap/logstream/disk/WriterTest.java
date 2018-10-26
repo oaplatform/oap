@@ -26,6 +26,7 @@ package oap.logstream.disk;
 
 import oap.io.Files;
 import oap.io.IoStreams.Encoding;
+import oap.logstream.Timestamp;
 import oap.testng.AbstractTest;
 import oap.util.Dates;
 import org.testng.annotations.DataProvider;
@@ -55,7 +56,7 @@ public class WriterTest extends AbstractTest {
             logs.resolve( "test/2015-10/10/file-2015-10-10-01-00.log.gz" ),
             PLAIN, "corrupted file" );
         String ext = ".log" + encoding.extension;
-        Writer writer = new Writer( logs, "test/file", ext, 10 );
+        Writer writer = new Writer( logs, "test/file", ext, 10, Timestamp.BPH_12 );
 
         writer.write( bytes, ( msg ) -> {} );
 
@@ -67,7 +68,7 @@ public class WriterTest extends AbstractTest {
 
         writer.close();
 
-        writer = new Writer( logs, "test/file", ext, 10 );
+        writer = new Writer( logs, "test/file", ext, 10, Timestamp.BPH_12 );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
         writer.write( bytes, ( msg ) -> {} );

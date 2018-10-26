@@ -36,6 +36,7 @@ import oap.io.Files;
 import oap.logstream.AvailabilityReport;
 import oap.logstream.LoggerBackend;
 import oap.logstream.LoggerException;
+import oap.logstream.Timestamp;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
 import oap.net.Inet;
@@ -46,7 +47,6 @@ import java.util.concurrent.TimeUnit;
 
 import static oap.logstream.AvailabilityReport.State.FAILED;
 import static oap.logstream.AvailabilityReport.State.OPERATIONAL;
-import static oap.logstream.Timestamp.BUCKETS_PER_HOUR;
 
 @Slf4j
 public class DiskLoggerBackend extends LoggerBackend {
@@ -56,6 +56,7 @@ public class DiskLoggerBackend extends LoggerBackend {
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
     private final Path logDirectory;
     private final String ext;
+    private final Timestamp timestamp;
     private final int bufferSize;
     private final LoadingCache<String, Writer> writers;
     private final Name writersMetric;
@@ -64,19 +65,20 @@ public class DiskLoggerBackend extends LoggerBackend {
     protected String prefix = "";
     private boolean closed;
 
-    public DiskLoggerBackend( Path logDirectory, String ext, int bufferSize ) {
+    public DiskLoggerBackend( Path logDirectory, String ext, Timestamp timestamp, int bufferSize ) {
         this.logDirectory = logDirectory;
         this.ext = ext;
+        this.timestamp = timestamp;
         this.bufferSize = bufferSize;
         this.writers = CacheBuilder.newBuilder()
-            .expireAfterAccess( 60 / BUCKETS_PER_HOUR * 3, TimeUnit.MINUTES )
+            .expireAfterAccess( 60 / timestamp.bucketsPerHour * 3, TimeUnit.MINUTES )
             .removalListener( notification -> Closeables.close( ( Writer ) notification.getValue() ) )
             .build( new CacheLoader<String, Writer>() {
                 @Override
                 public Writer load( String fullFileName ) throws Exception {
                     return new Writer( logDirectory,
                         StringUtils.replace( prefix, "${HOST}", Inet.hostname() ) + fullFileName,
-                        ext, bufferSize );
+                        ext, bufferSize, timestamp );
                 }
             } );
         this.writersMetric = Metrics.measureGauge(
@@ -123,7 +125,7 @@ public class DiskLoggerBackend extends LoggerBackend {
             .add( "path", logDirectory )
             .add( "ext", ext )
             .add( "buffer", bufferSize )
-            .add( "bucketsPerHour", BUCKETS_PER_HOUR )
+            .add( "bucketsPerHour", timestamp.bucketsPerHour )
             .add( "hostPrefix", useClientHostPrefix )
             .add( "writers", writers.size() )
             .toString();

@@ -66,7 +66,7 @@ public class LoggerTest extends AbstractTest {
 
         String host = useClientHostPrefix ? HOSTNAME + "/" : "";
         String content = "12345678";
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( tmpPath( "logs" ), ext, DEFAULT_BUFFER ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( tmpPath( "logs" ), ext, Timestamp.BPH_12, DEFAULT_BUFFER ) ) {
             backend.useClientHostPrefix = useClientHostPrefix;
             Logger logger = new Logger( backend );
             logger.log( "a", content );
@@ -89,7 +89,7 @@ public class LoggerTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "12345678";
 
-        try( val serverBackend = new DiskLoggerBackend( tmpPath( "logs" ), ".log", DEFAULT_BUFFER ) ) {
+        try( val serverBackend = new DiskLoggerBackend( tmpPath( "logs" ), ".log", Timestamp.BPH_12, DEFAULT_BUFFER ) ) {
             SocketLoggerServer server = new SocketLoggerServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
             try( val clientBackend = new SocketLoggerBackend( ( byte ) 1, "localhost", Env.port( "net" ),
                 tmpPath( "buffers" ), 50 ) ) {

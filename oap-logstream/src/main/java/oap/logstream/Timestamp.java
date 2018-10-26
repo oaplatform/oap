@@ -45,27 +45,14 @@ public class Timestamp {
         .forPattern( "yyyy-MM/dd" )
         .withZoneUTC();
     public static final char SEPARATOR_CHAR = '/';
-    public static final int MINUTES_PER_BUCKET = 5;
-    public static final int BUCKETS_PER_HOUR = 60 / MINUTES_PER_BUCKET;
 
-    public static Optional<DateTime> parse( Path path ) {
-        final Matcher matcher = FILE_NAME_WITH_TIMESTAMP.matcher( path.getFileName().toString() );
-        if( matcher.find() ) {
-            final String timestamp = matcher.group( 1 );
-            return Optional.of( parse( timestamp ) );
-        } else {
-            return Optional.empty();
-        }
-    }
+    public static final Timestamp BPH_12 = new Timestamp( 60 / 5 );
+    public static final Timestamp BPH_6 = new Timestamp( 60 / 10 );
+    public static final Timestamp BPH_1 = new Timestamp( 60 / 60 );
+    public final int bucketsPerHour;
 
-    public static String format( DateTime date ) {
-        int bucket = currentBucket( date );
-        return FILE_FORMATTER.print( date ) + "-" + ( bucket > 9 ? bucket : "0" + bucket );
-    }
-
-    public static DateTime parse( String timestamp ) {
-        return FILE_FORMATTER.parseDateTime( timestamp.substring( 0, 13 ) )
-            .plusMinutes( Integer.parseInt( timestamp.substring( 14, 16 ) ) * 60 / BUCKETS_PER_HOUR );
+    private Timestamp( int bucketsPerHour ) {
+        this.bucketsPerHour = bucketsPerHour;
     }
 
     @Deprecated
@@ -78,45 +65,12 @@ public class Timestamp {
         }
     }
 
-    private static int currentBucket( DateTime date ) {
-        return ( int ) Math.floor( date.getMinuteOfHour() / ( 60d / BUCKETS_PER_HOUR ) );
-    }
-
-    public static long currentBucketStartMillis() {
-        DateTime date = DateTime.now();
-        return date.withMinuteOfHour( 60 / BUCKETS_PER_HOUR * currentBucket( date ) )
-            .withSecondOfMinute( 0 )
-            .withMillisOfSecond( 0 )
-            .getMillis();
-    }
-
     public static String directoryName( String timestamp ) {
         final String yyyy = timestamp.substring( 0, 4 );
         final String MM = timestamp.substring( 5, 7 );
         final String dd = timestamp.substring( 8, 10 );
 
         return yyyy + "-" + MM + "/" + dd;
-    }
-
-    public static Stream<String> timestampsBeforeNow( int back ) {
-        return timestampsBefore( DateTime.now(), back );
-    }
-
-    public static Stream<String> timestampsBefore( DateTime since, int back ) {
-        return Stream.of( IntStream.rangeClosed( 1, back )
-            .mapToObj( b -> format( since.minusMinutes( ( back - b ) * 60 / BUCKETS_PER_HOUR ) ) )
-        );
-    }
-
-    public static Stream<String> timestampsAfter( DateTime since, int fore ) {
-        return Stream.of( IntStream.range( 0, fore )
-            .mapToObj( b -> format( since.plusMinutes( b * 60 / BUCKETS_PER_HOUR ) ) )
-        );
-    }
-
-    public static Stream<String> timestampsBeforeNow( DateTime since ) {
-        return Stream.of( since, AbstractInstant::isBeforeNow, t -> t.plusMinutes( 60 / BUCKETS_PER_HOUR ) )
-            .map( Timestamp::format );
     }
 
     public static String path( String directory, String timestamp, String filename, String ext ) {
@@ -128,7 +82,60 @@ public class Timestamp {
             ? ext : "." + ext );
     }
 
-    public static String path( String directory, DateTime date, String filename, String ext ) {
+    public Optional<DateTime> parse( Path path ) {
+        final Matcher matcher = FILE_NAME_WITH_TIMESTAMP.matcher( path.getFileName().toString() );
+        if( matcher.find() ) {
+            final String timestamp = matcher.group( 1 );
+            return Optional.of( parse( timestamp ) );
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    public String format( DateTime date ) {
+        int bucket = currentBucket( date );
+        return FILE_FORMATTER.print( date ) + "-" + ( bucket > 9 ? bucket : "0" + bucket );
+    }
+
+    public DateTime parse( String timestamp ) {
+        return FILE_FORMATTER.parseDateTime( timestamp.substring( 0, 13 ) )
+            .plusMinutes( Integer.parseInt( timestamp.substring( 14, 16 ) ) * 60 / bucketsPerHour );
+    }
+
+    private int currentBucket( DateTime date ) {
+        return ( int ) Math.floor( date.getMinuteOfHour() / ( 60d / bucketsPerHour ) );
+    }
+
+    public long currentBucketStartMillis() {
+        DateTime date = DateTime.now();
+        return date.withMinuteOfHour( 60 / bucketsPerHour * currentBucket( date ) )
+            .withSecondOfMinute( 0 )
+            .withMillisOfSecond( 0 )
+            .getMillis();
+    }
+
+    public Stream<String> timestampsBeforeNow( int back ) {
+        return timestampsBefore( DateTime.now(), back );
+    }
+
+    public Stream<String> timestampsBefore( DateTime since, int back ) {
+        return Stream.of( IntStream.rangeClosed( 1, back )
+            .mapToObj( b -> format( since.minusMinutes( ( back - b ) * 60 / bucketsPerHour ) ) )
+        );
+    }
+
+    public Stream<String> timestampsAfter( DateTime since, int fore ) {
+        return Stream.of( IntStream.range( 0, fore )
+            .mapToObj( b -> format( since.plusMinutes( b * 60 / bucketsPerHour ) ) )
+        );
+    }
+
+    public Stream<String> timestampsBeforeNow( DateTime since ) {
+        return Stream.of( since, AbstractInstant::isBeforeNow, t -> t.plusMinutes( 60 / bucketsPerHour ) )
+            .map( s -> format( s ) );
+    }
+
+    public String path( String directory, DateTime date, String filename, String ext ) {
         return path( directory, format( date ), filename, ext );
     }
 }

@@ -82,7 +82,7 @@ public class ArchiverTest extends AbstractTest {
         String corrupted = "a/corrupted-2015-10-10-11-10.txt.gz";
         Files.writeString( logs.resolve( corrupted ), PLAIN, "data" );
 
-        Archiver archiver = new CopyArchiver( logs, archives, 10000, "**/*", destEncoding );
+        Archiver archiver = new CopyArchiver( logs, archives, 10000, "**/*", destEncoding, Timestamp.BPH_12 );
         archiver.run();
 
         for( String file : files )

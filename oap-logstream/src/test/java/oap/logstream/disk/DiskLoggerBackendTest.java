@@ -24,6 +24,7 @@
 
 package oap.logstream.disk;
 
+import oap.logstream.Timestamp;
 import oap.net.Inet;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
@@ -37,7 +38,7 @@ import static org.testng.Assert.assertTrue;
 public class DiskLoggerBackendTest extends AbstractTest {
     @Test
     public void spaceAvailable() {
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( Env.tmpPath( "logs" ), "log", 4000 ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( Env.tmpPath( "logs" ), "log", Timestamp.BPH_12, 4000 ) ) {
             assertTrue( backend.isLoggingAvailable() );
             backend.requiredFreeSpace *= 1000;
             assertFalse( backend.isLoggingAvailable() );
@@ -48,8 +49,8 @@ public class DiskLoggerBackendTest extends AbstractTest {
 
     @Test
     public void testPrefix() {
-        Dates.setTimeFixed(2017, 8, 22, 12, 51);
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( Env.tmpPath( "logs" ), "log", 4000 ) ) {
+        Dates.setTimeFixed( 2017, 8, 22, 12, 51 );
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( Env.tmpPath( "logs" ), "log", Timestamp.BPH_12, 4000 ) ) {
             backend.prefix = "${HOST}--";
             backend.useClientHostPrefix = false;
 

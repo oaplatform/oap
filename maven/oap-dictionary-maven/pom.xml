@@ -36,7 +36,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap-maven-plugin</artifactId>
-        <version>3.13.19</version>
+        <version>3.14.0</version>
     </parent>
 
     <dependencies>

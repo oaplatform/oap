@@ -43,9 +43,10 @@ public class CopyArchiver extends Archiver {
                          Path destinationDirectory,
                          long safeInterval,
                          String mask,
-                         IoStreams.Encoding encoding ) {
+                         IoStreams.Encoding encoding,
+                         Timestamp timestamp ) {
 
-        super( sourceDirectory, safeInterval, mask, encoding );
+        super( sourceDirectory, safeInterval, mask, encoding, timestamp );
         this.destinationDirectory = destinationDirectory;
     }
 

@@ -51,17 +51,19 @@ public class Writer implements Closeable {
     private final String ext;
     private final Path logDirectory;
     private final String filename;
+    private final Timestamp timestamp;
     private int bufferSize;
     private CountingOutputStream out;
     private String lastPattern;
     private Scheduled refresher;
     private Stopwatch stopwatch = new Stopwatch();
 
-    public Writer( Path logDirectory, String filename, String ext, int bufferSize ) {
+    public Writer( Path logDirectory, String filename, String ext, int bufferSize, Timestamp timestamp ) {
         this.logDirectory = logDirectory;
         this.filename = filename;
         this.ext = ext;
         this.bufferSize = bufferSize;
+        this.timestamp = timestamp;
         this.lastPattern = currentPattern();
         this.refresher = Scheduler.scheduleWithFixedDelay( 10, SECONDS, this::refresh );
         log.debug( "spawning {}", this );
@@ -133,7 +135,7 @@ public class Writer implements Closeable {
     }
 
     private String currentPattern() {
-        return Timestamp.format( DateTime.now() );
+        return timestamp.format( DateTime.now() );
     }
 
     @Override
