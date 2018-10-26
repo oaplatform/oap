@@ -120,8 +120,8 @@ public class DefaultAclServiceTest {
         val role = roleStorage.store( new AclRole( "pr", "pr", singletonList( "object" ) ) ).getId();
         aclService.add( childId, subjectId, role, true );
 
-        assertThat(aclService.checkOne( childId2, subjectId, "object.child.read" )).isTrue();
-        assertThat(aclService.checkOne( childId2, subjectId, "child.read" )).isFalse();
+        assertThat( aclService.checkOne( childId2, subjectId, "object.child.read" ) ).isTrue();
+        assertThat( aclService.checkOne( childId2, subjectId, "child.read" ) ).isFalse();
     }
 
     @Test( dependsOnMethods = { "testAddAcl" } )
@@ -235,7 +235,7 @@ public class DefaultAclServiceTest {
         aclService.add( childId, subjectId2, role2.getId(), false );
 
         assertThat( aclService.getSubjectRoles( childId, false ) ).containsExactlyInAnyOrder(
-            new AclService.SubjectRole( subjectId, asList( role2, role1 ) ),
+            new AclService.SubjectRole( subjectId, asList( role1, role2 ) ),
             new AclService.SubjectRole( subjectId2, singletonList( role2 ) ) );
 
         assertThat( aclService.getSubjectRoles( childId, true ) ).hasSize( 3 );
@@ -248,8 +248,12 @@ public class DefaultAclServiceTest {
         aclService.add( childId, subjectId, role2.getId(), false );
 
         final List<AclService.ObjectRole> roles = aclService.getRoles( subjectId, false );
+
+        System.out.println( "root = " + rootId );
+        System.out.println( "childId = " + childId );
+
         assertThat( roles ).containsExactlyInAnyOrder(
-            new AclService.ObjectRole( rootId, asList( role2, role1 ) ),
+            new AclService.ObjectRole( rootId, asList( role1, role2 ) ),
             new AclService.ObjectRole( childId, singletonList( role2 ) ) );
 
         assertThat( aclService.getRoles( subjectId, true ) ).hasSize( 7 );

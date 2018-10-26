@@ -25,12 +25,12 @@
 package oap.security.acl;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.HashMultimap;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.storage.Storage;
 import oap.util.IdBean;
 import oap.util.Lists;
-import org.testng.collections.SetMultiMap;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -326,7 +326,7 @@ public class DefaultAclService implements AclService {
         val obj = schema.getObject( objectId ).orElse( null );
         if( obj == null ) return emptyList();
 
-        val map = new SetMultiMap<String, AclRole>( false );
+        val map = HashMultimap.<String, AclRole>create();
 
         for( val acl : obj.acls ) {
             if( inherited || acl.parent == null )
@@ -334,6 +334,7 @@ public class DefaultAclService implements AclService {
         }
 
         return map
+            .asMap()
             .entrySet()
             .stream()
             .map( e -> new SubjectRole( e.getKey(), new ArrayList<>( e.getValue() ) ) )
@@ -342,7 +343,7 @@ public class DefaultAclService implements AclService {
 
     @Override
     public List<ObjectRole> getRoles( String userId, boolean inherited ) {
-        val map = new SetMultiMap<String, AclRole>( false );
+        val map = HashMultimap.<String, AclRole>create();
 
         schema.objects().forEach( obj -> {
             for( val acl : obj.acls ) {
@@ -353,6 +354,7 @@ public class DefaultAclService implements AclService {
         } );
 
         return map
+            .asMap()
             .entrySet()
             .stream()
             .map( e -> new ObjectRole( e.getKey(), new ArrayList<>( e.getValue() ) ) )
