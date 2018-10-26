@@ -41,7 +41,7 @@ public class TimestampTest extends AbstractTest {
         assertThat( Timestamp.BPH_12.format( new DateTime( 2015, 12, 3, 11, 28, 30, UTC ) ) )
             .isEqualTo( "2015-12-03-11-05" );
         assertThat( Timestamp.BPH_1.format( new DateTime( 2015, 12, 3, 11, 28, 30, UTC ) ) )
-            .isEqualTo( "2015-12-03-11-05" );
+            .isEqualTo( "2015-12-03-11-00" );
     }
 
     @Test
