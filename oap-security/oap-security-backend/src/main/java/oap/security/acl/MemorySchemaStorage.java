@@ -24,16 +24,14 @@
 
 package oap.security.acl;
 
-import oap.storage.mongo.MongoClient;
-import oap.storage.mongo.MongoStorage;
-
-import static oap.storage.Storage.LockStrategy.Lock;
+import oap.storage.IdentifierBuilder;
+import oap.storage.MemoryStorage;
 
 /**
- * Created by igor.petrenko on 22.12.2017.
+ * Created by igor.petrenko on 07.11.2018.
  */
-public class MongoSchemaStorage extends MongoStorage<AclSchemaContainer> implements SchemaStorage {
-    public MongoSchemaStorage( MongoClient mongoClient, String table ) {
-        super( mongoClient, table, Lock );
+public class MemorySchemaStorage extends MemoryStorage<AclSchemaContainer> implements SchemaStorage {
+    public MemorySchemaStorage() {
+        super( IdentifierBuilder.annotationBuild(), LockStrategy.Lock );
     }
 }
