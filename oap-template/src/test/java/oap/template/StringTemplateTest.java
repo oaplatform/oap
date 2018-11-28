@@ -34,11 +34,13 @@ import oap.template.StringTemplateTest.Tst.Test4;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
+import oap.util.Maps;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -239,6 +241,14 @@ public class StringTemplateTest extends AbstractTest {
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test1.idNotFound}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=" );
 
+    }
+
+    @Test
+    public void testMap() {
+        val map = Maps.of2( "a", 1, "b", "test" );
+
+        assertThat( engine.getTemplate( "tmp", Map.class, "id=${a},id2=${b}" )
+            .renderString( map ) ).isEqualTo( "id=1,id2=test" );
     }
 
     private static class InvocationAccumulator extends StringAccumulator {

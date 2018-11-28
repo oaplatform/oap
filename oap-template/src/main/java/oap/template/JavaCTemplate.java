@@ -31,9 +31,9 @@ import oap.tools.MemoryClassLoader;
 import oap.util.Pair;
 import oap.util.Try;
 import org.apache.commons.lang3.ClassUtils;
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.commons.text.StringEscapeUtils;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
@@ -273,10 +273,14 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                     tab( c.append( "\n" ), tab );
                     map.map( c, String.class, line, cField, delimiter, join );
                 } else {
+                    val isParentMap = isMap( parentClass );
+
+                    val ff = ( isParentMap ? "get( \"" + cField + "\" )" : cField );
+
                     if( isOptionalParent ) {
-                        newPath = new StringBuilder( in > 0 ? optField + "." + cField : cField );
+                        newPath = new StringBuilder( in > 0 ? optField + "." + ff : cField );
                     } else {
-                        newPath = new StringBuilder( in > 0 ? pField + "." + cField : "s." + cField );
+                        newPath = new StringBuilder( in > 0 ? pField + "." + ff : "s." + ff );
                     }
 
                     Type cc = in > 0 ? getDeclaredFieldOrFunctionType( parentClass, cField ) : parentClass;
@@ -308,6 +312,13 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 tab( c, tab ).append( "}\n" );
             }
         }
+    }
+
+    private boolean isMap( Type parentClass ) {
+        if( parentClass instanceof ParameterizedType )
+            return isMap( ( ( ParameterizedType ) parentClass ).getRawType() );
+
+        return ( ( Class ) parentClass ).isAssignableFrom( Map.class );
     }
 
     private void tabInc( AtomicInteger tab ) {
