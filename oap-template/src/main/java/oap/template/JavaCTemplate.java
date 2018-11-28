@@ -368,15 +368,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
         boolean primitive = isPrimitive( cc );
         if( !primitive ) {
             pfield = "field" + num.incrementAndGet();
-            if( parentType.getTypeName().startsWith( "java.util.Map<" ) ) {
-
-                tab( c, tab )
-                    .append( " " )
-                    .append( toJavaType( cc ) ).append( " " ).append( pfield ).append( " = " )
-                    .append( newPath.replace( ".", ".get(\"" ) ).append( "\");\n" );
-            } else {
-                tab( c, tab ).append( " " ).append( toJavaType( cc ) ).append( " " ).append( pfield ).append( " = " ).append( newPath ).append( ";\n" );
-            }
+            tab( c, tab ).append( " " ).append( toJavaType( cc ) ).append( " " ).append( pfield ).append( " = " ).append( newPath ).append( ";\n" );
         }
         if( !primitive ) {
             if( isOptional( cc ) ) {
