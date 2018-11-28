@@ -245,10 +245,10 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testMap() {
-        val map = Maps.of2( "a", 1, "b", "test" );
+        val map = Maps.of2( "a", 1, "b", "test", "c (1)", 0.0 );
 
-        assertThat( engine.getTemplate( "tmp", Map.class, "id=${a},id2=${b}" )
-            .renderString( map ) ).isEqualTo( "id=1,id2=test" );
+        assertThat( engine.getTemplate( "tmp", Map.class, "id=${a},id2=${b},id3=${c ((1)}" )
+            .renderString( map ) ).isEqualTo( "id=1,id2=test,id3=0.0" );
     }
 
     private static class InvocationAccumulator extends StringAccumulator {

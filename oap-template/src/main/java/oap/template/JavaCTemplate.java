@@ -275,7 +275,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 } else {
                     val isParentMap = isMap( parentClass );
 
-                    val ff = ( isParentMap ? "get( \"" + cField + "\" )" : cField );
+                    val ff = ( isParentMap ? "get( \"" + StringUtils.replace( cField, "((", "(" ) + "\" )" : cField );
 
                     if( isOptionalParent ) {
                         newPath = new StringBuilder( in > 0 ? optField + "." + ff : cField );
@@ -346,6 +346,9 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
         Class type1 = ( Class ) type;
         try {
             int i = field.indexOf( '(' );
+            while( i > 0 && field.charAt( i + 1 ) == '(' ) {
+                i = field.indexOf( '(', i + 2 );
+            }
             if( i < 0 ) {
                 if( type1.isAssignableFrom( Map.class ) ) {
                     return Object.class;
