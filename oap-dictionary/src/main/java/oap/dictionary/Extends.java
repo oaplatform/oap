@@ -34,7 +34,12 @@ import java.util.Optional;
  */
 @ToString
 @AllArgsConstructor
-class Extends {
+class Extends implements Cloneable {
     public final String path;
     public final Optional<String> filter;
+
+    @Override
+    protected Extends clone() {
+        return new Extends( path, filter );
+    }
 }

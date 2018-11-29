@@ -42,121 +42,131 @@ import static java.util.stream.Collectors.toList;
 @EqualsAndHashCode
 @ToString
 public final class DictionaryRoot implements Dictionary {
-   public final String name;
-   public final ExternalIdType externalIdAs;
-   private final List<? extends Dictionary> values;
-   @JsonIgnore
-   private final HashMap<Integer, String> indexByExternalId = new HashMap<>();
-   @JsonIgnore
-   private final HashMap<String, Dictionary> indexById = new HashMap<>();
-   private final Map<String, Object> properties;
+    public final String name;
+    public final ExternalIdType externalIdAs;
+    private final List<? extends Dictionary> values;
+    @JsonIgnore
+    private final HashMap<Integer, String> indexByExternalId = new HashMap<>();
+    @JsonIgnore
+    private final HashMap<String, Dictionary> indexById = new HashMap<>();
+    private final Map<String, Object> properties;
 
-   public DictionaryRoot( String name, List<? extends Dictionary> values ) {
-      this( name, ExternalIdType.integer, values, emptyMap() );
-   }
+    public DictionaryRoot( String name, List<? extends Dictionary> values ) {
+        this( name, ExternalIdType.integer, values, emptyMap() );
+    }
 
-   public DictionaryRoot( String name, List<? extends Dictionary> values, Map<String, Object> properties ) {
-      this( name, ExternalIdType.integer, values, properties );
-   }
+    public DictionaryRoot( String name, List<? extends Dictionary> values, Map<String, Object> properties ) {
+        this( name, ExternalIdType.integer, values, properties );
+    }
 
-   public DictionaryRoot( String name, ExternalIdType externalIdAs, List<? extends Dictionary> values, Map<String, Object> properties ) {
-      this.name = name;
-      this.externalIdAs = externalIdAs;
-      this.values = values;
-      this.properties = properties;
+    public DictionaryRoot( String name, ExternalIdType externalIdAs, List<? extends Dictionary> values, Map<String, Object> properties ) {
+        this.name = name;
+        this.externalIdAs = externalIdAs;
+        this.values = values;
+        this.properties = properties;
 
-      for( Dictionary dv : values ) {
-         indexById.put( dv.getId(), dv );
-         indexByExternalId.put( dv.getExternalId(), dv.getId() );
-      }
-   }
+        for( Dictionary dv : values ) {
+            indexById.put( dv.getId(), dv );
+            indexByExternalId.put( dv.getExternalId(), dv.getId() );
+        }
+    }
 
-   @Override
-   public final String getOrDefault( int externlId, String defaultValue ) {
-      final String id = indexByExternalId.get( externlId );
-      if( id == null ) return defaultValue;
-      return id;
-   }
+    @Override
+    public final String getOrDefault( int externlId, String defaultValue ) {
+        final String id = indexByExternalId.get( externlId );
+        if( id == null ) return defaultValue;
+        return id;
+    }
 
-   @Override
-   public final int getOrDefault( String id, int defaultValue ) {
-      final Dictionary rtb = indexById.get( id );
-      if( rtb == null ) return defaultValue;
-      return rtb.getExternalId();
-   }
+    @Override
+    public final int getOrDefault( String id, int defaultValue ) {
+        final Dictionary rtb = indexById.get( id );
+        if( rtb == null ) return defaultValue;
+        return rtb.getExternalId();
+    }
 
-   @Override
-   public final Integer get( String id ) {
-      final Dictionary rtb = indexById.get( id );
-      if( rtb == null ) return null;
-      return rtb.getExternalId();
-   }
+    @Override
+    public final Integer get( String id ) {
+        final Dictionary rtb = indexById.get( id );
+        if( rtb == null ) return null;
+        return rtb.getExternalId();
+    }
 
-   @Override
-   public boolean containsValueWithId( String id ) {
-      return indexById.containsKey( id );
-   }
+    @Override
+    public boolean containsValueWithId( String id ) {
+        return indexById.containsKey( id );
+    }
 
-   @Override
-   public List<String> ids() {
-      return values.stream().map( Dictionary::getId ).collect( toList() );
-   }
+    @Override
+    public List<String> ids() {
+        return values.stream().map( Dictionary::getId ).collect( toList() );
+    }
 
-   @Override
-   public int[] externalIds() {
-      return values.stream().mapToInt( Dictionary::getExternalId ).toArray();
-   }
+    @Override
+    public int[] externalIds() {
+        return values.stream().mapToInt( Dictionary::getExternalId ).toArray();
+    }
 
-   @Override
-   public Map<String, Object> getProperties() {
-      return properties;
-   }
+    @Override
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
 
-   @Override
-   public List<? extends Dictionary> getValues() {
-      return values;
-   }
+    @Override
+    public List<? extends Dictionary> getValues() {
+        return values;
+    }
 
-   @Override
-   public String getId() {
-      return name;
-   }
+    @Override
+    public String getId() {
+        return name;
+    }
 
-   @Override
-   @SuppressWarnings( "unchecked" )
-   public <T> Optional<T> getProperty( String name ) {
-      return Optional.ofNullable( ( T ) properties.get( name ) );
-   }
+    @Override
+    @SuppressWarnings( "unchecked" )
+    public <T> Optional<T> getProperty( String name ) {
+        return Optional.ofNullable( ( T ) properties.get( name ) );
+    }
 
-   @Override
-   public Optional<? extends Dictionary> getValueOpt( String name ) {
-      return Optional.ofNullable( indexById.get( name ) );
-   }
+    @Override
+    public Optional<? extends Dictionary> getValueOpt( String name ) {
+        return Optional.ofNullable( indexById.get( name ) );
+    }
 
-   @Override
-   public Dictionary getValue( String name ) {
-      return indexById.get( name );
-   }
+    @Override
+    public Dictionary getValue( String name ) {
+        return indexById.get( name );
+    }
 
-   @Override
-   public Dictionary getValue( int externalId ) {
-      final String name = indexByExternalId.get( externalId );
-      if( name == null ) return null;
-      return indexById.get( name );
-   }
+    @Override
+    public Dictionary getValue( int externalId ) {
+        final String name = indexByExternalId.get( externalId );
+        if( name == null ) return null;
+        return indexById.get( name );
+    }
 
-   @Override
-   public boolean isEnabled() {
-      return true;
-   }
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 
-   @Override
-   public int getExternalId() {
-      return -1;
-   }
+    @Override
+    public int getExternalId() {
+        return -1;
+    }
 
-   @Override
-   public boolean containsProperty( String name ) {
-      return properties.containsKey( name );
-   }
+    @Override
+    public boolean containsProperty( String name ) {
+        return properties.containsKey( name );
+    }
+
+    @Override
+    public DictionaryRoot clone() {
+        return new DictionaryRoot(
+            name,
+            externalIdAs,
+            values.stream().map( Dictionary::clone ).collect( toList() ),
+            new HashMap<>( properties )
+        );
+    }
 }

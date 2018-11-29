@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -126,5 +127,16 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
     @Override
     public Dictionary getValue( int externalId ) {
         return values.stream().filter( l -> l.getExternalId() == externalId ).findAny().orElse( null );
+    }
+
+    @Override
+    public DictionaryLeaf clone() {
+        return new DictionaryValue(
+            id,
+            enabled,
+            externalId,
+            values.stream().map( Dictionary::clone ).collect( toList() ),
+            new HashMap<>( properties )
+        );
     }
 }

@@ -32,6 +32,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,12 +45,12 @@ import java.util.Optional;
 @JsonPropertyOrder( { "id", "externalId", "enabled", "properties" } )
 public class DictionaryLeaf implements Dictionary {
     @JsonIgnore
-    private final boolean enabled;
-    private final int externalId;
+    final boolean enabled;
+    final int externalId;
     @JsonInclude( JsonInclude.Include.NON_DEFAULT )
     @JsonProperty
-    private final Map<String, Object> properties;
-    private final String id;
+    final Map<String, Object> properties;
+    final String id;
 
     public DictionaryLeaf( String id, boolean enabled, int externalId, Map<String, Object> properties ) {
         this.id = id;
@@ -142,5 +143,10 @@ public class DictionaryLeaf implements Dictionary {
     @Override
     public boolean containsProperty( String name ) {
         return properties != null && properties.containsKey( name );
+    }
+
+    @Override
+    public DictionaryLeaf clone() {
+        return new DictionaryLeaf( id, enabled, externalId, new HashMap<>( properties ) );
     }
 }

@@ -34,7 +34,9 @@ import java.util.Optional;
 class DictionaryExtends implements Dictionary {
     final Extends anExtends;
 
-    public DictionaryExtends( Extends anExtends ) {this.anExtends = anExtends;}
+    public DictionaryExtends( Extends anExtends ) {
+        this.anExtends = anExtends;
+    }
 
     @Override
     public int getOrDefault( String id, int defaultValue ) {
@@ -114,5 +116,10 @@ class DictionaryExtends implements Dictionary {
     @Override
     public boolean containsProperty( String name ) {
         throw new IllegalAccessError();
+    }
+
+    @Override
+    public DictionaryExtends clone() {
+        return new DictionaryExtends( anExtends.clone() );
     }
 }
