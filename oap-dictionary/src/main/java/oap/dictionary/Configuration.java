@@ -54,8 +54,10 @@ public abstract class Configuration {
     private int latestVersion = -1;
 
     public Configuration(
-        Path mappingLocation, String defaultPath,
-        String resourceLocation, int maxVersionsToLoad,
+        Path mappingLocation,
+        String defaultPath,
+        String resourceLocation,
+        int maxVersionsToLoad,
         DictionaryParser.IdStrategy idStrategy ) {
 
         List<URL> logConfigs = Collections.emptyList();

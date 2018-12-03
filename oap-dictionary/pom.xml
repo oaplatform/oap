@@ -34,7 +34,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>3.14.4</version>
+        <version>3.14.5</version>
     </parent>
 
     <dependencies>
@@ -47,6 +47,11 @@
         <dependency>
             <groupId>oap</groupId>
             <artifactId>oap-tsv</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>oap</groupId>
+            <artifactId>oap-template</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
