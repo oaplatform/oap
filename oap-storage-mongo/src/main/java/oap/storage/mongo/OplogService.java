@@ -94,7 +94,11 @@ public class OplogService implements Runnable, Closeable {
     public synchronized void stop() {
         if( thread != null ) thread.interrupt();
         if( cursor != null ) cursor.close();
-        if( thread != null ) thread.stop();
+        try {
+            if( thread != null ) thread.stop();
+        } catch( ThreadDeath e ) {
+            //
+        }
     }
 
     @Override
