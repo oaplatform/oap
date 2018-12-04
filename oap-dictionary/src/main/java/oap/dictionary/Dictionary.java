@@ -35,7 +35,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Created by Igor Petrenko on 29.04.2016.
  */
-public interface Dictionary extends Cloneable {
+public interface Dictionary {
     int getOrDefault( String id, int defaultValue );
 
     Integer get( String id );
@@ -82,5 +82,5 @@ public interface Dictionary extends Cloneable {
         return ( List<String> ) getProperty( "tags" ).orElse( Collections.emptyList() );
     }
 
-    Dictionary clone();
+    Dictionary cloneDictionary();
 }

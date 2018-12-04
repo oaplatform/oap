@@ -119,7 +119,7 @@ class DictionaryExtends implements Dictionary {
     }
 
     @Override
-    public DictionaryExtends clone() {
+    public DictionaryExtends cloneDictionary() {
         return new DictionaryExtends( anExtends.clone() );
     }
 }

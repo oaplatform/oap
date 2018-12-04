@@ -161,11 +161,11 @@ public final class DictionaryRoot implements Dictionary {
     }
 
     @Override
-    public DictionaryRoot clone() {
+    public DictionaryRoot cloneDictionary() {
         return new DictionaryRoot(
             name,
             externalIdAs,
-            values.stream().map( Dictionary::clone ).collect( toList() ),
+            values.stream().map( Dictionary::cloneDictionary ).collect( toList() ),
             new HashMap<>( properties )
         );
     }

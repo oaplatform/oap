@@ -130,12 +130,12 @@ public class DictionaryValue extends DictionaryLeaf implements Dictionary {
     }
 
     @Override
-    public DictionaryLeaf clone() {
+    public DictionaryLeaf cloneDictionary() {
         return new DictionaryValue(
             id,
             enabled,
             externalId,
-            values.stream().map( Dictionary::clone ).collect( toList() ),
+            values.stream().map( Dictionary::cloneDictionary ).collect( toList() ),
             new HashMap<>( properties )
         );
     }

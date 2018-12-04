@@ -146,7 +146,7 @@ public class DictionaryLeaf implements Dictionary {
     }
 
     @Override
-    public DictionaryLeaf clone() {
+    public DictionaryLeaf cloneDictionary() {
         return new DictionaryLeaf( id, enabled, externalId, new HashMap<>( properties ) );
     }
 }
