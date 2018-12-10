@@ -110,7 +110,7 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
             throw new IOException( PREMATURE_EOS );
         }
 
-        if( MAGIC != Utils.readUnsignedIntLE( header, headerOffset - 6 ) ) {
+        if( MAGIC != KafkaLZ4BlockUtils.readUnsignedIntLE( header, headerOffset - 6 ) ) {
             throw new IOException( NOT_SUPPORTED );
         }
         flg = FLG.fromByte( header[headerOffset - 2] );
@@ -143,13 +143,13 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
      * @throws IOException
      */
     private void readBlock() throws IOException {
-        int blockSize = Utils.readUnsignedIntLE( in );
+        int blockSize = KafkaLZ4BlockUtils.readUnsignedIntLE( in );
 
         // Check for EndMark
         if( blockSize == 0 ) {
             finished = true;
             if( flg.isContentChecksumSet() )
-                Utils.readUnsignedIntLE( in ); // TODO: verify this content checksum
+                KafkaLZ4BlockUtils.readUnsignedIntLE( in ); // TODO: verify this content checksum
             return;
         } else if( blockSize > maxBlockSize ) {
             throw new IOException( String.format( "Block size %s exceeded max: %s", blockSize, maxBlockSize ) );
@@ -170,7 +170,7 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
         }
 
         // verify checksum
-        if( flg.isBlockChecksumSet() && Utils.readUnsignedIntLE( in ) != checksum.hash( bufferToRead, 0, blockSize, 0 ) ) {
+        if( flg.isBlockChecksumSet() && KafkaLZ4BlockUtils.readUnsignedIntLE( in ) != checksum.hash( bufferToRead, 0, blockSize, 0 ) ) {
             throw new IOException( BLOCK_HASH_MISMATCH );
         }
 
@@ -223,7 +223,7 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
     }
 
     @Override
-    public int available() throws IOException {
+    public int available() {
         return bufferSize - bufferOffset;
     }
 
@@ -238,7 +238,7 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
     }
 
     @Override
-    public synchronized void reset() throws IOException {
+    public synchronized void reset() {
         throw new RuntimeException( "reset not supported" );
     }
 

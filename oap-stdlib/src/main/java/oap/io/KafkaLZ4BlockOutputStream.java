@@ -136,7 +136,7 @@ public final class KafkaLZ4BlockOutputStream extends FilterOutputStream {
      * @throws IOException
      */
     private void writeHeader() throws IOException {
-        Utils.writeUnsignedIntLE( buffer, 0, MAGIC );
+        KafkaLZ4BlockUtils.writeUnsignedIntLE( buffer, 0, MAGIC );
         bufferOffset = 4;
         buffer[bufferOffset++] = flg.toByte();
         buffer[bufferOffset++] = bd.toByte();
@@ -180,13 +180,13 @@ public final class KafkaLZ4BlockOutputStream extends FilterOutputStream {
         }
 
         // Write content
-        Utils.writeUnsignedIntLE( out, compressedLength | compressMethod );
+        KafkaLZ4BlockUtils.writeUnsignedIntLE( out, compressedLength | compressMethod );
         out.write( bufferToWrite, 0, compressedLength );
 
         // Calculate and write block checksum
         if( flg.isBlockChecksumSet() ) {
             int hash = checksum.hash( bufferToWrite, 0, compressedLength, 0 );
-            Utils.writeUnsignedIntLE( out, hash );
+            KafkaLZ4BlockUtils.writeUnsignedIntLE( out, hash );
         }
         bufferOffset = 0;
     }
@@ -198,7 +198,7 @@ public final class KafkaLZ4BlockOutputStream extends FilterOutputStream {
      * @throws IOException
      */
     private void writeEndMark() throws IOException {
-        Utils.writeUnsignedIntLE( out, 0 );
+        KafkaLZ4BlockUtils.writeUnsignedIntLE( out, 0 );
         // TODO implement content checksum, update flg.validate()
         finished = true;
     }

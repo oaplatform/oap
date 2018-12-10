@@ -36,7 +36,6 @@ import static java.util.Arrays.asList;
 @UtilityClass
 public final class CommandLine {
     public List<String> shell( String cmd ) {
-        if( Resources.IS_WINDOWS ) return asList( "cmd", "/c", cmd );
-        else return asList( "sh", "-c", cmd );
+        return Resources.IS_WINDOWS ? asList( "cmd", "/c", cmd ) : asList( "sh", "-c", cmd );
     }
 }
