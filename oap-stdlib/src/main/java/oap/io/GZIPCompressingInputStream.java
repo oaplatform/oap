@@ -25,8 +25,6 @@
 package oap.io;
 
 
-import oap.io.CRC32InputStream;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,12 +38,12 @@ import java.util.zip.DeflaterInputStream;
  * See GzipOutputStream for details.
  */
 public class GZIPCompressingInputStream extends SequenceInputStream {
-    public GZIPCompressingInputStream(InputStream in) throws IOException {
-        this(in, 512);
+    public GZIPCompressingInputStream( InputStream in ) throws IOException {
+        this( in, 512 );
     }
 
-    public GZIPCompressingInputStream(InputStream in, int bufferSize) throws IOException {
-        super(new StatefullGzipStreamEnumerator(in, bufferSize));
+    public GZIPCompressingInputStream( InputStream in, int bufferSize ) throws IOException {
+        super( new StatefullGzipStreamEnumerator( in, bufferSize ) );
     }
 
     enum StreamState {
@@ -60,7 +58,7 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
         protected final int bufferSize;
         protected StreamState state;
 
-        public StatefullGzipStreamEnumerator(InputStream in, int bufferSize) {
+        public StatefullGzipStreamEnumerator( InputStream in, int bufferSize ) {
             this.in = in;
             this.bufferSize = bufferSize;
             state = StreamState.HEADER;
@@ -71,7 +69,7 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
         }
 
         public InputStream nextElement() {
-            switch (state) {
+            switch( state ) {
                 case HEADER:
                     state = StreamState.CONTENT;
                     return createHeaderStream();
@@ -86,32 +84,32 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
         }
 
         static final int GZIP_MAGIC = 0x8b1f;
-        static final byte[] GZIP_HEADER = new byte[]{
-                (byte) GZIP_MAGIC,        // Magic number (short)
-                (byte) (GZIP_MAGIC >> 8),  // Magic number (short)
-                Deflater.DEFLATED,        // Compression method (CM)
-                0,                        // Flags (FLG)
-                0,                        // Modification time MTIME (int)
-                0,                        // Modification time MTIME (int)
-                0,                        // Modification time MTIME (int)
-                0,                        // Modification time MTIME (int)
-                0,                        // Extra flags (XFLG)
-                0                         // Operating system (OS)
+        static final byte[] GZIP_HEADER = new byte[] {
+            ( byte ) GZIP_MAGIC,        // Magic number (short)
+            ( byte ) ( GZIP_MAGIC >> 8 ),  // Magic number (short)
+            Deflater.DEFLATED,        // Compression method (CM)
+            0,                        // Flags (FLG)
+            0,                        // Modification time MTIME (int)
+            0,                        // Modification time MTIME (int)
+            0,                        // Modification time MTIME (int)
+            0,                        // Modification time MTIME (int)
+            0,                        // Extra flags (XFLG)
+            0                         // Operating system (OS)
         };
 
         protected InputStream createHeaderStream() {
-            return new ByteArrayInputStream(GZIP_HEADER);
+            return new ByteArrayInputStream( GZIP_HEADER );
         }
 
         protected InternalGzipCompressingInputStream contentStream;
 
         protected InputStream createContentStream() {
-            contentStream = new InternalGzipCompressingInputStream(new CRC32InputStream(in), bufferSize);
+            contentStream = new InternalGzipCompressingInputStream( new CRC32InputStream( in ), bufferSize );
             return contentStream;
         }
 
         protected InputStream createTrailerStream() {
-            return new ByteArrayInputStream(contentStream.createTrailer());
+            return new ByteArrayInputStream( contentStream.createTrailer() );
         }
     }
 
@@ -121,13 +119,13 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
     protected static class InternalGzipCompressingInputStream extends DeflaterInputStream {
         protected final CRC32InputStream crcIn;
 
-        public InternalGzipCompressingInputStream(CRC32InputStream in, int bufferSize) {
-            super(in, new Deflater(Deflater.DEFAULT_COMPRESSION, true), bufferSize);
+        public InternalGzipCompressingInputStream( CRC32InputStream in, int bufferSize ) {
+            super( in, new Deflater( Deflater.DEFAULT_COMPRESSION, true ), bufferSize );
             crcIn = in;
         }
 
         public void close() throws IOException {
-            if (in != null) {
+            if( in != null ) {
                 try {
                     def.end();
                     in.close();
@@ -141,7 +139,7 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
 
         public byte[] createTrailer() {
             byte[] trailer = new byte[TRAILER_SIZE];
-            writeTrailer(trailer, 0);
+            writeTrailer( trailer, 0 );
             return trailer;
         }
 
@@ -149,27 +147,27 @@ public class GZIPCompressingInputStream extends SequenceInputStream {
          * Writes GZIP member trailer to a byte array, starting at a given
          * offset.
          */
-        private void writeTrailer(byte[] buf, int offset) {
-            writeInt((int) crcIn.getCrcValue(), buf, offset); // CRC-32 of uncompr. data
-            writeInt((int) crcIn.getByteCount(), buf, offset + 4); // Number of uncompr. bytes
+        private void writeTrailer( byte[] buf, int offset ) {
+            writeInt( ( int ) crcIn.getCrcValue(), buf, offset ); // CRC-32 of uncompr. data
+            writeInt( ( int ) crcIn.getByteCount(), buf, offset + 4 ); // Number of uncompr. bytes
         }
 
         /*
          * Writes integer in Intel byte order to a byte array, starting at a
          * given offset.
          */
-        private void writeInt(int i, byte[] buf, int offset) {
-            writeShort(i & 0xffff, buf, offset);
-            writeShort((i >> 16) & 0xffff, buf, offset + 2);
+        private void writeInt( int i, byte[] buf, int offset ) {
+            writeShort( i & 0xffff, buf, offset );
+            writeShort( ( i >> 16 ) & 0xffff, buf, offset + 2 );
         }
 
         /*
          * Writes short integer in Intel byte order to a byte array, starting
          * at a given offset
          */
-        private void writeShort(int s, byte[] buf, int offset) {
-            buf[offset] = (byte) (s & 0xff);
-            buf[offset + 1] = (byte) ((s >> 8) & 0xff);
+        private void writeShort( int s, byte[] buf, int offset ) {
+            buf[offset] = ( byte ) ( s & 0xff );
+            buf[offset + 1] = ( byte ) ( ( s >> 8 ) & 0xff );
         }
     }
 

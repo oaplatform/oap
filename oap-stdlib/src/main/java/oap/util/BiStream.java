@@ -85,7 +85,6 @@ public class BiStream<A, B> extends Stream<Pair<A, B>> {
     }
 
 
-
     public Pair<BiStream<A, B>, BiStream<A, B>> partition( BiPredicate<A, B> predicate ) {
         Pair<Stream<Pair<A, B>>, Stream<Pair<A, B>>> partition = super.partition( p -> predicate.test( p._1, p._2 ) );
         return new Pair<>( of( partition._1 ), of( partition._2 ) );

@@ -31,66 +31,66 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public abstract class MemoryMeter {
-   private static final MemoryMeter NULL_MEMORY_METER = new MemoryMeter() {
-      @Override
-      public long measureDeep( Object object ) {
-         return 0;
-      }
+    private static final MemoryMeter NULL_MEMORY_METER = new MemoryMeter() {
+        @Override
+        public long measureDeep( Object object ) {
+            return 0;
+        }
 
-      @Override
-      public long countChildren( Object object ) {
-         return 0;
-      }
+        @Override
+        public long countChildren( Object object ) {
+            return 0;
+        }
 
-      @Override
-      public long measure( Object object ) {
-         return 0;
-      }
-   };
-   private static JavaAgentStatus javaagent = JavaAgentStatus.UNKNOWN;
+        @Override
+        public long measure( Object object ) {
+            return 0;
+        }
+    };
+    private static JavaAgentStatus javaagent = JavaAgentStatus.UNKNOWN;
 
-   public static MemoryMeter get() {
-      if( javaagent == JavaAgentStatus.OFF ) return NULL_MEMORY_METER;
+    public static MemoryMeter get() {
+        if( javaagent == JavaAgentStatus.OFF ) return NULL_MEMORY_METER;
 
-      final org.github.jamm.MemoryMeter memoryMeter = new org.github.jamm.MemoryMeter();
+        final org.github.jamm.MemoryMeter memoryMeter = new org.github.jamm.MemoryMeter();
 
-      try {
-         if( javaagent == JavaAgentStatus.UNKNOWN ) {
-            memoryMeter.measure( 1 );
-            javaagent = JavaAgentStatus.ON;
-         }
-
-         return new MemoryMeter() {
-            @Override
-            public long measureDeep( Object object ) {
-               return memoryMeter.measureDeep( object );
+        try {
+            if( javaagent == JavaAgentStatus.UNKNOWN ) {
+                memoryMeter.measure( 1 );
+                javaagent = JavaAgentStatus.ON;
             }
 
-            @Override
-            public long countChildren( Object object ) {
-               return memoryMeter.countChildren( object );
-            }
+            return new MemoryMeter() {
+                @Override
+                public long measureDeep( Object object ) {
+                    return memoryMeter.measureDeep( object );
+                }
 
-            @Override
-            public long measure( Object object ) {
-               return memoryMeter.measure( object );
-            }
-         };
-      } catch( IllegalStateException e ) {
-         javaagent = JavaAgentStatus.OFF;
-         log.error( e.getMessage() );
+                @Override
+                public long countChildren( Object object ) {
+                    return memoryMeter.countChildren( object );
+                }
 
-         return NULL_MEMORY_METER;
-      }
-   }
+                @Override
+                public long measure( Object object ) {
+                    return memoryMeter.measure( object );
+                }
+            };
+        } catch( IllegalStateException e ) {
+            javaagent = JavaAgentStatus.OFF;
+            log.error( e.getMessage() );
 
-   public abstract long measureDeep( Object object );
+            return NULL_MEMORY_METER;
+        }
+    }
 
-   public abstract long countChildren( Object object );
+    public abstract long measureDeep( Object object );
 
-   public abstract long measure( Object object );
+    public abstract long countChildren( Object object );
 
-   private static enum JavaAgentStatus {
-      UNKNOWN, ON, OFF
-   }
+    public abstract long measure( Object object );
+
+    private static enum JavaAgentStatus {
+        UNKNOWN, ON, OFF
+    }
 }

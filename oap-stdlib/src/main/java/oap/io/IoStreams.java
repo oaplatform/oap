@@ -31,7 +31,6 @@ import oap.archive.Archiver;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
 import oap.util.Strings;
-import oap.util.Throwables;
 import oap.util.Try;
 import org.apache.commons.io.IOUtils;
 

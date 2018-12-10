@@ -24,8 +24,6 @@
 
 package oap.benchmark;
 
-import org.joda.time.Period;
-
 /**
  * Created by razer on 6/9/17.
  */
