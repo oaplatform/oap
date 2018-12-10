@@ -26,12 +26,13 @@ package oap.dictionary;
 
 import lombok.val;
 import oap.testng.AbstractTest;
+import oap.util.Lists;
 import oap.util.Maps;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static java.util.Arrays.asList;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertTrue;
@@ -44,8 +45,8 @@ public class DictionaryTest extends AbstractTest {
     public void testParse() {
         assertThat( Dictionaries.getDictionary( "test-dictionary" ).name ).isEqualTo( "test-dictionary" );
         List<? extends Dictionary> dictValues = Dictionaries.getDictionary( "test-dictionary" ).getValues();
-        assertThat( dictValues ).contains( new DictionaryValue( "id1", true, '1',
-                asList(
+        Assertions.<Dictionary>assertThat( dictValues ).contains( new DictionaryValue( "id1", true, '1',
+                Lists.of(
                     new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) ),
                     new DictionaryLeaf( "id12", true, 12, Maps.of( __( "title", "title12" ) ) )
                 ),

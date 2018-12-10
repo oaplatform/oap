@@ -125,11 +125,8 @@ public class Stream<E> implements java.util.stream.Stream<E> {
             public boolean tryAdvance( Consumer<? super T> consumer ) {
                 if( stillGoing ) {
                     boolean hadNext = spliterator.tryAdvance( elem -> {
-                        if( predicate.test( elem ) ) {
-                            consumer.accept( elem );
-                        } else {
-                            stillGoing = false;
-                        }
+                        if( predicate.test( elem ) ) consumer.accept( elem );
+                        else stillGoing = false;
                     } );
                     return hadNext && stillGoing;
                 }

@@ -22,47 +22,46 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.io;
 
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.zip.CRC32;
 
-public class Optionals {
-    public static <T> Stream<T> toStream( Optional<T> opt ) {
-        return opt.map( value -> Stream.of( value ) ).orElse( Stream.empty() );
+public class CRC32InputStream extends FilterInputStream {
+    protected CRC32 crc = new CRC32();
+    protected long byteCount;
+
+    public CRC32InputStream( InputStream in ) {
+        super( in );
     }
 
-    @SafeVarargs
-    public static <T> Optional<T> findFirst( Optional<T>... optionals ) {
-        return Stream.of( optionals ).flatMap( Optionals::toStream ).findFirst();
+    @Override
+    public int read() throws IOException {
+        int val = super.read();
+        if( val >= 0 ) {
+            crc.update( val );
+            byteCount++;
+        }
+        return val;
     }
 
-    public static <T> Fork<T> fork( Optional<T> opt ) {
-        return new Fork<>( opt );
+    @Override
+    public int read( byte[] b, int off, int len ) throws IOException {
+        len = super.read( b, off, len );
+        if( len >= 0 ) {
+            crc.update( b, off, len );
+            byteCount += len;
+        }
+        return len;
     }
 
-    public static class Fork<T> {
-        private Optional<T> opt;
+    public long getCrcValue() {
+        return crc.getValue();
+    }
 
-        public Fork( Optional<T> opt ) {
-            this.opt = opt;
-        }
-
-        public Fork<T> ifPresent( Consumer<? super T> consumer ) {
-            opt.ifPresent( consumer );
-            return this;
-        }
-
-        public Fork<T> ifAbsent( Runnable code ) {
-            if( !opt.isPresent() ) code.run();
-            return this;
-        }
-
-        public <X extends Throwable> Fork<T> ifAbsentThrow( Supplier<? extends X> supplier ) throws X {
-            if( !opt.isPresent() ) throw supplier.get();
-            return this;
-        }
+    public long getByteCount() {
+        return byteCount;
     }
 }
