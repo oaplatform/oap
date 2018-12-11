@@ -53,7 +53,7 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, R
     private final Identifier<T> identifier;
     private final List<DataListener<T>> dataListeners = new ArrayList<>();
     private final ArrayList<Constraint<T>> constraints = new ArrayList<>();
-    volatile protected ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
+    protected volatile ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
 
     public MemoryStorage( Identifier<T> identifier, LockStrategy lockStrategy ) {
         this.identifier = identifier;

@@ -34,7 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by igor.petrenko on 12.10.2017.
+ * Fate c'mon, start the class yourself
  */
+@Deprecated
 public class ApplicationUtils {
     private static final ConcurrentHashMap<Class, SMethod> startMethods = new ConcurrentHashMap<>();
 

@@ -315,26 +315,26 @@ public final class Strings {
             : significantSymbols )
             .matcher( source )
             .replaceAll( "" )
-            .toLowerCase();
+            .toUpperCase();
 
-        char[] chars = ( id.length() > length
+
+        String base = ( id.length() > length
             ? id.substring( 0, length )
             : Arrays.contains( FILL, opts )
-                ? id + fill( "x", length - id.length() )
+                ? id + fill( "X", length - id.length() )
                 : id
-        ).toCharArray();
+        );
 
+        StringBuilder sb = new StringBuilder( base );
+        //10k max attempts
+        for( int i = 0; i < 10000; i++ ) {
+            if( !conflict.test( sb.toString() ) ) break;
+            String suffix = Integer.toString( i, 36 ).toUpperCase();
+            if( suffix.length() > length ) break;
+            sb.replace( sb.length() - suffix.length(), sb.length(), suffix );
+        }
 
-        conflictResolution:
-        for( int position = chars.length - 1; position >= 0; position-- )
-            for( char symbol = 48; symbol <= 122; symbol++ ) {
-                if( symbol > 57 && symbol < 97 ) continue;
-
-                if( conflict.test( new String( chars ) ) ) chars[position] = symbol;
-                else break conflictResolution;
-            }
-
-        id = new String( chars );
+        id = sb.toString();
 
         if( conflict.test( id ) )
             throw new IllegalArgumentException( format( "cannot resolve conflict for source '%s' with max id length %s", id, length ) );
