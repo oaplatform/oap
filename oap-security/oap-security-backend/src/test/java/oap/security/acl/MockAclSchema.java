@@ -25,12 +25,12 @@
 package oap.security.acl;
 
 import oap.storage.Storage;
+import oap.util.Stream;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -40,13 +40,13 @@ import static oap.security.acl.AclService.ROOT;
  * Created by igor.petrenko on 02.01.2018.
  */
 public class MockAclSchema implements AclSchema {
-    private final AclObject ROOT_ACL_OBJECT;
+    private final AclObject rootAclObject;
     private final Storage<? extends SecurityContainer<?>> storage;
 
     public MockAclSchema( Storage<? extends SecurityContainer<?>> storage ) {
         this.storage = storage;
 
-        ROOT_ACL_OBJECT = new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT );
+        this.rootAclObject = new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT );
     }
 
     @Override
@@ -56,19 +56,19 @@ public class MockAclSchema implements AclSchema {
 
     @Override
     public Optional<AclObject> getObject( String id ) {
-        if( ROOT.equals( id ) ) return Optional.of( ROOT_ACL_OBJECT );
+        if( ROOT.equals( id ) ) return Optional.of( rootAclObject );
 
         return storage.get( id ).map( cs -> cs.acl );
     }
 
     @Override
     public Stream<AclObject> selectObjects() {
-        return storage.select().map( cs -> cs.acl ).concat( ROOT_ACL_OBJECT );
+        return storage.select().map( cs -> cs.acl ).concat( rootAclObject );
     }
 
     @Override
     public List<AclObject> listObjects() {
-        return storage.select().map( cs -> cs.acl ).concat( ROOT_ACL_OBJECT ).collect( toList() );
+        return storage.select().map( cs -> cs.acl ).concat( rootAclObject ).collect( toList() );
     }
 
     @Override
@@ -89,9 +89,9 @@ public class MockAclSchema implements AclSchema {
     @Override
     public Optional<AclObject> updateLocalObject( String id, Consumer<AclObject> cons ) {
         if( AclService.ROOT.equals( id ) ) {
-            cons.accept( ROOT_ACL_OBJECT );
+            cons.accept( rootAclObject );
 
-            return Optional.of( ROOT_ACL_OBJECT );
+            return Optional.of( rootAclObject );
         }
         return storage.update( id, cs -> {
             cons.accept( cs.acl );

@@ -24,11 +24,11 @@
 package oap.application;
 
 import oap.util.Maps;
+import oap.util.Stream;
 
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Stream;
 
 import static oap.application.Kernel.DEFAULT;
 
@@ -44,7 +44,7 @@ public class Application {
     }
 
     public static synchronized <T> Stream<T> instancesOf( String kernelName, Class<T> clazz ) {
-        return kernel( kernelName ).ofClass( clazz ).stream();
+        return Stream.of( kernel( kernelName ).ofClass( clazz ) );
     }
 
     public static synchronized <T> T service( Class<T> clazz ) {

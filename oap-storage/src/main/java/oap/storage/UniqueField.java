@@ -65,13 +65,9 @@ public class UniqueField<T> implements Constraint<T> {
     }
 
     private boolean equals( Object value, Object v2 ) {
-        if( value instanceof List<?> ) {
-            return !( ( List ) value ).stream().noneMatch( v -> equals( v, v2 ) );
-        }
+        if( value instanceof List<?> ) return ( ( List<?> ) value ).stream().anyMatch( v -> equals( v, v2 ) );
 
-        if( v2 instanceof List<?> ) {
-            return !( ( List ) v2 ).stream().noneMatch( v -> equals( value, v ) );
-        }
+        if( v2 instanceof List<?> ) return ( ( List<?> ) v2 ).stream().anyMatch( v -> equals( value, v ) );
 
         return Objects.equals( value, v2 );
     }

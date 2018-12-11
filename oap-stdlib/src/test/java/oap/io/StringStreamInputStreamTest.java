@@ -1,9 +1,8 @@
 package oap.io;
 
+import oap.util.Stream;
 import oap.util.Strings;
 import org.testng.annotations.Test;
-
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

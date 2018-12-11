@@ -48,12 +48,12 @@ public class StringBits {
         return bits.computeIfAbsent( name, n -> bit.getAndIncrement() );
     }
 
-    public final synchronized long[] computeIfAbsent( List<String> name ) {
-        return computeIfAbsent( name.stream() );
+    public final synchronized long[] computeIfAbsent( List<String> names ) {
+        return computeIfAbsent( Stream.of( names ) );
     }
 
-    public final synchronized long[] computeIfAbsent( java.util.stream.Stream<String> name ) {
-        return name.mapToLong( n -> bits.computeIfAbsent( n, k -> bit.getAndIncrement() ) ).toArray();
+    public final synchronized long[] computeIfAbsent( Stream<String> names ) {
+        return names.mapToLong( n -> bits.computeIfAbsent( n, k -> bit.getAndIncrement() ) ).toArray();
     }
 
     public final long get( String name ) {

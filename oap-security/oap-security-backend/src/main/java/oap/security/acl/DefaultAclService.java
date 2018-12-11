@@ -143,7 +143,7 @@ public class DefaultAclService implements AclService {
     public boolean remove( String objectId, String subjectId, Optional<String> roleId ) {
         log.debug( "remove object = {}, subject = {}, role = {}", objectId, subjectId, roleId );
 
-        Predicate<AclObject.Acl> roleIdFunc = acl -> roleId.map( rid -> acl.role.getId().equals( rid ) ).orElse( true );
+        Predicate<AclObject.Acl> roleIdFunc = acl -> roleId.map( rid -> acl.role.id.equals( rid ) ).orElse( true );
 
         return schema.updateLocalObject( objectId, aclObject ->
             aclObject.acls.removeIf( acl -> {
@@ -153,9 +153,7 @@ public class DefaultAclService implements AclService {
                             if( ao.ancestors.contains( objectId ) ) {
                                 schema.updateLocalObject(
                                     ao.id,
-                                    aos -> {
-                                        aos.acls.removeIf( aclc -> aclc.subjectId.equals( subjectId ) && roleIdFunc.test( acl ) );
-                                    }
+                                    aos -> aos.acls.removeIf( aclc -> aclc.subjectId.equals( subjectId ) && roleIdFunc.test( acl ) )
                                 );
                             }
 

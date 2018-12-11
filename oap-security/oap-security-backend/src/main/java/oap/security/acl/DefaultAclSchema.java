@@ -34,6 +34,7 @@ import oap.reflect.TypeRef;
 import oap.storage.ROStorage;
 import oap.storage.Storage;
 import oap.util.Lists;
+import oap.util.Stream;
 import oap.util.Strings;
 
 import java.net.URL;
@@ -42,7 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -126,22 +126,21 @@ public class DefaultAclSchema implements AclSchema {
     @Override
     public Stream<AclObject> selectObjects() {
         return remoteSchema
-            .map( rs -> Stream.concat( selectLocalObjects(), rs.listObjects().stream() ) )
+            .map( rs -> selectLocalObjects().concat( rs.listObjects().stream() ) )
             .orElse( selectLocalObjects() );
     }
 
     @Override
     public List<AclObject> listObjects() {
         return remoteSchema
-            .map( rs -> Stream.concat( selectLocalObjects(), rs.listObjects().stream() ) )
+            .map( rs -> selectLocalObjects().concat( rs.listObjects().stream() ) )
             .orElse( selectLocalObjects() )
             .collect( toList() );
     }
 
     @Override
     public Stream<AclObject> selectLocalObjects() {
-        return objectStorage.values()
-            .stream()
+        return Stream.of( objectStorage.values() )
             .flatMap( ROStorage::select )
             .map( con -> con.acl );
     }
@@ -217,7 +216,7 @@ public class DefaultAclSchema implements AclSchema {
                     .stream()
                     .flatMap( aclType ->
                         aclType.getChild( parent.type )
-                            .map( Stream::of )
+                            .map( a -> Stream.of( a ) )
                             .orElse( Stream.empty() ) )
             )
             .collect( toList() );

@@ -26,6 +26,7 @@ package oap.tree;
 
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
+import oap.util.Stream;
 import oap.util.StringBits;
 
 import java.util.Arrays;
@@ -34,7 +35,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static oap.tree.Consts.ANY_AS_ARRAY;
 

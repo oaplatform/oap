@@ -40,7 +40,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,7 +69,7 @@ public final class Asserts {
     }
 
     @Deprecated
-    public static <A> void assertEquals( Stream<? extends A> actual, Stream<? extends A> expected ) {
+    public static <A> void assertEquals( java.util.stream.Stream<? extends A> actual, java.util.stream.Stream<? extends A> expected ) {
         if( actual == null && expected != null ) fail( "actual stream is null" );
         else if( actual != null && expected != null )
             Assert.assertEquals( actual.collect( toList() ), expected.collect( toList() ) );

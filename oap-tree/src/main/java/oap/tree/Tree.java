@@ -193,7 +193,7 @@ public class Tree<T> {
     private void init( List<ValueData<T>> data ) {
         Stream.of( dimensions )
             .zipWithIndex()
-            .forEach( p -> p._1.init( data.stream().flatMap( d -> toStream( d.data.get( p._2 ) ) ) ) );
+            .forEach( p -> p._1.init( Stream.of( data ).flatMap( d -> toStream( d.data.get( p._2 ) ) ) ) );
     }
 
     private Stream<?> toStream( Object item ) {
@@ -326,9 +326,9 @@ public class Tree<T> {
             return new SplitDimension( finalSplitDimension, Consts.ANY, emptyList(), emptyList(), emptyList(), partition._2, partition._1, emptyList() );
         } else {
 
-            val partition_any_other = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY ) == ANY_AS_ARRAY );
+            val partitionAnyOther = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY ) == ANY_AS_ARRAY );
 
-            final List<ValueData<T>> sorted = partition_any_other._2
+            final List<ValueData<T>> sorted = partitionAnyOther._2
                 .sorted( Comparator.comparingLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] ) )
                 .collect( toList() );
 
@@ -339,7 +339,7 @@ public class Tree<T> {
             if( dimension.operationType == CONTAINS
                 && unique.length > 1
                 && ( double ) unique.length / uniqueCount[finalSplitDimension] > hashFillFactor ) {
-                final List<ValueData<T>> any = partition_any_other._1.collect( toList() );
+                final List<ValueData<T>> any = partitionAnyOther._1.collect( toList() );
 
                 return new SplitDimension( finalSplitDimension, Consts.ANY, emptyList(), emptyList(), emptyList(), any, emptyList(), sorted );
             } else {
@@ -347,15 +347,15 @@ public class Tree<T> {
 //                final long splitValue = dimension.getOrDefault( sorted.get( sorted.size() / 2).data.get( finalSplitDimension ), ANY_AS_ARRAY )[0];
                 final long splitValue = unique[unique.length / 2];
 
-                val partition_left_eq_right = Stream.of( sorted )
+                val partitionLeftEqRight = Stream.of( sorted )
                     .partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] < splitValue );
-                val partition_eq_right = partition_left_eq_right._2
+                val partitionEqRight = partitionLeftEqRight._2
                     .partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] == splitValue );
 
-                final List<ValueData<T>> left = partition_left_eq_right._1.collect( toList() );
-                final List<ValueData<T>> right = partition_eq_right._2.collect( toList() );
-                final List<ValueData<T>> eq = partition_eq_right._1.collect( toList() );
-                final List<ValueData<T>> any = Stream.of( partition_any_other._1 ).collect( toList() );
+                final List<ValueData<T>> left = partitionLeftEqRight._1.collect( toList() );
+                final List<ValueData<T>> right = partitionEqRight._2.collect( toList() );
+                final List<ValueData<T>> eq = partitionEqRight._1.collect( toList() );
+                final List<ValueData<T>> any = Stream.of( partitionAnyOther._1 ).collect( toList() );
 
                 return new SplitDimension( finalSplitDimension, splitValue, left, right, eq, any, emptyList(), emptyList() );
             }
@@ -437,12 +437,12 @@ public class Tree<T> {
             .entrySet()
             .stream()
             .filter( e -> filter.test( e.getKey() ) )
-            .map( e -> e.getKey().toString() + ": \n" +
-                e.getValue().entrySet().stream().map( dv -> {
-                        final Dimension dimension = dimensions.get( dv.getKey() );
-                        return "    " + dimension.name + "/" + dv.getKey() + ": "
-                            + dv.getValue().toString( dimension ) + " " + queryToString( query, dv.getKey() );
-                    }
+            .map( e -> e.getKey().toString() + ": \n"
+                    + e.getValue().entrySet().stream().map( dv -> {
+                    final Dimension dimension = dimensions.get( dv.getKey() );
+                    return "    " + dimension.name + "/" + dv.getKey() + ": "
+                        + dv.getValue().toString( dimension ) + " " + queryToString( query, dv.getKey() );
+                }
                 ).collect( joining( "\n" ) )
             ).collect( joining( "\n" ) );
         return queryStr + ( out.length() > 0 ? "Expecting:\n" + out : "ALL OK" );
@@ -452,7 +452,7 @@ public class Tree<T> {
         if( o == null
             || ( o instanceof Optional<?> && !( ( Optional<?> ) o ).isPresent() )
             || ( o instanceof List<?> && ( ( List<?> ) o ).isEmpty() )
-            ) {
+        ) {
             return Strings.UNKNOWN;
         }
         return o.toString();
@@ -487,9 +487,8 @@ public class Tree<T> {
         stat.forEach( ( s, m ) -> {
             final Map<String, Integer> statBySelection = result.computeIfAbsent( s, ( ss ) -> new HashMap<>() );
 
-            m.forEach( ( dimension, count ) -> {
-                statBySelection.compute( dimension, ( d, c ) -> c == null ? count : c + count );
-            } );
+            m.forEach( ( dimension, count ) ->
+                statBySelection.compute( dimension, ( d, c ) -> c == null ? count : c + count ) );
         } );
 
     }
@@ -908,10 +907,8 @@ public class Tree<T> {
             result.add( __( "eq", equal ) );
             result.add( __( "a", any ) );
 
-            for( int i = 0; i < sets.size(); i++ ) {
-                final ArrayBitSet set = sets.get( i );
+            for( ArrayBitSet set : sets )
                 result.add( __( ( set.include ? "in:" : "not in:" ) + bitSetToData( set.bitSet ), set.equal ) );
-            }
 
             return result;
         }

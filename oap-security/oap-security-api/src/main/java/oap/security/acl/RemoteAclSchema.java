@@ -24,12 +24,12 @@
 
 package oap.security.acl;
 
+import oap.util.Stream;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 /**
  * Created by igor.petrenko on 21.03.2018.

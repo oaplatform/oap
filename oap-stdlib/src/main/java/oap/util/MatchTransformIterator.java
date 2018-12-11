@@ -6,7 +6,6 @@ import com.google.common.collect.PeekingIterator;
 import java.util.Iterator;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static java.util.Spliterator.ORDERED;
@@ -45,9 +44,9 @@ public class MatchTransformIterator<A, B, R> implements Iterator<R> {
     }
 
     public static <A, B, R> Stream<R> stream( Stream<A> master, Stream<B> lookup, Predicate<A> validator, Comparator<A, B> comparator, BiFunction<A, B, R> transform ) {
-        return StreamSupport.stream( spliteratorUnknownSize(
+        return Stream.of( StreamSupport.stream( spliteratorUnknownSize(
             iterator( master.iterator(), lookup.iterator(), validator, comparator, transform ),
-            ORDERED ), false );
+            ORDERED ), false ) );
     }
 
     public static <A, B, R> MatchTransformIterator<A, B, R> iterator( Iterator<A> master, Iterator<B> lookup, Predicate<A> validator, Comparator<A, B> comparator, BiFunction<A, B, R> transform ) {

@@ -26,10 +26,10 @@ package oap.zabbix;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import oap.io.Closeables;
 import oap.json.Binder;
 import oap.net.Inet;
 import oap.zabbix.logback.ZabbixRequest;
-import org.apache.commons.io.IOUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -103,9 +103,9 @@ public class ZabbixImpl implements Zabbix {
 
             return new Response( e.getMessage(), "" );
         } finally {
-            IOUtils.closeQuietly( inputStream );
-            IOUtils.closeQuietly( outputStream );
-            IOUtils.closeQuietly( socket );
+            Closeables.close( inputStream );
+            Closeables.close( outputStream );
+            Closeables.close( socket );
         }
     }
 }

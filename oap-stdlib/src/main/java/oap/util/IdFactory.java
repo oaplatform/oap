@@ -37,13 +37,12 @@ public class IdFactory {
     private static final ConcurrentHashMap<Class, IdAccess> ids = new ConcurrentHashMap<>();
 
     public static String getId( Object value ) {
-        val idAccess = get( value );
 
-        return idAccess.get( value );
+        return get( value.getClass() ).get( value );
     }
 
-    private static IdAccess get( Object value ) {
-        return ids.computeIfAbsent( value.getClass(), ( c ) -> {
+    private static IdAccess get( Class<?> clazz ) {
+        return ids.computeIfAbsent( clazz, c -> {
             Reflection reflect = Reflect.reflect( c );
 
             val idFields = reflect.annotatedFields( Id.class );
@@ -67,7 +66,7 @@ public class IdFactory {
     }
 
     public static void setId( Object value, String id ) {
-        get( value ).set( value, id );
+        get( value.getClass() ).set( value, id );
     }
 
     public interface IdAccess {

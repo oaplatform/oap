@@ -27,13 +27,13 @@ package oap.statsdb;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.storage.Storage;
+import oap.util.Stream;
 
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 /**
  * Created by igor.petrenko on 08.09.2017.
@@ -102,8 +102,8 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
     private void init( Stream<? extends Node> nodes ) {
         nodes.forEach( node -> {
             if( node.v instanceof Node.Container ) {
-                init( node.db.values().stream() );
-                ( ( Node.Container ) node.v ).aggregate( node.db.values().stream().map( b -> b.v ) );
+                init( Stream.of( node.db.values() ) );
+                ( ( Node.Container ) node.v ).aggregate( Stream.of( node.db.values() ).map( b -> b.v ) );
             }
         } );
     }

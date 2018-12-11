@@ -31,11 +31,9 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigParseOptions;
-import lombok.experimental.var;
 import oap.util.Stream;
 import org.slf4j.Logger;
 
-import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
 
@@ -70,11 +68,11 @@ public class HoconFactoryWithFallback extends HoconFactory {
     }
 
     @Override
-    protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) throws IOException {
+    protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) {
         ConfigParseOptions options = ConfigParseOptions.defaults();
         Config config = ConfigFactory.parseReader( r, options );
 
-        var unresolvedConfig = additinal.withFallback( config );
+        Config unresolvedConfig = additinal.withFallback( config );
 
         if( withSystemProperties )
             unresolvedConfig = unresolvedConfig.withFallback( ConfigFactory.systemProperties() );

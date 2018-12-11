@@ -33,12 +33,12 @@ import oap.storage.SingleFileStorage;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Cuid;
+import oap.util.Stream;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
-import java.util.stream.Stream;
 
 import static oap.application.ApplicationUtils.service;
 import static oap.storage.Storage.LockStrategy.Lock;

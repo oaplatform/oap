@@ -29,13 +29,13 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.storage.Storage;
+import oap.util.Stream;
 
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 /**
  * Created by igor.petrenko on 05.09.2017.
@@ -58,9 +58,8 @@ public abstract class StatsDB<T extends StatsDB.Database> {
 
         final Node.Value value = mnode.v;
         if( value instanceof Node.Container ) {
-            ( ( Node.Container ) value ).aggregate( mnode.db
-                .values()
-                .stream().map( n -> n.v )
+            ( ( Node.Container ) value ).aggregate( Stream.of( mnode.db.values() )
+                .map( n -> n.v )
                 .filter( Objects::nonNull )
             );
         }
@@ -130,7 +129,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
     @SuppressWarnings( "unchecked" )
     private <TValue extends Node.Value<TValue>> Stream<TValue> _children( String[] key, int position, Node node ) {
         if( node == null ) return Stream.empty();
-        if( position >= key.length ) return node.db.values().stream().map( n -> ( TValue ) n.v );
+        if( position >= key.length ) return Stream.of( node.db.values() ).map( n -> ( TValue ) n.v );
 
         return _children( key, position + 1, node.db.get( key[position] ) );
     }

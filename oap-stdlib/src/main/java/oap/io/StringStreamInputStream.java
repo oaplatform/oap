@@ -1,8 +1,9 @@
 package oap.io;
 
+import oap.util.Stream;
+
 import java.io.InputStream;
 import java.util.Iterator;
-import java.util.stream.Stream;
 
 public class StringStreamInputStream extends InputStream {
     private Iterator<String> iterator;

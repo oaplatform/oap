@@ -26,8 +26,7 @@ package oap.util;
 import com.google.common.base.CharMatcher;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.text.StrLookup;
-import org.apache.commons.lang3.text.StrSubstitutor;
+import org.apache.commons.text.StringSubstitutor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -141,16 +140,13 @@ public final class Strings {
 
     @SafeVarargs
     public static String substitute( String s, Pair<String, Object>... map ) {
-        return new StrSubstitutor( Maps.ofStrings( map ) ).replace( s );
+        return new StringSubstitutor( Maps.ofStrings( map ) ).replace( s );
     }
 
     public static String substitute( String s, Function<String, Object> mapper ) {
-        return new StrSubstitutor( new StrLookup<Object>() {
-            @Override
-            public String lookup( String key ) {
-                Object value = mapper.apply( key );
-                return value == null ? "" : String.valueOf( value );
-            }
+        return new StringSubstitutor( key -> {
+            Object value = mapper.apply( key );
+            return value == null ? "" : String.valueOf( value );
         } ).replace( s );
     }
 
@@ -183,7 +179,7 @@ public final class Strings {
         for( Object value : items ) {
             if( first ) first = false;
             else builder.append( delimiter );
-            builder.append( String.valueOf( value ) );
+            builder.append( value );
         }
     }
 
@@ -346,29 +342,28 @@ public final class Strings {
         return id;
     }
 
-    public static String replace( String source, String os, String ns ) {
-        if( source == null ) {
-            return null;
-        }
+    public static String replace( String source, String old, String replacement ) {
+        if( source == null ) return null;
         int i = 0;
-        if( ( i = source.indexOf( os, i ) ) >= 0 ) {
-            char[] sourceArray = source.toCharArray();
-            char[] nsArray = ns.toCharArray();
-            int oLength = os.length();
+        String s = source;
+        if( ( i = s.indexOf( old, i ) ) >= 0 ) {
+            char[] sourceArray = s.toCharArray();
+            char[] nsArray = replacement.toCharArray();
+            int oLength = old.length();
             StringBuilder buf = new StringBuilder( sourceArray.length );
             buf.append( sourceArray, 0, i ).append( nsArray );
             i += oLength;
             int j = i;
-            while( ( i = source.indexOf( os, i ) ) > 0 ) {
+            while( ( i = s.indexOf( old, i ) ) > 0 ) {
                 buf.append( sourceArray, j, i - j ).append( nsArray );
                 i += oLength;
                 j = i;
             }
             buf.append( sourceArray, j, sourceArray.length - j );
-            source = buf.toString();
+            s = buf.toString();
             buf.setLength( 0 );
         }
-        return source;
+        return s;
     }
 
     public enum FriendlyIdOption {

@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.ToString;
 import lombok.val;
 import oap.util.Mergeable;
+import oap.util.Stream;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
@@ -39,7 +40,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
 /**
  * Created by igor.petrenko on 29.12.2017.

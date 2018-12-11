@@ -2,8 +2,6 @@ package oap.util;
 
 import org.testng.annotations.Test;
 
-import java.util.stream.Stream;
-
 import static java.util.stream.Collectors.toList;
 import static oap.util.Lists.of;
 import static org.assertj.core.api.Assertions.assertThat;

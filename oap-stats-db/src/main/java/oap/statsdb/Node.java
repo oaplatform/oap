@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.json.TypeIdFactory;
 import oap.util.Mergeable;
+import oap.util.Stream;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Serializable;
@@ -40,7 +41,6 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 /**
  * Created by igor.petrenko on 05.09.2017.
@@ -53,7 +53,7 @@ public class Node implements Serializable {
 
     public volatile ConcurrentHashMap<String, Node> db = new ConcurrentHashMap<>();
     @JsonTypeIdResolver( TypeIdFactory.class )
-    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "o:t" )
+    @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, property = "o:t" )
     public Value v;
     public long ct;
     public long mt;

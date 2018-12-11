@@ -39,7 +39,7 @@ public final class Countries {
 
     static {
 
-        List<Locale> locales = java.util.stream.Stream.of( Locale.getISOCountries() )
+        List<Locale> locales = Stream.of( Locale.getISOCountries() )
             .map( a2 -> new Locale( "", a2 ) )
             .collect( toList() );
 

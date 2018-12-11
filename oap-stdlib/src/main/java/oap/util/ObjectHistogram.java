@@ -24,8 +24,6 @@
 
 package oap.util;
 
-import lombok.experimental.var;
-import lombok.val;
 import org.joda.time.DateTimeUtils;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -63,7 +61,7 @@ public abstract class ObjectHistogram<T extends Mergeable<T>> implements Seriali
 
     public void update( long period, T value ) {
         shift( period );
-        var obj = values[0];
+        T obj = values[0];
         if( obj == null ) {
             values[0] = value;
         } else obj.merge( value );
@@ -72,36 +70,31 @@ public abstract class ObjectHistogram<T extends Mergeable<T>> implements Seriali
     public void update( long period, long time, T value ) {
         shift( period );
 
-        val count = ( int ) ( ( DateTimeUtils.currentTimeMillis() - time ) / period );
+        int count = ( int ) ( ( DateTimeUtils.currentTimeMillis() - time ) / period );
 
         if( count >= values.length ) return;
 
-        var obj = values[count];
-        if( obj == null ) {
-            values[count] = value;
-        } else obj.merge( value );
+        T obj = values[count];
+        if( obj == null ) values[count] = value;
+        else obj.merge( value );
     }
 
     private void shift( long period ) {
-        var ct = currentTick( period );
+        long ct = currentTick( period );
         if( ct == lastTick ) return;
         ct = currentTick( period );
         if( ct == lastTick ) return;
 
-        val sc = ( int ) ( ct - lastTick );
-        var len = values.length;
+        int sc = ( int ) ( ct - lastTick );
+        int len = values.length;
         if( sc < values.length ) {
             System.arraycopy( values, 0, values, sc, len - sc );
-            for( int i = 0; i < sc; i++ ) {
-                values[i] = null;
-            }
+            for( int i = 0; i < sc; i++ ) values[i] = null;
 
             len = sc;
         }
 
-        for( int i = 0; i < len; i++ ) {
-            values[i] = null;
-        }
+        for( int i = 0; i < len; i++ ) values[i] = null;
 
         lastTick = ct;
     }
@@ -117,8 +110,8 @@ public abstract class ObjectHistogram<T extends Mergeable<T>> implements Seriali
             shift( period );
             update.shift( period );
             for( int i = 0; i < values.length; i++ ) {
-                val thisValue = values[i];
-                val updateValue = update.values[i];
+                T thisValue = values[i];
+                T updateValue = update.values[i];
 
                 if( thisValue == null ) values[i] = updateValue;
                 else if( updateValue != null )

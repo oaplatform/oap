@@ -24,6 +24,7 @@
 
 package oap.http;
 
+import oap.util.Stream;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
 
@@ -31,7 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Iterator;
-import java.util.stream.Stream;
 
 /**
  * Created by Igor Petrenko on 22.01.2016.
@@ -57,7 +57,7 @@ public class HttpStreamEntity extends AbstractHttpEntity {
    }
 
    @Override
-   public InputStream getContent() throws IOException, UnsupportedOperationException {
+   public InputStream getContent() throws UnsupportedOperationException {
       throw new UnsupportedOperationException();
    }
 

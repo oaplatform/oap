@@ -35,7 +35,8 @@ import java.io.Serializable;
 @ToString
 @EqualsAndHashCode
 public class IdBean implements Serializable {
-    private String id;
+    @Id
+    public String id;
 
     public IdBean( String id ) {
         this.id = id;
@@ -45,11 +46,17 @@ public class IdBean implements Serializable {
         this( null );
     }
 
+    /**
+     * use direct access
+     * @return
+     */
+    @Deprecated
     @Id
     public String getId() {
         return id;
     }
 
+    @Deprecated
     @Id
     public void setId( String id ) {
         this.id = id;

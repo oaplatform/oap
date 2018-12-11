@@ -498,7 +498,7 @@ public class Client implements Closeable {
         val response = client.newCall( request ).execute();
 
         val headers = response.headers();
-        final java.util.stream.Stream<String> stream = headers.names().stream();
+        final Stream<String> stream = Stream.of( headers.names() );
         final Map<String, String> h = stream.collect( Collectors.toMap( n -> n, headers::get ) );
         val responseBody = response.body();
         return new Response( response.code(), response.message(), h,

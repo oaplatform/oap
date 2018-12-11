@@ -26,6 +26,7 @@ package oap.http;
 import com.google.common.base.Joiner;
 import oap.util.Maps;
 import oap.util.Pair;
+import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
@@ -48,7 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -157,8 +157,8 @@ public class HttpResponse {
     }
 
     private static String content( boolean raw, Object content, ContentType contentType ) {
-        return raw ? ( String ) content :
-            HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
+        return raw ? ( String ) content
+            : HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
     }
 
     public HttpResponse withHeader( String name, String value ) {
@@ -184,8 +184,7 @@ public class HttpResponse {
 
     @Override
     public String toString() {
-        return "HttpResponse{" + "reasonPhrase='" + reasonPhrase + '\'' + ", headers=" + headers + ", code=" + code +
-            '}';
+        return "HttpResponse{" + "reasonPhrase='" + reasonPhrase + '\'' + ", headers=" + headers + ", code=" + code + '}';
     }
 
     public static class CookieBuilder {
