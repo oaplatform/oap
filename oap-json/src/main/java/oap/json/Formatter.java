@@ -28,7 +28,6 @@ package oap.json;
 import java.util.Objects;
 
 public class Formatter {
-    @SuppressWarnings( "StatementWithEmptyBody" )
     public static String format( String json ) {
         StringBuilder b = new StringBuilder();
         boolean string = false;
@@ -40,11 +39,11 @@ public class Formatter {
                 string = !string;
                 escape = false;
             } else if( ( c == '{' || c == '[' ) && !string ) {
-                tabs.append( '\t' );
+                tabs.append( "  " );
                 b.append( c ).append( "\n" ).append( tabs );
                 escape = false;
             } else if( ( c == '}' || c == ']' ) && !string ) {
-                tabs.deleteCharAt( tabs.length() - 1 );
+                tabs.delete( tabs.length() - 2, tabs.length() );
                 b.append( "\n" ).append( tabs ).append( c );
                 escape = false;
             } else if( c == ',' && !string ) {
@@ -56,17 +55,17 @@ public class Formatter {
             } else if( c == ':' && !string ) {
                 b.append( c ).append( " " );
                 escape = false;
-            } else if( ( c == '\n' || c == '\r' || c == '\t' || c == ' ' ) && !string ) {
-            } else {
+            } else if( ( c != '\n' && c != '\r' && c != '\t' && c != ' ' ) || string ) {
                 b.append( c );
                 escape = false;
             }
+        b.append( "\n" );
         return b.toString();
     }
 
     public static boolean equals( String json1, String json2 ) {
         return Objects.equals(
-                format( Objects.requireNonNull( json1 ) ),
-                format( Objects.requireNonNull( json2 ) ) );
+            format( Objects.requireNonNull( json1 ) ),
+            format( Objects.requireNonNull( json2 ) ) );
     }
 }

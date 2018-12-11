@@ -47,12 +47,12 @@ import static oap.util.Pair.__;
 public class Dictionaries {
     private static final Map<String, URL> dictionaries = new HashMap<>();
     private static final ConcurrentHashMap<String, DictionaryRoot> cache = new ConcurrentHashMap<>();
-    private static String defaultPath = "/opt/madberry-dictionary";
+    public static final String DEFAULT_PATH = "/opt/oap-dictionary";
 
-    private synchronized static void load() {
+    private static synchronized void load() {
         if( dictionaries.isEmpty() ) {
-            dictionaries.putAll( Stream.of( Files.fastWildcard( defaultPath, "*.json" ).stream() )
-                .concat( Files.fastWildcard( defaultPath, "*.conf" ).stream() )
+            dictionaries.putAll( Stream.of( Files.fastWildcard( DEFAULT_PATH, "*.json" ).stream() )
+                .concat( Files.fastWildcard( DEFAULT_PATH, "*.conf" ).stream() )
                 .map( Try.map( p -> p.toUri().toURL() ) )
                 .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
                 .toMap() );
@@ -74,7 +74,7 @@ public class Dictionaries {
         return dictionaries.keySet();
     }
 
-    public static DictionaryRoot getDictionary( String name ) throws DictionaryNotFoundError {
+    public static DictionaryRoot getDictionary( String name ) {
         load();
 
         return Maps.get( dictionaries, name )
@@ -82,7 +82,7 @@ public class Dictionaries {
             .orElseThrow( () -> new DictionaryNotFoundError( name ) );
     }
 
-    public static DictionaryRoot getCachedDictionary( String name ) throws DictionaryNotFoundError {
+    public static DictionaryRoot getCachedDictionary( String name ) {
         return cache.computeIfAbsent( name, Dictionaries::getDictionary );
     }
 }

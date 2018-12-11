@@ -28,6 +28,7 @@ import oap.io.Resources;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Maps;
+import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.net.URL;
@@ -48,11 +49,11 @@ public class DictionaryParserTest extends AbstractTest {
 
         final DictionaryRoot dictionary = DictionaryParser.parse( path );
 
-        assertThat( dictionary.getValues() ).contains( new DictionaryLeaf( "id2", true, '2',
+        Assertions.<Dictionary>assertThat( dictionary.getValues() ).contains( new DictionaryLeaf( "id2", true, '2',
             Maps.of( __( "title", "title2" ) ) )
         );
 
-        assertThat( dictionary.getValues().get( 0 ).getValues() ).contains(
+        Assertions.<Dictionary>assertThat( dictionary.getValues().get( 0 ).getValues() ).contains(
             new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
         );
 
@@ -74,8 +75,8 @@ public class DictionaryParserTest extends AbstractTest {
     @Test
     public void testZeroStringEid() {
         final DictionaryRoot dictionary = Dictionaries.getDictionary( "test-dictionary2" );
-        assertThat(dictionary.getOrDefault( 0, "not found" )).isEqualTo( "-" );
-        assertThat(dictionary.getOrDefault( 'I', "not found" )).isEqualTo( "IMAGE" );
+        assertThat( dictionary.getOrDefault( 0, "not found" ) ).isEqualTo( "-" );
+        assertThat( dictionary.getOrDefault( 'I', "not found" ) ).isEqualTo( "IMAGE" );
 
     }
 }

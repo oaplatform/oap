@@ -38,14 +38,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class JsonValidatorPeer implements ValidatorPeer {
-    private final ConcurrentHashMap<String, JsonSchema> factory = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, JsonSchema> cache = new ConcurrentHashMap<>();
     private final WsValidateJson validate;
     private final String schemaRef;
     private final boolean dynamic;
 
     public JsonValidatorPeer( WsValidateJson validate, Reflection.Method targetMethod, Object instance, Type type ) {
         this.schemaRef = validate.schema();
-        dynamic = this.schemaRef.contains( "${" );
+        this.dynamic = this.schemaRef.contains( "${" );
         this.validate = validate;
     }
 
@@ -63,7 +63,7 @@ public class JsonValidatorPeer implements ValidatorPeer {
     }
 
     private JsonSchema getJsonSchema( LinkedHashMap<Reflection.Parameter, Object> originalValues ) {
-        if( !dynamic ) return factory.computeIfAbsent( Strings.UNDEFINED, ( s ) -> JsonSchema.schema( schemaRef ) );
+        if( !dynamic ) return cache.computeIfAbsent( Strings.UNDEFINED, s -> JsonSchema.schema( schemaRef ) );
 
         log.trace( "dynamic schema ref {}", schemaRef );
 
@@ -83,6 +83,6 @@ public class JsonValidatorPeer implements ValidatorPeer {
             .findAny()
             .orElse( Strings.UNKNOWN ) );
 
-        return factory.computeIfAbsent( id.toString(), ( i ) -> JsonSchema.schema( ref ) );
+        return cache.computeIfAbsent( id.toString(), i -> JsonSchema.schema( ref ) );
     }
 }

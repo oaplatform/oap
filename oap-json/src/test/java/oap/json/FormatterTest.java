@@ -24,18 +24,20 @@
 
 package oap.json;
 
-import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
+import static oap.testng.Asserts.assertString;
+import static oap.testng.Asserts.contentOfTestResource;
 
-public class FormatterTest extends AbstractTest {
+public class FormatterTest {
     @Test
     public void format() {
-        String expected = "{\n\t\"a\": {\n\t\t\"xxxx\": \":y\\\" \\ry []\\n\\t\\t{}\"\n	},\n\t\"b\": [\n\t\t1,\n\t\t{\n\t\t\t\"xx\": null\n\t\t},\n\t\t3\n\t]\n}";
-        String result = Formatter.format( "{\"a\": {\"xxxx\": \":y\\\" \\ry []\\n\\t\\t{}\"},\"b\":[1,{\"xx\":null},3]}" );
-        assertEquals( expected, result );
-        System.out.println( result );
+        String unformatted = contentOfTestResource( getClass(), "unformatted.json" );
+        String formatted = contentOfTestResource( getClass(), "formatted.json" );
+//        String expected = "{\n\t\"a\": {\n\t\t\"xxxx\": \":y\\\" \\ry []\\n\\t\\t{}\"\n	},\n\t\"b\": [\n\t\t1,\n\t\t{\n\t\t\t\"xx\": null\n\t\t},\n\t\t3\n\t]\n}";
+//        String result = Formatter.format( "{\"a\": {\"xxxx\": \":y\\\" \\ry []\\n\\t\\t{}\"},\"b\":[1,{\"xx\":null},3]}" );
+        assertString( Formatter.format( unformatted ) ).isEqualTo( formatted );
+//        System.out.println( result );
     }
 }
 

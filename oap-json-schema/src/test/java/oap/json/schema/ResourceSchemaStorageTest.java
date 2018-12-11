@@ -41,13 +41,13 @@ public class ResourceSchemaStorageTest {
         val schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema.conf" );
 
         assertJson( Binder.json.marshal( Binder.hoconWithoutSystemProperties.unmarshal( Map.class, schema ) ) )
-            .isEqualTo( "{\n"
-                + "\t\"type\": \"object\",\n"
-                + "\t\"properties\": {\n"
-                + "\t\t\"a\": {\n"
-                + "\t\t\t\"type\": \"string\"\n"
-                + "\t\t}\n"
-                + "\t}\n"
+            .isEqualTo( "{"
+                + "\"type\": \"object\","
+                + "  \"properties\": {"
+                + "     \"a\": {"
+                + "       \"type\": \"string\""
+                + "    }"
+                + "  }"
                 + "}" );
     }
 
@@ -56,16 +56,16 @@ public class ResourceSchemaStorageTest {
         val schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema-1.conf" );
 
         assertJson( Binder.json.marshal( Binder.hoconWithoutSystemProperties.unmarshal( Map.class, schema ) ) )
-            .isEqualTo( "{\n"
-                + "\t\"type\": \"object\",\n"
-                + "\t\"properties\": {\n"
-                + "\t\t\"a\": {\n"
-                + "\t\t\t\"type\": \"string\"\n"
-                + "\t\t},\n"
-                + "\t\t\"b\": {\n"
-                + "\t\t\t\"type\": \"integer\"\n"
-                + "\t\t}\n"
-                + "\t}\n"
+            .isEqualTo( "{"
+                + "  \"type\": \"object\","
+                + "  \"properties\": {"
+                + "    \"a\": {"
+                + "      \"type\": \"string\""
+                + "    },"
+                + "    \"b\": {"
+                + "      \"type\": \"integer\""
+                + "    }"
+                + "  }"
                 + "}" );
     }
 }
