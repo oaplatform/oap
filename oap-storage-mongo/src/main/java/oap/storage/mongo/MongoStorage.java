@@ -54,7 +54,7 @@ import static com.mongodb.client.model.Filters.eq;
 @Slf4j
 public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, OplogService.OplogListener {
     public static final UpdateOptions UPDATE_OPTIONS_UPSERT = new UpdateOptions().upsert( true );
-    protected final MongoCollection<Metadata<T>> collection;
+    public final MongoCollection<Metadata<T>> collection;
     public int bulkSize = 1000;
     public OplogService oplogService;
     private long lastFsync = -1;
@@ -99,9 +99,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
     public void start() {
         load();
 
-        if( oplogService != null ) {
-            oplogService.addListener( collection.getNamespace().getCollectionName(), this );
-        }
+        if( oplogService != null ) oplogService.addListener( collection.getNamespace().getCollectionName(), this );
     }
 
     @Override
