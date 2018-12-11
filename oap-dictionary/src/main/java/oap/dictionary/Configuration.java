@@ -26,6 +26,7 @@ package oap.dictionary;
 
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Pair;
@@ -35,7 +36,7 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -55,26 +56,17 @@ public abstract class Configuration {
 
     public Configuration(
         Path mappingLocation,
-        String defaultPath,
         String resourceLocation,
         int maxVersionsToLoad,
         DictionaryParser.IdStrategy idStrategy ) {
 
-        List<URL> logConfigs = Collections.emptyList();
+        val logConfigs = new ArrayList<URL>();
         if( mappingLocation != null ) {
             log.info( "mappingLocation = {}", mappingLocation );
-            logConfigs = Stream.of( Files.fastWildcard( mappingLocation, "*.json" ).stream() )
+            logConfigs.addAll( Stream.of( Files.fastWildcard( mappingLocation, "*.json" ).stream() )
                 .concat( Files.fastWildcard( mappingLocation, "*.conf" ).stream() )
                 .map( Try.map( p -> p.toUri().toURL() ) )
-                .collect( toList() );
-        }
-
-        if( logConfigs.isEmpty() && defaultPath != null ) {
-            log.info( "defaultLocation = {}", defaultPath );
-            logConfigs = Stream.of( Files.fastWildcard( defaultPath, "*.json" ).stream() )
-                .concat( Files.fastWildcard( defaultPath, "*.conf" ).stream() )
-                .map( Try.map( p -> p.toUri().toURL() ) )
-                .collect( toList() );
+                .collect( toList() ) );
         }
 
         if( logConfigs.isEmpty() && resourceLocation != null ) {
@@ -84,8 +76,8 @@ public abstract class Configuration {
             logConfigs.addAll( Resources.urls( resourceLocation, "conf" ) );
         }
 
-        Preconditions.checkState( !logConfigs.isEmpty(), "couldn't load configs from default path " + defaultPath +
-            " or resource location " + resourceLocation );
+        Preconditions.checkState( !logConfigs.isEmpty(), "couldn't load configs from mappingLocation "
+            + mappingLocation + " or resource location " + resourceLocation );
 
         List<Pair<Integer, URL>> versionedDics = logConfigs
             .stream()

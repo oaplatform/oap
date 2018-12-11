@@ -57,7 +57,7 @@ public class LogConfiguration extends Configuration {
     }
 
     public LogConfiguration( Engine engine, Path mappingLocation, String resourceLocation, int maxVersionsToLoad ) {
-        super( mappingLocation, "/opt/oap-logconfig/", resourceLocation, maxVersionsToLoad, INCREMENTAL_ID_STRATEGY );
+        super( mappingLocation, resourceLocation, maxVersionsToLoad, INCREMENTAL_ID_STRATEGY );
         this.engine = engine;
     }
 
