@@ -55,7 +55,6 @@ public abstract class Configuration {
 
     public Configuration(
         Path mappingLocation,
-        String defaultPath,
         String resourceLocation,
         int maxVersionsToLoad,
         DictionaryParser.IdStrategy idStrategy ) {
@@ -69,14 +68,6 @@ public abstract class Configuration {
                 .collect( toList() );
         }
 
-        if( logConfigs.isEmpty() && defaultPath != null ) {
-            log.info( "defaultLocation = {}", defaultPath );
-            logConfigs = Stream.of( Files.fastWildcard( defaultPath, "*.json" ).stream() )
-                .concat( Files.fastWildcard( defaultPath, "*.conf" ).stream() )
-                .map( Try.map( p -> p.toUri().toURL() ) )
-                .collect( toList() );
-        }
-
         if( logConfigs.isEmpty() && resourceLocation != null ) {
             log.info( "resourceLocation = {}", resourceLocation );
 
@@ -84,7 +75,7 @@ public abstract class Configuration {
             logConfigs.addAll( Resources.urls( resourceLocation, "conf" ) );
         }
 
-        Preconditions.checkState( !logConfigs.isEmpty(), "couldn't load configs from default path " + defaultPath +
+        Preconditions.checkState( !logConfigs.isEmpty(), "couldn't load configs from mappingLocation " + mappingLocation +
             " or resource location " + resourceLocation );
 
         List<Pair<Integer, URL>> versionedDics = logConfigs
