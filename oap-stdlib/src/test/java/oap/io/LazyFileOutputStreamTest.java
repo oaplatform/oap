@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class LazyFileOutputStreamTest extends AbstractTest {
     @Test
     public void testWrite() throws IOException {
-        val path = Env.tmpPath( "file1" );
+        val path = Env.tmpRoot.resolve( "test/file1.txt" );
 
         new LazyFileOutputStream( path ).close();
 

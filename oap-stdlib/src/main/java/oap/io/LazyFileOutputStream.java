@@ -47,7 +47,10 @@ public class LazyFileOutputStream extends OutputStream {
     }
 
     private void open() throws FileNotFoundException {
-        if( fos == null ) fos = new FileOutputStream( file );
+        if( fos == null ) {
+            Files.ensureFile( file.toPath() );
+            fos = new FileOutputStream( file );
+        }
     }
 
     @Override
