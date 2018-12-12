@@ -113,21 +113,21 @@ public class OplogService implements Runnable, Closeable {
                 switch( operation ) {
                     case 'i': {
                         val objO = ( Document ) document.get( "o" );
-                        val id = objO.get( "_id" );
+                        val id = objO.get( "_id" ).toString();
                         val l = listeners.get( tableName );
                         l.forEach( ll -> ll.inserted( tableName, id ) );
                         break;
                     }
                     case 'u': {
                         val objO2 = ( Document ) document.get( "o2" );
-                        val id = objO2.get( "_id" );
+                        val id = objO2.get( "_id" ).toString();
                         val l = listeners.get( tableName );
                         l.forEach( ll -> ll.updated( tableName, id ) );
                         break;
                     }
                     case 'd': {
                         val objO = ( Document ) document.get( "o" );
-                        val id = objO.get( "_id" );
+                        val id = objO.get( "_id" ).toString();
                         val l = listeners.get( tableName );
                         l.forEach( ll -> ll.deleted( tableName, id ) );
                         break;
@@ -150,10 +150,10 @@ public class OplogService implements Runnable, Closeable {
     }
 
     public interface OplogListener {
-        void updated( String table, Object id );
+        void updated( String table, String id );
 
-        void deleted( String table, Object id );
+        void deleted( String table, String id );
 
-        void inserted( String table, Object id );
+        void inserted( String table, String id );
     }
 }

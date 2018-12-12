@@ -125,7 +125,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
                 final List<? extends WriteModel<Metadata<T>>> bulk = Lists.map( list,
                     metadata -> {
                         val id = getIdentifier().get( metadata.object );
-                        return new ReplaceOneModel<>( eq( "_id", new ObjectId( id ) ), metadata, UPDATE_OPTIONS_UPSERT );
+                        return new ReplaceOneModel<>( eq( "_id", id ), metadata, UPDATE_OPTIONS_UPSERT );
                     } );
                 collection.bulkWrite( bulk );
 
@@ -142,25 +142,24 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
 
     @Override
     public Optional<T> delete( String id ) {
-        collection.deleteOne( eq( "_id", new ObjectId( id ) ) );
+        collection.deleteOne( eq( "_id", id ) );
 
         return super.delete( id );
     }
 
     @Override
-    public void updated( String table, Object id ) {
+    public void updated( String table, String id ) {
         update( id );
     }
 
-    public void update( Object id ) {
+    public void update( String id ) {
         val m = collection.find( eq( "_id", id ) ).first();
         if( m != null ) {
-            val strId = id.toString();
-            lockStrategy.synchronizedOn( strId, () -> {
-                val oldM = data.get( strId );
+            lockStrategy.synchronizedOn( id, () -> {
+                val oldM = data.get( id );
                 if( oldM == null || m.modified > oldM.modified ) {
                     log.debug( "update from mongo {}", id );
-                    data.put( strId, m );
+                    data.put( id, m );
                     fireUpdated( m.object, false );
                 } else {
                     log.debug( "[{}] m.modified <= oldM.modified", id );
@@ -170,12 +169,12 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
     }
 
     @Override
-    public void deleted( String table, Object id ) {
-        delete( id.toString() );
+    public void deleted( String table, String id ) {
+        delete( id );
     }
 
     @Override
-    public void inserted( String table, Object id ) {
+    public void inserted( String table, String id ) {
         update( id );
     }
 }

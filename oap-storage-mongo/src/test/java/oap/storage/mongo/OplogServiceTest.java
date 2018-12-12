@@ -44,17 +44,17 @@ public class OplogServiceTest extends AbstractMongoTest {
 
             oplogListener.addListener( "test_OplogServiceTest", new OplogService.OplogListener() {
                 @Override
-                public void updated( String table, Object id ) {
+                public void updated( String table, String id ) {
                     sb.append( 'u' );
                 }
 
                 @Override
-                public void deleted( String table, Object id ) {
+                public void deleted( String table, String id ) {
                     sb.append( 'd' );
                 }
 
                 @Override
-                public void inserted( String table, Object id ) {
+                public void inserted( String table, String id ) {
                     sb.append( 'i' );
                 }
             } );

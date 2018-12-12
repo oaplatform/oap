@@ -29,7 +29,6 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.util.Id;
-import org.bson.types.ObjectId;
 import org.testng.annotations.Test;
 
 import static com.mongodb.client.model.Filters.and;
@@ -95,18 +94,18 @@ public class MongoStorageTest extends AbstractMongoTest {
             storage.fsync();
 
             storage.collection.updateOne(
-                eq( "_id", new ObjectId( bean1.id ) ),
+                eq( "_id", bean1.id ),
                 and( set( "object.c", 1 ), inc( "modified", 1 ) )
             );
 
             assertEventually( 100, 100, () -> assertThat( storage.get( bean1.id ).get().c ).isEqualTo( 1 ) );
 
             storage.collection.updateOne(
-                eq( "_id", new ObjectId( bean1.id ) ),
+                eq( "_id", bean1.id ),
                 and( set( "object.c", -1 ) )
             );
             storage.collection.updateOne(
-                eq( "_id", new ObjectId( bean2.id ) ),
+                eq( "_id", bean2.id ),
                 and( set( "object.c", 100 ), inc( "modified", 1 ) )
             );
 

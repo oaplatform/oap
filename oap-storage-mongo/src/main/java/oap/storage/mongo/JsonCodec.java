@@ -30,8 +30,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.SneakyThrows;
 import lombok.val;
 import oap.json.Binder;
-import oap.json.TypeIdFactory;
-import org.bson.BsonDateTime;
 import org.bson.BsonReader;
 import org.bson.BsonWriter;
 import org.bson.Document;
@@ -39,9 +37,7 @@ import org.bson.codecs.Codec;
 import org.bson.codecs.DecoderContext;
 import org.bson.codecs.DocumentCodec;
 import org.bson.codecs.EncoderContext;
-import org.bson.types.ObjectId;
 
-import java.util.Date;
 import java.util.function.Function;
 
 /**
@@ -78,7 +74,7 @@ public class JsonCodec<T> implements Codec<T> {
 
         val id = idFunc.apply( data );
 
-        doc.put( "_id", new ObjectId( id ) );
+        doc.put( "_id", id );
 
         documentCodec.encode( bsonWriter, doc, encoderContext );
     }
