@@ -26,16 +26,16 @@ package oap.storage;
 
 import org.testng.annotations.Test;
 
-import static oap.storage.Storage.LockStrategy.Lock;
-import static oap.storage.Storage.LockStrategy.NoLock;
+import static oap.storage.Storage.Lock.CONCURRENT;
+import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultIdentifierTest {
 
     @Test
-    public void idFromPath() {
-        MemoryStorage<Bean> storage = new MemoryStorage<>( IdentifierBuilder.identityPath( "s" ).build(), Lock );
+    public void forPath() {
+        MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.<Bean>forPath( "s" ).build(), SERIALIZED );
         storage.store( new Bean( "1", "aaaa" ) );
         storage.store( new Bean( "2", "bbbb" ) );
         assertThat( storage.get( "aaaa" ) )
@@ -48,11 +48,11 @@ public class DefaultIdentifierTest {
 
     @Test
     public void idAndSizeGeneration() {
-        Identifier<Bean> identifier = IdentifierBuilder.<Bean>identityPath( "id" )
+        Identifier<Bean> identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
             .size( 7 )
             .build();
-        MemoryStorage<Bean> storage = new MemoryStorage<>( identifier, Lock );
+        MemoryStorage<Bean> storage = new MemoryStorage<>( identifier, SERIALIZED );
         Bean a = new Bean( null, "some text" );
         Bean b = new Bean( null, "another text" );
 
@@ -66,11 +66,11 @@ public class DefaultIdentifierTest {
 
     @Test
     public void conflictResolution() {
-        Identifier<Bean> identifier = IdentifierBuilder.<Bean>identityPath( "id" )
+        Identifier<Bean> identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
             .size( 7 )
             .build();
-        MemoryStorage<Bean> storage = new MemoryStorage<>( identifier, NoLock );
+        MemoryStorage<Bean> storage = new MemoryStorage<>( identifier, CONCURRENT );
         Bean a = new Bean( null, "some text" );
         Bean b = new Bean( null, "some text" );
         Bean c = new Bean( null, "some text" );

@@ -31,9 +31,12 @@ import java.io.Serializable;
 
 /**
  * Created by igor.petrenko on 10.01.2018.
+ * use annotation
+ * @see Id
  */
 @ToString
 @EqualsAndHashCode
+@Deprecated
 public class IdBean implements Serializable {
     @Id
     public String id;
@@ -48,7 +51,6 @@ public class IdBean implements Serializable {
 
     /**
      * use direct access
-     * @return
      */
     @Deprecated
     @Id

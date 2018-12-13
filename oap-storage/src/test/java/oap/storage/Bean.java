@@ -26,8 +26,9 @@ package oap.storage;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.storage.migration.FileStorageMigration;
+import oap.storage.migration.Migration;
 import oap.storage.migration.JsonMetadata;
+import oap.util.Id;
 
 /**
  * Created by Igor Petrenko on 05.10.2015.
@@ -35,8 +36,8 @@ import oap.storage.migration.JsonMetadata;
 @ToString
 @EqualsAndHashCode
 public class Bean {
-    public static final Identifier<Bean> identifier = IdentifierBuilder.<Bean>identify( p -> p.id ).build();
 
+    @Id
     public String id;
     public String s = "aaa";
 
@@ -52,19 +53,4 @@ public class Bean {
     public Bean() {
     }
 
-    public static class BeanMigration implements FileStorageMigration {
-
-        @Override
-        public long fromVersion() {
-            return 0;
-        }
-
-        @Override
-        public JsonMetadata run( JsonMetadata old ) {
-            return old
-                .object()
-                .mapString( "id", s -> s + "1" )
-                .topParent();
-        }
-    }
 }

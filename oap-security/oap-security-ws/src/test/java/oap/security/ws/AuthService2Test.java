@@ -26,17 +26,17 @@ package oap.security.ws;
 
 import lombok.val;
 import oap.security.acl.MockUser2;
+import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
 import oap.util.Cuid;
+import oap.util.Lists;
 import oap.ws.security.PasswordHasher;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import static java.util.Arrays.asList;
-import static oap.storage.IdentifierBuilder.annotationBuild;
-import static oap.storage.Storage.LockStrategy.Lock;
+import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -78,9 +78,9 @@ public class AuthService2Test {
         Cuid.reset( "s", 0 );
 
         authProvider = new MockAuthProvider();
-        authService = new AuthService2( asList( authProvider ),
+        authService = new AuthService2( Lists.of( authProvider ),
             new PasswordHasher( "salt" ),
-            new MemoryStorage<>( annotationBuild(), Lock ),
+            new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED ),
             10000 );
     }
 

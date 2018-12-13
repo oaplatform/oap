@@ -12,3 +12,4 @@ vcs.xml
 libraries
 inspectionProfiles
 kotlinc.xml
+.attach*

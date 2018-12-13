@@ -24,37 +24,30 @@
 
 package oap.storage;
 
-import lombok.val;
 import oap.json.TypeIdFactory;
-import oap.replication.Replicator;
 import oap.testng.AbstractTest;
-import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
-import static oap.storage.Storage.LockStrategy.NoLock;
+import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
-import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MemoryStorageReplicationTest extends AbstractTest {
+public class ReplicatorTest extends AbstractTest {
 
     @Test
     public void masterSlave() {
-        val time = new AtomicLong( 0 );
-        DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
-        MemoryStorage<Bean> slave = new MemoryStorage<>( Bean.identifier, NoLock );
-        try( FileStorage<Bean> master = new FileStorage<>( tmpPath( "master" ), Bean.identifier, 50, NoLock );
-             val ignored = new Replicator<Metadata<Bean>>( slave, master, 50, 0 ) ) {
+        MemoryStorage<Bean> slave = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+        try( MemoryStorage<Bean> master = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+             Replicator<Bean> ignored = new Replicator<>( slave, master, 50, 0 ) ) {
 
-            val updates = new AtomicInteger();
-            val creates = new AtomicInteger();
-            val deletes = new AtomicInteger();
-            slave.addDataListener( new FileStorage.DataListener<Bean>() {
+            AtomicInteger updates = new AtomicInteger();
+            AtomicInteger creates = new AtomicInteger();
+            AtomicInteger deletes = new AtomicInteger();
+            slave.addDataListener( new Storage.DataListener<Bean>() {
                 public void updated( Collection<Bean> objects, boolean added ) {
                     ( added ? creates : updates ).set( objects.size() );
                 }
@@ -65,7 +58,6 @@ public class MemoryStorageReplicationTest extends AbstractTest {
                 }
             } );
 
-            DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
             master.store( new Bean( "111" ) );
             master.store( new Bean( "222" ) );
             assertEventually( 120, 5, () -> {
@@ -73,10 +65,8 @@ public class MemoryStorageReplicationTest extends AbstractTest {
                 assertThat( updates.get() ).isEqualTo( 0 );
                 assertThat( creates.get() ).isEqualTo( 2 );
                 assertThat( deletes.get() ).isEqualTo( 0 );
-                DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
             } );
 
-            DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
             updates.set( 0 );
             creates.set( 0 );
             master.store( new Bean( "111", "bbb" ) );
@@ -85,10 +75,8 @@ public class MemoryStorageReplicationTest extends AbstractTest {
                 assertThat( updates.get() ).isEqualTo( 1 );
                 assertThat( creates.get() ).isEqualTo( 0 );
                 assertThat( deletes.get() ).isEqualTo( 0 );
-                DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
             } );
 
-            DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
             updates.set( 0 );
             creates.set( 0 );
             master.delete( "111" );
@@ -97,9 +85,7 @@ public class MemoryStorageReplicationTest extends AbstractTest {
                 assertThat( updates.get() ).isEqualTo( 0 );
                 assertThat( creates.get() ).isEqualTo( 0 );
                 assertThat( deletes.get() ).isEqualTo( 1 );
-                DateTimeUtils.setCurrentMillisFixed( time.incrementAndGet() );
             } );
-
         }
     }
 }

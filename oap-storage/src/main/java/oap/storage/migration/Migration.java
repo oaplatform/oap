@@ -27,7 +27,7 @@ package oap.storage.migration;
 /**
  * Created by Igor Petrenko on 14.03.2016.
  */
-public interface FileStorageMigration {
+public interface Migration {
     long fromVersion();
 
     JsonMetadata run( JsonMetadata old );

@@ -31,7 +31,7 @@ import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import oap.storage.IdentifierBuilder;
+import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
 import oap.storage.Metadata;
 import oap.util.Lists;
@@ -59,21 +59,24 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
     public OplogService oplogService;
     private long lastFsync = -1;
 
-    @SuppressWarnings( "unchecked" )
-    public MongoStorage( MongoClient mongoClient, String table,
-                         LockStrategy lockStrategy ) {
-        super( IdentifierBuilder
-            .annotation()
+    public MongoStorage( MongoClient mongoClient, String table, Lock lock ) {
+        this( mongoClient, table, Identifier
+            .<T>forAnnotation()
             .suggestion( ar -> ObjectId.get().toString() )
             .size( 24 )
-            .idOptions()
-            .build(), lockStrategy );
+            .options()
+            .build(), lock );
 
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public MongoStorage( MongoClient mongoClient, String table, Identifier<T> identifier, Lock lock ) {
+        super( identifier, lock );
 
         final Object o = new TypeReference<Metadata<T>>() {};
         final CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JsonCodec<>( ( TypeReference<Metadata> ) o,
-                Metadata.class, ( m ) -> getIdentifier().get( ( T ) m.object ) ) ),
+                Metadata.class, ( m ) -> this.identifier.get( ( T ) m.object ) ) ),
             mongoClient.database.getCodecRegistry()
         );
 
@@ -87,7 +90,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
         lastFsync = DateTimeUtils.currentTimeMillis();
 
         final Consumer<Metadata<T>> cons = metadata -> {
-            val id = getIdentifier().get( metadata.object );
+            val id = identifier.get( metadata.object );
             data.put( id, metadata );
         };
 
@@ -124,7 +127,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
 
                 final List<? extends WriteModel<Metadata<T>>> bulk = Lists.map( list,
                     metadata -> {
-                        val id = getIdentifier().get( metadata.object );
+                        val id = identifier.get( metadata.object );
                         return new ReplaceOneModel<>( eq( "_id", id ), metadata, UPDATE_OPTIONS_UPSERT );
                     } );
                 collection.bulkWrite( bulk );
@@ -155,7 +158,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
     public void update( String id ) {
         val m = collection.find( eq( "_id", id ) ).first();
         if( m != null ) {
-            lockStrategy.synchronizedOn( id, () -> {
+            lock.synchronizedOn( id, () -> {
                 val oldM = data.get( id );
                 if( oldM == null || m.modified > oldM.modified ) {
                     log.debug( "update from mongo {}", id );

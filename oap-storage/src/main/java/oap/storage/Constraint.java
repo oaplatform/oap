@@ -30,5 +30,5 @@ import java.util.function.Function;
  * Created by igor.petrenko on 05.01.2018.
  */
 public interface Constraint<T> {
-    void check( T object, ROStorage<T> storage, Function<T, String> id ) throws ConstraintException;
+    void check( T object, Storage<T> storage, Function<T, String> id ) throws ConstraintException;
 }

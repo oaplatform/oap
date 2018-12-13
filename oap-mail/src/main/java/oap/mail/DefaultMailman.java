@@ -45,8 +45,6 @@ import javax.mail.Transport;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -56,7 +54,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
-public class DefaultMailman implements Mailman, Runnable, Closeable {
+public class DefaultMailman implements Mailman, Runnable {
     private final String smtpHost;
     private final int smtpPort;
     private final Storage<Message> storage;
@@ -110,9 +108,7 @@ public class DefaultMailman implements Mailman, Runnable, Closeable {
     }
 
     public void start() {
-        for( val message : storage ) {
-            messages.add( message );
-        }
+        storage.forEach( messages::add );
     }
 
     private void initMailCap() {
@@ -217,11 +213,6 @@ public class DefaultMailman implements Mailman, Runnable, Closeable {
         } catch( MessagingException e ) {
             throw new MailException( e );
         }
-    }
-
-    @Override
-    public void close() throws IOException {
-        storage.fsync();
     }
 
     @Slf4j

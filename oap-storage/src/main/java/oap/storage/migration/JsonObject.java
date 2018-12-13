@@ -184,11 +184,11 @@ public class JsonObject extends Json<Map<String, Object>> {
     }
 
     public String stringField( String field ) {
-        return stringOpt( field ).orElseThrow( () -> new FileStorageMigrationException( "String field " + field + " not found" ) );
+        return stringOpt( field ).orElseThrow( () -> new MigrationException( "String field " + field + " not found" ) );
     }
 
     public long longField( String field ) {
-        return longOpt( field ).orElseThrow( () -> new FileStorageMigrationException( "String field " + field + " not found" ) );
+        return longOpt( field ).orElseThrow( () -> new MigrationException( "String field " + field + " not found" ) );
     }
 
     public <T> JsonObject mapString( String field, Function<String, T> func ) {

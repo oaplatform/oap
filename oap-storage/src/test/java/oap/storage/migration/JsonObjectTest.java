@@ -43,34 +43,34 @@ public class JsonObjectTest extends AbstractTest {
    }
 
    @Test
-   public void testRename() throws Exception {
+   public void rename() throws Exception {
       final JsonObject obj = new JsonObject( empty(), empty(), map( "{field1 = v1}" ) );
       assertThat( obj.rename( "field1", "field2" ).underlying ).isEqualTo( map( "{field2 = v1}" ) );
    }
 
    @Test
-   public void testRenameInner() throws Exception {
+   public void renameInner() throws Exception {
       final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj.field1 = v1}" ) );
       assertThat( obj.rename( "obj.field1", "obj.field2" ).underlying )
          .isEqualTo( map( "{obj.field2 = v1}" ) );
    }
 
    @Test
-   public void testRenameIntoArray() throws Exception {
+   public void renameIntoArray() throws Exception {
       final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1}, {field1 = v2}]}" ) );
       assertThat( obj.rename( "obj.field1", "obj.field2" ).underlying )
          .isEqualTo( map( "{obj = [{field2 = v1}, {field2 = v2}]}" ) );
    }
 
    @Test
-   public void testRenameIntoArray2() throws Exception {
+   public void renameIntoArray2() throws Exception {
       final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1}, {field1 = v2}]}" ) );
       assertThat( obj.rename( "obj.field1", "obj.newObj.field2" ).underlying )
          .isEqualTo( map( "{obj = [{newObj.field2 = v1}, {newObj.field2 = v2}]}" ) );
    }
 
    @Test
-   public void testMultipleRenameIntoArray() throws Exception {
+   public void multipleRenameIntoArray() throws Exception {
       final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1, field2 = v1}, {field1 = v2, field2 = v2}]}" ) );
       assertThat( obj
          .rename( "obj.field1", "obj.newObj.newfield1" )
@@ -80,7 +80,7 @@ public class JsonObjectTest extends AbstractTest {
    }
 
    @Test
-   public void testMapScript() throws Exception {
+   public void mapScript() throws Exception {
       final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
 
       assertThat( obj.mapScript( "" +
@@ -90,7 +90,7 @@ public class JsonObjectTest extends AbstractTest {
    }
 
    @Test
-   public void testMapScriptFromResource() throws Exception {
+   public void mapScriptFromResource() throws Exception {
       final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
 
       assertThat( obj.mapScriptFromResource( "test/jsonobj.js" ).underlying )

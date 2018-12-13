@@ -24,19 +24,19 @@
 
 package oap.security.acl;
 
-import oap.storage.IdentifierBuilder;
+import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
 
 import static java.util.Collections.emptyList;
 import static oap.security.acl.AclService.ROOT;
-import static oap.storage.Storage.LockStrategy.NoLock;
+import static oap.storage.Storage.Lock.CONCURRENT;
 
 /**
  * Created by igor.petrenko on 02.01.2018.
  */
 public class MemoryRootStorage extends MemoryStorage<SecurityContainer<RootObject>> {
     public MemoryRootStorage() {
-        super( IdentifierBuilder.identify( root -> ROOT ).build(), NoLock );
+        super( Identifier.<SecurityContainer<RootObject>>identify( root -> ROOT ).build(), CONCURRENT );
 
         store( new SecurityContainer<>( ROOT, new RootObject(), new AclObject( ROOT, "root", emptyList(), emptyList(), emptyList(), ROOT ) ) );
     }

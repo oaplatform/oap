@@ -26,13 +26,13 @@ package oap.mail;
 import oap.storage.IdentifierBuilder;
 import oap.storage.MemoryStorage;
 
-import static oap.storage.Storage.LockStrategy.Lock;
+import static oap.storage.Storage.Lock.SERIALIZED;
 
 public class TestGMail {
 
     public static void main( String[] args ) throws MailException {
         DefaultMailman queue = new DefaultMailman( "smtp.gmail.com", 587, true,
-            new MemoryStorage<>( IdentifierBuilder.<Message>identify( m -> m.id, ( m, id ) -> m.id = id ).build(), Lock ) );
+            new MemoryStorage<>( IdentifierBuilder.<Message>identify( m -> m.id, ( m, id ) -> m.id = id ).build(), SERIALIZED ) );
         Message message = Template.of( "/xjapanese" ).get().buildMessage();
         message.setFrom( MailAddress.of( "Україна", "vladimir.kirichenko@gmail.com" ) );
         message.setTo( MailAddress.of( "Little Green Mail", "vova@qupletech.com" ) );

@@ -35,7 +35,7 @@ import java.util.List;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static oap.storage.Storage.LockStrategy.NoLock;
+import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -43,8 +43,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class MemoryStorageTest {
     @Test
-    public void testConstraintStoreAdd() {
-        try( val storage = new MemoryStorage<TestClass>( IdentifierBuilder.annotationBuild(), NoLock ) ) {
+    public void constraintStoreAdd() {
+        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name ) );
 
             storage.store( new TestClass( "id1", "name1" ) );
@@ -56,12 +56,12 @@ public class MemoryStorageTest {
     }
 
     @Test
-    public void testConstraintStoreAddList() {
-        try( val storage = new MemoryStorage<TestClass>( IdentifierBuilder.annotationBuild(), NoLock ) ) {
+    public void constraintStoreAddList() {
+        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.names ) );
 
-            storage.store( new TestClass( "id1", "name1", asList("1", "2") ) );
-            storage.store( new TestClass( "id2", "name2", asList("3", "4") ) );
+            storage.store( new TestClass( "id1", "name1", asList( "1", "2" ) ) );
+            storage.store( new TestClass( "id2", "name2", asList( "3", "4" ) ) );
 
             Assertions.assertThatThrownBy( () -> storage.store( new TestClass( "id3", "name1", asList( "2", "5" ) ) ) )
                 .hasMessage( "Objtype '[2, 5]' already exists." );
@@ -69,8 +69,8 @@ public class MemoryStorageTest {
     }
 
     @Test
-    public void testConstraintStoreAddFilter() {
-        try( val storage = new MemoryStorage<TestClass>( IdentifierBuilder.annotationBuild(), NoLock ) ) {
+    public void constraintStoreAddFilter() {
+        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name, ( n, o ) -> false ) );
 
             storage.store( new TestClass( "id1", "name1" ) );
@@ -81,8 +81,8 @@ public class MemoryStorageTest {
     }
 
     @Test
-    public void testConstraintStoreUpdate() {
-        try( val storage = new MemoryStorage<TestClass>( IdentifierBuilder.annotationBuild(), NoLock ) ) {
+    public void constraintStoreUpdate() {
+        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name ) );
 
             storage.store( new TestClass( "id1", "name1" ) );
@@ -96,8 +96,8 @@ public class MemoryStorageTest {
     }
 
     @Test
-    public void testConstraintUpdate() {
-        try( val storage = new MemoryStorage<TestClass>( IdentifierBuilder.annotationBuild(), NoLock ) ) {
+    public void constraintUpdate() {
+        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name ) );
 
             storage.store( new TestClass( "id1", "name1" ) );
@@ -111,8 +111,8 @@ public class MemoryStorageTest {
     }
 
     @Test
-    public void testConstraintUpdateObject() {
-        try( val storage = new MemoryStorage<TestClass>( IdentifierBuilder.annotationBuild(), NoLock ) ) {
+    public void constraintUpdateObject() {
+        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name ) );
 
             storage.updateObject( "id1", ( a ) -> true, ( tc ) -> {

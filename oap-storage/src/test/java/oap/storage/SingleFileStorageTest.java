@@ -32,7 +32,7 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 
-import static oap.storage.Storage.LockStrategy.Lock;
+import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,9 +49,9 @@ public class SingleFileStorageTest extends AbstractTest {
     }
 
     @Test
-    public void testFsync() {
+    public void fsync() {
         final Path path = Env.tmpPath( "file.json" );
-        try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, TestSFS.identifier, 100, Lock ) ) {
+        try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, TestSFS.identifier, 100, SERIALIZED ) ) {
             sfs.store( new TestSFS( "123" ) );
 
             assertEventually( 10, 200, () -> assertThat( path ).exists() );
@@ -59,13 +59,13 @@ public class SingleFileStorageTest extends AbstractTest {
     }
 
     @Test
-    public void testPersist() {
+    public void persist() {
         final Path path = Env.tmpPath( "file.json" );
-        try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, TestSFS.identifier, 100, Lock ) ) {
+        try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, TestSFS.identifier, 100, SERIALIZED ) ) {
             sfs.store( new TestSFS( "123" ) );
         }
 
-        try( final SingleFileStorage<TestSFS> sfs2 = new SingleFileStorage<>( path, TestSFS.identifier, 100, Lock ) ) {
+        try( final SingleFileStorage<TestSFS> sfs2 = new SingleFileStorage<>( path, TestSFS.identifier, 100, SERIALIZED ) ) {
             assertThat( sfs2.get( "123" ) ).isPresent();
         }
     }

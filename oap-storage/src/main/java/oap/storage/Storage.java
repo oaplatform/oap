@@ -24,17 +24,29 @@
 package oap.storage;
 
 import oap.concurrent.Threads;
+import oap.util.Stream;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public interface Storage<T> extends ROStorage<T> {
+public interface Storage<T> extends AutoCloseable {
+
+    Stream<T> select();
+
+    Optional<T> get( String id );
+
+    long size();
+
     T store( T object );
 
     void store( Collection<T> objects );
+
+    void forEach( Consumer<? super T> action );
 
     default Optional<T> update( String id, Function<T, T> update ) {
         return update( id, update, null );
@@ -65,30 +77,56 @@ public interface Storage<T> extends ROStorage<T> {
 
     void update( Collection<String> ids, Predicate<T> predicate, Function<T, T> update, Supplier<T> init );
 
-    @Override
-    default Optional<T> apply( String id ) {
-        return get( id );
-    }
-
     Optional<T> delete( String id );
 
     void deleteAll();
 
-    ROStorage<T> copyAndClean();
+    Map<String, T> snapshot( boolean clean );
 
+    /**
+     * remove it. There must be no need to sync storage explicitly!
+     */
     void fsync();
 
     void addConstraint( Constraint<T> constraint );
 
-    interface LockStrategy {
-        LockStrategy NoLock = new NoLock();
-        LockStrategy Lock = new Lock();
+    void addDataListener( DataListener<T> dataListener );
+
+    void removeDataListener( DataListener<T> dataListener );
+
+    interface DataListener<T2> {
+
+        default void updated( T2 object, boolean added ) {
+        }
+
+
+        default void updated( Collection<T2> objects ) {
+        }
+
+        default void updated( Collection<T2> objects, boolean added ) {
+            updated( objects );
+
+            objects.forEach( obj -> updated( obj, added ) );
+        }
+
+
+        default void deleted( T2 object ) {
+        }
+
+        default void deleted( Collection<T2> objects ) {
+            objects.forEach( this::deleted );
+        }
+    }
+
+    interface Lock {
+        Lock CONCURRENT = new ConcurrentLock();
+        Lock SERIALIZED = new SerializedLock();
 
         void synchronizedOn( String id, Runnable run );
 
         <R> R synchronizedOn( String id, Supplier<R> run );
 
-        final class NoLock implements LockStrategy {
+        final class ConcurrentLock implements Lock {
             @Override
             public final void synchronizedOn( String id, Runnable run ) {
                 run.run();
@@ -100,7 +138,7 @@ public interface Storage<T> extends ROStorage<T> {
             }
         }
 
-        final class Lock implements LockStrategy {
+        final class SerializedLock implements Lock {
             @Override
             public final void synchronizedOn( String id, Runnable run ) {
                 Threads.synchronizedOn( id, run );

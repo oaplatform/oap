@@ -23,18 +23,15 @@
  */
 package oap.storage;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.json.Binder;
-import oap.replication.Replication;
-import oap.replication.ReplicationMaster;
-import oap.replication.ReplicationSlave;
 import oap.util.Maps;
 import oap.util.Optionals;
 import oap.util.Stream;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,34 +43,28 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
-
-public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, ReplicationMaster<Metadata<T>> {
-    protected final LockStrategy lockStrategy;
-    private final Identifier<T> identifier;
+@Slf4j
+public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
+    protected final Lock lock;
+    public final Identifier<T> identifier;
     private final List<DataListener<T>> dataListeners = new ArrayList<>();
     private final ArrayList<Constraint<T>> constraints = new ArrayList<>();
     protected volatile ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
 
-    public MemoryStorage( Identifier<T> identifier, LockStrategy lockStrategy ) {
+    public MemoryStorage( Identifier<T> identifier, Lock lock ) {
         this.identifier = identifier;
-        this.lockStrategy = lockStrategy;
-    }
-
-    public Identifier<T> getIdentifier() {
-        return identifier;
+        this.lock = lock;
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
     public Stream<T> select() {
         return Stream.of( data.values() ).map( i -> i.object );
     }
 
     @Override
     public T store( T object ) {
-        String id = identifier.getOrInit( object, this );
-        lockStrategy.synchronizedOn( id, () -> {
+        String id = identifier.getOrInit( object, this::get );
+        lock.synchronizedOn( id, () -> {
             val metadata = data.get( id );
 
             if( metadata != null ) {
@@ -83,6 +74,7 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, R
                 metadata.update( object );
             } else {
                 checkConstraints( object );
+
                 data.computeIfAbsent( id, id1 -> new Metadata<>( object ) );
             }
             fireUpdated( object, metadata == null );
@@ -97,7 +89,7 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, R
 
     @Override
     public Optional<T> update( String id, T object ) {
-        return lockStrategy.synchronizedOn( id, () -> {
+        return lock.synchronizedOn( id, () -> {
             val metadata = data.get( id );
             if( metadata != null ) {
                 identifier.set( object, id );
@@ -117,8 +109,8 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, R
         ArrayList<T> updatedObjects = new ArrayList<>();
 
         for( T object : objects ) {
-            String id = identifier.getOrInit( object, this );
-            lockStrategy.synchronizedOn( id, () -> {
+            String id = identifier.getOrInit( object, this::get );
+            lock.synchronizedOn( id, () -> {
                 val metadata = data.get( id );
                 if( metadata != null ) {
                     metadata.update( object );
@@ -149,7 +141,7 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, R
                                                             Predicate<T> predicate,
                                                             Function<T, T> update,
                                                             Supplier<T> init ) {
-        return lockStrategy.synchronizedOn( id, () -> {
+        return lock.synchronizedOn( id, () -> {
             Metadata<T> metadata = data.get( id );
             if( metadata == null ) {
                 if( init == null ) return Optional.empty();
@@ -214,7 +206,7 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, R
     }
 
     protected Optional<Metadata<T>> deleteObject( String id ) {
-        return lockStrategy.synchronizedOn( id, () -> Optional.ofNullable( data.remove( id ) ) );
+        return lock.synchronizedOn( id, () -> Optional.ofNullable( data.remove( id ) ) );
     }
 
     @Override
@@ -222,17 +214,14 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, R
         return data.size();
     }
 
+    /**
+     * remove this method. This is statsdb specific logic. Should be handled with another type of storage.
+     */
     @Override
-    public synchronized MemoryStorage<T> copyAndClean() {
-        final MemoryStorage<T> ms = new MemoryStorage<>( identifier, lockStrategy );
-        ms.data = data;
-        this.data = new ConcurrentHashMap<>();
-        return ms;
-    }
-
-    @Override
-    public synchronized Map<String, T> toMap() {
-        return data.entrySet().stream().collect( Collectors.toMap( Map.Entry::getKey, entry -> entry.getValue().object ) );
+    public synchronized Map<String, T> snapshot( boolean clean ) {
+        Map<String, T> data = this.data.entrySet().stream().collect( Collectors.toMap( Map.Entry::getKey, entry -> entry.getValue().object ) );
+        if( clean ) this.data = new ConcurrentHashMap<>();
+        return data;
     }
 
     @Override
@@ -285,10 +274,6 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, R
     public void close() {
     }
 
-    @Override
-    public Iterator<T> iterator() {
-        return select().iterator();
-    }
 
     @Override
     public void forEach( Consumer<? super T> action ) {
@@ -296,20 +281,9 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, R
     }
 
     @Override
-    public ReplicationMaster<Metadata<T>> master() {
-        return this;
-    }
-
-    public List<Metadata<T>> updatedSince( long time ) {
-        return Stream.of( data.values() )
-            .filter( m -> m.modified > time )
-            .toList();
-    }
-
-    @Override
     public List<Metadata<T>> updatedSince( long time, int limit, int offset ) {
         return Stream.of( data.values() )
-            .filter( m -> m.modified > time )
+            .filter( m -> m.modified >= time )
             .skip( offset )
             .limit( limit )
             .toList();
@@ -318,40 +292,5 @@ public class MemoryStorage<T> implements Storage<T>, Replication<Metadata<T>>, R
     @Override
     public Collection<String> ids() {
         return MemoryStorage.this.data.keySet();
-    }
-
-    @Override
-    public ReplicationSlave<Metadata<T>> slave() {
-        return new ReplicationSlave<Metadata<T>>() {
-            @Override
-            public String getIdFor( Metadata<T> metadata ) {
-                return MemoryStorage.this.getIdentifier().get( metadata.object );
-            }
-
-            @Override
-            public void fireUpdated( Collection<Metadata<T>> objects, boolean isNew ) {
-                MemoryStorage.this.fireUpdated( objects.stream().map( m -> m.object ).collect( toList() ), isNew );
-            }
-
-            @Override
-            public void fireDeleted( List<Metadata<T>> objects ) {
-                MemoryStorage.this.fireDeleted( objects.stream().map( m -> m.object ).collect( toList() ) );
-            }
-
-            @Override
-            public Optional<Metadata<T>> deleteObject( String id ) {
-                return MemoryStorage.this.deleteObject( id );
-            }
-
-            @Override
-            public Collection<String> keys() {
-                return MemoryStorage.this.data.keySet();
-            }
-
-            @Override
-            public boolean putMetadata( String id, Metadata<T> metadata ) {
-                return MemoryStorage.this.data.put( id, metadata ) != null;
-            }
-        };
     }
 }

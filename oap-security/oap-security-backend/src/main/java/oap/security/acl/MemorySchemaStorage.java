@@ -32,6 +32,6 @@ import oap.storage.MemoryStorage;
  */
 public class MemorySchemaStorage extends MemoryStorage<AclSchemaContainer> implements SchemaStorage {
     public MemorySchemaStorage() {
-        super( IdentifierBuilder.annotationBuild(), LockStrategy.Lock );
+        super( IdentifierBuilder.annotationBuild(), Lock.SERIALIZED );
     }
 }

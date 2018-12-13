@@ -97,22 +97,21 @@ public class AuthService2 implements Runnable {
     }
 
     private Optional<Token2> getTokenByUserId( String userId ) {
-        for( Token2 t : storage )
-            if( t.userId.equals( userId ) ) return Optional.of( t );
-        return Optional.empty();
+        return storage.select()
+            .filter( t -> t.userId.equals( userId ) )
+            .findFirst();
     }
 
     private Token2 getTokenByUserId( String userId, Supplier<Token2> init ) {
-        Optional<Token2> byUserId = getTokenByUserId( userId );
-        Token2 token = byUserId.map( t -> {
-            log.debug( "updating existing token for user [{}]...", userId );
-            t.lastAccess = DateTimeUtils.currentTimeMillis();
-            return t;
-        } ).orElseGet( () -> {
-            log.debug( "generating new token for user [{}]...", userId );
-            return storage.store( init.get() );
-        } );
 
-        return token;
+        return getTokenByUserId( userId )
+            .map( token -> {
+                log.debug( "updating existing token for user [{}]...", userId );
+                token.lastAccess = DateTimeUtils.currentTimeMillis();
+                return token;
+            } ).orElseGet( () -> {
+                log.debug( "generating new token for user [{}]...", userId );
+                return storage.store( init.get() );
+            } );
     }
 }

@@ -31,8 +31,6 @@ import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
-import oap.replication.ReplicationMaster;
-import oap.replication.ReplicationSlave;
 import oap.util.Stream;
 
 import java.io.OutputStream;
@@ -52,8 +50,8 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     private Path path;
     private boolean closed = true;
 
-    public LazyFileStorage( Path path, Identifier<T> identifier, LockStrategy lockStrategy ) {
-        super( identifier, lockStrategy );
+    public LazyFileStorage( Path path, Identifier<T> identifier, Lock lock ) {
+        super( identifier, lock );
         this.path = path;
     }
 
@@ -117,7 +115,7 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         if( java.nio.file.Files.exists( path ) ) {
             Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {}, path )
                 .forEach( m -> {
-                    val id = getIdentifier().get( m.object );
+                    val id = identifier.get( m.object );
                     data.put( id, m );
                 } );
         }
@@ -144,15 +142,4 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         log.debug( "storing {}... done", path );
     }
 
-    @Override
-    public ReplicationSlave<Metadata<T>> slave() {
-        open();
-        return super.slave();
-    }
-
-    @Override
-    public ReplicationMaster<Metadata<T>> master() {
-        open();
-        return super.master();
-    }
 }

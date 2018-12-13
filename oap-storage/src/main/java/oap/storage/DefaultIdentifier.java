@@ -44,7 +44,7 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
         this.getId = identifierBuilder.getIdentityFunction();
         this.setId = identifierBuilder.getSetIdFunction().orElse( null );
         this.suggestion = identifierBuilder.getSuggestion().orElse( null );
-        this.idOptions = identifierBuilder.getIdOptions();
+        this.idOptions = identifierBuilder.getOptions();
     }
 
     @Override
@@ -58,7 +58,7 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
     }
 
     @Override
-    public synchronized String getOrInit( T object, Function<String, Optional<T>> storage ) {
+    public synchronized String getOrInit( T object, Function<String, Optional<T>> container ) {
         String id = getId.apply( object );
 
         if( id == null ) {
@@ -66,7 +66,7 @@ public final class DefaultIdentifier<T> implements Identifier<T> {
             Objects.requireNonNull( setId, "Set of nullable identifier is not specified" );
 
             id = Strings.toUserFriendlyId( suggestion.apply( object ),
-                size, newId -> storage.apply( newId ).isPresent(), idOptions );
+                size, newId -> container.apply( newId ).isPresent(), idOptions );
 
             setId.accept( object, id );
         }

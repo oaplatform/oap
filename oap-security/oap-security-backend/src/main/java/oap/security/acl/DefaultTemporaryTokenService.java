@@ -58,10 +58,10 @@ public class DefaultTemporaryTokenService implements TemporaryTokenService, Runn
     @Override
     public void run() {
         val now = DateTimeUtils.currentTimeMillis() - expiration;
-        for( val tt : storage ) {
-            if( tt.time < now ) {
-                storage.delete( tt.id );
+        storage.forEach( token -> {
+            if( token.time < now ) {
+                storage.delete( token.id );
             }
-        }
+        } );
     }
 }

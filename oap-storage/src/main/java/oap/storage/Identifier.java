@@ -28,9 +28,25 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public interface Identifier<T> {
-    void set( T Object, String id );
+    void set( T object, String id );
 
     String getOrInit( T object, Function<String, Optional<T>> storage );
 
     String get( T object );
+
+    static <T> IdentifierBuilder<T> forPath( String path ) {
+        return IdentifierBuilder.forPath( path );
+    }
+
+    static <T> IdentifierBuilder<T> forAnnotation() {
+        return IdentifierBuilder.forAnnotation();
+    }
+
+    static <T> Identifier<T> forAnnotationFixed() {
+        return IdentifierBuilder.<T>forAnnotation().build();
+    }
+
+    static <T> IdentifierBuilder<T> identify( final Function<T, String> identity ) {
+        return IdentifierBuilder.identify( identity );
+    }
 }

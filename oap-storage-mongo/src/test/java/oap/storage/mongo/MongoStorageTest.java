@@ -35,7 +35,7 @@ import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.inc;
 import static com.mongodb.client.model.Updates.set;
-import static oap.storage.Storage.LockStrategy.Lock;
+import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,11 +47,11 @@ public class MongoStorageTest extends AbstractMongoTest {
 
     @Test
     public void store() {
-        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", Lock ) ) {
+        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED ) ) {
             storage.start();
             TestMongoBean bean1 = storage.store( new TestMongoBean() );
             TestMongoBean bean2 = storage.store( new TestMongoBean() );
-            storage.store( new TestMongoBean( bean1.id ) );
+            storage.store( new TestMongoBean( bean1.id, "test" ) );
 
             log.debug( "bean1 = {}", bean1 );
             log.debug( "bean2 = {}", bean2 );
@@ -59,9 +59,9 @@ public class MongoStorageTest extends AbstractMongoTest {
             assertThat( bean1.id ).isNotBlank();
             assertThat( bean2.id ).isNotBlank();
         }
-        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", Lock ) ) {
+        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED ) ) {
             storage.start();
-            assertThat( storage ).hasSize( 2 );
+            assertThat( storage.select() ).hasSize( 2 );
             assertThat( storage.collection.count() ).isEqualTo( 2 );
 
         }
@@ -69,7 +69,7 @@ public class MongoStorageTest extends AbstractMongoTest {
 
     @Test
     public void delete() {
-        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", Lock ) ) {
+        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED ) ) {
             storage.start();
             TestMongoBean bean1 = storage.store( new TestMongoBean() );
             storage.store( new TestMongoBean() );
@@ -84,7 +84,7 @@ public class MongoStorageTest extends AbstractMongoTest {
     @Test()
     public void updateMongo() {
         store();
-        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", Lock );
+        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED );
              val oplogService = new OplogService( mongoClient ) ) {
             oplogService.start();
             storage.oplogService = oplogService;
@@ -119,10 +119,16 @@ public class MongoStorageTest extends AbstractMongoTest {
     public static class TestMongoBean {
         @Id
         public String id;
+        public String name;
         public int c;
 
-        public TestMongoBean( String id ) {
+        public TestMongoBean( String id, String name ) {
             this.id = id;
+            this.name = name;
+        }
+
+        public TestMongoBean( String name ) {
+            this.name = name;
         }
 
         public TestMongoBean() {

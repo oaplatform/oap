@@ -41,8 +41,8 @@ import org.testng.annotations.Test;
 import java.nio.file.Path;
 
 import static oap.application.ApplicationUtils.service;
-import static oap.storage.Storage.LockStrategy.Lock;
-import static oap.storage.Storage.LockStrategy.NoLock;
+import static oap.storage.Storage.Lock.CONCURRENT;
+import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -73,7 +73,7 @@ public class StatsDBTest extends AbstractTest {
 
     @Test
     public void testChildren() {
-        try( val master = service( new StatsDBMaster( schema2, new MemoryStorage<>( NodeIdentifier.identifier, NoLock ) ) ) ) {
+        try( val master = service( new StatsDBMaster( schema2, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) ) ) {
             master.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
             master.update( "k1", "k3", ( c ) -> c.ci = 3, MockChild::new );
             master.update( "k2", "k4", ( c ) -> c.ci = 4, MockChild::new );
@@ -96,8 +96,8 @@ public class StatsDBTest extends AbstractTest {
 
     @Test
     public void testMergeChild() {
-        try( val master = service( new StatsDBMaster( schema3, new MemoryStorage<>( NodeIdentifier.identifier, NoLock ) ) );
-             val node = service( new StatsDBNode( schema3, master, null, new MemoryStorage<>( NodeIdentifier.identifier, NoLock ) ) ) ) {
+        try( val master = service( new StatsDBMaster( schema3, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) );
+             val node = service( new StatsDBNode( schema3, master, null, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) ) ) {
 
             node.update( "p", ( p ) -> {}, () -> new MockValue( 1 ) );
             node.update( "p", "c1", ( c ) -> {}, () -> new MockChild( 1 ) );
@@ -125,12 +125,12 @@ public class StatsDBTest extends AbstractTest {
 
     @Test
     public void testPersistMaster() {
-        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, NoLock ) );
+        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
              val master = service( new StatsDBMaster( schema2, storage ) ) ) {
             master.update( "k1", "k2", ( c ) -> c.i2 = 10, MockValue::new );
         }
 
-        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, NoLock ) );
+        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
              val master = service( new StatsDBMaster( schema2, storage ) ) ) {
             assertThat( master.<MockValue>get( "k1", "k2" ) ).isNotNull();
             assertThat( master.<MockValue>get( "k1", "k2" ).i2 ).isEqualTo( 10 );
@@ -140,12 +140,12 @@ public class StatsDBTest extends AbstractTest {
     @Test
     public void testPersistNode() {
         final MockRemoteStatsDB master = new MockRemoteStatsDB( schema2 );
-        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, NoLock ) );
+        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
              val node = service( new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) ) {
             node.update( "k1", "k2", ( c ) -> c.i2 = 10, MockValue::new );
         }
 
-        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, NoLock ) );
+        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
              val node = service( new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) ) {
             assertThat( node.<MockValue>get( "k1", "k2" ) ).isNotNull();
             assertThat( node.<MockValue>get( "k1", "k2" ).i2 ).isEqualTo( 10 );
@@ -154,9 +154,9 @@ public class StatsDBTest extends AbstractTest {
 
     @Test
     public void testSync() {
-        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, NoLock ) );
+        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
              val master = service( new StatsDBMaster( schema2, storage ) );
-             val node = service( new StatsDBNode( schema2, master, null, new MemoryStorage<>( NodeIdentifier.identifier, NoLock ) ) ) ) {
+             val node = service( new StatsDBNode( schema2, master, null, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) ) ) {
 
             node.sync();
 
@@ -184,7 +184,7 @@ public class StatsDBTest extends AbstractTest {
     public void testCalculatedValuesAfterRestart() {
         testSync();
 
-        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, NoLock ) );
+        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
              val master = service( new StatsDBMaster( schema2, storage ) ) ) {
             assertThat( master.<MockValue>get( "k1" ).sum ).isEqualTo( 21L );
         }
@@ -194,7 +194,7 @@ public class StatsDBTest extends AbstractTest {
     public void testSyncFailed() {
         final MockRemoteStatsDB master = new MockRemoteStatsDB( schema2 );
 
-        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, NoLock ) );
+        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
              val node = service( new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) ) {
 
             master.syncWithException( ( sync ) -> new RuntimeException( "sync" ) );
@@ -205,7 +205,7 @@ public class StatsDBTest extends AbstractTest {
 
         assertThat( master.syncs ).isEmpty();
 
-        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, Lock ) );
+        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, SERIALIZED ) );
              val node = service( new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) ) {
 
             master.syncWithoutException();
@@ -219,8 +219,8 @@ public class StatsDBTest extends AbstractTest {
 
     @Test
     public void testVersion() {
-        try( val master = service( new StatsDBMaster( schema2, new MemoryStorage<>( NodeIdentifier.identifier, NoLock ) ) );
-             val node = service( new StatsDBNode( schema2, master, null, new MemoryStorage<>( NodeIdentifier.identifier, NoLock ) ) ) ) {
+        try( val master = service( new StatsDBMaster( schema2, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) );
+             val node = service( new StatsDBNode( schema2, master, null, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) ) ) {
 
             Cuid.reset( "s", 0 );
 

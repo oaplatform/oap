@@ -32,7 +32,7 @@ import oap.http.Request;
 import oap.http.Session;
 import oap.reflect.Reflection;
 import oap.security.acl.AclService;
-import oap.util.IdFactory;
+import oap.util.IdAccessorFactory;
 import oap.ws.Interceptor;
 
 import java.util.ArrayList;
@@ -124,7 +124,7 @@ public class SecurityInterceptor2 implements Interceptor {
 
         val userId = ( String ) session.get( USER_ID ).orElse( null );
 
-        val id = IdFactory.getId( value );
+        val id = IdAccessorFactory.getter( value );
 
         List<String> res = aclService.checkAll( id, userId );
         if( annotation.includeRootPermissions() ) {

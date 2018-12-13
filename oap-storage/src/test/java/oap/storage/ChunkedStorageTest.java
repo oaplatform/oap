@@ -27,7 +27,7 @@ public class ChunkedStorageTest {
    }
 
    @Test
-   public void testPutGetStream() throws Exception {
+   public void putGetStream() throws Exception {
       ChunkedStorage<String> storage = new ChunkedStorage<>( s -> s, Env.tmpRoot.resolve( "audience-chunks" ) );
 
       List<String> all = new ArrayList<>();

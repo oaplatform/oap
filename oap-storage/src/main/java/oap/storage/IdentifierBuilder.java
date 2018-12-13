@@ -27,7 +27,7 @@ package oap.storage;
 import com.google.common.base.Preconditions;
 import oap.reflect.Reflect;
 import oap.util.Cuid;
-import oap.util.IdFactory;
+import oap.util.IdAccessorFactory;
 import oap.util.Strings;
 
 import java.util.Objects;
@@ -42,46 +42,65 @@ public final class IdentifierBuilder<T> {
 
     private static final int DEFAULT_ID_SIZE = 10;
 
-    private final Function<T, String> getId;
-    private final BiConsumer<T, String> setId;
-    private Strings.FriendlyIdOption[] idOptions = new Strings.FriendlyIdOption[] { NO_VOWELS, FILL };
+    private final Function<T, String> getter;
+    private final BiConsumer<T, String> setter;
+    private Strings.FriendlyIdOption[] options = new Strings.FriendlyIdOption[] { NO_VOWELS, FILL };
 
     private Function<T, String> suggestion = obj -> Cuid.next();
 
     private int size = DEFAULT_ID_SIZE;
 
-    private IdentifierBuilder( final Function<T, String> getId, final BiConsumer<T, String> setId ) {
-        this.getId = getId;
-        this.setId = setId;
+    private IdentifierBuilder( final Function<T, String> getter, final BiConsumer<T, String> setter ) {
+        this.getter = getter;
+        this.setter = setter;
     }
 
     /**
      * Specifies the path in object where to look for an existing identifier (or set it in case its null
      * and suggestion is specified)
      *
-     * @param idPath - path in object to look for existing identifier and generate it in case its null
-     * @param <T>    - object type
+     * @param path - path in object to look for existing identifier and generate it in case its null
      * @return instance of the current builder
      */
-    public static <T> IdentifierBuilder<T> identityPath( final String idPath ) {
-        final String path = Objects.requireNonNull( idPath, "path of id must not be null" );
+    public static <T> IdentifierBuilder<T> forPath( String path ) {
+        Objects.requireNonNull( path, "path of id must not be null" );
 
         return new IdentifierBuilder<>( object -> Reflect.get( object, path ),
             ( object, value ) -> Reflect.set( object, path, value )
         );
+
     }
 
+    @Deprecated
+    public static <T> IdentifierBuilder<T> identityPath( String idPath ) {
+        return forPath( idPath );
+    }
+
+
+    public static <T> IdentifierBuilder<T> forAnnotation() {
+        return new IdentifierBuilder<>( IdAccessorFactory::getter, IdAccessorFactory::setter );
+
+    }
+
+
+    @Deprecated
     public static <T> IdentifierBuilder<T> annotation() {
-        return new IdentifierBuilder<>( IdFactory::getId, IdFactory::setId );
+        return forAnnotation();
     }
 
+    /**
+     * @param <T>
+     * @return
+     * @see #forAnnotation()
+     */
+    @Deprecated
     public static <T> Identifier<T> annotationBuild() {
-        return new IdentifierBuilder<T>( IdFactory::getId, IdFactory::setId ).build();
+        return IdentifierBuilder.<T>forAnnotation().build();
     }
 
     /**
      * Specifies the existing identifier, which should be retrieved from object (assumes, its not null, otherwise
-     * see {@link #identityPath(String)})
+     * see {@link #forPath(String)}
      *
      * @param identity - existing identifier
      * @param <T>      - object type
@@ -92,14 +111,14 @@ public final class IdentifierBuilder<T> {
             identity, "identity must not be null" ), null );
     }
 
-    public static <T> IdentifierBuilder<T> identify( Function<T, String> identity, BiConsumer<T, String> setId ) {
+    public static <T> IdentifierBuilder<T> identify( Function<T, String> identity, BiConsumer<T, String> setter ) {
         return new IdentifierBuilder<>( Objects.requireNonNull(
-            identity, "identity must not be null" ), setId );
+            identity, "identity must not be null" ), setter );
     }
 
     /**
      * Specifies where to get the base string for identifier generation (needs to be specified if
-     * {@link #identityPath(String)} is used and there is a chance for identifier to be null)
+     * {@link #forPath(String)} is used and there is a chance for identifier to be null)
      *
      * @param suggestion - base string for identifier generation
      * @return instance of the current builder
@@ -123,22 +142,27 @@ public final class IdentifierBuilder<T> {
         return this;
     }
 
+    @Deprecated
     public IdentifierBuilder<T> idOptions( Strings.FriendlyIdOption... idOptions ) {
-        this.idOptions = idOptions;
+        return options( idOptions );
+    }
+
+    public IdentifierBuilder<T> options( Strings.FriendlyIdOption... idOptions ) {
+        this.options = idOptions;
 
         return this;
     }
 
-    public <T1 extends T> Identifier<T1> build() {
+    public Identifier<T> build() {
         return new DefaultIdentifier<>( this );
     }
 
     Function<T, String> getIdentityFunction() {
-        return getId;
+        return getter;
     }
 
     Optional<BiConsumer<T, String>> getSetIdFunction() {
-        return Optional.ofNullable( setId );
+        return Optional.ofNullable( setter );
     }
 
     Optional<Function<T, String>> getSuggestion() {
@@ -149,7 +173,7 @@ public final class IdentifierBuilder<T> {
         return size;
     }
 
-    public Strings.FriendlyIdOption[] getIdOptions() {
-        return idOptions;
+    public Strings.FriendlyIdOption[] getOptions() {
+        return options;
     }
 }

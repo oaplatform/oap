@@ -31,7 +31,6 @@ import lombok.val;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
-import oap.storage.ROStorage;
 import oap.storage.Storage;
 import oap.util.Lists;
 import oap.util.Stream;
@@ -89,14 +88,14 @@ public class DefaultAclSchema implements AclSchema {
         val lSchema = Binder.hoconWithConfig( configs ).unmarshal( new TypeRef<AclSchemaBean>() {}, Lists.head( urls ) );
 
 
-        for( val aclSchemaContainer : schemaStorage ) {
+        schemaStorage.forEach( aclSchemaContainer -> {
             if( log.isDebugEnabled() )
                 log.debug( "found children schema {}", aclSchemaContainer );
             else
                 log.info( "found children schema {}", aclSchemaContainer.owner );
 
             lSchema.findByPath( aclSchemaContainer.schema.parentPath ).merge( aclSchemaContainer.schema );
-        }
+        } );
 
         this.schema = remoteSchema.map( rs -> rs.addSchema( identity, lSchema ) ).orElse( lSchema );
 
@@ -141,7 +140,7 @@ public class DefaultAclSchema implements AclSchema {
     @Override
     public Stream<AclObject> selectLocalObjects() {
         return Stream.of( objectStorage.values() )
-            .flatMap( ROStorage::select )
+            .flatMap( Storage::select )
             .map( con -> con.acl );
     }
 
@@ -201,7 +200,6 @@ public class DefaultAclSchema implements AclSchema {
         return schema;
     }
 
-    @SuppressWarnings( "unchecked" )
     private List<AclSchemaBean> getSchemas( AclObject parent ) {
         if( parent == null ) return singletonList( schema );
         if( parent.parents.isEmpty() )

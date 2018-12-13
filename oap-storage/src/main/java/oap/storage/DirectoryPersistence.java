@@ -23,7 +23,6 @@
  */
 package oap.storage;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.io.CountingOutputStream;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -35,9 +34,10 @@ import oap.concurrent.scheduler.Scheduler;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
-import oap.storage.migration.FileStorageMigration;
-import oap.storage.migration.FileStorageMigrationException;
+import oap.reflect.TypeRef;
 import oap.storage.migration.JsonMetadata;
+import oap.storage.migration.Migration;
+import oap.storage.migration.MigrationException;
 import oap.util.Lists;
 import org.slf4j.Logger;
 
@@ -58,33 +58,45 @@ import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static org.slf4j.LoggerFactory.getLogger;
 
-class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Storage.DataListener<T> {
+public class DirectoryPersistence<T> implements Persistence<T>, Closeable, Storage.DataListener<T> {
     private final Path path;
     private final BiFunction<Path, T, Path> fsResolve;
+    private long fsync;
     private final int version;
-    private final List<FileStorageMigration> migrations;
+    private final List<Migration> migrations;
     private final Logger log;
     private final Lock lock = new ReentrantLock();
     private MemoryStorage<T> storage;
     private PeriodicScheduled scheduled;
 
-    FsPersistenceBackend( Path path, BiFunction<Path, T, Path> fsResolve, long fsync,
-                          int version, List<FileStorageMigration> migrations, MemoryStorage<T> storage ) {
+    public DirectoryPersistence( Path path, long fsync, int version, List<Migration> migrations, MemoryStorage<T> storage ) {
+        this( path, plainResolve(), fsync, version, migrations, storage );
+    }
+
+    public DirectoryPersistence( Path path, MemoryStorage<T> storage ) {
+        this( path, plainResolve(), 60000, 0, Lists.of(), storage );
+    }
+
+    public DirectoryPersistence( Path path, BiFunction<Path, T, Path> fsResolve, long fsync,
+                                 int version, List<Migration> migrations, MemoryStorage<T> storage ) {
         this.path = path;
         this.fsResolve = fsResolve;
+        this.fsync = fsync;
         this.version = version;
         this.migrations = migrations;
         this.storage = storage;
         this.log = getLogger( toString() );
+    }
+
+
+    public void start() {
         this.load();
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
         this.storage.addDataListener( this );
     }
 
-
     @SneakyThrows
     private void load() {
-
         Threads.synchronously( lock, () -> {
             Files.ensureDirectory( path );
             List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
@@ -97,7 +109,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
                     file = migration( file );
                 }
 
-                final Metadata<T> unmarshal = Binder.json.unmarshal( new TypeReference<Metadata<T>>() {
+                final Metadata<T> unmarshal = Binder.json.unmarshal( new TypeRef<Metadata<T>>() {
                 }, file );
 
                 final Path newPath = filenameFor( unmarshal.object, this.version );
@@ -106,7 +118,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
                     Files.move( file, newPath, StandardCopyOption.REPLACE_EXISTING );
                 }
 
-                val id = storage.getIdentifier().get( unmarshal.object );
+                val id = storage.identifier.get( unmarshal.object );
 
                 storage.data.put( id, unmarshal );
 
@@ -120,7 +132,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
     private Path migration( Path path ) {
 
         return Threads.synchronously( lock, () -> {
-            JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {
+            JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
             }, path ) );
 
             Persisted fn = Persisted.valueOf( path );
@@ -129,7 +141,7 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
 
             val migration = Lists.find2( migrations, m -> m.fromVersion() == fn.version );
             if( migration == null )
-                throw new FileStorageMigrationException( "migration from version " + fn + " not found" );
+                throw new MigrationException( "migration from version " + fn + " not found" );
 
 
             Path name = fn.toVersion( migration.fromVersion() + 1 );
@@ -185,16 +197,14 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
 
     @Override
     public void fsync() {
-        Threads.synchronously( lock, () -> {
-            fsync( scheduled.lastExecuted() );
-        } );
+        Threads.synchronously( lock, () -> fsync( scheduled.lastExecuted() ) );
     }
 
     private Path filenameFor( T object, long version ) {
         return Threads.synchronously( lock, () -> {
             final String ver = this.version > 0 ? ".v" + version : "";
             return fsResolve.apply( this.path, object )
-                .resolve( this.storage.getIdentifier().get( object ) + ver + ".json" );
+                .resolve( this.storage.identifier.get( object ) + ver + ".json" );
         } );
     }
 
@@ -237,5 +247,9 @@ class FsPersistenceBackend<T> implements PersistenceBackend<T>, Closeable, Stora
         Path toVersion( long version ) {
             return path.resolve( id + ".v" + version + ".json" );
         }
+    }
+
+    public static <T> BiFunction<Path, T, Path> plainResolve() {
+        return ( p, object ) -> p;
     }
 }

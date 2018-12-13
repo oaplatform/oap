@@ -40,7 +40,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static oap.application.ApplicationUtils.service;
 import static oap.security.acl.AclService.ROOT;
-import static oap.storage.Storage.LockStrategy.Lock;
+import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -66,8 +66,8 @@ public class DefaultAclServiceTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        objectStorage = service( new MemoryStorage<SecurityContainer<TestAclObject>>( IdentifierBuilder.annotationBuild(), Lock ) );
-        roleStorage = service( new MemoryStorage<>( IdentifierBuilder.annotationBuild(), Lock ) );
+        objectStorage = service( new MemoryStorage<SecurityContainer<TestAclObject>>( IdentifierBuilder.annotationBuild(), SERIALIZED ) );
+        roleStorage = service( new MemoryStorage<>( IdentifierBuilder.annotationBuild(), SERIALIZED ) );
 
         val gaRole = roleStorage.store( new AclRole( AclService.GLOBAL_ADMIN_ROLE, "ga", singletonList( "*" ) ) );
 
@@ -271,7 +271,7 @@ public class DefaultAclServiceTest {
     }
 
     @AfterMethod
-    public void afterMethod() throws IOException {
+    public void afterMethod() throws Exception {
         objectStorage.close();
         roleStorage.close();
     }

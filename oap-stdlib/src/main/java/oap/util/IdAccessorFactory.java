@@ -33,20 +33,19 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by igor.petrenko on 04.01.2018.
  */
-public class IdFactory {
-    private static final ConcurrentHashMap<Class, IdAccess> ids = new ConcurrentHashMap<>();
+public class IdAccessorFactory {
+    private static final ConcurrentHashMap<Class, Accessor> ids = new ConcurrentHashMap<>();
 
-    public static String getId( Object value ) {
-
+    public static String getter( Object value ) {
         return get( value.getClass() ).get( value );
     }
 
-    private static IdAccess get( Class<?> clazz ) {
+    private static Accessor get( Class<?> clazz ) {
         return ids.computeIfAbsent( clazz, c -> {
             Reflection reflect = Reflect.reflect( c );
 
             val idFields = reflect.annotatedFields( Id.class );
-            if( !idFields.isEmpty() ) return new FieldIdAccess( Lists.head( idFields ) );
+            if( !idFields.isEmpty() ) return new FieldAccessor( Lists.head( idFields ) );
 
             val idMethods = reflect.annotatedMethods( Id.class );
 
@@ -61,24 +60,24 @@ public class IdFactory {
 
             if( setter == null || getter == null ) throw new RuntimeException( "no @Id annotation" );
 
-            return new MethodIdAccess( setter, getter );
+            return new MethodAccessor( setter, getter );
         } );
     }
 
-    public static void setId( Object value, String id ) {
+    public static void setter( Object value, String id ) {
         get( value.getClass() ).set( value, id );
     }
 
-    public interface IdAccess {
+    public interface Accessor {
         void set( Object object, String id );
 
         String get( Object object );
     }
 
-    private static class FieldIdAccess implements IdAccess {
+    private static class FieldAccessor implements Accessor {
         private final Reflection.Field field;
 
-        public FieldIdAccess( Reflection.Field field ) {
+        public FieldAccessor( Reflection.Field field ) {
             this.field = field;
         }
 
@@ -93,11 +92,11 @@ public class IdFactory {
         }
     }
 
-    private static class MethodIdAccess implements IdAccess {
+    private static class MethodAccessor implements Accessor {
         private final Reflection.Method setter;
         private final Reflection.Method getter;
 
-        public MethodIdAccess( Reflection.Method setter, Reflection.Method getter ) {
+        public MethodAccessor( Reflection.Method setter, Reflection.Method getter ) {
             this.setter = setter;
             this.getter = getter;
         }

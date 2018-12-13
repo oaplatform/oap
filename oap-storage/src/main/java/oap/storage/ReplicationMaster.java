@@ -22,20 +22,15 @@
  * SOFTWARE.
  */
 
-package oap.replication;
+package oap.storage;
+
+import oap.storage.Metadata;
 
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 10.04.2018.
- */
-public interface ReplicationMaster<M> {
-    List<M> updatedSince( long time );
-
-    default List<M> updatedSince( long time, int limit, int offset ) {
-        return updatedSince( time );
-    }
+public interface ReplicationMaster<T> {
+    List<Metadata<T>> updatedSince( long time, int limit, int offset );
 
     Collection<String> ids();
 }

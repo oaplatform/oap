@@ -36,7 +36,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static oap.application.ApplicationUtils.service;
 import static oap.security.acl.AclService.ROOT;
-import static oap.storage.Storage.LockStrategy.NoLock;
+import static oap.storage.Storage.Lock.CONCURRENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -50,8 +50,8 @@ public class DefaultAclSchemaTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        storage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), NoLock );
-        schemaStorage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), NoLock );
+        storage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), CONCURRENT );
+        schemaStorage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), CONCURRENT );
 
         schema = service( new DefaultAclSchema(
             "local", schemaStorage,

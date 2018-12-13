@@ -27,8 +27,8 @@ package oap.storage.migration;
 /**
  * Created by Igor Petrenko on 14.03.2016.
  */
-public class FileStorageMigrationException extends RuntimeException {
-    public FileStorageMigrationException( String message ) {
+public class MigrationException extends RuntimeException {
+    public MigrationException( String message ) {
         super( message );
     }
 }

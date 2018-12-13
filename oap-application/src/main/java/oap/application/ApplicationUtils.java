@@ -40,7 +40,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ApplicationUtils {
     private static final ConcurrentHashMap<Class, SMethod> startMethods = new ConcurrentHashMap<>();
 
+    /**
+     * dont do that!
+     * @return
+     */
     @SneakyThrows
+    @Deprecated
     public static <T> T service( T service ) {
         startMethods.computeIfAbsent(
             service.getClass(),

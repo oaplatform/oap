@@ -58,8 +58,8 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
     private AtomicBoolean modified = new AtomicBoolean( false );
 
 
-    public SingleFileStorage( Path path, Identifier<T> identifier, long fsync, LockStrategy lockStrategy ) {
-        super( identifier, lockStrategy );
+    public SingleFileStorage( Path path, Identifier<T> identifier, long fsync, Lock lock ) {
+        super( identifier, lock );
         this.path = path;
 
         load();
@@ -74,7 +74,7 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
             Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {
             }, IoStreams.in( path ) )
                 .forEach( m -> {
-                    val id = getIdentifier().get( m.object );
+                    val id = identifier.get( m.object );
                     data.put( id, m );
                 } );
         }
@@ -94,7 +94,7 @@ public class SingleFileStorage<T> extends MemoryStorage<T> {
             Iterator<Metadata<T>> it = data.values().iterator();
             while( it.hasNext() ) {
                 Metadata<T> metadata = it.next();
-                val id = getIdentifier().get( metadata.object );
+                val id = identifier.get( metadata.object );
                 synchronizedOn( id, () -> Binder.json.marshal( out, metadata ) );
                 if( it.hasNext() ) out.write( ITEM_SEP );
             }
