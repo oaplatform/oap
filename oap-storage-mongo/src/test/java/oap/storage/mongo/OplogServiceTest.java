@@ -28,7 +28,6 @@ import lombok.val;
 import org.bson.Document;
 import org.testng.annotations.Test;
 
-import static oap.application.ApplicationUtils.service;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,7 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OplogServiceTest extends AbstractMongoTest {
     @Test
     public void testOplog() {
-        try( val oplogListener = service( new OplogService( mongoClient ) ) ) {
+        try( val oplogListener = new OplogService( mongoClient  ) ) {
+            oplogListener.start();
 
             val sb = new StringBuilder();
 

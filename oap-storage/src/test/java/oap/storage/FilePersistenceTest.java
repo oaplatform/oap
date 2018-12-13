@@ -27,6 +27,7 @@ package oap.storage;
 import oap.json.TypeIdFactory;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.util.Id;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -39,20 +40,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Created by igor.petrenko on 23.09.2016.
  */
-public class SingleFileStorageTest extends AbstractTest {
+public class FilePersistenceTest extends AbstractTest {
     @BeforeMethod
     @Override
     public void beforeMethod() throws Exception {
         super.beforeMethod();
 
-        TypeIdFactory.register( TestSFS.class, TestSFS.class.getName() );
+        TypeIdFactory.register( Bean.class, Bean.class.getName() );
     }
 
     @Test
     public void fsync() {
-        final Path path = Env.tmpPath( "file.json" );
-        try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, TestSFS.identifier, 100, SERIALIZED ) ) {
-            sfs.store( new TestSFS( "123" ) );
+        Path path = Env.tmpPath( "storage.json.gz" );
+        try( MemoryStorage<Bean> storge = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+             FilePersistence<Bean> persistence = new FilePersistence<>( path, 10, storge ) ) {
+            persistence.start();
+            storge.store( new Bean( "123" ) );
 
             assertEventually( 10, 200, () -> assertThat( path ).exists() );
         }
@@ -60,27 +63,19 @@ public class SingleFileStorageTest extends AbstractTest {
 
     @Test
     public void persist() {
-        final Path path = Env.tmpPath( "file.json" );
-        try( final SingleFileStorage<TestSFS> sfs = new SingleFileStorage<>( path, TestSFS.identifier, 100, SERIALIZED ) ) {
-            sfs.store( new TestSFS( "123" ) );
+        Path path = Env.tmpPath( "storage.json.gz" );
+        try( MemoryStorage<Bean> storge = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+             FilePersistence<Bean> persistence = new FilePersistence<>( path, 10, storge ) ) {
+            persistence.start();
+            storge.store( new Bean( "123" ) );
         }
 
-        try( final SingleFileStorage<TestSFS> sfs2 = new SingleFileStorage<>( path, TestSFS.identifier, 100, SERIALIZED ) ) {
-            assertThat( sfs2.get( "123" ) ).isPresent();
-        }
-    }
-
-
-    public static class TestSFS {
-        public static final Identifier<TestSFS> identifier = IdentifierBuilder.<TestSFS>identify( s -> s.id ).build();
-
-        public String id;
-
-        public TestSFS() {
-        }
-
-        public TestSFS( String id ) {
-            this.id = id;
+        try( MemoryStorage<Bean> storge = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+             FilePersistence<Bean> persistence = new FilePersistence<>( path, 10, storge ) ) {
+            persistence.start();
+            assertThat( storge.select() ).containsExactly( new Bean( "123" ) );
         }
     }
+
+
 }

@@ -25,20 +25,17 @@
 package oap.security.acl;
 
 import lombok.val;
-import oap.storage.IdentifierBuilder;
+import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
-import oap.storage.Storage;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static oap.application.ApplicationUtils.service;
 import static oap.security.acl.AclService.ROOT;
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,8 +45,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Created by igor.petrenko on 21.12.2017.
  */
 public class DefaultAclServiceTest {
-    private Storage<SecurityContainer<TestAclObject>> objectStorage;
-    private Storage<AclRole> roleStorage;
+    private MemoryStorage<SecurityContainer<TestAclObject>> objectStorage;
+    private MemoryStorage<AclRole> roleStorage;
     private DefaultAclService aclService;
     private String rootId;
     private String childId;
@@ -66,13 +63,15 @@ public class DefaultAclServiceTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        objectStorage = service( new MemoryStorage<SecurityContainer<TestAclObject>>( IdentifierBuilder.annotationBuild(), SERIALIZED ) );
-        roleStorage = service( new MemoryStorage<>( IdentifierBuilder.annotationBuild(), SERIALIZED ) );
+        objectStorage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+        roleStorage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
 
         val gaRole = roleStorage.store( new AclRole( AclService.GLOBAL_ADMIN_ROLE, "ga", singletonList( "*" ) ) );
 
         val aclSchema = new MockAclSchema( objectStorage );
-        aclService = service( new DefaultAclService( roleStorage, aclSchema ) );
+        aclService = new DefaultAclService( roleStorage, aclSchema );
+
+        aclService.start();
 
         rootId = register( ROOT, "testObject1", ROOT );
         childId = register( rootId, "child", ROOT );
@@ -89,7 +88,7 @@ public class DefaultAclServiceTest {
         role2 = roleStorage.store( new AclRole( "roleId2", "testRole2", singletonList( "testObject2.read" ) ) );
         role3 = roleStorage.store( new AclRole( "roleId3", "testRole3", singletonList( "testObject3.read" ) ) );
 
-        aclService.add( ROOT, ga, gaRole.getId(), true );
+        aclService.add( ROOT, ga, gaRole.id, true );
     }
 
     private String register( String parent, String type, String owner ) {

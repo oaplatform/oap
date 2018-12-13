@@ -34,7 +34,6 @@ import org.testng.annotations.Test;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static oap.application.ApplicationUtils.service;
 import static oap.security.acl.AclService.ROOT;
 import static oap.storage.Storage.Lock.CONCURRENT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,16 +49,19 @@ public class DefaultAclSchemaTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        storage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), CONCURRENT );
-        schemaStorage = new MemoryStorage<>( IdentifierBuilder.annotationBuild(), CONCURRENT );
+        storage = new MemoryStorage<>(  Identifier.forAnnotationFixed(), CONCURRENT );
+        schemaStorage = new MemoryStorage<>(  Identifier.forAnnotationFixed(), CONCURRENT );
 
-        schema = service( new DefaultAclSchema(
+        DefaultAclSchema defaultAclSchema = new DefaultAclSchema(
+            "remote", schemaStorage,
+            Maps.of2( "organization", storage,
+                "user", storage ), "acl/parent-test-acl-schema.conf", null );
+        schema = new DefaultAclSchema(
             "local", schemaStorage,
             Maps.of2( "root", new MemoryRootStorage() ), "acl/child-test-acl-schema.conf",
-            service( new DefaultAclSchema(
-                "remote", schemaStorage,
-                Maps.of2( "organization", storage,
-                    "user", storage ), "acl/parent-test-acl-schema.conf", null ) ) ) );
+            defaultAclSchema );
+        defaultAclSchema.start();
+        schema.start();
     }
 
     @Test

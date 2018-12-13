@@ -480,15 +480,24 @@ public final class Files {
         }
     }
 
-    public static boolean fileNotEmpty( final Path path ) {
-        try( InputStream inputStream = IoStreams.in( path );
-             InputStreamReader inputStreamReader = new InputStreamReader( inputStream );
-             BufferedReader reader = new BufferedReader( inputStreamReader ) ) {
+    @Deprecated
+    public static boolean fileNotEmpty( Path path ) {
+        return isFileNotEmpty( path );
+    }
 
-            return StringUtils.isNotEmpty( reader.readLine() );
-        } catch( final IOException e ) {
-            throw new RuntimeException( e );
+    public static boolean isFileNotEmpty( final Path path ) {
+        try( InputStream is = IoStreams.in( path );
+             InputStreamReader isr = new InputStreamReader( is );
+             BufferedReader reader = new BufferedReader( isr ) ) {
+            String line;
+            while( ( line = reader.readLine() ) != null ) if( StringUtils.isNotEmpty( line ) ) return true;
+            return false;
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
         }
     }
 
+    public static boolean exists( Path path ) {
+        return java.nio.file.Files.exists( path );
+    }
 }

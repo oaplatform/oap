@@ -58,7 +58,7 @@ import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class DirectoryPersistence<T> implements Persistence<T>, Closeable, Storage.DataListener<T> {
+public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<T> {
     private final Path path;
     private final BiFunction<Path, T, Path> fsResolve;
     private long fsync;
@@ -191,13 +191,8 @@ public class DirectoryPersistence<T> implements Persistence<T>, Closeable, Stora
     public void close() {
         Threads.synchronously( lock, () -> {
             Scheduled.cancel( scheduled );
-            fsync();
+            fsync( scheduled.lastExecuted() );
         } );
-    }
-
-    @Override
-    public void fsync() {
-        Threads.synchronously( lock, () -> fsync( scheduled.lastExecuted() ) );
     }
 
     private Path filenameFor( T object, long version ) {

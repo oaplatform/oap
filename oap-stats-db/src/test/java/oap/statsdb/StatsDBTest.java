@@ -28,8 +28,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.val;
+import oap.storage.FilePersistence;
+import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
-import oap.storage.SingleFileStorage;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Cuid;
@@ -40,13 +41,12 @@ import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 
-import static oap.application.ApplicationUtils.service;
 import static oap.storage.Storage.Lock.CONCURRENT;
-import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by igor.petrenko on 08.09.2017.
+ * @todo by some reason it fails every second run
  */
 public class StatsDBTest extends AbstractTest {
     private static final KeySchema schema2 = new KeySchema( "n1", "n2" );
@@ -72,12 +72,13 @@ public class StatsDBTest extends AbstractTest {
     }
 
     @Test
-    public void testChildren() {
-        try( val master = service( new StatsDBMaster( schema2, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) ) ) {
-            master.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
-            master.update( "k1", "k3", ( c ) -> c.ci = 3, MockChild::new );
-            master.update( "k2", "k4", ( c ) -> c.ci = 4, MockChild::new );
-            master.update( "k1", ( c ) -> c.i2 = 10, MockValue::new );
+    public void children() {
+        try( val master = new StatsDBMaster( schema2, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) ) ) {
+            master.start();
+            master.update( "k1", "k2", c -> c.ci = 10, MockChild::new );
+            master.update( "k1", "k3", c -> c.ci = 3, MockChild::new );
+            master.update( "k2", "k4", c -> c.ci = 4, MockChild::new );
+            master.update( "k1", c -> c.i2 = 10, MockValue::new );
 
 
             assertThat( master.children( "k1" ) )
@@ -95,22 +96,23 @@ public class StatsDBTest extends AbstractTest {
     }
 
     @Test
-    public void testMergeChild() {
-        try( val master = service( new StatsDBMaster( schema3, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) );
-             val node = service( new StatsDBNode( schema3, master, null, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) ) ) {
+    public void mergeChild() {
+        try( val master = new StatsDBMaster( schema3, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) );
+             val node = new StatsDBNode( schema3, master, null, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) ) ) {
+            master.start();
 
             node.update( "p", ( p ) -> {}, () -> new MockValue( 1 ) );
-            node.update( "p", "c1", ( c ) -> {}, () -> new MockChild( 1 ) );
-            node.update( "p", "c1", "c2", ( c ) -> {}, () -> new MockChild( 2 ) );
+            node.update( "p", "c1", c -> {}, () -> new MockChild( 1 ) );
+            node.update( "p", "c1", "c2", c -> {}, () -> new MockChild( 2 ) );
             node.sync();
 
             assertThat( master.<MockValue>get( "p" ).sum ).isEqualTo( 3 );
 
             node.update( "p", ( p ) -> {}, () -> new MockValue( 1 ) );
-            node.update( "p", "c1", "c2", "c3", ( c ) -> {}, () -> new MockChild( 2 ) );
+            node.update( "p", "c1", "c2", "c3", c -> {}, () -> new MockChild( 2 ) );
             node.sync();
 
-            node.update( "p", "c1", "c2", ( c ) -> {}, () -> new MockChild( 2 ) );
+            node.update( "p", "c1", "c2", c -> {}, () -> new MockChild( 2 ) );
             node.sync();
 
             assertThat( master.<MockValue>get( "p" ).i2 ).isEqualTo( 2 );
@@ -124,53 +126,65 @@ public class StatsDBTest extends AbstractTest {
 
 
     @Test
-    public void testPersistMaster() {
-        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
-             val master = service( new StatsDBMaster( schema2, storage ) ) ) {
-            master.update( "k1", "k2", ( c ) -> c.i2 = 10, MockValue::new );
+    public void persistMaster() {
+        try( MemoryStorage<IdNode> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT );
+             FilePersistence<IdNode> persistence = new FilePersistence<>( masterDbPath, 10, storage );
+             StatsDBMaster master = new StatsDBMaster( schema2, storage ) ) {
+            persistence.start();
+            master.start();
+            master.update( "k1", "k2", c -> c.i2 = 10, MockValue::new );
         }
 
-        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
-             val master = service( new StatsDBMaster( schema2, storage ) ) ) {
+        try( MemoryStorage<IdNode> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT );
+             FilePersistence<IdNode> persistence = new FilePersistence<>( masterDbPath, 10, storage );
+             StatsDBMaster master = new StatsDBMaster( schema2, storage ) ) {
+            persistence.start();
+            master.start();
             assertThat( master.<MockValue>get( "k1", "k2" ) ).isNotNull();
             assertThat( master.<MockValue>get( "k1", "k2" ).i2 ).isEqualTo( 10 );
         }
     }
 
     @Test
-    public void testPersistNode() {
+    public void persistNode() {
         final MockRemoteStatsDB master = new MockRemoteStatsDB( schema2 );
-        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
-             val node = service( new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) ) {
-            node.update( "k1", "k2", ( c ) -> c.i2 = 10, MockValue::new );
+        try( MemoryStorage<IdNode> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT );
+             FilePersistence<IdNode> persistence = new FilePersistence<>( nodeDbPath, 10, storage );
+             StatsDBNode node = new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) {
+            persistence.start();
+            node.update( "k1", "k2", c -> c.i2 = 10, MockValue::new );
         }
 
-        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
-             val node = service( new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) ) {
+        try( MemoryStorage<IdNode> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT );
+             FilePersistence<IdNode> persistence = new FilePersistence<>( nodeDbPath, 10, storage );
+             StatsDBNode node = new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) {
+            persistence.start();
             assertThat( node.<MockValue>get( "k1", "k2" ) ).isNotNull();
             assertThat( node.<MockValue>get( "k1", "k2" ).i2 ).isEqualTo( 10 );
         }
     }
 
     @Test
-    public void testSync() {
-        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
-             val master = service( new StatsDBMaster( schema2, storage ) );
-             val node = service( new StatsDBNode( schema2, master, null, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) ) ) {
-
+    public void sync() {
+        try( MemoryStorage<IdNode> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT );
+             FilePersistence<IdNode> persistence = new FilePersistence<>( masterDbPath, 10, storage );
+             StatsDBMaster master = new StatsDBMaster( schema2, storage );
+             StatsDBNode node = new StatsDBNode( schema2, master, null, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) ) ) {
+            persistence.start();
+            master.start();
             node.sync();
 
-            node.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
-            node.update( "k1", "k3", ( c ) -> c.ci = 1, MockChild::new );
-            node.update( "k1", ( c ) -> c.i2 = 20, MockValue::new );
+            node.update( "k1", "k2", c -> c.ci = 10, MockChild::new );
+            node.update( "k1", "k3", c -> c.ci = 1, MockChild::new );
+            node.update( "k1", c -> c.i2 = 20, MockValue::new );
 
             node.sync();
             assertThat( node.<MockValue>get( "k1", "k2" ) ).isNull();
             assertThat( master.<MockChild>get( "k1", "k2" ).ci ).isEqualTo( 10 );
             assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );
 
-            node.update( "k1", "k2", ( c ) -> c.ci = 10, MockChild::new );
-            node.update( "k1", ( c ) -> c.i2 = 21, () -> new MockValue( 21 ) );
+            node.update( "k1", "k2", c -> c.ci = 10, MockChild::new );
+            node.update( "k1", c -> c.i2 = 21, () -> new MockValue( 21 ) );
 
             node.sync();
             assertThat( node.<MockValue>get( "k1", "k2" ) ).isNull();
@@ -180,33 +194,39 @@ public class StatsDBTest extends AbstractTest {
         }
     }
 
-    @Test( dependsOnMethods = "testSync" )
-    public void testCalculatedValuesAfterRestart() {
-        testSync();
+    @Test( dependsOnMethods = "sync" )
+    public void calculatedValuesAfterRestart() {
+        sync();
 
-        try( val storage = service( new SingleFileStorage<>( masterDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
-             val master = service( new StatsDBMaster( schema2, storage ) ) ) {
+        try( MemoryStorage<IdNode> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT );
+             FilePersistence<IdNode> persistence = new FilePersistence<>( masterDbPath, 10, storage );
+             StatsDBMaster master = new StatsDBMaster( schema2, storage ) ) {
+            persistence.start();
+            master.start();
             assertThat( master.<MockValue>get( "k1" ).sum ).isEqualTo( 21L );
         }
     }
 
     @Test
-    public void testSyncFailed() {
+    public void syncFailed() {
         final MockRemoteStatsDB master = new MockRemoteStatsDB( schema2 );
 
-        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, CONCURRENT ) );
-             val node = service( new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) ) {
-
+        try( MemoryStorage<IdNode> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT );
+             FilePersistence<IdNode> persistence = new FilePersistence<>( nodeDbPath, 10, storage );
+             StatsDBNode node = new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) {
+            persistence.start();
             master.syncWithException( ( sync ) -> new RuntimeException( "sync" ) );
-            node.update( "k1", "k2", ( c ) -> c.i2 = 10, MockValue::new );
+            node.update( "k1", "k2", c -> c.i2 = 10, MockValue::new );
             node.sync();
             assertThat( node.<MockValue>get( "k1", "k2" ) ).isNull();
         }
 
         assertThat( master.syncs ).isEmpty();
 
-        try( val storage = service( new SingleFileStorage<>( nodeDbPath, NodeIdentifier.identifier, 10000, SERIALIZED ) );
-             val node = service( new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) ) {
+        try( MemoryStorage<IdNode> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT );
+             FilePersistence<IdNode> persistence = new FilePersistence<>( nodeDbPath, 10, storage );
+             StatsDBNode node = new StatsDBNode( schema2, master, Env.tmpPath( "node" ), storage ) ) {
+            persistence.start();
 
             master.syncWithoutException();
             node.sync();
@@ -218,18 +238,20 @@ public class StatsDBTest extends AbstractTest {
     }
 
     @Test
-    public void testVersion() {
-        try( val master = service( new StatsDBMaster( schema2, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) );
-             val node = service( new StatsDBNode( schema2, master, null, new MemoryStorage<>( NodeIdentifier.identifier, CONCURRENT ) ) ) ) {
+    public void version() {
+        try( StatsDBMaster master = new StatsDBMaster( schema2, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) ) ;
+             StatsDBNode node = new StatsDBNode( schema2, master, null, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) )  ) {
+
+            master.start();
 
             Cuid.reset( "s", 0 );
 
-            node.update( "k1", ( c ) -> c.i2 = 20, MockValue::new );
+            node.update( "k1", c -> c.i2 = 20, MockValue::new );
             node.sync();
             assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );
 
             Cuid.reset( "s", 0 );
-            node.update( "k1", ( c ) -> c.i2 = 21, MockValue::new );
+            node.update( "k1", c -> c.i2 = 21, MockValue::new );
             node.sync();
             assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );
         }

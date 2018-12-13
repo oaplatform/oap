@@ -27,7 +27,7 @@ package oap.security.acl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.util.IdBean;
+import oap.util.Id;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,17 +35,18 @@ import java.util.List;
 /**
  * Created by igor.petrenko on 21.12.2017.
  */
-@ToString( callSuper = true )
-@EqualsAndHashCode( callSuper = true )
-public class AclRole extends IdBean {
+@ToString()
+@EqualsAndHashCode()
+public class AclRole {
     private static final long serialVersionUID = -7844632176452798221L;
 
+    @Id
+    public String id;
     public final String name;
     public final LinkedHashSet<String> permissions;
 
     @JsonCreator
     public AclRole( String id, String name, List<String> permissions ) {
-        super( id );
         this.name = name;
         this.permissions = new LinkedHashSet<>( permissions );
     }
