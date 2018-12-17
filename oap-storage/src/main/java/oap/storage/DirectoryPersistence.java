@@ -105,22 +105,21 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
             for( Path file : paths ) {
                 final Persisted persisted = Persisted.valueOf( file );
 
-                for( long version = persisted.version; version < this.version; version++ ) {
-                    file = migration( file );
-                }
+                for( long version = persisted.version; version < this.version; version++ ) file = migration( file );
 
-                final Metadata<T> unmarshal = Binder.json.unmarshal( new TypeRef<Metadata<T>>() {
-                }, file );
+                Metadata<T> metadata = Binder.json.unmarshal( new TypeRef<Metadata<T>>() {}, file );
 
-                final Path newPath = filenameFor( unmarshal.object, this.version );
+                Path newPath = filenameFor( metadata.object, this.version );
+
 
                 if( !java.nio.file.Files.exists( newPath ) || !java.nio.file.Files.isSameFile( file, newPath ) ) {
+                    log.trace( "moving {} => {}", file, newPath );
                     Files.move( file, newPath, StandardCopyOption.REPLACE_EXISTING );
                 }
 
-                val id = storage.identifier.get( unmarshal.object );
+                val id = storage.identifier.get( metadata.object );
 
-                storage.data.put( id, unmarshal );
+                storage.data.put( id, metadata );
 
             }
 

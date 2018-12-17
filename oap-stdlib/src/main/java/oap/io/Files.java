@@ -149,7 +149,7 @@ public final class Files {
                 return FileVisitResult.CONTINUE;
             }
         };
-        if( java.nio.file.Files.exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
+        if( exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
             java.nio.file.Files.walkFileTree( basePath, visitor );
         return result;
     }

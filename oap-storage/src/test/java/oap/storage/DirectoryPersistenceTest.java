@@ -95,7 +95,7 @@ public class DirectoryPersistenceTest extends AbstractTest {
 
         try( MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
              DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, fsResolve, 50, 0, empty(), storage ) ) {
-            persistence.start();
+            persistence.start( );
             assertThat( storage.select() )
                 .containsExactly( new Bean( "1" ), new Bean( "2" ) );
         }
