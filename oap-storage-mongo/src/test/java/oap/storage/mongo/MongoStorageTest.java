@@ -28,6 +28,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import oap.storage.Identifier;
 import oap.util.Id;
 import org.testng.annotations.Test;
 
@@ -47,21 +48,28 @@ public class MongoStorageTest extends AbstractMongoTest {
 
     @Test
     public void store() {
-        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED ) ) {
+        try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test",
+            Identifier.<Bean>forAnnotation()
+                .suggestion( o -> o.name )
+                .length( 10 )
+                .build(), SERIALIZED ) ) {
             storage.start();
-            TestMongoBean bean1 = storage.store( new TestMongoBean() );
-            TestMongoBean bean2 = storage.store( new TestMongoBean() );
-            storage.store( new TestMongoBean( bean1.id, "test" ) );
+            Bean bean1 = storage.store( new Bean( "test1" ) );
+            Bean bean2 = storage.store( new Bean( "test2" ) );
+            storage.store( new Bean( bean1.id, "test3" ) );
 
             log.debug( "bean1 = {}", bean1 );
             log.debug( "bean2 = {}", bean2 );
 
-            assertThat( bean1.id ).isNotBlank();
-            assertThat( bean2.id ).isNotBlank();
+            assertThat( bean1.id ).isEqualTo( "TST1XXXXXX" );
+            assertThat( bean2.id ).isEqualTo( "TST2XXXXXX" );
         }
-        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED ) ) {
+        try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED ) ) {
             storage.start();
-            assertThat( storage.select() ).hasSize( 2 );
+            assertThat( storage.select() ).containsOnly(
+                new Bean( "TST1XXXXXX", "test1" ),
+                new Bean( "TST2XXXXXX", "test3" )
+            );
             assertThat( storage.collection.count() ).isEqualTo( 2 );
 
         }
@@ -69,10 +77,10 @@ public class MongoStorageTest extends AbstractMongoTest {
 
     @Test
     public void delete() {
-        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED ) ) {
+        try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED ) ) {
             storage.start();
-            TestMongoBean bean1 = storage.store( new TestMongoBean() );
-            storage.store( new TestMongoBean() );
+            Bean bean1 = storage.store( new Bean() );
+            storage.store( new Bean() );
 
             storage.delete( bean1.id );
             storage.fsync();
@@ -84,13 +92,13 @@ public class MongoStorageTest extends AbstractMongoTest {
     @Test()
     public void updateMongo() {
         store();
-        try( MongoStorage<TestMongoBean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED );
+        try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED );
              val oplogService = new OplogService( mongoClient ) ) {
             oplogService.start();
             storage.oplogService = oplogService;
             storage.start();
-            TestMongoBean bean1 = storage.store( new TestMongoBean() );
-            TestMongoBean bean2 = storage.store( new TestMongoBean() );
+            Bean bean1 = storage.store( new Bean() );
+            Bean bean2 = storage.store( new Bean() );
             storage.fsync();
 
             storage.collection.updateOne(
@@ -116,22 +124,22 @@ public class MongoStorageTest extends AbstractMongoTest {
 
     @ToString
     @EqualsAndHashCode( of = { "id" } )
-    public static class TestMongoBean {
+    public static class Bean {
         @Id
         public String id;
         public String name;
         public int c;
 
-        public TestMongoBean( String id, String name ) {
+        public Bean( String id, String name ) {
             this.id = id;
             this.name = name;
         }
 
-        public TestMongoBean( String name ) {
+        public Bean( String name ) {
             this.name = name;
         }
 
-        public TestMongoBean() {
+        public Bean() {
         }
     }
 }
