@@ -47,6 +47,7 @@ public class AclRole {
 
     @JsonCreator
     public AclRole( String id, String name, List<String> permissions ) {
+        this.id = id;
         this.name = name;
         this.permissions = new LinkedHashSet<>( permissions );
     }

@@ -29,7 +29,6 @@ import oap.storage.mongo.Migration;
 import oap.storage.mongo.MongoClient;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import org.bson.types.ObjectId;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
