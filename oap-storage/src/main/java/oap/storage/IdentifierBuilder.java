@@ -48,9 +48,9 @@ public final class IdentifierBuilder<T> {
 
     private Function<T, String> suggestion = obj -> Cuid.next();
 
-    private int size = DEFAULT_ID_SIZE;
+    private int length = DEFAULT_ID_SIZE;
 
-    private IdentifierBuilder( final Function<T, String> getter, final BiConsumer<T, String> setter ) {
+    private IdentifierBuilder( Function<T, String> getter, BiConsumer<T, String> setter ) {
         this.getter = getter;
         this.setter = setter;
     }
@@ -106,7 +106,7 @@ public final class IdentifierBuilder<T> {
      * @param <T>      - object type
      * @return instance of the current builder
      */
-    public static <T> IdentifierBuilder<T> identify( final Function<T, String> identity ) {
+    public static <T> IdentifierBuilder<T> identify( Function<T, String> identity ) {
         return new IdentifierBuilder<>( Objects.requireNonNull(
             identity, "identity must not be null" ), null );
     }
@@ -123,21 +123,21 @@ public final class IdentifierBuilder<T> {
      * @param suggestion - base string for identifier generation
      * @return instance of the current builder
      */
-    public IdentifierBuilder<T> suggestion( final Function<T, String> suggestion ) {
+    public IdentifierBuilder<T> suggestion( Function<T, String> suggestion ) {
         this.suggestion = Objects.requireNonNull( suggestion, "suggestion must not be null" );
 
         return this;
     }
 
     /**
-     * Sets the size of identifier to be generated
+     * Sets the length of identifier to be generated
      *
-     * @param size - desired identifier size
+     * @param length - desired identifier length
      * @return instance of the current builder
      */
-    public IdentifierBuilder<T> size( final int size ) {
-        Preconditions.checkArgument( size > 0, "size needs to be bigger than 0" );
-        this.size = size;
+    public IdentifierBuilder<T> length( int length ) {
+        Preconditions.checkArgument( length > 0, "length needs to be bigger than 0" );
+        this.length = length;
 
         return this;
     }
@@ -157,11 +157,11 @@ public final class IdentifierBuilder<T> {
         return new DefaultIdentifier<>( this );
     }
 
-    Function<T, String> getIdentityFunction() {
+    Function<T, String> getGetter() {
         return getter;
     }
 
-    Optional<BiConsumer<T, String>> getSetIdFunction() {
+    Optional<BiConsumer<T, String>> getSetter() {
         return Optional.ofNullable( setter );
     }
 
@@ -169,8 +169,8 @@ public final class IdentifierBuilder<T> {
         return Optional.ofNullable( suggestion );
     }
 
-    int getSize() {
-        return size;
+    int getLength() {
+        return length;
     }
 
     public Strings.FriendlyIdOption[] getOptions() {

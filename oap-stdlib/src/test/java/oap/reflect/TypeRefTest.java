@@ -21,21 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.reflect;
 
-import com.google.common.reflect.TypeToken;
+import org.testng.annotations.Test;
 
-import java.lang.reflect.Type;
+import java.util.ArrayList;
 
-public abstract class TypeRef<T> {
-    TypeToken<T> token = new TypeToken<T>( getClass() ) {
-    };
+import static org.assertj.core.api.Assertions.assertThat;
 
-    public Type type() {
-        return token.getType();
+public class TypeRefTest {
+
+    @Test
+    public void type() {
+        assertThat( new TypeRef<String>() {}.type() ).isEqualTo( String.class );
     }
 
-    public Class<T> clazz() {
-        return ( Class<T> ) token.getRawType();
+    @Test
+    public void clazz() {
+        assertThat( new TypeRef<String>() {}.clazz() ).isEqualTo( String.class );
+        assertThat( new TypeRef<ArrayList<String>>() {}.clazz() ).isEqualTo( ArrayList.class );
     }
+
 }

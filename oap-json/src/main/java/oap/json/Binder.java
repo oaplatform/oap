@@ -291,6 +291,10 @@ public class Binder {
         }
     }
 
+    public ObjectReader readerFor( TypeRef<?> ref ) {
+        return mapper.readerFor( toTypeReference( ref ) );
+    }
+
     @Deprecated
     public ObjectReader readerFor( TypeReference<?> ref ) {
         return mapper.readerFor( ref );
@@ -298,6 +302,10 @@ public class Binder {
 
     public ObjectReader readerForUpdating( Object obj ) {
         return mapper.readerForUpdating( obj );
+    }
+
+    public ObjectWriter writerFor( TypeRef<?> ref ) {
+        return mapper.writerFor( toTypeReference( ref ) );
     }
 
     @Deprecated

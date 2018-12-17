@@ -165,7 +165,7 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
     private void fsync( long last ) {
 
         Threads.synchronously( lock, () -> {
-            log.trace( "fsync: last: {}, storage size: {}", last, storage.data.size() );
+            log.trace( "fsync: last: {}, storage length: {}", last, storage.data.size() );
 
             for( val value : storage.data.values() ) {
                 if( value.modified < last ) continue;

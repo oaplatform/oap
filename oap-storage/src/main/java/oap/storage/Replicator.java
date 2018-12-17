@@ -63,7 +63,7 @@ public class Replicator<T> implements Closeable {
         for( int b = 0; b < 100000; b++ ) {
             int offset = b * batchSize;
             List<Metadata<T>> updates = master.updatedSince( last, batchSize, offset );
-            log.trace( "replicate {} to {} last: {}, size {}, batch {}, offset {}",
+            log.trace( "replicate {} to {} last: {}, length {}, batch {}, offset {}",
                 master, slave, last, updates.size(), batchSize, offset );
             if( updates.isEmpty() ) break;
             newUpdates.addAll( updates );

@@ -36,8 +36,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OplogServiceTest extends AbstractMongoTest {
     @Test
-    public void testOplog() {
-        try( val oplogListener = new OplogService( mongoClient  ) ) {
+    public void oplog() {
+        try( val oplogListener = new OplogService( mongoClient ) ) {
             oplogListener.start();
 
             val sb = new StringBuilder();

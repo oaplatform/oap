@@ -24,12 +24,12 @@
 
 package oap.storage.mongo;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.SneakyThrows;
 import lombok.val;
 import oap.json.Binder;
+import oap.reflect.TypeRef;
 import org.bson.BsonReader;
 import org.bson.BsonWriter;
 import org.bson.Document;
@@ -46,16 +46,16 @@ import java.util.function.Function;
 public class JsonCodec<T> implements Codec<T> {
     private final DocumentCodec documentCodec;
     private final Class<T> clazz;
-    private final Function<T, String> idFunc;
+    private final Function<T, String> identifier;
     private ObjectWriter fileWriter;
     private ObjectReader fileReader;
 
-    public JsonCodec( TypeReference<T> tr, Class<T> clazz, Function<T, String> idFunc ) {
-        this.clazz = clazz;
-        this.idFunc = idFunc;
-        documentCodec = new DocumentCodec();
-        fileReader = Binder.json.readerFor( tr );
-        fileWriter = Binder.json.writerFor( tr );
+    public JsonCodec( TypeRef<T> ref, Function<T, String> identifier ) {
+        this.clazz = ref.clazz();
+        this.identifier = identifier;
+        this.documentCodec = new DocumentCodec();
+        this.fileReader = Binder.json.readerFor( ref );
+        this.fileWriter = Binder.json.writerFor( ref );
     }
 
     @SneakyThrows
@@ -72,7 +72,7 @@ public class JsonCodec<T> implements Codec<T> {
     public void encode( BsonWriter bsonWriter, T data, EncoderContext encoderContext ) {
         val doc = Document.parse( fileWriter.writeValueAsString( data ) );
 
-        val id = idFunc.apply( data );
+        val id = identifier.apply( data );
 
         doc.put( "_id", id );
 

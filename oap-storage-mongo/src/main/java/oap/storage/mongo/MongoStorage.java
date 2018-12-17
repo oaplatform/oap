@@ -24,13 +24,13 @@
 
 package oap.storage.mongo;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import oap.reflect.TypeRef;
 import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
 import oap.storage.Metadata;
@@ -63,27 +63,24 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
         this( mongoClient, table, Identifier
             .<T>forAnnotation()
             .suggestion( ar -> ObjectId.get().toString() )
-            .size( 24 )
+            .length( 24 )
             .options()
             .build(), lock );
-
     }
 
-    @SuppressWarnings( "unchecked" )
     public MongoStorage( MongoClient mongoClient, String table, Identifier<T> identifier, Lock lock ) {
         super( identifier, lock );
 
-        final Object o = new TypeReference<Metadata<T>>() {};
-        final CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
-            CodecRegistries.fromCodecs( new JsonCodec<>( ( TypeReference<Metadata> ) o,
-                Metadata.class, ( m ) -> this.identifier.get( ( T ) m.object ) ) ),
+        TypeRef<Metadata<T>> ref = new TypeRef<Metadata<T>>() {};
+
+        CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
+            CodecRegistries.fromCodecs( new JsonCodec<>( ref, m -> this.identifier.get( m.object ) ) ),
             mongoClient.database.getCodecRegistry()
         );
 
-        final Object metadataMongoCollection = mongoClient.database
-            .getCollection( table, Metadata.class )
+        this.collection = mongoClient.database
+            .getCollection( table, ref.clazz() )
             .withCodecRegistry( codecRegistry );
-        this.collection = ( MongoCollection<Metadata<T>> ) metadataMongoCollection;
     }
 
     private void load() {
@@ -152,16 +149,16 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
 
     @Override
     public void updated( String table, String id ) {
-        update( id );
+        refresh( id );
     }
 
-    public void update( String id ) {
+    public void refresh( String id ) {
         val m = collection.find( eq( "_id", id ) ).first();
         if( m != null ) {
             lock.synchronizedOn( id, () -> {
                 val oldM = data.get( id );
                 if( oldM == null || m.modified > oldM.modified ) {
-                    log.debug( "update from mongo {}", id );
+                    log.debug( "refresh from mongo {}", id );
                     data.put( id, m );
                     fireUpdated( m.object, false );
                 } else {
@@ -178,6 +175,6 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
 
     @Override
     public void inserted( String table, String id ) {
-        update( id );
+        refresh( id );
     }
 }

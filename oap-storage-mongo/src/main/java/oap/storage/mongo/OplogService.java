@@ -67,6 +67,7 @@ public class OplogService implements Runnable, Closeable {
     }
 
     public synchronized void start() {
+        log.debug( "starting oplog listening {} for {}", this, mongoClient.database.getName() );
         val oplogRs = mongoClient.mongoClient.getDatabase( "local" ).getCollection( "oplog.rs" );
         final Bson filter = and(
             in( "op", "i", "u", "d" ),
@@ -92,6 +93,7 @@ public class OplogService implements Runnable, Closeable {
     }
 
     public synchronized void stop() {
+        log.debug( "stopping oplog listening {} for {}", this, mongoClient.database.getName() );
         if( thread != null ) thread.interrupt();
         if( cursor != null ) cursor.close();
         try {

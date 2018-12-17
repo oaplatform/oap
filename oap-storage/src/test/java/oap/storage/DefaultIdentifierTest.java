@@ -50,7 +50,7 @@ public class DefaultIdentifierTest {
     public void idAndSizeGeneration() {
         Identifier<Bean> identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
-            .size( 7 )
+            .length( 7 )
             .build();
         MemoryStorage<Bean> storage = new MemoryStorage<>( identifier, SERIALIZED );
         Bean a = new Bean( null, "some text" );
@@ -68,7 +68,7 @@ public class DefaultIdentifierTest {
     public void conflictResolution() {
         Identifier<Bean> identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
-            .size( 7 )
+            .length( 7 )
             .build();
         MemoryStorage<Bean> storage = new MemoryStorage<>( identifier, CONCURRENT );
         Bean a = new Bean( null, "some text" );

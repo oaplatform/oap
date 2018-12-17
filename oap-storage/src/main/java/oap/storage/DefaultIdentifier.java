@@ -33,42 +33,42 @@ import java.util.function.Function;
 
 public final class DefaultIdentifier<T> implements Identifier<T> {
 
-    private final Function<? super T, String> getId;
-    private final BiConsumer<? super T, String> setId;
+    private final Function<? super T, String> getter;
+    private final BiConsumer<? super T, String> setter;
     private final Function<? super T, String> suggestion;
-    private final Strings.FriendlyIdOption[] idOptions;
-    private final int size;
+    private final Strings.FriendlyIdOption[] options;
+    private final int length;
 
     DefaultIdentifier( final IdentifierBuilder<? super T> identifierBuilder ) {
-        this.size = identifierBuilder.getSize();
-        this.getId = identifierBuilder.getIdentityFunction();
-        this.setId = identifierBuilder.getSetIdFunction().orElse( null );
+        this.length = identifierBuilder.getLength();
+        this.getter = identifierBuilder.getGetter();
+        this.setter = identifierBuilder.getSetter().orElse( null );
         this.suggestion = identifierBuilder.getSuggestion().orElse( null );
-        this.idOptions = identifierBuilder.getOptions();
+        this.options = identifierBuilder.getOptions();
     }
 
     @Override
     public void set( T object, String id ) {
-        if( setId != null ) setId.accept( object, id );
+        if( setter != null ) setter.accept( object, id );
     }
 
     @Override
     public String get( T object ) {
-        return getId.apply( object );
+        return getter.apply( object );
     }
 
     @Override
     public synchronized String getOrInit( T object, Function<String, Optional<T>> container ) {
-        String id = getId.apply( object );
+        String id = getter.apply( object );
 
         if( id == null ) {
             Objects.requireNonNull( suggestion, "Suggestion is not specified for nullable identifier" );
-            Objects.requireNonNull( setId, "Set of nullable identifier is not specified" );
+            Objects.requireNonNull( setter, "Set of nullable identifier is not specified" );
 
             id = Strings.toUserFriendlyId( suggestion.apply( object ),
-                size, newId -> container.apply( newId ).isPresent(), idOptions );
+                length, candidate -> container.apply( candidate ).isPresent(), options );
 
-            setId.accept( object, id );
+            setter.accept( object, id );
         }
 
         return id;

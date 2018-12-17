@@ -51,6 +51,11 @@ public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyLi
         child.run();
     }
 
+    /**
+     * {@link SynchronizedRunnable} has its own {@link SynchronizedRunnableReadyListener} notification scheme,
+     * henche 2 permits are needed to be released: the 1st is {@link SynchronizedThread}'s internal and
+     * the 2nd is released by {@link #notifyReady()} from {@link SynchronizedRunnable}
+     */
     public synchronized void start() {
         stopped = false;
         thread.start();
@@ -86,6 +91,10 @@ public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyLi
     @Override
     public void notifyReady() {
         this.semaphore.release();
+    }
+
+    public synchronized void synchronous( Runnable code ) {
+        code.run();
     }
 
 }

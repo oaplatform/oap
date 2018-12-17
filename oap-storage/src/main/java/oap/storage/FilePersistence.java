@@ -90,7 +90,7 @@ public class FilePersistence<T> implements Closeable {
     @SneakyThrows
     private synchronized void fsync( long last ) {
         Threads.synchronously( lock, () -> {
-            log.trace( "fsync: last: {}, storage size: {}", last, storage.data.size() );
+            log.trace( "fsync: last: {}, storage length: {}", last, storage.data.size() );
 
             if( anyMatch( storage.data.values(), m -> m.modified > last ) ) {
                 log.debug( "fsync storing {}...", path );
