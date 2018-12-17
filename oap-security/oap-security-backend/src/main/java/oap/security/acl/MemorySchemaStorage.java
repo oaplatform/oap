@@ -24,7 +24,7 @@
 
 package oap.security.acl;
 
-import oap.storage.IdentifierBuilder;
+import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
 
 /**

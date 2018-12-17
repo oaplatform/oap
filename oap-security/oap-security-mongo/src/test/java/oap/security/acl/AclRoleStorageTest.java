@@ -60,7 +60,7 @@ public class AclRoleStorageTest extends AbstractTest {
     public void testId() {
         val role = storage.store( new AclRole( "role1", singletonList( "test.permission" ) ) );
         storage.fsync();
-        val role2 = storage.collection.find( eq( "_id", role.getId() ) ).first();
+        val role2 = storage.collection.find( eq( "_id", role.id ) ).first();
 
         assertThat( role2.object ).isEqualTo( role );
     }

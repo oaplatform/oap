@@ -25,7 +25,7 @@
 package oap.security.acl;
 
 import lombok.val;
-import oap.storage.IdentifierBuilder;
+import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
 import oap.storage.Storage;
 import oap.util.Maps;
