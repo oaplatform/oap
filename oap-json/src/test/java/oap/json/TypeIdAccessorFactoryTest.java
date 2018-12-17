@@ -34,6 +34,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.val;
 import oap.testng.AbstractTest;
+import oap.util.Id;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
@@ -93,6 +94,7 @@ public class TypeIdAccessorFactoryTest extends AbstractTest {
     @ToString
     @EqualsAndHashCode
     public static class TestBean {
+        @Id
         public final String id;
 
         public TestBean( @JsonProperty( "id" ) String id ) {
