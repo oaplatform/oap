@@ -24,7 +24,6 @@
 
 package oap.security.ws;
 
-import lombok.experimental.var;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.http.HttpResponse;
@@ -81,7 +80,7 @@ public class SecurityInterceptor2 implements Interceptor {
             return Optional.of( httpResponse );
         }
 
-        var userId = ( String ) session.get( USER_ID ).orElse( null );
+        String userId = ( String ) session.get( USER_ID ).orElse( null );
         if( userId == null ) {
             val token = tokenService.getToken( sessionToken ).orElse( null );
             if( token == null ) {
