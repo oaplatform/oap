@@ -108,6 +108,7 @@ public class ReflectionTest {
     public void assignableFrom() {
         assertThat( Reflect.reflect( Bean.class )
             .field( "l" )
+            .get()
             .type()
             .assignableFrom( List.class ) ).isTrue();
     }
@@ -117,10 +118,14 @@ public class ReflectionTest {
     public void annotation() {
         assertThat( Reflect
             .reflect( Bean.class )
-            .field( "x" ).isAnnotatedWith( Ann.class ) ).isTrue();
+            .field( "x" )
+            .get()
+            .isAnnotatedWith( Ann.class ) )
+            .isTrue();
         assertThat( Reflect
             .reflect( Bean.class )
             .field( "x" )
+            .get()
             .annotationOf( Ann.class ).get( 0 )
             .a() ).isEqualTo( 10 );
     }
@@ -204,7 +209,11 @@ public class ReflectionTest {
 
     @Test
     public void castMap() {
-        Pair<Reflection, Reflection> params = Reflect.reflect( CForComponentType.class ).field( "map" ).type().getMapComponentsType();
+        Pair<Reflection, Reflection> params = Reflect.reflect( CForComponentType.class )
+            .field( "map" )
+            .get()
+            .type()
+            .getMapComponentsType();
         assertThat( params ).isNotNull();
         assertThat( params._1 ).isEqualTo( Reflect.reflect( String.class ) );
         assertThat( params._2 ).isEqualTo( Reflect.reflect( String.class ) );

@@ -24,7 +24,6 @@
 package oap.reflect;
 
 import com.google.common.reflect.TypeToken;
-import lombok.val;
 import oap.util.Arrays;
 import oap.util.Pair;
 import oap.util.Try;
@@ -107,24 +106,22 @@ public class Reflect {
                 next = list.size() < key ? null : list.get( key );
             } else {
                 Object instance = next;
-                val f = reflect( next.getClass() ).field( field );
-                if( f == null ) {
-                    next = null;
-                    continue;
-                }
-                next = f.get( instance );
-                if( next == null ) continue;
+
+                next = reflect( next.getClass() )
+                    .field( field )
+                    .map( f -> f.get( instance ) )
+                    .orElse( null );
                 if( next instanceof Optional ) next = ( ( Optional ) next ).orElse( null );
             }
         }
         return ( T ) next;
     }
 
-    @SuppressWarnings( "unchecked" )
     public static void set( Object object, String path, Object value ) {
         set( object, path, value, false );
     }
 
+    @SuppressWarnings( "unchecked" )
     public static void set( Object object, String path, Object value, boolean removeNullValues ) {
         String[] splittedPath = StringUtils.split( path, '.' );
         Pair<String[], String[]> split = Arrays.splitAt( splittedPath.length - 1, splittedPath );
@@ -146,10 +143,9 @@ public class Reflect {
                 list.set( key, value );
             }
         } else {
-            val f = reflect( next.getClass() ).field( field );
-            if( f != null ) {
-                f.set( next, f.type().isOptional() ? Optional.ofNullable( value ) : value );
-            }
+            reflect( next.getClass() )
+                .field( field )
+                .ifPresent( f -> f.set( next, f.type().isOptional() ? Optional.ofNullable( value ) : value ) );
         }
 
     }

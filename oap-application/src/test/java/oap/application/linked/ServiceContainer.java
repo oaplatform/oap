@@ -21,19 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application;
 
-import oap.util.Strings;
+package oap.application.linked;
 
-import java.net.URL;
+import oap.util.PrioritySet;
 
-@Deprecated
-public class PluginConfiguration extends Configuration<Plugin> {
-    public PluginConfiguration() {
-        super( Plugin.class, "oap-plugin" );
-    }
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
-    public Plugin fromHocon( URL hocon ) {
-        return fromHocon( Strings.readString( hocon ) );
-    }
+public class ServiceContainer {
+    public List<ServiceContainee> containees = new ArrayList<>();
+    public Set<ServiceContainee> priorities = new PrioritySet<>();
+
 }

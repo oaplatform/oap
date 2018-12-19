@@ -168,8 +168,8 @@ public class Reflection extends Annotated<Class<?>> {
     }
 
 
-    public Field field( String name ) {
-        return fields.get( name );
+    public Optional<Field> field( String name ) {
+        return Optional.ofNullable( fields.get( name ) );
     }
 
     public Optional<Method> method( Predicate<Method> matcher ) {
@@ -411,11 +411,11 @@ public class Reflection extends Annotated<Class<?>> {
                 for( String key : args.keySet() ) {
                     if( parameterNames.contains( key ) ) continue;
 
-                    Field f = field( key );
-                    if( f == null ) continue;
-
-                    Object arg = coercions.cast( f.type(), args.get( key ) );
-                    f.set( instance, arg );
+                    Optional<Field> f = field( key );
+                    f.ifPresent( field -> {
+                        Object arg = coercions.cast( field.type(), args.get( key ) );
+                        field.set( instance, arg );
+                    } );
                 }
 
                 return instance;

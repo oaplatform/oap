@@ -21,19 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application;
 
-import oap.util.Strings;
+package oap.application.linked;
 
-import java.net.URL;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-@Deprecated
-public class PluginConfiguration extends Configuration<Plugin> {
-    public PluginConfiguration() {
-        super( Plugin.class, "oap-plugin" );
-    }
+@ToString
+@EqualsAndHashCode
+public class ServiceContainee {
+    String name;
 
-    public Plugin fromHocon( URL hocon ) {
-        return fromHocon( Strings.readString( hocon ) );
+    public ServiceContainee( String name ) {
+        this.name = name;
     }
 }

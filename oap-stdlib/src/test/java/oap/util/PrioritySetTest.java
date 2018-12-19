@@ -21,19 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application;
 
-import oap.util.Strings;
+package oap.util;
 
-import java.net.URL;
+import org.testng.annotations.Test;
 
-@Deprecated
-public class PluginConfiguration extends Configuration<Plugin> {
-    public PluginConfiguration() {
-        super( Plugin.class, "oap-plugin" );
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class PrioritySetTest {
+    @Test
+    public void get() {
+        PrioritySet<String> set = new PrioritySet<>();
+        assertThat( set.add( "a" ) ).isTrue();
+        assertThat( set.add( 1, "b" ) ).isTrue();
+        assertThat( set.add( 3, "b" ) ).isTrue();
+        assertThat( set.add( 3, "b" ) ).isFalse();
+        assertThat( set.add( 2, "c" ) ).isTrue();
+        assertThat( set ).containsExactly( "a", "c", "b" );
+        assertThat( set.add( 4, "c" ) ).isTrue();
+        assertThat( set ).containsExactly( "a", "b", "c" );
+        assertThat( set ).hasSize( 3 );
     }
 
-    public Plugin fromHocon( URL hocon ) {
-        return fromHocon( Strings.readString( hocon ) );
-    }
+
 }

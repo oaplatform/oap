@@ -21,19 +21,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application;
 
-import oap.util.Strings;
+package oap.util;
 
-import java.net.URL;
+import com.google.common.collect.MultimapBuilder;
+import com.google.common.collect.SetMultimap;
 
-@Deprecated
-public class PluginConfiguration extends Configuration<Plugin> {
-    public PluginConfiguration() {
-        super( Plugin.class, "oap-plugin" );
+import javax.annotation.Nonnull;
+import java.util.AbstractSet;
+import java.util.Iterator;
+
+public class PrioritySet<E> extends AbstractSet<E> {
+    public static int PRIORITY_DEFAULT = 0;
+    private SetMultimap<Integer, E> map = MultimapBuilder
+        .treeKeys( Integer::compareTo )
+        .linkedHashSetValues()
+        .build();
+
+    @Override
+    public int size() {
+        return map.size();
     }
 
-    public Plugin fromHocon( URL hocon ) {
-        return fromHocon( Strings.readString( hocon ) );
+    public boolean add( int priority, E e ) {
+        if( map.get( priority ).contains( e ) ) return false;
+        if( map.containsValue( e ) ) remove( e );
+        return map.put( priority, e );
     }
+
+    @Override
+    public boolean add( E e ) {
+        return add( PRIORITY_DEFAULT, e );
+    }
+
+    @Override
+    @Nonnull
+    public Iterator<E> iterator() {
+        return map.values().iterator();
+    }
+
 }

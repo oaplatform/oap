@@ -28,14 +28,16 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.extern.slf4j.Slf4j;
 import oap.application.remote.RemoteLocation;
+import oap.json.Binder;
 import oap.reflect.Coercions;
+import oap.util.PrioritySet;
 import oap.util.Strings;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Arrays.asList;
 
@@ -51,8 +53,10 @@ public class Module {
     @JsonAlias( { "dependsOn", "%dependsOn" } )
     public ArrayList<String> dependsOn = new ArrayList<>();
     @JsonAlias( { "extends", "%extends" } )
+    @Deprecated
     public ArrayList<String> extendsModules = new ArrayList<>();
     @JsonAlias( { "abstract", "%abstract" } )
+    @Deprecated
     public boolean isAbstract = false;
     @JsonAlias( { "services", "%services" } )
     public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
@@ -62,9 +66,8 @@ public class Module {
         this.name = name;
     }
 
-    @EqualsAndHashCode()
-    @ToString()
-    @Slf4j
+    @EqualsAndHashCode
+    @ToString
     public static class Service {
         public String implementation;
         public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
@@ -73,6 +76,7 @@ public class Module {
         public String profile;
         public String name;
         public LinkedHashMap<String, String> listen = new LinkedHashMap<>();
+        public LinkedHashMap<String, Object> link = new LinkedHashMap<>(); // String | Reference
         public RemoteLocation remote;
         public boolean enabled = true;
 
@@ -96,4 +100,28 @@ public class Module {
         public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
     }
 
+    @ToString
+    @EqualsAndHashCode
+    public static class Reference {
+        public int priority;
+        public String name;
+
+        public Reference( int priority, String name ) {
+            this.priority = priority;
+            this.name = name.substring( "@service:".length() );
+        }
+
+        public Reference( String name ) {
+            this( PrioritySet.PRIORITY_DEFAULT, name );
+        }
+
+        @SuppressWarnings( "unchecked" )
+        public static Reference of( Object reference ) {
+            if( reference instanceof String ) return new Reference( ( String ) reference );
+            if( reference instanceof Map<?, ?> )
+                return Binder.hocon.unmarshal( Reference.class, ( Map<String, Object> ) reference );
+            throw new ApplicationException( "could not parse reference " + reference );
+        }
+
+    }
 }

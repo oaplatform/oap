@@ -28,6 +28,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.val;
 import oap.application.ServiceOne.Complex;
+import oap.application.linked.ServiceContainee;
+import oap.application.linked.ServiceContainer;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
@@ -41,12 +43,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
+import static oap.util.Lists.empty;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertNotNull;
@@ -66,7 +67,7 @@ public class KernelTest extends AbstractTest {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/start_stop.conf" ) );
 
-        Kernel kernel = new Kernel( modules, emptyList() );
+        Kernel kernel = new Kernel( modules, empty() );
         kernel.start();
         TestCloseable tc = Application.service( "c1" );
         TestCloseable2 tc2 = Application.service( "c2" );
@@ -81,7 +82,7 @@ public class KernelTest extends AbstractTest {
     public void dynamicConfigurations() {
         List<URL> modules = Lists.of( urlOfTestResource( getClass(), "dynaconf/dynaconf.conf" ) );
         Env.deployTestData( getClass(), "dynaconf" );
-        Kernel kernel = new Kernel( modules, emptyList() );
+        Kernel kernel = new Kernel( modules, empty() );
         try {
             kernel.start( pathOfTestResource( getClass(), "dynaconf/application.conf" ) );
             Dynaconf dynaconf = Application.service( "c1" );
@@ -99,7 +100,7 @@ public class KernelTest extends AbstractTest {
             urlOfTestResource( getClass(), "modules/m2.json" )
         );
 
-        Kernel kernel = new Kernel( modules, emptyList() );
+        Kernel kernel = new Kernel( modules, empty() );
         try {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ),
                 pathOfTestResource( getClass(), "conf.d" ) );
@@ -138,10 +139,10 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void disabledServices() {
-        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "modules/m3.conf" ) );
+    public void disabled() {
+        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "disabled/disabled.conf" ) );
 
-        Kernel kernel = new Kernel( modules, emptyList() );
+        Kernel kernel = new Kernel( modules, empty() );
         try {
             kernel.start();
 
@@ -154,10 +155,34 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void map() {
-        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "modules/m4.conf" ) );
+    public void linked() {
+        List<URL> modules = Lists.of(
+            urlOfTestResource( getClass(), "linked/container.conf" ),
+            urlOfTestResource( getClass(), "linked/containee.conf" )
+        );
 
-        Kernel kernel = new Kernel( modules, emptyList() );
+        Kernel kernel = new Kernel( modules, empty() );
+        try {
+            kernel.start();
+
+            ServiceContainer container = Application.service( "container" );
+            ServiceContainee containee1 = Application.service( "containee1" );
+            ServiceContainee containee2 = Application.service( "containee2" );
+            assertThat( container ).isNotNull();
+            assertThat( containee1 ).isNotNull();
+            assertThat( containee2 ).isNotNull();
+            assertThat( container.containees ).contains( containee1, containee2 );
+            assertThat( container.priorities ).containsExactly( containee2, containee1 );
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
+    public void map() {
+        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "map/map.conf" ) );
+
+        Kernel kernel = new Kernel( modules, empty() );
         try {
             kernel.start();
 
@@ -176,7 +201,7 @@ public class KernelTest extends AbstractTest {
             urlOfTestResource( getClass(), "modules/impl.conf" )
         );
 
-        Kernel kernel = new Kernel( modules, emptyList() );
+        Kernel kernel = new Kernel( modules, empty() );
         try {
             kernel.start();
 
@@ -195,8 +220,8 @@ public class KernelTest extends AbstractTest {
     @Test
     public void testPlugins() {
         val kernel = new Kernel(
-            singletonList( urlOfTestResource( getClass(), "plugins/oap-module.conf" ) ),
-            singletonList( urlOfTestResource( getClass(), "plugins/oap-plugin.conf" ) )
+            Lists.of( urlOfTestResource( getClass(), "plugins/oap-module.conf" ) ),
+            Lists.of( urlOfTestResource( getClass(), "plugins/oap-plugin.conf" ) )
         );
 
         try {

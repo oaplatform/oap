@@ -27,15 +27,18 @@ package oap.application;
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
-import oap.util.Optionals;
+import oap.util.PrioritySet;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.function.Supplier;
+
+import static oap.util.Optionals.fork;
 
 @Slf4j
 public class Linker {
@@ -50,27 +53,46 @@ public class Linker {
         return value instanceof String && ( ( String ) value ).startsWith( "@service:" );
     }
 
-    static String linkedServiceName( String reference ) {
-        return reference.substring( "@service:".length() );
-    }
-
 
     Object link( Module.Service service, Supplier<Object> instantiate ) {
         resolveLinks( service.name, service.parameters );
         Object instance = instantiate.get();
         linkListeners( service, instance );
+        linkLinks( service, instance );
         return instance;
     }
 
     @SuppressWarnings( "unchecked" )
+    private void linkLinks( Module.Service service, Object instance ) {
+        service.link.forEach( ( field, reference ) -> {
+            log.debug( "linking " + service.name + " to " + reference + " into " + field );
+            Module.Reference ref = Module.Reference.of( reference );
+            Object linked = kernel.service( ref.name );
+            if( linked == null )
+                throw new ApplicationException( "for " + service.name + " linked object " + ref + " is not found" );
+            fork( Reflect.reflect( linked.getClass() ).field( field ) )
+                .ifPresent( f -> {
+                    Object value = f.get( linked );
+                    if( value instanceof PrioritySet<?> ) {
+                        log.debug( "adding " + instance + " with priority " + ref.priority + " to " + field + " of " + ref.name );
+                        ( ( PrioritySet<Object> ) value ).add( ref.priority, instance );
+                    } else if( value instanceof Collection<?> ) ( ( Collection<Object> ) value ).add( instance );
+                    else
+                        throw new ApplicationException( "do not know how to link " + service.name + " to " + f.type().name() + " of " + ref.name );
+                } )
+                .ifAbsentThrow( () -> new ReflectException( "service " + ref.name + " should have field " + field ) );
+        } );
+    }
+
+
     private void linkListeners( Module.Service service, Object instance ) {
         service.listen.forEach( ( listener, reference ) -> {
             log.debug( "setting " + service.name + " to listen to " + reference + " with listener " + listener );
             String methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
-            Object linked = kernel.service( linkedServiceName( reference ) );
+            Object linked = kernel.service( Module.Reference.of( reference ).name );
             if( linked == null )
                 throw new ApplicationException( "for " + service.name + " listening object " + reference + " is not found" );
-            Optionals.fork( Reflect.reflect( linked.getClass() ).method( methodName ) )
+            fork( Reflect.reflect( linked.getClass() ).method( methodName ) )
                 .ifPresent( m -> m.invoke( linked, instance ) )
                 .ifAbsentThrow( () -> new ReflectException( "listener " + listener
                     + " should have method " + methodName + " in " + reference ) );
@@ -80,7 +102,7 @@ public class Linker {
     }
 
     protected Object resolve( String serviceName, String field, String reference, boolean required ) {
-        String linkName = linkedServiceName( reference );
+        String linkName = Module.Reference.of( reference ).name;
         Object linkedService = kernel.service( linkName );
         log.debug( "for {} linking {} -> {} with {}", serviceName, field, reference, linkedService );
         if( linkedService == null && required && kernel.serviceEnabled( linkName ) )

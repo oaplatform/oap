@@ -104,22 +104,20 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
             if( initialized.containsAll( dependsOn ) ) {
                 log.debug( "initializing {} as {}", entry.getKey(), service.name );
 
-                if( service.implementation == null ) {
+                if( service.implementation == null )
                     throw new ApplicationException( "failed to initialize service: " + service.name + ". implementation == null" );
-                }
-                @SuppressWarnings( "unchecked" )
+
                 Reflection reflect = Reflect.reflect( service.implementation, Module.coersions );
 
                 Object instance;
-                if( !service.isRemoteService() ) {
-                    try {
-                        instance = linker.link( service, () -> reflect.newInstance( service.parameters ) );
-                        initializeDynamicConfigurations( reflect, instance );
-                    } catch( ReflectException e ) {
-                        log.info( "service name = {}, remote = {}, profile = {}", service.name, service.remote, service.profile );
-                        throw e;
-                    }
-                } else instance = RemoteInvocationHandler.proxy(
+                if( !service.isRemoteService() ) try {
+                    instance = linker.link( service, () -> reflect.newInstance( service.parameters ) );
+                    initializeDynamicConfigurations( reflect, instance );
+                } catch( ReflectException e ) {
+                    log.info( "service name = {}, remote = {}, profile = {}", service.name, service.remote, service.profile );
+                    throw e;
+                }
+                else instance = RemoteInvocationHandler.proxy(
                     service.remote,
                     reflect.underlying );
                 register( service.name, instance );
@@ -268,6 +266,8 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         log.debug( "application kernel started" );
     }
 
+    @SuppressWarnings( "unchecked" )
+    @Deprecated
     private void initPlugins() {
         if( !plugins.isEmpty() )
             log.warn( "plugins are deprecated. Use standard kernel facilities" );
@@ -280,12 +280,12 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
                     Preconditions.checkNotNull( service, "Unknown service " + serviceName );
                     val reflect = Reflect.reflect( service.getClass() );
                     export.parameters.forEach( ( name, services ) -> {
-                        val field = reflect.field( name );
+                        val field = reflect.field( name ).get();
                         if( field.type().assignableTo( List.class ) ) {
                             for( val refServiceName : services ) {
                                 val refService = Application.service( refServiceName );
                                 Preconditions.checkNotNull( service, "Unknown service " + serviceName );
-                                ( ( List ) field.get( service ) ).add( refService );
+                                ( ( List<Object> ) field.get( service ) ).add( refService );
                             }
                         } else {
                             Preconditions.checkArgument( services.size() == 1 );
