@@ -27,6 +27,7 @@ package oap.storage.mongo;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.MultimapBuilder;
 import com.mongodb.CursorType;
+import com.mongodb.MongoInterruptedException;
 import com.mongodb.client.MongoCursor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -137,10 +138,11 @@ public class OplogService implements Runnable, Closeable {
                     default:
                 }
             }
+        } catch( MongoInterruptedException ignored ) {
         } catch( IllegalStateException ise ) {
             log.debug( ise.getMessage() );
-        } catch( ThreadDeath td ) {
-
+        } catch( ThreadDeath ignored ) {
+//why ??
         }
     }
 
