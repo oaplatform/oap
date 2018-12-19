@@ -27,6 +27,7 @@ import oap.concurrent.Threads;
 import oap.util.Stream;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -37,6 +38,8 @@ import java.util.function.Supplier;
 public interface Storage<T> extends AutoCloseable {
 
     Stream<T> select();
+
+    List<T> list();
 
     Optional<T> get( String id );
 

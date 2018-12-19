@@ -62,6 +62,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     }
 
     @Override
+    public List<T> list() {
+        return select().toList();
+    }
+
+    @Override
     public T store( T object ) {
         String id = identifier.getOrInit( object, this::get );
         lock.synchronizedOn( id, () -> {
