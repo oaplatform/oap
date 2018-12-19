@@ -22,10 +22,14 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.spring;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import oap.application.Application;
+import oap.application.Kernel;
+import oap.application.Module;
+import oap.application.Plugin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -40,7 +44,7 @@ import javax.annotation.PreDestroy;
  */
 @Service
 @Slf4j
-public class OapService {
+public class SpringKernel {
     private Kernel kernel;
 
     @Value( "${config}" )

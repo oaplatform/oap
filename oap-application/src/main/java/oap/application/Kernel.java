@@ -269,6 +269,8 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     }
 
     private void initPlugins() {
+        if( !plugins.isEmpty() )
+            log.warn( "plugins are deprecated. Use standard kernel facilities" );
         for( val url : plugins ) {
             val plugin = Plugin.CONFIGURATION.fromHocon( url );
 

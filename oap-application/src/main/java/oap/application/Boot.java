@@ -23,26 +23,75 @@
  */
 package oap.application;
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.context.event.ApplicationFailedEvent;
-import org.springframework.context.ApplicationListener;
-import org.springframework.context.ConfigurableApplicationContext;
+import oap.cli.Cli;
+import oap.cli.Option;
+import org.slf4j.Logger;
+import sun.misc.Signal;
 
-@SpringBootApplication
-@Slf4j
+import java.nio.file.Path;
+
+import static org.slf4j.LoggerFactory.getLogger;
+
 public class Boot {
-    static ConfigurableApplicationContext applicationContext;
+    public static boolean terminated = false;
+    private static Logger logger = getLogger( Boot.class );
+    private static Kernel kernel;
 
     public static void main( String[] args ) {
-        applicationContext = new SpringApplicationBuilder( Boot.class )
-            .listeners( ( ApplicationListener<ApplicationFailedEvent> ) event -> {
-                if( event.getException() != null ) {
-                    log.error( "!!!!!!Looks like something not working as expected so stoping application.!!!!!!", event.getException() );
-                    event.getApplicationContext().close();
-                    System.exit( -1 );
-                }
-            } ).run( args );
+        Cli.create()
+            .group( "Starting service",
+                params -> {
+                    Path config = ( Path ) params.get( "config" );
+                    Boot.start( config, ( Path ) params.getOrDefault( "config-directory", config.getParent().resolve( "conf.d" ) ) );
+                },
+                Option.simple( "start" ).required(),
+                Option.path( "config" ).required(),
+                Option.path( "config-directory" )
+            )
+            .act( args );
     }
+
+    public static void start( Path config, Path confd ) {
+        Signal.handle( new Signal( "HUP" ), signal -> {
+            logger.info( "SIGHUP" );
+            System.out.println( "SIGHUP" );
+            System.out.flush();
+            kernel.reload();
+        } );
+        final ShutdownHook shutdownHook = new ShutdownHook();
+
+        Signal.handle( new Signal( "INT" ), signal -> {
+            logger.info( "SIGINT" );
+            System.out.println( "SIGINT" );
+            System.out.flush();
+            shutdownHook.run();
+        } );
+
+        Signal.handle( new Signal( "TERM" ), signal -> {
+            logger.info( "SIGTERM" );
+            System.out.println( "SIGTERM" );
+            System.out.flush();
+            shutdownHook.run();
+        } );
+        try {
+            kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath(), Plugin.CONFIGURATION.urlsFromClassPath() );
+            kernel.start( config, confd );
+            logger.debug( "started" );
+        } catch( Exception e ) {
+            logger.error( e.getMessage(), e );
+        }
+    }
+
+    public static synchronized void stop() {
+        if( !terminated ) {
+            terminated = true;
+            try {
+                kernel.stop();
+                logger.debug( "stopped" );
+            } catch( Exception e ) {
+                logger.error( e.getMessage(), e );
+            }
+        }
+    }
+
 }

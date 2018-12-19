@@ -22,30 +22,33 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.spring;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.val;
+import oap.application.Application;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.batch.JobExecutionExitCodeGenerator;
+import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 09.07.2018.
- */
-@ToString
-@EqualsAndHashCode
-@Deprecated
-public class Plugin {
-    public static final PluginConfiguration CONFIGURATION = new PluginConfiguration();
-    public final ArrayList<Export> export = new ArrayList<>();
+public class SpringKernelTest {
+    @Test
+    public void boot() {
+        SpringBoot.main( new String[] {
+            "--config=classpath:oap/application/spring/SpringKernelTest/application.conf" } );
 
-    @ToString
-    @EqualsAndHashCode
-    public static class Export {
-        public final LinkedHashSet<String> service = new LinkedHashSet<>();
-        public final LinkedHashMap<String, List<String>> parameters = new LinkedHashMap<>();
+        val service = Application.service( TestService.class );
+        assertThat( service ).isNotNull();
+
+        assertThat( SpringBoot.applicationContext.getBean( "test" ) ).isSameAs( service );
+
+        SpringApplication.exit( SpringBoot.applicationContext, new JobExecutionExitCodeGenerator() );
     }
+
+    public static class TestService {
+
+    }
+
+
 }

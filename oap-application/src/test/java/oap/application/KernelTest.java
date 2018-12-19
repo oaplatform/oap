@@ -32,8 +32,6 @@ import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Maps;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.batch.JobExecutionExitCodeGenerator;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -195,20 +193,6 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void boot() {
-        Boot.main( new String[] {
-            "--config=classpath:oap/application/KernelTest/application.conf",
-            "--hosts=classpath:oap/application/KernelTest/hosts.conf" } );
-
-        val service = Application.service( TestService.class );
-        assertThat( service ).isNotNull();
-
-        assertThat( Boot.applicationContext.getBean( "test" ) ).isSameAs( service );
-
-        SpringApplication.exit( Boot.applicationContext, new JobExecutionExitCodeGenerator() );
-    }
-
-    @Test
     public void testPlugins() {
         val kernel = new Kernel(
             singletonList( urlOfTestResource( getClass(), "plugins/oap-module.conf" ) ),
@@ -259,10 +243,6 @@ public class KernelTest extends AbstractTest {
 
     public static class DynaconfCfg {
         String parameter;
-    }
-
-    public static class TestService {
-
     }
 
     public static class Service1 {

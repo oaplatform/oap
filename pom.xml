@@ -48,6 +48,7 @@
         <module>oap-ws</module>
         <module>oap-remoting-server</module>
         <module>oap-application</module>
+        <module>oap-application-spring</module>
         <module>oap-tree</module>
         <module>oap-template</module>
         <module>oap-storage</module>

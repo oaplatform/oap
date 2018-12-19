@@ -22,30 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.storage.mongo;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-
-/**
- * Created by igor.petrenko on 09.07.2018.
- */
-@ToString
-@EqualsAndHashCode
-@Deprecated
-public class Plugin {
-    public static final PluginConfiguration CONFIGURATION = new PluginConfiguration();
-    public final ArrayList<Export> export = new ArrayList<>();
-
-    @ToString
-    @EqualsAndHashCode
-    public static class Export {
-        public final LinkedHashSet<String> service = new LinkedHashSet<>();
-        public final LinkedHashMap<String, List<String>> parameters = new LinkedHashMap<>();
-    }
+public class MongoPersistence {
 }
