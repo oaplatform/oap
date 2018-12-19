@@ -53,7 +53,7 @@ public class TemplateTest {
     }
 
     @Test
-    public void publicFields()  {
+    public void publicFields() {
         Template template = new Template( TEXT, "--subject--\nsubj\n--body--\n${bean.pub}" );
         template.bind( "bean", new Bean() );
         Message message = template.buildMessage();

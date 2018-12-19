@@ -32,16 +32,16 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class StringSchemaASTWrapper extends SchemaASTWrapper<StringSchemaAST> {
-   Optional<Integer> minLength;
-   Optional<Integer> maxLength;
-   Optional<Pattern> pattern;
+    Optional<Integer> minLength;
+    Optional<Integer> maxLength;
+    Optional<Pattern> pattern;
 
-   public StringSchemaASTWrapper( SchemaId id ) {
-      super( id );
-   }
+    public StringSchemaASTWrapper( SchemaId id ) {
+        super( id );
+    }
 
-   @Override
-   public StringSchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new StringSchemaAST( common, minLength, maxLength, pattern, id.toString() );
-   }
+    @Override
+    public StringSchemaAST unwrap( JsonSchemaParserContext context ) {
+        return new StringSchemaAST( common, minLength, maxLength, pattern, id.toString() );
+    }
 }

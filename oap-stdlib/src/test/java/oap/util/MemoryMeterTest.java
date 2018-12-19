@@ -30,10 +30,10 @@ import org.testng.annotations.Test;
  * Created by igor.petrenko on 29.11.2016.
  */
 public class MemoryMeterTest {
-   @Test
-   public void testGet() throws Exception {
-      MemoryMeter.get().measure( "sdfsdf" );
-      MemoryMeter.get().measure( "sdfsdf" );
-   }
+    @Test
+    public void testGet() throws Exception {
+        MemoryMeter.get().measure( "sdfsdf" );
+        MemoryMeter.get().measure( "sdfsdf" );
+    }
 
 }

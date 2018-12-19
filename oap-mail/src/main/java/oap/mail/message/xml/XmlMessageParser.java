@@ -37,7 +37,7 @@ import java.io.IOException;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class XmlMessageParser implements MessageParser {
-    public Message parse( String content )  {
+    public Message parse( String content ) {
         try {
             SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
             SaxMessageParser handler = new SaxMessageParser();

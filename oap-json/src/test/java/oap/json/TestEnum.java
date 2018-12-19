@@ -28,5 +28,5 @@ package oap.json;
  * @author Vladimir Kirichenko <vladimir.kirichenko@gmail.com>
  */
 public enum TestEnum {
-	A, B, C
+    A, B, C
 }

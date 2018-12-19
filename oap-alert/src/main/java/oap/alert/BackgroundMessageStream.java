@@ -35,37 +35,35 @@ import java.util.concurrent.LinkedBlockingQueue;
 @Slf4j
 public class BackgroundMessageStream<Message> implements MessageStream<Message>, Runnable {
 
-   private final MessageTransport<Message> transport;
-   private final GuaranteedDeliveryTransport guaranteedDeliveryTransport;
-   private BlockingQueue<Message> messages = new LinkedBlockingQueue<>(  );
+    private final MessageTransport<Message> transport;
+    private final GuaranteedDeliveryTransport guaranteedDeliveryTransport;
+    private BlockingQueue<Message> messages = new LinkedBlockingQueue<>();
 
-   public BackgroundMessageStream( MessageTransport<Message> transport,
-                                   GuaranteedDeliveryTransport guaranteedDeliveryTransport ) {
-      this.transport = transport;
-      this.guaranteedDeliveryTransport = guaranteedDeliveryTransport;
-   }
+    public BackgroundMessageStream( MessageTransport<Message> transport,
+                                    GuaranteedDeliveryTransport guaranteedDeliveryTransport ) {
+        this.transport = transport;
+        this.guaranteedDeliveryTransport = guaranteedDeliveryTransport;
+    }
 
-   @Override
-   public void send( Message p ) {
-      messages.add( p );
-   }
+    @Override
+    public void send( Message p ) {
+        messages.add( p );
+    }
 
-   @Override
-   public void run() {
+    @Override
+    public void run() {
 
-      while( true ){
-         try {
-            Message p = messages.take();
-            guaranteedDeliveryTransport.send( p, transport );
-         }
-         catch( InterruptedException ie ) {
-            log.info( "Interrupted background message stream - exiting" );
-            return;
-         }
-         catch( Exception e ) {
-            log.error( "Unexpected exception", e );
-         }
-      }
-   }
+        while( true ) {
+            try {
+                Message p = messages.take();
+                guaranteedDeliveryTransport.send( p, transport );
+            } catch( InterruptedException ie ) {
+                log.info( "Interrupted background message stream - exiting" );
+                return;
+            } catch( Exception e ) {
+                log.error( "Unexpected exception", e );
+            }
+        }
+    }
 
 }

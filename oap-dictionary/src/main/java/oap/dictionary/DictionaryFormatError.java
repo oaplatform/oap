@@ -28,7 +28,7 @@ package oap.dictionary;
  * Created by Igor Petrenko on 15.04.2016.
  */
 public class DictionaryFormatError extends DictionaryError {
-   protected DictionaryFormatError( String message ) {
-      super( message );
-   }
+    protected DictionaryFormatError( String message ) {
+        super( message );
+    }
 }

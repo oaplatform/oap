@@ -28,14 +28,14 @@ import java.util.List;
 import java.util.Optional;
 
 public class ListObjectEnumFunction implements EnumFunction {
-   private final List<Object> values;
+    private final List<Object> values;
 
-   public ListObjectEnumFunction( List<Object> values ) {
-      this.values = values;
-   }
+    public ListObjectEnumFunction( List<Object> values ) {
+        this.values = values;
+    }
 
-   @Override
-   public List<Object> apply( Object rootJson, Optional<String> currentPath ) {
-      return values;
-   }
+    @Override
+    public List<Object> apply( Object rootJson, Optional<String> currentPath ) {
+        return values;
+    }
 }

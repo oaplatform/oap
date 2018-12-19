@@ -34,45 +34,45 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 public class FilteredEnumFunction implements EnumFunction {
-   private final Function<Object, List<Object>> source;
-   private final Optional<Pair<Function<Object, List<Object>>, OperationFunction>> filtered;
-   private final OperationFunction of;
+    private final Function<Object, List<Object>> source;
+    private final Optional<Pair<Function<Object, List<Object>>, OperationFunction>> filtered;
+    private final OperationFunction of;
 
-   public FilteredEnumFunction( Function<Object, List<Object>> source,
-                                OperationFunction of,
-                                Optional<Pair<Function<Object, List<Object>>, OperationFunction>> filtered ) {
-      this.source = source;
-      this.filtered = filtered;
-      this.of = of;
-   }
+    public FilteredEnumFunction( Function<Object, List<Object>> source,
+                                 OperationFunction of,
+                                 Optional<Pair<Function<Object, List<Object>>, OperationFunction>> filtered ) {
+        this.source = source;
+        this.filtered = filtered;
+        this.of = of;
+    }
 
-   public FilteredEnumFunction( Function<Object, List<Object>> source, OperationFunction of ) {
-      this( source, of, Optional.empty() );
-   }
+    public FilteredEnumFunction( Function<Object, List<Object>> source, OperationFunction of ) {
+        this( source, of, Optional.empty() );
+    }
 
-   public FilteredEnumFunction( Function<Object, List<Object>> source, OperationFunction of,
-                                Pair<Function<Object, List<Object>>, OperationFunction> filtered ) {
-      this( source, of, Optional.of( filtered ) );
-   }
+    public FilteredEnumFunction( Function<Object, List<Object>> source, OperationFunction of,
+                                 Pair<Function<Object, List<Object>>, OperationFunction> filtered ) {
+        this( source, of, Optional.of( filtered ) );
+    }
 
-   @Override
-   public List<Object> apply( Object rootJson, Optional<String> currentPath ) {
-      final List<Object> values = source.apply( rootJson )
-         .stream()
-         .filter( v -> of.apply( rootJson, currentPath, v ) )
-         .collect( toList() );
-
-      if( !filtered.isPresent() ) {
-         return values;
-      } else {
-         final Pair<Function<Object, List<Object>>, OperationFunction> functionOperationFunctionPair = filtered.get();
-         final Function<Object, List<Object>> filteredSource = functionOperationFunctionPair._1;
-         final OperationFunction filteredOf = functionOperationFunctionPair._2;
-         final Optional<Object> any = filteredSource.apply( rootJson )
+    @Override
+    public List<Object> apply( Object rootJson, Optional<String> currentPath ) {
+        final List<Object> values = source.apply( rootJson )
             .stream()
-            .filter( v -> filteredOf.apply( rootJson, currentPath, v ) )
-            .findAny();
-         return any.isPresent() ? values : emptyList();
-      }
-   }
+            .filter( v -> of.apply( rootJson, currentPath, v ) )
+            .collect( toList() );
+
+        if( !filtered.isPresent() ) {
+            return values;
+        } else {
+            final Pair<Function<Object, List<Object>>, OperationFunction> functionOperationFunctionPair = filtered.get();
+            final Function<Object, List<Object>> filteredSource = functionOperationFunctionPair._1;
+            final OperationFunction filteredOf = functionOperationFunctionPair._2;
+            final Optional<Object> any = filteredSource.apply( rootJson )
+                .stream()
+                .filter( v -> filteredOf.apply( rootJson, currentPath, v ) )
+                .findAny();
+            return any.isPresent() ? values : emptyList();
+        }
+    }
 }

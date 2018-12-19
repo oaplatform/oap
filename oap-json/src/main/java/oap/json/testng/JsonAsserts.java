@@ -34,78 +34,78 @@ import org.testng.Assert;
 import static oap.testng.Asserts.assertString;
 
 public class JsonAsserts {
-   @Deprecated
-   public static void assertEquals( String actual, String expected ) {
-      Assert.assertEquals( Formatter.format( actual ), Formatter.format( expected ) );
-   }
+    @Deprecated
+    public static void assertEquals( String actual, String expected ) {
+        Assert.assertEquals( Formatter.format( actual ), Formatter.format( expected ) );
+    }
 
-   @Deprecated
-   @SafeVarargs
-   public static void assertEqualsCanonical( Class<?> context, Class<?> clazz,
-                                             String actual, String expectedResourcePath,
-                                             Pair<String, Object>... substitutions ) {
-      assertEquals( Binder.json.canonicalize( clazz, actual ),
-         readCanonical( context, clazz, expectedResourcePath, substitutions ) );
-   }
+    @Deprecated
+    @SafeVarargs
+    public static void assertEqualsCanonical( Class<?> context, Class<?> clazz,
+                                              String actual, String expectedResourcePath,
+                                              Pair<String, Object>... substitutions ) {
+        assertEquals( Binder.json.canonicalize( clazz, actual ),
+            readCanonical( context, clazz, expectedResourcePath, substitutions ) );
+    }
 
-   @Deprecated
-   public static void assertEqualsCanonical( Class<?> clazz, String actual, String expected ) {
-      assertEquals( Binder.json.canonicalize( clazz, actual ), Binder.json.canonicalize( clazz, expected ) );
-   }
+    @Deprecated
+    public static void assertEqualsCanonical( Class<?> clazz, String actual, String expected ) {
+        assertEquals( Binder.json.canonicalize( clazz, actual ), Binder.json.canonicalize( clazz, expected ) );
+    }
 
-   @SafeVarargs
-   public static String readCanonical( Class<?> context, Class<?> clazz, String resourcePath,
-                                       Pair<String, Object>... substitutions ) {
-      return Resources.readString( context, resourcePath )
-         .map( json -> Binder.json.canonicalize( clazz, Strings.substitute( json, substitutions ) ) )
-         .orElseThrow( () -> new AssertionError( "not found " + resourcePath ) );
-   }
+    @SafeVarargs
+    public static String readCanonical( Class<?> context, Class<?> clazz, String resourcePath,
+                                        Pair<String, Object>... substitutions ) {
+        return Resources.readString( context, resourcePath )
+            .map( json -> Binder.json.canonicalize( clazz, Strings.substitute( json, substitutions ) ) )
+            .orElseThrow( () -> new AssertionError( "not found " + resourcePath ) );
+    }
 
-   /**
-    * @see #unmarshalTestResource(Class, Class, String)
-    */
-   @Deprecated
-   public static <T> T readObject( Class<?> context, Class<T> clazz, String resourcePath ) {
-      return Binder.json.unmarshalResource( context, clazz, resourcePath );
+    /**
+     * @see #unmarshalTestResource(Class, Class, String)
+     */
+    @Deprecated
+    public static <T> T readObject( Class<?> context, Class<T> clazz, String resourcePath ) {
+        return Binder.json.unmarshalResource( context, clazz, resourcePath );
 
-   }
+    }
 
-   public static <T> T unmarshalTestResource( Class<?> context, Class<T> clazz, String resourcePath ) {
-      return Binder.json.unmarshalResource( context, clazz, context.getSimpleName() + "/" + resourcePath );
-   }
+    public static <T> T unmarshalTestResource( Class<?> context, Class<T> clazz, String resourcePath ) {
+        return Binder.json.unmarshalResource( context, clazz, context.getSimpleName() + "/" + resourcePath );
+    }
 
-   public static JsonAssertion assertJson( String json ) {
-      return new JsonAssertion( json );
-   }
+    public static JsonAssertion assertJson( String json ) {
+        return new JsonAssertion( json );
+    }
 
-   public static class JsonAssertion extends AbstractAssert<JsonAssertion, String> {
+    public static class JsonAssertion extends AbstractAssert<JsonAssertion, String> {
 
-      public JsonAssertion( String json ) {
-         super( json, JsonAssertion.class );
-      }
+        public JsonAssertion( String json ) {
+            super( json, JsonAssertion.class );
+        }
 
-      public JsonAssertion isEqualTo( String expected ) {
-         isNotNull();
-         assertString( Formatter.format( actual ) )
-            .isEqualTo( Formatter.format( expected ) );
-         return this;
+        public JsonAssertion isEqualTo( String expected ) {
+            isNotNull();
+            assertString( Formatter.format( actual ) )
+                .isEqualTo( Formatter.format( expected ) );
+            return this;
 
-      }
+        }
 
-      @Override
-      public JsonAssertion isEqualTo( Object expected ) {
-         return isEqualTo( String.valueOf( expected ) );
-      }
+        @Override
+        public JsonAssertion isEqualTo( Object expected ) {
+            return isEqualTo( String.valueOf( expected ) );
+        }
 
-      public JsonAssertion isEqualCanonically( Class<?> clazz, String expected ) {
-         assertString( Binder.json.canonicalize( clazz, actual ) )
-            .isEqualTo( Binder.json.canonicalize( clazz, expected ) );
-         return this;
-      }
+        public JsonAssertion isEqualCanonically( Class<?> clazz, String expected ) {
+            assertString( Binder.json.canonicalize( clazz, actual ) )
+                .isEqualTo( Binder.json.canonicalize( clazz, expected ) );
+            return this;
+        }
 
-      @SafeVarargs
-      public final JsonAssertion isEqualCanonically( Class<?> clazz, String expected, Pair<String, Object>... substitutions ) {
-         return isEqualCanonically( clazz, Strings.substitute( expected, substitutions ) );
-      }
-   }
+        @SafeVarargs
+        public final JsonAssertion isEqualCanonically( Class<?> clazz, String expected, Pair<String, Object>... substitutions ) {
+            return isEqualCanonically( clazz, Strings.substitute( expected, substitutions ) );
+        }
+    }
 }

@@ -34,15 +34,15 @@ import static oap.util.Pair.__;
  * Created by Igor Petrenko on 04.01.2016.
  */
 public class MemoryMessenger implements Messenger {
-   public boolean changesOnly;
-   public ArrayList<Pair<String, Alert>> alerts = new ArrayList<>();
+    public boolean changesOnly;
+    public ArrayList<Pair<String, Alert>> alerts = new ArrayList<>();
 
-   public MemoryMessenger( boolean changesOnly ) {
-      this.changesOnly = changesOnly;
-   }
+    public MemoryMessenger( boolean changesOnly ) {
+        this.changesOnly = changesOnly;
+    }
 
-   @Override
-   public void send( String host, String name, Alert alert, boolean changed ) {
-      if( !this.changesOnly || changed ) alerts.add( __( name + "/" + host, alert ) );
-   }
+    @Override
+    public void send( String host, String name, Alert alert, boolean changed ) {
+        if( !this.changesOnly || changed ) alerts.add( __( name + "/" + host, alert ) );
+    }
 }

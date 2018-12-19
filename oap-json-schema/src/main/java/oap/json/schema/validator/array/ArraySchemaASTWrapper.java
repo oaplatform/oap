@@ -38,26 +38,26 @@ import static java.util.Collections.singletonList;
 
 public class ArraySchemaASTWrapper extends SchemaASTWrapper<ArraySchemaAST> implements ContainerSchemaASTWrapper {
 
-   public SchemaASTWrapper items;
-   Optional<Boolean> additionalProperties;
-   Optional<Integer> minItems;
-   Optional<Integer> maxItems;
-   Optional<String> idField;
+    public SchemaASTWrapper items;
+    Optional<Boolean> additionalProperties;
+    Optional<Integer> minItems;
+    Optional<Integer> maxItems;
+    Optional<String> idField;
 
-   public ArraySchemaASTWrapper( SchemaId id ) {
-      super( id );
-   }
+    public ArraySchemaASTWrapper( SchemaId id ) {
+        super( id );
+    }
 
-   @Override
-   public ArraySchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new ArraySchemaAST( common, additionalProperties, minItems, maxItems, idField,
-         context.computeIfAbsent( items.id, () -> items.unwrap( context ) ), id.toString() );
-   }
+    @Override
+    public ArraySchemaAST unwrap( JsonSchemaParserContext context ) {
+        return new ArraySchemaAST( common, additionalProperties, minItems, maxItems, idField,
+            context.computeIfAbsent( items.id, () -> items.unwrap( context ) ), id.toString() );
+    }
 
-   @Override
-   public Map<String, List<SchemaASTWrapper>> getChildren() {
-      return new HashMap<String, List<SchemaASTWrapper>>() {{
-         put( "items", singletonList( items ) );
-      }};
-   }
+    @Override
+    public Map<String, List<SchemaASTWrapper>> getChildren() {
+        return new HashMap<String, List<SchemaASTWrapper>>() {{
+            put( "items", singletonList( items ) );
+        }};
+    }
 }

@@ -27,7 +27,6 @@ package oap.json.schema.validator.object;
 import oap.json.schema.DefaultSchemaASTWrapper;
 import oap.json.schema.SchemaASTWrapper;
 import oap.json.schema.SchemaId;
-import oap.json.schema.validator.object.ObjectSchemaASTWrapper;
 import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
@@ -37,37 +36,37 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ObjectSchemaASTWrapperTest extends AbstractTest {
-   @Test
-   public void testGetChildren() throws Exception {
-      final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "", "", "id" ) ) {{
-         extendsSchema = Optional.of(
-            new ObjectSchemaASTWrapper( new SchemaId( "", "", "id" ) ) {{
-               extendsSchema = Optional.empty();
-               declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
-                  put( "b", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.b" ) ) );
-               }};
-            }}
-         );
-         declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
-            put( "a", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.a" ) ) );
-            put( "b", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.b" ) ) );
-         }};
-      }};
+    @Test
+    public void testGetChildren() throws Exception {
+        final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "", "", "id" ) ) {{
+            extendsSchema = Optional.of(
+                new ObjectSchemaASTWrapper( new SchemaId( "", "", "id" ) ) {{
+                    extendsSchema = Optional.empty();
+                    declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
+                        put( "b", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.b" ) ) );
+                    }};
+                }}
+            );
+            declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
+                put( "a", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.a" ) ) );
+                put( "b", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.b" ) ) );
+            }};
+        }};
 
-      assertThat( ow.getChildren() ).containsKeys( "a", "b" );
-      assertThat( ow.getChildren().get( "b" ) ).hasSize( 2 );
-   }
+        assertThat( ow.getChildren() ).containsKeys( "a", "b" );
+        assertThat( ow.getChildren().get( "b" ) ).hasSize( 2 );
+    }
 
-   @Test
-   public void testGetChildrenWithoutParent() throws Exception {
-      final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "", "", "id" ) ) {{
-         extendsSchema = Optional.empty();
-         declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
-            put( "a", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.a" ) ) );
-         }};
-      }};
+    @Test
+    public void testGetChildrenWithoutParent() throws Exception {
+        final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "", "", "id" ) ) {{
+            extendsSchema = Optional.empty();
+            declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
+                put( "a", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.a" ) ) );
+            }};
+        }};
 
-      assertThat( ow.getChildren() ).hasSize( 1 );
-   }
+        assertThat( ow.getChildren() ).hasSize( 1 );
+    }
 
 }

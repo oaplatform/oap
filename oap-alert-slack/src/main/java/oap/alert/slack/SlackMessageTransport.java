@@ -36,47 +36,46 @@ import oap.alert.MessageTransport;
 @Slf4j
 public class SlackMessageTransport implements MessageTransport<Payload> {
 
-   private final String webhookUrl;
-   private SlackWebhookClient webhookClient;
+    private final String webhookUrl;
+    private SlackWebhookClient webhookClient;
 
-   public SlackMessageTransport( String webhookUrl ) {
-      this.webhookUrl = webhookUrl;
-   }
+    public SlackMessageTransport( String webhookUrl ) {
+        this.webhookUrl = webhookUrl;
+    }
 
-   public synchronized void start() {
-      webhookClient = SlackClientFactory.createWebhookClient( webhookUrl );
-   }
+    public synchronized void start() {
+        webhookClient = SlackClientFactory.createWebhookClient( webhookUrl );
+    }
 
-   public synchronized void stop() {
-      try {
-         if( webhookClient != null ) {
-            webhookClient.shutdown();
-            webhookClient = null;
-         }
-      } catch( Throwable e ) {
-         log.warn( e.getMessage(), e );
-      }
-   }
+    public synchronized void stop() {
+        try {
+            if( webhookClient != null ) {
+                webhookClient.shutdown();
+                webhookClient = null;
+            }
+        } catch( Throwable e ) {
+            log.warn( e.getMessage(), e );
+        }
+    }
 
-   public synchronized boolean isOperational() {
-      return webhookClient != null;
-   }
+    public synchronized boolean isOperational() {
+        return webhookClient != null;
+    }
 
-   public synchronized void ensureStarted() {
-      if( !isOperational() ) {
-         stop();
-         start();
-      }
-   }
+    public synchronized void ensureStarted() {
+        if( !isOperational() ) {
+            stop();
+            start();
+        }
+    }
 
-   @Override
-   public void send( Payload p ) {
-      ensureStarted();
-      try {
-         webhookClient.post( p );
-      }
-      catch( Exception e ) {
-         throw new SlackCommunicationException( e );
-      }
-   }
+    @Override
+    public void send( Payload p ) {
+        ensureStarted();
+        try {
+            webhookClient.post( p );
+        } catch( Exception e ) {
+            throw new SlackCommunicationException( e );
+        }
+    }
 }

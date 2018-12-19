@@ -31,17 +31,17 @@ import oap.json.schema.SchemaId;
 import java.util.Optional;
 
 public class NumberSchemaASTWrapper extends SchemaASTWrapper<NumberSchemaAST> {
-   Optional<Boolean> exclusiveMinimum;
-   Optional<Boolean> exclusiveMaximum;
-   Optional<Double> minimum;
-   Optional<Double> maximum;
+    Optional<Boolean> exclusiveMinimum;
+    Optional<Boolean> exclusiveMaximum;
+    Optional<Double> minimum;
+    Optional<Double> maximum;
 
-   public NumberSchemaASTWrapper( SchemaId id ) {
-      super( id );
-   }
+    public NumberSchemaASTWrapper( SchemaId id ) {
+        super( id );
+    }
 
-   @Override
-   public NumberSchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new NumberSchemaAST( common, exclusiveMinimum, exclusiveMaximum, minimum, maximum, id.toString() );
-   }
+    @Override
+    public NumberSchemaAST unwrap( JsonSchemaParserContext context ) {
+        return new NumberSchemaAST( common, exclusiveMinimum, exclusiveMaximum, minimum, maximum, id.toString() );
+    }
 }

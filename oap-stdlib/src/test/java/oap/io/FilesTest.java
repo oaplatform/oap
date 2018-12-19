@@ -193,7 +193,7 @@ public class FilesTest extends AbstractTest {
         assertThat( dir4 ).doesNotExist();
         assertThat( dir3 ).doesNotExist();
         assertThat( Env.tmpPath( "/dir1/dir2" ) ).exists();
-        assertThat(Env.tmp( "/dir1/1.txt" )).contains( "1" );
+        assertThat( Env.tmp( "/dir1/1.txt" ) ).contains( "1" );
 
         java.nio.file.Files.createDirectories( dir3 );
         java.nio.file.Files.createDirectories( dir4 );

@@ -30,51 +30,48 @@ import oap.testng.AbstractTest;
 import org.mockito.Mock;
 import org.testng.annotations.Test;
 
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.testng.Assert.*;
 
 /**
  * Created by Admin on 03.06.2016.
  */
 public class BackgroundMessageStreamTest extends AbstractTest {
 
-   @Mock
-   MessageTransport<String> transport;
+    @Mock
+    MessageTransport<String> transport;
 
-   @Mock
-   GuaranteedDeliveryTransport guaranteedDeliveryTransport;
+    @Mock
+    GuaranteedDeliveryTransport guaranteedDeliveryTransport;
 
-   @Test
-   public void testSendDoesntBlock() {
+    @Test
+    public void testSendDoesntBlock() {
 
-      BackgroundMessageStream<String> backgroundStream = new BackgroundMessageStream<>( transport,
-         guaranteedDeliveryTransport );
+        BackgroundMessageStream<String> backgroundStream = new BackgroundMessageStream<>( transport,
+            guaranteedDeliveryTransport );
 
-      backgroundStream.send( "Msg1" );
-      verifyZeroInteractions( guaranteedDeliveryTransport );
-      verifyZeroInteractions( transport );
-   }
+        backgroundStream.send( "Msg1" );
+        verifyZeroInteractions( guaranteedDeliveryTransport );
+        verifyZeroInteractions( transport );
+    }
 
-   @Test
-   public void testSendIsExecutedInSeparateThread() throws InterruptedException {
+    @Test
+    public void testSendIsExecutedInSeparateThread() throws InterruptedException {
 
-      BackgroundMessageStream<String> backgroundStream = new BackgroundMessageStream<>( transport,
-         guaranteedDeliveryTransport );
+        BackgroundMessageStream<String> backgroundStream = new BackgroundMessageStream<>( transport,
+            guaranteedDeliveryTransport );
 
-      backgroundStream.send( "Msg1" );
-      verifyZeroInteractions( guaranteedDeliveryTransport );
-      verifyZeroInteractions( transport );
+        backgroundStream.send( "Msg1" );
+        verifyZeroInteractions( guaranteedDeliveryTransport );
+        verifyZeroInteractions( transport );
 
-      SynchronizedThread thread = new SynchronizedThread( backgroundStream );
-      thread.start();
-      Threads.sleepSafely(100);
-      thread.stop();
-      verify( guaranteedDeliveryTransport, times( 1 ) ).send( "Msg1", transport );
-   }
+        SynchronizedThread thread = new SynchronizedThread( backgroundStream );
+        thread.start();
+        Threads.sleepSafely( 100 );
+        thread.stop();
+        verify( guaranteedDeliveryTransport, times( 1 ) ).send( "Msg1", transport );
+    }
 
 
 }

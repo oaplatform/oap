@@ -28,82 +28,82 @@ import oap.json.schema.AbstractSchemaTest;
 import org.testng.annotations.Test;
 
 public class ObjectSchemaTest extends AbstractSchemaTest {
-   @Test
-   public void testObject() {
-      String schema = "{type: object, properties: {}}";
+    @Test
+    public void testObject() {
+        String schema = "{type: object, properties: {}}";
 
-      assertOk( schema, "{}" );
-      assertOk( schema, "null" );
-      assertFailure( schema, "[]",
-         "instance is resolve type array, which is none resolve the allowed primitive types ([object])" );
-   }
+        assertOk( schema, "{}" );
+        assertOk( schema, "null" );
+        assertFailure( schema, "[]",
+            "instance is resolve type array, which is none resolve the allowed primitive types ([object])" );
+    }
 
-   @Test
-   public void testObjectWithField() {
-      String schema = "{type: object, properties: {a: {type: string}}}";
+    @Test
+    public void testObjectWithField() {
+        String schema = "{type: object, properties: {a: {type: string}}}";
 
-      assertOk( schema, "{}" );
-      assertOk( schema, "{'a': 'test'}" );
-      assertFailure( schema, "{'a': 10}",
-         "/a: instance is resolve type number, which is none resolve the allowed primitive types ([string])" );
-   }
+        assertOk( schema, "{}" );
+        assertOk( schema, "{'a': 'test'}" );
+        assertFailure( schema, "{'a': 10}",
+            "/a: instance is resolve type number, which is none resolve the allowed primitive types ([string])" );
+    }
 
-   @Test
-   public void testObjectObjectWithField() {
-      String schema = "{" +
-         "type: object, " +
-         "properties: {" +
-         "  a: {" +
-         "    type: object, " +
-         "    properties: {" +
-         "      a: {" +
-         "        type: string" +
-         "      }" +
-         "    }" +
-         "  }" +
-         "}" +
-         "}";
+    @Test
+    public void testObjectObjectWithField() {
+        String schema = "{" +
+            "type: object, " +
+            "properties: {" +
+            "  a: {" +
+            "    type: object, " +
+            "    properties: {" +
+            "      a: {" +
+            "        type: string" +
+            "      }" +
+            "    }" +
+            "  }" +
+            "}" +
+            "}";
 
-      assertOk( schema, "{}" );
-      assertOk( schema, "{'a': {'a': 'test'}}" );
-      assertFailure( schema, "{'a': {'a': true}}",
-         "/a/a: instance is resolve type boolean, which is none resolve the allowed primitive types ([string])" );
-   }
+        assertOk( schema, "{}" );
+        assertOk( schema, "{'a': {'a': 'test'}}" );
+        assertFailure( schema, "{'a': {'a': true}}",
+            "/a/a: instance is resolve type boolean, which is none resolve the allowed primitive types ([string])" );
+    }
 
-   @Test
-   public void testAdditionalPropertiesTrue() {
-      String schema = "{type: object, properties: {a: {type: string}}}";
+    @Test
+    public void testAdditionalPropertiesTrue() {
+        String schema = "{type: object, properties: {a: {type: string}}}";
 
-      assertOk( schema, "{}" );
-      assertOk( schema, "{'b': 'test'}" );
-   }
+        assertOk( schema, "{}" );
+        assertOk( schema, "{'b': 'test'}" );
+    }
 
-   @Test
-   public void testAdditionalPropertiesFalse() {
-      String schema = "{additionalProperties: false, type: object, properties: {a: {type: string}}}";
+    @Test
+    public void testAdditionalPropertiesFalse() {
+        String schema = "{additionalProperties: false, type: object, properties: {a: {type: string}}}";
 
-      assertOk( schema, "{}" );
-      assertFailure( schema, "{'b': 'test', 'c': 10}", "additional properties are not permitted [b, c]" );
-   }
+        assertOk( schema, "{}" );
+        assertFailure( schema, "{'b': 'test', 'c': 10}", "additional properties are not permitted [b, c]" );
+    }
 
-   @Test
-   public void testAdditionalPropertiesFalseInheritance() {
-      String schema = "{" +
-         "additionalProperties: false, " +
-         "type: object, " +
-         "properties: {" +
-         " a: {" +
-         "  type: object," +
-         "  properties: {" +
-         "   b: {" +
-         "    type: string" +
-         "   }" +
-         "  }" +
-         " }" +
-         "}" +
-         "}";
+    @Test
+    public void testAdditionalPropertiesFalseInheritance() {
+        String schema = "{" +
+            "additionalProperties: false, " +
+            "type: object, " +
+            "properties: {" +
+            " a: {" +
+            "  type: object," +
+            "  properties: {" +
+            "   b: {" +
+            "    type: string" +
+            "   }" +
+            "  }" +
+            " }" +
+            "}" +
+            "}";
 
-      assertOk( schema, "{}" );
-      assertFailure( schema, "{'a': {'b': 'test', 'c': 10}}", "/a: additional properties are not permitted [c]" );
-   }
+        assertOk( schema, "{}" );
+        assertFailure( schema, "{'a': {'b': 'test', 'c': 10}}", "/a: additional properties are not permitted [c]" );
+    }
 }

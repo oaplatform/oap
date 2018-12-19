@@ -33,19 +33,19 @@ import oap.util.Lists;
 import java.util.List;
 
 public class BooleanJsonValidator extends JsonSchemaValidator<DefaultSchemaAST> {
-   public BooleanJsonValidator() {
-      super( "boolean" );
-   }
+    public BooleanJsonValidator() {
+        super( "boolean" );
+    }
 
-   @Override
-   public List<String> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
-      if( !( value instanceof Boolean ) ) return typeFailed( properties, schema, value );
+    @Override
+    public List<String> validate( JsonValidatorProperties properties, DefaultSchemaAST schema, Object value ) {
+        if( !( value instanceof Boolean ) ) return typeFailed( properties, schema, value );
 
-      return Lists.empty();
-   }
+        return Lists.empty();
+    }
 
-   @Override
-   public DefaultSchemaASTWrapper parse( JsonSchemaParserContext context ) {
-      return defaultParse( context );
-   }
+    @Override
+    public DefaultSchemaASTWrapper parse( JsonSchemaParserContext context ) {
+        return defaultParse( context );
+    }
 }

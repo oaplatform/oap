@@ -23,7 +23,11 @@
  */
 package oap.cli;
 
-import oap.util.*;
+import oap.util.Arrays;
+import oap.util.Maps;
+import oap.util.Pair;
+import oap.util.Result;
+import oap.util.Strings;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,64 +37,64 @@ import java.util.Date;
 import java.util.Map;
 
 public interface ValueParser<V> {
-   Result<V, String> parse( String value );
+    Result<V, String> parse( String value );
 
-   String[] TRUE_VALUES = { "true", "yes", "y", "t" };
-   String[] FALSE_VALUES = { "false", "no", "n", "f" };
+    String[] TRUE_VALUES = { "true", "yes", "y", "t" };
+    String[] FALSE_VALUES = { "false", "no", "n", "f" };
 
-   ValueParser<Boolean> BOOLEAN = value -> {
-      if( value == null ) return Result.failure( "null value" );
-      for( String v : TRUE_VALUES ) if( v.equals( value.toLowerCase() ) ) return Result.success( true );
-      for( String v : FALSE_VALUES ) if( v.equals( value.toLowerCase() ) ) return Result.success( false );
-      return Result.failure( "wrong value: " + value );
-   };
+    ValueParser<Boolean> BOOLEAN = value -> {
+        if( value == null ) return Result.failure( "null value" );
+        for( String v : TRUE_VALUES ) if( v.equals( value.toLowerCase() ) ) return Result.success( true );
+        for( String v : FALSE_VALUES ) if( v.equals( value.toLowerCase() ) ) return Result.success( false );
+        return Result.failure( "wrong value: " + value );
+    };
 
-   ValueParser<Path> PATH = value -> value != null ?
-      Result.success( Paths.get( value ) ) : Result.failure( "path should not be null" );
+    ValueParser<Path> PATH = value -> value != null ?
+        Result.success( Paths.get( value ) ) : Result.failure( "path should not be null" );
 
-   ValueParser<String> STRING = Result::success;
+    ValueParser<String> STRING = Result::success;
 
-   ValueParser<Map<String, String>> MAP = value -> value == null ?
-      Result.failure( "value should not be null" ) :
-      Result.success( Maps.of(
-         Arrays.map(
-            Pair.class,
-            kv -> Strings.split( kv, "=" ),
-            value.split( "," ) ) ) );
+    ValueParser<Map<String, String>> MAP = value -> value == null ?
+        Result.failure( "value should not be null" ) :
+        Result.success( Maps.of(
+            Arrays.map(
+                Pair.class,
+                kv -> Strings.split( kv, "=" ),
+                value.split( "," ) ) ) );
 
-   static ValueParser<Long> LONG( long min, long max ) {
-      return value -> {
-         try {
-            long l = Long.parseLong( value );
-            if( l < min || l > max ) return Result.failure( "_2 must be between " + min + " and " + max );
-            return Result.success( l );
-         } catch( NumberFormatException e ) {
-            return Result.failure( e.getMessage() );
-         }
-      };
-   }
+    static ValueParser<Long> LONG( long min, long max ) {
+        return value -> {
+            try {
+                long l = Long.parseLong( value );
+                if( l < min || l > max ) return Result.failure( "_2 must be between " + min + " and " + max );
+                return Result.success( l );
+            } catch( NumberFormatException e ) {
+                return Result.failure( e.getMessage() );
+            }
+        };
+    }
 
-   static ValueParser<Integer> INT( int min, int max ) {
-      return value -> {
-         try {
-            int l = Integer.parseInt( value );
-            if( l < min || l > max ) return Result.failure( "_2 must be between " + min + " and " + max );
-            return Result.success( l );
-         } catch( NumberFormatException e ) {
-            return Result.failure( e.getMessage() );
-         }
-      };
-   }
+    static ValueParser<Integer> INT( int min, int max ) {
+        return value -> {
+            try {
+                int l = Integer.parseInt( value );
+                if( l < min || l > max ) return Result.failure( "_2 must be between " + min + " and " + max );
+                return Result.success( l );
+            } catch( NumberFormatException e ) {
+                return Result.failure( e.getMessage() );
+            }
+        };
+    }
 
-   static ValueParser<Date> DATE( String pattern ) {
-      SimpleDateFormat format = new SimpleDateFormat( pattern );
-      return value -> {
-         if( value == null ) return Result.failure( "date should not be null" );
-         try {
-            return Result.success( format.parse( value ) );
-         } catch( ParseException e ) {
-            return Result.failure( e.getMessage() );
-         }
-      };
-   }
+    static ValueParser<Date> DATE( String pattern ) {
+        SimpleDateFormat format = new SimpleDateFormat( pattern );
+        return value -> {
+            if( value == null ) return Result.failure( "date should not be null" );
+            try {
+                return Result.success( format.parse( value ) );
+            } catch( ParseException e ) {
+                return Result.failure( e.getMessage() );
+            }
+        };
+    }
 }

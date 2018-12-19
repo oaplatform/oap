@@ -49,8 +49,8 @@ public class DefaultAclSchemaTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        storage = new MemoryStorage<>(  Identifier.forAnnotationFixed(), CONCURRENT );
-        schemaStorage = new MemoryStorage<>(  Identifier.forAnnotationFixed(), CONCURRENT );
+        storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT );
+        schemaStorage = new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT );
 
         DefaultAclSchema defaultAclSchema = new DefaultAclSchema(
             "remote", schemaStorage,

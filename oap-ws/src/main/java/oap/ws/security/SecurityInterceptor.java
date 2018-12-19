@@ -31,7 +31,6 @@ import oap.http.Session;
 import oap.reflect.Reflection;
 import oap.ws.Interceptor;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 

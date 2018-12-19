@@ -29,28 +29,28 @@ import java.util.stream.Collectors;
 
 public class RequestCors {
 
-   public static final String NO_ORIGIN = "";
+    public static final String NO_ORIGIN = "";
 
-   public final String allowOrigin;
-   public final String allowHeaders;
-   public final String allowCredentials;
-   public final String allowMethods;
-   public final boolean autoOptions;
+    public final String allowOrigin;
+    public final String allowHeaders;
+    public final String allowCredentials;
+    public final String allowMethods;
+    public final boolean autoOptions;
 
-   public RequestCors( final String allowOrigin, final String allowHeaders, final boolean allowCredentials,
-                       final boolean autoOptions, final List<String> allowMethods ) {
-      this.allowOrigin = allowOrigin;
-      this.allowHeaders = allowHeaders;
-      this.allowCredentials = String.valueOf( allowCredentials );
-      this.autoOptions = autoOptions;
-      this.allowMethods = allowMethods.stream().collect( Collectors.joining(", ") );
-   }
+    public RequestCors( final String allowOrigin, final String allowHeaders, final boolean allowCredentials,
+                        final boolean autoOptions, final List<String> allowMethods ) {
+        this.allowOrigin = allowOrigin;
+        this.allowHeaders = allowHeaders;
+        this.allowCredentials = String.valueOf( allowCredentials );
+        this.autoOptions = autoOptions;
+        this.allowMethods = allowMethods.stream().collect( Collectors.joining( ", " ) );
+    }
 
-   public void setHeaders( final org.apache.http.HttpResponse response ) {
-      response.setHeader( "Access-Control-Allow-Origin", allowOrigin );
-      response.setHeader( "Access-Control-Allow-Headers", allowHeaders );
-      response.setHeader( "Access-Control-Allow-Credentials", allowCredentials );
-      response.setHeader( "Access-Control-Allow-Methods", allowMethods );
-   }
+    public void setHeaders( final org.apache.http.HttpResponse response ) {
+        response.setHeader( "Access-Control-Allow-Origin", allowOrigin );
+        response.setHeader( "Access-Control-Allow-Headers", allowHeaders );
+        response.setHeader( "Access-Control-Allow-Credentials", allowCredentials );
+        response.setHeader( "Access-Control-Allow-Methods", allowMethods );
+    }
 
 }

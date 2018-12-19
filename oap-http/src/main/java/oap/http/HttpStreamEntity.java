@@ -37,41 +37,41 @@ import java.util.Iterator;
  * Created by Igor Petrenko on 22.01.2016.
  */
 public class HttpStreamEntity extends AbstractHttpEntity {
-   private final Stream<String> stream;
+    private final Stream<String> stream;
 
-   public HttpStreamEntity( Stream<String> stream, ContentType contentType ) {
-      this.stream = stream;
-      if( contentType != null ) {
-         setContentType( contentType.toString() );
-      }
-   }
+    public HttpStreamEntity( Stream<String> stream, ContentType contentType ) {
+        this.stream = stream;
+        if( contentType != null ) {
+            setContentType( contentType.toString() );
+        }
+    }
 
-   @Override
-   public boolean isRepeatable() {
-      return false;
-   }
+    @Override
+    public boolean isRepeatable() {
+        return false;
+    }
 
-   @Override
-   public long getContentLength() {
-      return -1;
-   }
+    @Override
+    public long getContentLength() {
+        return -1;
+    }
 
-   @Override
-   public InputStream getContent() throws UnsupportedOperationException {
-      throw new UnsupportedOperationException();
-   }
+    @Override
+    public InputStream getContent() throws UnsupportedOperationException {
+        throw new UnsupportedOperationException();
+    }
 
-   @Override
-   public void writeTo( OutputStream outstream ) throws IOException {
-      final Iterator<String> iterator = stream.iterator();
-      while( iterator.hasNext() ) {
-         outstream.write( iterator.next().getBytes() );
-         outstream.write( '\n' );
-      }
-   }
+    @Override
+    public void writeTo( OutputStream outstream ) throws IOException {
+        final Iterator<String> iterator = stream.iterator();
+        while( iterator.hasNext() ) {
+            outstream.write( iterator.next().getBytes() );
+            outstream.write( '\n' );
+        }
+    }
 
-   @Override
-   public boolean isStreaming() {
-      return false;
-   }
+    @Override
+    public boolean isStreaming() {
+        return false;
+    }
 }

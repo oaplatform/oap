@@ -26,8 +26,6 @@ package oap.storage;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.storage.migration.Migration;
-import oap.storage.migration.JsonMetadata;
 import oap.util.Id;
 
 /**

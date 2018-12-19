@@ -42,40 +42,43 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class GuaranteedDeliveryTransport {
 
-   private final Retryer<Boolean> retryer;
+    private final Retryer<Boolean> retryer;
 
-   public GuaranteedDeliveryTransport( long maxWaitTimeSeconds ) {
-      this( maxWaitTimeSeconds, Integer.MAX_VALUE );
-   }
+    public GuaranteedDeliveryTransport( long maxWaitTimeSeconds ) {
+        this( maxWaitTimeSeconds, Integer.MAX_VALUE );
+    }
 
-   public GuaranteedDeliveryTransport( long maxWaitTimeSeconds, int maxAttempts ) {
-      retryer = RetryerBuilder.<Boolean>newBuilder()
-         .withRetryListener( new RetryListener() {
-            @Override
-            public <V> void onRetry( Attempt<V> attempt ) {
-               String errorMessage = attempt.hasException() ? attempt.getExceptionCause().toString() : "no errors";
-               V result = attempt.hasResult() ? attempt.getResult() : null;
-               log.info( "Attempt: {},  result: {}, error: {}", attempt.getAttemptNumber(), result, errorMessage );
+    public GuaranteedDeliveryTransport( long maxWaitTimeSeconds, int maxAttempts ) {
+        retryer = RetryerBuilder.<Boolean>newBuilder()
+            .withRetryListener( new RetryListener() {
+                @Override
+                public <V> void onRetry( Attempt<V> attempt ) {
+                    String errorMessage = attempt.hasException() ? attempt.getExceptionCause().toString() : "no errors";
+                    V result = attempt.hasResult() ? attempt.getResult() : null;
+                    log.info( "Attempt: {},  result: {}, error: {}", attempt.getAttemptNumber(), result, errorMessage );
+                }
+            } )
+            .retryIfException( e -> !( e instanceof InterruptedException ) )
+            .withWaitStrategy( WaitStrategies.fibonacciWait( maxWaitTimeSeconds, TimeUnit.SECONDS ) )
+            .withStopStrategy( StopStrategies.stopAfterAttempt( maxAttempts ) )
+            .build();
+    }
+
+
+    public <Message> void send( Message m, MessageTransport<Message> transport ) throws InterruptedException {
+        try {
+            retryer.call( () -> {
+                transport.send( m );
+                return true;
+            } );
+        } catch( ExecutionException e ) {
+            if( e.getCause() instanceof InterruptedException ) {
+                throw ( InterruptedException ) e.getCause();
             }
-         } )
-         .retryIfException( e -> !( e instanceof InterruptedException ) )
-         .withWaitStrategy( WaitStrategies.fibonacciWait( maxWaitTimeSeconds, TimeUnit.SECONDS ) )
-         .withStopStrategy( StopStrategies.stopAfterAttempt( maxAttempts ) )
-         .build();
-   }
+            log.error( "Unexpected execution exception", e );
+        } catch( RetryException e ) {
+            log.error( "Cannot exec retry", e );
+        }
 
-
-   public <Message> void send( Message m, MessageTransport<Message> transport ) throws InterruptedException {
-      try {
-         retryer.call( () -> { transport.send( m ); return true; } );
-      } catch( ExecutionException e ) {
-         if( e.getCause() instanceof InterruptedException ) {
-            throw ( InterruptedException ) e.getCause();
-         }
-         log.error( "Unexpected execution exception", e );
-      } catch( RetryException e ) {
-         log.error( "Cannot exec retry", e );
-      }
-
-   }
+    }
 }

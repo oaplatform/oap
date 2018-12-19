@@ -39,27 +39,27 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Created by Admin on 25.05.2016.
  */
 public class JsonPathTest extends AbstractTest {
-   @Test
-   public void testTraverse() throws Exception {
-      final List<Object> traverse = new JsonPath( "flights.items.rules.items.region.items", Optional.of( "flights/0/rules/0/country/0" ) )
-         .traverse( Maps.of( __( "flights", Lists.of( Maps.of( __( "rules", Lists.of( Maps.of( __( "region", Lists.of( "reg" ) ) ) ) ) ) ) ) ) );
+    @Test
+    public void testTraverse() throws Exception {
+        final List<Object> traverse = new JsonPath( "flights.items.rules.items.region.items", Optional.of( "flights/0/rules/0/country/0" ) )
+            .traverse( Maps.of( __( "flights", Lists.of( Maps.of( __( "rules", Lists.of( Maps.of( __( "region", Lists.of( "reg" ) ) ) ) ) ) ) ) ) );
 
-      assertThat( traverse ).containsExactly( "reg" );
-   }
+        assertThat( traverse ).containsExactly( "reg" );
+    }
 
-   @Test
-   public void testTraverseNotFound() throws Exception {
-      final List<Object> traverse = new JsonPath( "a.items.field", Optional.of( "a/0/unknown" ) )
-         .traverse( Maps.of( __( "a", Lists.of( Maps.of( __( "unknown", 10 ) ) ) ) ) );
+    @Test
+    public void testTraverseNotFound() throws Exception {
+        final List<Object> traverse = new JsonPath( "a.items.field", Optional.of( "a/0/unknown" ) )
+            .traverse( Maps.of( __( "a", Lists.of( Maps.of( __( "unknown", 10 ) ) ) ) ) );
 
-      assertThat( traverse ).isEmpty();
-   }
+        assertThat( traverse ).isEmpty();
+    }
 
-   @Test
-   public void getFixedPath() {
-      final String path = new JsonPath( "flights.items.rules.items.region.items", Optional.of( "flights/0/rules/5/country/0" ) )
-         .getFixedPath();
+    @Test
+    public void getFixedPath() {
+        final String path = new JsonPath( "flights.items.rules.items.region.items", Optional.of( "flights/0/rules/5/country/0" ) )
+            .getFixedPath();
 
-      assertThat( path ).isEqualTo( "flights.0.rules.5.region.0" );
-   }
+        assertThat( path ).isEqualTo( "flights.0.rules.5.region.0" );
+    }
 }

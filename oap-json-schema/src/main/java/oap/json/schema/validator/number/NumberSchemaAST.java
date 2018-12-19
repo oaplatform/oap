@@ -28,33 +28,33 @@ import oap.json.schema.SchemaAST;
 import java.util.Optional;
 
 public class NumberSchemaAST extends SchemaAST<NumberSchemaAST> {
-   public Optional<Boolean> exclusiveMinimum;
+    public Optional<Boolean> exclusiveMinimum;
 
-   public Optional<Boolean> exclusiveMaximum;
+    public Optional<Boolean> exclusiveMaximum;
 
-   public Optional<Double> minimum;
+    public Optional<Double> minimum;
 
-   public Optional<Double> maximum;
+    public Optional<Double> maximum;
 
-   public NumberSchemaAST( CommonSchemaAST common, Optional<Boolean> exclusiveMinimum,
-                           Optional<Boolean> exclusiveMaximum, Optional<Double> minimum,
-                           Optional<Double> maximum, String path ) {
-      super( common, path );
-      this.exclusiveMinimum = exclusiveMinimum;
-      this.exclusiveMaximum = exclusiveMaximum;
-      this.minimum = minimum;
-      this.maximum = maximum;
-   }
+    public NumberSchemaAST( CommonSchemaAST common, Optional<Boolean> exclusiveMinimum,
+                            Optional<Boolean> exclusiveMaximum, Optional<Double> minimum,
+                            Optional<Double> maximum, String path ) {
+        super( common, path );
+        this.exclusiveMinimum = exclusiveMinimum;
+        this.exclusiveMaximum = exclusiveMaximum;
+        this.minimum = minimum;
+        this.maximum = maximum;
+    }
 
-   @Override
-   public NumberSchemaAST merge( NumberSchemaAST cs ) {
-      return new NumberSchemaAST(
-         common.merge( cs.common ),
-         exclusiveMinimum.isPresent() ? exclusiveMinimum : cs.exclusiveMinimum,
-         exclusiveMaximum.isPresent() ? exclusiveMaximum : cs.exclusiveMaximum,
-         minimum.isPresent() ? minimum : cs.minimum,
-         maximum.isPresent() ? maximum : cs.maximum,
-         path
-      );
-   }
+    @Override
+    public NumberSchemaAST merge( NumberSchemaAST cs ) {
+        return new NumberSchemaAST(
+            common.merge( cs.common ),
+            exclusiveMinimum.isPresent() ? exclusiveMinimum : cs.exclusiveMinimum,
+            exclusiveMaximum.isPresent() ? exclusiveMaximum : cs.exclusiveMaximum,
+            minimum.isPresent() ? minimum : cs.minimum,
+            maximum.isPresent() ? maximum : cs.maximum,
+            path
+        );
+    }
 }

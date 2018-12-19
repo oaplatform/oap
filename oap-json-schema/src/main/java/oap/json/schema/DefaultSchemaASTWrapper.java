@@ -31,12 +31,12 @@ import lombok.ToString;
  */
 @ToString( callSuper = true )
 public class DefaultSchemaASTWrapper extends SchemaASTWrapper<DefaultSchemaAST> {
-   public DefaultSchemaASTWrapper( SchemaId id ) {
-      super( id );
-   }
+    public DefaultSchemaASTWrapper( SchemaId id ) {
+        super( id );
+    }
 
-   @Override
-   public DefaultSchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new DefaultSchemaAST( common, id.toString() );
-   }
+    @Override
+    public DefaultSchemaAST unwrap( JsonSchemaParserContext context ) {
+        return new DefaultSchemaAST( common, id.toString() );
+    }
 }

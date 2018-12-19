@@ -179,7 +179,7 @@ public class WsService implements Handler {
                     if( cookieId != null
                         && ( session = sessionManager.getSessionById( cookieId ) ) != null
                         && Objects.equals( authToken, session.get( Interceptor.AUTHORIZATION ).orElse( null ) )
-                        ) {
+                    ) {
                         log.debug( "{}: Valid SID [{}] found in cookie", service(), cookieId );
 
                         handleInternal( request, response, method, name, __( cookieId, session ) );

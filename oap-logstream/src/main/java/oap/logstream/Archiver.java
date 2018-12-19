@@ -27,7 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams.Encoding;
-import oap.metrics.Metrics;
 import oap.util.Optionals;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;

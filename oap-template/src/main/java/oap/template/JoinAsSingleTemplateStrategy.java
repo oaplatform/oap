@@ -5,15 +5,15 @@ import java.lang.reflect.Type;
 /**
  * Created by macchiatow on 21.06.17.
  */
-public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTemplate.Line>{
+public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTemplate.Line> {
 
     @Override
-    public void mapFirstJoin( StringBuilder c, JavaCTemplate.Line line ){
+    public void mapFirstJoin( StringBuilder c, JavaCTemplate.Line line ) {
         c.append( "\njb = new StringBuilder();\n" );
     }
 
     @Override
-    public void mapLastJoin( StringBuilder c, JavaCTemplate.Line line ){
+    public void mapLastJoin( StringBuilder c, JavaCTemplate.Line line ) {
         c.append( "\nacc.accept( " );
         function( c, line.function, () -> escape( c, () -> c.append( " jb.toString()" ) ) );
         c.append( " );" );
@@ -27,18 +27,19 @@ public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTempl
     }
 
     @Override
-    public void mapObject( StringBuilder c, Type cc, JavaCTemplate.Line line, String field, boolean isJoin ){
-        if ( isJoin ){
+    public void mapObject( StringBuilder c, Type cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
+        if( isJoin ) {
             c.append( "jb.append( " );
         } else {
             c.append( "acc.accept( " );
-        }        function( c, line.function, () -> escape( c, () -> c.append( " String.valueOf( " ).append( field ).append( " )" ) ) );
+        }
+        function( c, line.function, () -> escape( c, () -> c.append( " String.valueOf( " ).append( field ).append( " )" ) ) );
         c.append( " );" );
     }
 
     @Override
     public void mapPrimitive( StringBuilder c, Type cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
-        if ( isJoin ){
+        if( isJoin ) {
             c.append( "jb.append( " );
         } else {
             c.append( "acc.accept( " );
@@ -48,7 +49,7 @@ public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTempl
     }
 
     @Override
-    public void mapInterJoin( StringBuilder c, Type cc, JavaCTemplate.Line line, String field ){
+    public void mapInterJoin( StringBuilder c, Type cc, JavaCTemplate.Line line, String field ) {
         c.append( "jb.append( " );
         function( c, line.function, () -> c.append( field ) );
         c.append( " );\n" );
@@ -56,7 +57,7 @@ public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTempl
 
     @Override
     public void mapString( StringBuilder c, Type cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
-        if ( isJoin ){
+        if( isJoin ) {
             c.append( "jb.append( " );
         } else {
             c.append( "acc.accept( " );
@@ -67,7 +68,7 @@ public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTempl
 
     @Override
     public void mapEnum( StringBuilder c, Type cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
-        if ( isJoin ){
+        if( isJoin ) {
             c.append( "jb.append( " );
         } else {
             c.append( "acc.accept( " );

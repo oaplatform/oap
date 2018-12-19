@@ -33,34 +33,45 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link CliParser}.
  */
 public interface CliListener extends ParseTreeListener {
-	/**
-	 * Enter a template tree produced by {@link CliParser#parameters}.
-	 * @param ctx the template tree
-	 */
-	void enterParameters(CliParser.ParametersContext ctx);
-	/**
-	 * Exit a template tree produced by {@link CliParser#parameters}.
-	 * @param ctx the template tree
-	 */
-	void exitParameters(CliParser.ParametersContext ctx);
-	/**
-	 * Enter a template tree produced by {@link CliParser#parameter}.
-	 * @param ctx the template tree
-	 */
-	void enterParameter(CliParser.ParameterContext ctx);
-	/**
-	 * Exit a template tree produced by {@link CliParser#parameter}.
-	 * @param ctx the template tree
-	 */
-	void exitParameter(CliParser.ParameterContext ctx);
-	/**
-	 * Enter a template tree produced by {@link CliParser#value}.
-	 * @param ctx the template tree
-	 */
-	void enterValue(CliParser.ValueContext ctx);
-	/**
-	 * Exit a template tree produced by {@link CliParser#value}.
-	 * @param ctx the template tree
-	 */
-	void exitValue(CliParser.ValueContext ctx);
+    /**
+     * Enter a template tree produced by {@link CliParser#parameters}.
+     *
+     * @param ctx the template tree
+     */
+    void enterParameters( CliParser.ParametersContext ctx );
+
+    /**
+     * Exit a template tree produced by {@link CliParser#parameters}.
+     *
+     * @param ctx the template tree
+     */
+    void exitParameters( CliParser.ParametersContext ctx );
+
+    /**
+     * Enter a template tree produced by {@link CliParser#parameter}.
+     *
+     * @param ctx the template tree
+     */
+    void enterParameter( CliParser.ParameterContext ctx );
+
+    /**
+     * Exit a template tree produced by {@link CliParser#parameter}.
+     *
+     * @param ctx the template tree
+     */
+    void exitParameter( CliParser.ParameterContext ctx );
+
+    /**
+     * Enter a template tree produced by {@link CliParser#value}.
+     *
+     * @param ctx the template tree
+     */
+    void enterValue( CliParser.ValueContext ctx );
+
+    /**
+     * Exit a template tree produced by {@link CliParser#value}.
+     *
+     * @param ctx the template tree
+     */
+    void exitValue( CliParser.ValueContext ctx );
 }

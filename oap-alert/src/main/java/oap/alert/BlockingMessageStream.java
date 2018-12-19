@@ -32,21 +32,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BlockingMessageStream<Message> implements MessageStream<Message> {
 
-   private final MessageTransport<Message> transport;
-   private final GuaranteedDeliveryTransport guaranteedDeliveryTransport;
+    private final MessageTransport<Message> transport;
+    private final GuaranteedDeliveryTransport guaranteedDeliveryTransport;
 
-   public BlockingMessageStream( MessageTransport<Message> transport,
-                                 GuaranteedDeliveryTransport guaranteedDeliveryTransport ) {
-      this.transport = transport;
-      this.guaranteedDeliveryTransport = guaranteedDeliveryTransport;
-   }
+    public BlockingMessageStream( MessageTransport<Message> transport,
+                                  GuaranteedDeliveryTransport guaranteedDeliveryTransport ) {
+        this.transport = transport;
+        this.guaranteedDeliveryTransport = guaranteedDeliveryTransport;
+    }
 
-   @Override
-   public void send( Message p ) {
-      try {
-         guaranteedDeliveryTransport.send( p, transport );
-      } catch( Exception e ) {
-         log.error( "Unexpected exception", e );
-      }
-   }
+    @Override
+    public void send( Message p ) {
+        try {
+            guaranteedDeliveryTransport.send( p, transport );
+        } catch( Exception e ) {
+            log.error( "Unexpected exception", e );
+        }
+    }
 }

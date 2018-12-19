@@ -37,46 +37,46 @@ import java.util.Objects;
 import java.util.Optional;
 
 public class Configuration<T> {
-   private Class<T> clazz;
-   private String name;
+    private Class<T> clazz;
+    private String name;
 
-   public Configuration( Class<T> clazz, String name ) {
-      this.clazz = clazz;
-      this.name = name;
-   }
+    public Configuration( Class<T> clazz, String name ) {
+        this.clazz = clazz;
+        this.name = name;
+    }
 
-   public List<T> fromClassPath() {
-      return Stream.of( urlsFromClassPath() )
-         .map( this::fromUrl )
-         .toList();
-   }
+    public List<T> fromClassPath() {
+        return Stream.of( urlsFromClassPath() )
+            .map( this::fromUrl )
+            .toList();
+    }
 
-   public List<URL> urlsFromClassPath() {
-      return Stream.of( ListUtils.union(
-         Resources.urls( "META-INF/" + name + ".json" ),
-         Resources.urls( "META-INF/" + name + ".conf" ) ) )
-         .toList();
-   }
+    public List<URL> urlsFromClassPath() {
+        return Stream.of( ListUtils.union(
+            Resources.urls( "META-INF/" + name + ".json" ),
+            Resources.urls( "META-INF/" + name + ".conf" ) ) )
+            .toList();
+    }
 
-   public T fromUrl( URL url ) {
-      return fromHocon( Strings.readString( url ) );
-   }
+    public T fromUrl( URL url ) {
+        return fromHocon( Strings.readString( url ) );
+    }
 
-   public T fromHocon( String hocon ) {
-      Objects.nonNull( hocon );
-      return Binder.hocon.unmarshal( clazz, hocon );
-   }
+    public T fromHocon( String hocon ) {
+        Objects.nonNull( hocon );
+        return Binder.hocon.unmarshal( clazz, hocon );
+    }
 
-   public T fromResource( Class<?> contextClass, String name ) {
-      return Resources.url( contextClass, name )
-         .map( this::fromUrl )
-         .orElseThrow( () -> {
-            String path = Optional.ofNullable( contextClass.getPackage() )
-               .map( Package::getName )
-               .orElse( "" )
-               .replace( ".", "/" ) + "/" + name;
-            return new UncheckedIOException( new IOException( "not found " + path ) );
-         } );
-   }
+    public T fromResource( Class<?> contextClass, String name ) {
+        return Resources.url( contextClass, name )
+            .map( this::fromUrl )
+            .orElseThrow( () -> {
+                String path = Optional.ofNullable( contextClass.getPackage() )
+                    .map( Package::getName )
+                    .orElse( "" )
+                    .replace( ".", "/" ) + "/" + name;
+                return new UncheckedIOException( new IOException( "not found " + path ) );
+            } );
+    }
 
 }

@@ -25,7 +25,6 @@ package oap.ws;
 
 import oap.util.Lists;
 
-import java.net.HttpURLConnection;
 import java.util.List;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;

@@ -41,14 +41,14 @@ public class DefaultUserTest {
         user.organizationName = "irg name";
 
         val json = Binder.json.marshal( user );
-        assertThat(json).isEqualTo( "{\"email\":\"my@enai.com\",\"password\":\"test1\",\"role\":\"ADMIN\",\"organizationId\":\"orgid\",\"organizationName\":\"irg name\"}" );
+        assertThat( json ).isEqualTo( "{\"email\":\"my@enai.com\",\"password\":\"test1\",\"role\":\"ADMIN\",\"organizationId\":\"orgid\",\"organizationName\":\"irg name\"}" );
         val clone = Binder.json.<DefaultUser>unmarshal( DefaultUser.class, json );
 
-        assertThat(clone.organizationId).isEqualTo( "orgid" );
-        assertThat(clone.organizationName).isEqualTo( "irg name" );
-        assertThat(clone.password).isEqualTo( "test1" );
-        assertThat(clone.role).isEqualTo( Role.ADMIN );
-        assertThat(clone.email).isEqualTo( "my@enai.com" );
+        assertThat( clone.organizationId ).isEqualTo( "orgid" );
+        assertThat( clone.organizationName ).isEqualTo( "irg name" );
+        assertThat( clone.password ).isEqualTo( "test1" );
+        assertThat( clone.role ).isEqualTo( Role.ADMIN );
+        assertThat( clone.email ).isEqualTo( "my@enai.com" );
     }
 
 }

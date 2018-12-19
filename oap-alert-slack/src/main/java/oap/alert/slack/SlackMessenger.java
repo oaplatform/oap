@@ -37,52 +37,52 @@ import oap.alert.Messenger;
  */
 @Slf4j
 public class SlackMessenger implements Messenger {
-   private final String channel;
-   private final String username;
-   private final MessageStream<Payload> messageStream;
+    private final String channel;
+    private final String username;
+    private final MessageStream<Payload> messageStream;
 
-   public SlackMessenger( String channel, String username, MessageStream<Payload> messageStream ) {
-      this.channel = channel;
-      this.username = username;
-      this.messageStream = messageStream;
-   }
+    public SlackMessenger( String channel, String username, MessageStream<Payload> messageStream ) {
+        this.channel = channel;
+        this.username = username;
+        this.messageStream = messageStream;
+    }
 
-   @Override
-   public void send( String host, String name, Alert alert, boolean changed ) {
-      if( !changed )
-         return;
+    @Override
+    public void send( String host, String name, Alert alert, boolean changed ) {
+        if( !changed )
+            return;
 
-      final Payload payload = generateMessage( host, name, alert );
-      messageStream.send( payload );
-   }
+        final Payload payload = generateMessage( host, name, alert );
+        messageStream.send( payload );
+    }
 
-   private Payload generateMessage( String host, String name, Alert alert ) {
-      final Payload payload = new Payload();
-      payload.setText( "" );
-      payload.setChannel( "#" + channel );
-      payload.setUsername( username );
+    private Payload generateMessage( String host, String name, Alert alert ) {
+        final Payload payload = new Payload();
+        payload.setText( "" );
+        payload.setChannel( "#" + channel );
+        payload.setUsername( username );
 
-      final Attachment attachment = new Attachment();
+        final Attachment attachment = new Attachment();
 
-      switch( alert.state ) {
-         case GREEN:
-            payload.setIcon_emoji( ":recycle:" );
-            attachment.setColor( Color.GOOD );
-            attachment.setText( "OK: " + name + "/" + host + ": " + alert.message );
-            break;
-         case YELLOW:
-            payload.setIcon_emoji( ":warning:" );
-            attachment.setColor( Color.WARNING );
-            attachment.setText( "WARNING: " + name + "/" + host + ": " + alert.message );
-            break;
-         case RED:
-            payload.setIcon_emoji( ":bangbang:" );
-            attachment.setColor( Color.DANGER );
-            attachment.setText( "CRITICAL: " + name + "/" + host + ": " + alert.message );
-            break;
-      }
+        switch( alert.state ) {
+            case GREEN:
+                payload.setIcon_emoji( ":recycle:" );
+                attachment.setColor( Color.GOOD );
+                attachment.setText( "OK: " + name + "/" + host + ": " + alert.message );
+                break;
+            case YELLOW:
+                payload.setIcon_emoji( ":warning:" );
+                attachment.setColor( Color.WARNING );
+                attachment.setText( "WARNING: " + name + "/" + host + ": " + alert.message );
+                break;
+            case RED:
+                payload.setIcon_emoji( ":bangbang:" );
+                attachment.setColor( Color.DANGER );
+                attachment.setText( "CRITICAL: " + name + "/" + host + ": " + alert.message );
+                break;
+        }
 
-      payload.addAttachment( attachment );
-      return payload;
-   }
+        payload.addAttachment( attachment );
+        return payload;
+    }
 }

@@ -31,20 +31,20 @@ import lombok.EqualsAndHashCode;
  */
 @EqualsAndHashCode
 public class SchemaId {
-   private final String schema;
-   private final String rootPath;
-   private final String path;
-   private final String id;
+    private final String schema;
+    private final String rootPath;
+    private final String path;
+    private final String id;
 
-   public SchemaId( String schema, String rootPath, String path ) {
-      this.schema = schema;
-      this.rootPath = rootPath;
-      this.path = path;
-      id = SchemaPath.resolve( rootPath, path );
-   }
+    public SchemaId( String schema, String rootPath, String path ) {
+        this.schema = schema;
+        this.rootPath = rootPath;
+        this.path = path;
+        id = SchemaPath.resolve( rootPath, path );
+    }
 
-   @Override
-   public String toString() {
-      return id;
-   }
+    @Override
+    public String toString() {
+        return id;
+    }
 }

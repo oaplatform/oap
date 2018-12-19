@@ -12,27 +12,27 @@ import java.net.ServerSocket;
 @Slf4j
 public class LocalHttpListener extends AbstractHttpListener {
 
-   private final int port;
+    private final int port;
 
-   public LocalHttpListener( HttpServer server, int port ) {
-      super( server );
-      this.port = port;
-   }
+    public LocalHttpListener( HttpServer server, int port ) {
+        super( server );
+        this.port = port;
+    }
 
-   @Override
-   protected ServerSocket createSocket() {
-      try {
-         ServerSocket serverSocket = new ServerSocket();
-         serverSocket.setReuseAddress( true );
-         serverSocket.setSoTimeout( timeout );
-         serverSocket.bind( new InetSocketAddress( "localhost", port ) );
+    @Override
+    protected ServerSocket createSocket() {
+        try {
+            ServerSocket serverSocket = new ServerSocket();
+            serverSocket.setReuseAddress( true );
+            serverSocket.setSoTimeout( timeout );
+            serverSocket.bind( new InetSocketAddress( "localhost", port ) );
 
-         return serverSocket;
-      } catch( BindException e ) {
-         log.error( "Cannot bind to port [{}]", port );
-         throw new UncheckedIOException( e );
-      } catch( IOException e ) {
-         throw new UncheckedIOException( e );
-      }
-   }
+            return serverSocket;
+        } catch( BindException e ) {
+            log.error( "Cannot bind to port [{}]", port );
+            throw new UncheckedIOException( e );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
 }

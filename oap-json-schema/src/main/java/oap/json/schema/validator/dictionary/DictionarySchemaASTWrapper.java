@@ -36,36 +36,36 @@ import java.util.Optional;
  * Created by Igor Petrenko on 12.04.2016.
  */
 public class DictionarySchemaASTWrapper extends SchemaASTWrapper<DictionarySchemaAST> {
-   Optional<String> name;
-   Optional<String> parent;
+    Optional<String> name;
+    Optional<String> parent;
 
-   public DictionarySchemaASTWrapper( SchemaId id ) {
-      super( id );
-   }
+    public DictionarySchemaASTWrapper( SchemaId id ) {
+        super( id );
+    }
 
-   @Override
-   public DictionarySchemaAST unwrap( JsonSchemaParserContext context ) {
-      return new DictionarySchemaAST(
-         common, getName( context ), parent.map( p -> {
-         final DictionarySchemaASTWrapper parent = getParent( context, p );
-         return context.computeIfAbsent( parent.id, () -> parent.unwrap( context ) );
-      } ), id.toString()
-      );
-   }
+    @Override
+    public DictionarySchemaAST unwrap( JsonSchemaParserContext context ) {
+        return new DictionarySchemaAST(
+            common, getName( context ), parent.map( p -> {
+            final DictionarySchemaASTWrapper parent = getParent( context, p );
+            return context.computeIfAbsent( parent.id, () -> parent.unwrap( context ) );
+        } ), id.toString()
+        );
+    }
 
-   private String getName( JsonSchemaParserContext context ) {
-      final String name = parent
-         .map( p -> getParent( context, p )
-            .getName( context )
-         )
-         .orElseGet( () -> this.name.get() );
+    private String getName( JsonSchemaParserContext context ) {
+        final String name = parent
+            .map( p -> getParent( context, p )
+                .getName( context )
+            )
+            .orElseGet( () -> this.name.get() );
 
-      return name;
-   }
+        return name;
+    }
 
-   private DictionarySchemaASTWrapper getParent( JsonSchemaParserContext context, String parent ) {
-      return ( DictionarySchemaASTWrapper ) new SchemaWrapperPath( parent )
-         .traverse( context.getRoot() )
-         .orElseThrow( () -> new ValidationSyntaxException( "[" + id + "] json-path '" + this.parent.get() + "' not found" ) );
-   }
+    private DictionarySchemaASTWrapper getParent( JsonSchemaParserContext context, String parent ) {
+        return ( DictionarySchemaASTWrapper ) new SchemaWrapperPath( parent )
+            .traverse( context.getRoot() )
+            .orElseThrow( () -> new ValidationSyntaxException( "[" + id + "] json-path '" + this.parent.get() + "' not found" ) );
+    }
 }

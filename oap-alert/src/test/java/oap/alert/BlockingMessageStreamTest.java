@@ -34,15 +34,15 @@ import static org.mockito.Mockito.verify;
  */
 public class BlockingMessageStreamTest {
 
-   @Test
-   @SuppressWarnings( "unchecked" )
-   public void testSendIsDoneByCallerThread() throws InterruptedException {
-      MessageTransport<String> transport = mock(MessageTransport.class);
-      GuaranteedDeliveryTransport guaranteedDeliveryTransport = mock( GuaranteedDeliveryTransport.class );
-      BlockingMessageStream<String> stream = new BlockingMessageStream<>( transport, guaranteedDeliveryTransport );
+    @Test
+    @SuppressWarnings( "unchecked" )
+    public void testSendIsDoneByCallerThread() throws InterruptedException {
+        MessageTransport<String> transport = mock( MessageTransport.class );
+        GuaranteedDeliveryTransport guaranteedDeliveryTransport = mock( GuaranteedDeliveryTransport.class );
+        BlockingMessageStream<String> stream = new BlockingMessageStream<>( transport, guaranteedDeliveryTransport );
 
-      stream.send( "Msg" );
-      verify( guaranteedDeliveryTransport ).send( "Msg", transport );
-   }
+        stream.send( "Msg" );
+        verify( guaranteedDeliveryTransport ).send( "Msg", transport );
+    }
 
 }

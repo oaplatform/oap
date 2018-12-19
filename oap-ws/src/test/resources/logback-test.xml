@@ -29,8 +29,8 @@
         </encoder>
     </appender>
 
-    <logger name="org" level="DEBUG" additivity="false" />
-    <logger name="javax.management" level="WARN" additivity="false" />
+    <logger name="org" level="DEBUG" additivity="false"/>
+    <logger name="javax.management" level="WARN" additivity="false"/>
 
     <root level="TRACE">
         <appender-ref ref="STDOUT"/>

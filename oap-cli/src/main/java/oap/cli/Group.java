@@ -52,7 +52,7 @@ public class Group {
     boolean matches( List<Pair<String, String>> parameters ) {
         for( Pair<String, String> parameter : parameters )
             if( !options.containsKey( parameter._1 )
-                    || !options.get( parameter._1 ).matches( parameter ) ) return false;
+                || !options.get( parameter._1 ).matches( parameter ) ) return false;
         List<String> parameterNames = parameters.stream().map( p -> p._1 ).collect( toList() );
         for( Option<?> option : options.values() )
             if( option.isRequired() && !parameterNames.contains( option.name ) ) return false;
@@ -65,11 +65,11 @@ public class Group {
 
     public Result<Void, String> act( List<Pair<String, String>> parameters ) {
         Result<Map<String, Object>, String> r = Stream.of( parameters )
-                .tryMap( p -> options
-                        .get( p._1 )
-                        .parse( p._2 )
-                        .mapSuccess( v -> __( p._1, v ) ) )
-                .mapSuccess( Maps::of );
+            .tryMap( p -> options
+                .get( p._1 )
+                .parse( p._2 )
+                .mapSuccess( v -> __( p._1, v ) ) )
+            .mapSuccess( Maps::of );
         if( r.isSuccess() ) {
             action.accept( r.successValue );
             return Result.success( null );

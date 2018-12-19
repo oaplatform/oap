@@ -41,7 +41,7 @@
             <groupId>oap</groupId>
             <artifactId>oap-stdlib</artifactId>
             <version>${project.parent.version}</version>
-         </dependency>
+        </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>

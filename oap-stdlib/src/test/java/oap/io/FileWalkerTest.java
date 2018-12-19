@@ -10,7 +10,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static oap.testng.Env.tmpPath;
@@ -83,7 +82,7 @@ public class FileWalkerTest extends AbstractTest {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "w2/3*.txt" ).walkFileTree( visitor );
 
-        assertThat( visitor.files)
+        assertThat( visitor.files )
             .containsOnly( tmpPath( "/wildcard/w2/3.txt" ), tmpPath( "/wildcard/w2/33.txt" ) );
     }
 

@@ -28,5 +28,5 @@ import java.util.List;
 import java.util.Optional;
 
 public interface EnumFunction {
-   List<Object> apply( Object rootJson, Optional<String> currentPath );
+    List<Object> apply( Object rootJson, Optional<String> currentPath );
 }

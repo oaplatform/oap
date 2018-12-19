@@ -23,7 +23,7 @@
  */
 package oap.http;
 
-public class HttpException extends RuntimeException{
+public class HttpException extends RuntimeException {
     public HttpException( String message ) {
         super( message );
     }

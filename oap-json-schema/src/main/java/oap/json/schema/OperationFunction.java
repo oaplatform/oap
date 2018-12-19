@@ -40,84 +40,84 @@ import static oap.json.schema.OperationFunction.Condition.IN;
 import static oap.json.schema.OperationFunction.Condition.NE;
 
 public class OperationFunction {
-   public static final String EQ_OP = "eq";
-   public static final String NE_OP = "ne";
-   public static final String IN_OP = "in";
+    public static final String EQ_OP = "eq";
+    public static final String NE_OP = "ne";
+    public static final String IN_OP = "in";
 
-   private final Condition condition;
-   private final BiFunction<Object, Optional<String>, List<Object>> func;
+    private final Condition condition;
+    private final BiFunction<Object, Optional<String>, List<Object>> func;
 
-   public OperationFunction( Condition condition, BiFunction<Object, Optional<String>, List<Object>> func ) {
+    public OperationFunction( Condition condition, BiFunction<Object, Optional<String>, List<Object>> func ) {
 
-      this.condition = condition;
-      this.func = func;
-   }
+        this.condition = condition;
+        this.func = func;
+    }
 
-   public static OperationFunction parse( Map<?, ?> map ) {
-      final OperationFunction.Condition condition = getCondition( map );
-      final Object value = getValue( condition, map );
+    public static OperationFunction parse( Map<?, ?> map ) {
+        final OperationFunction.Condition condition = getCondition( map );
+        final Object value = getValue( condition, map );
 
-      if( value instanceof Map ) {
-         final Map valueMap = ( Map ) value;
-         final String jsonPath = ( String ) valueMap.get( "json-path" );
+        if( value instanceof Map ) {
+            final Map valueMap = ( Map ) value;
+            final String jsonPath = ( String ) valueMap.get( "json-path" );
 
-         return new OperationFunction( condition, ( rootJson, currentPath ) -> new JsonPath( jsonPath, currentPath ).traverse( rootJson ) );
-      } else {
-         return new OperationFunction( condition, ( rootJson, currentPath ) -> Collections.singletonList( value ) );
-      }
-   }
+            return new OperationFunction( condition, ( rootJson, currentPath ) -> new JsonPath( jsonPath, currentPath ).traverse( rootJson ) );
+        } else {
+            return new OperationFunction( condition, ( rootJson, currentPath ) -> Collections.singletonList( value ) );
+        }
+    }
 
-   private static Object getValue( Condition condition, Map<?, ?> map ) {
-      switch( condition ) {
-         case EQ:
-            return map.get( EQ_OP );
-         case NE:
-            return map.get( NE_OP );
-         case IN:
-            return map.get( IN_OP );
-         case ANY:
-            return null;
-         default:
-            throw new IllegalStateException( "Unknown condition " + condition );
-      }
-   }
+    private static Object getValue( Condition condition, Map<?, ?> map ) {
+        switch( condition ) {
+            case EQ:
+                return map.get( EQ_OP );
+            case NE:
+                return map.get( NE_OP );
+            case IN:
+                return map.get( IN_OP );
+            case ANY:
+                return null;
+            default:
+                throw new IllegalStateException( "Unknown condition " + condition );
+        }
+    }
 
-   private static Condition getCondition( Map<?, ?> map ) {
-      if( map.containsKey( EQ_OP ) ) return EQ;
-      else if( map.containsKey( NE_OP ) ) return NE;
-      else if( map.containsKey( IN_OP ) ) return IN;
-      return ANY;
-   }
+    private static Condition getCondition( Map<?, ?> map ) {
+        if( map.containsKey( EQ_OP ) ) return EQ;
+        else if( map.containsKey( NE_OP ) ) return NE;
+        else if( map.containsKey( IN_OP ) ) return IN;
+        return ANY;
+    }
 
-   private Optional<Object> getValue( Object rootJson, Optional<String> currentPath ) {
-      return Lists.headOpt( func.apply( rootJson, currentPath ) );
-   }
+    private Optional<Object> getValue( Object rootJson, Optional<String> currentPath ) {
+        return Lists.headOpt( func.apply( rootJson, currentPath ) );
+    }
 
-   public final boolean apply( Object rootJson, Optional<String> currentPath, Object value ) {
-      if(condition == ANY) return true;
+    public final boolean apply( Object rootJson, Optional<String> currentPath, Object value ) {
+        if( condition == ANY ) return true;
 
-      final Optional<Object> foundOpt = getValue( rootJson, currentPath );
+        final Optional<Object> foundOpt = getValue( rootJson, currentPath );
 
-      switch( condition ) {
-         case EQ:
-            return foundOpt.map( v -> Objects.equals( v, value ) ).orElse( false );
-         case NE:
-            return foundOpt.map( v -> !Objects.equals( v, value ) ).orElse( true );
-         case IN:
-            final Object found = foundOpt.orElse( emptyList() );
-            for( Object item : (List)found ) {
-               if( Objects.equals( item, value ) ) return true;
-            }
+        switch( condition ) {
+            case EQ:
+                return foundOpt.map( v -> Objects.equals( v, value ) ).orElse( false );
+            case NE:
+                return foundOpt.map( v -> !Objects.equals( v, value ) ).orElse( true );
+            case IN:
+                final Object found = foundOpt.orElse( emptyList() );
+                for( Object item : ( List ) found ) {
+                    if( Objects.equals( item, value ) ) return true;
+                }
 
-            return false;
+                return false;
 
-         default:
-            throw new IllegalStateException( "Unknown condition " + condition );
+            default:
+                throw new IllegalStateException( "Unknown condition " + condition );
 
-      }
-   }
+        }
+    }
 
-   public enum Condition {
-      EQ, NE, ANY, IN
-   }
+    public enum Condition {
+        EQ, NE, ANY, IN
+    }
 }

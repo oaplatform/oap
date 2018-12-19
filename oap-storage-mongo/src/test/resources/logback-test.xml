@@ -29,7 +29,7 @@
         </encoder>
     </appender>
 
-    <logger name="org" additivity="false" level="ERROR" />
+    <logger name="org" additivity="false" level="ERROR"/>
 
     <root level="TRACE">
         <appender-ref ref="STDOUT"/>

@@ -33,6 +33,6 @@ import java.io.IOException;
 public class MicroDollarDeserializer extends JsonDeserializer<Long> {
     @Override
     public Long deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-        return (long) (p.getDoubleValue() * 1000000);
+        return ( long ) ( p.getDoubleValue() * 1000000 );
     }
 }

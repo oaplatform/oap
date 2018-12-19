@@ -32,12 +32,6 @@ import org.apache.velocity.exception.ResourceNotFoundException;
 import org.apache.velocity.runtime.directive.Directive;
 import org.w3c.dom.Node;
 
-import static org.w3c.dom.Node.ATTRIBUTE_NODE;
-import static org.w3c.dom.Node.CDATA_SECTION_NODE;
-import static org.w3c.dom.Node.COMMENT_NODE;
-import static org.w3c.dom.Node.PROCESSING_INSTRUCTION_NODE;
-import static org.w3c.dom.Node.TEXT_NODE;
-
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -45,6 +39,12 @@ import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
+
+import static org.w3c.dom.Node.ATTRIBUTE_NODE;
+import static org.w3c.dom.Node.CDATA_SECTION_NODE;
+import static org.w3c.dom.Node.COMMENT_NODE;
+import static org.w3c.dom.Node.PROCESSING_INSTRUCTION_NODE;
+import static org.w3c.dom.Node.TEXT_NODE;
 
 @Slf4j
 public class XPathDirective extends Directive {

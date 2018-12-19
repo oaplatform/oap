@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by igor.petrenko on 08.09.2017.
+ *
  * @todo by some reason it fails every second run
  */
 public class StatsDBTest extends AbstractTest {
@@ -239,8 +240,8 @@ public class StatsDBTest extends AbstractTest {
 
     @Test
     public void version() {
-        try( StatsDBMaster master = new StatsDBMaster( schema2, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) ) ;
-             StatsDBNode node = new StatsDBNode( schema2, master, null, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) )  ) {
+        try( StatsDBMaster master = new StatsDBMaster( schema2, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) );
+             StatsDBNode node = new StatsDBNode( schema2, master, null, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) ) ) {
 
             master.start();
 

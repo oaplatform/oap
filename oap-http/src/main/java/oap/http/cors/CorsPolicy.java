@@ -28,5 +28,5 @@ import oap.http.Request;
 
 public interface CorsPolicy {
 
-   RequestCors getCors( Request request );
+    RequestCors getCors( Request request );
 }

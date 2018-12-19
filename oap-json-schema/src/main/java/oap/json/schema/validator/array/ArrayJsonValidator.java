@@ -31,42 +31,42 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ArrayJsonValidator extends JsonSchemaValidator<ArraySchemaAST> {
-   public ArrayJsonValidator() {
-      super( "array" );
-   }
+    public ArrayJsonValidator() {
+        super( "array" );
+    }
 
-   @Override
-   public List<String> validate( JsonValidatorProperties properties, ArraySchemaAST schema,
-                                 Object value ) {
-      if( !( value instanceof List<?> ) ) return typeFailed( properties, schema, value );
+    @Override
+    public List<String> validate( JsonValidatorProperties properties, ArraySchemaAST schema,
+                                  Object value ) {
+        if( !( value instanceof List<?> ) ) return typeFailed( properties, schema, value );
 
-      List<?> arrayValue = ( List<?> ) value;
-      List<String> errors = new ArrayList<>();
+        List<?> arrayValue = ( List<?> ) value;
+        List<String> errors = new ArrayList<>();
 
-      schema.minItems.filter( minItems -> arrayValue.size() < minItems )
-         .ifPresent( minItems -> errors.add( properties.error( "array " + arrayValue + " has less than minItems elements " + minItems ) ) );
+        schema.minItems.filter( minItems -> arrayValue.size() < minItems )
+            .ifPresent( minItems -> errors.add( properties.error( "array " + arrayValue + " has less than minItems elements " + minItems ) ) );
 
-      schema.maxItems.filter( maxItems -> arrayValue.size() > maxItems )
-         .ifPresent( maxItems -> errors.add( properties.error( "array " + arrayValue + " has more than maxItems elements " + maxItems ) ) );
+        schema.maxItems.filter( maxItems -> arrayValue.size() > maxItems )
+            .ifPresent( maxItems -> errors.add( properties.error( "array " + arrayValue + " has more than maxItems elements " + maxItems ) ) );
 
-      for( int i = 0; i < arrayValue.size(); i++ )
-         errors.addAll( properties.validator.apply( properties.withAdditionalProperties( schema.additionalProperties ).withPath( String.valueOf( i ) ),
-            schema.items, arrayValue.get( i ) ) );
+        for( int i = 0; i < arrayValue.size(); i++ )
+            errors.addAll( properties.validator.apply( properties.withAdditionalProperties( schema.additionalProperties ).withPath( String.valueOf( i ) ),
+                schema.items, arrayValue.get( i ) ) );
 
-      return errors;
-   }
+        return errors;
+    }
 
-   @Override
-   public ArraySchemaASTWrapper parse( JsonSchemaParserContext context ) {
-      final ArraySchemaASTWrapper wrapper = context.createWrapper( ArraySchemaASTWrapper::new );
+    @Override
+    public ArraySchemaASTWrapper parse( JsonSchemaParserContext context ) {
+        final ArraySchemaASTWrapper wrapper = context.createWrapper( ArraySchemaASTWrapper::new );
 
-      wrapper.common = node( context ).asCommon();
-      wrapper.additionalProperties = node( context ).asBoolean( ADDITIONAL_PROPERTIES ).optional();
-      wrapper.minItems = node( context ).asInt( "minItems" ).optional();
-      wrapper.maxItems = node( context ).asInt( "maxItems" ).optional();
-      wrapper.idField = node( context ).asString( "id" ).optional();
-      wrapper.items = node( context ).asAST( "items", context ).required();
+        wrapper.common = node( context ).asCommon();
+        wrapper.additionalProperties = node( context ).asBoolean( ADDITIONAL_PROPERTIES ).optional();
+        wrapper.minItems = node( context ).asInt( "minItems" ).optional();
+        wrapper.maxItems = node( context ).asInt( "maxItems" ).optional();
+        wrapper.idField = node( context ).asString( "id" ).optional();
+        wrapper.items = node( context ).asAST( "items", context ).required();
 
-      return wrapper;
-   }
+        return wrapper;
+    }
 }

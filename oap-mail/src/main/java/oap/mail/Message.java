@@ -34,7 +34,8 @@ import static java.util.Collections.emptyList;
 
 @ToString
 public class Message {
-    @Id public String id;
+    @Id
+    public String id;
     private String subject;
     private String body;
     private ArrayList<Attachment> attachments = new ArrayList<Attachment>();

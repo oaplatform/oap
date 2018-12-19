@@ -33,24 +33,24 @@ import java.util.Optional;
  * Created by Igor Petrenko on 19.04.2016.
  */
 public class SchemaWrapperPath {
-   private final String[] paths;
+    private final String[] paths;
 
-   public SchemaWrapperPath( String path ) {
-      paths = StringUtils.split( path, '.' );
-   }
+    public SchemaWrapperPath( String path ) {
+        paths = StringUtils.split( path, '.' );
+    }
 
-   private static Optional<SchemaASTWrapper> traverse( SchemaASTWrapper schema, String[] paths, int index ) {
-      if( index >= paths.length ) return Optional.of( schema );
+    private static Optional<SchemaASTWrapper> traverse( SchemaASTWrapper schema, String[] paths, int index ) {
+        if( index >= paths.length ) return Optional.of( schema );
 
-      if( schema instanceof ContainerSchemaASTWrapper ) {
-         final String property = paths[index];
-         final List<SchemaASTWrapper> list = ( ( ContainerSchemaASTWrapper ) schema ).getChildren().get( property );
-         if( list == null ) return Optional.empty();
-         return list.stream().map( s -> traverse( s, paths, index + 1 ) ).filter( Optional::isPresent ).findFirst().map( Optional::get );
-      } else return Optional.empty();
-   }
+        if( schema instanceof ContainerSchemaASTWrapper ) {
+            final String property = paths[index];
+            final List<SchemaASTWrapper> list = ( ( ContainerSchemaASTWrapper ) schema ).getChildren().get( property );
+            if( list == null ) return Optional.empty();
+            return list.stream().map( s -> traverse( s, paths, index + 1 ) ).filter( Optional::isPresent ).findFirst().map( Optional::get );
+        } else return Optional.empty();
+    }
 
-   public final Optional<SchemaASTWrapper> traverse( SchemaASTWrapper schema ) {
-      return traverse( schema, paths, 0 );
-   }
+    public final Optional<SchemaASTWrapper> traverse( SchemaASTWrapper schema ) {
+        return traverse( schema, paths, 0 );
+    }
 }

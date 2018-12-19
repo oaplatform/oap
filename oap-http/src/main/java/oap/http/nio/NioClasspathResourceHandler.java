@@ -54,13 +54,13 @@ public class NioClasspathResourceHandler implements HttpAsyncRequestHandler<Http
 
     @Override
     public HttpAsyncRequestConsumer<HttpRequest> processRequest( HttpRequest request,
-        HttpContext context ) throws HttpException, IOException {
+                                                                 HttpContext context ) throws HttpException, IOException {
         return new BasicAsyncRequestConsumer();
     }
 
     @Override
     public void handle( HttpRequest req, HttpAsyncExchange httpExchange,
-        HttpContext context ) throws HttpException, IOException {
+                        HttpContext context ) throws HttpException, IOException {
 
         String resource = location + Strings.substringAfter( req.getRequestLine().getUri(), prefix );
         if( logger.isTraceEnabled() ) logger.trace( req.getRequestLine().toString() + " -> " + resource );

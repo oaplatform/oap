@@ -38,99 +38,99 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 
 public class JsonPath {
-   private final String[] path;
-   private final Optional<String[]> fromPath;
+    private final String[] path;
+    private final Optional<String[]> fromPath;
 
-   public JsonPath( String path, Optional<String> fromPath ) {
-      this.path = StringUtils.split( path, '.' );
-      this.fromPath = fromPath.map( fp -> StringUtils.split( fp, '/' ) );
-   }
+    public JsonPath( String path, Optional<String> fromPath ) {
+        this.path = StringUtils.split( path, '.' );
+        this.fromPath = fromPath.map( fp -> StringUtils.split( fp, '/' ) );
+    }
 
-   public JsonPath( String path ) {
-      this( path, Optional.empty() );
-   }
+    public JsonPath( String path ) {
+        this( path, Optional.empty() );
+    }
 
-   @SuppressWarnings( "unchecked" )
-   public List<Object> traverse( Object json ) {
-      final Optional<Object> result = traverse( json, 0, 0 );
+    @SuppressWarnings( "unchecked" )
+    public List<Object> traverse( Object json ) {
+        final Optional<Object> result = traverse( json, 0, 0 );
 
-      return result.map( r -> {
-         if( r instanceof List<?> ) return ( List<Object> ) r;
+        return result.map( r -> {
+            if( r instanceof List<?> ) return ( List<Object> ) r;
 
-         return singletonList( r );
-      } ).orElseGet( Collections::emptyList );
+            return singletonList( r );
+        } ).orElseGet( Collections::emptyList );
 
-   }
+    }
 
-   private Optional<Object> traverse( Object json, int index, int fromIndex ) {
-      Object last = json;
+    private Optional<Object> traverse( Object json, int index, int fromIndex ) {
+        Object last = json;
 
-      int fi = fromIndex;
-      for( int i = index; i < path.length; i++, fi++ ) {
-         final String field = path[i];
-         Optional<String> fromField = Optional.empty();
-         if( fromPath.isPresent() ) {
+        int fi = fromIndex;
+        for( int i = index; i < path.length; i++, fi++ ) {
+            final String field = path[i];
+            Optional<String> fromField = Optional.empty();
+            if( fromPath.isPresent() ) {
+                final String[] fp = fromPath.get();
+                if( fp.length <= fi )
+                    throw new IllegalArgumentException( "[" + fi + "] path = " + asList( path ) + " != fromPath = " + fromPath.map( Arrays::asList ) );
+                fromField = Optional.of( fp[fi] );
+            }
+            if( last == null ) return Optional.empty();
+            else if( last instanceof Map<?, ?> ) {
+                final Map<?, ?> map = ( Map<?, ?> ) last;
+
+                last = map.get( field );
+            } else if( last instanceof List<?> ) {
+                final List<?> list = ( List<?> ) last;
+
+                if( fromField.isPresent() ) {
+                    final String arrayIndexStr = fromPath.get()[fi];
+                    if( !NumberUtils.isDigits( arrayIndexStr ) ) return Optional.empty();
+                    int arrayIndex = Integer.parseInt( arrayIndexStr );
+
+                    final Optional<Object> value = traverse( list.get( arrayIndex ), i + 1, fi + 1 );
+                    last = value.orElse( null );
+                } else {
+                    final ArrayList<Object> result = new ArrayList<>();
+
+                    for( Object item : list ) {
+                        final Optional<Object> value = traverse( item, i, fi );
+                        value.ifPresent( result::add );
+                    }
+                    last = result;
+                }
+
+                i = path.length;
+            } else return Optional.empty();
+        }
+
+        return Optional.ofNullable( last );
+    }
+
+    public String getFixedPath() {
+        if( !fromPath.isPresent() ) throw new IllegalArgumentException( "fromPath is required" );
+
+        return getFixedPath( 0, 0 );
+    }
+
+    private String getFixedPath( int index, int fromIndex ) {
+        final ArrayList<String> res = new ArrayList<>();
+        int fi = fromIndex;
+        for( int i = index; i < path.length; i++, fi++ ) {
+            final String field = path[i];
+
             final String[] fp = fromPath.get();
             if( fp.length <= fi )
-               throw new IllegalArgumentException( "[" + fi + "] path = " + asList( path ) + " != fromPath = " + fromPath.map( Arrays::asList ) );
-            fromField = Optional.of( fp[fi] );
-         }
-         if( last == null ) return Optional.empty();
-         else if( last instanceof Map<?, ?> ) {
-            final Map<?, ?> map = ( Map<?, ?> ) last;
+                throw new IllegalArgumentException( "[" + fi + "] path = " + asList( path ) + " != fromPath = " + fromPath.map( Arrays::asList ) );
+            String fromField = fp[fi];
 
-            last = map.get( field );
-         } else if( last instanceof List<?> ) {
-            final List<?> list = ( List<?> ) last;
-
-            if( fromField.isPresent() ) {
-               final String arrayIndexStr = fromPath.get()[fi];
-               if( !NumberUtils.isDigits( arrayIndexStr ) ) return Optional.empty();
-               int arrayIndex = Integer.parseInt( arrayIndexStr );
-
-               final Optional<Object> value = traverse( list.get( arrayIndex ), i + 1, fi + 1 );
-               last = value.orElse( null );
+            if( "items".equals( field ) && NumberUtils.isDigits( fromField ) ) {
+                res.add( fromField );
             } else {
-               final ArrayList<Object> result = new ArrayList<>();
-
-               for( Object item : list ) {
-                  final Optional<Object> value = traverse( item, i, fi );
-                  value.ifPresent( result::add );
-               }
-               last = result;
+                res.add( field );
             }
+        }
 
-            i = path.length;
-         } else return Optional.empty();
-      }
-
-      return Optional.ofNullable( last );
-   }
-
-   public String getFixedPath() {
-      if( !fromPath.isPresent() ) throw new IllegalArgumentException( "fromPath is required" );
-
-      return getFixedPath( 0, 0 );
-   }
-
-   private String getFixedPath( int index, int fromIndex ) {
-      final ArrayList<String> res = new ArrayList<>();
-      int fi = fromIndex;
-      for( int i = index; i < path.length; i++, fi++ ) {
-         final String field = path[i];
-
-         final String[] fp = fromPath.get();
-         if( fp.length <= fi )
-            throw new IllegalArgumentException( "[" + fi + "] path = " + asList( path ) + " != fromPath = " + fromPath.map( Arrays::asList ) );
-         String fromField = fp[fi];
-
-         if( "items".equals( field ) && NumberUtils.isDigits( fromField ) ) {
-            res.add( fromField );
-         } else {
-            res.add( field );
-         }
-      }
-
-      return String.join( ".", res );
-   }
+        return String.join( ".", res );
+    }
 }

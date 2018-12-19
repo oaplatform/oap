@@ -29,26 +29,26 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 public class StringSchemaAST extends SchemaAST<StringSchemaAST> {
-   public final Optional<Integer> minLength;
-   public final Optional<Integer> maxLength;
-   public final Optional<Pattern> pattern;
+    public final Optional<Integer> minLength;
+    public final Optional<Integer> maxLength;
+    public final Optional<Pattern> pattern;
 
-   public StringSchemaAST( SchemaAST.CommonSchemaAST common, Optional<Integer> minLength, Optional<Integer> maxLength,
-                           Optional<Pattern> pattern, String path ) {
-      super( common, path );
-      this.minLength = minLength;
-      this.maxLength = maxLength;
-      this.pattern = pattern;
-   }
+    public StringSchemaAST( SchemaAST.CommonSchemaAST common, Optional<Integer> minLength, Optional<Integer> maxLength,
+                            Optional<Pattern> pattern, String path ) {
+        super( common, path );
+        this.minLength = minLength;
+        this.maxLength = maxLength;
+        this.pattern = pattern;
+    }
 
-   @Override
-   public StringSchemaAST merge( StringSchemaAST cs ) {
-      return new StringSchemaAST(
-         common.merge( cs.common ),
-         minLength.isPresent() ? minLength : cs.minLength,
-         maxLength.isPresent() ? maxLength : cs.maxLength,
-         pattern.isPresent() ? pattern : cs.pattern,
-         path
-      );
-   }
+    @Override
+    public StringSchemaAST merge( StringSchemaAST cs ) {
+        return new StringSchemaAST(
+            common.merge( cs.common ),
+            minLength.isPresent() ? minLength : cs.minLength,
+            maxLength.isPresent() ? maxLength : cs.maxLength,
+            pattern.isPresent() ? pattern : cs.pattern,
+            path
+        );
+    }
 }

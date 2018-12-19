@@ -64,13 +64,13 @@ public class LoginWS {
 
     public HttpResponse withAuthorization( HttpResponse response, Token token ) {
         return response.withHeader( "Authorization", token.id )
-                    .withCookie( new HttpResponse.CookieBuilder()
-                        .withCustomValue( "Authorization", token.id )
-                        .withDomain( cookieDomain )
-                        .withPath( "/" )
-                        .withExpires( DateTime.now().plusMinutes( cookieExpiration ) )
-                        .build()
-                    );
+            .withCookie( new HttpResponse.CookieBuilder()
+                .withCustomValue( "Authorization", token.id )
+                .withDomain( cookieDomain )
+                .withPath( "/" )
+                .withExpires( DateTime.now().plusMinutes( cookieExpiration ) )
+                .build()
+            );
     }
 
 }

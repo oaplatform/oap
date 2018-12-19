@@ -32,7 +32,7 @@ public final class Context {
     public final InetAddress remoteAddress;
     public final String protocol;
 
-    public Context(final String location, final InetAddress remoteAddress, final String protocol ) {
+    public Context( final String location, final InetAddress remoteAddress, final String protocol ) {
         this.location = location;
         this.remoteAddress = remoteAddress;
         this.protocol = protocol;

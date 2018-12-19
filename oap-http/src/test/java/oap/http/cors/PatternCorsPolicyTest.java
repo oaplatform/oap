@@ -38,40 +38,40 @@ import static org.testng.Assert.assertEquals;
 
 public class PatternCorsPolicyTest {
 
-   private PatternCorsPolicy cors = new PatternCorsPolicy( "^(http)s?(://)[^/]*[\\.]?oaplatform\\.org/?",
-       "Autorization", true, ImmutableList.of( "HEAD", "POST", "GET", "PUT", "DELETE", "OPTIONS" ) );
+    private PatternCorsPolicy cors = new PatternCorsPolicy( "^(http)s?(://)[^/]*[\\.]?oaplatform\\.org/?",
+        "Autorization", true, ImmutableList.of( "HEAD", "POST", "GET", "PUT", "DELETE", "OPTIONS" ) );
 
-   @Test
-   public void testSameDomainOrigin( ) throws UnknownHostException {
-      final Request request = getRequest("http://oaplatform.org/", "http://oaplatform.org/api");
+    @Test
+    public void testSameDomainOrigin() throws UnknownHostException {
+        final Request request = getRequest( "http://oaplatform.org/", "http://oaplatform.org/api" );
 
-      assertEquals( cors.getCors( request ).allowOrigin, "http://oaplatform.org/");
-   }
+        assertEquals( cors.getCors( request ).allowOrigin, "http://oaplatform.org/" );
+    }
 
-   @Test
-   public void testSubDomainOrigin( ) throws UnknownHostException {
-      final String origin = "https://oap.oaplatform.org/";
-      final Request request = getRequest( origin, "https://oap.oaplatform.org/cors");
+    @Test
+    public void testSubDomainOrigin() throws UnknownHostException {
+        final String origin = "https://oap.oaplatform.org/";
+        final Request request = getRequest( origin, "https://oap.oaplatform.org/cors" );
 
-      assertEquals( cors.getCors( request ).allowOrigin, origin );
-   }
+        assertEquals( cors.getCors( request ).allowOrigin, origin );
+    }
 
-   @Test
-   public void testAnotherDomainOrigin( ) throws UnknownHostException {
-      final Request request = getRequest("http://example.com/", "http://example.com/path/to/api");
+    @Test
+    public void testAnotherDomainOrigin() throws UnknownHostException {
+        final Request request = getRequest( "http://example.com/", "http://example.com/path/to/api" );
 
-      assertEquals( cors.getCors( request ).allowOrigin, RequestCors.NO_ORIGIN);
-   }
+        assertEquals( cors.getCors( request ).allowOrigin, RequestCors.NO_ORIGIN );
+    }
 
-   private static Request getRequest( final String origin, final String url ) throws UnknownHostException {
-      final BasicHttpRequest basicHttpRequest = new BasicHttpRequest( "GET", url );
-      basicHttpRequest.addHeader( "Origin", origin );
-      basicHttpRequest.addHeader( "Host", "some-host" );
+    private static Request getRequest( final String origin, final String url ) throws UnknownHostException {
+        final BasicHttpRequest basicHttpRequest = new BasicHttpRequest( "GET", url );
+        basicHttpRequest.addHeader( "Origin", origin );
+        basicHttpRequest.addHeader( "Host", "some-host" );
 
-      final Context context = new Context( "not important", InetAddress.getLocalHost(), "not important" );
+        final Context context = new Context( "not important", InetAddress.getLocalHost(), "not important" );
 
-      return new Request( basicHttpRequest, context );
-   }
+        return new Request( basicHttpRequest, context );
+    }
 
 
 }

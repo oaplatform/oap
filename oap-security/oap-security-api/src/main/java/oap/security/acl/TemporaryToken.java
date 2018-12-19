@@ -36,7 +36,8 @@ public class TemporaryToken implements Serializable {
     private static final long serialVersionUID = -7308648704979898600L;
     public final String objectId;
     public final long time;
-    @Id public String id;
+    @Id
+    public String id;
 
     @JsonCreator
     public TemporaryToken( String id, String objectId, long time ) {

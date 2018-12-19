@@ -32,6 +32,7 @@ import java.io.Serializable;
 /**
  * Created by igor.petrenko on 10.01.2018.
  * use annotation
+ *
  * @see Id
  */
 @ToString

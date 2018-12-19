@@ -24,5 +24,5 @@
 package oap.http;
 
 public interface Handler {
-    void handle( Request request, Response response ) ;
+    void handle( Request request, Response response );
 }

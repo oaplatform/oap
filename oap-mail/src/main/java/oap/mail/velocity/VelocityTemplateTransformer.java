@@ -25,8 +25,6 @@ package oap.mail.velocity;
 
 import oap.mail.MailException;
 import oap.mail.Template;
-import oap.mail.velocity.Uberspector;
-import oap.mail.velocity.XPathDirective;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.exception.MethodInvocationException;
@@ -50,7 +48,7 @@ public class VelocityTemplateTransformer {
         }
     }
 
-    public synchronized String transform( Template template )  {
+    public synchronized String transform( Template template ) {
         try {
             VelocityContext context = new VelocityContext();
             Map<String, Object> parameters = template.getParameters();

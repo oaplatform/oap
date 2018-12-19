@@ -55,10 +55,10 @@ public class UniqueField<T> implements Constraint<T> {
         val idValue = id.apply( object );
         val value = valueFunc.apply( object );
 
-            if( storage
-                .select()
-                .filter( obj -> filter.test( object, obj ) )
-                .anyMatch( itemObject -> equals( value, valueFunc.apply( itemObject ) ) && !idValue.equals( id.apply( itemObject ) ) ) ) {
+        if( storage
+            .select()
+            .filter( obj -> filter.test( object, obj ) )
+            .anyMatch( itemObject -> equals( value, valueFunc.apply( itemObject ) ) && !idValue.equals( id.apply( itemObject ) ) ) ) {
             throw new ConstraintException( StringUtils.capitalize( type ) + " '" + value + "' already exists." );
         }
     }

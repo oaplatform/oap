@@ -27,7 +27,6 @@ package oap.util;
 import lombok.val;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 
 import static java.util.Arrays.asList;

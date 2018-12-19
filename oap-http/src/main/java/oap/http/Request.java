@@ -33,7 +33,6 @@ import oap.util.Maps;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
-import org.apache.http.Header;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.util.EntityUtils;
@@ -88,7 +87,7 @@ public class Request {
 
     public boolean isRequestGzipped() {
         final List<String> headers = headers( "Content-Encoding" );
-        if ( headers != null ) {
+        if( headers != null ) {
             for( final String header : headers ) {
                 if( header.contains( "gzip" ) ) {
                     return true;
@@ -101,7 +100,7 @@ public class Request {
 
     private Optional<InputStream> content( HttpRequest req ) {
         try {
-            if ( req instanceof HttpEntityEnclosingRequest ) {
+            if( req instanceof HttpEntityEnclosingRequest ) {
                 final HttpEntityEnclosingRequest enclosingRequest = ( HttpEntityEnclosingRequest ) req;
 
                 final InputStream content = enclosingRequest.getEntity().getContent();

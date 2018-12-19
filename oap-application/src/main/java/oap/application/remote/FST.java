@@ -37,57 +37,57 @@ import java.util.Optional;
  * Created by Igor Petrenko on 15.01.2016.
  */
 public class FST {
-   public FSTConfiguration conf;
+    public FSTConfiguration conf;
 
-   public FST( SerializationMethod serializationMethod) {
-      conf = serializationMethod.conf();
-      conf.registerClass( RemoteInvocation.class );
-      conf.registerSerializer( Optional.class, new FSTOptionalSerializer(), false );
-   }
+    public FST( SerializationMethod serializationMethod ) {
+        conf = serializationMethod.conf();
+        conf.registerClass( RemoteInvocation.class );
+        conf.registerSerializer( Optional.class, new FSTOptionalSerializer(), false );
+    }
 
-   private class FSTOptionalSerializer extends FSTBasicObjectSerializer {
-      @Override
-      public void writeObject( FSTObjectOutput out, Object o, FSTClazzInfo fstClazzInfo, FSTClazzInfo.FSTFieldInfo fstFieldInfo, int i ) throws IOException {
-         final Optional opt = ( Optional ) o;
-         if( opt.isPresent() ) {
-            out.writeObject( opt.get() );
-         } else {
-            out.writeObject( null );
-         }
-      }
+    private class FSTOptionalSerializer extends FSTBasicObjectSerializer {
+        @Override
+        public void writeObject( FSTObjectOutput out, Object o, FSTClazzInfo fstClazzInfo, FSTClazzInfo.FSTFieldInfo fstFieldInfo, int i ) throws IOException {
+            final Optional opt = ( Optional ) o;
+            if( opt.isPresent() ) {
+                out.writeObject( opt.get() );
+            } else {
+                out.writeObject( null );
+            }
+        }
 
-      @Override
-      public void readObject( FSTObjectInput in, Object toRead, FSTClazzInfo clzInfo, FSTClazzInfo.FSTFieldInfo referencedBy ) throws Exception {
-      }
+        @Override
+        public void readObject( FSTObjectInput in, Object toRead, FSTClazzInfo clzInfo, FSTClazzInfo.FSTFieldInfo referencedBy ) throws Exception {
+        }
 
-      @Override
-      public Object instantiate( Class objectClass, FSTObjectInput in, FSTClazzInfo serializationInfo, FSTClazzInfo.FSTFieldInfo referencee, int streamPosition ) throws Exception {
-         return Optional.ofNullable( in.readObject() );
-      }
-   }
+        @Override
+        public Object instantiate( Class objectClass, FSTObjectInput in, FSTClazzInfo serializationInfo, FSTClazzInfo.FSTFieldInfo referencee, int streamPosition ) throws Exception {
+            return Optional.ofNullable( in.readObject() );
+        }
+    }
 
-   public enum SerializationMethod {
-      JSON {
-         @Override
-         public FSTConfiguration conf() {
-            return FSTConfiguration.createJsonConfiguration( false, false );
-         }
-      },
-      BINARY {
-         @Override
-         public FSTConfiguration conf() {
-            return FSTConfiguration.createUnsafeBinaryConfiguration();
-         }
-      },
-      DEFAULT {
-         @Override
-         public FSTConfiguration conf() {
-            return FSTConfiguration.createDefaultConfiguration();
-         }
-      };
+    public enum SerializationMethod {
+        JSON {
+            @Override
+            public FSTConfiguration conf() {
+                return FSTConfiguration.createJsonConfiguration( false, false );
+            }
+        },
+        BINARY {
+            @Override
+            public FSTConfiguration conf() {
+                return FSTConfiguration.createUnsafeBinaryConfiguration();
+            }
+        },
+        DEFAULT {
+            @Override
+            public FSTConfiguration conf() {
+                return FSTConfiguration.createDefaultConfiguration();
+            }
+        };
 
-      public abstract FSTConfiguration conf();
+        public abstract FSTConfiguration conf();
 
 
-   }
+    }
 }

@@ -24,8 +24,6 @@
 
 package oap.storage;
 
-import oap.storage.Metadata;
-
 import java.util.Collection;
 import java.util.List;
 

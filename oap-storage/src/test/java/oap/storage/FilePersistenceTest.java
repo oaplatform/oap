@@ -27,7 +27,6 @@ package oap.storage;
 import oap.json.TypeIdFactory;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import oap.util.Id;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

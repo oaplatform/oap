@@ -25,22 +25,22 @@
 package oap.alert.slack;
 
 public class SlackCommunicationException extends RuntimeException {
-   public SlackCommunicationException() {
-   }
+    public SlackCommunicationException() {
+    }
 
-   public SlackCommunicationException( String message ) {
-      super( message );
-   }
+    public SlackCommunicationException( String message ) {
+        super( message );
+    }
 
-   public SlackCommunicationException( String message, Throwable cause ) {
-      super( message, cause );
-   }
+    public SlackCommunicationException( String message, Throwable cause ) {
+        super( message, cause );
+    }
 
-   public SlackCommunicationException( Throwable cause ) {
-      super( cause );
-   }
+    public SlackCommunicationException( Throwable cause ) {
+        super( cause );
+    }
 
-   public SlackCommunicationException( String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace ) {
-      super( message, cause, enableSuppression, writableStackTrace );
-   }
+    public SlackCommunicationException( String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace ) {
+        super( message, cause, enableSuppression, writableStackTrace );
+    }
 }

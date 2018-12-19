@@ -32,8 +32,8 @@ import oap.util.IdBean;
 /**
  * Created by igor.petrenko on 02.01.2018.
  */
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
+@ToString( callSuper = true )
+@EqualsAndHashCode( callSuper = true )
 public class TestAclObject extends IdBean {
     private static final long serialVersionUID = 7994106300424465617L;
 

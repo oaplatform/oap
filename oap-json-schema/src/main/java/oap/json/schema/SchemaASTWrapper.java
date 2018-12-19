@@ -31,12 +31,12 @@ import lombok.ToString;
  */
 @ToString
 public abstract class SchemaASTWrapper<TAST extends SchemaAST<TAST>> {
-   public final SchemaId id;
-   public SchemaAST.CommonSchemaAST common;
+    public final SchemaId id;
+    public SchemaAST.CommonSchemaAST common;
 
-   public SchemaASTWrapper( SchemaId id ) {
-      this.id = id;
-   }
+    public SchemaASTWrapper( SchemaId id ) {
+        this.id = id;
+    }
 
-   public abstract TAST unwrap( JsonSchemaParserContext context );
+    public abstract TAST unwrap( JsonSchemaParserContext context );
 }

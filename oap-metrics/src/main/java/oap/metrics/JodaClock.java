@@ -28,13 +28,13 @@ import com.codahale.metrics.Clock;
 import org.joda.time.DateTimeUtils;
 
 public class JodaClock extends Clock {
-   @Override
-   public long getTick() {
-      return DateTimeUtils.currentTimeMillis() * 1000000;
-   }
+    @Override
+    public long getTick() {
+        return DateTimeUtils.currentTimeMillis() * 1000000;
+    }
 
-   @Override
-   public long getTime() {
-      return DateTimeUtils.currentTimeMillis();
-   }
+    @Override
+    public long getTime() {
+        return DateTimeUtils.currentTimeMillis();
+    }
 }

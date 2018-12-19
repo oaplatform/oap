@@ -32,18 +32,27 @@
             <Ad id="{$id}">
                 <InLine>
                     <AdSystem version="v2.2.0">Madberry</AdSystem>
-                    <AdTitle><xsl:value-of select="/ffprobe/model/@filename"/></AdTitle>
-                    <Impression id="someImpId">https://tests.quple.rocks/rtb/someImpId/i?price=AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==</Impression>
+                    <AdTitle>
+                        <xsl:value-of select="/ffprobe/model/@filename"/>
+                    </AdTitle>
+                    <Impression id="someImpId">
+                        https://tests.quple.rocks/rtb/someImpId/i?price=AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==
+                    </Impression>
                 </InLine>
                 <Creatives>
                     <Creative sequence="1" id="${$id}">
                         <Linear>
-                            <Duration><xsl:value-of select="/ffprobe/model/@duration"/></Duration>
-                            <VideoClicks />
-                            <TrackingEvents />
+                            <Duration>
+                                <xsl:value-of select="/ffprobe/model/@duration"/>
+                            </Duration>
+                            <VideoClicks/>
+                            <TrackingEvents/>
                             <MediaFiles>
                                 <xsl:for-each select="/ffprobe/streams/stream[@codec_type='video']">
-                                    <MediaFile delivery="progressive" width="{current()/@width}" height="{current()/@height}" type="{$contentType}">${STORAGE_URL}<xsl:value-of select="$id"/></MediaFile>
+                                    <MediaFile delivery="progressive" width="{current()/@width}"
+                                               height="{current()/@height}" type="{$contentType}">${STORAGE_URL}
+                                        <xsl:value-of select="$id"/>
+                                    </MediaFile>
                                 </xsl:for-each>
                             </MediaFiles>
                         </Linear>
@@ -52,7 +61,9 @@
                 <Extensions>
                     <Extension>
                         <CustomTracking>
-                            <Tracking event="skip">https://test.quple.rocks/rtb/someImpId_AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==/e?name=skip</Tracking>
+                            <Tracking event="skip">
+                                https://test.quple.rocks/rtb/someImpId_AAAAAAAMZu8AAAAAAAQ5UUiijIwjs5bDMYa6Kg==/e?name=skip
+                            </Tracking>
                         </CustomTracking>
                     </Extension>
                 </Extensions>

@@ -64,7 +64,7 @@ public class StringTemplatePerformance extends AbstractPerformance {
             val engine = new Engine( test );
             val template = engine.getTemplate( clazz, Test1.class, "test${id}" );
 
-            template.renderString( new Test1("1") );
+            template.renderString( new Test1( "1" ) );
         } ).inThreads( 5, 1000 ).experiments( 5 ).run();
     }
 

@@ -35,7 +35,7 @@ public class NumberSchemaTest extends AbstractSchemaTest {
 
         assertFailure( schema, "10.0", "instance is resolve type number, which is none resolve the allowed primitive types ([integer])" );
         assertFailure( schema, "\"10\"",
-                "instance is resolve type string, which is none resolve the allowed primitive types ([integer])" );
+            "instance is resolve type string, which is none resolve the allowed primitive types ([integer])" );
     }
 
     @Test
@@ -47,7 +47,7 @@ public class NumberSchemaTest extends AbstractSchemaTest {
 
         assertFailure( schema, "10.0", "instance is resolve type number, which is none resolve the allowed primitive types ([long])" );
         assertFailure( schema, "\"10\"",
-                "instance is resolve type string, which is none resolve the allowed primitive types ([long])" );
+            "instance is resolve type string, which is none resolve the allowed primitive types ([long])" );
     }
 
     @Test
@@ -62,7 +62,7 @@ public class NumberSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "null" );
 
         assertFailure( schema, "\"10\"",
-                "instance is resolve type string, which is none resolve the allowed primitive types ([double])" );
+            "instance is resolve type string, which is none resolve the allowed primitive types ([double])" );
     }
 
     @Test

@@ -30,52 +30,52 @@ import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SchemaTest extends AbstractSchemaTest {
-   @Test
-   public void testRequiredNull() {
-      String schema = "{type: boolean, required: true}";
+    @Test
+    public void testRequiredNull() {
+        String schema = "{type: boolean, required: true}";
 
-      assertFailure( schema, "null", "required property is missing" );
-   }
+        assertFailure( schema, "null", "required property is missing" );
+    }
 
-   @Test
-   public void testRequiredNullIgnoreRequiredDefault() {
-      String schema = "{type: boolean, required: true}";
+    @Test
+    public void testRequiredNullIgnoreRequiredDefault() {
+        String schema = "{type: boolean, required: true}";
 
-      assertOk( schema, "null", true );
-   }
+        assertOk( schema, "null", true );
+    }
 
-   @Test
-   public void testRequiredPropertyNull() {
-      String schema = "{type: object, properties: {a: {type: boolean, required: true}}}";
+    @Test
+    public void testRequiredPropertyNull() {
+        String schema = "{type: object, properties: {a: {type: boolean, required: true}}}";
 
-      assertFailure( schema, "{'a':null}", "/a: required property is missing" );
-   }
+        assertFailure( schema, "{'a':null}", "/a: required property is missing" );
+    }
 
-   @Test
-   public void testRequiredPropertyEmpty() {
-      String schema = "{type: object, properties: {a: {type: boolean, required: true}}}";
+    @Test
+    public void testRequiredPropertyEmpty() {
+        String schema = "{type: object, properties: {a: {type: boolean, required: true}}}";
 
-      assertFailure( schema, "{}", "/a: required property is missing" );
-   }
+        assertFailure( schema, "{}", "/a: required property is missing" );
+    }
 
-   @Test
-   public void testDefault() {
-      String schema = "{type: boolean, default: true}";
+    @Test
+    public void testDefault() {
+        String schema = "{type: boolean, default: true}";
 
-      assertOk( schema, "null" );
-   }
+        assertOk( schema, "null" );
+    }
 
-   @Test
-   public void testDefaultIgnoreRequiredDefault() {
-      String schema = "{type: boolean, default: true}";
+    @Test
+    public void testDefaultIgnoreRequiredDefault() {
+        String schema = "{type: boolean, default: true}";
 
-      assertOk( schema, "null", true );
-   }
+        assertOk( schema, "null", true );
+    }
 
-   @Test
-   public void testFixDefault() {
-      String schema = "{type: object, properties: {a: {type: boolean, default: true}}}";
+    @Test
+    public void testFixDefault() {
+        String schema = "{type: object, properties: {a: {type: boolean, default: true}}}";
 
-      assertThat( assertOk( schema, "{}", true ) ).isEqualTo( Maps.of( __( "a", true ) ) );
-   }
+        assertThat( assertOk( schema, "{}", true ) ).isEqualTo( Maps.of( __( "a", true ) ) );
+    }
 }

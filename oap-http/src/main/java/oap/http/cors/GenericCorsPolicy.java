@@ -35,25 +35,25 @@ import java.util.List;
 @ToString
 public class GenericCorsPolicy implements CorsPolicy {
 
-   public static final GenericCorsPolicy DEFAULT = new GenericCorsPolicy("*", "Content-type, Authorization",
-       true, ImmutableList.of( "HEAD", "POST", "GET", "PUT", "DELETE", "OPTIONS" ) );
+    public static final GenericCorsPolicy DEFAULT = new GenericCorsPolicy( "*", "Content-type, Authorization",
+        true, ImmutableList.of( "HEAD", "POST", "GET", "PUT", "DELETE", "OPTIONS" ) );
 
-   public final String allowOrigin;
-   public final String allowHeaders;
-   public final boolean allowCredentials;
-   public final boolean autoOptions = true;
-   public final List<String> allowMethods;
+    public final String allowOrigin;
+    public final String allowHeaders;
+    public final boolean allowCredentials;
+    public final boolean autoOptions = true;
+    public final List<String> allowMethods;
 
-   public GenericCorsPolicy( final String allowOrigin, final String allowHeaders,
-                             final boolean allowCredentials, final List<String> allowMethods ) {
-      this.allowOrigin = allowOrigin;
-      this.allowHeaders = allowHeaders;
-      this.allowCredentials = allowCredentials;
-      this.allowMethods = allowMethods;
-   }
+    public GenericCorsPolicy( final String allowOrigin, final String allowHeaders,
+                              final boolean allowCredentials, final List<String> allowMethods ) {
+        this.allowOrigin = allowOrigin;
+        this.allowHeaders = allowHeaders;
+        this.allowCredentials = allowCredentials;
+        this.allowMethods = allowMethods;
+    }
 
-   @Override
-   public RequestCors getCors( final Request request ) {
-      return new RequestCors( allowOrigin, allowHeaders, allowCredentials, autoOptions, allowMethods );
-   }
+    @Override
+    public RequestCors getCors( final Request request ) {
+        return new RequestCors( allowOrigin, allowHeaders, allowCredentials, autoOptions, allowMethods );
+    }
 }

@@ -39,17 +39,17 @@ import static org.testng.Assert.assertTrue;
 public class CliTest extends AbstractTest {
     @Test
     public void complex() {
-        Map<String, Object> result = new HashMap<>(  );
+        Map<String, Object> result = new HashMap<>();
         Cli cli = Cli.<String>create()
-                .group( "magic generation", result::putAll,
-                        Option.simple( "generate" ).required().description( "generate magic" ),
-                        Option.string( "macaddress" ).required().description( "macaddress" ),
-                        Option.string( "name" ).required().description( "magic name" ),
-                        Option.<Map<String, String>>option( "attributes" ).argument( ValueParser.MAP ).description( "magic attributes( comma separated key=value pairs )" ) )
-                .group( "magic inspection", result::putAll,
-                        Option.simple( "inspect" ).required().description( "inspect magic" ),
-                        Option.string( "magic" ).required().description( "magic file" ),
-                        Option.string( "macaddress" ).required().description( "macaddress" ) );
+            .group( "magic generation", result::putAll,
+                Option.simple( "generate" ).required().description( "generate magic" ),
+                Option.string( "macaddress" ).required().description( "macaddress" ),
+                Option.string( "name" ).required().description( "magic name" ),
+                Option.<Map<String, String>>option( "attributes" ).argument( ValueParser.MAP ).description( "magic attributes( comma separated key=value pairs )" ) )
+            .group( "magic inspection", result::putAll,
+                Option.simple( "inspect" ).required().description( "inspect magic" ),
+                Option.string( "magic" ).required().description( "magic file" ),
+                Option.string( "macaddress" ).required().description( "macaddress" ) );
         cli.act( "--generate --macaddress=1:1:1:1:1:1 --name=aaa --attributes=1=2,3=4" );
         assertEquals( result, Maps.of(
             __( "generate", null ),
@@ -67,7 +67,7 @@ public class CliTest extends AbstractTest {
         result.clear();
         cli.act( "--generate --macaddress=1:1:1:1:1:1 --attributes=1=2,3=4" );
         assertTrue( result.isEmpty() );
-        cli.act( new String[]{} );
+        cli.act( new String[] {} );
         assertTrue( result.isEmpty() );
     }
 

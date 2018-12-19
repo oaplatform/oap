@@ -24,8 +24,8 @@
 
 package oap.ws.validate.testng;
 
-import oap.ws.validate.WsValidate;
 import oap.ws.validate.ValidationErrors;
+import oap.ws.validate.WsValidate;
 import org.testng.annotations.Test;
 
 import static oap.ws.validate.ValidationErrors.empty;
@@ -34,48 +34,48 @@ import static oap.ws.validate.testng.ValidationErrorsAssertion.validating;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ValidationErrorsAssertionTest {
-   @Test
-   public void validatedCall() {
-      assertThat(
-         validating( I.class )
-            .isError( 404, "not found" )
+    @Test
+    public void validatedCall() {
+        assertThat(
+            validating( I.class )
+                .isError( 404, "not found" )
+                .forInstance( new C() )
+                .m( "a" ) )
+            .isNull();
+        assertThat(
+            validating( I.class )
+                .isFailed()
+                .hasCode( 404 )
+                .containsErrors( "not found" )
+                .forInstance( new C() )
+                .m( "b" ) )
+            .isNull();
+        assertThat( validating( I.class )
+            .isNotFailed()
             .forInstance( new C() )
-            .m( "a" ) )
-         .isNull();
-      assertThat(
-         validating( I.class )
-            .isFailed()
-            .hasCode( 404 )
-            .containsErrors( "not found" )
-            .forInstance( new C() )
-            .m( "b" ) )
-         .isNull();
-      assertThat( validating( I.class )
-         .isNotFailed()
-         .forInstance( new C() )
-         .m( "c" ) )
-         .isEqualTo( "c" );
-   }
+            .m( "c" ) )
+            .isEqualTo( "c" );
+    }
 }
 
 interface I {
-   String m( String a );
+    String m( String a );
 }
 
 
 class C implements I {
-   @WsValidate( "validateM" )
-   public String m( @WsValidate( "validateP" ) String a ) {
-      return a;
-   }
+    @WsValidate( "validateM" )
+    public String m( @WsValidate( "validateP" ) String a ) {
+        return a;
+    }
 
-   public ValidationErrors validateM( String a ) {
-      return a.equals( "a" ) ? error( 404, "not found" )
-         : empty();
-   }
+    public ValidationErrors validateM( String a ) {
+        return a.equals( "a" ) ? error( 404, "not found" )
+            : empty();
+    }
 
-   public ValidationErrors validateP( String a ) {
-      return a.equals( "b" ) ? error( 404, "not found" )
-         : empty();
-   }
+    public ValidationErrors validateP( String a ) {
+        return a.equals( "b" ) ? error( 404, "not found" )
+            : empty();
+    }
 }

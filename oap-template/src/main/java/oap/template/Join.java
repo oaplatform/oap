@@ -28,19 +28,19 @@ package oap.template;
  * Created by igor.petrenko on 19.10.2016.
  */
 public class Join {
-   public final int index;
-   public final int size;
+    public final int index;
+    public final int size;
 
-   public Join( int index, int size ) {
-      this.index = index;
-      this.size = size;
-   }
+    public Join( int index, int size ) {
+        this.index = index;
+        this.size = size;
+    }
 
-   public final boolean isFirst() {
-      return index == 0;
-   }
+    public final boolean isFirst() {
+        return index == 0;
+    }
 
-   public final boolean isLast() {
-      return index == size - 1;
-   }
+    public final boolean isLast() {
+        return index == size - 1;
+    }
 }

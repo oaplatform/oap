@@ -36,37 +36,37 @@ import java.util.function.Consumer;
  * Created by Igor Petrenko on 22.01.2016.
  */
 public class HttpOutputStreamEntity extends AbstractHttpEntity {
-   private final Consumer<OutputStream> cons;
+    private final Consumer<OutputStream> cons;
 
-   public HttpOutputStreamEntity( Consumer<OutputStream> cons, ContentType contentType ) {
-      this.cons = cons;
-      if( contentType != null ) {
-         setContentType( contentType.toString() );
-      }
-   }
+    public HttpOutputStreamEntity( Consumer<OutputStream> cons, ContentType contentType ) {
+        this.cons = cons;
+        if( contentType != null ) {
+            setContentType( contentType.toString() );
+        }
+    }
 
-   @Override
-   public boolean isRepeatable() {
-      return false;
-   }
+    @Override
+    public boolean isRepeatable() {
+        return false;
+    }
 
-   @Override
-   public long getContentLength() {
-      return -1;
-   }
+    @Override
+    public long getContentLength() {
+        return -1;
+    }
 
-   @Override
-   public InputStream getContent() throws IOException, UnsupportedOperationException {
-      throw new UnsupportedOperationException();
-   }
+    @Override
+    public InputStream getContent() throws IOException, UnsupportedOperationException {
+        throw new UnsupportedOperationException();
+    }
 
-   @Override
-   public void writeTo( OutputStream outstream ) throws IOException {
-      cons.accept( outstream );
-   }
+    @Override
+    public void writeTo( OutputStream outstream ) throws IOException {
+        cons.accept( outstream );
+    }
 
-   @Override
-   public boolean isStreaming() {
-      return false;
-   }
+    @Override
+    public boolean isStreaming() {
+        return false;
+    }
 }
