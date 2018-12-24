@@ -244,7 +244,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         this.profiles.addAll( config.profiles );
 
         this.modules.addAll( Stream.of( configurations )
-            .map( module -> Module.CONFIGURATION.fromHocon( module, config.services ) )
+            .map( module -> Module.CONFIGURATION.fromFile( module, config.services ) )
             .toSet() );
         log.debug( "modules = " + Sets.map( this.modules, m -> m.name ) );
         log.trace( "modules configs = " + this.modules );
@@ -272,7 +272,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         if( !plugins.isEmpty() )
             log.warn( "plugins are deprecated. Use standard kernel facilities" );
         for( val url : plugins ) {
-            val plugin = Plugin.CONFIGURATION.fromHocon( url );
+            val plugin = Plugin.CONFIGURATION.fromUrl( url );
 
             for( val export : plugin.export ) {
                 for( val serviceName : export.service ) {

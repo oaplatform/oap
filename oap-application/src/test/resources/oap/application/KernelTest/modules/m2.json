@@ -26,19 +26,6 @@
         "schedule": true,
         "delay": "1s"
       }
-    },
-    "ServiceDepsList": {
-      "implementation": "oap.application.ServiceDepsList",
-      "parameters": {
-        "deps": [
-          "@service:ServiceOne",
-          "@service:ServiceTwo"
-        ]
-      },
-      "dependsOn": [
-        "ServiceOne",
-        "ServiceTwo"
-      ]
     }
   }
 }

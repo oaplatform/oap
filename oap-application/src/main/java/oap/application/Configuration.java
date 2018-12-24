@@ -23,17 +23,17 @@
  */
 package oap.application;
 
+import lombok.val;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.util.Stream;
 import oap.util.Strings;
-import org.apache.commons.collections4.ListUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 public class Configuration<T> {
@@ -52,19 +52,17 @@ public class Configuration<T> {
     }
 
     public List<URL> urlsFromClassPath() {
-        return Stream.of( ListUtils.union(
-            Resources.urls( "META-INF/" + name + ".json" ),
-            Resources.urls( "META-INF/" + name + ".conf" ) ) )
-            .toList();
+        val ret = new ArrayList<URL>();
+        ret.addAll( Resources.urls( "META-INF/" + name + ".json" ) );
+        ret.addAll( Resources.urls( "META-INF/" + name + ".conf" ) );
+        ret.addAll( Resources.urls( "META-INF/" + name + ".yaml" ) );
+        ret.addAll( Resources.urls( "META-INF/" + name + ".yml" ) );
+
+        return ret;
     }
 
     public T fromUrl( URL url ) {
-        return fromHocon( Strings.readString( url ) );
-    }
-
-    public T fromHocon( String hocon ) {
-        Objects.nonNull( hocon );
-        return Binder.hocon.unmarshal( clazz, hocon );
+        return Binder.getBinder( url ).unmarshal( clazz, Strings.readString( url ) );
     }
 
     public T fromResource( Class<?> contextClass, String name ) {

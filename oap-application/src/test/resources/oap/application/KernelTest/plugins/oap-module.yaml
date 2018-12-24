@@ -1,0 +1,8 @@
+services:
+  service1:
+    implementation: "oap.application.KernelTest$Service1"
+
+  service2:
+    implementation: "oap.application.KernelTest$Service2"
+    parameters:
+      val: val1

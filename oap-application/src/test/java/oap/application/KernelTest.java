@@ -97,7 +97,8 @@ public class KernelTest extends AbstractTest {
         System.setProperty( "failedValue", "value that can fail config parsing" );
         List<URL> modules = Lists.of(
             urlOfTestResource( getClass(), "modules/m1.conf" ),
-            urlOfTestResource( getClass(), "modules/m2.json" )
+            urlOfTestResource( getClass(), "modules/m2.json" ),
+            urlOfTestResource( getClass(), "modules/m3.yaml" )
         );
 
         Kernel kernel = new Kernel( modules, empty() );
@@ -220,8 +221,8 @@ public class KernelTest extends AbstractTest {
     @Test
     public void testPlugins() {
         val kernel = new Kernel(
-            Lists.of( urlOfTestResource( getClass(), "plugins/oap-module.conf" ) ),
-            Lists.of( urlOfTestResource( getClass(), "plugins/oap-plugin.conf" ) )
+            Lists.of( urlOfTestResource( getClass(), "plugins/oap-module.yaml" ) ),
+            Lists.of( urlOfTestResource( getClass(), "plugins/oap-plugin.yaml" ) )
         );
 
         try {

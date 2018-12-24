@@ -1,0 +1,4 @@
+name: test
+services:
+  test:
+    implementation: "oap.application.spring.SpringKernelTest$TestService"

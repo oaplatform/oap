@@ -1,0 +1,8 @@
+export:
+  - service:
+      - service1
+    parameters:
+      list:
+        - service2
+      ref:
+        - service2

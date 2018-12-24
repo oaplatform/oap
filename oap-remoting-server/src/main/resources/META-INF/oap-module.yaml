@@ -1,0 +1,25 @@
+name: oap-remoting-server
+dependsOn:
+- oap-http
+services:
+  remoting:
+    profile: remoting
+    implementation: "oap.application.remote.Remote"
+    parameters:
+      server: "@service:oap-http-server"
+      context: remote
+      serialization: DEFAULT
+    supervision:
+      supervise: true
+
+  remoting-listener:
+    profile: remoting
+    dependsOn:
+    - oap-http-server
+    implementation: oap.http.SecureHttpListener
+    parameters:
+      port: 8980
+      server: "@service:oap-http-server"
+      private_network: false
+    supervision:
+      thread: true

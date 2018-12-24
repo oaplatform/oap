@@ -21,27 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application;
 
-import oap.json.Binder;
+package oap.json;
 
-import java.net.URL;
-import java.util.Map;
+import lombok.val;
+import org.testng.annotations.Test;
 
-public class ModuleConfiguration extends Configuration<Module> {
-    public ModuleConfiguration() {
-        super( Module.class, "oap-module" );
+import static org.assertj.core.api.Assertions.assertThat;
+
+
+/**
+ * Created by Igor Petrenko on 01.12.2015.
+ */
+public class BinderYamlTest {
+    @Test
+    public void testYaml() {
+        val pattern = "test:\n  b: 10";
+        val obj = Binder.yaml.<BeanPattern>unmarshal( BeanPattern.class, pattern );
+
+        assertThat( obj.test.b ).isEqualTo( 10 );
     }
 
-    public Module fromFile( URL url, Map<String, Map<String, Object>> config ) {
-        Module module = super.fromUrl( url );
+    public static class BeanPattern {
+        public static class Test1 {
+            public int b;
+        }
 
-        module.services
-            .entrySet()
-            .stream()
-            .filter( e -> config.containsKey( e.getKey() ) )
-            .forEach( e -> Binder.update( e.getValue(), config.get( e.getKey() ) ) );
-
-        return module;
+        public Test1 test;
     }
 }

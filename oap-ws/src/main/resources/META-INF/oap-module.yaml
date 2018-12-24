@@ -1,0 +1,87 @@
+name: oap-ws
+dependsOn:
+- oap-http
+services:
+  oap-ws-webservices:
+    implementation: oap.ws.WebServices
+    parameters:
+      server: "@service:oap-http-server"
+      sessionManager: "@service:session-manager"
+      globalCorsPolicy: "@service:corsPolicy-generic"
+      defaultResponse: JSON
+      exceptionToHttpCode:
+        "oap.storage.ConstraintException": 400
+    supervision.supervise: true
+    dependsOn:
+    - oap-http-server
+    - session-manager
+    - corsPolicy-generic
+    - corsPolicy-subdomain
+
+  corsPolicy-generic:
+    implementation: oap.http.cors.GenericCorsPolicy
+    parameters:
+      allowOrigin: "*"
+      allowHeaders: "Content-type, Authorization"
+      allowCredentials: true
+      allowMethods: [HEAD, POST, GET, PUT, DELETE, OPTIONS]
+
+  corsPolicy-subdomain:
+    implementation: oap.http.cors.PatternCorsPolicy
+    parameters:
+      domainRegexp: "^[^:/]*\\.oaplatform\\.org$"
+      allowHeaders: "Content-type, Authorization"
+      allowCredentials: true
+      allowMethods: [HEAD, POST, GET, PUT, DELETE, OPTIONS]
+
+  session-manager:
+    implementation: oap.ws.SessionManager
+    parameters:
+      expirationTime: 60
+      cookieDomain: ""
+      cookiePath: "/"
+    supervision:
+      supervise: true
+
+  plain-http-listener:
+    profile: plain-listener
+    implementation: oap.http.PlainHttpListener
+    parameters:
+      port: 8880
+      server: "@service:oap-http-server"
+    supervision:
+      thread: true
+    dependsOn:
+    - oap-http-server
+
+  secure-http-listener:
+    profile: secure-listener
+    implementation: oap.http.SecureHttpListener
+    parameters:
+      port: 8443
+      server: "@service:oap-http-server"
+      keystoreLocation: "/etc/oap/keystore.jks"
+      keystorePassword: "changeit"
+    dependsOn:
+    - oap-http-server
+    supervision:
+      thread: true
+
+  token-service:
+    profile: "ws-security"
+    implementation: oap.ws.security.TokenService
+    remoteName: "ws-token"
+
+  security-interceptor-https:
+    name: security-interceptor
+    profile: "ws-security"
+    implementation: oap.ws.security.SecurityInterceptor
+    parameters:
+      tokenService: "@service:token-service"
+    dependsOn:
+    - token-service
+
+  security-interceptor-mock:
+    name: security-interceptor
+    profile: "ws-security-mock"
+    implementation: oap.ws.security.MockSecurityInterceptor

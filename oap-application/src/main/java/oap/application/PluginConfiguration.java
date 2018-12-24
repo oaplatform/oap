@@ -23,17 +23,9 @@
  */
 package oap.application;
 
-import oap.util.Strings;
-
-import java.net.URL;
-
 @Deprecated
 public class PluginConfiguration extends Configuration<Plugin> {
     public PluginConfiguration() {
         super( Plugin.class, "oap-plugin" );
-    }
-
-    public Plugin fromHocon( URL hocon ) {
-        return fromHocon( Strings.readString( hocon ) );
     }
 }

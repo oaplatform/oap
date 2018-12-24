@@ -42,6 +42,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.fasterxml.jackson.datatype.joda.cfg.JacksonJodaDateFormat;
@@ -80,6 +81,7 @@ public class Binder {
     public static final Binder jsonWithTyping;
     public static final Binder xml;
     public static final Binder xmlWithTyping;
+    public static final Binder yaml;
     private static final JacksonJodaDateFormat JACKSON_DATE_FORMAT = new JacksonJodaDateFormat( Dates.PARSER_FULL );
     private static Set<Module> modules;
 
@@ -97,12 +99,23 @@ public class Binder {
             new Binder( initialize( new ObjectMapper( new HoconFactory() ), false, false ) );
         hocon =
             new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false, false ) );
+
+        yaml = new Binder( initialize( new ObjectMapper( new YAMLFactory() ), false, false ) );
     }
 
     private ObjectMapper mapper;
 
     public Binder( ObjectMapper mapper ) {
         this.mapper = mapper;
+    }
+
+    public static Binder getBinder( URL url ) {
+        val strUrl = url.toString().toLowerCase();
+        if( strUrl.endsWith( "json" ) ) return Binder.json;
+        else if( strUrl.endsWith( "conf" ) ) return Binder.hocon;
+        else if( strUrl.endsWith( "yaml" ) ) return Binder.yaml;
+        else if( strUrl.endsWith( "yml" ) ) return Binder.yaml;
+        else return Binder.hocon;
     }
 
     public static Binder hoconWithConfig( String... config ) {
