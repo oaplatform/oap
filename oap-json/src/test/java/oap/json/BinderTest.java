@@ -223,8 +223,6 @@ public class BinderTest extends AbstractTest {
         assertBind( BeanAnyRef.class, new BeanAnyRef( "str" ) );
         assertBind( BeanAnyRef.class, new BeanAnyRef( TestEnum.B ) );
         assertBind( BeanAnyRef.class, new BeanAnyRef( new EnumBean( TestEnum.B ) ) );
-//        assertException( new JsonException( "a requires :type hint" ),
-//            () -> Binder.unmarshalString( BeanAnyRef.class, "{\"a\":\"str\"}" ) );
     }
 
     @Test
@@ -241,9 +239,16 @@ public class BinderTest extends AbstractTest {
     }
 
     @Test
-    public void bindMap_xml() {
+    public void bindMapXml() {
         assertBindXml( MapBean.class, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
         assertString( Binder.xml.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ) )
+            .isEqualTo( "<MapBean><map><a>1</a><b>2</b></map></MapBean>" );
+    }
+
+    @Test
+    public void bindMapXmlCaseInsensitive() {
+        assertString( Binder.xml.marshal( Binder.xml.unmarshal( MapBean.class,
+            "<MapBean><Map><a>1</a><b>2</b></Map></MapBean>" ) ) )
             .isEqualTo( "<MapBean><map><a>1</a><b>2</b></map></MapBean>" );
     }
 
