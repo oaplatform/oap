@@ -43,6 +43,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
@@ -142,6 +143,7 @@ public class Binder {
     private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping, boolean nonNullInclusion ) {
         if( mapper instanceof XmlMapper ) {
             ( ( XmlMapper ) mapper ).setDefaultUseWrapper( false );
+            ( ( XmlMapper ) mapper ).configure( ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true );
         }
         AnnotationIntrospector introspector = new JacksonAnnotationIntrospector();
         mapper.getDeserializationConfig().with( introspector );

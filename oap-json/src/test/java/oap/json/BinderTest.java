@@ -245,14 +245,14 @@ public class BinderTest extends AbstractTest {
     public void bindMapXml() {
         assertBindXml( MapBean.class, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
         assertString( Binder.xml.marshal( new MapBean( __( "a", 1L ), __( "b", 2L ) ) ) )
-            .isEqualTo( "<MapBean><map><a>1</a><b>2</b></map></MapBean>" );
+            .isEqualTo( "<?xml version='1.0' encoding='UTF-8'?><MapBean><map><a>1</a><b>2</b></map></MapBean>" );
     }
 
     @Test( enabled = false )
     public void bindMapXmlCaseInsensitive() {
         assertString( Binder.xml.marshal( Binder.xml.unmarshal( CaseSensXmlBean.class,
-            "<CaseSensXmlBean><Bean></Bean></CaseSensXmlBean>" ) ) )
-            .isEqualTo( "<CaseSensXmlBean><bean><i>0</i><l>0</l><bean></CaseSensXmlBean>" );
+            "<?xml version='1.0' encoding='UTF-8'?><CaseSensXmlBean><Bean></Bean></CaseSensXmlBean>" ) ) )
+            .isEqualTo( "<?xml version='1.0' encoding='UTF-8'?><CaseSensXmlBean><bean><i>0</i><l>0</l><bean></CaseSensXmlBean>" );
     }
 
     @Test
