@@ -27,6 +27,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.val;
@@ -246,11 +248,11 @@ public class BinderTest extends AbstractTest {
             .isEqualTo( "<MapBean><map><a>1</a><b>2</b></map></MapBean>" );
     }
 
-    @Test
+    @Test( enabled = false )
     public void bindMapXmlCaseInsensitive() {
-        assertString( Binder.xml.marshal( Binder.xml.unmarshal( MapBean.class,
-            "<MapBean><Map><a>1</a><b>2</b></Map></MapBean>" ) ) )
-            .isEqualTo( "<MapBean><map><a>1</a><b>2</b></map></MapBean>" );
+        assertString( Binder.xml.marshal( Binder.xml.unmarshal( CaseSensXmlBean.class,
+            "<CaseSensXmlBean><Bean></Bean></CaseSensXmlBean>" ) ) )
+            .isEqualTo( "<CaseSensXmlBean><bean><i>0</i><l>0</l><bean></CaseSensXmlBean>" );
     }
 
     @Test
@@ -574,4 +576,10 @@ class Complex {
         this.list = list;
         this.map = map;
     }
+}
+
+class CaseSensXmlBean {
+    @JacksonXmlProperty( localName = "bean" )
+    @JacksonXmlElementWrapper( useWrapping = false )
+    List<Bean> beans = new ArrayList<>();
 }

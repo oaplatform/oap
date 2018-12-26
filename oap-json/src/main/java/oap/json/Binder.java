@@ -157,7 +157,7 @@ public class Binder {
         mapper.disable( SerializationFeature.WRITE_EMPTY_JSON_ARRAYS );
         mapper.disable( SerializationFeature.FAIL_ON_EMPTY_BEANS );
         mapper.configure( JsonGenerator.Feature.AUTO_CLOSE_TARGET, false );
-        mapper.configure( MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true );
+        mapper.enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         if( !nonNullInclusion ) mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
 
