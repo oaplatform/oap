@@ -31,6 +31,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.val;
 import oap.concurrent.LongAdder;
+import oap.json.testng.JsonAsserts;
 import oap.reflect.TypeRef;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
@@ -251,6 +252,13 @@ public class BinderTest extends AbstractTest {
             "<MapBean><Map><a>1</a><b>2</b></Map></MapBean>" ) ) )
             .isEqualTo( "<MapBean><map><a>1</a><b>2</b></map></MapBean>" );
     }
+
+    @Test
+    public void emptyListNotIncluded() {
+        JsonAsserts.assertJson( Binder.json.marshal( new Complex( null, Lists.empty(), Maps.empty() ) ) )
+            .isEqualTo( "{}" );
+    }
+
 
     @Test
     void optional() {

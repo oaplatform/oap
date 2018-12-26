@@ -154,10 +154,10 @@ public class Binder {
         mapper.enable( JsonParser.Feature.ALLOW_SINGLE_QUOTES );
         mapper.disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES );
         mapper.disable( SerializationFeature.WRITE_DATES_AS_TIMESTAMPS );
+        mapper.disable( SerializationFeature.WRITE_EMPTY_JSON_ARRAYS );
         mapper.disable( SerializationFeature.FAIL_ON_EMPTY_BEANS );
         mapper.configure( JsonGenerator.Feature.AUTO_CLOSE_TARGET, false );
         mapper.configure( MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true );
-        mapper.setSerializationInclusion( JsonInclude.Include.NON_EMPTY );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
         if( !nonNullInclusion ) mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
 
