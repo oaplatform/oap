@@ -11,7 +11,8 @@ services:
       defaultResponse: JSON
       exceptionToHttpCode:
         "oap.storage.ConstraintException": 400
-    supervision.supervise: true
+    supervision:
+      supervise: true
     dependsOn:
     - oap-http-server
     - session-manager

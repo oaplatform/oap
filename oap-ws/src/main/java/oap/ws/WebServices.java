@@ -23,7 +23,6 @@
  */
 package oap.ws;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Application;
@@ -122,7 +121,6 @@ public class WebServices {
         }
     }
 
-    @VisibleForTesting
     public void bind( String context, CorsPolicy corsPolicy, Object impl, boolean sessionAware, SessionManager sessionManager,
                       List<Interceptor> interceptors, Protocol protocol ) {
         server.bind( context, corsPolicy,
