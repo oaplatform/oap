@@ -37,7 +37,7 @@ public final class Throwables {
     public static RuntimeException propagate( Throwable throwable ) throws RuntimeException {
         if( throwable instanceof IOException ) throw new UncheckedIOException( ( IOException ) throwable );
         else if( throwable instanceof RuntimeException ) throw ( RuntimeException ) throwable;
-        throw new WrappingRuntimeException( throwable );
+        throw new UncheckedException( throwable );
     }
 
     public static Throwable getRootCause( Throwable throwable ) {

@@ -25,18 +25,21 @@ package oap.ws.validate;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import oap.reflect.Reflection;
 import oap.util.Lists;
 import oap.util.Mergeable;
 import oap.ws.WsClientException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static oap.ws.validate.Validators.forParameter;
 
 @ToString
 @EqualsAndHashCode
-public class ValidationErrors implements Mergeable<ValidationErrors> {
+public final class ValidationErrors implements Mergeable<ValidationErrors> {
     public static final int DEFAULT_CODE = HTTP_BAD_REQUEST;
     public final List<String> errors = new ArrayList<>();
     public int code;
@@ -92,7 +95,15 @@ public class ValidationErrors implements Mergeable<ValidationErrors> {
         return this;
     }
 
-    public boolean isFailed() {
+    public ValidationErrors validateParameters( Map<Reflection.Parameter, Object> values, Reflection.Method method, Object instance, boolean beforeUnmarshaling ) {
+        values.forEach( ( parameter, value ) ->
+            merge( forParameter( method, parameter, instance, beforeUnmarshaling )
+                .validate( value, values )
+            ) );
+        return this;
+    }
+
+    public boolean failed() {
         return !errors.isEmpty();
     }
 
@@ -100,8 +111,9 @@ public class ValidationErrors implements Mergeable<ValidationErrors> {
         return code == DEFAULT_CODE;
     }
 
-    public void throwIfInvalid() throws WsClientException {
-        if( isFailed() )
+    public ValidationErrors throwIfInvalid() throws WsClientException {
+        if( failed() )
             throw new WsClientException( errors.size() > 1 ? "validation failed" : errors.get( 0 ), code, errors );
+        return this;
     }
 }

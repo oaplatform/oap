@@ -32,7 +32,6 @@ import oap.reflect.Reflection;
 import oap.util.Strings;
 import oap.ws.WsClientException;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,7 +49,7 @@ public class JsonValidatorPeer implements ValidatorPeer {
     }
 
     @Override
-    public ValidationErrors validate( Object value, LinkedHashMap<Reflection.Parameter, Object> originalValues ) {
+    public ValidationErrors validate( Object value, Map<Reflection.Parameter, Object> originalValues ) {
         try {
             final Map mapValue = Binder.json.unmarshal( Map.class, ( String ) value );
 
@@ -62,7 +61,7 @@ public class JsonValidatorPeer implements ValidatorPeer {
         }
     }
 
-    private JsonSchema getJsonSchema( LinkedHashMap<Reflection.Parameter, Object> originalValues ) {
+    private JsonSchema getJsonSchema( Map<Reflection.Parameter, Object> originalValues ) {
         if( !dynamic ) return cache.computeIfAbsent( Strings.UNDEFINED, s -> JsonSchema.schema( schemaRef ) );
 
         log.trace( "dynamic schema ref {}", schemaRef );

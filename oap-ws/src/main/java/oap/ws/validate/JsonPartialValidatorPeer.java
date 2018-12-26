@@ -36,20 +36,19 @@ import oap.ws.WsClientException;
 import oap.ws.WsException;
 
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
 public class JsonPartialValidatorPeer implements ValidatorPeer {
-    private final JsonSchema factory;
+    private final JsonSchema schema;
     private final WsPartialValidateJson validate;
     private final Reflection.Method method;
     private final Object instance;
 
     public JsonPartialValidatorPeer( WsPartialValidateJson validate, Reflection.Method targetMethod, Object instance, Type type ) {
-        this.factory = JsonSchema.schema( validate.schema() );
+        this.schema = JsonSchema.schema( validate.schema() );
         this.validate = validate;
         this.instance = instance;
         this.method = Reflect.reflect( instance.getClass() )
@@ -57,10 +56,10 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
             .orElseThrow( () -> new WsException( "No such method " + validate.methodName() ) );
     }
 
-    private static Object getValue( final LinkedHashMap<Reflection.Parameter, Object> originalValues,
-                                    final String idName ) {
-        return originalValues.entrySet().stream()
-            .filter( p -> p.getKey().name().equals( idName ) )
+    private static Object getValue( Map<Reflection.Parameter, Object> originalValues, String name ) {
+        return originalValues.entrySet()
+            .stream()
+            .filter( p -> p.getKey().name().equals( name ) )
             .findFirst()
             .get()
             .getValue();
@@ -68,45 +67,44 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
 
     @Override
     @SneakyThrows
-    public ValidationErrors validate( Object value, LinkedHashMap<Reflection.Parameter, Object> originalValues ) {
+    @SuppressWarnings( "unchecked" )
+    public ValidationErrors validate( Object value, Map<Reflection.Parameter, Object> originalValues ) {
         try {
-            final Object objectId = getValue( originalValues, validate.idParameterName() );
+            Object objectId = getValue( originalValues, validate.idParameterName() );
 
-            final String id = objectId instanceof Optional
+            String id = objectId instanceof Optional
                 ? ( ( Optional ) objectId ).get().toString() : objectId.toString();
 
-            final Object root = method.invoke( instance, id );
+            Object root = method.invoke( instance, id );
 
-            if( root == null ) {
-                return ValidationErrors.empty();
-            }
+            if( root == null ) return ValidationErrors.empty();
 
-            final String fetchedRoot = Binder.json.marshal( Binder.json.clone( root ) );
+            String fetchedRoot = Binder.json.marshal( Binder.json.clone( root ) );
 
             log.trace( "Retrieved object [{}] with id [{}]", fetchedRoot, id );
 
-            final Map rootMap = Binder.json.unmarshal( Map.class, fetchedRoot );
-            final Map partialValue = Binder.json.unmarshal( Map.class, ( String ) value );
+            Map<Object, Object> rootMap = Binder.json.unmarshal( Map.class, fetchedRoot );
+            Map<Object, Object> partialValue = Binder.json.unmarshal( Map.class, ( String ) value );
 
-            Map child = rootMap;
+            Map<Object, Object> child = rootMap;
             for( String pathElement : validate.path().split( "(?<=})\\." ) ) {
 
                 if( pathElement.contains( "$" ) ) {
-                    final String[] split = pathElement.split( "\\." );
+                    String[] split = pathElement.split( "\\." );
 
-                    final Object next = child.get( split[0] );
+                    Object next = child.get( split[0] );
 
                     Preconditions.checkState( next != null, "schema has no elements for value " + split[0] );
                     Preconditions.checkState( next instanceof List, split[0] + " should be of type list" );
 
-                    final Object idValue = ( ( Optional ) getValue( originalValues,
+                    Object idValue = ( ( Optional ) getValue( originalValues,
                         split[1].replaceAll( "\\$|\\{|\\}", "" ) ) ).get();
 
-                    final Optional matchedChild = ( ( List ) next ).stream()
+                    Optional matchedChild = ( ( List<Object> ) next ).stream()
                         .filter( o -> idValue.equals( ( ( Map ) o ).get( "id" ).toString() ) )
                         .findFirst();
 
-                    child = ( Map ) matchedChild.get();
+                    child = ( Map<Object, Object> ) matchedChild.get();
 
                     continue;
                 }
@@ -135,7 +133,7 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
                 }
             }
 
-            return ValidationErrors.errors( factory.validate( rootMap, validate.ignoreRequired() ) );
+            return ValidationErrors.errors( schema.validate( rootMap, validate.ignoreRequired() ) );
         } catch( JsonException e ) {
             throw new WsClientException( e.getMessage(), e );
         }

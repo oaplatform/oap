@@ -42,7 +42,7 @@ import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Throwables;
-import oap.util.WrappingRuntimeException;
+import oap.util.UncheckedException;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
@@ -72,21 +72,21 @@ import static oap.ws.WsResponse.TEXT;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 @Slf4j
-public class WsService implements Handler {
+public class WebService implements Handler {
     private final boolean sessionAware;
     private final Reflection reflection;
     private final WsResponse defaultResponse;
     private final HashMap<Class<?>, Integer> exceptionToHttpCode = new HashMap<>();
     private final SessionManager sessionManager;
     private final List<Interceptor> interceptors;
-    private Object impl;
+    private Object instance;
     private Map<String, Pattern> compiledPaths = new HashMap<>();
 
-    public WsService( Object impl, boolean sessionAware,
-                      SessionManager sessionManager, List<Interceptor> interceptors, WsResponse defaultResponse,
-                      Map<String, Integer> exceptionToHttpCode ) {
-        this.impl = impl;
-        this.reflection = Reflect.reflect( impl.getClass() );
+    public WebService( Object instance, boolean sessionAware,
+                       SessionManager sessionManager, List<Interceptor> interceptors, WsResponse defaultResponse,
+                       Map<String, Integer> exceptionToHttpCode ) {
+        this.instance = instance;
+        this.reflection = Reflect.reflect( instance.getClass() );
         this.defaultResponse = defaultResponse;
         this.reflection.methods.forEach( m -> m.findAnnotation( WsMethod.class )
             .ifPresent( a -> compiledPaths.put( a.path(), WsServices.compile( a.path() ) ) )
@@ -107,7 +107,7 @@ public class WsService implements Handler {
     private void wsError( Response response, Throwable e ) {
         if( e instanceof ReflectException && e.getCause() != null )
             wsError( response, e.getCause() );
-        else if( e instanceof WrappingRuntimeException && e.getCause() != null )
+        else if( e instanceof UncheckedException && e.getCause() != null )
             wsError( response, e.getCause() );
         else if( e instanceof InvocationTargetException )
             wsError( response, ( ( InvocationTargetException ) e ).getTargetException() );
@@ -202,7 +202,7 @@ public class WsService implements Handler {
     }
 
     public String service() {
-        return impl.getClass().getSimpleName();
+        return instance.getClass().getSimpleName();
     }
 
     private void handleInternal( Request request, Response response, Reflection.Method method,
@@ -211,107 +211,90 @@ public class WsService implements Handler {
 
         Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
 
-        Function<Reflection.Parameter, Object> func = ( p ) -> {
+        Function<Reflection.Parameter, Object> func = p -> {
             val ret = getValue( session, request, wsMethod, p ).orElse( Optional.empty() );
             if( ret instanceof Optional ) return ( ( Optional<?> ) ret ).orElse( null );
 
             return ret;
         };
 
-        HttpResponse interceptorResponse =
-            session != null
-                ? runInterceptors( request, session._2, method, func )
+        HttpResponse interceptorResponse = session != null
+            ? runInterceptors( request, session._2, method, func )
+            : null;
+
+        if( interceptorResponse != null ) response.respond( interceptorResponse );
+        else Metrics.measureTimer( name, () -> {
+            List<Reflection.Parameter> parameters = method.parameters;
+            LinkedHashMap<Reflection.Parameter, Object> originalValues = getOriginalValues( session, parameters, request, wsMethod );
+
+            ValidationErrors paramValidation = ValidationErrors.empty()
+                .validateParameters( originalValues, method, instance, true )
+                .throwIfInvalid();
+
+            Validators.forMethod( method, instance, true )
+                .validate( originalValues.values().toArray( new Object[originalValues.size()] ), originalValues )
+                .throwIfInvalid();
+
+            LinkedHashMap<Reflection.Parameter, Object> values = getValues( originalValues );
+
+            paramValidation
+                .validateParameters( values, method, instance, false )
+                .throwIfInvalid();
+
+            Object[] paramValues = values.values().toArray( new Object[values.size()] );
+
+            Validators.forMethod( method, instance, false )
+                .validate( paramValues, values )
+                .throwIfInvalid();
+
+            Object result = method.invoke( instance, paramValues );
+
+            Boolean isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
+            ContentType produces =
+                wsMethod.map( wsm -> ContentType.create( wsm.produces() )
+                    .withCharset( UTF_8 ) )
+                    .orElse( APPLICATION_JSON );
+
+            String cookie = session != null
+                ? new HttpResponse.CookieBuilder()
+                .withSID( session._1 )
+                .withPath( sessionManager.cookiePath )
+                .withExpires( DateTime.now().plusMinutes( sessionManager.cookieExpiration ) )
+                .withDomain( sessionManager.cookieDomain )
+                .build()
                 : null;
 
-        if( interceptorResponse != null ) {
-            response.respond( interceptorResponse );
-        } else {
-            Metrics.measureTimer( name, () -> {
-                List<Reflection.Parameter> parameters = method.parameters;
-                LinkedHashMap<Reflection.Parameter, Object> originalValues = getOriginalValues( session, parameters, request, wsMethod );
-
-                ValidationErrors paramValidation = ValidationErrors.empty();
-
-                originalValues.forEach( ( parameter, value ) ->
-                    paramValidation.merge(
-                        Validators
-                            .forParameter( method, parameter, impl, true )
-                            .validate( value, originalValues )
-                    )
+            if( method.isVoid() ) response.respond( NO_CONTENT );
+            else if( result instanceof HttpResponse )
+                response.respond( ( ( HttpResponse ) result ).withCookie( cookie ) );
+            else if( result instanceof Optional<?> ) {
+                response.respond(
+                    ( ( Optional<?> ) result )
+                        .map( r -> HttpResponse.ok( runPostInterceptors( r, session, method ), isRaw, produces )
+                            .withCookie( cookie ) )
+                        .orElse( NOT_FOUND )
                 );
-
-                paramValidation.throwIfInvalid();
-
-                Validators.forMethod( method, impl, true )
-                    .validate( originalValues.values().toArray( new Object[originalValues.size()] ), originalValues )
-                    .throwIfInvalid();
-
-                LinkedHashMap<Reflection.Parameter, Object> values = getValues( originalValues );
-                Object[] paramValues = values.values().toArray( new Object[values.size()] );
-
-                values.forEach( ( parameter, value ) ->
-                    paramValidation.merge(
-                        Validators
-                            .forParameter( method, parameter, impl, false )
-                            .validate( value, values )
-                    ) );
-
-                paramValidation.throwIfInvalid();
-
-                Validators.forMethod( method, impl, false )
-                    .validate( paramValues, values )
-                    .throwIfInvalid();
-
-                Object result = method.invoke( impl, paramValues );
-
-                Boolean isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
-                ContentType produces =
-                    wsMethod.map( wsm -> ContentType.create( wsm.produces() )
-                        .withCharset( UTF_8 ) )
-                        .orElse( APPLICATION_JSON );
-
-                String cookie = session != null
-                    ? new HttpResponse.CookieBuilder()
-                    .withSID( session._1 )
-                    .withPath( sessionManager.cookiePath )
-                    .withExpires( DateTime.now().plusMinutes( sessionManager.cookieExpiration ) )
-                    .withDomain( sessionManager.cookieDomain )
-                    .withDomain( sessionManager.cookieDomain )
-                    .build()
-                    : null;
-
-                if( method.isVoid() ) response.respond( NO_CONTENT );
-                else if( result instanceof HttpResponse )
-                    response.respond( ( ( HttpResponse ) result ).withCookie( cookie ) );
-                else if( result instanceof Optional<?> ) {
-                    response.respond(
-                        ( ( Optional<?> ) result )
-                            .map( r -> HttpResponse.ok( runPostInterceptors( r, session, method ), isRaw, produces )
-                                .withCookie( cookie ) )
-                            .orElse( NOT_FOUND )
-                    );
-                } else if( result instanceof Result<?, ?> ) {
-                    Result<HttpResponse, HttpResponse> resp = ( ( Result<?, ?> ) result )
-                        .mapSuccess( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) )
-                        .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r )
-                            .withCookie( cookie ) );
-
-                    response.respond( resp.isSuccess() ? ( ( Result<?, ?> ) result )
-                        .mapSuccess( r -> HttpResponse.ok( runPostInterceptors( r, session, method ), isRaw, produces )
-                            .withCookie( cookie ) ).successValue
-                        : ( ( Result<?, ?> ) result )
-                            .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r ).withCookie( cookie ) )
-                            .failureValue );
-
-                } else if( result instanceof Stream<?> ) {
-                    response.respond(
-                        HttpResponse.stream( ( ( Stream<?> ) result ).map( v -> runPostInterceptors( v, session, method ) ), isRaw, produces )
-                            .withCookie( cookie ) );
-                } else
-                    response.respond( HttpResponse.ok( runPostInterceptors( result, session, method ), isRaw, produces )
+            } else if( result instanceof Result<?, ?> ) {
+                Result<HttpResponse, HttpResponse> resp = ( ( Result<?, ?> ) result )
+                    .mapSuccess( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) )
+                    .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r )
                         .withCookie( cookie ) );
-            } );
-        }
+
+                response.respond( resp.isSuccess() ? ( ( Result<?, ?> ) result )
+                    .mapSuccess( r -> HttpResponse.ok( runPostInterceptors( r, session, method ), isRaw, produces )
+                        .withCookie( cookie ) ).successValue
+                    : ( ( Result<?, ?> ) result )
+                        .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r ).withCookie( cookie ) )
+                        .failureValue );
+
+            } else if( result instanceof Stream<?> ) {
+                response.respond(
+                    HttpResponse.stream( ( ( Stream<?> ) result ).map( v -> runPostInterceptors( v, session, method ) ), isRaw, produces )
+                        .withCookie( cookie ) );
+            } else
+                response.respond( HttpResponse.ok( runPostInterceptors( result, session, method ), isRaw, produces )
+                    .withCookie( cookie ) );
+        } );
     }
 
     private Object runPostInterceptors( Object value, Pair<String, Session> session, Reflection.Method method ) {
@@ -347,6 +330,7 @@ public class WsService implements Handler {
             if( value instanceof Optional ) return map( reflection, ( ( Optional ) value ).get() );
             if( reflection.isEnum() ) return Enum.valueOf( ( Class<Enum> ) reflection.underlying, ( String ) value );
 
+            // what is this for? I sincerelly hope there is a test for it.
             if( !( value instanceof String ) && Collection.class.isAssignableFrom( reflection.underlying ) )
                 value = Binder.json.marshal( value );
             if( reflection.underlying.isInstance( value ) ) return value;
@@ -360,9 +344,7 @@ public class WsService implements Handler {
 
         for( Interceptor interceptor : interceptors ) {
             val interceptorResponse = interceptor.intercept( request, session, method, getParameterValueFunc );
-            if( interceptorResponse.isPresent() ) {
-                return interceptorResponse.get();
-            }
+            if( interceptorResponse.isPresent() ) return interceptorResponse.get();
         }
 
         return null;
@@ -370,7 +352,7 @@ public class WsService implements Handler {
 
     @Override
     public String toString() {
-        return impl.getClass().getName();
+        return instance.getClass().getName();
     }
 
     private Object unwrap( Reflection.Parameter parameter, Optional<?> opt ) {

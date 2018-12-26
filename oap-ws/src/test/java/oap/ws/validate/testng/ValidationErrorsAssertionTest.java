@@ -26,6 +26,7 @@ package oap.ws.validate.testng;
 
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.WsValidate;
+import oap.ws.validate.WsValidateJson;
 import org.testng.annotations.Test;
 
 import static oap.ws.validate.ValidationErrors.empty;
@@ -56,17 +57,41 @@ public class ValidationErrorsAssertionTest {
             .m( "c" ) )
             .isEqualTo( "c" );
     }
+
+    @Test
+    public void validateSchemaPreUnmarshalValidation() {
+        validating( I.class )
+            .isFailed()
+            .hasCode( 400 )
+            .containsErrors( "/b: required property is missing", "additional properties are not permitted [a]" )
+            .forInstance( new C() )
+            .b( new B() );
+    }
+
+}
+
+@SuppressWarnings( "unused" )
+class B {
+    int a;
 }
 
 interface I {
     String m( String a );
+
+    B b( B b );
 }
 
-
+@SuppressWarnings( "unused" )
 class C implements I {
     @WsValidate( "validateM" )
+    @Override
     public String m( @WsValidate( "validateP" ) String a ) {
         return a;
+    }
+
+    @Override
+    public B b( @WsValidateJson( schema = "/oap/ws/validate/testng/ValidationErrorsAssertionTest/schema.conf" ) B b ) {
+        return b;
     }
 
     public ValidationErrors validateM( String a ) {

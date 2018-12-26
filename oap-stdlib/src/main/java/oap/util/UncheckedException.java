@@ -27,24 +27,24 @@ package oap.util;
 /**
  * Created by anton on 1/4/17.
  */
-public class WrappingRuntimeException extends RuntimeException {
+public class UncheckedException extends RuntimeException {
 
-    public WrappingRuntimeException() {
+    public UncheckedException() {
     }
 
-    public WrappingRuntimeException( String message ) {
+    public UncheckedException( String message ) {
         super( message );
     }
 
-    public WrappingRuntimeException( String message, Throwable cause ) {
+    public UncheckedException( String message, Throwable cause ) {
         super( message, cause );
     }
 
-    public WrappingRuntimeException( Throwable cause ) {
+    public UncheckedException( Throwable cause ) {
         super( cause );
     }
 
-    public WrappingRuntimeException( String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace ) {
+    public UncheckedException( String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace ) {
         super( message, cause, enableSuppression, writableStackTrace );
     }
 }

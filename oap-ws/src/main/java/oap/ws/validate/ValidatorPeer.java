@@ -26,9 +26,10 @@ package oap.ws.validate;
 import oap.reflect.Reflection;
 
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 public interface ValidatorPeer {
-    ValidationErrors validate( Object value, LinkedHashMap<Reflection.Parameter, Object> originalValues );
+    ValidationErrors validate( Object value, Map<Reflection.Parameter, Object> originalValues );
 
     enum Type {
         METHOD, PARAMETER

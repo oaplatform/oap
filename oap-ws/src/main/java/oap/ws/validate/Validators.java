@@ -31,8 +31,8 @@ import oap.reflect.Reflection;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Validators {
@@ -82,11 +82,11 @@ public class Validators {
     public static class Validator {
         private final List<ValidatorPeer> peers = new ArrayList<>();
 
-        public ValidationErrors validate( Object value, LinkedHashMap<Reflection.Parameter, Object> originalValues ) {
+        public ValidationErrors validate( Object value, Map<Reflection.Parameter, Object> originalValues ) {
             ValidationErrors total = ValidationErrors.empty();
             for( ValidatorPeer peer : peers ) {
                 ValidationErrors result = peer.validate( value, originalValues );
-                if( result.isFailed() && !result.hasDefaultCode() ) return result;
+                if( result.failed() && !result.hasDefaultCode() ) return result;
                 total.merge( result );
             }
             return total;

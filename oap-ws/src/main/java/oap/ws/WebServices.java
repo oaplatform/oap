@@ -53,6 +53,7 @@ public class WebServices {
     private final HttpServer server;
     private final SessionManager sessionManager;
     private final CorsPolicy globalCorsPolicy;
+//todo handle this case better
     public WsResponse defaultResponse = WsResponse.TEXT;
 
     public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy ) {
@@ -125,7 +126,7 @@ public class WebServices {
     public void bind( String context, CorsPolicy corsPolicy, Object impl, boolean sessionAware, SessionManager sessionManager,
                       List<Interceptor> interceptors, Protocol protocol ) {
         server.bind( context, corsPolicy,
-            new WsService( impl, sessionAware, sessionManager, interceptors, defaultResponse, exceptionToHttpCode ),
+            new WebService( impl, sessionAware, sessionManager, interceptors, defaultResponse, exceptionToHttpCode ),
             protocol );
     }
 

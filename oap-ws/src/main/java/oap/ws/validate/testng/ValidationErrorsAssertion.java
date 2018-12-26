@@ -23,8 +23,10 @@
  */
 package oap.ws.validate.testng;
 
+import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
+import oap.util.Stream;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.assertj.core.api.AbstractAssert;
@@ -35,9 +37,11 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAssertion, ValidationErrors> {
@@ -70,14 +74,14 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
     }
 
     public ValidationErrorsAssertion isFailed() {
-        assertThat( this.actual.isFailed() )
+        assertThat( this.actual.failed() )
             .withFailMessage( "should contain errors" )
             .isTrue();
         return this;
     }
 
     public ValidationErrorsAssertion isNotFailed() {
-        assertThat( this.actual.isFailed() )
+        assertThat( this.actual.failed() )
             .withFailMessage( "shouldn't contain errors but contain: " + this.actual )
             .isFalse();
         return this;
@@ -128,25 +132,35 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
 
                     List<Reflection.Parameter> parameters = method.parameters;
 
-                    LinkedHashMap<Reflection.Parameter, Object> values = new LinkedHashMap<>();
-                    for( int i = 0; i < parameters.size(); i++ ) values.put( parameters.get( i ), args[i] );
+                    Map<Reflection.Parameter, Object> originalValues = Stream.of( parameters )
+                        .zipWithIndex()
+                        .<Reflection.Parameter, Object>map( ( parameter, i ) -> __( parameter, Binder.json.marshal( args[i] ) ) )
+                        .toMap();
 
-                    for( int i = 0; i < parameters.size(); i++ ) {
-                        Reflection.Parameter parameter = parameters.get( i );
-                        paramErrors.merge( Validators
-                            .forParameter( method, parameter, instance, false )
-                            .validate( args[i], values ) );
-                    }
-                    if( paramErrors.isFailed() ) {
+                    paramErrors.validateParameters( originalValues, method, instance, true );
+
+                    if( paramErrors.failed() ) {
                         runAsserts( paramErrors );
                         return null;
-                    } else {
-                        ValidationErrors methodErrors = Validators
-                            .forMethod( method, instance, false )
-                            .validate( args, values );
-                        runAsserts( methodErrors );
-                        if( methodErrors.isFailed() ) return null;
                     }
+
+                    LinkedHashMap<Reflection.Parameter, Object> values = new LinkedHashMap<>();
+
+                    for( int i = 0; i < parameters.size(); i++ ) values.put( parameters.get( i ), args[i] );
+
+                    paramErrors.validateParameters( values, method, instance, false );
+
+                    if( paramErrors.failed() ) {
+                        runAsserts( paramErrors );
+                        return null;
+                    }
+
+                    ValidationErrors methodErrors = Validators
+                        .forMethod( method, instance, false )
+                        .validate( args, values );
+                    runAsserts( methodErrors );
+                    if( methodErrors.failed() ) return null;
+
                     return method.invoke( instance, args );
                 } )
                 .orElse( null );

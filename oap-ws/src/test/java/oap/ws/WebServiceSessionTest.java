@@ -48,7 +48,7 @@ import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.util.Pair.__;
 import static oap.ws.WsParam.From.SESSION;
 
-public class WsServiceSessionTest {
+public class WebServiceSessionTest {
 
     private final SessionManager sessionManager = new SessionManager( 10, null, "/" );
 
@@ -80,7 +80,7 @@ public class WsServiceSessionTest {
     }
 
     @Test
-    public void testShouldVerifySessionPropagation() {
+    public void sessionPropagation() {
 
         final Session session = new Session();
         LinkedHashMap<Integer, Integer> map = Maps.of( __( 1, 2 ) );
@@ -95,7 +95,7 @@ public class WsServiceSessionTest {
     }
 
     @Test
-    public void testUSER_ID() {
+    public void userId() {
 
         final Session session = new Session();
         session.set( Interceptor.USER_ID, "user_id" );
