@@ -95,17 +95,6 @@ public class BinderTest extends AbstractTest {
         assertThat( result ).isEqualTo( source );
     }
 
-    private static <T> void assertBind( TypeReference<T> ref, T source ) {
-        System.out.println( "========================================" );
-        String json = Binder.json.marshal( source );
-        System.out.println( "JSON:" );
-        System.out.println( json );
-        T result = Binder.json.unmarshal( ref, json );
-        System.out.println( "Object:" );
-        System.out.println( result );
-        assertThat( result ).isEqualTo( source );
-    }
-
     private static <T> void assertBind( TypeRef<T> ref, T source ) {
         System.out.println( "========================================" );
         String json = Binder.json.marshal( source );
@@ -153,8 +142,6 @@ public class BinderTest extends AbstractTest {
 
     @Test
     public void bindList() {
-        assertBind( new TypeReference<ArrayList<Integer>>() {
-        }, Lists.of( 1, 2, 3 ) );
         assertBind( new TypeRef<ArrayList<Integer>>() {
         }, Lists.of( 1, 2, 3 ) );
     }
