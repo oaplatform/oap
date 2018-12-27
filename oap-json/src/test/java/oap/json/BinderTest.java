@@ -567,8 +567,8 @@ class LongAdderBean {
 @EqualsAndHashCode
 class Complex {
     Bean bean;
-    List<Bean> list = new ArrayList<>();
-    Map<String, Bean> map = new LinkedHashMap<>();
+    List<Bean> list;
+    Map<String, Bean> map;
 
 
     public Complex( Bean bean, List<Bean> list, Map<String, Bean> map ) {
