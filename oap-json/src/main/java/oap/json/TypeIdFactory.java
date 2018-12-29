@@ -46,8 +46,8 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class TypeIdFactory implements TypeIdResolver {
-    private final static ConcurrentHashMap<String, Class<?>> idToClass = new ConcurrentHashMap<>();
-    private final static ConcurrentHashMap<Class<?>, String> classToId = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Class<?>> idToClass = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Class<?>, String> classToId = new ConcurrentHashMap<>();
 
     static {
         Resources.urls( "META-INF/json-mapping.properties" )
@@ -56,9 +56,8 @@ public class TypeIdFactory implements TypeIdResolver {
                 try( InputStream is = url.openStream() ) {
                     final Properties properties = new Properties();
                     properties.load( is );
-                    for( String key : properties.stringPropertyNames() ) {
+                    for( String key : properties.stringPropertyNames() )
                         register( Class.forName( properties.getProperty( key ) ), key );
-                    }
                 } catch( IOException e ) {
                     throw new UncheckedIOException( e );
                 } catch( ClassNotFoundException e ) {

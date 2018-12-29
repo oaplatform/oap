@@ -73,8 +73,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static java.util.stream.Collectors.toSet;
-
 @Slf4j
 public class Binder {
     public static final Binder hocon;
@@ -91,7 +89,7 @@ public class Binder {
         modules = Resources
             .lines( "META-INF/jackson.modules" )
             .map( Try.map( clazz -> ( ( Module ) Class.forName( clazz ).newInstance() ) ) )
-            .collect( toSet() );
+            .toSet();
 
         json = new Binder( initialize( new ObjectMapper(), false, false ) );
         jsonWithTyping = new Binder( initialize( new ObjectMapper(), true, false ) );

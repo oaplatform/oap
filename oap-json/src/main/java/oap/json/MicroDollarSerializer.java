@@ -34,7 +34,7 @@ import java.io.IOException;
 public class MicroDollarSerializer extends JsonSerializer<Long> {
     @Override
     public void serialize( Long value, JsonGenerator gen,
-                           SerializerProvider serializers ) throws IOException, JsonProcessingException {
+                           SerializerProvider serializers ) throws IOException {
 
         gen.writeNumber( value / 1000000d );
     }

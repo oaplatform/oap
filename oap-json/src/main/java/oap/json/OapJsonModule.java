@@ -38,8 +38,8 @@ import oap.util.Numbers;
 import java.io.IOException;
 
 public class OapJsonModule extends Module {
-    public final static Version VERSION = VersionUtil.parseVersion(
-        "1.0.0", "oap", "json" );
+    public static final Version VERSION = VersionUtil.parseVersion(
+        "1.0.0", "oap", "oap-json" );
 
     @Override
     public String getModuleName() {
@@ -81,8 +81,8 @@ public class OapJsonModule extends Module {
 
         @Override
         public Long deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
-            return p.hasToken( JsonToken.VALUE_STRING ) ?
-                Numbers.parseLongWithUnits( p.getText().trim() )
+            return p.hasToken( JsonToken.VALUE_STRING )
+                ? Numbers.parseLongWithUnits( p.getText().trim() )
                 : deserializer.deserialize( p, ctxt );
         }
     }

@@ -68,14 +68,14 @@ public class Node implements Serializable {
     }
 
     @SuppressWarnings( "unchecked" )
-    synchronized <TValue extends Value<TValue>> void updateValue( Consumer<TValue> update, Supplier<TValue> create ) {
+    synchronized <V extends Value<V>> void updateValue( Consumer<V> update, Supplier<V> create ) {
         if( v == null ) v = create.get();
-        update.accept( ( TValue ) v );
+        update.accept( ( V ) v );
         this.mt = DateTimeUtils.currentTimeMillis();
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TValue extends Value<TValue>> TValue get( Iterator<String> key ) {
+    public <V extends Value<V>> V get( Iterator<String> key ) {
         Node obj = this;
 
         while( key.hasNext() ) {
@@ -88,7 +88,7 @@ public class Node implements Serializable {
 
         if( obj == null ) return null;
 
-        return ( TValue ) obj.v;
+        return ( V ) obj.v;
     }
 
     @SuppressWarnings( "unchecked" )

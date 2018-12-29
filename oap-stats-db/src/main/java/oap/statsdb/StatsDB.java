@@ -67,44 +67,42 @@ public abstract class StatsDB<T extends StatsDB.Database> {
 
     protected abstract T toDatabase( ConcurrentHashMap<String, Node> db );
 
-    protected <TValue extends Node.Value<TValue>> void update(
-        String[] key, Consumer<TValue> update, Supplier<TValue> create ) {
-
+    protected <V extends Node.Value<V>> void update( String[] key, Consumer<V> update, Supplier<V> create ) {
         storage.update( key[0],
             node -> updateNode( key, update, create, node, schema ),
             () -> updateNode( key, update, create, new IdNode( key[0] ), schema )
         );
     }
 
-    protected <TValue extends Node.Value<TValue>>
-    void update( String key1, Consumer<TValue> update, Supplier<TValue> create ) {
+    protected <V extends Node.Value<V>>
+    void update( String key1, Consumer<V> update, Supplier<V> create ) {
         update( new String[] { key1 }, update, create );
     }
 
-    protected <TValue extends Node.Value<TValue>>
-    void update( String key1, String key2, Consumer<TValue> update, Supplier<TValue> create ) {
+    protected <V extends Node.Value<V>>
+    void update( String key1, String key2, Consumer<V> update, Supplier<V> create ) {
         update( new String[] { key1, key2 }, update, create );
     }
 
-    protected <TValue extends Node.Value<TValue>>
-    void update( String key1, String key2, String key3, Consumer<TValue> update, Supplier<TValue> create ) {
+    protected <V extends Node.Value<V>>
+    void update( String key1, String key2, String key3, Consumer<V> update, Supplier<V> create ) {
         update( new String[] { key1, key2, key3 }, update, create );
     }
 
-    protected <TValue extends Node.Value<TValue>>
-    void update( String key1, String key2, String key3, String key4, Consumer<TValue> update, Supplier<TValue> create ) {
+    protected <V extends Node.Value<V>>
+    void update( String key1, String key2, String key3, String key4, Consumer<V> update, Supplier<V> create ) {
         update( new String[] { key1, key2, key3, key4 }, update, create );
     }
 
-    protected <TValue extends Node.Value<TValue>>
-    void update( String key1, String key2, String key3, String key4, String key5, Consumer<TValue> update, Supplier<TValue> create ) {
+    protected <V extends Node.Value<V>>
+    void update( String key1, String key2, String key3, String key4, String key5, Consumer<V> update, Supplier<V> create ) {
         update( new String[] { key1, key2, key3, key4, key5 }, update, create );
     }
 
     @SuppressWarnings( "unchecked" )
-    public <TValue extends Node.Value<TValue>> TValue get( String... key ) {
+    public <V extends Node.Value<V>> V get( String... key ) {
         val node = getNode( key );
-        return node != null ? ( TValue ) node.v : null;
+        return node != null ? ( V ) node.v : null;
     }
 
     public Node _getNode( String[] key, int position, Node node ) {
@@ -120,22 +118,22 @@ public abstract class StatsDB<T extends StatsDB.Database> {
         return _getNode( key, 1, storage.get( key[0] ).orElse( null ) );
     }
 
-    public <TValue extends Node.Value<TValue>> Stream<TValue> children( String... key ) {
+    public <V extends Node.Value<V>> Stream<V> children( String... key ) {
         if( key.length == 0 ) return Stream.empty();
 
         return _children( key, 1, storage.get( key[0] ).orElse( null ) );
     }
 
     @SuppressWarnings( "unchecked" )
-    private <TValue extends Node.Value<TValue>> Stream<TValue> _children( String[] key, int position, Node node ) {
+    private <V extends Node.Value<V>> Stream<V> _children( String[] key, int position, Node node ) {
         if( node == null ) return Stream.empty();
-        if( position >= key.length ) return Stream.of( node.db.values() ).map( n -> ( TValue ) n.v );
+        if( position >= key.length ) return Stream.of( node.db.values() ).map( n -> ( V ) n.v );
 
         return _children( key, position + 1, node.db.get( key[position] ) );
     }
 
-    public <TNode extends Node, TValue extends Node.Value<TValue>> TNode updateNode(
-        String[] key, Consumer<TValue> update, Supplier<TValue> create, TNode node, KeySchema schema ) {
+    public <N extends Node, V extends Node.Value<V>> N updateNode(
+        String[] key, Consumer<V> update, Supplier<V> create, N node, KeySchema schema ) {
         Node tNode = node;
 
         for( int i = 1; i < key.length; i++ ) {
