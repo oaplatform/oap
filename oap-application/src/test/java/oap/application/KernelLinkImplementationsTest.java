@@ -36,6 +36,7 @@ import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class KernelLinkImplementationsTest extends AbstractTest {
     @BeforeMethod
@@ -79,6 +80,37 @@ public class KernelLinkImplementationsTest extends AbstractTest {
             assertThat( service.tis ).isNotNull();
             assertThat( service.tis.stream().map( Object::toString ).collect( toList() ) )
                 .containsExactlyInAnyOrder( "TestInterfaceImpl1", "TestInterfaceImpl3" );
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
+    public void testFieldReferenceUnknownInterface() {
+        val kernel = new Kernel(
+            singletonList( urlOfTestResource( getClass(), "field-reference-unknown-interface.conf" ) ),
+            emptyList()
+        );
+
+        try {
+            assertThatThrownBy( kernel::start ).isInstanceOf( ApplicationException.class );
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
+    public void testFieldReferencesUnknownInterface() {
+        val kernel = new Kernel(
+            singletonList( urlOfTestResource( getClass(), "field-references-unknown-interface.conf" ) ),
+            emptyList()
+        );
+
+        try {
+            kernel.start();
+            val service = Application.service( FieldReferences.class );
+
+            assertThat( service.tis ).isEmpty();
         } finally {
             kernel.stop();
         }

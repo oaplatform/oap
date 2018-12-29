@@ -42,6 +42,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static oap.util.Optionals.fork;
 
@@ -204,7 +205,9 @@ public class Linker {
         val linkedServices = mapInterfaces.get( linkName );
         log.debug( "for {} linking {} -> {} with {}", serviceName, field, reference, linkedServices );
 
-        val ret = linkedServices.stream().map( ls -> kernel.service( ls ) ).filter( Objects::nonNull ).collect( toList() );
+        val ret = linkedServices != null
+            ? linkedServices.stream().map( ls -> kernel.service( ls ) ).filter( Objects::nonNull ).collect( toList() )
+            : emptyList();
 
         if( ret.size() < minImplementations ) {
             throw new ApplicationException( "for " + serviceName + " service link " + reference + " is not found" );
