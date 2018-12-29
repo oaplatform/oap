@@ -108,7 +108,7 @@ public class Module {
 
         public Reference( int priority, String name ) {
             this.priority = priority;
-            this.name = name.substring( "@service:".length() );
+            this.name = name.substring( name.indexOf( ':' ) + 1 );
         }
 
         public Reference( String name ) {
@@ -117,7 +117,8 @@ public class Module {
 
         @SuppressWarnings( "unchecked" )
         public static Reference of( Object reference ) {
-            if( reference instanceof String ) return new Reference( ( String ) reference );
+            if( reference instanceof String )
+                return new Reference( ( String ) reference );
             if( reference instanceof Map<?, ?> )
                 return Binder.hocon.unmarshal( Reference.class, ( Map<String, Object> ) reference );
             throw new ApplicationException( "could not parse reference " + reference );

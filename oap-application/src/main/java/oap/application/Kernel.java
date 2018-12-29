@@ -35,9 +35,11 @@ import oap.metrics.Metrics;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
+import oap.util.Lists;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
+import org.apache.commons.lang3.ClassUtils;
 
 import java.io.File;
 import java.net.URL;
@@ -82,7 +84,8 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     }
 
     private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
-                                                            Set<String> initialized, ApplicationConfiguration config ) {
+                                                            Set<String> initialized, ApplicationConfiguration config,
+                                                            Map<String, List<String>> mapInterfaces ) {
 
         HashMap<String, Module.Service> deferred = new HashMap<>();
 
@@ -111,7 +114,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
 
                 Object instance;
                 if( !service.isRemoteService() ) try {
-                    instance = linker.link( service, () -> reflect.newInstance( service.parameters ) );
+                    instance = linker.link( service, () -> reflect.newInstance( service.parameters ), mapInterfaces );
                     initializeDynamicConfigurations( reflect, instance );
                 } catch( ReflectException e ) {
                     log.info( "service name = {}, remote = {}, profile = {}", service.name, service.remote, service.profile );
@@ -148,7 +151,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         }
 
         return deferred.size() == services.size() ? deferred
-            : initializeServices( deferred, initialized, config );
+            : initializeServices( deferred, initialized, config, mapInterfaces );
     }
 
     private void initializeDynamicConfigurations( Reflection reflect, Object instance ) {
@@ -163,7 +166,8 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     }
 
 
-    private Set<Module> initialize( Set<Module> modules, Set<String> initialized, Set<String> initializedServices, ApplicationConfiguration config ) {
+    private Set<Module> initialize( Set<Module> modules, Set<String> initialized, Set<String> initializedServices,
+                                    ApplicationConfiguration config, HashMap<String, List<String>> mapInterfaces ) {
         HashSet<Module> deferred = new HashSet<>();
 
         for( Module module : modules ) {
@@ -183,7 +187,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
                 }
 
                 Map<String, Module.Service> def =
-                    initializeServices( module.services, initializedServices, config );
+                    initializeServices( module.services, initializedServices, config, mapInterfaces );
                 if( !def.isEmpty() ) {
                     Set<String> names = Sets.map( def.entrySet(), Map.Entry::getKey );
                     log.error( "failed to initialize: " + names );
@@ -199,7 +203,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         }
 
         return deferred.size() == modules.size() ? deferred
-            : initialize( deferred, initialized, initializedServices, config );
+            : initialize( deferred, initialized, initializedServices, config, mapInterfaces );
     }
 
     public void start() {
@@ -249,7 +253,10 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         log.debug( "modules = " + Sets.map( this.modules, m -> m.name ) );
         log.trace( "modules configs = " + this.modules );
 
-        Set<Module> def = initialize( this.modules, new HashSet<>(), new HashSet<>(), config );
+        val mapInterfaces = extractInterfaces( this.modules );
+        linker.fixDeps( this.modules, mapInterfaces );
+
+        Set<Module> def = initialize( this.modules, new HashSet<>(), new HashSet<>(), config, mapInterfaces );
         if( !def.isEmpty() ) {
             Set<String> names = Sets.map( def, m -> m.name );
             log.error( "failed to initialize: {} ", names );
@@ -264,6 +271,43 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
 
         this.modules.add( new Module( Module.DEFAULT ) );
         log.debug( "application kernel started" );
+    }
+
+    @SneakyThrows
+    private HashMap<String, List<String>> extractInterfaces( Set<Module> modules ) {
+        val map = new HashMap<String, List<String>>();
+        for( val module : modules ) {
+            for( val serviceEntry : module.services.entrySet() ) {
+                val service = serviceEntry.getValue();
+                val serviceName = serviceEntry.getKey();
+                if( !service.enabled ) continue;
+
+                val implementation = service.implementation;
+                try {
+                    val clazz = Class.forName( implementation );
+
+                    val list = java.util.stream.Stream.concat(
+                        ClassUtils.getAllSuperclasses( clazz ).stream(),
+                        ClassUtils.getAllInterfaces( clazz ).stream()
+                    );
+
+                    list.forEach( c -> {
+                        map.compute( c.getName(), ( s, l ) -> {
+                            if( l == null ) return Lists.of( serviceName );
+                            else {
+                                l.add( serviceName );
+                                return l;
+                            }
+                        } );
+                    } );
+                } catch( ClassNotFoundException e ) {
+                    log.error( "service = {}, implementation = {}", serviceEntry.getKey(), implementation );
+                    throw e;
+                }
+            }
+        }
+
+        return map;
     }
 
     @SuppressWarnings( "unchecked" )
