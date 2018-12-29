@@ -25,19 +25,25 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.util.PrioritySet;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
 
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
 import static oap.util.Optionals.fork;
 
 @Slf4j
@@ -53,9 +59,45 @@ public class Linker {
         return value instanceof String && ( ( String ) value ).startsWith( "@service:" );
     }
 
+    public static boolean isImplementations( Object value ) {
+        return value instanceof String && ( ( String ) value ).startsWith( "@implementations:" );
+    }
 
-    Object link( Module.Service service, Supplier<Object> instantiate ) {
-        resolveLinks( service.name, service.parameters );
+    void fixDeps( Set<Module> modules, HashMap<String, List<String>> mapInterfaces ) {
+        for( val module : modules ) {
+            for( val service : module.services.values() ) {
+                fixDepsParameters( service, service.parameters, mapInterfaces );
+            }
+        }
+    }
+
+    void fixDepsParameters( Module.Service service, LinkedHashMap<String, Object> parameters, HashMap<String, List<String>> mapInterfaces ) {
+        parameters.forEach( ( key, value ) -> {
+            fixDepsParameter( service, mapInterfaces, value );
+        } );
+    }
+
+    private void fixDepsParameter( Module.Service service, HashMap<String, List<String>> mapInterfaces, Object value ) {
+        if( isImplementations( value ) ) {
+            String linkName = Module.Reference.of( value ).name;
+            val list = mapInterfaces.get( linkName );
+            if( list != null ) service.dependsOn.addAll( list );
+        } else if( isLink( value ) ) {
+            String linkName = Module.Reference.of( value ).name;
+            service.dependsOn.add( linkName );
+        } else if( value instanceof List<?> ) {
+            for( val item : ( List<?> ) value ) {
+                fixDepsParameter( service, mapInterfaces, item );
+            }
+        } else if( value instanceof Map<?, ?> ) {
+            for( val item : ( ( Map<?, ?> ) value ).values() ) {
+                fixDepsParameter( service, mapInterfaces, item );
+            }
+        }
+    }
+
+    Object link( Module.Service service, Supplier<Object> instantiate, Map<String, List<String>> mapInterfaces ) {
+        resolveLinks( service.name, service.parameters, mapInterfaces );
         Object instance = instantiate.get();
         linkListeners( service, instance );
         linkLinks( service, instance );
@@ -112,12 +154,15 @@ public class Linker {
 
 
     @SuppressWarnings( "unchecked" )
-    private void resolveLinks( String serviceName, LinkedHashMap<String, Object> map ) {
+    private void resolveLinks( String serviceName, LinkedHashMap<String, Object> map, Map<String, List<String>> mapInterfaces ) {
         for( Map.Entry<String, Object> entry : map.entrySet() ) {
             Object value = entry.getValue();
             String key = entry.getKey();
 
-            if( isLink( value ) ) entry.setValue( resolve( serviceName, key, ( String ) value, true ) );
+            if( isLink( value ) )
+                entry.setValue( resolve( serviceName, key, ( String ) value, true ) );
+            else if( isImplementations( value ) )
+                entry.setValue( resolveImplementations( serviceName, key, ( String ) value, mapInterfaces, 1 ).get( 0 ) );
             else if( value instanceof List<?> ) {
                 ListIterator<Object> iterator = ( ( List<Object> ) value ).listIterator();
                 while( iterator.hasNext() ) {
@@ -126,10 +171,16 @@ public class Linker {
                         Object linkedService = resolve( serviceName, key, ( String ) item, false );
                         if( linkedService == null ) iterator.remove();
                         else iterator.set( linkedService );
+                    } else if( isImplementations( item ) ) {
+                        val linkedServices = resolveImplementations( serviceName, key, ( String ) item, mapInterfaces, 0 );
+                        if( linkedServices.isEmpty() ) iterator.remove();
+                        else {
+                            iterator.remove();
+                            linkedServices.forEach( iterator::add );
+                        }
                     }
                 }
             } else if( value instanceof Map<?, ?> ) {
-
                 Iterator<Map.Entry<String, Object>> iterator = ( ( Map<String, Object> ) value ).entrySet().iterator();
                 while( iterator.hasNext() ) {
                     Map.Entry<String, Object> item = iterator.next();
@@ -137,10 +188,31 @@ public class Linker {
                         Object linkedService = resolve( serviceName, key, ( String ) item.getValue(), false );
                         if( linkedService == null ) iterator.remove();
                         else item.setValue( linkedService );
+                    } else if( isImplementations( item.getValue() ) ) {
+                        val linkedServices = resolveImplementations( serviceName, key, ( String ) item.getValue(), mapInterfaces, 1 );
+                        if( linkedServices.isEmpty() ) iterator.remove();
+                        else item.setValue( linkedServices.get( 0 ) );
                     }
                 }
             }
         }
 
+    }
+
+    private List<Object> resolveImplementations( String serviceName, String field, String reference, Map<String,
+        List<String>> mapInterfaces, int minImplementations ) {
+        String linkName = Module.Reference.of( reference ).name;
+        val linkedServices = mapInterfaces.get( linkName );
+        log.debug( "for {} linking {} -> {} with {}", serviceName, field, reference, linkedServices );
+
+        val ret = linkedServices != null
+            ? linkedServices.stream().map( ls -> kernel.service( ls ) ).filter( Objects::nonNull ).collect( toList() )
+            : emptyList();
+
+        if( ret.size() < minImplementations ) {
+            throw new ApplicationException( "for " + serviceName + " service link " + reference + " is not found" );
+        }
+
+        return ret;
     }
 }
