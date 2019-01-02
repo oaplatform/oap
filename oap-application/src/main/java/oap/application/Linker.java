@@ -115,9 +115,12 @@ public class Linker {
         for( val item : list ) {
             val itemModule = findModuleByService( modules, item );
             if( itemModule != null && module != itemModule && !module.dependsOn.contains( itemModule.name ) ) {
+                log.trace( "module[{}].dependsOn.add({}); service={}", module.name, itemModule.name, service.name );
                 module.dependsOn.add( itemModule.name );
             }
         }
+
+        log.trace( "service[{}].dependsOn.addAll({}); module={}", service.name, list, module.name );
         service.dependsOn.addAll( list );
     }
 
