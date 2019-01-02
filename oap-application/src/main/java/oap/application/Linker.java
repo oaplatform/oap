@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static oap.util.Optionals.fork;
 
@@ -66,34 +67,58 @@ public class Linker {
     void fixDeps( Set<Module> modules, HashMap<String, List<String>> mapInterfaces ) {
         for( val module : modules ) {
             for( val service : module.services.values() ) {
-                fixDepsParameters( service, service.parameters, mapInterfaces );
+                fixDepsParameters( modules, module, service, service.parameters, mapInterfaces );
             }
         }
     }
 
-    void fixDepsParameters( Module.Service service, LinkedHashMap<String, Object> parameters, HashMap<String, List<String>> mapInterfaces ) {
+    private Module findModuleByService( Set<Module> modules, String serviceName ) {
+        for( val module : modules ) {
+            for( val serviceEntry : module.services.entrySet() ) {
+                if( serviceName.equals( serviceEntry.getKey() ) ) return module;
+            }
+        }
+
+        return null;
+    }
+
+    void fixDepsParameters( Set<Module> modules, Module module, Module.Service service,
+                            LinkedHashMap<String, Object> parameters, HashMap<String, List<String>> mapInterfaces ) {
         parameters.forEach( ( key, value ) -> {
-            fixDepsParameter( service, mapInterfaces, value );
+            fixDepsParameter( modules, module, service, mapInterfaces, value );
         } );
     }
 
-    private void fixDepsParameter( Module.Service service, HashMap<String, List<String>> mapInterfaces, Object value ) {
+    private void fixDepsParameter( Set<Module> modules, Module module, Module.Service service,
+                                   HashMap<String, List<String>> mapInterfaces, Object value ) {
         if( isImplementations( value ) ) {
             String linkName = Module.Reference.of( value ).name;
             val list = mapInterfaces.get( linkName );
-            if( list != null ) service.dependsOn.addAll( list );
+            if( list != null ) {
+                addDeps( modules, module, service, list );
+            }
         } else if( isLink( value ) ) {
             String linkName = Module.Reference.of( value ).name;
-            service.dependsOn.add( linkName );
+            addDeps( modules, module, service, singletonList( linkName ) );
         } else if( value instanceof List<?> ) {
             for( val item : ( List<?> ) value ) {
-                fixDepsParameter( service, mapInterfaces, item );
+                fixDepsParameter( modules, module, service, mapInterfaces, item );
             }
         } else if( value instanceof Map<?, ?> ) {
             for( val item : ( ( Map<?, ?> ) value ).values() ) {
-                fixDepsParameter( service, mapInterfaces, item );
+                fixDepsParameter( modules, module, service, mapInterfaces, item );
             }
         }
+    }
+
+    private void addDeps( Set<Module> modules, Module module, Module.Service service, List<String> list ) {
+        for( val item : list ) {
+            val itemModule = findModuleByService( modules, item );
+            if( module != itemModule && !module.dependsOn.contains( itemModule.name ) ) {
+                module.dependsOn.add( itemModule.name );
+            }
+        }
+        service.dependsOn.addAll( list );
     }
 
     Object link( Module.Service service, Supplier<Object> instantiate, Map<String, List<String>> mapInterfaces ) {
