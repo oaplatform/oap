@@ -136,10 +136,16 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     @SneakyThrows
     public void fsync() {
         super.fsync();
-        try( OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), IoStreams.DEFAULT_BUFFER, false, true ) ) {
-            Binder.json.marshal( out, data.values() );
+
+        if( size() > 0 ) {
+            try( OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), IoStreams.DEFAULT_BUFFER, false, true ) ) {
+                Binder.json.marshal( out, data.values() );
+            }
+            log.debug( "storing {}... done", path );
+        } else {
+            java.nio.file.Files.deleteIfExists( path );
+            log.debug( "removing {}... done", path );
         }
-        log.debug( "storing {}... done", path );
     }
 
 }
