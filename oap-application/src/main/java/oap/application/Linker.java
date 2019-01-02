@@ -114,7 +114,7 @@ public class Linker {
     private void addDeps( Set<Module> modules, Module module, Module.Service service, List<String> list ) {
         for( val item : list ) {
             val itemModule = findModuleByService( modules, item );
-            if( module != itemModule && !module.dependsOn.contains( itemModule.name ) ) {
+            if( itemModule != null && module != itemModule && !module.dependsOn.contains( itemModule.name ) ) {
                 module.dependsOn.add( itemModule.name );
             }
         }
