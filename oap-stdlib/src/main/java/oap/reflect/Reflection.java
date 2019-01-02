@@ -32,6 +32,7 @@ import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 
+import javax.annotation.Nonnull;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.InvocationTargetException;
@@ -132,7 +133,7 @@ public class Reflection extends Annotated<Class<?>> {
     private ReflectException constructorNotFound( Object args ) {
         List<String> candidates = Stream.of( constructors ).map( Constructor::toString ).toList();
 
-        return new ReflectException( underlying + ": cannot find matching constructor: " + args + " candidates: " + candidates );
+        return new ReflectException( underlying + ": cannot find matching constructor: " + args + " candidates: " + candidates + ". Classes must be compiled with '-parameters' option of javac." );
     }
 
     public boolean assignableTo( Class<?> clazz ) {
@@ -229,8 +230,7 @@ public class Reflection extends Annotated<Class<?>> {
 
     @Override
     public boolean equals( Object obj ) {
-        return obj != null
-            && obj instanceof Reflection
+        return obj instanceof Reflection
             && this.typeToken.equals( ( ( Reflection ) obj ).typeToken );
     }
 
@@ -302,7 +302,7 @@ public class Reflection extends Annotated<Class<?>> {
         }
 
         @Override
-        public int compareTo( Field o ) {
+        public int compareTo( @Nonnull Field o ) {
             return this.name().compareTo( o.name() );
         }
 
