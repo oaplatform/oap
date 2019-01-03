@@ -67,7 +67,8 @@ public class Linker {
     void fixDeps( Set<Module> modules, HashMap<String, List<String>> mapInterfaces ) {
         for( val module : modules ) {
             for( val service : module.services.values() ) {
-                fixDepsParameters( modules, module, service, service.parameters, mapInterfaces );
+                fixDepsMap( modules, module, service, service.parameters, mapInterfaces );
+                fixDepsMap( modules, module, service, service.listen, mapInterfaces );
             }
         }
     }
@@ -82,15 +83,15 @@ public class Linker {
         return null;
     }
 
-    void fixDepsParameters( Set<Module> modules, Module module, Module.Service service,
-                            LinkedHashMap<String, Object> parameters, HashMap<String, List<String>> mapInterfaces ) {
-        parameters.forEach( ( key, value ) -> {
+    void fixDepsMap( Set<Module> modules, Module module, Module.Service service,
+                     Map<String, ?> map, Map<String, List<String>> mapInterfaces ) {
+        map.forEach( ( key, value ) -> {
             fixDepsParameter( modules, module, service, mapInterfaces, value );
         } );
     }
 
     private void fixDepsParameter( Set<Module> modules, Module module, Module.Service service,
-                                   HashMap<String, List<String>> mapInterfaces, Object value ) {
+                                   Map<String, List<String>> mapInterfaces, Object value ) {
         if( isImplementations( value ) ) {
             String linkName = Module.Reference.of( value ).name;
             val list = mapInterfaces.get( linkName );
