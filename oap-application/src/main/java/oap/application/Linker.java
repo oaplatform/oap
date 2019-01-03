@@ -60,11 +60,11 @@ public class Linker {
         return value instanceof String && ( ( String ) value ).startsWith( "@service:" );
     }
 
-    public static boolean isImplementations( Object value ) {
+    private static boolean isImplementations( Object value ) {
         return value instanceof String && ( ( String ) value ).startsWith( "@implementations:" );
     }
 
-    void fixDeps( Set<Module> modules, HashMap<String, List<String>> mapInterfaces ) {
+    static void fixDeps( Set<Module> modules, HashMap<String, List<String>> mapInterfaces ) {
         for( val module : modules ) {
             for( val service : module.services.values() ) {
                 fixDepsMap( modules, module, service, service.parameters, mapInterfaces );
@@ -73,7 +73,7 @@ public class Linker {
         }
     }
 
-    private Module findModuleByService( Set<Module> modules, String serviceName ) {
+    private static Module findModuleByService( Set<Module> modules, String serviceName ) {
         for( val module : modules ) {
             for( val serviceEntry : module.services.entrySet() ) {
                 if( serviceName.equals( serviceEntry.getKey() ) ) return module;
@@ -83,15 +83,13 @@ public class Linker {
         return null;
     }
 
-    void fixDepsMap( Set<Module> modules, Module module, Module.Service service,
-                     Map<String, ?> map, Map<String, List<String>> mapInterfaces ) {
-        map.forEach( ( key, value ) -> {
-            fixDepsParameter( modules, module, service, mapInterfaces, value );
-        } );
+    private static void fixDepsMap( Set<Module> modules, Module module, Module.Service service,
+                                    Map<String, ?> map, Map<String, List<String>> mapInterfaces ) {
+        map.forEach( ( key, value ) -> fixDepsParameter( modules, module, service, mapInterfaces, value ) );
     }
 
-    private void fixDepsParameter( Set<Module> modules, Module module, Module.Service service,
-                                   Map<String, List<String>> mapInterfaces, Object value ) {
+    private static void fixDepsParameter( Set<Module> modules, Module module, Module.Service service,
+                                          Map<String, List<String>> mapInterfaces, Object value ) {
         if( isImplementations( value ) ) {
             String linkName = Module.Reference.of( value ).name;
             val list = mapInterfaces.get( linkName );
@@ -112,7 +110,7 @@ public class Linker {
         }
     }
 
-    private void addDeps( Set<Module> modules, Module module, Module.Service service, List<String> list ) {
+    private static void addDeps( Set<Module> modules, Module module, Module.Service service, List<String> list ) {
         for( val item : list ) {
             val itemModule = findModuleByService( modules, item );
             if( itemModule != null && module != itemModule && !module.dependsOn.contains( itemModule.name ) ) {
