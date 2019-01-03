@@ -77,6 +77,7 @@ public class Linker {
         for( val module : modules ) {
             for( val serviceEntry : module.services.entrySet() ) {
                 if( serviceName.equals( serviceEntry.getKey() ) ) return module;
+                if( serviceName.equals( serviceEntry.getValue().name ) ) return module;
             }
         }
 
