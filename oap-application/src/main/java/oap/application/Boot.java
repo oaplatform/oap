@@ -79,8 +79,12 @@ public class Boot {
             logger.debug( "started" );
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
-            Boot.stop();
-            throw e;
+            try {
+                Boot.stop();
+            } catch( Throwable es ) {
+                logger.error( es.getMessage(), es );
+            }
+            System.exit( 13 );
         }
     }
 
