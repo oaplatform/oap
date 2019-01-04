@@ -79,6 +79,8 @@ public class Boot {
             logger.debug( "started" );
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
+            Boot.stop();
+            throw e;
         }
     }
 
