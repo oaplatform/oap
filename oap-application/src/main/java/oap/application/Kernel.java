@@ -63,6 +63,7 @@ import java.util.concurrent.ConcurrentMap;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static oap.application.KernelHelper.fixLinks;
 import static oap.application.KernelHelper.fixLinksForConstructor;
 import static oap.application.KernelHelper.forEachModule;
 import static oap.application.KernelHelper.forEachService;

@@ -99,7 +99,7 @@ public class KernelTest extends AbstractTest {
                 assertThat( one.complexes ).contains( new Complex( 2 ) );
                 assertNotNull( two );
                 assertThat( two.j ).isEqualTo( 3000 );
-                assertThat( two.one ).isSameAs( one );
+                assertThat( two.one2 ).isSameAs( one );
                 assertTrue( two.started );
                 ServiceScheduled scheduled = Application.service( ServiceScheduled.class );
                 assertNotNull( scheduled );

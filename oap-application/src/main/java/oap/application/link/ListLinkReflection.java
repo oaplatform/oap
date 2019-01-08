@@ -33,7 +33,6 @@ public class ListLinkReflection implements LinkReflection {
     private final ListIterator<Object> iterator;
     private Object value = null;
     private boolean init = false;
-    private boolean set = false;
 
     public ListLinkReflection( ListIterator<Object> iterator ) {
         this.iterator = iterator;
@@ -41,17 +40,10 @@ public class ListLinkReflection implements LinkReflection {
 
     @Override
     public boolean set( Object value ) {
-        get();
         if( value == null ) {
-            iterator.remove();
             return false;
         } else {
-            if( !set ) {
-                iterator.set( value );
-                set = true;
-            } else {
-                iterator.add( value );
-            }
+            iterator.add( value );
             return true;
         }
     }

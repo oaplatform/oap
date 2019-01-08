@@ -33,9 +33,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ToString
-@EqualsAndHashCode
+@EqualsAndHashCode(exclude = "one2")
 public class ServiceTwo implements Hello, ActionListener {
-    public ServiceOne one;
+    public ServiceOne one2;
     int j;
     boolean started;
     String test;
@@ -44,7 +44,7 @@ public class ServiceTwo implements Hello, ActionListener {
 
     public ServiceTwo( ServiceOne one ) {
         Preconditions.checkNotNull( one );
-        this.one = one;
+        this.one2 = one;
     }
 
     public void start() {

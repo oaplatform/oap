@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -105,6 +106,8 @@ public class KernelHelper {
 
     static LinkedHashMap<String, Object> fixLinksForConstructor( Map<String, ServiceInitialization> initialized,
                                                                  LinkedHashMap<String, Object> parameters ) {
+        fixLinks( initialized, parameters );
+
         val ret = new LinkedHashMap<String, Object>();
 
         parameters.forEach( ( name, value ) -> {
@@ -128,13 +131,16 @@ public class KernelHelper {
             val newList = new ArrayList<>();
             for( val lValue : ( List<?> ) value ) {
                 val fixLValue = fixValue( initialized, lValue );
-                newList.add( fixLValue );
+                if( fixLValue != null ) newList.add( fixLValue );
             }
             newValue = newList;
         } else if( value instanceof Map<?, ?> ) {
             val newMap = new LinkedHashMap<Object, Object>();
 
-            ( ( Map<String, Object> ) value ).forEach( ( key, mValue ) -> newMap.put( key, fixValue( initialized, mValue ) ) );
+            ( ( Map<String, Object> ) value ).forEach( ( key, mValue ) -> {
+                val v = fixValue( initialized, mValue );
+                if( v != null ) newMap.put( key, v );
+            } );
 
             newValue = newMap;
         } else {
@@ -153,5 +159,26 @@ public class KernelHelper {
 
     static String referenceName( Object ref ) {
         return Module.Reference.of( ref ).name;
+    }
+
+    static Object fixLinks( Map<String, ServiceInitialization> initialized, Object value ) {
+        if( isServiceLink( value ) ) {
+            val linkName = referenceName( value );
+            val si = initialized.get( linkName );
+            return si != null ? si.instance : null;
+        } else if( value instanceof List<?> ) {
+            ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
+            while( it.hasNext() ) {
+                val v = fixLinks( initialized, it.next() );
+                if( v != null ) it.set( v );
+            }
+        } else if( value instanceof Map<?, ?> ) {
+            for( val entry : ( ( Map<?, Object> ) value ).entrySet() ) {
+                val v = fixLinks( initialized, entry.getValue() );
+                if( v != null ) entry.setValue( v );
+            }
+        }
+
+        return value;
     }
 }
