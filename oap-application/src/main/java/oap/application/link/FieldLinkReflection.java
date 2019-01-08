@@ -24,11 +24,15 @@
 
 package oap.application.link;
 
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import oap.application.ApplicationException;
 import oap.reflect.Reflection;
 
 /**
  * Created by igor.petrenko on 08.01.2019.
  */
+@Slf4j
 public class FieldLinkReflection implements LinkReflection {
     private final Reflection reflection;
     private final Object instance;
@@ -42,7 +46,11 @@ public class FieldLinkReflection implements LinkReflection {
 
     @Override
     public boolean set( Object value ) {
-        reflection.field( field ).get().set( instance, value );
+        val field = reflection.field( this.field ).orElse( null );
+        if( field == null ) {
+            throw new ApplicationException( "Class " + reflection + ", field " + this.field + ":: not found" );
+        }
+        field.set( instance, value );
 
         return true;
     }
