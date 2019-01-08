@@ -238,14 +238,11 @@ public final class Strings {
         try {
             int length = value.length();
 
-            for( int i = start; i < length; ++i ) {
-                if( any.indexOf( value.charAt( i ) ) >= 0 ) {
-                    return i;
-                }
-            }
+            for( int i = start; i < length; ++i )
+                if( any.indexOf( value.charAt( i ) ) >= 0 ) return i;
 
             return -1;
-        } catch( StringIndexOutOfBoundsException var5 ) {
+        } catch( StringIndexOutOfBoundsException e ) {
             return -1;
         }
     }

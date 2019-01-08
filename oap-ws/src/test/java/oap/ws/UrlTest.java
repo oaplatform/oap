@@ -27,6 +27,7 @@ import oap.http.Url;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
+import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
@@ -41,7 +42,7 @@ public class UrlTest {
     }
 
     @Test
-    public void testSubdomains() {
+    public void subdomains() {
         assertThat( Url.subdomains( null ) ).isEmpty();
         assertThat( Url.subdomains( "test" ) ).containsSequence( "test" );
         assertThat( Url.subdomains( "test.com" ) ).containsSequence( "com", "test.com" );
@@ -50,5 +51,15 @@ public class UrlTest {
             "www.a.test.com" );
     }
 
-
+    @Test
+    public void domainOf() {
+        assertThat( Url.domainOf( null ) ).isNull();
+        assertString( Url.domainOf( "test" ) ).isEqualTo( "test" );
+        assertString( Url.domainOf( "test.com" ) ).isEqualTo( "test.com" );
+        assertString( Url.domainOf( "http://test.com" ) ).isEqualTo( "test.com" );
+        assertString( Url.domainOf( "https://test.com" ) ).isEqualTo( "test.com" );
+        assertString( Url.domainOf( "https://test.com/" ) ).isEqualTo( "test.com" );
+        assertString( Url.domainOf( "https://test.com?aaa=bbb" ) ).isEqualTo( "test.com" );
+        assertString( Url.domainOf( "https://test.com#sss" ) ).isEqualTo( "test.com" );
+    }
 }

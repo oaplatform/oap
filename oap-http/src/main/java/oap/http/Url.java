@@ -27,7 +27,6 @@ package oap.http;
 import com.google.api.client.util.escape.CharEscapers;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
-import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
@@ -45,10 +44,10 @@ public class Url {
     }
 
     public static ListMultimap<String, String> parseQuery( String params ) {
-        return Strings.isEmpty( params ) ?
-            ArrayListMultimap.create() :
-            Stream.of( StringUtils.split( params, '&' ) )
-                .<Pair<String, String>>map( s -> Strings.split( s, "=" ) )
+        return Strings.isEmpty( params )
+            ? ArrayListMultimap.create()
+            : Stream.of( StringUtils.split( params, '&' ) )
+                .map( s -> Strings.split( s, "=" ) )
                 .map( pair -> __( pair._1, decode( pair._2 ) ) )
                 .collect( toListMultimap() );
     }
@@ -60,17 +59,31 @@ public class Url {
     public static List<String> subdomains( String domain ) {
         if( domain == null ) return emptyList();
 
-        final ArrayList<String> strings = new ArrayList<>();
+        ArrayList<String> strings = new ArrayList<>();
 
         int end;
-        final int length = domain.length();
+        int length = domain.length();
 
-        for( int i = domain.lastIndexOf( '.' ); i >= 0; end = i, i = domain.lastIndexOf( '.', end - 1 ) ) {
+        for( int i = domain.lastIndexOf( '.' ); i >= 0; end = i, i = domain.lastIndexOf( '.', end - 1 ) )
             strings.add( domain.substring( i + 1, length ) );
-        }
 
         strings.add( domain );
 
         return strings;
+    }
+
+    public static String domainOf( String url ) {
+        if( url == null ) return null;
+        if( !url.startsWith( "http" ) ) return url;
+
+        int slashPosition = url.indexOf( '/' );
+        if( slashPosition < 0 ) return url;
+        int start = slashPosition + 2;
+        int end = Strings.indexOfAny( url, "/?#", start );
+
+        if( end > 0 ) return url.substring( start, end );
+
+        return url.substring( start ).toLowerCase();
+
     }
 }

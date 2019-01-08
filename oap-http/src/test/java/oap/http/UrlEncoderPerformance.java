@@ -24,8 +24,6 @@
 package oap.http;
 
 import com.google.api.client.util.escape.CharEscapers;
-import lombok.val;
-import oap.testng.AbstractPerformance;
 import org.testng.annotations.Test;
 
 import java.io.UnsupportedEncodingException;
@@ -33,42 +31,43 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+import static oap.benchmark.Benchmark.benchmark;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class UrlPerformance extends AbstractPerformance {
+public class UrlEncoderPerformance {
 
     public static final int SAMPLES = 1000000;
 
     @Test
-    public void testEncode() throws UnsupportedEncodingException {
-        val STRING = "sdihgjf sdkgh dsfkjgh?&skfjh ?&. \tdkjhgf&amp;";
+    public void encode() throws UnsupportedEncodingException {
+        String value = "sdihgjf sdkgh dsfkjgh?&skfjh ?&. \tdkjhgf&amp;";
 
-        assertThat( URLEncoder.encode( STRING, StandardCharsets.UTF_8.name() ) )
-            .isEqualTo( CharEscapers.escapeUri( STRING ) );
+        assertThat( URLEncoder.encode( value, StandardCharsets.UTF_8.name() ) )
+            .isEqualTo( CharEscapers.escapeUri( value ) );
 
-        benchmark( "URLEncoder.encode", SAMPLES, () -> {
-            URLEncoder.encode( STRING, StandardCharsets.UTF_8.name() );
-        } ).run();
+        benchmark( "URLEncoder.encode", SAMPLES,
+            () -> URLEncoder.encode( value, StandardCharsets.UTF_8.name() )
+        ).run();
 
-        benchmark( "CharEscapers.escapeUri", SAMPLES, () -> {
-            CharEscapers.escapeUri( STRING );
-        } ).run();
+        benchmark( "CharEscapers.escapeUri", SAMPLES,
+            () -> CharEscapers.escapeUri( value )
+        ).run();
     }
 
     @Test
-    public void testDecode() throws UnsupportedEncodingException {
-        val STRING = URLEncoder.encode( "sdihgjf sdkgh dsfkjgh?&skfjh ?&. \tdkjhgf&amp;", StandardCharsets.UTF_8.name() );
+    public void decode() throws UnsupportedEncodingException {
+        String value = URLEncoder.encode( "sdihgjf sdkgh dsfkjgh?&skfjh ?&. \tdkjhgf&amp;", StandardCharsets.UTF_8.name() );
 
-        assertThat( URLDecoder.decode( STRING, StandardCharsets.UTF_8.name() ) )
-            .isEqualTo( CharEscapers.decodeUri( STRING ) );
+        assertThat( URLDecoder.decode( value, StandardCharsets.UTF_8.name() ) )
+            .isEqualTo( CharEscapers.decodeUri( value ) );
 
-        benchmark( "URLDecoder.decode", SAMPLES, () -> {
-            URLDecoder.decode( STRING, StandardCharsets.UTF_8.name() );
-        } ).run();
+        benchmark( "URLDecoder.decode", SAMPLES,
+            () -> URLDecoder.decode( value, StandardCharsets.UTF_8.name() )
+        ).run();
 
-        benchmark( "CharEscapers.decodeUri", SAMPLES, () -> {
-            CharEscapers.decodeUri( STRING );
-        } ).run();
+        benchmark( "CharEscapers.decodeUri", SAMPLES,
+            () -> CharEscapers.decodeUri( value )
+        ).run();
     }
 
 }

@@ -46,6 +46,7 @@ import java.util.stream.IntStream;
 import static java.util.stream.Collectors.toList;
 import static oap.util.Functions.empty.consume;
 
+@Deprecated
 public abstract class AbstractPerformance extends AbstractTest {
 
     public static final int WARMING = 1000;
