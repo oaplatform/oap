@@ -26,6 +26,7 @@ package oap.application;
 
 import lombok.val;
 import oap.reflect.Reflect;
+import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
@@ -73,13 +74,13 @@ public class KernelHelperTest {
         assertThat( newParameters ).isNotSameAs( parameters );
         assertThat( newParameters ).containsKeys( "services" );
         assertThat( newParameters.get( "services" ) ).isInstanceOf( List.class );
-        assertThat( ( List<Object> ) newParameters.get( "services" ) ).containsExactly( new Object[] { null } );
+        assertThat( ( List<Object> ) newParameters.get( "services" ) ).isEmpty();
     }
 
     @Test
     public void testFixLinksForConstructorMap() {
         val parameters = new LinkedHashMap<String, Object>(
-            Maps.of2( "services", singletonList( Maps.of2( "link", "@service:test-service" ) ) )
+            Maps.of2( "services", Lists.of( Maps.of2( "link", "@service:test-service" ) ) )
         );
 
         val newParameters = KernelHelper.fixLinksForConstructor( new HashMap<>(), parameters );
@@ -89,7 +90,6 @@ public class KernelHelperTest {
         assertThat( newParameters.get( "services" ) ).isInstanceOf( List.class );
         assertThat( ( List<Object> ) newParameters.get( "services" ) ).hasSize( 1 );
         assertThat( ( ( List<Object> ) newParameters.get( "services" ) ).get( 0 ) ).isNotNull();
-        assertThat( ( Map<String, ?> ) ( ( List<Object> ) newParameters.get( "services" ) ).get( 0 ) ).containsKeys( "link" );
-        assertThat( ( ( Map<String, ?> ) ( ( List<Object> ) newParameters.get( "services" ) ).get( 0 ) ).get( "link" ) ).isNull();
+        assertThat( ( Map<String, ?> ) ( ( List<Object> ) newParameters.get( "services" ) ).get( 0 ) ).isEmpty();
     }
 }
