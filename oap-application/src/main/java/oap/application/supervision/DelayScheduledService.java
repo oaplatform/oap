@@ -43,8 +43,4 @@ public class DelayScheduledService extends ScheduledService {
         return Scheduler.scheduleWithFixedDelay( delay, unit, this );
     }
 
-    @Override
-    public void reload() {
-
-    }
 }

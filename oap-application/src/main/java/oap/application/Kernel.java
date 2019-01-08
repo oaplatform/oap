@@ -130,8 +130,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
                 if( service.supervision.supervise )
                     supervisor.startSupervised( service.name, instance,
                         service.supervision.startWith,
-                        service.supervision.stopWith,
-                        service.supervision.reloadWith );
+                        service.supervision.stopWith );
                 if( service.supervision.thread )
                     supervisor.startThread( service.name, instance );
                 else {
@@ -359,14 +358,6 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         Metrics.resetAll();
         Application.unregister( this );
         log.debug( "application kernel stopped" );
-    }
-
-    @Deprecated
-    public void reload() {
-//@todo rethink this
-        log.debug( "reloading application kernel" + name + "..." );
-        supervisor.reload();
-        log.debug( "application kernel reloaded" );
     }
 
     public boolean profileEnabled( String profile ) {

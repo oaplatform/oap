@@ -23,18 +23,17 @@
  */
 package oap.application;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.cli.Cli;
 import oap.cli.Option;
-import org.slf4j.Logger;
 import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 import java.nio.file.Path;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
+@Slf4j
 public class Boot {
     public static boolean terminated = false;
-    private static Logger logger = getLogger( Boot.class );
     private static Kernel kernel;
 
     public static void main( String[] args ) {
@@ -52,40 +51,27 @@ public class Boot {
     }
 
     public static void start( Path config, Path confd ) {
-        Signal.handle( new Signal( "HUP" ), signal -> {
-            logger.info( "SIGHUP" );
-            System.out.println( "SIGHUP" );
-            System.out.flush();
-            kernel.reload();
-        } );
-        final ShutdownHook shutdownHook = new ShutdownHook();
+        installSignals();
 
-        Signal.handle( new Signal( "INT" ), signal -> {
-            logger.info( "SIGINT" );
-            System.out.println( "SIGINT" );
-            System.out.flush();
-            shutdownHook.run();
-        } );
-
-        Signal.handle( new Signal( "TERM" ), signal -> {
-            logger.info( "SIGTERM" );
-            System.out.println( "SIGTERM" );
-            System.out.flush();
-            shutdownHook.run();
-        } );
         try {
             kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath(), Plugin.CONFIGURATION.urlsFromClassPath() );
             kernel.start( config, confd );
-            logger.debug( "started" );
+            log.debug( "started" );
         } catch( Exception e ) {
-            logger.error( e.getMessage(), e );
-            try {
-                Boot.stop();
-            } catch( Throwable es ) {
-                logger.error( es.getMessage(), es );
-            }
-            System.exit( 13 );
+            log.error( e.getMessage(), e );
+            exit( 13 );
         }
+    }
+
+    private static void installSignals() {
+        SignalHandler handler = signal -> {
+            log.info( "cought signal: {}", signal.getName() );
+            System.out.println( "cought signal: {}" + signal.getName() );
+            System.out.flush();
+            exit( 0 );
+        };
+        Signal.handle( new Signal( "INT" ), handler );
+        Signal.handle( new Signal( "TERM" ), handler );
     }
 
     public static synchronized void stop() {
@@ -93,11 +79,22 @@ public class Boot {
             terminated = true;
             try {
                 kernel.stop();
-                logger.debug( "stopped" );
+                log.debug( "stopped" );
             } catch( Exception e ) {
-                logger.error( e.getMessage(), e );
+                log.error( e.getMessage(), e );
             }
         }
     }
 
+    public static void exit( int status ) {
+        log.info( "exit status = " + status );
+        System.out.println( "exit status = " + status );
+        try {
+            stop();
+        } catch( Throwable e ) {
+            log.error( e.getMessage(), e );
+        }
+
+        System.exit( status );
+    }
 }
