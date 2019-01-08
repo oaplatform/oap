@@ -40,8 +40,8 @@ public class Supervisor {
     private LinkedHashMap<String, Supervised> scheduled = new LinkedHashMap<>();
     private boolean stopped = false;
 
-    public void startSupervised( String name, Object service, String startWith, List<String> stopWith, String reloadWith ) {
-        this.supervised.put( name, new StartableService( service, startWith, stopWith, reloadWith ) );
+    public void startSupervised( String name, Object service, String startWith, List<String> stopWith ) {
+        this.supervised.put( name, new StartableService( service, startWith, stopWith ) );
     }
 
     public void startThread( String name, Object instance ) {
@@ -73,20 +73,6 @@ public class Supervisor {
             service.start();
             long end = System.currentTimeMillis();
             log.debug( "schedule {}... Done. ({}ms)", name, end - start );
-        } );
-    }
-
-    public synchronized void reload() {
-        this.supervised.forEach( ( name, service ) -> {
-            log.debug( "reloading {}...", name );
-            service.reload();
-            log.debug( "reloaded {}", name );
-        } );
-
-        this.scheduled.forEach( ( name, service ) -> {
-            log.debug( "reloading {}...", name );
-            service.reload();
-            log.debug( "reloaded {}", name );
         } );
     }
 

@@ -372,8 +372,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         if( service.supervision.supervise ) {
             supervisor.startSupervised( service.name, instance,
                 service.supervision.startWith,
-                service.supervision.stopWith,
-                service.supervision.reloadWith );
+                service.supervision.stopWith );
         }
 
         if( service.supervision.thread )

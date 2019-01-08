@@ -28,5 +28,4 @@ interface Supervised {
 
     void stop();
 
-    void reload();
 }

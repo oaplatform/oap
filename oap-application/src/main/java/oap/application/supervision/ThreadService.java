@@ -75,7 +75,4 @@ public class ThreadService extends SynchronizedRunnable implements Supervised, S
         thread.stop();
     }
 
-    @Override
-    public void reload() {
-    }
 }

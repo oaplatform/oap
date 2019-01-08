@@ -39,8 +39,4 @@ public class CronScheduledService extends ScheduledService {
         return Scheduler.scheduleCron( cron, this );
     }
 
-    @Override
-    public void reload() {
-
-    }
 }
