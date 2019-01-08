@@ -63,7 +63,6 @@ import java.util.concurrent.ConcurrentMap;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static oap.application.KernelHelper.fixLinks;
 import static oap.application.KernelHelper.fixLinksForConstructor;
 import static oap.application.KernelHelper.forEachModule;
 import static oap.application.KernelHelper.forEachService;
@@ -121,6 +120,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     private void fixDeps() {
         for( val module : modules ) {
             for( val service : module.services.values() ) {
+                log.trace( "fix deps for {} in {}", service.name, module.name );
                 service.parameters.forEach( ( key, value ) -> fixDepsParameter( module, service, value, false ) );
             }
         }
@@ -212,6 +212,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         log.debug( "modules = " + Sets.map( this.modules, m -> m.name ) );
         log.trace( "modules configs = " + this.modules );
 
+        fixServiceName();
         fixDeps();
         val map = instantiateServices( config );
         registerServices( map );
@@ -224,13 +225,20 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         log.debug( "application kernel started" );
     }
 
+    private void fixServiceName() {
+        for( val module : modules ) {
+            module.services.forEach( ( implName, service ) -> {
+                service.name = service.name != null ? service.name : implName;
+            } );
+        }
+    }
+
     private Map<String, ServiceInitialization> instantiateServices( ApplicationConfiguration config ) {
         val ret = new HashMap<String, ServiceInitialization>();
 
         val initializedServices = new HashSet<String>();
         forEachModule( modules, new HashSet<>(), module ->
             forEachService( modules, module.services, initializedServices, ( implName, service ) -> {
-                service.name = service.name != null ? service.name : implName;
                 if( !service.enabled ) {
                     log.debug( "service {} is disabled.", implName );
                     return;
@@ -272,6 +280,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
 
     private void linkServices( Map<String, ServiceInitialization> services ) {
         for( val si : services.values() ) {
+            log.trace( "linking service {}...", si.implementationName );
             si.service.parameters.forEach( ( parameter, value ) -> {
                 linkService( new FieldLinkReflection( si.reflection, si.instance, parameter ), value, si,
                     true );
@@ -320,6 +329,8 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         } else if( parameterValue instanceof Map ) {
             val parameterMap = ( Map<Object, Object> ) parameterValue;
             val instance = lRef.get();
+
+            if( instance == null ) return;
 
             for( val entry : parameterMap.entrySet() ) {
                 val isMap = instance instanceof Map;
