@@ -47,16 +47,16 @@ import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.util.Collections.anyMatch;
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class FilePersistence<T> implements Closeable {
+public class FilePersistence<T> implements Closeable, Storage.DataListener<T> {
     private static final byte[] BEGIN_ARRAY = "[".getBytes();
     private static final byte[] END_ARRAY = "]".getBytes();
     private static final byte[] ITEM_SEP = ",".getBytes();
-    private PeriodicScheduled scheduled;
-    private Path path;
     private final long fsync;
     private final MemoryStorage<T> storage;
     private final Lock lock = new ReentrantLock();
     private final Logger log;
+    private PeriodicScheduled scheduled;
+    private Path path;
 
 
     public FilePersistence( Path path, long fsync, MemoryStorage<T> storage ) {
@@ -67,6 +67,7 @@ public class FilePersistence<T> implements Closeable {
     }
 
     public void start() {
+        storage.addDataListener( this );
         load();
         this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
     }
@@ -113,6 +114,7 @@ public class FilePersistence<T> implements Closeable {
 
     @Override
     public void close() {
+        storage.removeDataListener( this );
         Threads.synchronously( lock, () -> {
             Scheduled.cancel( scheduled );
             fsync( scheduled.lastExecuted() );
@@ -122,5 +124,12 @@ public class FilePersistence<T> implements Closeable {
     @Override
     public String toString() {
         return getClass().getSimpleName() + ":" + path;
+    }
+
+    @Override
+    public void fsync() {
+        Threads.synchronously( lock, () -> {
+            fsync( scheduled.lastExecuted() );
+        } );
     }
 }

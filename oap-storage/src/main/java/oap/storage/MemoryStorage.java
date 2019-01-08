@@ -232,7 +232,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public void fsync() {
-
+        for( DataListener<T> dataListener : this.dataListeners ) dataListener.fsync();
     }
 
     protected void fireUpdated( T object, boolean isNew ) {

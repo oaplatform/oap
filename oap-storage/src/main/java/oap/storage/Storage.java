@@ -119,6 +119,8 @@ public interface Storage<T> extends Iterable<T>, AutoCloseable {
         default void deleted( Collection<T2> objects ) {
             objects.forEach( this::deleted );
         }
+
+        default void fsync() {}
     }
 
     interface Lock {

@@ -194,6 +194,13 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
         } );
     }
 
+    @Override
+    public void fsync() {
+        Threads.synchronously( lock, () -> {
+            fsync( scheduled.lastExecuted() );
+        } );
+    }
+
     private Path filenameFor( T object, long version ) {
         return Threads.synchronously( lock, () -> {
             final String ver = this.version > 0 ? ".v" + version : "";
