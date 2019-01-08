@@ -21,48 +21,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.application;
 
-import com.google.common.base.Preconditions;
-import lombok.EqualsAndHashCode;
+import lombok.AllArgsConstructor;
 import lombok.ToString;
+import oap.reflect.Reflection;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
-
+/**
+ * Created by igor.petrenko on 08.01.2019.
+ */
 @ToString
-@EqualsAndHashCode
-public class ServiceTwo implements Hello, ActionListener {
-    public ServiceOne one;
-    int j;
-    boolean started;
-    String test;
-    List<TestBean> beans = new ArrayList<>();
-
-
-    public ServiceTwo( ServiceOne one ) {
-        Preconditions.checkNotNull( one );
-        this.one = one;
-    }
-
-    public void start() {
-        System.out.println( "started" );
-        started = true;
-    }
-
-    @Override
-    public List<TestBean> hello( List<TestBean> beans ) {
-        this.beans = new ArrayList<>( beans );
-        return this.beans;
-    }
-
-    @Override
-    public void voidMethod( String test ) {
-        this.test = test;
-    }
-
-    @Override
-    public void actionPerformed( ActionEvent e ) {}
+@AllArgsConstructor
+class ServiceInitialization {
+    public final String implementationName;
+    public final Object instance;
+    public final Module module;
+    public final Module.Service service;
+    public final Reflection reflection;
 }

@@ -29,7 +29,6 @@ import lombok.val;
 import oap.application.Application;
 import oap.application.Kernel;
 import oap.application.Module;
-import oap.application.Plugin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -61,7 +60,7 @@ public class SpringKernel {
         try {
             log.info( "config = {}, config-directory = {}", config, confd );
 
-            kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath(), Plugin.CONFIGURATION.urlsFromClassPath() );
+            kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
             kernel.start( config, confd );
 
             val factory = ( ConfigurableListableBeanFactory ) applicationContext.getAutowireCapableBeanFactory();

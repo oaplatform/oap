@@ -22,30 +22,33 @@
  * SOFTWARE.
  */
 
-package oap.application;
+package oap.application.link;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
+import oap.reflect.Reflection;
 
 /**
- * Created by igor.petrenko on 09.07.2018.
+ * Created by igor.petrenko on 08.01.2019.
  */
-@ToString
-@EqualsAndHashCode
-@Deprecated
-public class Plugin {
-    public static final PluginConfiguration CONFIGURATION = new PluginConfiguration();
-    public final ArrayList<Export> export = new ArrayList<>();
+public class FieldLinkReflection implements LinkReflection {
+    private final Reflection reflection;
+    private final Object instance;
+    private final String field;
 
-    @ToString
-    @EqualsAndHashCode
-    public static class Export {
-        public final LinkedHashSet<String> service = new LinkedHashSet<>();
-        public final LinkedHashMap<String, List<String>> parameters = new LinkedHashMap<>();
+    public FieldLinkReflection( Reflection reflection, Object instance, String field ) {
+        this.reflection = reflection;
+        this.instance = instance;
+        this.field = field;
+    }
+
+    @Override
+    public boolean set( Object value ) {
+        reflection.field( field ).get().set( instance, value );
+
+        return true;
+    }
+
+    @Override
+    public Object get() {
+        return reflection.field( field ).get().get( instance );
     }
 }

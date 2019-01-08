@@ -21,48 +21,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application;
 
-import com.google.common.base.Preconditions;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+package oap.application.link;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
-@ToString
-@EqualsAndHashCode
-public class ServiceTwo implements Hello, ActionListener {
-    public ServiceOne one;
-    int j;
-    boolean started;
-    String test;
-    List<TestBean> beans = new ArrayList<>();
+/**
+ * Created by igor.petrenko on 08.01.2019.
+ */
+public class MapLinkReflection implements LinkReflection {
+    private final Map<Object, Object> map;
+    private final Object key;
 
-
-    public ServiceTwo( ServiceOne one ) {
-        Preconditions.checkNotNull( one );
-        this.one = one;
-    }
-
-    public void start() {
-        System.out.println( "started" );
-        started = true;
+    public MapLinkReflection( Map<Object, Object> map, Object key ) {
+        this.map = map;
+        this.key = key;
     }
 
     @Override
-    public List<TestBean> hello( List<TestBean> beans ) {
-        this.beans = new ArrayList<>( beans );
-        return this.beans;
+    public boolean set( Object value ) {
+        if( value == null ) {
+            map.remove( key );
+            return false;
+        } else {
+            map.put( key, value );
+            return true;
+        }
     }
 
     @Override
-    public void voidMethod( String test ) {
-        this.test = test;
+    public Object get() {
+        return map.get( key );
     }
-
-    @Override
-    public void actionPerformed( ActionEvent e ) {}
 }

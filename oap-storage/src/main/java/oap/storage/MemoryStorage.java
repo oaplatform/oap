@@ -32,6 +32,7 @@ import oap.util.Stream;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -45,8 +46,8 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
-    protected final Lock lock;
     public final Identifier<T> identifier;
+    protected final Lock lock;
     private final List<DataListener<T>> dataListeners = new ArrayList<>();
     private final ArrayList<Constraint<T>> constraints = new ArrayList<>();
     protected volatile ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
@@ -279,6 +280,11 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public void close() {
     }
 
+
+    @Override
+    public Iterator<T> iterator() {
+        return select().iterator();
+    }
 
     @Override
     public void forEach( Consumer<? super T> action ) {

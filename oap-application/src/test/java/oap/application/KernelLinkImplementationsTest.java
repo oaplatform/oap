@@ -31,7 +31,6 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static oap.testng.Asserts.urlOfTestResource;
@@ -51,8 +50,7 @@ public class KernelLinkImplementationsTest extends AbstractTest {
     @Test
     public void testFieldReference() {
         val kernel = new Kernel(
-            singletonList( urlOfTestResource( getClass(), "field-reference.conf" ) ),
-            emptyList()
+            singletonList( urlOfTestResource( getClass(), "field-reference.conf" ) )
         );
 
         try {
@@ -69,8 +67,7 @@ public class KernelLinkImplementationsTest extends AbstractTest {
     @Test
     public void testFieldReferences() {
         val kernel = new Kernel(
-            singletonList( urlOfTestResource( getClass(), "field-references.conf" ) ),
-            emptyList()
+            singletonList( urlOfTestResource( getClass(), "field-references.conf" ) )
         );
 
         try {
@@ -88,8 +85,7 @@ public class KernelLinkImplementationsTest extends AbstractTest {
     @Test
     public void testFieldReferenceUnknownInterface() {
         val kernel = new Kernel(
-            singletonList( urlOfTestResource( getClass(), "field-reference-unknown-interface.conf" ) ),
-            emptyList()
+            singletonList( urlOfTestResource( getClass(), "field-reference-unknown-interface.conf" ) )
         );
 
         try {
@@ -102,8 +98,7 @@ public class KernelLinkImplementationsTest extends AbstractTest {
     @Test
     public void testFieldReferencesUnknownInterface() {
         val kernel = new Kernel(
-            singletonList( urlOfTestResource( getClass(), "field-references-unknown-interface.conf" ) ),
-            emptyList()
+            singletonList( urlOfTestResource( getClass(), "field-references-unknown-interface.conf" ) )
         );
 
         try {
@@ -149,4 +144,3 @@ public class KernelLinkImplementationsTest extends AbstractTest {
         public List<TestInterface> tis;
     }
 }
-

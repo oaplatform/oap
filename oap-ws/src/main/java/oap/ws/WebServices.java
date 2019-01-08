@@ -52,7 +52,7 @@ public class WebServices {
     private final HttpServer server;
     private final SessionManager sessionManager;
     private final CorsPolicy globalCorsPolicy;
-//todo handle this case better
+    //todo handle this case better
     public WsResponse defaultResponse = WsResponse.TEXT;
 
     public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy ) {

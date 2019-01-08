@@ -21,6 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.application;
 
 import com.google.common.base.Preconditions;
@@ -28,6 +29,10 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import oap.application.link.FieldLinkReflection;
+import oap.application.link.LinkReflection;
+import oap.application.link.ListLinkReflection;
+import oap.application.link.MapLinkReflection;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.json.Binder;
@@ -35,17 +40,17 @@ import oap.metrics.Metrics;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
-import oap.util.Lists;
+import oap.util.PrioritySet;
 import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
-import org.apache.commons.lang3.ClassUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -56,154 +61,107 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.apache.commons.collections4.CollectionUtils.subtract;
+import static oap.application.KernelHelper.fixLinksForConstructor;
+import static oap.application.KernelHelper.forEachModule;
+import static oap.application.KernelHelper.forEachService;
+import static oap.application.KernelHelper.isImplementations;
+import static oap.application.KernelHelper.isServiceLink;
+import static oap.application.KernelHelper.referenceName;
+import static oap.application.KernelHelper.serviceEnabled;
 
+/**
+ * Created by igor.petrenko on 08.01.2019.
+ */
 @Slf4j
 @ToString( of = "name" )
 public class Kernel implements Iterable<Map.Entry<String, Object>> {
     public static final String DEFAULT = Strings.DEFAULT;
     final String name;
     private final List<URL> configurations;
-    private final List<URL> plugins;
     private final Set<String> profiles = Sets.empty();
     private final Set<Module> modules = Sets.empty();
     private final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
     private final Supervisor supervisor = new Supervisor();
-    private final List<DynamicConfig.Control> dynamicConfigurations = new ArrayList<>();
-    private final Linker linker = new Linker( this );
 
-    public Kernel( String name, List<URL> configurations, List<URL> plugins ) {
+    public Kernel( String name, List<URL> configurations ) {
         this.name = name;
         this.configurations = configurations;
-        this.plugins = plugins;
     }
 
-    public Kernel( List<URL> configurations, List<URL> plugins ) {
-        this( DEFAULT, configurations, plugins );
+    public Kernel( List<URL> configurations ) {
+        this( DEFAULT, configurations );
     }
 
-    private Map<String, Module.Service> initializeServices( Map<String, Module.Service> services,
-                                                            Set<String> initialized, ApplicationConfiguration config,
-                                                            Map<String, List<String>> mapInterfaces ) {
-
-        HashMap<String, Module.Service> deferred = new HashMap<>();
-
-        for( Map.Entry<String, Module.Service> entry : services.entrySet() ) {
-            Module.Service service = entry.getValue();
-            service.name = service.name != null ? service.name : entry.getKey();
-            if( !service.enabled ) {
-                initialized.add( service.name );
-                log.debug( "service {} is disabled.", entry.getKey() );
-                continue;
+    private static void fixDepsParameter( Module module, Module.Service service,
+                                          Object value, boolean optional ) {
+        if( isServiceLink( value ) ) {
+            if( !optional ) {
+                String linkName = Module.Reference.of( value ).name;
+                addDeps( module, service, singletonList( linkName ) );
             }
-            if( service.profile != null && !config.profiles.contains( service.profile ) ) {
-                log.debug( "skipping " + entry.getKey() + " with profile " + service.profile );
-                continue;
+        } else if( value instanceof List<?> ) {
+            for( val item : ( List<?> ) value ) {
+                fixDepsParameter( module, service, item, true );
             }
-
-            List<String> dependsOn = Stream.of( service.dependsOn ).filter( this::serviceEnabled ).toList();
-
-            if( initialized.containsAll( dependsOn ) ) {
-                log.debug( "initializing {} as {}", entry.getKey(), service.name );
-
-                if( service.implementation == null )
-                    throw new ApplicationException( "failed to initialize service: " + service.name + ". implementation == null" );
-
-                Reflection reflect = Reflect.reflect( service.implementation, Module.coersions );
-
-                Object instance;
-                if( !service.isRemoteService() ) try {
-                    instance = linker.link( service, () -> reflect.newInstance( service.parameters ), mapInterfaces );
-                    initializeDynamicConfigurations( reflect, instance );
-                } catch( ReflectException e ) {
-                    log.info( "service name = {}, remote = {}, profile = {}", service.name, service.remote, service.profile );
-                    throw e;
-                }
-                else instance = RemoteInvocationHandler.proxy(
-                    service.remote,
-                    reflect.underlying );
-                register( service.name, instance );
-                if( !service.name.equals( entry.getKey() ) )
-                    register( entry.getKey(), instance );
-
-                if( service.supervision.supervise )
-                    supervisor.startSupervised( service.name, instance,
-                        service.supervision.startWith,
-                        service.supervision.stopWith,
-                        service.supervision.reloadWith );
-                if( service.supervision.thread )
-                    supervisor.startThread( service.name, instance );
-                else {
-                    if( service.supervision.schedule && service.supervision.cron != null )
-                        supervisor.scheduleCron( service.name, ( Runnable ) instance,
-                            service.supervision.cron );
-                    else if( service.supervision.schedule && service.supervision.delay != 0 )
-                        supervisor.scheduleWithFixedDelay( service.name, ( Runnable ) instance,
-                            service.supervision.delay, MILLISECONDS );
-                }
-                initialized.add( service.name );
-            } else {
-                log.debug( "dependencies are not ready - deferring " + service.name + ": "
-                    + subtract( service.dependsOn, initialized ) );
-                deferred.put( entry.getKey(), service );
+        } else if( value instanceof Map<?, ?> ) {
+            for( val item : ( ( Map<?, ?> ) value ).values() ) {
+                fixDepsParameter( module, service, item, false );
             }
         }
-
-        return deferred.size() == services.size() ? deferred
-            : initializeServices( deferred, initialized, config, mapInterfaces );
     }
 
-    private void initializeDynamicConfigurations( Reflection reflect, Object instance ) {
-        reflect.fields
-            .values()
-            .stream()
-            .filter( field -> field.type().assignableFrom( DynamicConfig.class ) && !field.type().underlying.equals( Object.class ) )
-            .forEach( f -> {
-                DynamicConfig<?> config = ( DynamicConfig<?> ) f.get( instance );
-                if( config.isUpdateable() ) dynamicConfigurations.add( config.control );
-            } );
+    private static void addDeps( Module module, Module.Service service, List<String> list ) {
+        log.trace( "service[{}].dependsOn.addAll({}); module={}", service.name, list, module.name );
+        service.dependsOn.addAll( list );
     }
 
-
-    private Set<Module> initialize( Set<Module> modules, Set<String> initialized, Set<String> initializedServices,
-                                    ApplicationConfiguration config, HashMap<String, List<String>> mapInterfaces ) {
-        HashSet<Module> deferred = new HashSet<>();
-
-        for( Module module : modules ) {
-            log.debug( "initializing module " + module.name + " [abstract = " + module.isAbstract + "]" );
-
-            if( module.isAbstract ) {
-                initialized.add( module.name );
-                continue;
-            }
-
-            if( initialized.containsAll( module.dependsOn ) ) {
-                for( val ext : module.extendsModules ) {
-                    val extModule = this.modules.stream().filter( m -> m.name.equals( ext ) ).findAny()
-                        .orElseThrow( () -> new ApplicationException( "extends module " + ext + " not found." ) );
-
-                    module.services.putAll( extModule.services );
-                }
-
-                Map<String, Module.Service> def =
-                    initializeServices( module.services, initializedServices, config, mapInterfaces );
-                if( !def.isEmpty() ) {
-                    Set<String> names = Sets.map( def.entrySet(), Map.Entry::getKey );
-                    log.error( "failed to initialize: " + names );
-                    throw new ApplicationException( "failed to initialize services: " + names );
-                }
-
-                initialized.add( module.name );
-            } else {
-                log.debug( "dependencies are not ready - deferring " + module.name + ": "
-                    + subtract( module.dependsOn, initialized ) );
-                deferred.add( module );
+    private void fixDeps() {
+        for( val module : modules ) {
+            for( val service : module.services.values() ) {
+                service.parameters.forEach( ( key, value ) -> fixDepsParameter( module, service, value, false ) );
             }
         }
+    }
 
-        return deferred.size() == modules.size() ? deferred
-            : initialize( deferred, initialized, initializedServices, config, mapInterfaces );
+    private void linkListeners( Module.Service service, Object instance ) {
+        service.listen.forEach( ( listener, reference ) -> {
+            log.debug( "setting {} to listen to {} with listener {}", service.name, reference, listener );
+            String methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
+            Object linked = services.get( Module.Reference.of( reference ).name );
+            if( linked == null )
+                throw new ApplicationException( "for " + service.name + " listening object " + reference + " is not found" );
+            val m = Reflect.reflect( linked.getClass() ).method( methodName ).orElse( null );
+            if( m != null ) {
+                m.invoke( linked, instance );
+            } else {
+                throw new ReflectException( "listener " + listener + " should have method " + methodName + " in " + reference );
+            }
+        } );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private void linkLinks( Module.Service service, Object instance ) {
+        service.link.forEach( ( field, reference ) -> {
+            log.debug( "linking {} to {} into {}", service.name, reference, field );
+            Module.Reference ref = Module.Reference.of( reference );
+            Object linked = services.get( ref.name );
+            if( linked == null )
+                throw new ApplicationException( "for " + service.name + " linked object " + ref + " is not found" );
+            val f = Reflect.reflect( linked.getClass() ).field( field ).orElse( null );
+            if( f != null ) {
+                Object value = f.get( linked );
+                if( value instanceof PrioritySet<?> ) {
+                    log.debug( "adding {} with priority {} to {} of {}", instance, ref.priority, field, ref.name );
+                    ( ( PrioritySet<Object> ) value ).add( ref.priority, instance );
+                } else if( value instanceof Collection<?> ) ( ( Collection<Object> ) value ).add( instance );
+                else
+                    throw new ApplicationException( "do not know how to link " + service.name + " to " + f.type().name() + " of " + ref.name );
+            } else {
+                throw new ReflectException( "service " + ref.name + " should have field " + field );
+            }
+        } );
     }
 
     public void start() {
@@ -253,19 +211,11 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         log.debug( "modules = " + Sets.map( this.modules, m -> m.name ) );
         log.trace( "modules configs = " + this.modules );
 
-        val mapInterfaces = extractInterfaces( this.modules );
-        linker.fixDeps( this.modules, mapInterfaces );
-
-        Set<Module> def = initialize( this.modules, new HashSet<>(), new HashSet<>(), config, mapInterfaces );
-        if( !def.isEmpty() ) {
-            Set<String> names = Sets.map( def, m -> m.name );
-            log.error( "failed to initialize: {} ", names );
-            throw new ApplicationException( "failed to initialize modules: " + names );
-        }
-
-        this.dynamicConfigurations.forEach( DynamicConfig.Control::start );
-
-        initPlugins();
+        fixDeps();
+        val map = instantiateServices( config );
+        registerServices( map );
+        linkServices( map );
+        startServices( map );
 
         this.supervisor.start();
 
@@ -273,104 +223,169 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         log.debug( "application kernel started" );
     }
 
-    @SneakyThrows
-    private HashMap<String, List<String>> extractInterfaces( Set<Module> modules ) {
-        val map = new HashMap<String, List<String>>();
-        for( val module : modules ) {
-            for( val serviceEntry : module.services.entrySet() ) {
-                val service = serviceEntry.getValue();
-                val serviceName = serviceEntry.getKey();
-                if( !service.enabled ) continue;
+    private Map<String, ServiceInitialization> instantiateServices( ApplicationConfiguration config ) {
+        val ret = new HashMap<String, ServiceInitialization>();
 
-                val implementation = service.implementation;
-                try {
-                    val clazz = Class.forName( implementation );
+        val initializedServices = new HashSet<String>();
+        forEachModule( modules, new HashSet<>(), module ->
+            forEachService( modules, module.services, initializedServices, ( implName, service ) -> {
+                service.name = service.name != null ? service.name : implName;
+                if( !service.enabled ) {
+                    log.debug( "service {} is disabled.", implName );
+                    return;
+                }
+                if( service.profile != null && !config.profiles.contains( service.profile ) ) {
+                    log.debug( "skipping {} with profile {}", implName, service.profile );
+                    return;
+                }
 
-                    val list = java.util.stream.Stream.concat(
-                        ClassUtils.getAllSuperclasses( clazz ).stream(),
-                        ClassUtils.getAllInterfaces( clazz ).stream()
-                    );
+                log.debug( "initializing {} as {}", implName, service.name );
 
-                    list.forEach( c -> {
-                        map.compute( c.getName(), ( s, l ) -> {
-                            if( l == null ) return Lists.of( serviceName );
-                            else {
-                                l.add( serviceName );
-                                return l;
-                            }
-                        } );
-                    } );
-                } catch( ClassNotFoundException e ) {
-                    log.error( "service = {}, implementation = {}", serviceEntry.getKey(), implementation );
+                if( service.implementation == null )
+                    throw new ApplicationException( "failed to initialize service: " + service.name + ". implementation == null" );
+
+                Reflection reflect = Reflect.reflect( service.implementation, Module.coersions );
+                Object instance;
+                if( !service.isRemoteService() ) try {
+                    val parametersWithoutLinks = fixLinksForConstructor( ret, service.parameters );
+                    instance = reflect.newInstance( parametersWithoutLinks );
+                } catch( ReflectException e ) {
+                    log.info( "service name = {}, remote = {}, profile = {}", implName, service.remote, service.profile );
                     throw e;
                 }
-            }
-        }
+                else instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
 
-        return map;
+                ret.put( service.name, new ServiceInitialization( implName, instance, module, service, reflect ) );
+            } ) );
+
+        return ret;
+    }
+
+    private void registerServices( Map<String, ServiceInitialization> services ) {
+        services.forEach( ( name, si ) -> {
+            register( name, si.instance );
+            if( !si.service.name.equals( name ) )
+                register( si.service.name, si.instance );
+        } );
+    }
+
+    private void linkServices( Map<String, ServiceInitialization> services ) {
+        for( val si : services.values() ) {
+            si.service.parameters.forEach( ( parameter, value ) -> {
+                linkService( new FieldLinkReflection( si.reflection, si.instance, parameter ), value, si,
+                    true );
+                linkLinks( si.service, si.instance );
+                linkListeners( si.service, si.instance );
+            } );
+
+        }
     }
 
     @SuppressWarnings( "unchecked" )
-    @Deprecated
-    private void initPlugins() {
-        if( !plugins.isEmpty() )
-            log.warn( "plugins are deprecated. Use standard kernel facilities" );
-        for( val url : plugins ) {
-            val plugin = Plugin.CONFIGURATION.fromUrl( url );
+    private void linkService( LinkReflection lRef, Object parameterValue, ServiceInitialization si,
+                              boolean failIfNotFound ) {
+        if( isServiceLink( parameterValue ) ) {
+            val linkName = referenceName( parameterValue );
+            val linkService = service( linkName );
 
-            for( val export : plugin.export ) {
-                for( val serviceName : export.service ) {
-                    val service = Application.service( serviceName );
-                    Preconditions.checkNotNull( service, "Unknown service " + serviceName );
-                    val reflect = Reflect.reflect( service.getClass() );
-                    export.parameters.forEach( ( name, services ) -> {
-                        val field = reflect.field( name ).get();
-                        if( field.type().assignableTo( List.class ) ) {
-                            for( val refServiceName : services ) {
-                                val refService = Application.service( refServiceName );
-                                Preconditions.checkNotNull( service, "Unknown service " + serviceName );
-                                ( ( List<Object> ) field.get( service ) ).add( refService );
-                            }
-                        } else {
-                            Preconditions.checkArgument( services.size() == 1 );
+            if( failIfNotFound && linkService == null )
+                throw new ApplicationException( "for " + si.implementationName + " linked object " + linkName + " is not found" );
 
-                            val refService = Application.service( services.get( 0 ) );
-                            Preconditions.checkNotNull( service, "Unknown service " + serviceName );
-                            field.set( service, refService );
-                        }
-                    } );
+            lRef.set( linkService );
+        } else if( isImplementations( parameterValue ) ) {
+            val interfaceName = referenceName( parameterValue );
+            try {
+                val linkServices = ofClass( Class.forName( interfaceName ) );
+                if( linkServices.isEmpty() ) {
+                    if( failIfNotFound )
+                        throw new ApplicationException( "for " + si.implementationName + " service link " + interfaceName + " is not found" );
+                    lRef.set( null );
+                } else {
+                    for( val linkService : linkServices ) {
+                        lRef.set( linkService );
+                    }
                 }
+            } catch( ClassNotFoundException e ) {
+                throw new ApplicationException( "interface " + interfaceName + " not found" );
+            }
+
+        } else if( parameterValue instanceof List<?> ) {
+            val parameterList = ( List<?> ) parameterValue;
+            val instanceList = ( List<Object> ) lRef.get();
+            val instanceIterator = instanceList.listIterator();
+            for( val parameter : parameterList ) {
+                linkService( new ListLinkReflection( instanceIterator ), parameter, si, false );
+            }
+        } else if( parameterValue instanceof Map ) {
+            val parameterMap = ( Map<Object, Object> ) parameterValue;
+            val instance = lRef.get();
+
+            for( val entry : parameterMap.entrySet() ) {
+                val isMap = instance instanceof Map;
+                final LinkReflection linkReflection = isMap
+                    ? new MapLinkReflection( ( Map<Object, Object> ) instance, entry.getKey() )
+                    : new FieldLinkReflection( Reflect.reflect( instance.getClass() ), instance, entry.getKey().toString() );
+
+                linkService( linkReflection, entry.getValue(), si, !isMap );
             }
         }
     }
 
-    public void stop( String service ) {
-        log.debug( "stopping {}...", service );
-        supervisor.stop( service );
-        unregister( service );
-        log.debug( "{} stopped", service );
+    private void startServices( Map<String, ServiceInitialization> services ) {
+        Set<Module> def = startModules( this.modules, services, new HashSet<>(), new HashSet<>() );
+        if( !def.isEmpty() ) {
+            Set<String> names = Sets.map( def, m -> m.name );
+            log.error( "failed to initialize: {} ", names );
+            throw new ApplicationException( "failed to initialize modules: " + names );
+        }
     }
 
-    public void stop() {
-        log.debug( "stopping application kernel " + name + "..." );
-        this.dynamicConfigurations.forEach( DynamicConfig.Control::stop );
-        supervisor.stop();
-        services.clear();
-        Metrics.resetAll();
-        Application.unregister( this );
-        log.debug( "application kernel stopped" );
+    private Set<Module> startModules( Set<Module> modules, Map<String, ServiceInitialization> services,
+                                      Set<String> initializedModules, Set<String> initializedServices ) {
+
+        return forEachModule( modules, initializedModules, module -> {
+            Map<String, Module.Service> def = startModule( module.services, services, initializedServices );
+            if( !def.isEmpty() ) {
+                val names = def.keySet();
+                log.error( "failed to initialize: {}", names );
+                throw new ApplicationException( "failed to initialize services: " + names );
+            }
+        } );
     }
 
-    @Deprecated
-    public void reload() {
-//@todo rethink this
-        log.debug( "reloading application kernel" + name + "..." );
-        supervisor.reload();
-        log.debug( "application kernel reloaded" );
+    private Map<String, Module.Service> startModule( Map<String, Module.Service> services, Map<String, ServiceInitialization> sis,
+                                                     Set<String> initializedServices ) {
+
+        return forEachService( modules, services, initializedServices, ( implName, service ) -> {
+            log.debug( "initializing {} as {}", implName, service.name );
+
+            val si = sis.get( service.name );
+            if( si != null ) {
+                startService( si );
+            }
+        } );
     }
 
-    public boolean profileEnabled( String profile ) {
-        return profiles.contains( profile );
+    private void startService( ServiceInitialization si ) {
+        val service = si.service;
+        val instance = si.instance;
+        if( service.supervision.supervise ) {
+            supervisor.startSupervised( service.name, instance,
+                service.supervision.startWith,
+                service.supervision.stopWith,
+                service.supervision.reloadWith );
+        }
+
+        if( service.supervision.thread )
+            supervisor.startThread( service.name, instance );
+        else {
+            if( service.supervision.schedule && service.supervision.cron != null )
+                supervisor.scheduleCron( service.name, ( Runnable ) instance,
+                    service.supervision.cron );
+            else if( service.supervision.schedule && service.supervision.delay != 0 )
+                supervisor.scheduleWithFixedDelay( service.name, ( Runnable ) instance,
+                    service.supervision.delay, MILLISECONDS );
+        }
     }
 
     public void register( String name, Object service ) {
@@ -379,9 +394,13 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
             throw new ApplicationException( "Service " + service + " is already registered [" + registered.getClass() + "]" );
     }
 
-    public void unregister( String name ) {
-        //@todo check for dependencies
-        services.remove( name );
+    public void stop() {
+        log.debug( "stopping application kernel {}...", name );
+        supervisor.stop();
+        services.clear();
+        Metrics.resetAll();
+        Application.unregister( this );
+        log.debug( "application kernel stopped" );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -397,29 +416,38 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
             .toList();
     }
 
-    /**
-     * @see #stop()
-     */
-    @Deprecated
-    public void unregisterServices() {
-        services.clear();
-    }
-
-    public void enableProfiles( String... profiles ) {
-        this.profiles.addAll( Sets.of( profiles ) );
-    }
-
-    boolean serviceEnabled( String name ) {
-        for( Module module : this.modules ) {
-            Module.Service service = module.services.get( name );
-            if( service != null && !service.enabled ) return false;
-        }
-
-        return true;
+    protected Object resolve( String serviceName, String field, String reference, boolean required ) {
+        String linkName = Module.Reference.of( reference ).name;
+        Object linkedService = service( linkName );
+        log.debug( "for {} linking {} -> {} with {}", serviceName, field, reference, linkedService );
+        if( linkedService == null && required && serviceEnabled( modules, linkName ) )
+            throw new ApplicationException( "for " + serviceName + " service link " + reference + " is not found" );
+        return linkedService;
     }
 
     @Override
     public Iterator<Map.Entry<String, Object>> iterator() {
         return services.entrySet().iterator();
+    }
+
+    public void unregister( String name ) {
+        services.remove( name );
+    }
+
+    public void unregisterServices() {
+        services.clear();
+    }
+
+    public void reload() {
+        stop();
+        start();
+    }
+
+    public boolean profileEnabled( String profile ) {
+        return profiles.contains( profile );
+    }
+
+    public void enableProfiles( String profile ) {
+        this.profiles.add( profile );
     }
 }

@@ -26,12 +26,10 @@ package oap.application;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.val;
 import oap.application.ServiceOne.Complex;
 import oap.application.linked.ServiceContainee;
 import oap.application.linked.ServiceContainer;
 import oap.testng.AbstractTest;
-import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.BeforeMethod;
@@ -42,12 +40,9 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.util.Arrays.asList;
 import static oap.testng.Asserts.assertEventually;
-import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
-import static oap.util.Lists.empty;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertNotNull;
@@ -67,7 +62,7 @@ public class KernelTest extends AbstractTest {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/start_stop.conf" ) );
 
-        Kernel kernel = new Kernel( modules, empty() );
+        Kernel kernel = new Kernel( modules );
         kernel.start();
         TestCloseable tc = Application.service( "c1" );
         TestCloseable2 tc2 = Application.service( "c2" );
@@ -79,20 +74,6 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void dynamicConfigurations() {
-        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "dynaconf/dynaconf.conf" ) );
-        Env.deployTestData( getClass(), "dynaconf" );
-        Kernel kernel = new Kernel( modules, empty() );
-        try {
-            kernel.start( pathOfTestResource( getClass(), "dynaconf/application.conf" ) );
-            Dynaconf dynaconf = Application.service( "c1" );
-            assertString( dynaconf.x.value.parameter ).isEqualTo( "valueUpdated" );
-        } finally {
-            kernel.stop();
-        }
-    }
-
-    @Test
     public void start() {
         System.setProperty( "failedValue", "value that can fail config parsing" );
         List<URL> modules = Lists.of(
@@ -101,7 +82,7 @@ public class KernelTest extends AbstractTest {
             urlOfTestResource( getClass(), "modules/m3.yaml" )
         );
 
-        Kernel kernel = new Kernel( modules, empty() );
+        Kernel kernel = new Kernel( modules );
         try {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ),
                 pathOfTestResource( getClass(), "conf.d" ) );
@@ -131,7 +112,7 @@ public class KernelTest extends AbstractTest {
                 assertThat( one.listener ).isSameAs( two );
 
 //                dont do this kind of things now.
-//                ServiceOne.ComplexMap complexMap = Application.service( ServiceOne.ComplexMap.class );
+//                ServiceOne.ComplexMap complexMap = Application.service2( ServiceOne.ComplexMap.class );
                 //                assertThat( one.complexMap ).isSameAs( complexMap );
             } );
         } finally {
@@ -143,7 +124,7 @@ public class KernelTest extends AbstractTest {
     public void disabled() {
         List<URL> modules = Lists.of( urlOfTestResource( getClass(), "disabled/disabled.conf" ) );
 
-        Kernel kernel = new Kernel( modules, empty() );
+        Kernel kernel = new Kernel( modules );
         try {
             kernel.start();
 
@@ -162,7 +143,7 @@ public class KernelTest extends AbstractTest {
             urlOfTestResource( getClass(), "linked/containee.conf" )
         );
 
-        Kernel kernel = new Kernel( modules, empty() );
+        Kernel kernel = new Kernel( modules );
         try {
             kernel.start();
 
@@ -183,56 +164,13 @@ public class KernelTest extends AbstractTest {
     public void map() {
         List<URL> modules = Lists.of( urlOfTestResource( getClass(), "map/map.conf" ) );
 
-        Kernel kernel = new Kernel( modules, empty() );
+        Kernel kernel = new Kernel( modules );
         try {
             kernel.start();
 
             assertThat( Application.<ServiceOne>service( "s1" ).map ).hasSize( 2 );
             assertThat( Application.<ServiceOne>service( "s1" ).map.get( "test1" ) ).isInstanceOf( ServiceOne.class );
             assertThat( Application.<ServiceOne>service( "s1" ).map.get( "test2" ) ).isInstanceOf( ServiceOne.class );
-        } finally {
-            kernel.stop();
-        }
-    }
-
-    @Test
-    public void abstractModules() {
-        List<URL> modules = asList(
-            urlOfTestResource( getClass(), "modules/abs.conf" ),
-            urlOfTestResource( getClass(), "modules/impl.conf" )
-        );
-
-        Kernel kernel = new Kernel( modules, empty() );
-        try {
-            kernel.start();
-
-            val serviceOneP1 = Application.<ServiceOne>service( "ServiceOneP1" );
-            val cm = Application.<Complex>service( "comp" );
-
-            assertThat( serviceOneP1 ).isNotNull();
-            assertThat( serviceOneP1.complex ).isNotNull();
-            assertThat( cm ).isNotNull();
-            assertThat( serviceOneP1.complex ).isSameAs( cm );
-        } finally {
-            kernel.stop();
-        }
-    }
-
-    @Test
-    public void testPlugins() {
-        val kernel = new Kernel(
-            Lists.of( urlOfTestResource( getClass(), "plugins/oap-module.yaml" ) ),
-            Lists.of( urlOfTestResource( getClass(), "plugins/oap-plugin.yaml" ) )
-        );
-
-        try {
-            kernel.start();
-            val service1 = Application.service( Service1.class );
-            val service2 = Application.service( Service2.class );
-
-            assertThat( service1.ref ).isSameAs( service2 );
-            assertThat( service1.list ).hasSize( 1 );
-            assertThat( service1.list.get( 0 ) ).isSameAs( service2 );
         } finally {
             kernel.stop();
         }
@@ -261,14 +199,6 @@ public class KernelTest extends AbstractTest {
         public void close() {
             this.closed = true;
         }
-    }
-
-    public static class Dynaconf {
-        DynamicConfig<DynaconfCfg> x;
-    }
-
-    public static class DynaconfCfg {
-        String parameter;
     }
 
     public static class Service1 {

@@ -21,11 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.application;
 
-@Deprecated
-public class PluginConfiguration extends Configuration<Plugin> {
-    public PluginConfiguration() {
-        super( Plugin.class, "oap-plugin" );
+package oap.application.link;
+
+import java.util.ListIterator;
+
+/**
+ * Created by igor.petrenko on 08.01.2019.
+ */
+public class ListLinkReflection implements LinkReflection {
+    private final ListIterator<Object> iterator;
+    private Object value = null;
+    private boolean init = false;
+    private boolean set = false;
+
+    public ListLinkReflection( ListIterator<Object> iterator ) {
+        this.iterator = iterator;
+    }
+
+    @Override
+    public boolean set( Object value ) {
+        get();
+        if( value == null ) {
+            iterator.remove();
+            return false;
+        } else {
+            if( !set ) {
+                iterator.set( value );
+                set = true;
+            } else {
+                iterator.add( value );
+            }
+            return true;
+        }
+    }
+
+    @Override
+    public Object get() {
+        if( init ) return value;
+        value = iterator.next();
+        init = true;
+        return value;
     }
 }

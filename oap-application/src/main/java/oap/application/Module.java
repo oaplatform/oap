@@ -36,6 +36,7 @@ import oap.util.Strings;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -51,7 +52,7 @@ public class Module {
     @JsonAlias( { "name", "%name" } )
     public String name;
     @JsonAlias( { "dependsOn", "%dependsOn" } )
-    public ArrayList<String> dependsOn = new ArrayList<>();
+    public LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
     @JsonAlias( { "extends", "%extends" } )
     @Deprecated
     public ArrayList<String> extendsModules = new ArrayList<>();
@@ -72,7 +73,7 @@ public class Module {
         public String implementation;
         public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
         public Supervision supervision = new Supervision();
-        public ArrayList<String> dependsOn = new ArrayList<>();
+        public LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
         public String profile;
         public String name;
         public LinkedHashMap<String, String> listen = new LinkedHashMap<>();

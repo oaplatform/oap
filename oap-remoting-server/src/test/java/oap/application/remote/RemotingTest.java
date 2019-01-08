@@ -32,7 +32,6 @@ import org.testng.annotations.Test;
 import java.net.URL;
 import java.util.List;
 
-import static java.util.Collections.emptyList;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
@@ -46,7 +45,7 @@ public class RemotingTest {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( RemotingTest.class, "module.conf" ) );
 
-        Kernel kernel = new Kernel( modules, emptyList() );
+        Kernel kernel = new Kernel( modules );
         try {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ) );
 

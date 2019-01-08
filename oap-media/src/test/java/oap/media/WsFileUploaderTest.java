@@ -73,7 +73,7 @@ public class WsFileUploaderTest extends AbstractTest {
         Env.resetPorts();
         super.beforeMethod();
 
-        kernel = new Kernel( emptyList(), emptyList() );
+        kernel = new Kernel( emptyList() );
         kernel.start();
         path = Env.tmpPath( "/tmp" );
 

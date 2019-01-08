@@ -101,7 +101,7 @@ public class Lists extends oap.util.Collections {
         return map( of( array ), mapper );
     }
 
-    public static <E> ArrayList<E> filter( List<E> list, Predicate<E> predicate ) {
+    public static <E> ArrayList<E> filter( Collection<E> list, Predicate<E> predicate ) {
         final ArrayList<E> result = new ArrayList<>();
 
         for( E e : list ) if( predicate.test( e ) ) result.add( e );

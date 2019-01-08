@@ -74,7 +74,7 @@ public class Boot {
             shutdownHook.run();
         } );
         try {
-            kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath(), Plugin.CONFIGURATION.urlsFromClassPath() );
+            kernel = new Kernel( Module.CONFIGURATION.urlsFromClassPath() );
             kernel.start( config, confd );
             logger.debug( "started" );
         } catch( Exception e ) {

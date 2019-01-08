@@ -35,7 +35,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public interface Storage<T> extends AutoCloseable {
+public interface Storage<T> extends Iterable<T>, AutoCloseable {
 
     Stream<T> select();
 
