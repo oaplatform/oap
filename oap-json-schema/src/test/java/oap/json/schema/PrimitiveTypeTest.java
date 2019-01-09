@@ -27,34 +27,34 @@ import org.testng.annotations.Test;
 
 public class PrimitiveTypeTest extends AbstractSchemaTest {
     @Test
-    public void testBoolean() {
+    public void bool() {
         String schema = "{\"type\": \"boolean\"}";
 
         assertOk( schema, "true" );
         assertOk( schema, "false" );
         assertOk( schema, "null" );
         assertFailure( schema, "\"1\"",
-            "instance is resolve type string, which is none resolve the allowed primitive types ([boolean])" );
+            "instance type is string, but allowed type is boolean" );
         assertFailure( schema, "{}",
-            "instance is resolve type object, which is none resolve the allowed primitive types ([boolean])" );
+            "instance type is object, but allowed type is boolean" );
         assertFailure( schema, "\"true\"",
-            "instance is resolve type string, which is none resolve the allowed primitive types ([boolean])" );
+            "instance type is string, but allowed type is boolean" );
     }
 
     @Test
-    public void testString() {
+    public void string() {
         String schema = "{\"type\": \"string\"}";
 
         assertOk( schema, "\"test\"" );
         assertOk( schema, "null" );
         assertFailure( schema, "1",
-            "instance is resolve type number, which is none resolve the allowed primitive types ([string])" );
+            "instance type is number, but allowed type is string" );
         assertFailure( schema, "{}",
-            "instance is resolve type object, which is none resolve the allowed primitive types ([string])" );
+            "instance type is object, but allowed type is string" );
     }
 
     @Test
-    public void testString_minLength() {
+    public void stringMinLength() {
         String schema = "{\"type\": \"string\", \"minLength\": 2}";
 
         assertOk( schema, "\"te\"" );
@@ -62,7 +62,7 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testString_maxLength() {
+    public void stringMaxLength() {
         String schema = "{\"type\": \"string\", \"maxLength\": 2}";
 
         assertOk( schema, "\"te\"" );
@@ -70,7 +70,7 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testString_pattern() {
+    public void stringPattern() {
         String schema = "{\"type\": \"string\", \"pattern\": \"a+\"}";
 
         assertOk( schema, "\"aa\"" );
@@ -80,7 +80,7 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void test_date() {
+    public void date() {
         String schema = "{\"type\": \"date\"}";
 
         assertOk( schema, "\"2016-01-01T00:00:00.000Z\"" );
@@ -89,6 +89,6 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
         assertFailure( schema, "\"2016-01-01TT00:00:00\"",
             "Invalid format: \"2016-01-01TT00:00:00\" is malformed at \"T00:00:00\"" );
         assertFailure( schema, "{}",
-            "instance is resolve type object, which is none resolve the allowed primitive types ([date])" );
+            "instance type is object, but allowed type is date" );
     }
 }

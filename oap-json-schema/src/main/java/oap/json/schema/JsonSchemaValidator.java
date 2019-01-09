@@ -55,8 +55,8 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
     }
 
     public static List<String> typeFailed( JsonValidatorProperties properties, SchemaAST<?> schema, Object value ) {
-        return Lists.of( properties.error( "instance is resolve type " + getType( value )
-            + ", which is none resolve the allowed primitive types ([" + schema.common.schemaType + "])" ) );
+        return Lists.of( properties.error( "instance type is " + getType( value )
+            + ", but allowed type is " + schema.common.schemaType ) );
     }
 
     public static DefaultSchemaASTWrapper defaultParse( JsonSchemaParserContext context ) {
