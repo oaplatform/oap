@@ -48,11 +48,11 @@ public class PublicSuffixData {
     }
 
     public static String baseDomainOf( String domain ) {
-        if( domain == null || domain.startsWith( "." ) ) return null;
-        String normalized = IDN.toUnicode( domain.toLowerCase() );
-        if( suffixes.contains( normalized ) ) return null;
+        if( domain == null ) return null;
+        String normalized = IDN.toUnicode( domain.startsWith( "." ) ? domain.substring( 1 ) : domain ).toLowerCase();
+        if( suffixes.contains( normalized ) ) return normalized;
         String[] split = StringUtils.split( normalized, '.' );
-        if( split.length == 1 ) return null;
+        if( split.length == 1 ) return normalized;
         for( int i = 1; i < split.length; i++ ) {
             StringBuilder sb = new StringBuilder( split[i] );
             for( int j = i + 1; j < split.length; j++ ) sb.append( '.' ).append( split[j] );
