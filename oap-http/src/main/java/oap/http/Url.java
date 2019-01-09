@@ -84,6 +84,5 @@ public class Url {
         if( end > 0 ) return url.substring( start, end );
 
         return url.substring( start ).toLowerCase();
-
     }
 }

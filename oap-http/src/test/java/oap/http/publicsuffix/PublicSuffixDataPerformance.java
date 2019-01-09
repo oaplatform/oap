@@ -22,36 +22,20 @@
  * SOFTWARE.
  */
 
-package oap.http;
+package oap.http.publicsuffix;
 
-import lombok.SneakyThrows;
-import lombok.val;
-import oap.util.Maps;
-import oap.util.Pair;
-import org.apache.http.client.utils.URIBuilder;
+import org.testng.annotations.Test;
 
-import java.net.URI;
-import java.util.Collection;
-import java.util.Map;
+import static oap.benchmark.Benchmark.benchmark;
+import static oap.testng.Asserts.assertString;
 
-public class Uri {
-    @SneakyThrows
-    public static URI uri( String uri, Map<String, Object> params ) {
-        URIBuilder uriBuilder = new URIBuilder( uri );
-        for( Map.Entry<String, Object> entry : params.entrySet() ) {
-            String name = entry.getKey();
-            Object value = entry.getValue();
-            if( value instanceof Collection<?> )
-                for( val v : ( Collection<?> ) value )
-                    uriBuilder.addParameter( name, v == null ? "" : v.toString() );
-            else uriBuilder.addParameter( name, value == null ? "" : value.toString() );
-        }
-        return uriBuilder.build();
-
+public class PublicSuffixDataPerformance {
+    @Test
+    public void baseDomainOf() {
+        assertString( PublicSuffixData.baseDomainOf( "facebook.com" ) ).isEqualTo( "facebook.com" );
+        benchmark( "baseDomainOf", 1000000,
+            () -> PublicSuffixData.baseDomainOf( "facebook.com" )
+        ).run();
     }
 
-    @SafeVarargs
-    public static URI uri( String uri, Pair<String, Object>... params ) {
-        return uri( uri, Maps.of( params ) );
-    }
 }

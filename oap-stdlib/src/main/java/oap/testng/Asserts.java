@@ -29,6 +29,7 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
 import oap.util.Result;
+import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
@@ -137,6 +138,12 @@ public final class Asserts {
 
     public static Path pathOfTestResource( Class<?> contextClass, String resource ) {
         return Resources.filePath( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
+            : "/" + resource ) )
+            .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
+    }
+
+    public static Stream<String> linesOfTestResource( Class<?> contextClass, String resource ) {
+        return Resources.lines( contextClass, contextClass.getSimpleName() + ( resource == null ? ""
             : "/" + resource ) )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
