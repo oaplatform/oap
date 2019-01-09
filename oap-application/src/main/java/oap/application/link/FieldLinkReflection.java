@@ -29,6 +29,8 @@ import lombok.val;
 import oap.application.ApplicationException;
 import oap.reflect.Reflection;
 
+import java.util.Optional;
+
 /**
  * Created by igor.petrenko on 08.01.2019.
  */
@@ -47,9 +49,7 @@ public class FieldLinkReflection implements LinkReflection {
     @Override
     public boolean set( Object value ) {
         val field = reflection.field( this.field ).orElse( null );
-        if( field == null ) {
-            throw new ApplicationException( "Class " + reflection + ", field " + this.field + ":: not found" );
-        }
+        checkFound( field );
         field.set( instance, value );
 
         return true;
@@ -57,6 +57,14 @@ public class FieldLinkReflection implements LinkReflection {
 
     @Override
     public Object get() {
-        return reflection.field( field ).get().get( instance );
+        val field = reflection.field( this.field ).orElse( null );
+        checkFound( field );
+        return field.get( instance );
+    }
+
+    private void checkFound( Reflection.Field field ) {
+        if( field == null ) {
+            throw new ApplicationException( "Class " + reflection + ", field " + this.field + ":: not found" );
+        }
     }
 }
