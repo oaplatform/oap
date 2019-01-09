@@ -117,8 +117,8 @@ public class FilePersistence<T> implements Closeable, Storage.DataListener<T> {
         storage.removeDataListener( this );
         Threads.synchronously( lock, () -> {
             Scheduled.cancel( scheduled );
-            fsync( scheduled.lastExecuted() );
         } );
+        fsync( scheduled.lastExecuted() );
     }
 
     @Override
@@ -128,8 +128,6 @@ public class FilePersistence<T> implements Closeable, Storage.DataListener<T> {
 
     @Override
     public void fsync() {
-        Threads.synchronously( lock, () -> {
-            fsync( scheduled.lastExecuted() );
-        } );
+        fsync( scheduled.lastExecuted() );
     }
 }
