@@ -24,16 +24,16 @@
 
 package oap.util;
 
-import oap.benchmark.Benchmark;
-import oap.testng.AbstractPerformance;
 import org.testng.annotations.Test;
 
-public class CuidPerformance extends AbstractPerformance {
+import static oap.benchmark.Benchmark.benchmark;
+
+public class CuidPerformance {
     @Test
     public void test() {
         Cuid.next();
 
-        Benchmark.benchmark( "cuid", 20000000, Cuid::next )
+        benchmark( "cuid", 20000000, Cuid::next )
             .inThreads( 100 )
             .run();
     }

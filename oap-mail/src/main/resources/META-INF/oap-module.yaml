@@ -8,7 +8,7 @@ services:
     parameters:
       storage: "@service:mail-storage"
     dependsOn:
-    - mail-storage
+      - mail-storage
     supervision:
       schedule: true
       delay: 1m

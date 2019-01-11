@@ -42,11 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class DirectoryPersistenceTest extends AbstractTest {
-    @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
+    static {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
     }
 

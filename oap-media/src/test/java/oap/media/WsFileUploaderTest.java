@@ -64,18 +64,15 @@ public class WsFileUploaderTest extends AbstractTest {
     private Server server;
     private WebServices ws;
     private SynchronizedThread listener;
-    private Path path;
     private Kernel kernel;
 
     @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
+    public void init() {
         Env.resetPorts();
-        super.beforeMethod();
 
         kernel = new Kernel( emptyList() );
         kernel.start();
-        path = Env.tmpPath( "/tmp" );
+        Path path = Env.tmpPath( "/tmp" );
 
         Files.ensureDirectory( path );
 
@@ -101,8 +98,7 @@ public class WsFileUploaderTest extends AbstractTest {
     }
 
     @AfterMethod
-    @Override
-    public void afterMethod() throws Exception {
+    public void stop() {
         listener.stop();
         server.stop();
         ws.stop();
@@ -111,7 +107,7 @@ public class WsFileUploaderTest extends AbstractTest {
     }
 
     @Test
-    public void uploadVideo() throws IOException {
+    public void uploadVideo() {
         Path path = pathOfTestResource( getClass(), "video.mp4" );
 
         assertUploadFile( HTTP_URL( "/upload/" ), "test/test2", path )
@@ -133,7 +129,7 @@ public class WsFileUploaderTest extends AbstractTest {
     }
 
     @Test
-    public void uploadImage() throws IOException {
+    public void uploadImage() {
         Path path = pathOfTestResource( getClass(), "image.png" );
 
         assertUploadFile( HTTP_URL( "/upload/" ), "test/test2", path )

@@ -24,7 +24,6 @@
 
 package oap.io;
 
-import oap.testng.AbstractPerformance;
 import oap.testng.Env;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -34,12 +33,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
 
+import static oap.benchmark.Benchmark.benchmark;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 
 @Test( enabled = false )
-public class CompressionPerformance extends AbstractPerformance {
+public class CompressionPerformance {
     @DataProvider( name = "encodings" )
     public Object[][] encodings() {
         return new Object[][] { { GZIP }, { LZ4 } };

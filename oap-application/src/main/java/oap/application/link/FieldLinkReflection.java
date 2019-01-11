@@ -29,8 +29,6 @@ import lombok.val;
 import oap.application.ApplicationException;
 import oap.reflect.Reflection;
 
-import java.util.Optional;
-
 /**
  * Created by igor.petrenko on 08.01.2019.
  */

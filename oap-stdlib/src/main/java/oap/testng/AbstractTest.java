@@ -53,7 +53,7 @@ public abstract class AbstractTest {
     }
 
     @AfterSuite
-    public void afterSuite() throws Exception {
+    public final void tryGeneralCleanup() {
         if( cleanupTemp ) {
             final long now = System.currentTimeMillis();
             boolean empty = true;
@@ -74,6 +74,8 @@ public abstract class AbstractTest {
                         empty = false;
                     }
                 }
+            } catch( IOException e ) {
+                throw new UncheckedIOException( e );
             }
 
             if( empty ) deleteDirectory( Env.tmp );
@@ -81,25 +83,19 @@ public abstract class AbstractTest {
     }
 
     @AfterClass
-    public void afterClass() throws Exception {
+    public final void cleanTempDirectory() {
         if( cleanupTemp ) deleteDirectory( Env.tmpRoot );
     }
 
     @BeforeMethod
-    public void beforeMethod() throws Exception {
+    public final void initMocksAndResetClock() {
         MockitoAnnotations.initMocks( this );
         DateTimeUtils.setCurrentMillisSystem();
     }
 
     @AfterMethod
-    public void afterMethod() throws Exception {
-        afterMethod( true );
-    }
-
-    protected void afterMethod( boolean cleanup ) throws IOException {
-        if( cleanupTemp && cleanup ) {
-            deleteDirectory( Env.tmpRoot );
-        }
+    public final void cleanTempAndResetClock() {
+        if( cleanupTemp ) deleteDirectory( Env.tmpRoot );
         DateTimeUtils.setCurrentMillisSystem();
     }
 

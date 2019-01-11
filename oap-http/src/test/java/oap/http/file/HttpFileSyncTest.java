@@ -55,19 +55,13 @@ public class HttpFileSyncTest extends AbstractTest {
     private ClientAndServer mockServer;
 
     @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
+    public void start() {
         mockServer = startClientAndServer( PORT );
     }
 
     @AfterMethod
-    @Override
-    public void afterMethod() throws Exception {
+    public void stop() {
         mockServer.stop( true );
-
-        super.afterMethod();
     }
 
     @Test

@@ -39,10 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class KernelLinkImplementationsTest extends AbstractTest {
     @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
+    public void unregister() {
         Application.unregisterServices();
     }
 

@@ -24,13 +24,13 @@
 
 package oap.json;
 
-import oap.testng.AbstractPerformance;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static oap.benchmark.Benchmark.benchmark;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 
@@ -38,7 +38,7 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
  * Created by igor.petrenko on 06.12.2016.
  */
 @Test( enabled = false )
-public class BinderPerformance extends AbstractPerformance {
+public class BinderPerformance {
     @Test( enabled = false )
     public void testArrayVsList() {
         final String source = "{\"test\":[\"1\",\"2\",\"3\"],\"test2\":[1,2,3]}";

@@ -39,10 +39,7 @@ public class AbstractMongoTest extends AbstractTest {
     protected MongoClient mongoClient;
 
     @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
+    public void init() {
         dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
         mongoClient = new MongoClient( Env.getEnvOrDefault( "MONGO_HOST", "localhost" ), 27017, dbName, Migration.NONE );
@@ -51,11 +48,8 @@ public class AbstractMongoTest extends AbstractTest {
     }
 
     @AfterMethod
-    @Override
-    public void afterMethod() throws Exception {
+    public void done() {
         mongoClient.database.drop();
         mongoClient.close();
-
-        super.afterMethod();
     }
 }

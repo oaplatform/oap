@@ -24,7 +24,6 @@
 
 package oap.perf;
 
-import oap.testng.AbstractPerformance;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.testng.annotations.Test;
 
@@ -32,11 +31,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
+import static oap.benchmark.Benchmark.benchmark;
+
 /**
  * Created by igor.petrenko on 26.10.2016.
  */
 @Test
-public class AtomicPerformance extends AbstractPerformance {
+public class AtomicPerformance {
     private final MutableLong ml = new MutableLong();
     private final AtomicLong al = new AtomicLong( 0 );
     private final LongAdder la = new LongAdder();

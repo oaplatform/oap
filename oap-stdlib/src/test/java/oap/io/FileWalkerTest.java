@@ -23,10 +23,7 @@ import static org.testng.Assert.assertEqualsNoOrder;
 public class FileWalkerTest extends AbstractTest {
 
     @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
+    public void init() {
         Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
         Files.writeString( Env.tmp( "/wildcard/w2/3.txt" ), "1" );
         Files.writeString( Env.tmp( "/wildcard/w2/33.txt" ), "1" );
@@ -34,7 +31,7 @@ public class FileWalkerTest extends AbstractTest {
     }
 
     @Test
-    public void walkFileTreeBasePathNotFound() throws Exception {
+    public void walkFileTreeBasePathNotFound() {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( Paths.get( "/aaa" ), "*.txt" ).walkFileTree( visitor );
 
@@ -42,7 +39,7 @@ public class FileWalkerTest extends AbstractTest {
     }
 
     @Test
-    public void walkFileTreeStaticPath() throws Exception {
+    public void walkFileTreeStaticPath() {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "w2/3.txt" ).walkFileTree( visitor );
 
@@ -50,7 +47,7 @@ public class FileWalkerTest extends AbstractTest {
     }
 
     @Test
-    public void walkFileTreeStaticPathNotFound() throws Exception {
+    public void walkFileTreeStaticPathNotFound() {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "unknown/3.txt" ).walkFileTree( visitor );
 
@@ -58,7 +55,7 @@ public class FileWalkerTest extends AbstractTest {
     }
 
     @Test
-    public void walkFileTreeAny() throws Exception {
+    public void walkFileTreeAny() {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "w2\\*" ).walkFileTree( visitor );
 
@@ -68,7 +65,7 @@ public class FileWalkerTest extends AbstractTest {
     }
 
     @Test
-    public void walkFileTreeAny2() throws Exception {
+    public void walkFileTreeAny2() {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "*/*.txt" ).walkFileTree( visitor );
 
@@ -78,7 +75,7 @@ public class FileWalkerTest extends AbstractTest {
     }
 
     @Test
-    public void walkFileTreeFilePattern() throws Exception {
+    public void walkFileTreeFilePattern() {
         final MockVisitor visitor = new MockVisitor();
         new FileWalker( tmpPath( "wildcard" ), "w2/3*.txt" ).walkFileTree( visitor );
 
@@ -87,7 +84,7 @@ public class FileWalkerTest extends AbstractTest {
     }
 
     @Test
-    public void walkFileTreeFilePatternCache() throws Exception {
+    public void walkFileTreeFilePatternCache() {
         final FileWalkerCache fwc = new FileWalkerCache();
 
         final MockVisitor visitor1 = new MockVisitor();

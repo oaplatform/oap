@@ -37,7 +37,6 @@ import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
 import com.fasterxml.jackson.datatype.joda.ser.DateTimeSerializer;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import oap.io.Resources;
-import oap.testng.AbstractPerformance;
 import oap.util.Dates;
 import org.joda.time.DateTime;
 import org.joda.time.ReadableInstant;
@@ -46,7 +45,9 @@ import org.testng.annotations.Test;
 import java.util.Map;
 import java.util.Optional;
 
-public class ParserPerformance extends AbstractPerformance {
+import static oap.benchmark.Benchmark.benchmark;
+
+public class ParserPerformance {
     private static final JacksonJodaDateFormat jodaDateFormat = new JacksonJodaDateFormat( Dates.FORMAT_MILLIS );
     public static String yearJson = Resources.readString( ParserPerformance.class, "year.json" ).get();
 

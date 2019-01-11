@@ -41,11 +41,9 @@ import java.util.function.Consumer;
 
 import static org.apache.commons.collections4.CollectionUtils.subtract;
 
-/**
- * Created by igor.petrenko on 08.01.2019.
- */
-@Slf4j
+@Slf4j( topic = "oap.application.Kernel" )
 public class KernelHelper {
+
     static Set<Module> forEachModule( Set<Module> modules, Set<String> initializedModules, Consumer<Module> cons ) {
         val deferred = new HashSet<Module>();
 

@@ -30,7 +30,6 @@ import oap.storage.migration.Migration;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
@@ -39,11 +38,7 @@ import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DirectoryPersistenceMigrationTest extends AbstractTest {
-    @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
+    static {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
     }
 

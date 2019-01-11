@@ -24,7 +24,6 @@
 
 package oap.util;
 
-import oap.testng.AbstractPerformance;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.Test;
 
@@ -32,8 +31,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.IntStream;
 
+import static oap.benchmark.Benchmark.benchmark;
+
 @Test( enabled = false )
-public class HashMapPerformance extends AbstractPerformance {
+public class HashMapPerformance {
     @Test
     public void testComputeIfAbsentVsGet() {
         final HashMap<String, String> map = new HashMap<>();

@@ -25,13 +25,14 @@
 package oap.perf;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.testng.AbstractPerformance;
 import org.testng.annotations.Test;
 
 import java.util.Random;
 
+import static oap.benchmark.Benchmark.benchmark;
+
 @Slf4j
-public class LoggerPerformance extends AbstractPerformance {
+public class LoggerPerformance {
     @Test
     public void testSlf4j() {
         final Random random = new Random();

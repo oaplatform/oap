@@ -24,12 +24,12 @@
 
 package oap.json.schema;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.json.Binder;
 import oap.json.schema.validator.array.ArraySchemaAST;
 import oap.json.schema.validator.object.ObjectSchemaAST;
+import oap.reflect.TypeRef;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -54,9 +54,9 @@ public class JsonDiff {
     public static JsonDiff diff( String oldJson, String newJson, SchemaAST schema ) {
         final ArrayList<Line> result = new ArrayList<>();
 
-        final Map<String, Object> to = Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {
+        final Map<String, Object> to = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
         }, newJson );
-        final Map<String, Object> from = Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {
+        final Map<String, Object> from = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
         }, oldJson );
 
         diff( "", schema, result, to, from );

@@ -1,6 +1,6 @@
 name: oap-ws
 dependsOn:
-- oap-http
+  - oap-http
 services:
   oap-ws-webservices:
     implementation: oap.ws.WebServices
@@ -14,10 +14,10 @@ services:
     supervision:
       supervise: true
     dependsOn:
-    - oap-http-server
-    - session-manager
-    - corsPolicy-generic
-    - corsPolicy-subdomain
+      - oap-http-server
+      - session-manager
+      - corsPolicy-generic
+      - corsPolicy-subdomain
 
   corsPolicy-generic:
     implementation: oap.http.cors.GenericCorsPolicy
@@ -53,7 +53,7 @@ services:
     supervision:
       thread: true
     dependsOn:
-    - oap-http-server
+      - oap-http-server
 
   secure-http-listener:
     profile: secure-listener
@@ -64,7 +64,7 @@ services:
       keystoreLocation: "/etc/oap/keystore.jks"
       keystorePassword: "changeit"
     dependsOn:
-    - oap-http-server
+      - oap-http-server
     supervision:
       thread: true
 
@@ -80,7 +80,7 @@ services:
     parameters:
       tokenService: "@service:token-service"
     dependsOn:
-    - token-service
+      - token-service
 
   security-interceptor-mock:
     name: security-interceptor

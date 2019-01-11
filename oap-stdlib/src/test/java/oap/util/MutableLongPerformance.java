@@ -24,14 +24,15 @@
 
 package oap.util;
 
-import oap.testng.AbstractPerformance;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
 
+import static oap.benchmark.Benchmark.benchmark;
+
 @Test( enabled = false )
-public class MutableLongPerformance extends AbstractPerformance {
+public class MutableLongPerformance {
     @Test
     public void testIncrement() {
         final int SAMPLES = 1000000;

@@ -32,10 +32,8 @@ import oap.template.StringTemplateTest.Tst.Test2;
 import oap.template.StringTemplateTest.Tst.Test3;
 import oap.template.StringTemplateTest.Tst.Test4;
 import oap.testng.AbstractTest;
-import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Maps;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
@@ -45,28 +43,20 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static java.util.Collections.emptyMap;
+import static oap.io.Files.ensureDirectory;
+import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Created by igor.petrenko on 15.06.2017.
  */
 public class StringTemplateTest extends AbstractTest {
-    private Engine engine;
-    private Path test;
-
-    @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
-        test = Env.tmpPath( "test" );
-        Files.ensureDirectory( test );
-        engine = new Engine( test );
-    }
 
     @Test
     public void testTtl() {
-        final String clazz = Engine.getName( "test" );
+        Path test = ensureDirectory( tmpPath( "test" ) );
+        Engine engine = new Engine( test );
+        String clazz = Engine.getName( "test" );
         val template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
 
         template.renderString( new EngineTest.Test1() );
@@ -86,7 +76,9 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testLoadFromDisk() {
-        final String clazz = Engine.getName( "test" );
+        Path test = ensureDirectory( tmpPath( "test" ) );
+        Engine engine = new Engine( test );
+        String clazz = Engine.getName( "test" );
         val template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
 
         template.renderString( new EngineTest.Test1() );
@@ -99,6 +91,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testProcessWithoutVariables() throws Exception {
+        Path test = ensureDirectory( tmpPath( "test" ) );
+        Engine engine = new Engine( test );
         assertThat( engine.getTemplate( "test", Container.class, "d" ) )
             .isExactlyInstanceOf( ConstTemplate.class );
         assertThat( engine.getTemplate( "test- s%;\\/:", Container.class, "d" )
@@ -107,6 +101,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testDepth() {
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+
         Tst test = new Tst();
         Test1 test1 = new Test1( "a i/d" );
         test.test1 = Optional.of( test1 );
@@ -125,6 +121,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testOtherJoinStrategy() {
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+
         Tst test = new Tst();
         Test4 test4 = new Test4( 320, 50 );
         test.test4 = Optional.of( test4 );
@@ -142,6 +140,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testAlternatives() {
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+
         Tst test = new Tst();
         Test1 test1 = new Test1( "aid" );
         test.test1 = Optional.of( test1 );
@@ -156,6 +156,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testAlternatives2() {
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+
         Tst test = new Tst();
         Test1 test1 = new Test1( null );
         test.test1 = Optional.of( test1 );
@@ -165,6 +167,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testOverride() {
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+
         Tst test = new Tst();
         Test1 test1 = new Test1( "id1" );
         test.test1 = Optional.of( test1 );
@@ -179,6 +183,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testMapper() {
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+
         Tst test = new Tst();
         Test1 test1 = new Test1( "id1" );
         test.test1 = Optional.of( test1 );
@@ -192,6 +198,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testMapperWithUrlEncode() {
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+
         Tst test = new Tst();
         Test1 test1 = new Test1( "id1" );
         test.test1 = Optional.of( test1 );
@@ -205,6 +213,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testDoubleValue() {
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+
         Tst test = new Tst();
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test3.dval}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=" );
@@ -217,6 +227,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testEscape() {
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+
         Tst test = new Tst();
         Test1 test1 = new Test1( "aid" );
         test.test1 = Optional.of( test1 );
@@ -229,6 +241,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testInvalidPath() {
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+
         Tst test = new Tst();
         Test1 test1 = new Test1( "aid" );
         test.test1 = Optional.of( test1 );
@@ -245,6 +259,8 @@ public class StringTemplateTest extends AbstractTest {
 
     @Test
     public void testMap() {
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+
         val map = Maps.of2( "a", 1, "b", "test", "c (1)", 0.0 );
 
         assertThat( engine.getTemplate( "tmp", Map.class, "id=${a},id2=${b},id3=${c ((1)}" )

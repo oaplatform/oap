@@ -1,10 +1,10 @@
 name: oap-ws-cat
 dependsOn:
-- oap-http
+  - oap-http
 services:
   local-http-listener:
     dependsOn:
-    - oap-http-server
+      - oap-http-server
     implementation: oap.http.LocalHttpListener
     parameters:
       port: 18546

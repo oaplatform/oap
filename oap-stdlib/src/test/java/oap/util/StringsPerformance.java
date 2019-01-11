@@ -24,14 +24,15 @@
 
 package oap.util;
 
-import oap.testng.AbstractPerformance;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Test;
 
 import java.util.HashSet;
 
+import static oap.benchmark.Benchmark.benchmark;
+
 @Test
-public class StringsPerformance extends AbstractPerformance {
+public class StringsPerformance {
     private static String removeSet( String str, char... characters ) {
         if( StringUtils.indexOfAny( str, characters ) < 0 ) return str;
 

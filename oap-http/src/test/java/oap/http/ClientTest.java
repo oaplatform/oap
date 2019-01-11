@@ -33,7 +33,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,20 +52,14 @@ public class ClientTest extends AbstractTest {
     private Client.Response response;
 
     @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
+    public void start() {
         mockServer = startClientAndServer( PORT );
         response = null;
     }
 
     @AfterMethod
-    @Override
-    public void afterMethod() throws Exception {
+    public void stop() {
         mockServer.stop( true );
-
-        super.afterMethod();
     }
 
     @Test
@@ -120,7 +113,7 @@ public class ClientTest extends AbstractTest {
     }
 
     @Test
-    public void testPostOutputStream() throws IOException, InterruptedException {
+    public void testPostOutputStream() {
         mockServer.when( request()
                 .withMethod( "POST" )
                 .withPath( "/test" )

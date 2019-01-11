@@ -24,11 +24,12 @@
 
 package oap.util;
 
-import oap.testng.AbstractPerformance;
 import org.testng.annotations.Test;
 
+import static oap.benchmark.Benchmark.benchmark;
+
 @Test( enabled = false )
-public class SystemPerformance extends AbstractPerformance {
+public class SystemPerformance {
     @Test
     public void testNanoTimeVsCurrentTimeMillis() {
         final int SAMPLES = 10000000;

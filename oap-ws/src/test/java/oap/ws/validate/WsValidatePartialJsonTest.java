@@ -24,15 +24,14 @@
 
 package oap.ws.validate;
 
+import oap.util.Lists;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static java.util.Collections.singletonList;
 import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.http.Request.HttpMethod.POST;
 import static oap.http.testng.HttpAsserts.HTTP_URL;
@@ -43,20 +42,11 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
 
-    private static TestBean testBean;
-
-    @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
-        testBean = new TestBean();
-        testBean.id = "id1";
-    }
+    private static TestBean testBean = new TestBean( "id1" );
 
     @Override
     protected List<Object> getWsInstances() {
-        return singletonList( new TestWS() );
+        return Lists.of( new TestWS() );
     }
 
     @Test
@@ -93,6 +83,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
             .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"id\":1},{\"id\":2,\"b\":[{\"element\":\"some text\"}]}],\"id\":\"id1\"}" );
     }
 
+    @SuppressWarnings( "unused" )
     public static class TestWS {
         @WsMethod( path = "/run/validation/1/{id}", method = POST )
         public TestBean validation1(
@@ -149,8 +140,13 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
         }
     }
 
+    @SuppressWarnings( "unused" )
     public static class TestBean {
         public ArrayList<TestItem> a = new ArrayList<>();
+
+        public TestBean( String id ) {
+            this.id = id;
+        }
 
         public String id;
         public ArrayList<TestItem.SubTestItem> elements = new ArrayList<>();

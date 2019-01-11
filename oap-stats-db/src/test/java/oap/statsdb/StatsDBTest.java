@@ -57,20 +57,15 @@ public class StatsDBTest extends AbstractTest {
     private Path nodeDbPath;
 
     @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
+    public void init() {
 
         masterDbPath = Env.tmpPath( "master.db" );
         nodeDbPath = Env.tmpPath( "node.db" );
     }
 
     @AfterMethod
-    @Override
-    public void afterMethod() throws Exception {
+    public void done() {
         Cuid.restore();
-
-        super.afterMethod();
     }
 
     @Test

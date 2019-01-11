@@ -30,7 +30,6 @@ import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.nio.NioServer;
 import oap.http.testng.HttpAsserts;
-import oap.testng.AbstractPerformance;
 import oap.testng.Env;
 import org.apache.http.entity.ContentType;
 import org.testng.annotations.BeforeMethod;
@@ -38,17 +37,16 @@ import org.testng.annotations.Test;
 
 import java.util.Collections;
 
+import static oap.benchmark.Benchmark.benchmark;
 import static oap.http.testng.HttpAsserts.HTTP_URL;
 
-public class WebServicesPerformance extends AbstractPerformance {
+public class WebServicesPerformance {
     private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
     private final int samples = 100000;
 
     @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
+    public void init() {
         Env.resetPorts();
-        super.beforeMethod();
     }
 
     @Test

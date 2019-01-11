@@ -25,7 +25,6 @@
 package oap.tree;
 
 import lombok.val;
-import oap.testng.AbstractPerformance;
 import org.apache.commons.lang3.RandomUtils;
 import org.testng.annotations.Test;
 
@@ -33,13 +32,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
 
+import static oap.benchmark.Benchmark.benchmark;
 import static oap.tree.Dimension.LONG;
 import static oap.tree.Dimension.OperationType.CONTAINS;
 
 /**
  * Created by igor.petrenko on 26.12.2016.
  */
-public class TreePerformance extends AbstractPerformance {
+public class TreePerformance {
     @Test
     public void tree() {
 //        benchmarkTree( 0.25, 100, 5, new int[] { 1000, 10000, 100000 } );

@@ -54,7 +54,7 @@ public abstract class AbstractWsValidateTest extends AbstractTest {
 
 
     @BeforeClass
-    public void beforeClass() {
+    public void start() {
         Env.resetPorts();
         Metrics.resetAll();
         server.start();
@@ -69,15 +69,12 @@ public abstract class AbstractWsValidateTest extends AbstractTest {
     protected abstract List<Object> getWsInstances();
 
     @AfterClass
-    @Override
-    public void afterClass() throws Exception {
+    public void stop() {
         listener.stop();
         server.stop();
         server.unbind( "test" );
 
         HttpAsserts.reset();
         Metrics.resetAll();
-
-        super.afterClass();
     }
 }

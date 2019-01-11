@@ -25,12 +25,13 @@
 package oap.perf;
 
 import oap.io.Files;
-import oap.testng.AbstractPerformance;
 import org.apache.commons.io.FilenameUtils;
 import org.testng.annotations.Test;
 
+import static oap.benchmark.Benchmark.benchmark;
+
 @Test( enabled = false )
-public class WildcardMatchPerformance extends AbstractPerformance {
+public class WildcardMatchPerformance {
     @Test( enabled = false )
     public void perf() {
         benchmark( "FilenameUtils.wildcardMatch", 10000000, () ->

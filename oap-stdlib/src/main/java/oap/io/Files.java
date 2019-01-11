@@ -364,9 +364,10 @@ public final class Files {
         ensureDirectory( path.getParent() );
     }
 
-    public static void ensureDirectory( Path path ) {
+    public static Path ensureDirectory( Path path ) {
         try {
             java.nio.file.Files.createDirectories( path );
+            return path;
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }

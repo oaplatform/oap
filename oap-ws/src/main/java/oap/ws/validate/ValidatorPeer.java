@@ -25,7 +25,6 @@ package oap.ws.validate;
 
 import oap.reflect.Reflection;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 public interface ValidatorPeer {

@@ -26,14 +26,11 @@ package oap.template;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.val;
-import oap.io.Files;
 import oap.testng.AbstractTest;
-import oap.testng.Env;
+import oap.util.Lists;
 import org.mockito.internal.util.collections.Sets;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -41,10 +38,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static oap.io.Files.ensureDirectory;
 import static oap.template.Template.Line.line;
+import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -52,105 +50,95 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class EngineTest extends AbstractTest {
 
-    private Engine engine;
-
-    @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
-        final Path test = Env.tmpPath( "test" );
-        Files.ensureDirectory( test );
-        engine = new Engine( test );
-    }
+    private final Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
     @Test
-    public void testProcessString() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "testStr", "testStr", "d" ) ), " " )
+    public void testProcessString() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "testStr", "testStr", "d" ) ), " " )
             .renderString( new Test1( "val" ) ) ).isEqualTo( "val" );
     }
 
     @Test
-    public void testProcessWithoutVariables() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "testStr", null, "d" ) ), " " ) )
+    public void testProcessWithoutVariables() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "testStr", null, "d" ) ), " " ) )
             .isExactlyInstanceOf( ConstTemplate.class );
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "testStr", null, "d" ) ), " " )
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "testStr", null, "d" ) ), " " )
             .renderString( new Test1( "val" ) ) ).isEqualTo( "d" );
     }
 
     @Test
-    public void testProcessEmptyPath() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "testStr", null, "d" ) ), " " )
+    public void testProcessEmptyPath() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "testStr", null, "d" ) ), " " )
             .renderString( new Test1( "val" ) ) ).isEqualTo( "d" );
     }
 
     @Test
-    public void testProcessStringReload() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "testStr", "testStr", "d" ) ), " " )
+    public void testProcessStringReload() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "testStr", "testStr", "d" ) ), " " )
             .renderString( new Test1( "val" ) ) ).isEqualTo( "val" );
     }
 
     @Test
-    public void testProcessDefault() throws Exception {
-        engine.getTemplate( "test1", Test1.class, asList( line( "testStr", "testStr", "d1" ), line( "testStr2", "optTest2.testStr", "d2" ) ), " " )
+    public void testProcessDefault() {
+        engine.getTemplate( "test1", Test1.class, Lists.of( line( "testStr", "testStr", "d1" ), line( "testStr2", "optTest2.testStr", "d2" ) ), " " )
             .renderString( new Test1( Optional.empty(), Optional.of( new Test2() ) ) );
 
 
-        assertThat( engine.getTemplate( "test2", Test1.class, asList( line( "testStr", "testStr", "d1" ), line( "testStr2", "optTest2.testStr", "d2" ) ), " " )
+        assertThat( engine.getTemplate( "test2", Test1.class, Lists.of( line( "testStr", "testStr", "d1" ), line( "testStr2", "optTest2.testStr", "d2" ) ), " " )
             .renderString( new Test1( Optional.empty(), Optional.of( new Test2() ) ) ) ).isEqualTo( "d1 d2" );
-        assertThat( engine.getTemplate( "test3", Test1.class, asList( line( "testStr", "testStr", "d1" ), line( "testStr2", "optTest2.testStr", "d2" ) ), " " )
+        assertThat( engine.getTemplate( "test3", Test1.class, Lists.of( line( "testStr", "testStr", "d1" ), line( "testStr2", "optTest2.testStr", "d2" ) ), " " )
             .renderString( new Test1( Optional.empty(), Optional.of( new Test2() ) ) ) ).isEqualTo( "d1 d2" );
     }
 
     @Test
-    public void testProcessArray() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "array", "array", emptyList() ) ), " " )
-            .renderString( new Test1( asList( "1", "2" ) ) ) ).isEqualTo( "[1,2]" );
+    public void testProcessArray() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "array", "array", emptyList() ) ), " " )
+            .renderString( new Test1( Lists.of( "1", "2" ) ) ) ).isEqualTo( "[1,2]" );
     }
 
     @Test
-    public void testProcessSet() throws Exception {
-        Test1 source = new Test1( asList( "1", "2" ) );
+    public void testProcessSet() {
+        Test1 source = new Test1( Lists.of( "1", "2" ) );
         source.set = Sets.newSet( "4", "5" );
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "array", "set", emptyList() ) ), " " )
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "array", "set", emptyList() ) ), " " )
             .renderString( source ) ).isEqualTo( "[4,5]" );
     }
 
     @Test
-    public void testProcessOptString() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "optStr", "optStr", "d" ) ), " " )
+    public void testProcessOptString() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "optStr", "optStr", "d" ) ), " " )
             .renderString( new Test1( Optional.of( "test" ) ) ) ).isEqualTo( "test" );
     }
 
     @Test
-    public void testOr() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "optStr", "optStr|testStr", "d" ) ), " " )
+    public void testOr() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "optStr", "optStr|testStr", "d" ) ), " " )
             .renderString( new Test1( Optional.of( "test1" ) ) ) ).isEqualTo( "test1" );
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "optStr", "optStr|testStr", "d" ) ), " " )
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "optStr", "optStr|testStr", "d" ) ), " " )
             .renderString( new Test1( "test" ) ) ).isEqualTo( "test" );
     }
 
     @Test
-    public void testProcessStringNull() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "testStr", "testStr", "d" ) ), " " )
+    public void testProcessStringNull() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "testStr", "testStr", "d" ) ), " " )
             .renderString( new Test1( ( String ) null ) ) ).isEqualTo( "d" );
     }
 
     @Test
-    public void testProcessInt() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "testInt", "testInt", 1 ) ), " " )
+    public void testProcessInt() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "testInt", "testInt", 1 ) ), " " )
             .renderString( new Test1( 235 ) ) ).isEqualTo( "235" );
     }
 
     @Test
-    public void testProcessIntDiv2() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "testInt", "testInt/2", 1 ) ), " " )
+    public void testProcessIntDiv2() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "testInt", "testInt/2", 1 ) ), " " )
             .renderString( new Test1( 235 ) ) ).isEqualTo( "117" );
     }
 
     @Test
-    public void testProcessConc() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList(
+    public void testProcessConc() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of(
             line( "t", "{testInt,\"x\",testInt2}", 2 ),
             line( "t", "{testInt,\"x\",testInt2}", 2 )
         ), " " )
@@ -158,14 +146,14 @@ public class EngineTest extends AbstractTest {
     }
 
     @Test
-    public void testProcessFunction() throws Exception {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "f", "getTestInt()", 10 ) ), " " )
+    public void testProcessFunction() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "f", "getTestInt()", 10 ) ), " " )
             .renderString( new Test1( 235 ) ) ).isEqualTo( "235" );
     }
 
     @Test
     public void testDelimiter() {
-        assertThat( engine.getTemplate( "test", Test1.class, asList(
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of(
             line( "testStr", "testStr", "d" ),
             line( "testInt", "testInt", 2 ) ), " " )
             .renderString( new Test1( "str", 235 ) ) ).isEqualTo( "str 235" );
@@ -173,19 +161,19 @@ public class EngineTest extends AbstractTest {
 
     @Test
     public void testNested() {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "test2", "test2.testStr", "d" ), line( "test3", "test2.testInt", 2 ) ), " " )
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "test2", "test2.testStr", "d" ), line( "test3", "test2.testInt", 2 ) ), " " )
             .renderString( new Test1( new Test2( "str", 235 ) ) ) ).isEqualTo( "str 235" );
     }
 
     @Test
     public void testNestedOptional() {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "opt", "optTest2.testStr", "d" ) ), " " )
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "opt", "optTest2.testStr", "d" ) ), " " )
             .renderString( new Test1( Optional.empty(), Optional.of( new Test2( "str" ) ) ) ) ).isEqualTo( "str" );
     }
 
     @Test
     public void testNestedOptionalSeparators() {
-        assertThat( engine.getTemplate( "test", Test1.class, asList(
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of(
             line( "opt", "optTest2.testStr", "d" ),
             line( "testInt", "optTest2.testInt", 1 )
         ), " " )
@@ -194,13 +182,14 @@ public class EngineTest extends AbstractTest {
 
     @Test
     public void testNestedOptionalEmpty() {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "opt", "optTest2.test1.testStr", "def" ) ), " " )
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "opt", "optTest2.test1.testStr", "def" ) ), " " )
             .renderString( new Test1( Optional.empty(), Optional.empty() ) ) ).isEqualTo( "def" );
     }
 
     @Test
     public void testNested2() {
-        assertThat( engine.getTemplate( "test", Test1.class, asList( line( "f1", "test2.testStr", "d" ), line( "f2", "test2.test1.testInt", 2 ) ), " " )
+        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "f1", "test2.testStr", "d" ), line( "f2", "test2.test1.testInt", 2 ) ), " " )
             .renderString( new Test1( new Test2( "n2", 2, new Test1( "str", 235 ) ) ) ) ).isEqualTo( "n2 235" );
     }
 
@@ -217,7 +206,7 @@ public class EngineTest extends AbstractTest {
         val sample = new Test4( new Test3( ImmutableMap.of( "mapKey", "mapValue" ) ) );
         val testStrategy = new TestTemplateStrategy();
         final Template<Test4, Template.Line> template = engine.getTemplate( "test", Test4.class,
-            asList(
+            Lists.of(
                 line( "f1", "test3.map.mapKey", "unknown" ),
                 line( "f1", "test3.map.mapKey", "unknown" ) ), " ", testStrategy );
         assertThat( template.renderString( sample ) ).isEqualTo( "a0mapValue b0a1mapValueb1" );

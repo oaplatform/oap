@@ -48,9 +48,8 @@ public class InfluxDBReporterTest extends AbstractTest {
     private MetricRegistry registry;
 
     @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
+    public void init() {
+        super.initMocksAndResetClock();
 
         influxDB = new MockInfluxDB();
         registry = new MetricRegistry();
@@ -59,7 +58,7 @@ public class InfluxDBReporterTest extends AbstractTest {
     }
 
     @Test
-    public void testReport_aggregates() throws Exception {
+    public void reportAggregates() {
         final InfluxDBReporter reporter = createReporter( influxDB, registry, asList( "test.*", "test2.test2.*" ) );
 
         registry.counter( "test.name1" ).inc();
@@ -106,7 +105,7 @@ public class InfluxDBReporterTest extends AbstractTest {
     }
 
     @Test
-    public void testAggregatesWithTags() {
+    public void aggregatesWithTags() {
         final InfluxDBReporter reporter = createReporter( influxDB, registry, singletonList( "test.*" ) );
 
         registry.counter( "test.name1,b=10,v=20" ).inc();

@@ -24,34 +24,24 @@
 
 package oap.template;
 
-import lombok.AllArgsConstructor;
 import lombok.val;
 import oap.io.Files;
-import oap.testng.AbstractPerformance;
 import oap.testng.Env;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
 
+import static oap.benchmark.Benchmark.benchmark;
+
 /**
  * Created by igor.petrenko on 15.06.2017.
  */
-public class StringTemplatePerformance extends AbstractPerformance {
-    private Path test;
-
-    @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
-        test = Env.tmpPath( "test" );
-        Files.ensureDirectory( test );
-    }
+public class StringTemplatePerformance {
 
     @Test
-    public void testCache() {
-        final String clazz = Engine.getName( "test" );
+    public void cache() {
+        Path test = Files.ensureDirectory( Env.tmpPath( "test" ) );
+        String clazz = Engine.getName( "test" );
 
 //        benchmark( "template-compile", 10, () -> {
 //            val engine = new Engine( null );
@@ -68,8 +58,11 @@ public class StringTemplatePerformance extends AbstractPerformance {
         } ).inThreads( 5, 1000 ).experiments( 5 ).run();
     }
 
-    @AllArgsConstructor
     public static class Test1 {
         public String id;
+
+        public Test1( String id ) {
+            this.id = id;
+        }
     }
 }

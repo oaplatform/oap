@@ -27,7 +27,6 @@ package oap.storage;
 import oap.json.TypeIdFactory;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
@@ -40,11 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Created by igor.petrenko on 23.09.2016.
  */
 public class FilePersistenceTest extends AbstractTest {
-    @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
+    static {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
     }
 

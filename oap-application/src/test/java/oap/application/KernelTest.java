@@ -50,10 +50,7 @@ import static org.testng.Assert.assertTrue;
 
 public class KernelTest extends AbstractTest {
     @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
-
+    public void unregister() {
         Application.unregisterServices();
     }
 

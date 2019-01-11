@@ -24,13 +24,14 @@
 
 package oap.logstream;
 
-import oap.benchmark.Benchmark;
 import org.testng.annotations.Test;
+
+import static oap.benchmark.Benchmark.benchmark;
 
 public class TimestampPerformance {
     @Test
     public void directoryName() {
-        Benchmark.benchmark( "directoryName",
+        benchmark( "directoryName",
             1000000,
             () -> Timestamp.directoryName( "2015-12-03-11-05" ) )
             .run();

@@ -24,7 +24,6 @@
 
 package oap.io;
 
-import oap.testng.AbstractPerformance;
 import oap.testng.Env;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.BeforeMethod;
@@ -33,11 +32,13 @@ import org.testng.annotations.Test;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
+import static oap.benchmark.Benchmark.benchmark;
+
 /**
  * Created by Igor Petrenko on 08.04.2016.
  */
 @Test( enabled = false )
-public class FilesPerformance extends AbstractPerformance {
+public class FilesPerformance {
 
     public static final int SAMPLES = 100000;
     private Path path;
@@ -45,9 +46,7 @@ public class FilesPerformance extends AbstractPerformance {
     private Path pathNotExists;
 
     @BeforeMethod
-    @Override
-    public void beforeMethod() throws Exception {
-        super.beforeMethod();
+    public void init() throws Exception {
 
         path = Env.tmpPath( "tt/test" );
         path2 = Env.tmpPath( "tt/test2/1/2/3/4/5/6/7/8/9/10" );

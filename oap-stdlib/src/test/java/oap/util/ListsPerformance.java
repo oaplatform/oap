@@ -24,7 +24,6 @@
 
 package oap.util;
 
-import oap.testng.AbstractPerformance;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -33,7 +32,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class ListsPerformance extends AbstractPerformance {
+import static oap.benchmark.Benchmark.benchmark;
+
+public class ListsPerformance {
     @Test
     public void testAllMatch() {
         final List<String> list = IntStream.range( 0, 10 ).mapToObj( i -> "sdfsdf" + i ).collect( Collectors.toList() );

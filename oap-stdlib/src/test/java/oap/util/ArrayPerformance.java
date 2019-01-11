@@ -24,16 +24,17 @@
 
 package oap.util;
 
-import oap.testng.AbstractPerformance;
 import org.joda.time.Period;
 import org.testng.annotations.Test;
 
 import java.util.Random;
 
+import static oap.benchmark.Benchmark.benchmark;
+
 /**
  * Created by Igor.Petrenko on 18.08.2016.
  */
-public class ArrayPerformance extends AbstractPerformance {
+public class ArrayPerformance {
 
     private final Random random = new Random();
 

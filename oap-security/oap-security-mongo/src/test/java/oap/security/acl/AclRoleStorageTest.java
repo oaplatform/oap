@@ -44,9 +44,8 @@ public class AclRoleStorageTest extends AbstractTest {
     private AclRoleStorage storage;
     private MongoClient mongoClient;
 
-    @Override
     @BeforeMethod
-    public void beforeMethod() {
+    public void init() {
         val dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
         mongoClient = new MongoClient( Env.getEnvOrDefault( "MONGO_HOST", "localhost" ), 27017, dbName, Migration.NONE );
@@ -64,9 +63,8 @@ public class AclRoleStorageTest extends AbstractTest {
         assertThat( role2.object ).isEqualTo( role );
     }
 
-    @Override
     @AfterMethod
-    public void afterMethod() {
+    public void done() {
         mongoClient.database.drop();
         storage.close();
         mongoClient.close();

@@ -24,13 +24,14 @@
 
 package oap.concurrent;
 
-import oap.testng.AbstractPerformance;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import static oap.benchmark.Benchmark.benchmark;
+
 @Test( enabled = false )
-public class LimitedTimeExecutorPerformance extends AbstractPerformance {
+public class LimitedTimeExecutorPerformance {
     @Test
     public void testPerf() {
 

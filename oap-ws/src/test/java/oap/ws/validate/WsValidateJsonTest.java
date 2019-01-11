@@ -24,13 +24,13 @@
 
 package oap.ws.validate;
 
+import oap.util.Lists;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static java.util.Collections.singletonList;
 import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.http.Request.HttpMethod.POST;
 import static oap.http.testng.HttpAsserts.HTTP_URL;
@@ -45,7 +45,7 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 public class WsValidateJsonTest extends AbstractWsValidateTest {
     @Override
     protected List<Object> getWsInstances() {
-        return singletonList( new TestWS() );
+        return Lists.of( new TestWS() );
     }
 
     @Test
