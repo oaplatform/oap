@@ -47,9 +47,17 @@ public class HttpAsserts {
         .onError( ( c, e ) -> System.err.println( e.getMessage() ) )
         .build();
 
-    public static String HTTP_PREFIX() { return "http://localhost:" + Env.port(); }
+    @Deprecated
+    public static String HTTP_PREFIX() { return httpPrefix(); }
 
+    public static String httpPrefix() { return "http://localhost:" + Env.port(); }
+
+    @Deprecated
     public static String HTTP_URL( String suffix ) {
+        return httpUrl( suffix );
+    }
+
+    public static String httpUrl( String suffix ) {
         return "http://localhost:" + Env.port() + ( suffix.startsWith( "/" ) ? suffix : "/" + suffix );
     }
 
@@ -114,7 +122,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion isJson( String json ) {
-            isJson().isEqualTo( json );
+            isJson().isStructurallyEqualTo( json );
             return this;
         }
 
@@ -151,6 +159,13 @@ public class HttpAsserts {
                 .hasReason( reasonPhrase )
                 .hasContentType( contentType )
                 .hasBody( body );
+        }
+
+        public HttpAssertion respondedJson( int code, String reasonPhrase, String body ) {
+            return this.hasCode( code )
+                .hasReason( reasonPhrase )
+                .hasContentType( ContentType.APPLICATION_JSON )
+                .isJson( body );
         }
     }
 }

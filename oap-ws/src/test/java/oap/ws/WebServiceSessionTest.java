@@ -45,6 +45,7 @@ import java.util.Map;
 
 import static oap.http.Request.HttpMethod.GET;
 import static oap.http.testng.HttpAsserts.assertGet;
+import static oap.http.testng.HttpAsserts.httpUrl;
 import static oap.util.Pair.__;
 import static oap.ws.WsParam.From.SESSION;
 
@@ -89,7 +90,7 @@ public class WebServiceSessionTest {
 
         sessionManager.put( "123456", session );
 
-        assertGet( HttpAsserts.HTTP_URL( "/test/" ), Maps.empty(), Maps.of( __( "Cookie", "Authorization=987654321; SID=123456" ) ) )
+        assertGet( httpUrl( "/test/" ), Maps.empty(), Maps.of( __( "Cookie", "Authorization=987654321; SID=123456" ) ) )
             .hasCode( 200 )
             .hasBody( Binder.json.marshal( map ) );
     }
@@ -103,7 +104,7 @@ public class WebServiceSessionTest {
 
         sessionManager.put( "123456", session );
 
-        assertGet( HttpAsserts.HTTP_URL( "/test/2" ), Maps.empty(), Maps.of( __( "Cookie", "Authorization=987654321; SID=123456" ) ) )
+        assertGet( httpUrl( "/test/2" ), Maps.empty(), Maps.of( __( "Cookie", "Authorization=987654321; SID=123456" ) ) )
             .hasCode( 200 )
             .hasBody( Binder.json.marshal( "user_id" ) );
     }

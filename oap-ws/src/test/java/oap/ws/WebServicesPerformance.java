@@ -38,7 +38,6 @@ import org.testng.annotations.Test;
 import java.util.Collections;
 
 import static oap.benchmark.Benchmark.benchmark;
-import static oap.http.testng.HttpAsserts.HTTP_URL;
 
 public class WebServicesPerformance {
     private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
@@ -60,9 +59,8 @@ public class WebServicesPerformance {
                 Collections.emptyList(), Protocol.HTTP );
 
             HttpAsserts.reset();
-            benchmark( "Server.invocations", samples, () ->
-                HttpAsserts.assertGet( HTTP_URL( "/x/v/math/id?a=aaa" ) ).responded( 200, "OK",
-                    ContentType.APPLICATION_JSON, "\"aaa\"" )
+            benchmark( "Server.invocations", samples, () -> HttpAsserts.assertGet( HttpAsserts.httpUrl( "/x/v/math/id?a=aaa" ) ).responded( 200, "OK",
+                ContentType.APPLICATION_JSON, "\"aaa\"" )
             ).inThreads( 5000 ).run();
 
             HttpAsserts.reset();
@@ -85,7 +83,7 @@ public class WebServicesPerformance {
             HttpAsserts.reset();
             benchmark( "NioServer.invocations", samples, () -> {
                 try {
-                    HttpAsserts.assertGet( HTTP_URL( "/x/v/math/id?a=aaa" ) )
+                    HttpAsserts.assertGet( HttpAsserts.httpUrl( "/x/v/math/id?a=aaa" ) )
                         .responded( 200, "OK", ContentType.APPLICATION_JSON, "\"aaa\"" );
                 } catch( Throwable e ) {
                     e.printStackTrace();

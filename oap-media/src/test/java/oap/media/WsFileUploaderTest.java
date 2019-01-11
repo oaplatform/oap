@@ -42,14 +42,13 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertUploadFile;
+import static oap.http.testng.HttpAsserts.httpUrl;
 import static oap.http.testng.HttpAsserts.reset;
 import static oap.io.CommandLine.shell;
 import static oap.testng.Asserts.pathOfTestResource;
@@ -110,7 +109,7 @@ public class WsFileUploaderTest extends AbstractTest {
     public void uploadVideo() {
         Path path = pathOfTestResource( getClass(), "video.mp4" );
 
-        assertUploadFile( HTTP_URL( "/upload/" ), "test/test2", path )
+        assertUploadFile( httpUrl( "/upload/" ), "test/test2", path )
             .isOk()
             .is( r -> {
                 WsFileUploader.MediaResponse resp = r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get();
@@ -132,7 +131,7 @@ public class WsFileUploaderTest extends AbstractTest {
     public void uploadImage() {
         Path path = pathOfTestResource( getClass(), "image.png" );
 
-        assertUploadFile( HTTP_URL( "/upload/" ), "test/test2", path )
+        assertUploadFile( httpUrl( "/upload/" ), "test/test2", path )
             .isOk()
             .is( r -> {
                 WsFileUploader.MediaResponse resp = r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get();

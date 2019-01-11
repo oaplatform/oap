@@ -32,8 +32,8 @@ import java.util.List;
 
 import static java.util.Collections.singletonList;
 import static oap.http.Request.HttpMethod.GET;
-import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertGet;
+import static oap.http.testng.HttpAsserts.httpUrl;
 
 public class WebServiceLocalTest extends AbstractWebServicesTest {
 
@@ -49,7 +49,7 @@ public class WebServiceLocalTest extends AbstractWebServicesTest {
 
     @Test
     public void testShouldAllowRequestWhenEmptyInterceptor() {
-        assertGet( HTTP_URL( "/test/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
+        assertGet( httpUrl( "/test/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
     }
 
     private static class TestWS {

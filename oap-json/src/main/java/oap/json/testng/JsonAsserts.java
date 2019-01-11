@@ -31,7 +31,10 @@ import oap.util.Strings;
 import org.assertj.core.api.AbstractAssert;
 import org.testng.Assert;
 
+import java.util.Map;
+
 import static oap.testng.Asserts.assertString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class JsonAsserts {
     @Deprecated
@@ -88,6 +91,14 @@ public class JsonAsserts {
             isNotNull();
             assertString( Formatter.format( actual ) )
                 .isEqualTo( Formatter.format( expected ) );
+            return this;
+
+        }
+
+        public JsonAssertion isStructurallyEqualTo( String expected ) {
+            isNotNull();
+            assertThat( Binder.json.<Map<String, Object>>unmarshal( Map.class, actual ) )
+                .isEqualTo( Binder.json.<Map<String, Object>>unmarshal( Map.class, expected ) );
             return this;
 
         }

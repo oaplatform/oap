@@ -34,15 +34,15 @@ import java.util.List;
 
 import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.http.Request.HttpMethod.POST;
-import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertPost;
+import static oap.http.testng.HttpAsserts.httpUrl;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.PATH;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
-
-    private static TestBean testBean = new TestBean( "id1" );
+    //todo refactor this static madness
+    private static TestBean testBean;
 
     @Override
     protected List<Object> getWsInstances() {
@@ -50,27 +50,30 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
     }
 
     @Test
-    public void testValidation1() {
-        assertPost( HTTP_URL( "/test/run/validation/1/id1" ), "{\"id\":1}", APPLICATION_JSON )
-            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"id\":1}],\"id\":\"id1\"}" );
-        assertPost( HTTP_URL( "/test/run/validation/1/id1" ), "{\"b\":[{\"element\":\"test\"}],\"id\":1}", APPLICATION_JSON )
-            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"id\":1,\"b\":[{\"element\":\"test\"}]}],\"id\":\"id1\"}" );
-        assertPost( HTTP_URL( "/test/run/validation/1/id1" ), "{}", APPLICATION_JSON )
+    public void validation1() {
+        testBean = new TestBean( "id1" );
+        assertPost( httpUrl( "/test/run/validation/1/id1" ), "{\"id\":1}", APPLICATION_JSON )
+            .respondedJson( 200, "OK", "{\"a\":[{\"id\":1}],\"id\":\"id1\"}" );
+        assertPost( httpUrl( "/test/run/validation/1/id1" ), "{\"b\":[{\"element\":\"test\"}],\"id\":1}", APPLICATION_JSON )
+            .respondedJson( 200, "OK", "{\"a\":[{\"id\":1,\"b\":[{\"element\":\"test\"}]}],\"id\":\"id1\"}" );
+        assertPost( httpUrl( "/test/run/validation/1/id1" ), "{}", APPLICATION_JSON )
             .responded( 400, "/a/1/id: required property is missing", TEXT_PLAIN, "/a/1/id: required property is missing" );
     }
 
     @Test
-    public void testValidation2() {
-        assertPost( HTTP_URL( "/test/run/validation/2/id1" ), "{\"id\":1}", APPLICATION_JSON )
-            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"id\":1}],\"id\":\"id1\"}" );
-        assertPost( HTTP_URL( "/test/run/validation/2/id1" ), "{}", APPLICATION_JSON )
-            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{}],\"id\":\"id1\"}" );
-        assertPost( HTTP_URL( "/test/run/validation/2/id1" ), "{\"c\":1}", APPLICATION_JSON )
+    public void validation2() {
+        testBean = new TestBean( "id1" );
+        assertPost( httpUrl( "/test/run/validation/2/id1" ), "{\"id\":1}", APPLICATION_JSON )
+            .respondedJson( 200, "OK", "{\"a\":[{\"id\":1}],\"id\":\"id1\"}" );
+        assertPost( httpUrl( "/test/run/validation/2/id1" ), "{}", APPLICATION_JSON )
+            .respondedJson( 200, "OK", "{\"a\":[{}],\"id\":\"id1\"}" );
+        assertPost( httpUrl( "/test/run/validation/2/id1" ), "{\"c\":1}", APPLICATION_JSON )
             .responded( 400, "/a/1: additional properties are not permitted [c]", TEXT_PLAIN, "/a/1: additional properties are not permitted [c]" );
     }
 
     @Test
-    public void testValidation3() {
+    public void validation3() {
+        testBean = new TestBean( "id1" );
         final TestBean.TestItem itemA = new TestBean.TestItem();
         itemA.id = 1;
 
@@ -79,8 +82,8 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
 
         testBean.a.add( itemA );
         testBean.a.add( itemB );
-        assertPost( HTTP_URL( "/test/run/validation/3/id1/2" ), "{\"element\":\"some text\"}", APPLICATION_JSON )
-            .responded( 200, "OK", APPLICATION_JSON, "{\"a\":[{\"id\":1},{\"id\":2,\"b\":[{\"element\":\"some text\"}]}],\"id\":\"id1\"}" );
+        assertPost( httpUrl( "/test/run/validation/3/id1/2" ), "{\"element\":\"some text\"}", APPLICATION_JSON )
+            .respondedJson( 200, "OK", "{\"a\":[{\"id\":1},{\"id\":2,\"b\":[{\"element\":\"some text\"}]}],\"id\":\"id1\"}" );
     }
 
     @SuppressWarnings( "unused" )
@@ -143,13 +146,15 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
     @SuppressWarnings( "unused" )
     public static class TestBean {
         public ArrayList<TestItem> a = new ArrayList<>();
+        public String id;
+        public ArrayList<TestItem.SubTestItem> elements = new ArrayList<>();
+
+        public TestBean() {
+        }
 
         public TestBean( String id ) {
             this.id = id;
         }
-
-        public String id;
-        public ArrayList<TestItem.SubTestItem> elements = new ArrayList<>();
 
         public static class TestItem {
             public Integer id;

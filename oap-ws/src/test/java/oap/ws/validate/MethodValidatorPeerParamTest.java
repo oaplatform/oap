@@ -23,6 +23,7 @@
  */
 package oap.ws.validate;
 
+import oap.http.testng.HttpAsserts;
 import oap.util.Lists;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
@@ -33,7 +34,6 @@ import java.util.Optional;
 
 import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.http.Request.HttpMethod.POST;
-import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertPost;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;
@@ -49,43 +49,43 @@ public class MethodValidatorPeerParamTest extends AbstractWsValidateTest {
 
     @Test
     public void validationDefault() {
-        assertPost( HTTP_URL( "/test/run/validation/default?q=1" ), "test", TEXT_PLAIN )
+        assertPost( HttpAsserts.httpUrl( "/test/run/validation/default?q=1" ), "test", TEXT_PLAIN )
             .responded( 200, "OK", APPLICATION_JSON, "\"1test\"" );
     }
 
     @Test
     public void validationOk() {
-        assertPost( HTTP_URL( "/test/run/validation/ok?q=1" ), "test", TEXT_PLAIN )
+        assertPost( HttpAsserts.httpUrl( "/test/run/validation/ok?q=1" ), "test", TEXT_PLAIN )
             .responded( 200, "OK", APPLICATION_JSON, "\"1test\"" );
     }
 
     @Test
     public void validationOkList() {
-        assertPost( HTTP_URL( "/test/run/validation/ok?q=1&ql=_11&ql=_12" ), "test", TEXT_PLAIN )
+        assertPost( HttpAsserts.httpUrl( "/test/run/validation/ok?q=1&ql=_11&ql=_12" ), "test", TEXT_PLAIN )
             .responded( 200, "OK", APPLICATION_JSON, "\"1_11/_12test\"" );
     }
 
     @Test
     public void validationOkOptional() {
-        assertPost( HTTP_URL( "/test/run/validation/ok?q=1&q2=2" ), "test", TEXT_PLAIN )
+        assertPost( HttpAsserts.httpUrl( "/test/run/validation/ok?q=1&q2=2" ), "test", TEXT_PLAIN )
             .responded( 200, "OK", APPLICATION_JSON, "\"12test\"" );
     }
 
     @Test
     public void validationFail() {
-        assertPost( HTTP_URL( "/test/run/validation/fail?q=1" ), "test", TEXT_PLAIN )
+        assertPost( HttpAsserts.httpUrl( "/test/run/validation/fail?q=1" ), "test", TEXT_PLAIN )
             .responded( 400, "validation failed", TEXT_PLAIN, "error:1\nerror:test" );
     }
 
     @Test
     public void validationRequiredFailed() {
-        assertPost( HTTP_URL( "/test/run/validation/ok" ), "test", TEXT_PLAIN )
+        assertPost( HttpAsserts.httpUrl( "/test/run/validation/ok" ), "test", TEXT_PLAIN )
             .responded( 400, "q is required", TEXT_PLAIN, "q is required" );
     }
 
     @Test
     public void validationTypeFailed() {
-        assertPost( HTTP_URL( "/test/run/validation/ok?q=test" ), "test", TEXT_PLAIN )
+        assertPost( HttpAsserts.httpUrl( "/test/run/validation/ok?q=test" ), "test", TEXT_PLAIN )
             .hasCode( 400 );
     }
 

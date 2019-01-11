@@ -30,6 +30,7 @@ import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Response;
+import oap.http.testng.HttpAsserts;
 import oap.metrics.Metrics;
 import oap.util.Maps;
 import oap.util.Pair;
@@ -40,7 +41,6 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPOutputStream;
 
-import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.http.testng.HttpAsserts.assertPost;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
@@ -60,103 +60,103 @@ public class WebServicesTest extends AbstractWebServicesTest {
 
     @Test
     public void testPath() {
-        assertGet( HTTP_URL( "/x/v/math" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math" ) )
             .responded( 200, "OK", APPLICATION_JSON, "2" );
     }
 
     @Test
     public void testSort() {
-        assertGet( HTTP_URL( "/x/v/math/test/sort/default" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/test/sort/default" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"__default__\"" );
-        assertGet( HTTP_URL( "/x/v/math/test/sort/45" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/test/sort/45" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"45\"" );
     }
 
     @Test
     public void testEqual() {
-        assertGet( HTTP_URL( "/x/v/math/test/sort=3/test" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/test/sort=3/test" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"3\"" );
     }
 
 
     @Test
     public void invocations() {
-        assertGet( HTTP_URL( "/x/v/math/x?i=1&s=2" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
-        assertGet( HTTP_URL( "/x/v/math/x?i=1&s=2" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
-        assertGet( HTTP_URL( "/x/v/math/sumab?a=1&b=2" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/sumab?a=1&b=2" ) )
             .responded( 200, "OK", APPLICATION_JSON, "3" );
-        assertGet( HTTP_URL( "/x/v/math/x?i=1&s=2" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
-        assertGet( HTTP_URL( "/x/v/math/sumabopt?a=1" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/sumabopt?a=1" ) )
             .responded( 200, "OK", APPLICATION_JSON, "1" );
-        assertGet( HTTP_URL( "/x/v/math/bean?i=1&s=sss" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/bean?i=1&s=sss" ) )
             .responded( 200, "OK", APPLICATION_JSON, "{\"i\":1,\"s\":\"sss\"}" );
-        assertPost( HTTP_URL( "/x/v/math/bytes" ), "1234", APPLICATION_OCTET_STREAM )
+        assertPost( HttpAsserts.httpUrl( "/x/v/math/bytes" ), "1234", APPLICATION_OCTET_STREAM )
             .responded( 200, "OK", APPLICATION_JSON, "\"1234\"" );
-        assertPost( HTTP_URL( "/x/v/math/string" ), "1234", APPLICATION_OCTET_STREAM )
+        assertPost( HttpAsserts.httpUrl( "/x/v/math/string" ), "1234", APPLICATION_OCTET_STREAM )
             .responded( 200, "OK", APPLICATION_JSON, "\"1234\"" );
-        assertGet( HTTP_URL( "/x/v/math/code?code=204" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/code?code=204" ) )
             .hasCode( 204 );
         assertEquals(
             Metrics.snapshot( Metrics.name( "rest_timer" )
                 .tag( "service", MathWS.class.getSimpleName() )
                 .tag( "method", "bean" ) ).count,
             1 );
-        assertGet( HTTP_URL( "/x/h/" ) ).hasCode( 204 );
-        assertGet( HTTP_URL( "/hocon/x/v/math/x?i=1&s=2" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/h/" ) ).hasCode( 204 );
+        assertGet( HttpAsserts.httpUrl( "/hocon/x/v/math/x?i=1&s=2" ) )
             .responded( 500, "failed", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), "failed" );
 
     }
 
     @Test
     public void testEnum() {
-        assertGet( HTTP_URL( "/x/v/math/en?a=CLASS" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/en?a=CLASS" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"CLASS\"" );
     }
 
     @Test
     public void testOptional() {
-        assertGet( HTTP_URL( "/x/v/math/sumabopt?a=1&b=2" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/sumabopt?a=1&b=2" ) )
             .responded( 200, "OK", APPLICATION_JSON, "3" );
     }
 
     @Test
     public void testParameterList() {
-        assertGet( HTTP_URL( "/x/v/math/sum?a=1&b=2&b=3" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/sum?a=1&b=2&b=3" ) )
             .responded( 200, "OK", APPLICATION_JSON, "6" );
     }
 
     @Test
     public void testString() {
-        assertGet( HTTP_URL( "/x/v/math/id?a=aaa" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/id?a=aaa" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"aaa\"" );
     }
 
     @Test
     public void testRequest() {
-        assertGet( HTTP_URL( "/x/v/math/req" ) )
-            .responded( 200, "OK", APPLICATION_JSON, "\"" + HTTP_URL( "/x/v/math\"" ) );
+        assertGet( HttpAsserts.httpUrl( "/x/v/math/req" ) )
+            .responded( 200, "OK", APPLICATION_JSON, "\"" + HttpAsserts.httpUrl( "/x/v/math\"" ) );
     }
 
     @Test
     public void testBean() {
-        assertPost( HTTP_URL( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}", APPLICATION_JSON )
+        assertPost( HttpAsserts.httpUrl( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}", APPLICATION_JSON )
             .responded( 200, "OK", APPLICATION_JSON, "{\"i\":1,\"s\":\"sss\"}" );
     }
 
     @Test
     public void testList() {
-        assertPost( HTTP_URL( "/x/v/math/list" ), "[\"1str\", \"2str\"]", APPLICATION_JSON )
+        assertPost( HttpAsserts.httpUrl( "/x/v/math/list" ), "[\"1str\", \"2str\"]", APPLICATION_JSON )
             .responded( 200, "OK", APPLICATION_JSON, "[\"1str\",\"2str\"]" );
     }
 
     @Test
     public void testDefaultHeaders() {
-        assertGet( HTTP_URL( "/x/h/" ) )
+        assertGet( HttpAsserts.httpUrl( "/x/h/" ) )
             .containsHeader( "Access-Control-Allow-Origin", "*" );
-        assertPost( HTTP_URL( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}",
+        assertPost( HttpAsserts.httpUrl( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}",
             APPLICATION_OCTET_STREAM ).containsHeader( "Access-Control-Allow-Origin", "*" );
     }
 
@@ -170,7 +170,7 @@ public class WebServicesTest extends AbstractWebServicesTest {
         final Client.Response response = Client
             .custom()
             .build()
-            .post( HTTP_URL( "/x/v/math/json" ),
+            .post( HttpAsserts.httpUrl( "/x/v/math/json" ),
                 new ByteArrayInputStream( byteArrayOutputStream.toByteArray() ),
                 APPLICATION_JSON, Maps.of( Pair.__( "Content-Encoding", "gzip" ) ) );
 

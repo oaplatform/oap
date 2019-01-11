@@ -24,6 +24,7 @@
 package oap.ws.validate;
 
 import oap.http.HttpResponse;
+import oap.http.testng.HttpAsserts;
 import oap.util.Lists;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
@@ -34,7 +35,6 @@ import java.util.List;
 import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.http.Request.HttpMethod.GET;
 import static oap.http.Request.HttpMethod.POST;
-import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.http.testng.HttpAsserts.assertPost;
 import static oap.ws.WsParam.From.BODY;
@@ -50,31 +50,31 @@ public class MethodValidatorPeerMethodTest extends AbstractWsValidateTest {
 
     @Test
     public void validationDefault() throws InterruptedException {
-        assertPost( HTTP_URL( "/test/run/validation/default" ), "test", TEXT_PLAIN )
+        assertPost( HttpAsserts.httpUrl( "/test/run/validation/default" ), "test", TEXT_PLAIN )
             .responded( 200, "OK", TEXT_PLAIN, "test" );
     }
 
     @Test
     public void validationOk() {
-        assertPost( HTTP_URL( "/test/run/validation/ok" ), "test", TEXT_PLAIN )
+        assertPost( HttpAsserts.httpUrl( "/test/run/validation/ok" ), "test", TEXT_PLAIN )
             .responded( 200, "OK", TEXT_PLAIN, "test" );
     }
 
     @Test
     public void validationFail() {
-        assertPost( HTTP_URL( "/test/run/validation/fail" ), "test", TEXT_PLAIN )
+        assertPost( HttpAsserts.httpUrl( "/test/run/validation/fail" ), "test", TEXT_PLAIN )
             .responded( 400, "validation failed", TEXT_PLAIN, "error1\nerror2" );
     }
 
     @Test
     public void validationFailCode() {
-        assertPost( HTTP_URL( "/test/run/validation/fail-code" ), "test", TEXT_PLAIN )
+        assertPost( HttpAsserts.httpUrl( "/test/run/validation/fail-code" ), "test", TEXT_PLAIN )
             .responded( 403, "denied", TEXT_PLAIN, "denied" );
     }
 
     @Test
     public void validationMethods() {
-        assertGet( HTTP_URL( "/test/run/validation/methods?a=a&b=5&c=c" ) )
+        assertGet( HttpAsserts.httpUrl( "/test/run/validation/methods?a=a&b=5&c=c" ) )
             .responded( 400, "validation failed", TEXT_PLAIN, "a\na5\n5a" );
     }
 

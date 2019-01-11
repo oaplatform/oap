@@ -37,8 +37,8 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import static oap.http.Request.HttpMethod.GET;
-import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertGet;
+import static oap.http.testng.HttpAsserts.httpUrl;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
@@ -56,12 +56,12 @@ public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
 
     @Test
     public void testShouldAllowRequestWhenEmptyInterceptor() {
-        assertGet( HTTP_URL( "/test/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
+        assertGet( httpUrl( "/test/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
     }
 
     @Test
     public void testShouldNotAllowRequestWhenErrorInterceptor() {
-        assertGet( HTTP_URL( "/test/text?value=error" ) )
+        assertGet( httpUrl( "/test/text?value=error" ) )
             .hasCode( 403 )
             .hasBody( "caused by interceptor" );
     }
@@ -86,9 +86,9 @@ public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
         @Override
         public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
                                                  Function<Reflection.Parameter, Object> getParameterValueFunc ) {
-            return request.parameter( "value" ).get().equals( "error" ) ?
-                Optional.of( new HttpResponse( 403 ).withContent( "caused by interceptor", APPLICATION_JSON ) ) :
-                Optional.empty();
+            return request.parameter( "value" ).get().equals( "error" )
+                ? Optional.of( new HttpResponse( 403 ).withContent( "caused by interceptor", APPLICATION_JSON ) )
+                : Optional.empty();
         }
     }
 }

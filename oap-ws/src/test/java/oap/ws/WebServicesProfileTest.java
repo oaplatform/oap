@@ -26,13 +26,13 @@ package oap.ws;
 
 import oap.application.Kernel;
 import oap.http.HttpResponse;
+import oap.http.testng.HttpAsserts;
 import oap.util.Lists;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
 import static oap.http.Request.HttpMethod.GET;
-import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertGet;
 
 public class WebServicesProfileTest extends AbstractWebServicesTest {
@@ -53,17 +53,17 @@ public class WebServicesProfileTest extends AbstractWebServicesTest {
 
     @Test
     public void testShouldStartWebServiceIfProfileIsNotConfiguredForServiceAndWS() {
-        assertGet( HTTP_URL( "/test-no-profile/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
+        assertGet( HttpAsserts.httpUrl( "/test-no-profile/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
     }
 
     @Test
     public void testShouldStartWebServiceIfProfileIsConfiguredForServiceAndWS() {
-        assertGet( HTTP_URL( "/test-with-profile/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
+        assertGet( HttpAsserts.httpUrl( "/test-with-profile/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
     }
 
     @Test
     public void testShouldNotStartWebServiceIfProfileIsConfiguredForServiceAndNotWS() {
-        assertGet( HTTP_URL( "/new-profile/text?value=empty" ) ).hasCode( 501 );
+        assertGet( HttpAsserts.httpUrl( "/new-profile/text?value=empty" ) ).hasCode( 501 );
 
     }
 

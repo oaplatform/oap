@@ -32,8 +32,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import static java.util.Collections.singletonList;
-import static oap.http.testng.HttpAsserts.HTTP_URL;
 import static oap.http.testng.HttpAsserts.assertGet;
+import static oap.http.testng.HttpAsserts.httpUrl;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 @Slf4j
@@ -53,21 +53,21 @@ public class ValidationTest extends AbstractWebServicesTest {
 
     @Test
     public void testBrokenValidator() {
-        assertGet( HTTP_URL( "/vaildation/service/methodWithBrokenValidator?requiredParameter=10" ) )
+        assertGet( httpUrl( "/vaildation/service/methodWithBrokenValidator?requiredParameter=10" ) )
             .responded( 500, "CausedByException", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ),
                 "CausedByException" );
     }
 
     @Test
     public void testWrongValidatorName() {
-        assertGet( HTTP_URL( "/vaildation/service/methodWithWrongValidatorName?requiredParameter=10" ) )
+        assertGet( httpUrl( "/vaildation/service/methodWithWrongValidatorName?requiredParameter=10" ) )
             .responded( 500, "no such method wrongValidatorName", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ),
                 "no such method wrongValidatorName" );
     }
 
     @Test
     public void testValidatorWithWrongParameters() {
-        assertGet( HTTP_URL( "/vaildation/service/methodWithWrongValidatorArgs?requiredParameter=10" ) )
+        assertGet( httpUrl( "/vaildation/service/methodWithWrongValidatorArgs?requiredParameter=10" ) )
             .responded( 500, "missedParam required by validator wrongArgsValidatoris not supplied by web method",
                 TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ),
                 "missedParam required by validator wrongArgsValidatoris not supplied by web method" );
@@ -75,9 +75,9 @@ public class ValidationTest extends AbstractWebServicesTest {
 
     @Test
     public void testException() {
-        assertGet( HTTP_URL( "/vaildation/service/exceptionRuntimeException" ) )
+        assertGet( httpUrl( "/vaildation/service/exceptionRuntimeException" ) )
             .hasCode( 500 );
-        assertGet( HTTP_URL( "/vaildation/service/exceptionIllegalAccessException" ) )
+        assertGet( httpUrl( "/vaildation/service/exceptionIllegalAccessException" ) )
             .hasCode( 400 );
     }
 }
