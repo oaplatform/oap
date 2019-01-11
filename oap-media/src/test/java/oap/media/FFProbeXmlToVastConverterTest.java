@@ -29,15 +29,12 @@ import org.testng.annotations.Test;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
 
-/**
- * Created by igor.petrenko on 20.02.2017.
- */
 public class FFProbeXmlToVastConverterTest {
     @Test
-    public void testConvert() throws Exception {
+    public void convert() {
         String xml = contentOfTestResource( getClass(), "ffprobe-out.xml" );
         String result = contentOfTestResource( getClass(), "ffprobe-vast.xml" );
         String convert = FFProbeXmlToVastConverter.convert( xml, "uid", "video/mpeg" );
-        assertString( convert ).isEqualTo( result );
+        assertString( convert ).isEqualToIgnoringWhitespace( result );
     }
 }
