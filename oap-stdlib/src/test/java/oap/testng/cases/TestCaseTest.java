@@ -22,28 +22,29 @@
  * SOFTWARE.
  */
 
-package oap.testng;
+package oap.testng.cases;
 
+import lombok.extern.slf4j.Slf4j;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.nio.file.Path;
+import static oap.testng.cases.TestCase.casesOf;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import static oap.io.IoStreams.Encoding.PLAIN;
-import static oap.testng.Asserts.assertFile;
-import static oap.testng.Asserts.contentOfTestResource;
-import static oap.testng.Asserts.pathOfTestResource;
+@Slf4j
+public class TestCaseTest {
 
-/**
- * Created by Admin on 05.07.2016.
- */
-public class AssertsTest {
-
-    @Test
-    public void sortedContentOfFileResource() {
-        Path unsorted = pathOfTestResource( getClass(), "random-flow-of-mind.txt" );
-        String expected = contentOfTestResource( getClass(), "sorted-flow-of-mind.txt" );
-        assertFile( unsorted ).hasContentLineSorting( expected, PLAIN );
+    @DataProvider
+    public Object[][] collecCases() {
+        return casesOf( this, TestCaseTest.class );
     }
 
+    public static Object[] thecase( String param ) {
+        return TestCase.thecase( param );
+    }
 
+    @Test( dataProvider = "collecCases" )
+    public void check( @SuppressWarnings( "unused" ) String clazz, String param ) {
+        assertThat( param ).isIn( "X", "Y" );
+    }
 }

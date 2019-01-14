@@ -37,7 +37,7 @@ import java.util.function.Predicate;
 public final class Result<S, F> implements Serializable {
     public final S successValue;
     public final F failureValue;
-    private boolean success = false;
+    private boolean success;
 
     Result( S successValue, F failureValue, boolean success ) {
         this.successValue = successValue;
