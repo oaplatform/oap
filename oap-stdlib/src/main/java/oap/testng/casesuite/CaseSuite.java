@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.testng.cases;
+package oap.testng.casesuite;
 
 import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +34,7 @@ import java.io.UncheckedIOException;
 import java.util.Optional;
 
 @Slf4j
-public class TestCase {
+public class CaseSuite {
 
     @SuppressWarnings( "UnstableApiUsage" )
     public static Object[][] casesOf( Object self, Class<?> masterclass ) {
@@ -65,7 +65,7 @@ public class TestCase {
 
     private static Object[][] casesOf( Class<?> clazz, Object instance ) {
         Object[][] caseList = Reflect.reflect( clazz )
-            .annotatedMethods( TestCaseProvider.class )
+            .annotatedMethods( CaseProvider.class )
             .stream()
             .flatMap( m -> Stream.of( ( Object[][] ) m.invoke( instance ) ) )
             .map( a -> {
@@ -81,5 +81,13 @@ public class TestCase {
 
     public static Object[] thecase( Object... values ) {
         return values;
+    }
+
+    public static void assertion( String clazz, Runnable code ) {
+        try {
+            code.run();
+        } catch( AssertionError e ) {
+            throw new AssertionError( clazz + " failed: " + e.getMessage() );
+        }
     }
 }

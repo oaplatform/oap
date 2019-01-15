@@ -22,15 +22,30 @@
  * SOFTWARE.
  */
 
-package oap.testng.cases;
+package oap.testng.casesuite;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+import lombok.extern.slf4j.Slf4j;
+import org.testng.annotations.DataProvider;
+import org.testng.annotations.Test;
 
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static oap.testng.casesuite.CaseSuite.assertion;
+import static oap.testng.casesuite.CaseSuite.casesOf;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@Target( METHOD )
-@Retention( RUNTIME )
-public @interface TestCaseProvider {
+@Slf4j
+public class CaseSuiteTest {
+
+    @DataProvider
+    public Object[][] collecCases() {
+        return casesOf( this, CaseSuiteTest.class );
+    }
+
+    public static Object[] thecase( String param ) {
+        return CaseSuite.thecase( param );
+    }
+
+    @Test( dataProvider = "collecCases" )
+    public void check( @SuppressWarnings( "unused" ) String clazz, String param ) {
+        assertion( clazz, () -> assertThat( param ).isIn( "X", "Y" ) );
+    }
 }

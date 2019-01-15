@@ -22,29 +22,15 @@
  * SOFTWARE.
  */
 
-package oap.testng.cases;
+package oap.testng.casesuite;
 
-import lombok.extern.slf4j.Slf4j;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+public class XCases extends CaseSuiteTest {
 
-import static oap.testng.cases.TestCase.casesOf;
-import static org.assertj.core.api.Assertions.assertThat;
-
-@Slf4j
-public class TestCaseTest {
-
-    @DataProvider
-    public Object[][] collecCases() {
-        return casesOf( this, TestCaseTest.class );
-    }
-
-    public static Object[] thecase( String param ) {
-        return TestCase.thecase( param );
-    }
-
-    @Test( dataProvider = "collecCases" )
-    public void check( @SuppressWarnings( "unused" ) String clazz, String param ) {
-        assertThat( param ).isIn( "X", "Y" );
+    @CaseProvider
+    @SuppressWarnings( "unused" )
+    public Object[][] cases() {
+        return new Object[][] {
+            thecase( "X" )
+        };
     }
 }

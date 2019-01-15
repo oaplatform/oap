@@ -22,15 +22,15 @@
  * SOFTWARE.
  */
 
-package oap.testng.cases;
+package oap.testng.casesuite;
 
-public class YCases extends TestCaseTest {
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-    @TestCaseProvider
-    @SuppressWarnings( "unused" )
-    public Object[][] cases() {
-        return new Object[][] {
-            thecase( "Y" )
-        };
-    }
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
+
+@Target( METHOD )
+@Retention( RUNTIME )
+public @interface CaseProvider {
 }

@@ -22,15 +22,15 @@
  * SOFTWARE.
  */
 
-package oap.testng.cases;
+package oap.testng.casesuite;
 
-public class XCases extends TestCaseTest {
+public class YCases extends CaseSuiteTest {
 
-    @TestCaseProvider
+    @CaseProvider
     @SuppressWarnings( "unused" )
     public Object[][] cases() {
         return new Object[][] {
-            thecase( "X" )
+            thecase( "Y" )
         };
     }
 }
