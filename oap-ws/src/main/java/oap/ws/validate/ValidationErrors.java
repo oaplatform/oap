@@ -89,9 +89,9 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
         return errors( code, Lists.of( error ) );
     }
 
-    public ValidationErrors merge( ValidationErrors result ) {
-        if( hasDefaultCode() ) this.code = result.code;
-        this.errors.addAll( result.errors );
+    public ValidationErrors merge( ValidationErrors otherErrors ) {
+        if( hasDefaultCode() ) this.code = otherErrors.code;
+        this.errors.addAll( otherErrors.errors );
         return this;
     }
 
