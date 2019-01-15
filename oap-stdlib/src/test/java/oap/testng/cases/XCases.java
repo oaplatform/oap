@@ -30,7 +30,7 @@ public class XCases extends TestCaseTest {
     @SuppressWarnings( "unused" )
     public Object[][] cases() {
         return new Object[][] {
-            thecase( "X" )
+            thecase( "X1" )
         };
     }
 }
