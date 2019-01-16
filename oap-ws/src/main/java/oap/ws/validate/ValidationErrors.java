@@ -62,6 +62,10 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
         return errors( Lists.of( error ) );
     }
 
+    public static ValidationErrors error( String message, Object... args ) {
+        return errors( Lists.of( String.format( message, args ) ) );
+    }
+
     @Deprecated
     public static ValidationErrors create( List<String> errors ) {
         return new ValidationErrors( DEFAULT_CODE, errors );
@@ -87,6 +91,10 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
 
     public static ValidationErrors error( int code, String error ) {
         return errors( code, Lists.of( error ) );
+    }
+
+    public static ValidationErrors error( int code, String message, Object... args ) {
+        return errors( code, Lists.of( String.format( message, args ) ) );
     }
 
     public ValidationErrors merge( ValidationErrors otherErrors ) {
