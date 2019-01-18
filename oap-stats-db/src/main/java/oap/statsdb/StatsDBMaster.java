@@ -145,6 +145,7 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
 
     public void reset() {
         hosts.clear();
+        removeAll();
     }
 
     @Override
