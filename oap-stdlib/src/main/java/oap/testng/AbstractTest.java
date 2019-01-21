@@ -100,6 +100,7 @@ public abstract class AbstractTest {
     }
 
     private void deleteDirectory( Path path ) {
+        log.debug( "cleaning {}...", path );
         try {
             Files.delete( path );
         } catch( UncheckedIOException e ) {
