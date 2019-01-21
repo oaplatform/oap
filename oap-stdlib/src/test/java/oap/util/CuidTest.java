@@ -58,5 +58,15 @@ public class CuidTest {
 
         assertThat( ids.size() ).isEqualTo( count );
     }
+
+    @Test
+    public void last() {
+        assertThat( Cuid.last() )
+            .isEqualTo( Cuid.last() );
+        assertThat( Cuid.next() )
+            .isEqualTo( Cuid.last() )
+            .isEqualTo( Cuid.last() );
+    }
+
 }
 

@@ -40,7 +40,15 @@ public class Cuid {
     }
 
     public static String next() {
-        return Strings.toHexString( counter.next() ) + suffix;
+        return format( counter.next() );
+    }
+
+    public static String last() {
+        return format( counter.last() );
+    }
+
+    private static String format( long value ) {
+        return Strings.toHexString( value ) + suffix;
     }
 
     public static void reset( String suffix, long seed ) {
@@ -70,6 +78,8 @@ public class Cuid {
 
     public interface Counter {
         long next();
+
+        long last();
     }
 
     public static class SeedCounter implements Counter {
@@ -83,15 +93,20 @@ public class Cuid {
         public long next() {
             return value.incrementAndGet();
         }
+
+        @Override
+        public long last() {
+            return value.get();
+        }
     }
 
     public static class TimeSeedCounter implements Counter {
-        volatile private long lastTime = System.currentTimeMillis();
+        private volatile long lastTime = System.currentTimeMillis();
         private final AtomicLong value = new AtomicLong( lastTime << 16 );
 
         @Override
         public long next() {
-            final long ct = System.currentTimeMillis();
+            long ct = System.currentTimeMillis();
             if( ct > lastTime ) {
                 synchronized( TimeSeedCounter.class ) {
                     if( ct > lastTime ) {
@@ -100,8 +115,12 @@ public class Cuid {
                     }
                 }
             }
-
             return value.incrementAndGet();
+        }
+
+        @Override
+        public long last() {
+            return value.get();
         }
     }
 }
