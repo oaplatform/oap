@@ -45,7 +45,6 @@ import org.slf4j.Logger;
 import java.io.Closeable;
 import java.io.OutputStream;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -98,24 +97,24 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
     @SneakyThrows
     private void load() {
+        log.debug( "loading data from {}", path );
         Threads.synchronously( lock, () -> {
             Files.ensureDirectory( path );
             List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
             log.debug( "found {} files", paths.size() );
 
             for( Path file : paths ) {
-                final Persisted persisted = Persisted.valueOf( file );
+                Persisted persisted = Persisted.valueOf( file );
 
                 for( long version = persisted.version; version < this.version; version++ ) file = migration( file );
 
                 Metadata<T> metadata = Binder.json.unmarshal( new TypeRef<Metadata<T>>() {}, file );
 
-                Path newPath = filenameFor( metadata.object, this.version );
-
-
-                if( !java.nio.file.Files.exists( newPath ) || !java.nio.file.Files.isSameFile( file, newPath ) ) {
+                Path newPath = pathFor( metadata.object );
+                if( !newPath.equals( file ) ) {
                     log.trace( "moving {} => {}", file, newPath );
-                    Files.move( file, newPath, StandardCopyOption.REPLACE_EXISTING );
+                    Files.delete( file );
+                    persist( metadata );
                 }
 
                 val id = storage.identifier.get( metadata.object );
@@ -161,30 +160,27 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
     }
 
-    @SneakyThrows
     private void fsync( long last ) {
 
         Threads.synchronously( lock, () -> {
-            log.trace( "fsync: last: {}, storage length: {}", last, storage.data.size() );
-
-            for( val value : storage.data.values() ) {
-                if( value.modified < last ) continue;
-
-                final Path fn = filenameFor( value.object, version );
-                try( OutputStream outputStream = IoStreams.out( fn, PLAIN, DEFAULT_BUFFER, false, true ) ) {
-                    log.trace( "fsync storing {} with modification time {}", fn.getFileName(), value.modified );
-                    Binder.json.marshal( outputStream, value );
-                    log.trace( "fsync storing {} done", fn.getFileName() );
-                }
-            }
+            log.trace( "fsyncing, last: {}, storage length: {}", last, storage.data.size() );
+            for( val value : storage.data.values() )
+                if( value.modified >= last ) persist( value );
         } );
     }
 
+    @SneakyThrows
+    private void persist( Metadata<T> value ) {
+        Path path = pathFor( value.object );
+        try( OutputStream outputStream = IoStreams.out( path, PLAIN, DEFAULT_BUFFER, false, true ) ) {
+            log.trace( "storing {} with modification time {}", path, value.modified );
+            Binder.json.marshal( outputStream, value );
+            log.trace( "storing {} done", path );
+        }
+    }
+
     public void delete( T id ) {
-        Threads.synchronously( lock, () -> {
-            Path path = filenameFor( id, version );
-            Files.delete( path );
-        } );
+        Threads.synchronously( lock, () -> Files.delete( pathFor( id ) ) );
     }
 
     @Override
@@ -202,9 +198,9 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
         } );
     }
 
-    private Path filenameFor( T object, long version ) {
+    private Path pathFor( T object ) {
         return Threads.synchronously( lock, () -> {
-            final String ver = this.version > 0 ? ".v" + version : "";
+            String ver = this.version > 0 ? ".v" + this.version : "";
             return fsResolve.apply( this.path, object )
                 .resolve( this.storage.identifier.get( object ) + ver + ".json" );
         } );
@@ -240,7 +236,7 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
         static Persisted valueOf( Path path ) {
             String name = path.getFileName().toString();
-            final Matcher matcher = PATTERN_VERSION.matcher( name );
+            Matcher matcher = PATTERN_VERSION.matcher( name );
             return matcher.matches()
                 ? new Persisted( path.getParent(), matcher.group( 1 ), Long.parseLong( matcher.group( 2 ) ) )
                 : new Persisted( path.getParent(), name.substring( 0, name.length() - ".json".length() ), 0L );
