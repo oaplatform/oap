@@ -70,7 +70,7 @@ public class CaseSuite {
             .flatMap( m -> Stream.of( ( Object[][] ) m.invoke( instance ) ) )
             .map( a -> {
                 Object[] aCase = new Object[a.length + 1];
-                aCase[0] = clazz.getSimpleName();
+                aCase[0] = clazz;
                 System.arraycopy( a, 0, aCase, 1, a.length );
                 return aCase;
             } )
@@ -83,11 +83,11 @@ public class CaseSuite {
         return values;
     }
 
-    public static void assertion( String clazz, Runnable code ) {
+    public static void assertion( Class<?> caseClass, Runnable code ) {
         try {
             code.run();
         } catch( AssertionError e ) {
-            throw new AssertionError( clazz + " failed: " + e.getMessage() );
+            throw new AssertionError( caseClass.getSimpleName() + " failed: " + e.getMessage() );
         }
     }
 }

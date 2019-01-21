@@ -164,7 +164,6 @@ public class JsonSchema {
         return validate( properties, partialSchema, json );
     }
 
-    @SuppressWarnings( "unchecked" )
     public List<String> validate( Object json, boolean ignoreRequiredDefault ) {
         JsonValidatorProperties properties = new JsonValidatorProperties(
             schema,

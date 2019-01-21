@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class CaseSuiteTest {
 
     @DataProvider
-    public Object[][] collecCases() {
+    public Object[][] collectCases() {
         return casesOf( this, CaseSuiteTest.class );
     }
 
@@ -44,8 +44,11 @@ public class CaseSuiteTest {
         return CaseSuite.thecase( param );
     }
 
-    @Test( dataProvider = "collecCases" )
-    public void check( @SuppressWarnings( "unused" ) String clazz, String param ) {
-        assertion( clazz, () -> assertThat( param ).isIn( "X", "Y" ) );
+    @Test( dataProvider = "collectCases" )
+    public void check( @SuppressWarnings( "unused" ) Class<?> caseClass, String param ) {
+        assertion( caseClass, () -> {
+            assertThat( caseClass ).isIn( XCases.class, YCases.class );
+            assertThat( param ).isIn( "X", "Y" );
+        } );
     }
 }
