@@ -277,11 +277,11 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     private void linkServices( Map<String, ServiceInitialization> services ) {
         for( val si : services.values() ) {
             log.trace( "linking service {}...", si.implementationName );
+            linkLinks( si.service, si.instance );
+            linkListeners( si.service, si.instance );
             si.service.parameters.forEach( ( parameter, value ) -> {
                 linkService( new FieldLinkReflection( si.reflection, si.instance, parameter ), value, si,
                     true );
-                linkLinks( si.service, si.instance );
-                linkListeners( si.service, si.instance );
             } );
 
         }
