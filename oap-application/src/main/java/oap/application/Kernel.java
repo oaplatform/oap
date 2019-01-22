@@ -365,7 +365,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
                                                      Set<String> initializedServices ) {
 
         return forEachService( modules, services, initializedServices, ( implName, service ) -> {
-            log.debug( "initializing {} as {}", implName, service.name );
+            log.debug( "starting {} as {}", implName, service.name );
 
             val si = sis.get( service.name );
             if( si != null ) {

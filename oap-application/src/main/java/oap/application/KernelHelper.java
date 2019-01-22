@@ -77,8 +77,6 @@ public class KernelHelper {
 
             List<String> dependsOn = Lists.filter( service.dependsOn, d -> serviceEnabled( modules, d ) );
             if( initializedServices.containsAll( dependsOn ) ) {
-                log.debug( "initializing {} as {}", entry.getKey(), service.name );
-
                 cons.accept( entry.getKey(), service );
 
                 initializedServices.add( service.name );
