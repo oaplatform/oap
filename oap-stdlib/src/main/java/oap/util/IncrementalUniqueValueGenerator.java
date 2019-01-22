@@ -24,46 +24,26 @@
 
 package oap.util;
 
-import oap.concurrent.Threads;
-import org.testng.annotations.Test;
+import java.util.concurrent.atomic.AtomicLong;
 
-import java.util.Set;
+public class IncrementalUniqueValueGenerator {
+    private volatile long lastTime = System.currentTimeMillis();
+    private final AtomicLong value = new AtomicLong( lastTime << 16 );
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class CuidTest {
-
-    @Test
-    public void next() {
-        for( int i = 0; i < 20; i++ ) {
-            if( i % 3 == 0 ) Threads.sleepSafely( 1 );
-            System.out.println( Cuid.UNIQUE.next() );
+    public long next() {
+        long ct = System.currentTimeMillis();
+        if( ct > lastTime ) {
+            synchronized( IncrementalUniqueValueGenerator.class ) {
+                if( ct > lastTime ) {
+                    value.set( ct << 16 );
+                    lastTime = ct;
+                }
+            }
         }
+        return value.incrementAndGet();
     }
 
-    @Test
-    public void idLength() {
-        assertThat( Cuid.UNIQUE.next().length() ).isEqualTo( 23 );
+    public long last() {
+        return value.get();
     }
-
-    @Test
-    public void hiResBug() {
-        Set<String> ids = Sets.empty();
-
-        int count = 2000000;
-        for( int i = 0; i < count; i++ ) ids.add( Cuid.UNIQUE.next() );
-
-        assertThat( ids.size() ).isEqualTo( count );
-    }
-
-    @Test
-    public void last() {
-        assertThat( Cuid.UNIQUE.last() )
-            .isEqualTo( Cuid.UNIQUE.last() );
-        assertThat( Cuid.UNIQUE.next() )
-            .isEqualTo( Cuid.UNIQUE.last() )
-            .isEqualTo( Cuid.UNIQUE.last() );
-    }
-
 }
-

@@ -27,7 +27,6 @@ package oap.statsdb;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import oap.util.Cuid;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -43,10 +42,6 @@ public interface RemoteStatsDB {
 
         public final Map<String, IdNode> data;
         public final String id;
-
-        public Sync( Map<String, IdNode> data ) {
-            this( data, Cuid.next() );
-        }
 
         @JsonCreator
         public Sync( @JsonProperty Map<String, IdNode> data, @JsonProperty String id ) {

@@ -35,7 +35,6 @@ import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Cuid;
 import oap.util.Stream;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -61,11 +60,6 @@ public class StatsDBTest extends AbstractTest {
 
         masterDbPath = Env.tmpPath( "master.db" );
         nodeDbPath = Env.tmpPath( "node.db" );
-    }
-
-    @AfterMethod
-    public void done() {
-        Cuid.restore();
     }
 
     @Test
@@ -236,18 +230,19 @@ public class StatsDBTest extends AbstractTest {
 
     @Test
     public void version() {
+        Cuid.IncrementalCuid uid = Cuid.incremental( 0 );
         try( StatsDBMaster master = new StatsDBMaster( schema2, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) );
-             StatsDBNode node = new StatsDBNode( schema2, master, null, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ) ) ) {
+             StatsDBNode node = new StatsDBNode( schema2, master, null, new MemoryStorage<>( Identifier.forAnnotationFixed(), CONCURRENT ), uid ) ) {
 
             master.start();
 
-            Cuid.reset( "s", 0 );
+            uid.reset( 0 );
 
             node.update( "k1", c -> c.i2 = 20, MockValue::new );
             node.sync();
             assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );
 
-            Cuid.reset( "s", 0 );
+            uid.reset( 0 );
             node.update( "k1", c -> c.i2 = 21, MockValue::new );
             node.sync();
             assertThat( master.<MockValue>get( "k1" ).i2 ).isEqualTo( 20 );

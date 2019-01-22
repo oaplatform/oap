@@ -31,9 +31,9 @@ import static oap.benchmark.Benchmark.benchmark;
 public class CuidPerformance {
     @Test
     public void test() {
-        Cuid.next();
+        Cuid.UNIQUE.next();
 
-        benchmark( "cuid", 20000000, Cuid::next )
+        benchmark( "cuid", 20000000, Cuid.UNIQUE::next )
             .inThreads( 100 )
             .run();
     }

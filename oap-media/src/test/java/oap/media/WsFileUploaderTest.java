@@ -83,17 +83,17 @@ public class WsFileUploaderTest extends AbstractTest {
             WsConfig.CONFIGURATION.fromResource( getClass(), "ws-multipart.conf" )
         );
 
-        WsFileUploader service = new WsFileUploader( path, 1024 * 1024, -1,
+        WsFileUploader uploader = new WsFileUploader( path, 1024 * 1024, -1,
             singletonList( new VastMediaProcessing(
                 shell( "ffprobe -v quiet -print_format xml -show_format -sexagesimal -show_streams {FILE}" ), 10000L
-            ) )
+            ) ),
+            Cuid.incremental( 1 )
         );
-        service.addListener( ( media, mediaInfo, mediaContext ) -> WsFileUploaderTest.this.medias.add( __( media, mediaInfo ) ) );
-        kernel.register( "upload", service );
+        uploader.addListener( ( media, mediaInfo, mediaContext ) -> WsFileUploaderTest.this.medias.add( __( media, mediaInfo ) ) );
+        kernel.register( "upload", uploader );
         ws.start();
         listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
         listener.start();
-        Cuid.reset( "p", 1 );
     }
 
     @AfterMethod
@@ -113,12 +113,12 @@ public class WsFileUploaderTest extends AbstractTest {
             .isOk()
             .is( r -> {
                 WsFileUploader.MediaResponse resp = r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get();
-                assertThat( resp.id ).isEqualTo( "test/test2/2p.mp4" );
+                assertThat( resp.id ).isEqualTo( "test/test2/2.mp4" );
                 assertThat( resp.info.get( "vast" ) ).isNotNull();
                 assertThat( resp.info.get( "Content-Type" ) ).isEqualTo( "video/mp4" );
 
                 assertThat( medias ).hasSize( 1 );
-                assertThat( medias.get( 0 )._1.id ).startsWith( "test/test2/2p.mp4" );
+                assertThat( medias.get( 0 )._1.id ).startsWith( "test/test2/2.mp4" );
                 assertThat( medias.get( 0 )._1.name ).isEqualTo( "video.mp4" );
                 assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "video/mp4" );
                 assertThat( medias.get( 0 )._2.get( "vast" ) ).isNotNull();
@@ -135,11 +135,11 @@ public class WsFileUploaderTest extends AbstractTest {
             .isOk()
             .is( r -> {
                 WsFileUploader.MediaResponse resp = r.<WsFileUploader.MediaResponse>unmarshal( WsFileUploader.MediaResponse.class ).get();
-                assertThat( resp.id ).isEqualTo( "test/test2/2p.png" );
+                assertThat( resp.id ).isEqualTo( "test/test2/2.png" );
                 assertThat( resp.info.get( "Content-Type" ) ).isEqualTo( "image/png" );
 
                 assertThat( medias ).hasSize( 1 );
-                assertThat( medias.get( 0 )._1.id ).isEqualTo( "test/test2/2p.png" );
+                assertThat( medias.get( 0 )._1.id ).isEqualTo( "test/test2/2.png" );
                 assertThat( medias.get( 0 )._1.name ).isEqualTo( "image.png" );
                 assertThat( medias.get( 0 )._1.contentType ).isEqualTo( "image/png" );
                 assertThat( resp.info.get( "Content-Type" ) ).isEqualTo( "image/png" );

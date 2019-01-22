@@ -67,15 +67,15 @@ public class BuffersTest {
     @Test(
         expectedExceptions = IllegalArgumentException.class,
         expectedExceptionsMessageRegExp = "buffer size is too big: 2 for buffer of 18" )
-    public void testLength() {
-        Buffers.ReadyQueue.digestionIds = new Cuid.SeedCounter( 0 );
+    public void length() {
+        Buffers.ReadyQueue.digestionIds = Cuid.incremental( 0 );
         Buffers buffers = new Buffers( Env.tmpPath( "bfrs" ), BufferConfigurationMap.DEFAULT( HEADER + 1 ) );
         buffers.put( "x/y", new byte[] { 1, 2 } );
     }
 
     @Test
     public void foreach() {
-        Buffers.ReadyQueue.digestionIds = new Cuid.SeedCounter( 0 );
+        Buffers.ReadyQueue.digestionIds = Cuid.incremental( 0 );
         Buffers buffers = new Buffers( Env.tmpPath( "bfrs" ), BufferConfigurationMap.DEFAULT( HEADER + 4 ) );
         buffers.put( "x/y", new byte[] { 1, 2, 3 } );
         buffers.put( "x/z", new byte[] { 11, 12, 13 } );
@@ -96,8 +96,8 @@ public class BuffersTest {
     }
 
     @Test
-    public void foreach_pattern() {
-        Buffers.ReadyQueue.digestionIds = new Cuid.SeedCounter( 0 );
+    public void foreachPattern() {
+        Buffers.ReadyQueue.digestionIds = Cuid.incremental( 0 );
         Buffers buffers = new Buffers( Env.tmpPath( "bfrs" ), BufferConfigurationMap.custom(
             c( "x_y", ".+y", HEADER + 2 ),
             c( "x_z", ".+z", HEADER + 4 )
@@ -121,7 +121,7 @@ public class BuffersTest {
 
     @Test
     public void persistence() {
-        Buffers.ReadyQueue.digestionIds = new Cuid.SeedCounter( 0 );
+        Buffers.ReadyQueue.digestionIds = Cuid.incremental( 0 );
         Buffers buffers = new Buffers( Env.tmpPath( "bfrs" ), BufferConfigurationMap.DEFAULT( HEADER + 4 ) );
         buffers.put( "x/y", new byte[] { 1, 2, 3 } );
         buffers.put( "x/z", new byte[] { 11, 12, 13 } );

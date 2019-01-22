@@ -27,100 +27,91 @@ import java.net.Inet4Address;
 import java.net.NetworkInterface;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static oap.util.Strings.toHexString;
+
 /**
  * Cluster Unique Id
  */
-public class Cuid {
-    private static final String UNKNOWN_IP = "UUUUUUUU";
-    private static String suffix = ipSuffix();
-    private static Counter counter;
+public interface Cuid {
+    Cuid UNIQUE = new UniqueCuid();
 
-    static {
-        restore();
+    String next();
+
+    long nextLong();
+
+    String last();
+
+    static IncrementalCuid incremental( long seed ) {
+        return new IncrementalCuid( seed );
     }
 
-    public static String next() {
-        return format( counter.next() );
-    }
+    class UniqueCuid implements Cuid {
+        private static final String UNKNOWN_IP = "UUUUUUUU";
+        private static String suffix = ipSuffix();
+        private static final IncrementalUniqueValueGenerator generator = new IncrementalUniqueValueGenerator();
 
-    public static String last() {
-        return format( counter.last() );
-    }
+        @Override
+        public String next() {
+            return format( nextLong() );
+        }
 
-    private static String format( long value ) {
-        return Strings.toHexString( value ) + suffix;
-    }
+        public long nextLong() {
+            return generator.next();
+        }
 
-    public static void reset( String suffix, long seed ) {
-        Cuid.suffix = suffix;
-        counter = new SeedCounter( seed );
-    }
+        @Override
+        public String last() {
+            return format( generator.last() );
+        }
 
-    private static String ipSuffix() {
-        try {
-            return Stream.of( NetworkInterface.getNetworkInterfaces() )
-                .filter( Try.filter( i -> !i.isLoopback() && !i.isVirtual() && i.isUp() && !i.isPointToPoint() ) )
-                .findFirst()
-                .flatMap( i -> Stream.of( i.getInetAddresses() )
-                    .filter( a -> a instanceof Inet4Address )
+        private static String format( long value ) {
+            return toHexString( value ) + suffix;
+        }
+
+        private static String ipSuffix() {
+            try {
+                return Stream.of( NetworkInterface.getNetworkInterfaces() )
+                    .filter( Try.filter( i -> !i.isLoopback() && !i.isVirtual() && i.isUp() && !i.isPointToPoint() ) )
                     .findFirst()
-                    .map( a -> Strings.toHexString( a.getAddress() ) )
-                )
-                .orElse( UNKNOWN_IP );
-        } catch( Exception e ) {
-            return UNKNOWN_IP;
-        }
-    }
-
-    public static void restore() {
-        counter = new TimeSeedCounter();
-    }
-
-    public interface Counter {
-        long next();
-
-        long last();
-    }
-
-    public static class SeedCounter implements Counter {
-        private AtomicLong value = new AtomicLong();
-
-        public SeedCounter( long seed ) {
-            this.value.set( seed );
-        }
-
-        @Override
-        public long next() {
-            return value.incrementAndGet();
-        }
-
-        @Override
-        public long last() {
-            return value.get();
-        }
-    }
-
-    public static class TimeSeedCounter implements Counter {
-        private volatile long lastTime = System.currentTimeMillis();
-        private final AtomicLong value = new AtomicLong( lastTime << 16 );
-
-        @Override
-        public long next() {
-            long ct = System.currentTimeMillis();
-            if( ct > lastTime ) {
-                synchronized( TimeSeedCounter.class ) {
-                    if( ct > lastTime ) {
-                        value.set( ct << 16 );
-                        lastTime = ct;
-                    }
-                }
+                    .flatMap( i -> Stream.of( i.getInetAddresses() )
+                        .filter( a -> a instanceof Inet4Address )
+                        .findFirst()
+                        .map( a -> toHexString( a.getAddress() ) )
+                    )
+                    .orElse( UNKNOWN_IP );
+            } catch( Exception e ) {
+                return UNKNOWN_IP;
             }
-            return value.incrementAndGet();
+        }
+
+
+    }
+
+    class IncrementalCuid implements Cuid {
+        private AtomicLong counter = new AtomicLong();
+
+        public IncrementalCuid( long seed ) {
+            this.counter.set( seed );
         }
 
         @Override
-        public long last() {
-            return value.get();
+        public String next() {
+            return toHexString( nextLong() );
         }
+
+        @Override
+        public long nextLong() {
+            return this.counter.incrementAndGet();
+        }
+
+        @Override
+        public String last() {
+            return toHexString( this.counter.get() );
+        }
+
+        public void reset( long value ) {
+            this.counter.set( value );
+        }
+
     }
 }

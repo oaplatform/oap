@@ -43,7 +43,6 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.protocol.HTTP;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -58,13 +57,15 @@ import static java.util.Collections.emptyList;
 @Slf4j
 public class WsFileUploader extends FileUploader implements Handler {
     private final FileUpload upload;
+    private final Cuid cuid;
 
-    public WsFileUploader( Path path, long maxMemorySize, long maxRequestSize ) {
-        this( path, maxMemorySize, maxRequestSize, emptyList() );
+    public WsFileUploader( Path path, long maxMemorySize, long maxRequestSize, Cuid cuid ) {
+        this( path, maxMemorySize, maxRequestSize, emptyList(), cuid );
     }
 
-    public WsFileUploader( Path path, long maxMemorySize, long maxRequestSize, List<MediaProcessing> postprocessing ) {
+    public WsFileUploader( Path path, long maxMemorySize, long maxRequestSize, List<MediaProcessing> postprocessing, Cuid cuid ) {
         super( postprocessing );
+        this.cuid = cuid;
         log.info( "file uploader path = {}", path );
 
         oap.io.Files.ensureDirectory( path );
@@ -101,7 +102,7 @@ public class WsFileUploader extends FileUploader implements Handler {
             val prefixItem = items.stream().filter( FileItem::isFormField ).findAny().get();
 
             try {
-                val id = Cuid.next();
+                val id = cuid.next();
 
                 val prefix = prefixItem.getString();
                 val fileName = fileItem.getName();
@@ -156,7 +157,9 @@ public class WsFileUploader extends FileUploader implements Handler {
     private static class RequestUploadContext implements UploadContext {
         private final Request request;
 
-        public RequestUploadContext( Request request ) {this.request = request;}
+        public RequestUploadContext( Request request ) {
+            this.request = request;
+        }
 
         @Override
         public long contentLength() {
@@ -187,7 +190,7 @@ public class WsFileUploader extends FileUploader implements Handler {
         }
 
         @Override
-        public InputStream getInputStream() throws IOException {
+        public InputStream getInputStream() {
             return request.body.orElse( null );
         }
     }

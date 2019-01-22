@@ -28,7 +28,6 @@ import lombok.val;
 import oap.security.acl.MockUser2;
 import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
-import oap.util.Cuid;
 import oap.util.Lists;
 import oap.ws.security.PasswordHasher;
 import org.joda.time.DateTimeUtils;
@@ -75,7 +74,6 @@ public class AuthService2Test {
 
     @BeforeMethod
     public void beforeMethod() {
-        Cuid.reset( "s", 0 );
 
         authProvider = new MockAuthProvider();
         authService = new AuthService2( Lists.of( authProvider ),
@@ -86,7 +84,6 @@ public class AuthService2Test {
 
     @AfterMethod
     public void afterMethod() {
-        Cuid.restore();
         DateTimeUtils.setCurrentMillisSystem();
     }
 }

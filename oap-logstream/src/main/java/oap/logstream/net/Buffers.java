@@ -83,7 +83,6 @@ public class Buffers implements Closeable {
 
         final int bufferSize = conf.bufferSize;
         String intern = selector.intern();
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized( intern ) {
             Buffer b = currentBuffers.computeIfAbsent( intern, k -> cache.get( intern, bufferSize ) );
             if( bufferSize - b.headerLength() < length )
@@ -171,11 +170,11 @@ public class Buffers implements Closeable {
     }
 
     static class ReadyQueue implements Serializable {
-        static Cuid.Counter digestionIds = new Cuid.TimeSeedCounter();
+        static Cuid digestionIds = Cuid.UNIQUE;
         private final ConcurrentLinkedQueue<Buffer> buffers = new ConcurrentLinkedQueue<>();
 
         public final synchronized void ready( Buffer buffer ) {
-            buffer.close( digestionIds.next() );
+            buffer.close( digestionIds.nextLong() );
             buffers.offer( buffer );
         }
 

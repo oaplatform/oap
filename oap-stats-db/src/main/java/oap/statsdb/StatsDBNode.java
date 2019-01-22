@@ -32,6 +32,7 @@ import oap.json.Binder;
 import oap.net.Inet;
 import oap.statsdb.RemoteStatsDB.Sync;
 import oap.storage.Storage;
+import oap.util.Cuid;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -46,13 +47,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, Closeable {
     private final Path directory;
     private final RemoteStatsDB master;
+    private final Cuid cuid;
     protected boolean lastSyncSuccess = false;
     volatile Sync sync = null;
 
     public StatsDBNode( KeySchema schema, RemoteStatsDB master, Path directory, Storage<IdNode> storage ) {
+        this( schema, master, directory, storage, Cuid.UNIQUE );
+    }
+
+    public StatsDBNode( KeySchema schema, RemoteStatsDB master, Path directory, Storage<IdNode> storage, Cuid cuid ) {
         super( schema, storage );
         this.directory = directory;
         this.master = master;
+        this.cuid = cuid;
 
         if( directory != null ) {
             val syncPath = directory.resolve( "sync.db.gz" );
@@ -70,7 +77,7 @@ public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, 
 
     public synchronized void sync() {
         if( sync == null ) {
-            sync = new Sync( storage.snapshot( true ) );
+            sync = new Sync( storage.snapshot( true ), cuid.next() );
             fsync( true );
         }
 

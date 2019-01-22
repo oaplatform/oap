@@ -46,7 +46,7 @@ public final class IdentifierBuilder<T> {
     private final BiConsumer<T, String> setter;
     private Strings.FriendlyIdOption[] options = new Strings.FriendlyIdOption[] { NO_VOWELS, FILL };
 
-    private Function<T, String> suggestion = obj -> Cuid.next();
+    private Function<T, String> suggestion = obj -> Cuid.UNIQUE.next();
 
     private int length = DEFAULT_ID_SIZE;
 
