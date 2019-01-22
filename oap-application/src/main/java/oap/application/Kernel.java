@@ -200,7 +200,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     private void start( ApplicationConfiguration config ) {
         log.debug( "initializing application kernel..." );
         Application.register( this );
-//        register( KERNEL_SERVICE, this );
+        register( KERNEL_SERVICE, this );
         log.debug( "application config {}", config );
         this.profiles.addAll( config.profiles );
 
@@ -232,7 +232,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     private Map<String, ServiceInitialization> instantiateServices( ApplicationConfiguration config ) {
         val ret = new HashMap<String, ServiceInitialization>();
 
-        Set<String> initializedServices = new HashSet<>(  );
+        Set<String> initializedServices = Sets.of( KERNEL_SERVICE );
         forEachModule( modules, new HashSet<>(), module ->
             forEachService( modules, module.services, initializedServices, ( implName, service ) -> {
                 if( !service.enabled ) {
