@@ -47,7 +47,7 @@ public class KernelHelperTest {
         val parameters = new LinkedHashMap<String, Object>( Maps.of2( "service", "@service:test-service" ) );
 
         val si = new ServiceInitialization( "test-service", this, new Module( "n1" ), new Module.Service(), Reflect.reflect( getClass() ) );
-        val newParameters = KernelHelper.fixLinksForConstructor( Maps.of2( "test-service", si ), parameters );
+        val newParameters = KernelHelper.fixLinksForConstructor( null, Maps.of2( "test-service", si ), parameters );
 
         assertThat( newParameters ).isNotSameAs( parameters );
         assertThat( newParameters ).containsKeys( "service" );
@@ -58,7 +58,7 @@ public class KernelHelperTest {
     public void testFixLinksForConstructorValue() {
         val parameters = new LinkedHashMap<String, Object>( Maps.of2( "service", "@service:test-service" ) );
 
-        val newParameters = KernelHelper.fixLinksForConstructor( new HashMap<>(), parameters );
+        val newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
 
         assertThat( newParameters ).isNotSameAs( parameters );
         assertThat( newParameters ).containsKeys( "service" );
@@ -69,7 +69,7 @@ public class KernelHelperTest {
     public void testFixLinksForConstructorList() {
         val parameters = new LinkedHashMap<String, Object>( Maps.of2( "services", singletonList( "@service:test-service" ) ) );
 
-        val newParameters = KernelHelper.fixLinksForConstructor( new HashMap<>(), parameters );
+        val newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
 
         assertThat( newParameters ).isNotSameAs( parameters );
         assertThat( newParameters ).containsKeys( "services" );
@@ -83,7 +83,7 @@ public class KernelHelperTest {
             Maps.of2( "services", Lists.of( Maps.of2( "link", "@service:test-service" ) ) )
         );
 
-        val newParameters = KernelHelper.fixLinksForConstructor( new HashMap<>(), parameters );
+        val newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
 
         assertThat( newParameters ).isNotSameAs( parameters );
         assertThat( newParameters ).containsKeys( "services" );

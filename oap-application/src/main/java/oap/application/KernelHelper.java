@@ -100,14 +100,14 @@ public class KernelHelper {
         return true;
     }
 
-    static LinkedHashMap<String, Object> fixLinksForConstructor( Map<String, ServiceInitialization> initialized,
+    static LinkedHashMap<String, Object> fixLinksForConstructor( Kernel kernel, Map<String, ServiceInitialization> initialized,
                                                                  LinkedHashMap<String, Object> parameters ) {
-        fixLinks( initialized, parameters );
+        fixLinks( kernel, initialized, parameters );
 
         val ret = new LinkedHashMap<String, Object>();
 
         parameters.forEach( ( name, value ) -> {
-            Object newValue = fixValue( initialized, value );
+            Object newValue = fixValue( kernel, initialized, value );
             ret.put( name, newValue );
         } );
 
@@ -115,18 +115,20 @@ public class KernelHelper {
     }
 
     @SuppressWarnings( "unchecked" )
-    static Object fixValue( Map<String, ServiceInitialization> initialized, Object value ) {
+    static Object fixValue( Kernel kernel, Map<String, ServiceInitialization> initialized, Object value ) {
         Object newValue;
         if( isServiceLink( value ) ) {
             val linkName = referenceName( value );
             val si = initialized.get( linkName );
             newValue = si != null ? si.instance : null;
+        } else if( isKernel( value ) ) {
+            newValue = kernel;
         } else if( value instanceof String && ( ( String ) value ).matches( "@[^:]+:.+" ) ) {
             newValue = null;
         } else if( value instanceof List<?> ) {
             val newList = new ArrayList<>();
             for( val lValue : ( List<?> ) value ) {
-                val fixLValue = fixValue( initialized, lValue );
+                val fixLValue = fixValue( kernel, initialized, lValue );
                 if( fixLValue != null ) newList.add( fixLValue );
             }
             newValue = newList;
@@ -134,7 +136,7 @@ public class KernelHelper {
             val newMap = new LinkedHashMap<Object, Object>();
 
             ( ( Map<String, Object> ) value ).forEach( ( key, mValue ) -> {
-                val v = fixValue( initialized, mValue );
+                val v = fixValue( kernel, initialized, mValue );
                 if( v != null ) newMap.put( key, v );
             } );
 
@@ -149,6 +151,10 @@ public class KernelHelper {
         return value instanceof String && ( ( String ) value ).startsWith( "@service:" );
     }
 
+    static boolean isKernel( Object value ) {
+        return "@kernel".equals( value );
+    }
+
     static boolean isImplementations( Object value ) {
         return value instanceof String && ( ( String ) value ).startsWith( "@implementations:" );
     }
@@ -157,20 +163,22 @@ public class KernelHelper {
         return Module.Reference.of( ref ).name;
     }
 
-    static Object fixLinks( Map<String, ServiceInitialization> initialized, Object value ) {
+    static Object fixLinks( Kernel kernel, Map<String, ServiceInitialization> initialized, Object value ) {
         if( isServiceLink( value ) ) {
             val linkName = referenceName( value );
             val si = initialized.get( linkName );
             return si != null ? si.instance : null;
+        } else if( isKernel( value ) ) {
+            return kernel;
         } else if( value instanceof List<?> ) {
             ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
             while( it.hasNext() ) {
-                val v = fixLinks( initialized, it.next() );
+                val v = fixLinks( kernel, initialized, it.next() );
                 if( v != null ) it.set( v );
             }
         } else if( value instanceof Map<?, ?> ) {
             for( val entry : ( ( Map<?, Object> ) value ).entrySet() ) {
-                val v = fixLinks( initialized, entry.getValue() );
+                val v = fixLinks( kernel, initialized, entry.getValue() );
                 if( v != null ) entry.setValue( v );
             }
         }

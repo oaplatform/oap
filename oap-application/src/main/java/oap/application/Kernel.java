@@ -252,7 +252,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
                 Reflection reflect = Reflect.reflect( service.implementation, Module.coersions );
                 Object instance;
                 if( !service.isRemoteService() ) try {
-                    val parametersWithoutLinks = fixLinksForConstructor( ret, service.parameters );
+                    val parametersWithoutLinks = fixLinksForConstructor( this, ret, service.parameters );
                     instance = reflect.newInstance( parametersWithoutLinks );
                 } catch( ReflectException e ) {
                     log.info( "service name = {}, remote = {}, profile = {}", implName, service.remote, service.profile );
