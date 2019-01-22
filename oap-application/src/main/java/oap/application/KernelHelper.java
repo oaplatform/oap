@@ -83,8 +83,8 @@ public class KernelHelper {
 
                 initializedServices.add( service.name );
             } else {
-                log.debug( "dependencies are not ready - deferring {}: {}",
-                    service.name, subtract( service.dependsOn, initializedServices ) );
+                log.debug( "dependencies are not ready - deferring {}: {}, initialized {}",
+                    service.name, subtract( service.dependsOn, initializedServices ), initializedServices );
                 deferred.put( entry.getKey(), service );
             }
         }

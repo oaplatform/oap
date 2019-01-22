@@ -88,6 +88,7 @@ public class KernelTest extends AbstractTest {
                 ServiceTwo two = Application.service( ServiceTwo.class );
 
                 assertNotNull( one );
+//                assertThat( one.kernel ).isSameAs( kernel );
                 assertThat( one.i ).isEqualTo( 2 );
                 assertThat( one.i2 ).isEqualTo( 100 );
                 Complex expected = new Complex( 2 );

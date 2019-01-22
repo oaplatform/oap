@@ -4,7 +4,7 @@ dependsOn:
 services:
   remoting:
     profile: remoting
-    implementation: "oap.application.remote.Remote"
+    implementation: oap.application.remote.Remote
     parameters:
       server: "@service:oap-http-server"
       context: remote

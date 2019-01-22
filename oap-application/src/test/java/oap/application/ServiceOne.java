@@ -51,6 +51,7 @@ public class ServiceOne {
     ActionListener listener;
     List<ServiceOne> list = new ArrayList<>();
     List<TestRec> list2 = new ArrayList<>();
+    Kernel kernel;
 
     public ServiceOne( int i ) {
         this.i = i;

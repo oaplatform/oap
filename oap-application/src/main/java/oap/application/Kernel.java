@@ -40,6 +40,7 @@ import oap.metrics.Metrics;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
+import oap.util.Lists;
 import oap.util.PrioritySet;
 import oap.util.Sets;
 import oap.util.Stream;
@@ -61,7 +62,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.application.KernelHelper.fixLinksForConstructor;
 import static oap.application.KernelHelper.forEachModule;
@@ -78,6 +78,7 @@ import static oap.application.KernelHelper.serviceEnabled;
 @ToString( of = "name" )
 public class Kernel implements Iterable<Map.Entry<String, Object>> {
     public static final String DEFAULT = Strings.DEFAULT;
+    private static final String KERNEL_SERVICE = "kernel";
     final String name;
     private final List<URL> configurations;
     private final Set<String> profiles = Sets.empty();
@@ -99,17 +100,14 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         if( isServiceLink( value ) ) {
             if( !optional ) {
                 String linkName = Module.Reference.of( value ).name;
-                addDeps( module, service, singletonList( linkName ) );
+                addDeps( module, service, Lists.of( linkName ) );
             }
-        } else if( value instanceof List<?> ) {
-            for( val item : ( List<?> ) value ) {
+        } else if( value instanceof List<?> )
+            for( val item : ( List<?> ) value )
                 fixDepsParameter( module, service, item, true );
-            }
-        } else if( value instanceof Map<?, ?> ) {
-            for( val item : ( ( Map<?, ?> ) value ).values() ) {
+        else if( value instanceof Map<?, ?> )
+            for( val item : ( ( Map<?, ?> ) value ).values() )
                 fixDepsParameter( module, service, item, false );
-            }
-        }
     }
 
     private static void addDeps( Module module, Module.Service service, List<String> list ) {
@@ -118,12 +116,11 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     }
 
     private void fixDeps() {
-        for( val module : modules ) {
+        for( val module : modules )
             for( val service : module.services.values() ) {
                 log.trace( "fix deps for {} in {}", service.name, module.name );
                 service.parameters.forEach( ( key, value ) -> fixDepsParameter( module, service, value, false ) );
             }
-        }
     }
 
     private void linkListeners( Module.Service service, Object instance ) {
@@ -203,6 +200,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     private void start( ApplicationConfiguration config ) {
         log.debug( "initializing application kernel..." );
         Application.register( this );
+//        register( KERNEL_SERVICE, this );
         log.debug( "application config {}", config );
         this.profiles.addAll( config.profiles );
 
@@ -226,17 +224,15 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     }
 
     private void fixServiceName() {
-        for( val module : modules ) {
-            module.services.forEach( ( implName, service ) -> {
-                service.name = service.name != null ? service.name : implName;
-            } );
-        }
+        for( val module : modules )
+            module.services.forEach( ( implName, service ) ->
+                service.name = service.name != null ? service.name : implName );
     }
 
     private Map<String, ServiceInitialization> instantiateServices( ApplicationConfiguration config ) {
         val ret = new HashMap<String, ServiceInitialization>();
 
-        val initializedServices = new HashSet<String>();
+        Set<String> initializedServices = new HashSet<>(  );
         forEachModule( modules, new HashSet<>(), module ->
             forEachService( modules, module.services, initializedServices, ( implName, service ) -> {
                 if( !service.enabled ) {
@@ -447,11 +443,6 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
 
     public void unregisterServices() {
         services.clear();
-    }
-
-    public void reload() {
-        stop();
-        start();
     }
 
     public boolean profileEnabled( String profile ) {
