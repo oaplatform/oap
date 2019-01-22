@@ -33,19 +33,19 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>4.0.21</version>
+        <version>4.0.22</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <dependencies>
         <dependency>
-            <groupId>oap</groupId>
+            <groupId>${project.parent.groupId}</groupId>
             <artifactId>oap-security-backend</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>oap</groupId>
+            <groupId>${project.parent.groupId}</groupId>
             <artifactId>oap-storage-mongo</artifactId>
             <version>${project.parent.version}</version>
         </dependency>

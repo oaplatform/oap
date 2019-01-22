@@ -33,27 +33,27 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>4.0.21</version>
+        <version>4.0.22</version>
     </parent>
 
     <dependencies>
         <dependency>
-            <groupId>oap</groupId>
+            <groupId>${project.parent.groupId}</groupId>
             <artifactId>oap-cli</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>oap</groupId>
+            <groupId>${project.parent.groupId}</groupId>
             <artifactId>oap-json</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>oap</groupId>
+            <groupId>${project.parent.groupId}</groupId>
             <artifactId>oap-http</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>oap</groupId>
+            <groupId>${project.parent.groupId}</groupId>
             <artifactId>oap-stdlib</artifactId>
             <version>${project.parent.version}</version>
         </dependency>

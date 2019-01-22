@@ -23,6 +23,7 @@
  */
 package oap.application;
 
+import com.google.common.annotations.Beta;
 import oap.util.Maps;
 import oap.util.Stream;
 
@@ -32,6 +33,10 @@ import java.util.concurrent.ConcurrentMap;
 
 import static oap.application.Kernel.DEFAULT;
 
+/**
+ * This is to hunt usage in external projects.
+ */
+@Beta
 public class Application {
     private static final ConcurrentMap<String, Kernel> kernels = new ConcurrentHashMap<>();
 
