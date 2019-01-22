@@ -26,11 +26,11 @@ package oap.ws;
 
 import oap.application.Kernel;
 import oap.http.HttpResponse;
+import oap.util.Lists;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static java.util.Collections.singletonList;
 import static oap.http.Request.HttpMethod.GET;
 import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.http.testng.HttpAsserts.httpUrl;
@@ -44,14 +44,15 @@ public class WebServiceLocalTest extends AbstractWebServicesTest {
 
     @Override
     protected List<String> getConfig() {
-        return singletonList( "ws-local.conf" );
+        return Lists.of( "ws-local.conf" );
     }
 
     @Test
-    public void testShouldAllowRequestWhenEmptyInterceptor() {
+    public void shouldAllowRequestWhenEmptyInterceptor() {
         assertGet( httpUrl( "/test/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
     }
 
+    @SuppressWarnings( "unused" )
     private static class TestWS {
 
         @WsMethod( path = "/text", method = GET )

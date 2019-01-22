@@ -25,7 +25,6 @@
 package oap.application.spring;
 
 import lombok.val;
-import oap.application.Application;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.batch.JobExecutionExitCodeGenerator;
 import org.testng.annotations.Test;
@@ -38,7 +37,9 @@ public class SpringKernelTest {
         SpringBoot.main( new String[] {
             "--config=classpath:oap/application/spring/SpringKernelTest/application.conf" } );
 
-        val service = Application.service( TestService.class );
+        SpringKernel springKernel = SpringBoot.applicationContext.getBean( SpringKernel.class );
+        assertThat( springKernel ).isNotNull();
+        val service = springKernel.kernel.service( "test" );
         assertThat( service ).isNotNull();
 
         assertThat( SpringBoot.applicationContext.getBean( "test" ) ).isSameAs( service );
@@ -46,6 +47,7 @@ public class SpringKernelTest {
         SpringApplication.exit( SpringBoot.applicationContext, new JobExecutionExitCodeGenerator() );
     }
 
+    @SuppressWarnings( "unused" )
     public static class TestService {
 
     }

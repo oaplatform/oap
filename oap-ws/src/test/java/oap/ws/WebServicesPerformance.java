@@ -23,6 +23,7 @@
  */
 package oap.ws;
 
+import oap.application.Kernel;
 import oap.concurrent.SynchronizedThread;
 import oap.http.PlainHttpListener;
 import oap.http.Protocol;
@@ -31,6 +32,7 @@ import oap.http.cors.GenericCorsPolicy;
 import oap.http.nio.NioServer;
 import oap.http.testng.HttpAsserts;
 import oap.testng.Env;
+import oap.util.Lists;
 import org.apache.http.entity.ContentType;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -54,7 +56,7 @@ public class WebServicesPerformance {
         SynchronizedThread listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
         listener.start();
         try {
-            WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+            WebServices ws = new WebServices( new Kernel( Lists.empty() ), server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
             ws.bind( "x/v/math", GenericCorsPolicy.DEFAULT, new MathWS(), false, SESSION_MANAGER,
                 Collections.emptyList(), Protocol.HTTP );
 
@@ -74,7 +76,7 @@ public class WebServicesPerformance {
     public void nioThreads() throws Exception {
         NioServer server = new NioServer( Env.port(), 500 );
         try {
-            WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+            WebServices ws = new WebServices( new Kernel( Lists.empty() ), server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
             ws.bind( "x/v/math", GenericCorsPolicy.DEFAULT, new MathWS(), false, SESSION_MANAGER,
                 Collections.emptyList(), Protocol.HTTP );
             server.start();

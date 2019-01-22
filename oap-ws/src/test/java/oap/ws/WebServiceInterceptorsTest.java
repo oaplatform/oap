@@ -55,17 +55,18 @@ public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
     }
 
     @Test
-    public void testShouldAllowRequestWhenEmptyInterceptor() {
+    public void shouldAllowRequestWhenEmptyInterceptor() {
         assertGet( httpUrl( "/test/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
     }
 
     @Test
-    public void testShouldNotAllowRequestWhenErrorInterceptor() {
+    public void shouldNotAllowRequestWhenErrorInterceptor() {
         assertGet( httpUrl( "/test/text?value=error" ) )
             .hasCode( 403 )
             .hasBody( "caused by interceptor" );
     }
 
+    @SuppressWarnings( "unused" )
     private static class TestWS {
 
         @WsMethod( path = "/text", method = GET )

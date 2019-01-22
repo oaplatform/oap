@@ -83,7 +83,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     private final List<URL> configurations;
     private final Set<String> profiles = Sets.empty();
     private final Set<Module> modules = Sets.empty();
-    private final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
+    public final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
     private final Supervisor supervisor = new Supervisor();
 
     public Kernel( String name, List<URL> configurations ) {
@@ -128,7 +128,6 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     }
 
     private void linkListeners( Module.Service service, Object instance ) {
-        log.debug( "setting listeners of {}", service.name );
         service.listen.forEach( ( listener, reference ) -> {
             log.debug( "setting {} to listen to {} with listener {}", service.name, reference, listener );
             String methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
@@ -136,11 +135,9 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
             if( linked == null )
                 throw new ApplicationException( "for " + service.name + " listening object " + reference + " is not found" );
             val m = Reflect.reflect( linked.getClass() ).method( methodName ).orElse( null );
-            if( m != null ) {
-                m.invoke( linked, instance );
-            } else {
+            if( m != null ) m.invoke( linked, instance );
+            else
                 throw new ReflectException( "listener " + listener + " should have method " + methodName + " in " + reference );
-            }
         } );
     }
 
@@ -161,9 +158,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
                 } else if( value instanceof Collection<?> ) ( ( Collection<Object> ) value ).add( instance );
                 else
                     throw new ApplicationException( "do not know how to link " + service.name + " to " + f.type().name() + " of " + ref.name );
-            } else {
-                throw new ReflectException( "service " + ref.name + " should have field " + field );
-            }
+            } else throw new ReflectException( "service " + ref.name + " should have field " + field );
         } );
     }
 
@@ -205,7 +200,6 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     private void start( ApplicationConfiguration config ) {
         log.debug( "initializing application kernel..." );
         Application.register( this );
-        register( KERNEL_SERVICE, this );
         log.debug( "application config {}", config );
         this.profiles.addAll( config.profiles );
 
@@ -237,7 +231,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     private Map<String, ServiceInitialization> instantiateServices( ApplicationConfiguration config ) {
         val ret = new HashMap<String, ServiceInitialization>();
 
-        Set<String> initializedServices = Sets.of( KERNEL_SERVICE );
+        Set<String> initializedServices = new HashSet<>(  );
         forEachModule( modules, new HashSet<>(), module ->
             forEachService( modules, module.services, initializedServices, ( implName, service ) -> {
                 if( !service.enabled ) {

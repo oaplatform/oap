@@ -5,6 +5,7 @@ services:
   oap-ws-webservices:
     implementation: oap.ws.WebServices
     parameters:
+      kernel: "@kernel"
       server: "@service:oap-http-server"
       sessionManager: "@service:session-manager"
       globalCorsPolicy: "@service:corsPolicy-generic"

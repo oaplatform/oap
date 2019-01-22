@@ -24,7 +24,6 @@
 
 package oap.application.remote;
 
-import oap.application.Application;
 import oap.application.Kernel;
 import oap.application.Module;
 import org.testng.annotations.Test;
@@ -49,13 +48,13 @@ public class RemotingTest {
         try {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ) );
 
-            RemoteClient remote1 = Application.service( "remote-client1" );
+            RemoteClient remote1 = kernel.service( "remote-client1" );
             assertTrue( remote1.accessible() );
             assertString( remote1.toString() ).isEqualTo( "remote:remote-service-impl1@https://localhost:8980/remote/" );
 
-            assertTrue( Application.<RemoteClient>service( "remote-client2" ).accessible() );
+            assertTrue( kernel.<RemoteClient>service( "remote-client2" ).accessible() );
 
-            assertThatThrownBy( () -> Application.<RemoteClient>service( "remote-client3" ).accessible() )
+            assertThatThrownBy( () -> kernel.<RemoteClient>service( "remote-client3" ).accessible() )
                 .isInstanceOf( IllegalStateException.class );
 
         } finally {

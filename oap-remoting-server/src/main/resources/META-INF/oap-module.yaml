@@ -9,6 +9,7 @@ services:
       server: "@service:oap-http-server"
       context: remote
       serialization: DEFAULT
+      kernel: "@kernel"
     supervision:
       supervise: true
 

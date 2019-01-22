@@ -25,7 +25,6 @@ package oap.ws;
 
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
-import oap.application.Application;
 import oap.application.Kernel;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
@@ -33,13 +32,13 @@ import oap.http.Protocol;
 import oap.http.cors.CorsPolicy;
 import oap.json.Binder;
 import oap.util.Lists;
+import oap.util.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class WebServices {
@@ -52,18 +51,20 @@ public class WebServices {
     private final HttpServer server;
     private final SessionManager sessionManager;
     private final CorsPolicy globalCorsPolicy;
+    private final Kernel kernel;
     //todo handle this case better
     public WsResponse defaultResponse = WsResponse.TEXT;
 
-    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy ) {
-        this( server, sessionManager, globalCorsPolicy, WsConfig.CONFIGURATION.fromClassPath() );
+    public WebServices( Kernel kernel, HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy ) {
+        this( kernel, server, sessionManager, globalCorsPolicy, WsConfig.CONFIGURATION.fromClassPath() );
     }
 
-    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, WsConfig... wsConfigs ) {
-        this( server, sessionManager, globalCorsPolicy, Lists.of( wsConfigs ) );
+    public WebServices( Kernel kernel, HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, WsConfig... wsConfigs ) {
+        this( kernel, server, sessionManager, globalCorsPolicy, Lists.of( wsConfigs ) );
     }
 
-    public WebServices( HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, List<WsConfig> wsConfigs ) {
+    public WebServices( Kernel kernel, HttpServer server, SessionManager sessionManager, CorsPolicy globalCorsPolicy, List<WsConfig> wsConfigs ) {
+        this.kernel = kernel;
         this.wsConfigs = wsConfigs;
         this.server = server;
         this.sessionManager = sessionManager;
@@ -73,15 +74,13 @@ public class WebServices {
     public void start() {
         log.info( "binding web services..." );
 
-        Kernel kernel = Application.kernel( Kernel.DEFAULT );
-
         for( WsConfig config : wsConfigs ) {
             log.trace( "config = {}", config );
 
-            final List<Interceptor> interceptors = config.interceptors.stream()
-                .map( Application::service )
+            final List<Interceptor> interceptors = Stream.of( config.interceptors )
+                .map( kernel::service )
                 .map( Interceptor.class::cast )
-                .collect( Collectors.toList() );
+                .toList();
 
             for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
                 final WsConfig.Service serviceConfig = entry.getValue();
@@ -94,7 +93,7 @@ public class WebServices {
                     continue;
                 }
 
-                final Object service = Application.service( serviceConfig.service );
+                final Object service = kernel.service( serviceConfig.service );
 
                 Preconditions.checkState( service != null, "Unknown service " + serviceConfig.service );
 
@@ -109,7 +108,7 @@ public class WebServices {
 
                 CorsPolicy corsPolicy = handlerConfig.corsPolicy != null ? handlerConfig.corsPolicy : globalCorsPolicy;
 
-                server.bind( entry.getKey(), corsPolicy, Application.service( handlerConfig.service ), handlerConfig.protocol );
+                server.bind( entry.getKey(), corsPolicy, kernel.service( handlerConfig.service ), handlerConfig.protocol );
             }
         }
     }

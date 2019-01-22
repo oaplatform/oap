@@ -45,14 +45,14 @@ public class KernelLinkImplementationsTest extends AbstractTest {
 
 
     @Test
-    public void testFieldReference() {
+    public void fieldReference() {
         val kernel = new Kernel(
             singletonList( urlOfTestResource( getClass(), "field-reference.conf" ) )
         );
 
         try {
             kernel.start();
-            val service = Application.service( FieldReference.class );
+            FieldReference service = kernel.service( "m" );
 
             assertThat( service.ti ).isNotNull();
             assertThat( service.ti.toString() ).isEqualTo( "TestInterfaceImpl1" );
@@ -62,14 +62,14 @@ public class KernelLinkImplementationsTest extends AbstractTest {
     }
 
     @Test
-    public void testFieldReferences() {
+    public void fieldReferences() {
         val kernel = new Kernel(
             singletonList( urlOfTestResource( getClass(), "field-references.conf" ) )
         );
 
         try {
             kernel.start();
-            val service = Application.service( FieldReferences.class );
+            FieldReferences service = kernel.service( "m" );
 
             assertThat( service.tis ).isNotNull();
             assertThat( service.tis.stream().map( Object::toString ).collect( toList() ) )
@@ -80,7 +80,7 @@ public class KernelLinkImplementationsTest extends AbstractTest {
     }
 
     @Test
-    public void testFieldReferenceUnknownInterface() {
+    public void fieldReferenceUnknownInterface() {
         val kernel = new Kernel(
             singletonList( urlOfTestResource( getClass(), "field-reference-unknown-interface.conf" ) )
         );
@@ -93,14 +93,14 @@ public class KernelLinkImplementationsTest extends AbstractTest {
     }
 
     @Test
-    public void testFieldReferencesUnknownInterface() {
+    public void fieldReferencesUnknownInterface() {
         val kernel = new Kernel(
             singletonList( urlOfTestResource( getClass(), "field-references-unknown-interface.conf" ) )
         );
 
         try {
             kernel.start();
-            val service = Application.service( FieldReferences.class );
+            FieldReferences service = kernel.service( "m" );
 
             assertThat( service.tis ).isEmpty();
         } finally {

@@ -24,6 +24,7 @@
 
 package oap.ws;
 
+import oap.application.Kernel;
 import oap.concurrent.SynchronizedThread;
 import oap.http.PlainHttpListener;
 import oap.http.Protocol;
@@ -34,6 +35,7 @@ import oap.http.testng.HttpAsserts;
 import oap.json.Binder;
 import oap.metrics.Metrics;
 import oap.testng.Env;
+import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -54,7 +56,7 @@ public class WebServiceSessionTest {
     private final SessionManager sessionManager = new SessionManager( 10, null, "/" );
 
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, sessionManager, GenericCorsPolicy.DEFAULT );
+    private final WebServices ws = new WebServices( new Kernel( Lists.empty() ), server, sessionManager, GenericCorsPolicy.DEFAULT );
 
     private SynchronizedThread listener;
 

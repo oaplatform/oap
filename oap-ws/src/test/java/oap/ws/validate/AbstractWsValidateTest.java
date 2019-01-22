@@ -25,6 +25,7 @@
 package oap.ws.validate;
 
 import lombok.val;
+import oap.application.Kernel;
 import oap.concurrent.SynchronizedThread;
 import oap.http.PlainHttpListener;
 import oap.http.Protocol;
@@ -34,6 +35,7 @@ import oap.http.testng.HttpAsserts;
 import oap.metrics.Metrics;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.util.Lists;
 import oap.ws.SessionManager;
 import oap.ws.WebServices;
 import org.testng.annotations.AfterClass;
@@ -49,7 +51,7 @@ public abstract class AbstractWsValidateTest extends AbstractTest {
     private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
 
     private final Server server = new Server( 100 );
-    private final WebServices ws = new WebServices( server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+    private final WebServices ws = new WebServices( new Kernel( Lists.empty() ), server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
     private SynchronizedThread listener;
 
 

@@ -61,8 +61,8 @@ public class KernelTest extends AbstractTest {
 
         Kernel kernel = new Kernel( modules );
         kernel.start();
-        TestCloseable tc = Application.service( "c1" );
-        TestCloseable2 tc2 = Application.service( "c2" );
+        TestCloseable tc = kernel.service( "c1" );
+        TestCloseable2 tc2 = kernel.service( "c2" );
         kernel.stop();
 
         assertThat( tc.closed ).isTrue();
@@ -84,8 +84,8 @@ public class KernelTest extends AbstractTest {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ),
                 pathOfTestResource( getClass(), "conf.d" ) );
             assertEventually( 50, 1, () -> {
-                ServiceOne one = Application.service( ServiceOne.class );
-                ServiceTwo two = Application.service( ServiceTwo.class );
+                ServiceOne one = kernel.service( "ServiceOne" );
+                ServiceTwo two = kernel.service( "ServiceTwo" );
 
                 assertNotNull( one );
                 assertThat( one.kernel ).isSameAs( kernel );
@@ -99,11 +99,11 @@ public class KernelTest extends AbstractTest {
                 assertThat( two.j ).isEqualTo( 3000 );
                 assertThat( two.one2 ).isSameAs( one );
                 assertTrue( two.started );
-                ServiceScheduled scheduled = Application.service( ServiceScheduled.class );
+                ServiceScheduled scheduled = kernel.service( "ServiceScheduled" );
                 assertNotNull( scheduled );
                 assertTrue( scheduled.executed );
 
-                ServiceDepsList depsList = Application.service( ServiceDepsList.class );
+                ServiceDepsList depsList = kernel.service( "ServiceDepsList" );
                 assertNotNull( depsList );
                 assertThat( depsList.deps ).contains( one, two );
 
@@ -126,9 +126,9 @@ public class KernelTest extends AbstractTest {
         try {
             kernel.start();
 
-            assertThat( Application.<ServiceOne>service( "s1" ) ).isNotNull();
-            assertThat( Application.<ServiceOne>service( "s1" ).list ).isEmpty();
-            assertThat( Application.<ServiceOne>service( "s2" ) ).isNull();
+            assertThat( kernel.<ServiceOne>service( "s1" ) ).isNotNull();
+            assertThat( kernel.<ServiceOne>service( "s1" ).list ).isEmpty();
+            assertThat( kernel.<ServiceOne>service( "s2" ) ).isNull();
         } finally {
             kernel.stop();
         }
@@ -145,9 +145,9 @@ public class KernelTest extends AbstractTest {
         try {
             kernel.start();
 
-            ServiceContainer container = Application.service( "container" );
-            ServiceContainee containee1 = Application.service( "containee1" );
-            ServiceContainee containee2 = Application.service( "containee2" );
+            ServiceContainer container = kernel.service( "container" );
+            ServiceContainee containee1 = kernel.service( "containee1" );
+            ServiceContainee containee2 = kernel.service( "containee2" );
             assertThat( container ).isNotNull();
             assertThat( containee1 ).isNotNull();
             assertThat( containee2 ).isNotNull();
@@ -166,9 +166,9 @@ public class KernelTest extends AbstractTest {
         try {
             kernel.start();
 
-            assertThat( Application.<ServiceOne>service( "s1" ).map ).hasSize( 2 );
-            assertThat( Application.<ServiceOne>service( "s1" ).map.get( "test1" ) ).isInstanceOf( ServiceOne.class );
-            assertThat( Application.<ServiceOne>service( "s1" ).map.get( "test2" ) ).isInstanceOf( ServiceOne.class );
+            assertThat( kernel.<ServiceOne>service( "s1" ).map ).hasSize( 2 );
+            assertThat( kernel.<ServiceOne>service( "s1" ).map.get( "test1" ) ).isInstanceOf( ServiceOne.class );
+            assertThat( kernel.<ServiceOne>service( "s1" ).map.get( "test2" ) ).isInstanceOf( ServiceOne.class );
         } finally {
             kernel.stop();
         }

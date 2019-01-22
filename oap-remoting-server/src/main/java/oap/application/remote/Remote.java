@@ -25,7 +25,7 @@ package oap.application.remote;
 
 import com.google.common.io.ByteStreams;
 import lombok.extern.slf4j.Slf4j;
-import oap.application.Application;
+import oap.application.Kernel;
 import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
@@ -54,11 +54,13 @@ public class Remote implements Handler {
 
     private final HttpServer server;
     private final String context;
+    private final Kernel kernel;
 
-    public Remote( FST.SerializationMethod serialization, final HttpServer server, final String context ) {
+    public Remote( FST.SerializationMethod serialization, HttpServer server, String context, Kernel kernel ) {
         this.serialization = serialization;
         this.server = server;
         this.context = context;
+        this.kernel = kernel;
     }
 
     public void start() {
@@ -66,7 +68,7 @@ public class Remote implements Handler {
     }
 
     @Override
-    public void handle( final Request request, final Response response ) {
+    public void handle( Request request, Response response ) {
         FST fst = this.fst.get();
 
         RemoteInvocation invocation = request.body
@@ -75,7 +77,7 @@ public class Remote implements Handler {
 
         log.trace( "invoke {}", invocation );
 
-        Object service = Application.service( invocation.service );
+        Object service = kernel.service( invocation.service );
 
         if( service == null )
             response.respond( HttpResponse.status( HTTP_NOT_FOUND, invocation.service + " not found" ) );

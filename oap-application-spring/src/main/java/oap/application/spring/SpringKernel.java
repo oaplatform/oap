@@ -26,7 +26,6 @@ package oap.application.spring;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import oap.application.Application;
 import oap.application.Kernel;
 import oap.application.Module;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,7 +43,7 @@ import javax.annotation.PreDestroy;
 @Service
 @Slf4j
 public class SpringKernel {
-    private Kernel kernel;
+    protected Kernel kernel;
 
     @Value( "${config}" )
     private String config;
@@ -65,10 +64,10 @@ public class SpringKernel {
 
             val factory = ( ConfigurableListableBeanFactory ) applicationContext.getAutowireCapableBeanFactory();
 
-            for( val entry : Application.kernel( Kernel.DEFAULT ) ) {
-                log.trace( "oap bean {}...", entry.getKey() );
-                factory.registerSingleton( entry.getKey(), entry.getValue() );
-            }
+            kernel.services.forEach( ( key, value ) -> {
+                log.trace( "oap bean {}...", key );
+                factory.registerSingleton( key, value );
+            } );
 
             log.debug( "started" );
         } catch( Exception e ) {
