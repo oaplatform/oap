@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -41,6 +42,7 @@ import static java.util.Collections.emptySet;
 
 @ToString( exclude = "listener" )
 @EqualsAndHashCode
+@Slf4j
 public class ServiceOne {
     int i;
     int i2;
@@ -58,6 +60,7 @@ public class ServiceOne {
     }
 
     public void addSomeListener( ActionListener listener ) {
+        log.debug( "called addSomeListener with {}", listener  );
         this.listener = listener;
     }
 

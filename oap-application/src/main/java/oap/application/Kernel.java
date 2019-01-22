@@ -116,14 +116,19 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     }
 
     private void fixDeps() {
-        for( val module : modules )
-            for( val service : module.services.values() ) {
-                log.trace( "fix deps for {} in {}", service.name, module.name );
-                service.parameters.forEach( ( key, value ) -> fixDepsParameter( module, service, value, false ) );
+        for( val module : modules ) {
+            log.trace( "module {} services {}", module.name, module.services.keySet() );
+            for( val service : module.services.entrySet() ) {
+                log.trace( "fix deps for {} in {}", service.getKey(), module.name );
+                service.getValue().parameters.forEach( ( key, value ) ->
+                    fixDepsParameter( module, service.getValue(), value, false )
+                );
             }
+        }
     }
 
     private void linkListeners( Module.Service service, Object instance ) {
+        log.debug( "setting listeners of {}", service.name );
         service.listen.forEach( ( listener, reference ) -> {
             log.debug( "setting {} to listen to {} with listener {}", service.name, reference, listener );
             String methodName = "add" + StringUtils.capitalize( listener ) + "Listener";
