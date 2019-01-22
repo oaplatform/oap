@@ -24,13 +24,13 @@
 
 package oap.storage;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
+import oap.reflect.TypeRef;
 import oap.util.Stream;
 
 import java.io.OutputStream;
@@ -42,9 +42,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-/**
- * Created by igor.petrenko on 23.09.2016.
- */
 @Slf4j
 public class LazyFileStorage<T> extends MemoryStorage<T> {
     private Path path;
@@ -102,8 +99,7 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
     @Override
     public Optional<T> delete( String id ) {
         open();
-        super.delete( id );
-        return null;
+        return super.delete( id );
     }
 
     private synchronized void open() {
@@ -113,7 +109,7 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         Files.ensureFile( path );
 
         if( java.nio.file.Files.exists( path ) ) {
-            Binder.json.unmarshal( new TypeReference<List<Metadata<T>>>() {}, path )
+            Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {}, path )
                 .forEach( m -> {
                     val id = identifier.get( m.object );
                     data.put( id, m );
