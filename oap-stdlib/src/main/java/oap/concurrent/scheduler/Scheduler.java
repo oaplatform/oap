@@ -26,6 +26,7 @@ package oap.concurrent.scheduler;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Throwables;
 import oap.util.Try;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobDetail;
@@ -69,7 +70,7 @@ public final class Scheduler {
 
             scheduler.start();
         } catch( org.quartz.SchedulerException e ) {
-            throw new SchedulerException( e );
+            throw Throwables.propagate( e );
         }
     }
 
@@ -86,28 +87,25 @@ public final class Scheduler {
                 .repeatForever() );
     }
 
+    @SneakyThrows
     private static Scheduled schedule( Runnable runnable, ScheduleBuilder<?> scheduleBuilder ) {
-        try {
-            String identity = identity( runnable );
+        String identity = identity( runnable );
 
-            JobDetail job = newJob( RunnableJob.class )
-                .withIdentity( identity + "/job" )
-                .storeDurably()
-                .build();
+        JobDetail job = newJob( RunnableJob.class )
+            .withIdentity( identity + "/job" )
+            .storeDurably()
+            .build();
 
-            Trigger trigger = newTrigger()
-                .withIdentity( identity + "/trigger" )
-                .withSchedule( scheduleBuilder )
-                .build();
+        Trigger trigger = newTrigger()
+            .withIdentity( identity + "/trigger" )
+            .withSchedule( scheduleBuilder )
+            .build();
 
-            jobFactory.register( job, runnable );
+        jobFactory.register( job, runnable );
 
-            scheduler.scheduleJob( job, trigger );
-            log.trace( "scheduling job {} with trigger {}", job, trigger );
-            return new QuartzScheduled( job );
-        } catch( org.quartz.SchedulerException e ) {
-            throw new SchedulerException( e );
-        }
+        scheduler.scheduleJob( job, trigger );
+        log.trace( "scheduling job {} with trigger {}", job, trigger );
+        return new QuartzScheduled( job );
     }
 
     public static Scheduled scheduleCron( String cron, Runnable runnable ) {

@@ -42,7 +42,6 @@ import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Throwables;
-import oap.util.UncheckedException;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
@@ -106,8 +105,6 @@ public class WebService implements Handler {
 
     private void wsError( Response response, Throwable e ) {
         if( e instanceof ReflectException && e.getCause() != null )
-            wsError( response, e.getCause() );
-        else if( e instanceof UncheckedException && e.getCause() != null )
             wsError( response, e.getCause() );
         else if( e instanceof InvocationTargetException )
             wsError( response, ( ( InvocationTargetException ) e ).getTargetException() );

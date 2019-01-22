@@ -24,6 +24,8 @@
 
 package oap.util;
 
+import lombok.SneakyThrows;
+
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
@@ -34,10 +36,10 @@ public final class Throwables {
     private Throwables() {
     }
 
-    public static RuntimeException propagate( Throwable throwable ) throws RuntimeException {
+    @SneakyThrows
+    public static RuntimeException propagate( Throwable throwable ) {
         if( throwable instanceof IOException ) throw new UncheckedIOException( ( IOException ) throwable );
-        else if( throwable instanceof RuntimeException ) throw ( RuntimeException ) throwable;
-        throw new UncheckedException( throwable );
+        throw throwable;
     }
 
     public static Throwable getRootCause( Throwable throwable ) {

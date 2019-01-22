@@ -23,6 +23,7 @@
  */
 package oap.concurrent.scheduler;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 import oap.util.Lists;
@@ -38,34 +39,31 @@ public class QuartzScheduled extends Scheduled {
     }
 
     @Override
+    @SneakyThrows
     public void cancel() {
-        try {
-            log.trace( "cancelling {}", job );
-            Scheduler.scheduler.deleteJob( job.getKey() );
-            Scheduler.jobFactory.unregister( job.getKey() );
+        log.trace( "cancelling {}", job );
+        Scheduler.scheduler.deleteJob( job.getKey() );
+        Scheduler.jobFactory.unregister( job.getKey() );
 
-            int i = 10;
+        int i = 10;
 
-            while( --i >= 0 && Lists.contains( Scheduler.scheduler.getCurrentlyExecutingJobs(),
-                j -> j.getJobDetail().getKey().equals( job.getKey() ) ) ) {
+        while( --i >= 0 && Lists.contains( Scheduler.scheduler.getCurrentlyExecutingJobs(),
+            j -> j.getJobDetail().getKey().equals( job.getKey() ) ) ) {
 
-                try {
-                    Lists.find( Scheduler.scheduler.getCurrentlyExecutingJobs(),
-                        j -> j.getJobDetail().getKey().equals( job.getKey() ) )
-                        .ifPresent( Try.consume( j -> {
-                            log.debug( "running job [{}]...", j.getJobDetail().getKey() );
-                            Scheduler.scheduler.interrupt( j.getJobDetail().getKey() );
-                        } ) );
-                } catch( Exception e ) {
-                    log.error( e.getMessage(), e );
-                }
-
-                Threads.sleepSafely( 1000 );
+            try {
+                Lists.find( Scheduler.scheduler.getCurrentlyExecutingJobs(),
+                    j -> j.getJobDetail().getKey().equals( job.getKey() ) )
+                    .ifPresent( Try.consume( j -> {
+                        log.debug( "running job [{}]...", j.getJobDetail().getKey() );
+                        Scheduler.scheduler.interrupt( j.getJobDetail().getKey() );
+                    } ) );
+            } catch( Exception e ) {
+                log.error( e.getMessage(), e );
             }
-            log.trace( "cancelled {}", job );
-        } catch( org.quartz.SchedulerException e ) {
-            throw new SchedulerException( e );
+
+            Threads.sleepSafely( 1000 );
         }
+        log.trace( "cancelled {}", job );
     }
 
     @Override

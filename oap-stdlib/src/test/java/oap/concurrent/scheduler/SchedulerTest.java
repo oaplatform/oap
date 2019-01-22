@@ -24,13 +24,15 @@
 
 package oap.concurrent.scheduler;
 
+import oap.concurrent.Threads;
 import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.testng.Asserts.assertEventually;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -44,18 +46,35 @@ public class SchedulerTest extends AbstractTest {
     }
 
     @Test
-    public void lambdaIsolation() throws InterruptedException {
+    public void lambdaIsolation() {
         AtomicInteger c1 = new AtomicInteger();
         AtomicInteger c2 = new AtomicInteger();
         Runnable lambda1 = getLambda( c1 );
         Runnable lambda2 = getLambda( c2 );
         assertEquals( lambda1.getClass(), lambda2.getClass() );
-        try( Scheduled ignored = Scheduler.scheduleWithFixedDelay( 10, TimeUnit.MILLISECONDS, lambda1 );
-             Scheduled ignored2 = Scheduler.scheduleWithFixedDelay( 10, TimeUnit.MILLISECONDS, lambda2 ) ) {
+        try( Scheduled ignored = Scheduler.scheduleWithFixedDelay( 10, MILLISECONDS, lambda1 );
+             Scheduled ignored2 = Scheduler.scheduleWithFixedDelay( 10, MILLISECONDS, lambda2 ) ) {
             assertEventually( 50, 30, () -> {
                 assertTrue( c1.get() > 8 );
                 assertTrue( c2.get() > 8 );
             } );
         }
     }
+
+    @Test
+    public void cancel() {
+        AtomicInteger counter = new AtomicInteger( 0 );
+        Scheduled scheduled = Scheduler.scheduleWithFixedDelay( 50, MILLISECONDS, () -> {
+            counter.incrementAndGet();
+            Threads.sleepSafely( 1000 );
+            counter.incrementAndGet();
+        } );
+        Threads.sleepSafely( 500 );
+        scheduled.cancel();
+        int value = counter.get();
+        assertThat( value ).isGreaterThan( 0 );
+        Threads.sleepSafely( 500 );
+        assertThat( counter.get() ).isEqualTo( value );
+    }
+
 }
