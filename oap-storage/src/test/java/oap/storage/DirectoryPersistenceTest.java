@@ -27,7 +27,6 @@ package oap.storage;
 import lombok.extern.slf4j.Slf4j;
 import oap.json.TypeIdFactory;
 import oap.testng.AbstractTest;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;

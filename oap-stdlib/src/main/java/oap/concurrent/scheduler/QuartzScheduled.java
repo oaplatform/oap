@@ -40,6 +40,7 @@ public class QuartzScheduled extends Scheduled {
     @Override
     public void cancel() {
         try {
+            log.trace( "cancelling {}", job );
             Scheduler.scheduler.deleteJob( job.getKey() );
             Scheduler.jobFactory.unregister( job.getKey() );
 
@@ -61,9 +62,14 @@ public class QuartzScheduled extends Scheduled {
 
                 Threads.sleepSafely( 1000 );
             }
+            log.trace( "cancelled {}", job );
         } catch( org.quartz.SchedulerException e ) {
             throw new SchedulerException( e );
         }
     }
 
+    @Override
+    public String toString() {
+        return job.toString();
+    }
 }

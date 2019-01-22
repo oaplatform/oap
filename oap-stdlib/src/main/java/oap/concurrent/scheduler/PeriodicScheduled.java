@@ -24,11 +24,13 @@
 
 package oap.concurrent.scheduler;
 
+import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTimeUtils;
 
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
+@Slf4j
 public class PeriodicScheduled extends Scheduled implements Runnable {
     private final AtomicLong lastTimeExecuted = new AtomicLong( 0 );
     Scheduled scheduled;
@@ -47,9 +49,11 @@ public class PeriodicScheduled extends Scheduled implements Runnable {
     }
 
     public void run() {
+        log.trace( "executing {}", scheduled );
         long current = DateTimeUtils.currentTimeMillis() - safePeriod;
         this.job.accept( lastTimeExecuted.get() );
         lastTimeExecuted.set( current );
+        log.trace( "executed {}", scheduled );
     }
 
     @Override

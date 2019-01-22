@@ -161,7 +161,6 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
     }
 
     private void fsync( long last ) {
-
         Threads.synchronously( lock, () -> {
             log.trace( "fsyncing, last: {}, storage length: {}", last, storage.data.size() );
             for( val value : storage.data.values() )
@@ -185,10 +184,12 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
     @Override
     public void close() {
+        log.debug( "closing {}...", this );
         Threads.synchronously( lock, () -> {
             Scheduled.cancel( scheduled );
             fsync( scheduled.lastExecuted() );
         } );
+        log.debug( "closed {}", this );
     }
 
     @Override
@@ -199,16 +200,14 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
     }
 
     private Path pathFor( T object ) {
-        return Threads.synchronously( lock, () -> {
-            String ver = this.version > 0 ? ".v" + this.version : "";
-            return fsResolve.apply( this.path, object )
-                .resolve( this.storage.identifier.get( object ) + ver + ".json" );
-        } );
+        String ver = this.version > 0 ? ".v" + this.version : "";
+        return fsResolve.apply( this.path, object )
+            .resolve( this.storage.identifier.get( object ) + ver + ".json" );
     }
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + ":" + path;
+        return getClass().getSimpleName() + "/" + hashCode();
     }
 
     @Override
