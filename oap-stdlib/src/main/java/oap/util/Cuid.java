@@ -23,8 +23,6 @@
  */
 package oap.util;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.net.Inet4Address;
 import java.net.NetworkInterface;
 import java.util.concurrent.atomic.AtomicLong;
@@ -84,20 +82,16 @@ public class Cuid {
         long last();
     }
 
-    @Slf4j
     public static class SeedCounter implements Counter {
         private AtomicLong value = new AtomicLong();
 
         public SeedCounter( long seed ) {
-            log.trace( "seeding with {}", seed );
             this.value.set( seed );
         }
 
         @Override
         public long next() {
-            long next = value.incrementAndGet();
-            log.trace( "generating value {}", next );
-            return next;
+            return value.incrementAndGet();
         }
 
         @Override
