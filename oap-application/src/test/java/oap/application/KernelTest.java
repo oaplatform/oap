@@ -174,6 +174,23 @@ public class KernelTest extends AbstractTest {
         }
     }
 
+    @Test
+    public void testMapWithEntries() {
+        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "modules/map.conf" ) );
+
+        Kernel kernel = new Kernel( modules );
+        try {
+            kernel.start();
+
+            assertThat( kernel.<TestServiceMap>service( "ServiceMap" ).map1 ).hasSize( 1 );
+            assertThat( kernel.<TestServiceMap>service( "ServiceMap" ).map1.get( "ok" ) ).isInstanceOf( TestServiceMap.TestEntry.class );
+            assertThat( kernel.<TestServiceMap>service( "ServiceMap" ).map1.get( "ok" ).i ).isEqualTo( 10 );
+        } finally {
+            kernel.stop();
+        }
+
+    }
+
     public static class TestCloseable implements Closeable {
 
         public boolean closed;

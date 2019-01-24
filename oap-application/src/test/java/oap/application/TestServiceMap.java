@@ -22,46 +22,33 @@
  * SOFTWARE.
  */
 
-package oap.application.link;
+package oap.application;
 
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import oap.reflect.Reflection;
+import com.google.common.base.Preconditions;
+import lombok.ToString;
+
+import java.util.Map;
 
 /**
- * Created by igor.petrenko on 08.01.2019.
+ * Created by igor.petrenko on 24.01.2019.
  */
-@Slf4j
-public class FieldLinkReflection implements LinkReflection {
-    private final Reflection reflection;
-    private final Object instance;
-    private final String field;
+@ToString
+public class TestServiceMap {
+    private  TestEntry map;
+    public Map<String, TestEntry> map1;
 
-    public FieldLinkReflection( Reflection reflection, Object instance, String field ) {
-        this.reflection = reflection;
-        this.instance = instance;
-        this.field = field;
+    public TestServiceMap( Map<String, TestEntry> map ) {
+        Preconditions.checkNotNull( map.get( "ok" ) );
+        this.map1 = map;
+        this.map = map.get( "ok" );
     }
 
-    @Override
-    public boolean set( Object value ) {
-        val field = reflection.field( this.field ).orElse( null );
-        if( field != null ) {
-            field.set( instance, value );
-            return true;
-        } else {
-            return false;
+    @ToString
+    public static class TestEntry {
+        public int i;
+
+        public TestEntry( int i ) {
+            this.i = i;
         }
     }
-
-    @Override
-    public Object get() {
-        val field = reflection.field( this.field ).orElse( null );
-        if( field != null ) {
-            return field.get( instance );
-        } else {
-            return null;
-        }
-    }
-
 }
