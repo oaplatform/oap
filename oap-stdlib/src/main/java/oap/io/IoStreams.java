@@ -175,10 +175,10 @@ public class IoStreams {
 
         Files.ensureFile( path );
         if( append ) Files.ensureFileEncodingValid( path );
-        final OutputStream outputStream = safe
+        OutputStream outputStream = safe
             ? new SafeFileOutputStream( path, append, encoding )
             : new FileOutputStream( path.toFile(), append );
-        final OutputStream fos = bufferSize > 0 ? new BufferedOutputStream( outputStream, bufferSize ) : outputStream;
+        OutputStream fos = bufferSize > 0 ? new BufferedOutputStream( outputStream, bufferSize ) : outputStream;
         switch( encoding ) {
             case GZIP:
                 return Archiver.ungzip( fos );
@@ -212,7 +212,7 @@ public class IoStreams {
     public static InputStream in( Path path, Encoding encoding, int bufferSize ) {
         try {
             final FileInputStream fileInputStream = new FileInputStream( path.toFile() );
-            return getInputStream(
+            return decoded(
                 bufferSize > 0 ? new BufferedInputStream( fileInputStream, bufferSize ) : fileInputStream, encoding );
         } catch( IOException e ) {
             throw new IOException( "couldn't open file " + path.toString(), e );
@@ -221,16 +221,16 @@ public class IoStreams {
 
     @SneakyThrows
     public static InputStream in( InputStream stream, Encoding encoding ) {
-        return getInputStream( stream, encoding );
+        return decoded( stream, encoding );
     }
 
     @SneakyThrows
     public static String asString( InputStream stream, Encoding encoding ) {
-        return IOUtils.toString( getInputStream( stream, encoding ), StandardCharsets.UTF_8 );
+        return IOUtils.toString( decoded( stream, encoding ), StandardCharsets.UTF_8 );
     }
 
     @SneakyThrows
-    private static InputStream getInputStream( InputStream stream, Encoding encoding ) {
+    private static InputStream decoded( InputStream stream, Encoding encoding ) {
         switch( encoding ) {
             case GZIP:
                 try {

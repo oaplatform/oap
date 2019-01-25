@@ -78,7 +78,6 @@ import static oap.application.KernelHelper.serviceEnabled;
 @ToString( of = "name" )
 public class Kernel implements Iterable<Map.Entry<String, Object>> {
     public static final String DEFAULT = Strings.DEFAULT;
-    private static final String KERNEL_SERVICE = "kernel";
     final String name;
     private final List<URL> configurations;
     private final Set<String> profiles = Sets.empty();
