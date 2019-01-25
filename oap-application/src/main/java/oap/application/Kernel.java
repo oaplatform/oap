@@ -78,11 +78,11 @@ import static oap.application.KernelHelper.serviceEnabled;
 @ToString( of = "name" )
 public class Kernel implements Iterable<Map.Entry<String, Object>> {
     public static final String DEFAULT = Strings.DEFAULT;
+    public final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
     final String name;
     private final List<URL> configurations;
     private final Set<String> profiles = Sets.empty();
     private final Set<Module> modules = Sets.empty();
-    public final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
     private final Supervisor supervisor = new Supervisor();
 
     public Kernel( String name, List<URL> configurations ) {
@@ -118,6 +118,8 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         for( val module : modules ) {
             log.trace( "module {} services {}", module.name, module.services.keySet() );
             for( val service : module.services.entrySet() ) {
+                if( service.getValue().profile != null && !profiles.contains( service.getValue().profile ) ) continue;
+
                 log.trace( "fix deps for {} in {}", service.getKey(), module.name );
                 service.getValue().parameters.forEach( ( key, value ) ->
                     fixDepsParameter( module, service.getValue(), value, false )
@@ -230,7 +232,7 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
     private Map<String, ServiceInitialization> instantiateServices( ApplicationConfiguration config ) {
         val ret = new HashMap<String, ServiceInitialization>();
 
-        Set<String> initializedServices = new HashSet<>(  );
+        Set<String> initializedServices = new HashSet<>();
         forEachModule( modules, new HashSet<>(), module ->
             forEachService( modules, module.services, initializedServices, ( implName, service ) -> {
                 if( !service.enabled ) {
