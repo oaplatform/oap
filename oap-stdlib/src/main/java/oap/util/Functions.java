@@ -26,6 +26,7 @@ package oap.util;
 import com.google.common.base.Suppliers;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -90,5 +91,16 @@ public class Functions {
 
     public static <T> Supplier<T> memoize( Supplier<T> delegate ) {
         return () -> Suppliers.memoize( delegate::get ).get();
+    }
+
+    public static <V, R> Optional<R> applyIfInstanceOf( V value, Class<?> clazz, Function<V, R> f ) {
+        return applyIfInstanceOf( value, clazz, f, null );
+
+    }
+
+    protected static <V, R> Optional<R> applyIfInstanceOf( V value, Class<?> clazz, Function<V, R> f, R defaultValue ) {
+        return clazz.isInstance( value ) ? Optional.ofNullable( f.apply( value ) )
+            : Optional.ofNullable( defaultValue );
+
     }
 }
