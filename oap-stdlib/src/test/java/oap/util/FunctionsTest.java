@@ -26,8 +26,9 @@ package oap.util;
 
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Function;
 
 import static oap.util.Functions.applyIfInstanceOf;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,11 +36,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class FunctionsTest {
     @Test
     public void applyIfinstanceOf() {
-        Function<CharSequence, Integer> length = CharSequence::length;
-        String string = "sss";
-        assertThat( applyIfInstanceOf( string, CharSequence.class, length ) ).contains( 3 );
-        assertThat( applyIfInstanceOf( string, String.class, length ) ).contains( 3 );
-        assertThat( applyIfInstanceOf( string, List.class, length ) ).isEmpty();
-        assertThat( applyIfInstanceOf( string, List.class, length, -1 ) ).contains( -1 );
+        List<String> ll = new LinkedList<>( Lists.of( "a", "b" ) );
+        List<String> al = new ArrayList<>( Lists.of( "a", "b" ) );
+        assertThat( applyIfInstanceOf( ll, LinkedList.class, LinkedList::getFirst ) ).contains( "a" );
+        assertThat( applyIfInstanceOf( al, LinkedList.class, LinkedList::getFirst ) ).isEmpty();
     }
 }

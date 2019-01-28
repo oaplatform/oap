@@ -93,14 +93,12 @@ public class Functions {
         return () -> Suppliers.memoize( delegate::get ).get();
     }
 
-    public static <V, R> Optional<R> applyIfInstanceOf( V value, Class<?> clazz, Function<V, R> f ) {
-        return applyIfInstanceOf( value, clazz, f, null );
+    @SuppressWarnings( "unchecked" )
+    public static <V, T extends V, R> Optional<R> applyIfInstanceOf( V value, Class<T> clazz, Function<T, R> f ) {
+        return clazz.isInstance( value )
+            ? Optional.ofNullable( f.apply( ( T ) value ) )
+            : Optional.empty();
 
     }
 
-    protected static <V, R> Optional<R> applyIfInstanceOf( V value, Class<?> clazz, Function<V, R> f, R defaultValue ) {
-        return clazz.isInstance( value ) ? Optional.ofNullable( f.apply( value ) )
-            : Optional.ofNullable( defaultValue );
-
-    }
 }
