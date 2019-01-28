@@ -70,7 +70,7 @@ public class CaseSuite {
             .flatMap( m -> Stream.of( ( Object[][] ) m.invoke( instance ) ) )
             .map( a -> {
                 Object[] aCase = new Object[a.length + 1];
-                aCase[0] = clazz;
+                aCase[0] = new CaseContext( clazz );
                 System.arraycopy( a, 0, aCase, 1, a.length );
                 return aCase;
             } )

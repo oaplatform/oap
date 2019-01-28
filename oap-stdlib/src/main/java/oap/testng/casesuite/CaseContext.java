@@ -24,31 +24,15 @@
 
 package oap.testng.casesuite;
 
-import lombok.extern.slf4j.Slf4j;
-import org.testng.annotations.DataProvider;
-import org.testng.annotations.Test;
+public class CaseContext {
+    public final Class<?> caseClass;
 
-import static oap.testng.casesuite.CaseSuite.assertion;
-import static oap.testng.casesuite.CaseSuite.casesOf;
-import static org.assertj.core.api.Assertions.assertThat;
-
-@Slf4j
-public class CaseSuiteTest {
-
-    @DataProvider
-    public Object[][] collectCases() {
-        return casesOf( this, CaseSuiteTest.class );
+    public CaseContext( Class<?> caseClass ) {
+        this.caseClass = caseClass;
     }
 
-    public static Object[] thecase( String param ) {
-        return CaseSuite.thecase( param );
-    }
-
-    @Test( dataProvider = "collectCases" )
-    public void check( @SuppressWarnings( "unused" ) CaseContext context, String param ) {
-        assertion( context.caseClass, () -> {
-            assertThat( context.caseClass ).isIn( XCases.class, YCases.class );
-            assertThat( param ).isIn( "X", "Y" );
-        } );
+    @Override
+    public String toString() {
+        return caseClass.getSimpleName();
     }
 }
