@@ -24,15 +24,27 @@
 
 package oap.testng.casesuite;
 
+import oap.util.Lists;
+
 public class CaseContext {
     public final Class<?> caseClass;
+    private Object[] parameters;
 
-    public CaseContext( Class<?> caseClass ) {
+    public CaseContext( Class<?> caseClass, Object[] parameters ) {
         this.caseClass = caseClass;
+        this.parameters = parameters;
     }
 
     @Override
     public String toString() {
         return caseClass.getSimpleName();
+    }
+
+    public void assertion( Runnable code ) {
+        try {
+            code.run();
+        } catch( AssertionError e ) {
+            throw new AssertionError( caseClass.getSimpleName() + ": " + Lists.of( parameters ) + "\n failed: " + e.getMessage() );
+        }
     }
 }

@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import static oap.testng.casesuite.CaseSuite.assertion;
 import static oap.testng.casesuite.CaseSuite.casesOf;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,7 +45,7 @@ public class CaseSuiteTest {
 
     @Test( dataProvider = "collectCases" )
     public void check( @SuppressWarnings( "unused" ) CaseContext context, String param ) {
-        assertion( context.caseClass, () -> {
+        context.assertion( () -> {
             assertThat( context.caseClass ).isIn( XCases.class, YCases.class );
             assertThat( param ).isIn( "X", "Y" );
         } );
