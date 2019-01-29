@@ -35,7 +35,11 @@ public class Logger {
     }
 
     public void log( String selector, String line ) {
-        backend.log( Inet.HOSTNAME, selector, Dates.formatDateWithMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
+        logWithoutTime( selector, Dates.formatDateWithMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
+    }
+
+    public void logWithoutTime( String selector, String line ) {
+        backend.log( Inet.HOSTNAME, selector, line );
     }
 
     public boolean isLoggingAvailable() {
