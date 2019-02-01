@@ -33,9 +33,6 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-/**
- * Created by Admin on 16.05.2017.
- */
 public class CollectionsTest {
     @Test
     public void testCount() {

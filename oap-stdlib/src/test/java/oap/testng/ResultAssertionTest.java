@@ -29,9 +29,6 @@ import org.testng.annotations.Test;
 
 import static oap.testng.Asserts.assertResult;
 
-/**
- * Created by igor.petrenko on 17.02.2017.
- */
 public class ResultAssertionTest {
     @Test
     public void test() {

@@ -34,9 +34,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/**
- * Created by igor.petrenko on 26.01.2017.
- */
 @ToString( callSuper = true )
 @EqualsAndHashCode( callSuper = true )
 public final class BufferConfigurationMap extends HashMap<String, BufferConfigurationMap.BufferConfiguration> {

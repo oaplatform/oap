@@ -30,9 +30,6 @@ import java.util.ArrayList;
 
 import static oap.util.Pair.__;
 
-/**
- * Created by Igor Petrenko on 04.01.2016.
- */
 public class MemoryMessenger implements Messenger {
     public boolean changesOnly;
     public ArrayList<Pair<String, Alert>> alerts = new ArrayList<>();

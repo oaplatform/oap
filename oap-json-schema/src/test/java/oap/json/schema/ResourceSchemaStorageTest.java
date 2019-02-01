@@ -32,9 +32,6 @@ import java.util.Map;
 
 import static oap.json.testng.JsonAsserts.assertJson;
 
-/**
- * Created by igor.petrenko on 10.07.2018.
- */
 public class ResourceSchemaStorageTest {
     @Test
     public void testGet() {

@@ -36,9 +36,6 @@ import java.util.Optional;
 import static oap.testng.Asserts.pathOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 20.02.2017.
- */
 public class MediaUtilsTest extends AbstractTest {
     @Test
     public void getContentType() throws IOException {

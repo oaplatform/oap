@@ -26,9 +26,6 @@ package oap.application.link;
 
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 08.01.2019.
- */
 public class MapLinkReflection implements LinkReflection {
     private final Map<Object, Object> map;
     private final Object key;

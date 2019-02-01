@@ -41,9 +41,6 @@ import java.util.concurrent.TimeUnit;
 
 import static java.util.stream.Collectors.toList;
 
-/**
- * Created by igor.petrenko on 10.02.2017.
- */
 @Slf4j
 public class VastMediaProcessing implements MediaProcessing {
     private final List<String> command;

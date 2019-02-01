@@ -38,9 +38,6 @@ import org.testng.annotations.Test;
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 15.02.2018.
- */
 public class AuthService2Test {
     private MockAuthProvider authProvider;
     private AuthService2 authService;

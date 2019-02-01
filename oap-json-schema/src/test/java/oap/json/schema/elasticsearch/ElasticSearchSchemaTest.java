@@ -30,9 +30,6 @@ import org.testng.annotations.Test;
 import static oap.json.schema.elasticsearch.ElasticSearchSchema.convert;
 import static oap.testng.Asserts.assertString;
 
-/**
- * Created by igor.petrenko on 17.10.2017.
- */
 public class ElasticSearchSchemaTest extends AbstractSchemaTest {
     @Test
     public void testConvert_string() throws Exception {

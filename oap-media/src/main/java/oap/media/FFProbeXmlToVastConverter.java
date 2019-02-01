@@ -41,9 +41,6 @@ import javax.xml.transform.stream.StreamSource;
 import java.io.StringReader;
 import java.io.StringWriter;
 
-/**
- * Created by igor.petrenko on 20.02.2017.
- */
 public class FFProbeXmlToVastConverter {
     private static final TransformerFactory transformerFactory;
     private static final Templates templates;

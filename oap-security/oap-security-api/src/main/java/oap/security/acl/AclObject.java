@@ -38,9 +38,6 @@ import java.util.List;
 
 import static java.util.Collections.emptyList;
 
-/**
- * Created by igor.petrenko on 20.12.2017.
- */
 @ToString
 @EqualsAndHashCode
 @JsonInclude( JsonInclude.Include.NON_DEFAULT )

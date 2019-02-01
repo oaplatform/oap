@@ -26,9 +26,6 @@ package oap.ws.security;
 
 import oap.util.Hash;
 
-/**
- * Created by igor.petrenko on 18.10.2017.
- */
 public class PasswordHasher {
     private final String salt;
 

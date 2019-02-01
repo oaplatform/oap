@@ -35,9 +35,6 @@ import oap.util.IdBean;
 
 import java.io.Serializable;
 
-/**
- * Created by igor.petrenko on 10.01.2018.
- */
 @ToString
 public class SecurityContainer<T extends IdBean> implements Serializable {
     private static final long serialVersionUID = 8477473083613051099L;

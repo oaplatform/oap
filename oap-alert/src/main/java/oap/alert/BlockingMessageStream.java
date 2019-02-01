@@ -26,9 +26,6 @@ package oap.alert;
 
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Created by Admin on 02.06.2016.
- */
 @Slf4j
 public class BlockingMessageStream<Message> implements MessageStream<Message> {
 

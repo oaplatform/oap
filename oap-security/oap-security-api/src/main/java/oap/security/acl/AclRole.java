@@ -32,9 +32,6 @@ import oap.util.Id;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 21.12.2017.
- */
 @ToString()
 @EqualsAndHashCode()
 public class AclRole {

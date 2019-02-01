@@ -34,9 +34,6 @@ import static oap.benchmark.Benchmark.benchmark;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_INT_ARRAY;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 
-/**
- * Created by igor.petrenko on 06.12.2016.
- */
 @Test( enabled = false )
 public class BinderPerformance {
     @Test( enabled = false )

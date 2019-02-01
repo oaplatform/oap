@@ -26,9 +26,6 @@ package oap.concurrent;
 
 import java.util.Arrays;
 
-/**
- * Created by anton on 8/22/16.
- */
 public class CircularBuffer<T> {
     private final T[] data;
     private int index = 0;

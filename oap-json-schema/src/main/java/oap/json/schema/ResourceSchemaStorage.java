@@ -32,9 +32,6 @@ import org.apache.commons.io.FilenameUtils;
 import java.util.ArrayList;
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 31.01.2018.
- */
 public final class ResourceSchemaStorage implements SchemaStorage {
     public static final SchemaStorage INSTANCE = new ResourceSchemaStorage();
 

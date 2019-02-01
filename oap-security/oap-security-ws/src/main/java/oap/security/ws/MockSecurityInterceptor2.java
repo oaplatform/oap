@@ -34,9 +34,6 @@ import oap.ws.Interceptor;
 import java.util.Optional;
 import java.util.function.Function;
 
-/**
- * Created by igor.petrenko on 22.12.2017.
- */
 public class MockSecurityInterceptor2 implements Interceptor {
     public static final String SESSION_TOKEN = "sessionToken";
     public static final String USER_ID_HEADER = "USER_ID_TESTING";

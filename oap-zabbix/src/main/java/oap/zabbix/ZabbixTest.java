@@ -28,9 +28,6 @@ import lombok.val;
 
 import java.io.IOException;
 
-/**
- * Created by igor.petrenko on 28.09.2017.
- */
 public class ZabbixTest {
     public static void main( String[] args ) throws IOException {
         val zabbix = new ZabbixImpl( "zabbix.quple.rocks", 10051 );

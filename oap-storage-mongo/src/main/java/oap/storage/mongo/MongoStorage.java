@@ -48,9 +48,6 @@ import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
 
-/**
- * Created by igor.petrenko on 15.09.2017.
- */
 @Slf4j
 public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, OplogService.OplogListener {
     public static final UpdateOptions UPDATE_OPTIONS_UPSERT = new UpdateOptions().upsert( true );

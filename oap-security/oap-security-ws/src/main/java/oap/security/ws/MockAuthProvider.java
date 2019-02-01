@@ -30,9 +30,6 @@ import org.apache.commons.lang3.NotImplementedException;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created by igor.petrenko on 15.02.2018.
- */
 public class MockAuthProvider implements AuthProvider<User2> {
     private final ConcurrentHashMap<String, User2> map = new ConcurrentHashMap<>();
 

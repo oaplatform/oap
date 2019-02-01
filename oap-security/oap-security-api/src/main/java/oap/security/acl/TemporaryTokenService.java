@@ -29,9 +29,6 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 27.12.2017.
- */
 public interface TemporaryTokenService {
     Token create( String objectId );
 

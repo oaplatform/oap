@@ -27,9 +27,6 @@ package oap.json.schema;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by Igor Petrenko on 29.04.2016.
- */
 public interface ContainerSchemaASTWrapper {
     Map<String, List<SchemaASTWrapper>> getChildren();
 }

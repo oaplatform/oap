@@ -33,9 +33,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-/**
- * Created by igor.petrenko on 22.09.2016.
- */
 public class ShardStorage<T, ShardID> implements Closeable {
     private ShardManager<T, ShardID> sm;
     private Function<ShardID, Storage<T>> cons;

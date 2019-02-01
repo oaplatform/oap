@@ -29,9 +29,6 @@ import lombok.ToString;
 
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 24.01.2019.
- */
 @ToString
 public class TestServiceMap {
     private  TestEntry map;

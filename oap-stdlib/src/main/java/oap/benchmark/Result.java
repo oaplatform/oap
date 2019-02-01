@@ -26,9 +26,6 @@ package oap.benchmark;
 
 import java.util.List;
 
-/**
- * Created by razer on 6/9/17.
- */
 class Result {
     public long rate;
     public long time;

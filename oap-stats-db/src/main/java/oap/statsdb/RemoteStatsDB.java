@@ -31,9 +31,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 05.09.2017.
- */
 public interface RemoteStatsDB {
     boolean update( Sync data, String host );
 

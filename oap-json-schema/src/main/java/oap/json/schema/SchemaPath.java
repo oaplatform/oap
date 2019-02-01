@@ -34,9 +34,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-/**
- * Created by Admin on 24.05.2016.
- */
 public final class SchemaPath {
     public static String resolve( String path, String... paths ) {
         if( paths.length == 0 ) return path;

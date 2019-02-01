@@ -34,9 +34,6 @@ import java.util.concurrent.TimeUnit;
 
 import static oap.benchmark.Benchmark.benchmark;
 
-/**
- * Created by Igor Petrenko on 08.04.2016.
- */
 @Test( enabled = false )
 public class FilesPerformance {
 

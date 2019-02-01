@@ -24,9 +24,6 @@
 
 package oap.ws;
 
-/**
- * Created by igor.petrenko on 06.03.2017.
- */
 public enum WsResponse {
     TEXT, JSON
 }

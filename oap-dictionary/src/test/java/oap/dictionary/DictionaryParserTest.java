@@ -38,9 +38,6 @@ import java.util.Optional;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by Igor Petrenko on 15.04.2016.
- */
 public class DictionaryParserTest extends AbstractTest {
     @Test
     public void testSerialize() {

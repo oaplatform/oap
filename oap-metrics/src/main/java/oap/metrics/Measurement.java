@@ -29,9 +29,6 @@ import lombok.val;
 
 import java.util.ArrayList;
 
-/**
- * Created by igor.petrenko on 26.05.2017.
- */
 @AllArgsConstructor
 public class Measurement {
     public final String name;

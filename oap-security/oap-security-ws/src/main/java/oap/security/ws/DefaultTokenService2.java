@@ -26,9 +26,6 @@ package oap.security.ws;
 
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 22.12.2017.
- */
 public class DefaultTokenService2 implements TokenService2 {
     private final AuthService2 authService;
 

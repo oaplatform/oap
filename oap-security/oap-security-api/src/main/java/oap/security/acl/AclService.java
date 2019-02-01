@@ -36,9 +36,6 @@ import java.util.function.Predicate;
 
 import static java.util.Arrays.asList;
 
-/**
- * Created by igor.petrenko on 20.12.2017.
- */
 public interface AclService {
     String ROOT = "aaaaaaaa97684103f0d6bb17";
     String GLOBAL_ADMIN_ROLE = "eeeeeeeee76841048ccd59bd";

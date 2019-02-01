@@ -27,9 +27,6 @@ package oap.logstream.sharding;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import oap.logstream.LoggerBackend;
 
-/**
- * Created by anton on 11/2/16.
- */
 public class LoggerShardRange {
 
     @JsonCreator

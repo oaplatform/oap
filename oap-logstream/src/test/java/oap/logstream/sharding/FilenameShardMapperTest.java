@@ -28,9 +28,6 @@ import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
 
-/**
- * Created by anton on 11/3/16.
- */
 public class FilenameShardMapperTest {
 
     @Test

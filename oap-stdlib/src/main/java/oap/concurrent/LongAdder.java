@@ -30,9 +30,6 @@ import oap.util.Throwables;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 
-/**
- * Created by igor.petrenko on 26.05.2017.
- */
 public class LongAdder extends java.util.concurrent.atomic.LongAdder {
     private static Field baseField;
 

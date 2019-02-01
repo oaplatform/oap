@@ -31,9 +31,6 @@ import org.joda.time.DateTimeUtils;
 import javax.annotation.concurrent.ThreadSafe;
 import java.io.Serializable;
 
-/**
- * Created by igor.petrenko on 16.02.2018.
- */
 @ThreadSafe
 public class LongAdderHistogram implements Serializable {
     private static final long serialVersionUID = 2085517363901568734L;

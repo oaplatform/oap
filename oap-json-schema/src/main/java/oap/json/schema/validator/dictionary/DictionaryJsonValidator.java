@@ -44,9 +44,6 @@ import java.util.Optional;
 import static java.util.stream.Collectors.toList;
 import static oap.json.schema.SchemaPath.rightTrimItems;
 
-/**
- * Created by Igor Petrenko on 12.04.2016.
- */
 @Slf4j
 public class DictionaryJsonValidator extends JsonSchemaValidator<DictionarySchemaAST> {
 

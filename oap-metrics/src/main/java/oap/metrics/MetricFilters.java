@@ -29,9 +29,6 @@ import oap.util.Pair;
 
 import java.util.function.Predicate;
 
-/**
- * Created by Igor Petrenko on 17.12.2015.
- */
 public final class MetricFilters {
     public static Predicate<Pair<String, Metric>> startsWith( String prefix ) {
         return new StartsWithPredicate( prefix );

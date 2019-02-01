@@ -26,8 +26,5 @@ package oap.security.acl;
 
 import oap.storage.Storage;
 
-/**
- * Created by igor.petrenko on 07.11.2018.
- */
 public interface SchemaStorage extends Storage<AclSchemaContainer> {
 }

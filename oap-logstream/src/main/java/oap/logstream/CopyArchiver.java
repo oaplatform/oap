@@ -31,9 +31,6 @@ import oap.metrics.Metrics;
 
 import java.nio.file.Path;
 
-/**
- * Created by anton on 8/4/17.
- */
 @Slf4j
 public class CopyArchiver extends Archiver {
 

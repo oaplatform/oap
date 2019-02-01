@@ -30,9 +30,6 @@ import java.util.List;
 
 import static java.util.Arrays.asList;
 
-/**
- * Created by igor.petrenko on 10.02.2017.
- */
 @UtilityClass
 public final class CommandLine {
     public List<String> shell( String cmd ) {

@@ -24,9 +24,6 @@
 
 package oap.storage.migration;
 
-/**
- * Created by Igor Petrenko on 14.03.2016.
- */
 public interface Migration {
     long fromVersion();
 

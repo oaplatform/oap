@@ -27,9 +27,6 @@ package oap.statsdb;
 import java.util.ArrayList;
 import java.util.function.Function;
 
-/**
- * Created by igor.petrenko on 08.09.2017.
- */
 public class MockRemoteStatsDB implements RemoteStatsDB {
     public final ArrayList<Sync> syncs = new ArrayList<>();
     private final KeySchema schema;

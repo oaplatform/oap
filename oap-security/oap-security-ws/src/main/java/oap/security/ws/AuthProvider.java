@@ -26,9 +26,6 @@ package oap.security.ws;
 
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 22.12.2017.
- */
 public interface AuthProvider<User2> {
     Optional<User2> getByEmail( String email );
 

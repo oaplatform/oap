@@ -24,9 +24,6 @@
 
 package oap.json.schema.validator.object;
 
-/**
- * Created by igor.petrenko on 17.10.2017.
- */
 public enum Dynamic {
     TRUE, FALSE, STRICT
 }

@@ -29,9 +29,6 @@ import lombok.ToString;
 
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 14.12.2017.
- */
 @ToString
 @AllArgsConstructor
 class Extends implements Cloneable {

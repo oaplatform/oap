@@ -29,9 +29,6 @@ import org.apache.commons.lang3.ClassUtils;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
-/**
- * Created by igor.petrenko on 01.09.2016.
- */
 public final class Types {
     public static Type getOptionalArgumentType( Type type ) {
         return ( ( ParameterizedType ) type ).getActualTypeArguments()[0];

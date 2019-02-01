@@ -24,8 +24,5 @@
 
 package oap.logstream.net;
 
-/**
- * Created by razer on 6/12/17.
- */
 public abstract class SocketServer implements Runnable {
 }

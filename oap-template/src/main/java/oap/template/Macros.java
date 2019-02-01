@@ -29,9 +29,6 @@ import lombok.SneakyThrows;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Created by igor.petrenko on 16.06.2017.
- */
 public class Macros {
     public static String encode( String src, long depth ) {
         String res = src;

@@ -41,9 +41,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
-/**
- * Created by igor.petrenko on 29.12.2017.
- */
 public interface AclSchema {
     void validateNewObject( AclObject parent, String newObjectType ) throws AclSecurityException;
 

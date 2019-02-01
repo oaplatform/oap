@@ -38,9 +38,6 @@ import lombok.val;
 
 import java.io.IOException;
 
-/**
- * Created by igor.petrenko on 06.07.2018.
- */
 class CustomValueModule extends SimpleModule {
     static class CustomValueDeserializer extends JsonDeserializer<CustomValue<?>> {
         @Override

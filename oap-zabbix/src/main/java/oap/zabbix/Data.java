@@ -29,9 +29,6 @@ import lombok.ToString;
 
 import java.io.Serializable;
 
-/**
- * Created by igor.petrenko on 28.09.2017.
- */
 @ToString
 @AllArgsConstructor
 public class Data implements Serializable {

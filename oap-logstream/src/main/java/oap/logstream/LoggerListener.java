@@ -24,9 +24,6 @@
 
 package oap.logstream;
 
-/**
- * Created by igor.petrenko on 16.06.2017.
- */
 public interface LoggerListener {
     void error( String message );
 

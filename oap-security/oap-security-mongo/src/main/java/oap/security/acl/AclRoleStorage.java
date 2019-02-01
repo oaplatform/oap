@@ -29,9 +29,6 @@ import oap.storage.mongo.MongoStorage;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 
-/**
- * Created by igor.petrenko on 21.12.2017.
- */
 public class AclRoleStorage extends MongoStorage<AclRole> {
     public AclRoleStorage( MongoClient mongoClient, String table ) {
         super( mongoClient, table, SERIALIZED );

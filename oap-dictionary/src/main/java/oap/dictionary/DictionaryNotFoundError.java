@@ -24,9 +24,6 @@
 
 package oap.dictionary;
 
-/**
- * Created by Igor Petrenko on 15.04.2016.
- */
 public class DictionaryNotFoundError extends DictionaryError {
     public DictionaryNotFoundError( String dictionaryName ) {
         super( "DictionaryRoot '" + dictionaryName + "' not found " );

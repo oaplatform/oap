@@ -46,9 +46,6 @@ import static org.mockserver.matchers.Times.once;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
-/**
- * Created by igor.petrenko on 25.05.2017.
- */
 public class HttpFileSyncTest extends AbstractTest {
     private static final int PORT = Env.port( HttpFileSyncTest.class.toString() );
 

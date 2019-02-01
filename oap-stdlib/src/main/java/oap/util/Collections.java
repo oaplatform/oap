@@ -34,9 +34,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-/**
- * Created by igor.petrenko on 16.05.2017.
- */
 public class Collections {
     public static <E, L extends Collection<E>> long count( L collection, Predicate<E> predicate ) {
         long count = 0;

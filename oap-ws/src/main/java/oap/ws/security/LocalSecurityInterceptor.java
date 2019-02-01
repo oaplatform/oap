@@ -24,9 +24,6 @@
 
 package oap.ws.security;
 
-/**
- * Created by igor.petrenko on 12.10.2017.
- */
 public class LocalSecurityInterceptor {
     public final SecurityInterceptor securityInterceptor;
     public final TokenService defaultTokenService;

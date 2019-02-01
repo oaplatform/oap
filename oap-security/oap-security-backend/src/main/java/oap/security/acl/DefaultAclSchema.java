@@ -47,9 +47,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 
-/**
- * Created by igor.petrenko on 29.12.2017.
- */
 @Slf4j
 public class DefaultAclSchema implements AclSchema {
     private final String identity;

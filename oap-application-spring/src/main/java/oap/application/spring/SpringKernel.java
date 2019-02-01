@@ -37,9 +37,6 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-/**
- * Created by igor.petrenko on 08.12.2017.
- */
 @Service
 @Slf4j
 public class SpringKernel {

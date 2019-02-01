@@ -24,9 +24,6 @@
 
 package oap.benchmark;
 
-/**
- * Created by razer on 6/9/17.
- */
 abstract class Runner {
     public abstract Result run( Benchmark benchmark );
 

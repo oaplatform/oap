@@ -30,9 +30,6 @@ import oap.util.IdBean;
 
 import static oap.security.acl.AclService.ROOT;
 
-/**
- * Created by igor.petrenko on 02.01.2018.
- */
 @ToString( callSuper = true )
 @EqualsAndHashCode( callSuper = true )
 public class RootObject extends IdBean {

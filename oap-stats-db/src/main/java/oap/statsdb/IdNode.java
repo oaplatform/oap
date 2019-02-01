@@ -30,9 +30,6 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Id;
 
-/**
- * Created by igor.petrenko on 05.09.2017.
- */
 @EqualsAndHashCode( callSuper = true )
 @ToString( callSuper = true )
 @Slf4j

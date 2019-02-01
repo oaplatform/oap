@@ -31,9 +31,6 @@ import java.util.Optional;
 
 import static org.testng.Assert.assertEquals;
 
-/**
- * Created by Igor Petrenko on 15.01.2016.
- */
 public class FSTTest extends AbstractTest {
     @Test
     public void testOptional() {

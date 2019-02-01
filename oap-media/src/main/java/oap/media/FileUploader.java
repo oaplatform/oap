@@ -27,9 +27,6 @@ package oap.media;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by Admin on 08.02.2017.
- */
 public abstract class FileUploader {
     protected final List<MediaProcessing> postprocessing;
     private final ArrayList<FileUploaderListener> listeners = new ArrayList<>();

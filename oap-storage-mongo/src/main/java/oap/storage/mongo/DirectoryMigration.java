@@ -39,9 +39,6 @@ import java.util.stream.Collectors;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.set;
 
-/**
- * Created by igor.petrenko on 30.01.2018.
- */
 @Slf4j
 public class DirectoryMigration implements Migration {
     private static final FindOneAndUpdateOptions UPSERT = new FindOneAndUpdateOptions().upsert( true );

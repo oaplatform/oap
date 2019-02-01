@@ -32,9 +32,6 @@ import oap.alert.Alert;
 import oap.alert.MessageStream;
 import oap.alert.Messenger;
 
-/**
- * Created by Igor Petrenko on 04.01.2016.
- */
 @Slf4j
 public class SlackMessenger implements Messenger {
     private final String channel;

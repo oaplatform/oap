@@ -24,9 +24,6 @@
 
 package oap.dictionary;
 
-/**
- * Created by Admin on 19.05.2016.
- */
 public enum ExternalIdType {
     character( char.class ), integer( int.class );
 

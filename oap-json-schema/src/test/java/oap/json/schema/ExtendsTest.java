@@ -26,9 +26,6 @@ package oap.json.schema;
 
 import org.testng.annotations.Test;
 
-/**
- * Created by Igor Petrenko on 13.04.2016.
- */
 public class ExtendsTest extends AbstractSchemaTest {
     @Test
     public void testExtends() {

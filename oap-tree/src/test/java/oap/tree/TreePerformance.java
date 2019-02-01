@@ -36,9 +36,6 @@ import static oap.benchmark.Benchmark.benchmark;
 import static oap.tree.Dimension.LONG;
 import static oap.tree.Dimension.OperationType.CONTAINS;
 
-/**
- * Created by igor.petrenko on 26.12.2016.
- */
 public class TreePerformance {
     @Test
     public void tree() {

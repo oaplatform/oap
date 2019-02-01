@@ -33,9 +33,6 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 27.03.2018.
- */
 public class ObjectHistogramTest {
     private static final int PERIOD_HOUR = 1000 * 60 * 60;
 

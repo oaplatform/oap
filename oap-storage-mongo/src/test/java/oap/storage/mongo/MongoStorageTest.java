@@ -40,9 +40,6 @@ import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 19.09.2017.
- */
 @Slf4j
 public class MongoStorageTest extends AbstractMongoTest {
 

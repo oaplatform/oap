@@ -17,9 +17,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertEqualsNoOrder;
 
-/**
- * Created by Igor Petrenko on 14.01.2016.
- */
 public class FileWalkerTest extends AbstractTest {
 
     @BeforeMethod

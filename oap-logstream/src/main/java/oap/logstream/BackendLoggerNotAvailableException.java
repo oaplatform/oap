@@ -24,9 +24,6 @@
 
 package oap.logstream;
 
-/**
- * Created by igor.petrenko on 16.06.2017.
- */
 public class BackendLoggerNotAvailableException extends LoggerException {
     public BackendLoggerNotAvailableException( String hostName, byte clientId ) {
         super( "[" + hostName + "/" + clientId + "] backend logging is not available" );

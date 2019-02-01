@@ -28,9 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.reflect.Reflection;
 
-/**
- * Created by igor.petrenko on 08.01.2019.
- */
 @Slf4j
 public class FieldLinkReflection implements LinkReflection {
     private final Reflection reflection;

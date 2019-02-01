@@ -24,9 +24,6 @@
 
 package oap.logstream;
 
-/**
- * Created by igor.petrenko on 16.06.2017.
- */
 public class BufferOverflowException extends LoggerException {
     public final String hostName;
     public final byte clientId;

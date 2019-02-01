@@ -37,9 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Created by Igor Petrenko on 29.04.2016.
- */
 @EqualsAndHashCode
 @ToString
 @JsonPropertyOrder( { "id", "externalId", "enabled", "properties" } )

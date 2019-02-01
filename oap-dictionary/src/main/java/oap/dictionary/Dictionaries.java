@@ -40,9 +40,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
 
-/**
- * Created by Igor Petrenko on 15.04.2016.
- */
 @Slf4j
 public class Dictionaries {
     private static final Map<String, URL> dictionaries = new HashMap<>();

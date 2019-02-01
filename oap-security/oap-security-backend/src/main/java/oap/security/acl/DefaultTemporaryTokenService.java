@@ -30,9 +30,6 @@ import org.joda.time.DateTimeUtils;
 
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 27.12.2017.
- */
 public class DefaultTemporaryTokenService implements TemporaryTokenService, Runnable {
     private final Storage<TemporaryToken> storage;
     private final long expiration;

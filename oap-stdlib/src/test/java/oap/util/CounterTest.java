@@ -29,9 +29,6 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 02.06.2017.
- */
 public class CounterTest {
     @Test
     public void testHourly() throws Exception {

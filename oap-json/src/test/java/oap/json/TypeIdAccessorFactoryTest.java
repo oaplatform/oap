@@ -43,9 +43,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by Igor Petrenko on 14.03.2016.
- */
 public class TypeIdAccessorFactoryTest extends AbstractTest {
     @Test
     public void testClassMapping() {

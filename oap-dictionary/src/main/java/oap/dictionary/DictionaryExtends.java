@@ -28,9 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 14.12.2017.
- */
 class DictionaryExtends implements Dictionary {
     final Extends anExtends;
 

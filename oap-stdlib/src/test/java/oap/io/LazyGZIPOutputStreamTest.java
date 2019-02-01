@@ -33,9 +33,6 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 12.12.2018.
- */
 public class LazyGZIPOutputStreamTest extends AbstractTest {
     @Test
     public void testGzip() throws IOException {

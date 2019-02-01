@@ -24,9 +24,6 @@
 
 package oap.logstream.sharding;
 
-/**
- * Created by anton on 11/3/16.
- */
 public interface ShardMapper {
 
     int getShardNumber( String hostName, String fileName );

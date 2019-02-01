@@ -27,9 +27,6 @@ package oap.template;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-/**
- * Created by Admin on 26.06.2017.
- */
 public interface Template<T, TLine extends Template.Line> {
     Template<Object, Line> EMPTY = new Template<Object, Line>() {
         @Override

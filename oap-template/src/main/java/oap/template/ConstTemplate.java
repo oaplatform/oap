@@ -24,9 +24,6 @@
 
 package oap.template;
 
-/**
- * Created by igor.petrenko on 26.06.2017.
- */
 public class ConstTemplate<T, TLine extends Template.Line> implements Template<T, TLine> {
     private final Object value;
 

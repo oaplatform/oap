@@ -32,9 +32,6 @@ import org.testng.annotations.Test;
 import static java.util.Collections.emptyMap;
 import static oap.testng.Asserts.assertString;
 
-/**
- * Created by igor.petrenko on 25.01.2018.
- */
 public class DictionaryLeafTest {
     @Test
     public void testSerializeProperties() {

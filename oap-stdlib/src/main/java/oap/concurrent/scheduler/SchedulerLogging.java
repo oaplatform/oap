@@ -29,9 +29,6 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.JobListener;
 
-/**
- * Created by Igor Petrenko on 11.04.2016.
- */
 @Slf4j
 public class SchedulerLogging implements JobListener {
     @Override

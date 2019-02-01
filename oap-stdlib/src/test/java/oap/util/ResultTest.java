@@ -30,9 +30,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-/**
- * Created by Anton on 06.05.2016.
- */
 public class ResultTest {
 
     @Test( expectedExceptions = InterruptedException.class )

@@ -34,9 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by anton on 11/3/16.
- */
 public class FilenameShardMapper implements ShardMapper {
 
     private final Pattern pattern;

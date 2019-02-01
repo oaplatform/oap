@@ -29,9 +29,6 @@ import java.util.List;
 
 import static java.util.Collections.unmodifiableList;
 
-/**
- * Created by igor.petrenko on 04.01.2018.
- */
 public class MockMailman implements Mailman {
     private final ArrayList<Message> messages = new ArrayList<>();
 

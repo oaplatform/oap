@@ -9,9 +9,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
-/**
- * Created by Igor Petrenko on 14.01.2016.
- */
 public class FileWalker {
     private final Path basePath;
     private final String[] paths;

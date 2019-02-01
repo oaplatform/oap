@@ -12,9 +12,6 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-/**
- * Created by macchiatow on 8/30/16.
- */
 @Slf4j
 public class ChunkedStorage<T> {
     private static final String pattern = "chunk*.gz";

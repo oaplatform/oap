@@ -28,9 +28,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 
-/**
- * Created by igor.petrenko on 12.12.2018.
- */
 public class LazyGZIPOutputStream extends OutputStream {
     private final OutputStream os;
     private GZIPOutputStream gos = null;

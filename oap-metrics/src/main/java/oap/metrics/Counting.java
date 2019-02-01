@@ -24,9 +24,6 @@
 
 package oap.metrics;
 
-/**
- * Created by igor.petrenko on 26.05.2017.
- */
 public interface Counting {
     long getCount();
 }

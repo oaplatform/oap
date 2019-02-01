@@ -39,9 +39,6 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
 
-/**
- * Created by igor.petrenko on 21.12.2017.
- */
 @Slf4j
 public class MockAclService implements AclService {
     private final HashMap<Pair<String, String>, List<String>> checks = new HashMap<>();

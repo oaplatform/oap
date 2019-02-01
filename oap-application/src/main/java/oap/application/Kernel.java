@@ -71,12 +71,9 @@ import static oap.application.KernelHelper.isServiceLink;
 import static oap.application.KernelHelper.referenceName;
 import static oap.application.KernelHelper.serviceEnabled;
 
-/**
- * Created by igor.petrenko on 08.01.2019.
- */
 @Slf4j
 @ToString( of = "name" )
-public class Kernel implements Iterable<Map.Entry<String, Object>> {
+public class Kernel {
     public static final String DEFAULT = Strings.DEFAULT;
     public final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
     final String name;
@@ -430,11 +427,6 @@ public class Kernel implements Iterable<Map.Entry<String, Object>> {
         if( linkedService == null && required && serviceEnabled( modules, linkName ) )
             throw new ApplicationException( "for " + serviceName + " service link " + reference + " is not found" );
         return linkedService;
-    }
-
-    @Override
-    public Iterator<Map.Entry<String, Object>> iterator() {
-        return services.entrySet().iterator();
     }
 
     public void unregister( String name ) {

@@ -50,9 +50,6 @@ import static oap.tree.TreeTest.TestEnum.Test4;
 import static oap.tree.TreeTest.TestEnum.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 26.12.2016.
- */
 public class TreeTest {
     @SafeVarargs
     private static <T> Set<T> s( T... data ) {

@@ -37,9 +37,6 @@ import static oap.tree.TreeTest.TestEnum.Test1;
 import static oap.tree.TreeTest.TestEnum.Test2;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 26.12.2016.
- */
 public class TreeArrayTraceTest {
     @Test
     public void testArrayTrace() {

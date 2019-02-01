@@ -41,9 +41,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static oap.http.testng.HttpAsserts.reset;
 
-/**
- * Created by igor.petrenko on 16.02.2017.
- */
 public class AbstractWebServicesTest extends AbstractTest {
     protected WebServices ws;
     private Server server;

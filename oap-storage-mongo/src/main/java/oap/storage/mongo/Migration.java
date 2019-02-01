@@ -26,9 +26,6 @@ package oap.storage.mongo;
 
 import com.mongodb.client.MongoDatabase;
 
-/**
- * Created by igor.petrenko on 30.01.2018.
- */
 public interface Migration {
     Migration NONE = database -> {};
 

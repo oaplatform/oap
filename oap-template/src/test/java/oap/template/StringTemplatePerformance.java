@@ -33,9 +33,6 @@ import java.nio.file.Path;
 
 import static oap.benchmark.Benchmark.benchmark;
 
-/**
- * Created by igor.petrenko on 15.06.2017.
- */
 public class StringTemplatePerformance {
 
     @Test

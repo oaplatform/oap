@@ -33,9 +33,6 @@ import java.util.regex.Pattern;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-/**
- * Created by Igor Petrenko on 01.12.2015.
- */
 public class ReporterFilterTest extends AbstractTest {
 
     @Test

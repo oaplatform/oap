@@ -32,9 +32,6 @@ import java.util.List;
 
 import static java.util.Arrays.asList;
 
-/**
- * Created by igor.petrenko on 20.09.2017.
- */
 @ToString
 public class KeySchema extends ArrayList<String> implements Serializable {
     private static final long serialVersionUID = 5960753080754091696L;

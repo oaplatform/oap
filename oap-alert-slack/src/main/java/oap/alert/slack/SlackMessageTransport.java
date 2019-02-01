@@ -30,9 +30,6 @@ import flowctrl.integration.slack.webhook.SlackWebhookClient;
 import lombok.extern.slf4j.Slf4j;
 import oap.alert.MessageTransport;
 
-/**
- * Created by Admin on 02.06.2016.
- */
 @Slf4j
 public class SlackMessageTransport implements MessageTransport<Payload> {
 

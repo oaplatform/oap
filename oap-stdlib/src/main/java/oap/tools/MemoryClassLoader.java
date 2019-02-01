@@ -48,9 +48,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 30.08.2016.
- */
 @Slf4j
 public class MemoryClassLoader extends ClassLoader {
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();

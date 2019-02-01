@@ -32,9 +32,6 @@ import org.bson.codecs.configuration.CodecRegistries;
 
 import java.io.Closeable;
 
-/**
- * Created by igor.petrenko on 21.12.2017.
- */
 public class MongoClient implements Closeable {
     public final MongoDatabase database;
     public final com.mongodb.MongoClient mongoClient;

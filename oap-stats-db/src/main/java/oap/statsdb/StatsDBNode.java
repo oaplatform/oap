@@ -40,9 +40,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created by igor.petrenko on 05.09.2017.
- */
 @Slf4j
 public class StatsDBNode extends StatsDB<StatsDB.Database> implements Runnable, Closeable {
     private final Path directory;

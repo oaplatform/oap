@@ -40,9 +40,6 @@ import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.SESSION;
 
-/**
- * Created by igor.petrenko on 27.12.2017.
- */
 @Slf4j
 public class Logout2WS {
     private final AuthService2 authService;

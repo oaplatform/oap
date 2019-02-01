@@ -24,9 +24,6 @@
 
 package oap.security.acl;
 
-/**
- * Created by igor.petrenko on 22.12.2017.
- */
 public interface User2 {
     String getPassword();
 

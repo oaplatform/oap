@@ -24,9 +24,6 @@
 
 package oap.security.acl;
 
-/**
- * Created by igor.petrenko on 15.02.2018.
- */
 public class MockUser2 implements User2 {
     public final String email;
     private final String password;

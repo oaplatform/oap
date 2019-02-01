@@ -36,9 +36,6 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 
-/**
- * Created by razer on 6/9/17.
- */
 @ToString
 class MultiThreadRunner extends Runner {
     private int threads;

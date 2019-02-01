@@ -33,9 +33,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 12.09.2016.
- */
 @Slf4j
 public class HttpFileSync extends FileSync {
     public HttpFileSync() {

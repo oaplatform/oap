@@ -38,9 +38,6 @@ import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 26.12.2016.
- */
 public class TreeArrayTest {
 
     @SafeVarargs

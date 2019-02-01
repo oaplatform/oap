@@ -39,9 +39,6 @@ import static oap.storage.Storage.Lock.CONCURRENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Created by igor.petrenko on 29.12.2017.
- */
 public class DefaultAclSchemaTest {
     private Storage<SecurityContainer<TestAclObject>> storage;
     private Storage<AclSchemaContainer> schemaStorage;

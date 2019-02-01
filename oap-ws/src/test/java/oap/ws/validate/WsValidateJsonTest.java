@@ -39,9 +39,6 @@ import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.QUERY;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
-/**
- * Created by igor.petrenko on 02.03.2017.
- */
 public class WsValidateJsonTest extends AbstractWsValidateTest {
     @Override
     protected List<Object> getWsInstances() {

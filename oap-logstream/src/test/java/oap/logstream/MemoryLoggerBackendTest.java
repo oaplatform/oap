@@ -28,9 +28,6 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 19.12.2016.
- */
 public class MemoryLoggerBackendTest {
     @Test
     public void testGetLines() throws Exception {

@@ -43,9 +43,6 @@ import static java.util.Collections.emptyMap;
 import static oap.template.Template.Line.line;
 import static oap.template.TemplateStrategy.DEFAULT;
 
-/**
- * Created by igor.petrenko on 15.06.2017.
- */
 @Slf4j
 public class Engine implements Runnable {
     private final static HashMap<String, String> builtInFunction = new HashMap<>();

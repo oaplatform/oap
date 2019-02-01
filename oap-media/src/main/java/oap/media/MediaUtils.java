@@ -36,9 +36,6 @@ import java.io.FileInputStream;
 import java.nio.file.Path;
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 20.02.2017.
- */
 @Slf4j
 public class MediaUtils {
     private static final AutoDetectParser AUTO_DETECT_PARSER = new AutoDetectParser();

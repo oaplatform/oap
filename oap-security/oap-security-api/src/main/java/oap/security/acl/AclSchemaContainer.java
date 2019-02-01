@@ -28,9 +28,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.ToString;
 import oap.util.IdBean;
 
-/**
- * Created by igor.petrenko on 21.03.2018.
- */
 @ToString
 public class AclSchemaContainer extends IdBean {
     public final String owner;

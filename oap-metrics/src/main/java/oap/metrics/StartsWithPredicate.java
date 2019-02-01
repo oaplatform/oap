@@ -29,9 +29,6 @@ import oap.util.Pair;
 
 import java.util.function.Predicate;
 
-/**
- * Created by Igor Petrenko on 17.12.2015.
- */
 class StartsWithPredicate implements Predicate<Pair<String, Metric>> {
     private final String prefix;
 

@@ -32,9 +32,6 @@ import oap.json.schema.ValidationSyntaxException;
 
 import java.util.Optional;
 
-/**
- * Created by Igor Petrenko on 12.04.2016.
- */
 public class DictionarySchemaASTWrapper extends SchemaASTWrapper<DictionarySchemaAST> {
     Optional<String> name;
     Optional<String> parent;

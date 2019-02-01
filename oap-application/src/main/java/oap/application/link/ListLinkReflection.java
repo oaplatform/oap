@@ -26,9 +26,6 @@ package oap.application.link;
 
 import java.util.ListIterator;
 
-/**
- * Created by igor.petrenko on 08.01.2019.
- */
 public class ListLinkReflection implements LinkReflection {
     private final ListIterator<Object> iterator;
     private Object value = null;

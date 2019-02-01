@@ -45,9 +45,6 @@ import static oap.tree.TreeTraceTest.TestEnum.UNKNOWN;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 26.12.2016.
- */
 public class TreeTraceTest {
     @Test
     public void testEmptyTreeTrace() {

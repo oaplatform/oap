@@ -27,9 +27,6 @@ package oap.tree;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 27.12.2016.
- */
 public class TreeBuilder<T> {
     private List<Dimension> dimensions;
     private double hashFillFactor = 0.25;

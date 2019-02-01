@@ -31,9 +31,6 @@ import oap.util.Id;
 
 import java.io.Serializable;
 
-/**
- * Created by igor.petrenko on 22.12.2017.
- */
 @ToString
 @EqualsAndHashCode
 public class Token2 implements Serializable {

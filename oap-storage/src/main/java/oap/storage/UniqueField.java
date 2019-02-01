@@ -32,9 +32,6 @@ import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 
-/**
- * Created by igor.petrenko on 05.01.2018.
- */
 public class UniqueField<T> implements Constraint<T> {
     private final String type;
     private final Function<T, Object> valueFunc;

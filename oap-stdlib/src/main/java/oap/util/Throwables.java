@@ -29,9 +29,6 @@ import lombok.SneakyThrows;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-/**
- * Created by igor.petrenko on 06.12.2016.
- */
 public final class Throwables {
     private Throwables() {
     }
