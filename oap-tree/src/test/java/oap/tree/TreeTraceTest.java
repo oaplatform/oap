@@ -27,6 +27,7 @@ package oap.tree;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
+import static java.util.Collections.emptyList;
 import static oap.testng.Asserts.assertString;
 import static oap.tree.Dimension.ENUM;
 import static oap.tree.Dimension.LONG;
@@ -49,6 +50,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class TreeTraceTest {
     @Test
+    public void testEmptyTreeTrace() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", CONTAINS, null ), ENUM( "d2", TestEnum.class, CONTAINS, UNKNOWN ) )
+            .withHashFillFactor( 1 )
+            .load( emptyList() );
+
+        System.out.println( tree.toString() );
+
+        assertString( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "query = [d1:1,d2:Test2]\n"
+            + "Tree is empty" );
+
+    }
+
+    @Test
     public void testTrace() {
         final Tree<String> tree = Tree
             .<String>tree( LONG( "d1", CONTAINS, null ), ENUM( "d2", TestEnum.class, CONTAINS, UNKNOWN ) )
@@ -57,52 +72,52 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "query = [d1:1,d2:Test2]\n" +
-            "Expecting:\n" +
-            "33: \n" +
-            "    d2/1: [Test3] CONTAINS Test2\n" +
-            "1: \n" +
-            "    d2/1: [Test1] CONTAINS Test2\n" +
-            "2: \n" +
-            "    d1/0: [2] CONTAINS 1\n" +
-            "3: \n" +
-            "    d2/1: [Test3] CONTAINS Test2" );
-        assertThat( tree.trace( l( 3L, Test3 ) ) ).isEqualTo( "query = [d1:3,d2:Test3]\n" +
-            "Expecting:\n" +
-            "33: \n" +
-            "    d1/0: [1] CONTAINS 3\n" +
-            "1: \n" +
-            "    d1/0: [1] CONTAINS 3\n" +
-            "    d2/1: [Test1] CONTAINS Test3\n" +
-            "2: \n" +
-            "    d1/0: [2] CONTAINS 3\n" +
-            "    d2/1: [Test2] CONTAINS Test3\n" +
-            "3: \n" +
-            "    d1/0: [1] CONTAINS 3" );
+        assertString( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "query = [d1:1,d2:Test2]\n"
+            + "Expecting:\n"
+            + "33: \n"
+            + "    d2/1: [Test3] CONTAINS Test2\n"
+            + "1: \n"
+            + "    d2/1: [Test1] CONTAINS Test2\n"
+            + "2: \n"
+            + "    d1/0: [2] CONTAINS 1\n"
+            + "3: \n"
+            + "    d2/1: [Test3] CONTAINS Test2" );
+        assertString( tree.trace( l( 3L, Test3 ) ) ).isEqualTo( "query = [d1:3,d2:Test3]\n"
+            + "Expecting:\n"
+            + "33: \n"
+            + "    d1/0: [1] CONTAINS 3\n"
+            + "1: \n"
+            + "    d1/0: [1] CONTAINS 3\n"
+            + "    d2/1: [Test1] CONTAINS Test3\n"
+            + "2: \n"
+            + "    d1/0: [2] CONTAINS 3\n"
+            + "    d2/1: [Test2] CONTAINS Test3\n"
+            + "3: \n"
+            + "    d1/0: [1] CONTAINS 3" );
 
-        assertThat( tree.trace( l( 4L, Test4 ) ) ).isEqualTo( "query = [d1:4,d2:Test4]\n" +
-            "Expecting:\n" +
-            "33: \n" +
-            "    d1/0: [1] CONTAINS 4\n" +
-            "    d2/1: [Test3] CONTAINS Test4\n" +
-            "1: \n" +
-            "    d1/0: [1] CONTAINS 4\n" +
-            "    d2/1: [Test1] CONTAINS Test4\n" +
-            "2: \n" +
-            "    d1/0: [2] CONTAINS 4\n" +
-            "    d2/1: [Test2] CONTAINS Test4\n" +
-            "3: \n" +
-            "    d1/0: [1] CONTAINS 4\n" +
-            "    d2/1: [Test3] CONTAINS Test4" );
-        assertThat( tree.trace( l( 1L, Test1 ) ) ).isEqualTo( "query = [d1:1,d2:Test1]\n" +
-            "Expecting:\n" +
-            "33: \n" +
-            "    d2/1: [Test3] CONTAINS Test1\n" +
-            "2: \n" +
-            "    d1/0: [2] CONTAINS 1\n" +
-            "    d2/1: [Test2] CONTAINS Test1\n" +
-            "3: \n" +
-            "    d2/1: [Test3] CONTAINS Test1" );
+        assertString( tree.trace( l( 4L, Test4 ) ) ).isEqualTo( "query = [d1:4,d2:Test4]\n"
+            + "Expecting:\n"
+            + "33: \n"
+            + "    d1/0: [1] CONTAINS 4\n"
+            + "    d2/1: [Test3] CONTAINS Test4\n"
+            + "1: \n"
+            + "    d1/0: [1] CONTAINS 4\n"
+            + "    d2/1: [Test1] CONTAINS Test4\n"
+            + "2: \n"
+            + "    d1/0: [2] CONTAINS 4\n"
+            + "    d2/1: [Test2] CONTAINS Test4\n"
+            + "3: \n"
+            + "    d1/0: [1] CONTAINS 4\n"
+            + "    d2/1: [Test3] CONTAINS Test4" );
+        assertString( tree.trace( l( 1L, Test1 ) ) ).isEqualTo( "query = [d1:1,d2:Test1]\n"
+            + "Expecting:\n"
+            + "33: \n"
+            + "    d2/1: [Test3] CONTAINS Test1\n"
+            + "2: \n"
+            + "    d1/0: [2] CONTAINS 1\n"
+            + "    d2/1: [Test2] CONTAINS Test1\n"
+            + "3: \n"
+            + "    d2/1: [Test3] CONTAINS Test1" );
     }
 
     @Test
@@ -114,52 +129,52 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "query = [d1:1,d2:Test2]\n" +
-            "Expecting:\n" +
-            "33: \n" +
-            "    d2/1: [Test3] CONTAINS Test2\n" +
-            "1: \n" +
-            "    d2/1: [Test1] CONTAINS Test2\n" +
-            "2: \n" +
-            "    d1/0: [2] CONTAINS 1\n" +
-            "3: \n" +
-            "    d2/1: [Test3] CONTAINS Test2" );
-        assertThat( tree.trace( l( 3L, Test3 ) ) ).isEqualTo( "query = [d1:3,d2:Test3]\n" +
-            "Expecting:\n" +
-            "33: \n" +
-            "    d1/0: [1] CONTAINS 3\n" +
-            "1: \n" +
-            "    d1/0: [1] CONTAINS 3\n" +
-            "    d2/1: [Test1] CONTAINS Test3\n" +
-            "2: \n" +
-            "    d1/0: [2] CONTAINS 3\n" +
-            "    d2/1: [Test2] CONTAINS Test3\n" +
-            "3: \n" +
-            "    d1/0: [1] CONTAINS 3" );
+        assertString( tree.trace( l( 1L, Test2 ) ) ).isEqualTo( "query = [d1:1,d2:Test2]\n"
+            + "Expecting:\n"
+            + "33: \n"
+            + "    d2/1: [Test3] CONTAINS Test2\n"
+            + "1: \n"
+            + "    d2/1: [Test1] CONTAINS Test2\n"
+            + "2: \n"
+            + "    d1/0: [2] CONTAINS 1\n"
+            + "3: \n"
+            + "    d2/1: [Test3] CONTAINS Test2" );
+        assertString( tree.trace( l( 3L, Test3 ) ) ).isEqualTo( "query = [d1:3,d2:Test3]\n"
+            + "Expecting:\n"
+            + "33: \n"
+            + "    d1/0: [1] CONTAINS 3\n"
+            + "1: \n"
+            + "    d1/0: [1] CONTAINS 3\n"
+            + "    d2/1: [Test1] CONTAINS Test3\n"
+            + "2: \n"
+            + "    d1/0: [2] CONTAINS 3\n"
+            + "    d2/1: [Test2] CONTAINS Test3\n"
+            + "3: \n"
+            + "    d1/0: [1] CONTAINS 3" );
 
-        assertThat( tree.trace( l( 4L, Test4 ) ) ).isEqualTo( "query = [d1:4,d2:Test4]\n" +
-            "Expecting:\n" +
-            "33: \n" +
-            "    d1/0: [1] CONTAINS 4\n" +
-            "    d2/1: [Test3] CONTAINS Test4\n" +
-            "1: \n" +
-            "    d1/0: [1] CONTAINS 4\n" +
-            "    d2/1: [Test1] CONTAINS Test4\n" +
-            "2: \n" +
-            "    d1/0: [2] CONTAINS 4\n" +
-            "    d2/1: [Test2] CONTAINS Test4\n" +
-            "3: \n" +
-            "    d1/0: [1] CONTAINS 4\n" +
-            "    d2/1: [Test3] CONTAINS Test4" );
-        assertThat( tree.trace( l( 1L, Test1 ) ) ).isEqualTo( "query = [d1:1,d2:Test1]\n" +
-            "Expecting:\n" +
-            "33: \n" +
-            "    d2/1: [Test3] CONTAINS Test1\n" +
-            "2: \n" +
-            "    d1/0: [2] CONTAINS 1\n" +
-            "    d2/1: [Test2] CONTAINS Test1\n" +
-            "3: \n" +
-            "    d2/1: [Test3] CONTAINS Test1" );
+        assertString( tree.trace( l( 4L, Test4 ) ) ).isEqualTo( "query = [d1:4,d2:Test4]\n"
+            + "Expecting:\n"
+            + "33: \n"
+            + "    d1/0: [1] CONTAINS 4\n"
+            + "    d2/1: [Test3] CONTAINS Test4\n"
+            + "1: \n"
+            + "    d1/0: [1] CONTAINS 4\n"
+            + "    d2/1: [Test1] CONTAINS Test4\n"
+            + "2: \n"
+            + "    d1/0: [2] CONTAINS 4\n"
+            + "    d2/1: [Test2] CONTAINS Test4\n"
+            + "3: \n"
+            + "    d1/0: [1] CONTAINS 4\n"
+            + "    d2/1: [Test3] CONTAINS Test4" );
+        assertString( tree.trace( l( 1L, Test1 ) ) ).isEqualTo( "query = [d1:1,d2:Test1]\n"
+            + "Expecting:\n"
+            + "33: \n"
+            + "    d2/1: [Test3] CONTAINS Test1\n"
+            + "2: \n"
+            + "    d1/0: [2] CONTAINS 1\n"
+            + "    d2/1: [Test2] CONTAINS Test1\n"
+            + "3: \n"
+            + "    d2/1: [Test3] CONTAINS Test1" );
     }
 
     @Test
@@ -217,7 +232,7 @@ public class TreeTraceTest {
             "3: \n" +
             "    d1/0: [3] NOT_CONTAINS 3" );
 
-        assertThat( tree.trace( l( 5L ) ) ).isEqualTo( "query = [d1:5]\nALL OK" );
+        assertString( tree.trace( l( 5L ) ) ).isEqualTo( "query = [d1:5]\nALL OK" );
     }
 
     @Test
@@ -229,10 +244,10 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( null, 1L ) ) ).isEqualTo( "query = [d1:UNKNOWN,d2:1]\n" +
-            "Expecting:\n" +
-            "1: \n" +
-            "    d2/1: [99] CONTAINS 1" );
+        assertString( tree.trace( l( null, 1L ) ) ).isEqualTo( "query = [d1:UNKNOWN,d2:1]\n"
+            + "Expecting:\n"
+            + "1: \n"
+            + "    d2/1: [99] CONTAINS 1" );
     }
 
     @Test
@@ -244,10 +259,10 @@ public class TreeTraceTest {
 
         System.out.println( tree.toString() );
 
-        assertThat( tree.trace( l( ( Long ) null ) ) ).isEqualTo( "query = [d1:UNKNOWN]\n" +
-            "Expecting:\n" +
-            "1: \n" +
-            "    d1/0: [1] CONTAINS UNKNOWN" );
+        assertString( tree.trace( l( ( Long ) null ) ) ).isEqualTo( "query = [d1:UNKNOWN]\n"
+            + "Expecting:\n"
+            + "1: \n"
+            + "    d1/0: [1] CONTAINS UNKNOWN" );
     }
 
     @Test

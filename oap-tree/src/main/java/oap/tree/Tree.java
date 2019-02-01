@@ -152,7 +152,7 @@ public class Tree<T> {
         }
     }
 
-    public void load( ArrayList<ValueData<T>> data ) {
+    public void load( List<ValueData<T>> data ) {
         init( data );
         final long[] uniqueCount = getUniqueCount( data );
         root = toNode( data, uniqueCount, new BitSet( dimensions.size() ) );
@@ -445,6 +445,11 @@ public class Tree<T> {
                 }
                 ).collect( joining( "\n" ) )
             ).collect( joining( "\n" ) );
+
+        if( root == null ) {
+            return queryStr + "Tree is empty";
+        }
+
         return queryStr + ( out.length() > 0 ? "Expecting:\n" + out : "ALL OK" );
     }
 

@@ -51,7 +51,7 @@ public class TreeBuilder<T> {
         return this;
     }
 
-    public final Tree<T> load( ArrayList<Tree.ValueData<T>> data ) {
+    public final Tree<T> load( List<Tree.ValueData<T>> data ) {
         final Tree<T> tree = new Tree<>( dimensions, hashFillFactor, arrayToTree );
         tree.load( data );
 
