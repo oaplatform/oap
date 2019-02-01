@@ -26,9 +26,6 @@ package oap.util;
 
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * Created by igor.petrenko on 29.11.2016.
- */
 @Slf4j
 public abstract class MemoryMeter {
     private static final MemoryMeter NULL_MEMORY_METER = new MemoryMeter() {

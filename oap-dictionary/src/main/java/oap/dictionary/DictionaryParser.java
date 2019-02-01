@@ -50,9 +50,6 @@ import java.util.stream.Collectors;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
-/**
- * Created by Igor Petrenko on 15.04.2016.
- */
 public class DictionaryParser {
     public static final IdStrategy PROPERTY_ID_STRATEGY = new PropertyIdStrategy();
     public static final IdStrategy INCREMENTAL_ID_STRATEGY = new IncrementalIdStrategy();

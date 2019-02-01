@@ -24,9 +24,6 @@
 
 package oap.tree;
 
-/**
- * Created by igor.petrenko on 18.05.2017.
- */
 class Consts {
     static final long ANY = Long.MIN_VALUE;
     static final long[] ANY_AS_ARRAY = new long[0];

@@ -26,9 +26,6 @@ package oap.logstream;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-/**
- * Created by igor.petrenko on 19.06.2017.
- */
 public class LoggerListeners {
     protected final ConcurrentLinkedQueue<LoggerListener> listeners = new ConcurrentLinkedQueue<>();
 

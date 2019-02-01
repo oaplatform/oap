@@ -28,9 +28,6 @@ import lombok.ToString;
 
 import java.nio.file.Path;
 
-/**
- * Created by igor.petrenko on 10.02.2017.
- */
 @ToString
 public class Media {
     public final String id;

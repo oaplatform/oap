@@ -24,9 +24,6 @@
 
 package oap.storage;
 
-/**
- * Created by igor.petrenko on 05.01.2018.
- */
 public class ConstraintException extends RuntimeException {
     public ConstraintException( String message ) {
         super( message );

@@ -30,9 +30,6 @@ import oap.testng.Env;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
-/**
- * Created by igor.petrenko on 30.01.2018.
- */
 @Slf4j
 public class AbstractMongoTest extends AbstractTest {
     protected String dbName;

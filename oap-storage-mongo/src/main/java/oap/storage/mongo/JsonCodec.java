@@ -40,9 +40,6 @@ import org.bson.codecs.EncoderContext;
 
 import java.util.function.Function;
 
-/**
- * Created by igor.petrenko on 13.12.2017.
- */
 public class JsonCodec<T> implements Codec<T> {
     private final DocumentCodec documentCodec;
     private final Class<T> clazz;

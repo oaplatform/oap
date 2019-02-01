@@ -28,9 +28,6 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.Id;
 
-/**
- * Created by Igor Petrenko on 05.10.2015.
- */
 @ToString
 @EqualsAndHashCode
 public class Bean {

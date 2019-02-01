@@ -28,9 +28,6 @@ import oap.json.schema.SchemaAST;
 
 import java.util.Optional;
 
-/**
- * Created by Igor Petrenko on 12.04.2016.
- */
 public class DictionarySchemaAST extends SchemaAST<DictionarySchemaAST> {
     public final String name;
     public final Optional<DictionarySchemaAST> parent;

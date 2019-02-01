@@ -29,9 +29,6 @@ import org.testng.annotations.Test;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-/**
- * Created by Admin on 03.06.2016.
- */
 public class BlockingMessageStreamTest {
 
     @Test

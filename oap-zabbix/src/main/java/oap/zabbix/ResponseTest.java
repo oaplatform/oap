@@ -29,9 +29,6 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 28.09.2017.
- */
 public class ResponseTest {
     @Test
     public void testResponse() {

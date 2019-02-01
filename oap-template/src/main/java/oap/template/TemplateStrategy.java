@@ -32,9 +32,6 @@ import java.util.Optional;
 import static oap.reflect.Types.isInstance;
 import static oap.reflect.Types.isPrimitive;
 
-/**
- * Created by igor.petrenko on 01.09.2016.
- */
 public interface TemplateStrategy<TLine extends JavaCTemplate.Line> {
     TemplateStrategy<JavaCTemplate.Line> DEFAULT = new TemplateStrategy<JavaCTemplate.Line>() {};
 

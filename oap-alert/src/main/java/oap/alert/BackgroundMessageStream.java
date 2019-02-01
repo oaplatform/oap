@@ -29,9 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/**
- * Created by Admin on 02.06.2016.
- */
 @Slf4j
 public class BackgroundMessageStream<Message> implements MessageStream<Message>, Runnable {
 

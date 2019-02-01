@@ -38,9 +38,6 @@ import java.util.Map;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 08.01.2019.
- */
 public class KernelHelperTest {
     @Test
     public void testFixLinksForConstructorValueExists() {

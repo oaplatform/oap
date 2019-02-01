@@ -33,9 +33,6 @@ import java.util.concurrent.atomic.LongAdder;
 
 import static oap.benchmark.Benchmark.benchmark;
 
-/**
- * Created by igor.petrenko on 26.10.2016.
- */
 @Test
 public class AtomicPerformance {
     private final MutableLong ml = new MutableLong();

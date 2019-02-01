@@ -33,9 +33,6 @@ import static oap.testng.Asserts.assertFile;
 import static oap.testng.Asserts.contentOfTestResource;
 import static oap.testng.Asserts.pathOfTestResource;
 
-/**
- * Created by Admin on 05.07.2016.
- */
 public class AssertsTest {
 
     @Test

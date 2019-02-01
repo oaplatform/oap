@@ -12,9 +12,6 @@ import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
-/**
- * Created by igor.petrenko on 20.09.2017.
- */
 public class TestListener implements ITestListener {
     @Override
     public void onTestStart( ITestResult iTestResult ) {

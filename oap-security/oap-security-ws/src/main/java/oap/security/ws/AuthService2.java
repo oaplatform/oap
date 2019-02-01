@@ -36,9 +36,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-/**
- * Created by igor.petrenko on 22.12.2017.
- */
 @Slf4j
 public class AuthService2 implements Runnable {
     private final List<AuthProvider<User2>> providers;

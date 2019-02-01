@@ -46,9 +46,6 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 
-/**
- * Created by igor.petrenko on 05.10.2017.
- */
 public class SecurityInterceptorTest {
 
     private static final Reflection REFLECTION = Reflect.reflect( TestAPI.class );

@@ -36,9 +36,6 @@ import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 import static oap.security.acl.AclService.ROOT;
 
-/**
- * Created by igor.petrenko on 02.01.2018.
- */
 public class MockAclSchema implements AclSchema {
     private final AclObject rootAclObject;
     private final Storage<? extends SecurityContainer<?>> storage;

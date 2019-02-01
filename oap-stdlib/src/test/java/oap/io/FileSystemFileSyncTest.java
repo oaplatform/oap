@@ -33,9 +33,6 @@ import java.nio.file.Paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 24.05.2017.
- */
 public class FileSystemFileSyncTest extends AbstractTest {
     @Test
     public void testSync() throws Exception {

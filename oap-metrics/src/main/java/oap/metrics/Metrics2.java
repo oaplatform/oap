@@ -26,9 +26,6 @@ package oap.metrics;
 
 import java.util.HashMap;
 
-/**
- * Created by igor.petrenko on 26.05.2017.
- */
 public class Metrics2 {
     public static final HashMap<Measurement, Counter> count = new HashMap<>();
 

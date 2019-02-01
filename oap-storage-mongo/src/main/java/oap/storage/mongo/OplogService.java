@@ -43,9 +43,6 @@ import static com.mongodb.client.model.Filters.gt;
 import static com.mongodb.client.model.Filters.in;
 import static com.mongodb.client.model.Filters.regex;
 
-/**
- * Created by igor.petrenko on 13.02.2018.
- */
 @Slf4j
 public class OplogService implements Runnable, Closeable {
     private final MongoClient mongoClient;

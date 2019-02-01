@@ -29,9 +29,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Created by Igor Petrenko on 19.04.2016.
- */
 public class SchemaWrapperPath {
     private final String[] paths;
 

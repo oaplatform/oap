@@ -41,9 +41,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-/**
- * Created by Igor Petrenko on 14.03.2016.
- */
 @Slf4j
 public class TypeIdFactory implements TypeIdResolver {
     private static final ConcurrentHashMap<String, Class<?>> idToClass = new ConcurrentHashMap<>();

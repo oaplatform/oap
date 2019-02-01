@@ -32,9 +32,6 @@ import org.joda.time.DateTimeUtils;
 
 import java.io.Serializable;
 
-/**
- * Created by igor.petrenko on 02.06.2017.
- */
 @EqualsAndHashCode
 @ToString
 public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter<T>>, Serializable {

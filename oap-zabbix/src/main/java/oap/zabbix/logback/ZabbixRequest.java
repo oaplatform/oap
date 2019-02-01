@@ -32,9 +32,6 @@ import oap.zabbix.Request;
 import java.io.IOException;
 import java.io.OutputStream;
 
-/**
- * Created by igor.petrenko on 29.09.2017.
- */
 @ToString
 public final class ZabbixRequest {
     private static final byte header[] = { 'Z', 'B', 'X', 'D', '\1' };

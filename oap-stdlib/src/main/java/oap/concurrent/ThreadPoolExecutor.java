@@ -34,9 +34,6 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by Igor Petrenko on 29.01.2016.
- */
 @Slf4j( topic = "UncaughException" )
 public class ThreadPoolExecutor extends java.util.concurrent.ThreadPoolExecutor {
     public ThreadPoolExecutor( int corePoolSize, int maximumPoolSize, long keepAliveTime, TimeUnit unit, BlockingQueue<Runnable> workQueue ) {

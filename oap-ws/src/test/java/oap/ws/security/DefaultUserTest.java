@@ -30,9 +30,6 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 31.10.2017.
- */
 public class DefaultUserTest {
     @Test
     public void testJson() {

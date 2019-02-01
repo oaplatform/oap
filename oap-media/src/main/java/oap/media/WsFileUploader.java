@@ -51,9 +51,6 @@ import java.util.List;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.util.Collections.emptyList;
 
-/**
- * Created by igor.petrenko on 06.02.2017.
- */
 @Slf4j
 public class WsFileUploader extends FileUploader implements Handler {
     private final FileUpload upload;

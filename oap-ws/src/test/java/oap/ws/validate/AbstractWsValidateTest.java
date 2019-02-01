@@ -44,9 +44,6 @@ import org.testng.annotations.BeforeClass;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 02.03.2017.
- */
 public abstract class AbstractWsValidateTest extends AbstractTest {
     private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
 

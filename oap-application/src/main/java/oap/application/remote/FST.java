@@ -33,9 +33,6 @@ import org.nustaq.serialization.FSTObjectOutput;
 import java.io.IOException;
 import java.util.Optional;
 
-/**
- * Created by Igor Petrenko on 15.01.2016.
- */
 public class FST {
     public FSTConfiguration conf;
 

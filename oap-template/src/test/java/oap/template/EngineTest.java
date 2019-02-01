@@ -45,9 +45,6 @@ import static oap.template.Template.Line.line;
 import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 01.09.2016.
- */
 public class EngineTest extends AbstractTest {
 
     private final Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );

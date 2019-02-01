@@ -31,9 +31,6 @@ import org.assertj.core.error.BasicErrorMessageFactory;
 import static oap.testng.ResultAssertion.ResultShouldBeFailure.shouldBeFailure;
 import static oap.testng.ResultAssertion.ResultShouldBeSuccess.shouldBeSuccess;
 
-/**
- * Created by igor.petrenko on 17.02.2017.
- */
 public class ResultAssertion<S, F> extends AbstractAssert<ResultAssertion<S, F>, Result<S, F>> {
     public ResultAssertion( Result<S, F> actual ) {
         super( actual, ResultAssertion.class );

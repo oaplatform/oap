@@ -29,9 +29,6 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.util.IdBean;
 
-/**
- * Created by igor.petrenko on 02.01.2018.
- */
 @ToString( callSuper = true )
 @EqualsAndHashCode( callSuper = true )
 public class TestAclObject extends IdBean {

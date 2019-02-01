@@ -38,9 +38,6 @@ import java.util.Set;
 
 import static java.util.Arrays.asList;
 
-/**
- * Created by igor.petrenko on 24.05.2017.
- */
 public abstract class FileSync implements Runnable {
     private final HashSet<String> protocols;
     private final ArrayList<FileDownloaderListener> listeners = new ArrayList<>();

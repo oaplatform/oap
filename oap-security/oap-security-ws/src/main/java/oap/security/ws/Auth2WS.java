@@ -32,9 +32,6 @@ import java.util.Optional;
 import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.PATH;
 
-/**
- * Created by igor.petrenko on 27.12.2017.
- */
 public class Auth2WS {
     private final AuthService2 authService;
 

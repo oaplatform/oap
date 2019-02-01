@@ -26,9 +26,6 @@ package oap.logstream;
 
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 16.06.2017.
- */
 public class NoLoggerConfiguredForShardsException extends LoggerException {
     public NoLoggerConfiguredForShardsException( List<Integer> notConfiguredShards ) {
         super( "No logger configured for shards:" + notConfiguredShards );

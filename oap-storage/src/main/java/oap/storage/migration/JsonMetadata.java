@@ -28,9 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-/**
- * Created by Igor Petrenko on 14.03.2016.
- */
 public class JsonMetadata extends JsonObject {
     public JsonMetadata( Map<String, Object> underlying ) {
         super( Optional.empty(), Optional.empty(), underlying );

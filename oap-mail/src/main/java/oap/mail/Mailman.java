@@ -24,9 +24,6 @@
 
 package oap.mail;
 
-/**
- * Created by igor.petrenko on 04.01.2018.
- */
 public interface Mailman {
     void enqueue( Message message );
 

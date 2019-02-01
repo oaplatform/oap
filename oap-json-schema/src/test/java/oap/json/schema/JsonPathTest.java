@@ -35,9 +35,6 @@ import java.util.Optional;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by Admin on 25.05.2016.
- */
 public class JsonPathTest extends AbstractTest {
     @Test
     public void testTraverse() throws Exception {

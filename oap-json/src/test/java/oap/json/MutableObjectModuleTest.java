@@ -30,9 +30,6 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by Igor Petrenko on 22.03.2016.
- */
 public class MutableObjectModuleTest extends AbstractTest {
     @Test
     public void testSerializeDeserialize() {

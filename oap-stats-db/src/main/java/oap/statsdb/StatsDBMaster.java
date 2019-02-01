@@ -35,9 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created by igor.petrenko on 08.09.2017.
- */
 @Slf4j
 public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> implements RemoteStatsDB, Closeable {
     private final ConcurrentHashMap<String, String> hosts = new ConcurrentHashMap<>();

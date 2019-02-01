@@ -33,9 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Created by Admin on 17.06.2016.
- */
 public class DictionaryModel {
     private final Dictionary dictionary;
 

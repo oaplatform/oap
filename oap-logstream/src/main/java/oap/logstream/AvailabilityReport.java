@@ -28,9 +28,6 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 
-/**
- * Created by anton on 11/22/16.
- */
 public class AvailabilityReport {
 
     public final State state;

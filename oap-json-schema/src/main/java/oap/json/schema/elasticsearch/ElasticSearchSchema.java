@@ -41,9 +41,6 @@ import org.apache.commons.io.output.StringBuilderWriter;
 
 import java.io.IOException;
 
-/**
- * Created by igor.petrenko on 17.10.2017.
- */
 public class ElasticSearchSchema {
     @SneakyThrows
     public static String convert( SchemaAST<?> schemaAST ) {

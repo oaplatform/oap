@@ -36,9 +36,6 @@ import java.util.Optional;
 
 import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 
-/**
- * Created by igor.petrenko on 03.12.2018.
- */
 public class LogConfiguration extends Configuration {
     public static final int MAX_VERSIONS_TO_LOAD = 5;
     private static final String STANDARD_DELIMITER = "\t";

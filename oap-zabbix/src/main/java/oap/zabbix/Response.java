@@ -34,9 +34,6 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Created by igor.petrenko on 28.09.2017.
- */
 public class Response implements Serializable {
     private static final long serialVersionUID = 1927251369169425165L;
 

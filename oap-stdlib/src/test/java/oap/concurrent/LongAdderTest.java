@@ -35,9 +35,6 @@ import java.io.ObjectOutputStream;
 
 import static org.assertj.core.api.Java6Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 23.02.2018.
- */
 public class LongAdderTest {
     @Test
     public void testSerializarion() throws IOException, ClassNotFoundException {

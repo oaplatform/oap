@@ -26,9 +26,6 @@ package oap.json.schema;
 
 import lombok.ToString;
 
-/**
- * Created by Igor Petrenko on 29.04.2016.
- */
 @ToString
 public abstract class SchemaASTWrapper<TAST extends SchemaAST<TAST>> {
     public final SchemaId id;

@@ -24,9 +24,6 @@
 
 package oap.storage.mongo;
 
-/**
- * Created by igor.petrenko on 30.01.2018.
- */
 public class MigrationExceptin extends RuntimeException {
     public MigrationExceptin( String message ) {
         super( message );

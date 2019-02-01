@@ -26,9 +26,6 @@ package oap.ws.security;
 
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 10.10.2017.
- */
 public interface UserStorage<T extends User> {
     Optional<T> getByEmail( String email );
 }

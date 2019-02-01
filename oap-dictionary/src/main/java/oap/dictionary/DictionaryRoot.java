@@ -36,9 +36,6 @@ import java.util.Optional;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 
-/**
- * Created by Igor Petrenko on 14.04.2016.
- */
 @EqualsAndHashCode
 @ToString
 public final class DictionaryRoot implements Dictionary {

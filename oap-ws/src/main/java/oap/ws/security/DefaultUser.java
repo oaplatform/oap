@@ -29,9 +29,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-/**
- * Created by igor.petrenko on 30.10.2017.
- */
 @EqualsAndHashCode
 @ToString
 public class DefaultUser implements User {

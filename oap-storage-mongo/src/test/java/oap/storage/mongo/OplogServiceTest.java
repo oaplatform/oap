@@ -31,9 +31,6 @@ import org.testng.annotations.Test;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 13.02.2018.
- */
 public class OplogServiceTest extends AbstractMongoTest {
     @Test
     public void oplog() {

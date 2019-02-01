@@ -31,9 +31,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 
-/**
- * Created by igor.petrenko on 12.12.2018.
- */
 public class LazyFileOutputStream extends OutputStream {
     private final File file;
     private FileOutputStream fos = null;

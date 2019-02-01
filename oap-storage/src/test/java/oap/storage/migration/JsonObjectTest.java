@@ -33,9 +33,6 @@ import java.util.Map;
 import static java.util.Optional.empty;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by Igor Petrenko on 16.03.2016.
- */
 public class JsonObjectTest extends AbstractTest {
 
     private static Map<String, Object> map( String map ) {

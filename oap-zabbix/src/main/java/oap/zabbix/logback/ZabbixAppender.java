@@ -50,9 +50,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by igor.petrenko on 29.09.2017.
- */
 public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements SocketConnector.ExceptionHandler {
     public static final int DEFAULT_QUEUE_SIZE = 128;
     private static final int prefixLength = "zabbix.".length();

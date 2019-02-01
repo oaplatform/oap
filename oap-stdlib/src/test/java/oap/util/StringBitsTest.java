@@ -31,9 +31,6 @@ import java.util.BitSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by Igor Petrenko on 04.04.2016.
- */
 public class StringBitsTest extends AbstractTest {
     @Test
     public void testValueOfInt() throws Exception {

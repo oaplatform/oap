@@ -55,9 +55,6 @@ import static oap.testng.Asserts.pathOfTestResource;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 06.02.2017.
- */
 public class WsFileUploaderTest extends AbstractTest {
     private ArrayList<Pair<Media, MediaInfo>> medias = new ArrayList<>();
     private Server server;

@@ -28,9 +28,6 @@ import lombok.AllArgsConstructor;
 import lombok.ToString;
 import oap.reflect.Reflection;
 
-/**
- * Created by igor.petrenko on 08.01.2019.
- */
 @ToString
 @AllArgsConstructor
 class ServiceInitialization {

@@ -47,9 +47,6 @@ import static oap.io.Files.ensureDirectory;
 import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 15.06.2017.
- */
 public class StringTemplateTest extends AbstractTest {
 
     @Test

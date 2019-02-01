@@ -31,9 +31,6 @@ import java.util.Optional;
 import static oap.json.schema.ResourceSchemaStorage.INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by Igor Petrenko on 19.04.2016.
- */
 public class SchemaWrapperPathTest extends AbstractSchemaTest {
     private SchemaASTWrapper wrapper( String schema, SchemaStorage storage ) {
         return JsonSchema.schemaFromString( schema ).parse( schema, storage );

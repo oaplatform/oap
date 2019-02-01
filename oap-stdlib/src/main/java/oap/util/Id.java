@@ -29,9 +29,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Created by igor.petrenko on 04.01.2018.
- */
 @Target( { ElementType.FIELD, ElementType.METHOD } )
 @Retention( RetentionPolicy.RUNTIME )
 public @interface Id {

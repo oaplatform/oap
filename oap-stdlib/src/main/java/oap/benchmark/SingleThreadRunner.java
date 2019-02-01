@@ -32,9 +32,6 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 
-/**
- * Created by razer on 6/9/17.
- */
 @ToString
 class SingleThreadRunner extends Runner {
     static SingleThreadRunner INSTANCE = new SingleThreadRunner();

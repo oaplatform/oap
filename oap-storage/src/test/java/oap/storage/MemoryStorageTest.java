@@ -38,9 +38,6 @@ import static java.util.Collections.emptyList;
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 05.01.2018.
- */
 public class MemoryStorageTest {
     @Test
     public void constraintStoreAdd() {

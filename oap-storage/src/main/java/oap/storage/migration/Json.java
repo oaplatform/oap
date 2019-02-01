@@ -28,9 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Created by Igor Petrenko on 14.03.2016.
- */
 public abstract class Json<T extends Object> {
     public final Optional<String> field;
     public final Optional<Json<?>> parent;

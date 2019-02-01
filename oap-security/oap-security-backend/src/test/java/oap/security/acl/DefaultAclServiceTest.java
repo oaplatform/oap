@@ -41,9 +41,6 @@ import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Created by igor.petrenko on 21.12.2017.
- */
 public class DefaultAclServiceTest {
     private MemoryStorage<SecurityContainer<TestAclObject>> objectStorage;
     private MemoryStorage<AclRole> roleStorage;

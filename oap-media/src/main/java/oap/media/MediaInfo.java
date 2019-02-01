@@ -30,9 +30,6 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.util.HashMap;
 
-/**
- * Created by igor.petrenko on 10.02.2017.
- */
 @ToString( callSuper = true )
 @EqualsAndHashCode( callSuper = true )
 public class MediaInfo extends HashMap<String, Object> implements Serializable {

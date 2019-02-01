@@ -24,9 +24,6 @@
 
 package oap.zabbix;
 
-/**
- * Created by igor.petrenko on 28.09.2017.
- */
 public class ZabbixNull implements Zabbix {
     private static final Response RESPONSE = new Response( "", "" );
 

@@ -34,9 +34,6 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
-/**
- * Created by Igor Petrenko on 01.12.2015.
- */
 public class BinderHoconTest {
     @Test
     public void testPattern() {

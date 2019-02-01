@@ -63,9 +63,6 @@ import static oap.tree.Dimension.OperationType.CONTAINS;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
 import static oap.util.Pair.__;
 
-/**
- * Created by igor.petrenko on 26.12.2016.
- */
 public class Tree<T> {
     private final int arrayToTree;
     TreeNode<T> root = new Leaf<>( emptyList() );

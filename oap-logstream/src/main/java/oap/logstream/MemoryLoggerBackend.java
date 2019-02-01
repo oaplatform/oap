@@ -34,9 +34,6 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 
-/**
- * Created by igor.petrenko on 19.12.2016.
- */
 public class MemoryLoggerBackend extends LoggerBackend {
     private final HashMap<String, HashMap<String, ByteArrayOutputStream>> outputs = new HashMap<>();
 

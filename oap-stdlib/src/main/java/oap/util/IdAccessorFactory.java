@@ -30,9 +30,6 @@ import oap.reflect.Reflection;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Created by igor.petrenko on 04.01.2018.
- */
 public class IdAccessorFactory {
     private static final ConcurrentHashMap<Class, Accessor> ids = new ConcurrentHashMap<>();
 

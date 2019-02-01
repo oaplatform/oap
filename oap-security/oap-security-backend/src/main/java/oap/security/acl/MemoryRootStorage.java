@@ -31,9 +31,6 @@ import static java.util.Collections.emptyList;
 import static oap.security.acl.AclService.ROOT;
 import static oap.storage.Storage.Lock.CONCURRENT;
 
-/**
- * Created by igor.petrenko on 02.01.2018.
- */
 public class MemoryRootStorage extends MemoryStorage<SecurityContainer<RootObject>> {
     public MemoryRootStorage() {
         super( Identifier.<SecurityContainer<RootObject>>identify( root -> ROOT ).build(), CONCURRENT );

@@ -24,9 +24,6 @@
 
 package oap.alert;
 
-/**
- * Created by Igor Petrenko on 04.01.2016.
- */
 public interface Messenger {
     void send( String host, String name, Alert alert, boolean changed );
 }

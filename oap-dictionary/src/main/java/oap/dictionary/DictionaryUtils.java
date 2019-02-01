@@ -28,9 +28,6 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-/**
- * Created by igor.petrenko on 07.09.2016.
- */
 public class DictionaryUtils {
     public List<Dictionary> filter( Dictionary dictionary, Predicate<Dictionary> p ) {
         return dictionary.getValues().stream().filter( p ).collect( Collectors.toList() );

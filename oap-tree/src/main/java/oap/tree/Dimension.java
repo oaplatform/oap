@@ -38,9 +38,6 @@ import java.util.Optional;
 
 import static oap.tree.Consts.ANY_AS_ARRAY;
 
-/**
- * Created by igor.petrenko on 27.12.2016.
- */
 @EqualsAndHashCode
 public abstract class Dimension {
     public static final int PRIORITY_DEFAULT = 0;

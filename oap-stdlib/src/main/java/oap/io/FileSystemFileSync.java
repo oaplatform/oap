@@ -34,9 +34,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 24.05.2017.
- */
 @Slf4j
 public class FileSystemFileSync extends FileSync {
     public FileSystemFileSync() {

@@ -29,9 +29,6 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 02.03.2017.
- */
 public class SchemaPathTest extends AbstractSchemaTest {
     @Test
     public void testTraverse() throws Exception {

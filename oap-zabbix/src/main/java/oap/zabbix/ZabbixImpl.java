@@ -41,9 +41,6 @@ import java.nio.charset.StandardCharsets;
 
 import static java.util.Collections.singletonList;
 
-/**
- * Created by igor.petrenko on 28.09.2017.
- */
 @Slf4j
 public class ZabbixImpl implements Zabbix {
     public final String host;

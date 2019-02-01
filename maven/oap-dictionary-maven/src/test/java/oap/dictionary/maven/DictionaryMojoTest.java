@@ -28,9 +28,6 @@ import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.Test;
 
-/**
- * Created by igor.petrenko on 19.05.2016.
- */
 public class DictionaryMojoTest extends AbstractTest {
     @Test
     public void testExecute() throws Exception {

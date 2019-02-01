@@ -32,9 +32,6 @@ import org.apache.http.client.methods.HttpGet;
 
 import java.net.InetAddress;
 
-/**
- * Created by igor.petrenko on 21.06.2017.
- */
 public class MockRequest extends Request {
     public MockRequest( HttpRequest req ) {
         super( req, new Context( "", getLocalHost(), "http" ) );

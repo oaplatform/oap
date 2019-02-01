@@ -24,8 +24,5 @@
 
 package oap.security.acl;
 
-/**
- * Created by igor.petrenko on 02.01.2018.
- */
 public interface AclProvider {
 }

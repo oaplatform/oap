@@ -34,9 +34,6 @@ import java.util.function.LongFunction;
 
 import static oap.util.Functions.empty.run;
 
-/**
- * Created by razer on 6/9/17.
- */
 @ToString( exclude = "code" )
 public class Benchmark {
     public int experiments = 5;

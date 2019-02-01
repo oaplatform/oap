@@ -31,9 +31,6 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 28.09.2017.
- */
 @Builder
 @AllArgsConstructor
 @ToString

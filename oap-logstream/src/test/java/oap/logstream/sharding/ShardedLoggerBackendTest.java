@@ -45,9 +45,6 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-/**
- * Created by anton on 11/3/16.
- */
 public class ShardedLoggerBackendTest {
 
     ShardMapper mapper = mock( ShardMapper.class );

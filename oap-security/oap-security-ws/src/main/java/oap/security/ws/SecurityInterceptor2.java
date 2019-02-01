@@ -42,9 +42,6 @@ import java.util.function.Function;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 
-/**
- * Created by igor.petrenko on 22.12.2017.
- */
 @Slf4j
 public class SecurityInterceptor2 implements Interceptor {
     private final AclService aclService;

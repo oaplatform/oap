@@ -44,9 +44,6 @@ import static java.util.Arrays.asList;
 import static oap.util.Lists.head;
 import static oap.util.Lists.tail;
 
-/**
- * Created by Igor Petrenko on 14.03.2016.
- */
 @Slf4j
 public class JsonObject extends Json<Map<String, Object>> {
     public final Map<String, Object> underlying;

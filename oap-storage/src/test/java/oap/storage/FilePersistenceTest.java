@@ -35,9 +35,6 @@ import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 23.09.2016.
- */
 public class FilePersistenceTest extends AbstractTest {
     static {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );

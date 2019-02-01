@@ -26,8 +26,5 @@ package oap.media;
 
 import java.util.HashMap;
 
-/**
- * Created by igor.petrenko on 08.02.2018.
- */
 public class MediaContext extends HashMap<String, Object> {
 }

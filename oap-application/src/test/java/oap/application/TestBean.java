@@ -31,9 +31,6 @@ import lombok.ToString;
 
 import java.io.Serializable;
 
-/**
- * Created by Igor Petrenko on 18.11.2015.
- */
 @ToString
 @EqualsAndHashCode
 public class TestBean implements Serializable {

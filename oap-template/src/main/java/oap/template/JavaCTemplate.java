@@ -56,9 +56,6 @@ import static oap.reflect.Types.isPrimitive;
 import static oap.reflect.Types.toJavaType;
 import static oap.util.Pair.__;
 
-/**
- * Created by igor.petrenko on 01.09.2016.
- */
 @Slf4j
 public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T, TLine> {
     private static final String math = "/*+-%";

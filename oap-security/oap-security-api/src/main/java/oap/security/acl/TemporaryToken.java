@@ -29,9 +29,6 @@ import oap.util.Id;
 
 import java.io.Serializable;
 
-/**
- * Created by igor.petrenko on 27.12.2017.
- */
 public class TemporaryToken implements Serializable {
     private static final long serialVersionUID = -7308648704979898600L;
     public final String objectId;

@@ -29,9 +29,6 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-/**
- * Created by igor.petrenko on 06.12.2016.
- */
 public class ThrowablesTest {
     @Test( expectedExceptions = UncheckedIOException.class, expectedExceptionsMessageRegExp = "java.io.IOException: test" )
     public void propagateIOException() {

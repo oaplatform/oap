@@ -30,9 +30,6 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 04.01.2018.
- */
 @ToString
 public class ObjectWithPermissions<T> implements Serializable {
     private static final long serialVersionUID = 6532013786626661364L;

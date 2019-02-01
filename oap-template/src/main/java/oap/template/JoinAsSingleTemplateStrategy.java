@@ -2,9 +2,6 @@ package oap.template;
 
 import java.lang.reflect.Type;
 
-/**
- * Created by macchiatow on 21.06.17.
- */
 public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTemplate.Line> {
 
     @Override

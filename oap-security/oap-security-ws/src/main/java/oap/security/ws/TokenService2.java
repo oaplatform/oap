@@ -26,9 +26,6 @@ package oap.security.ws;
 
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 22.12.2017.
- */
 public interface TokenService2 {
     Optional<Token2> getToken( String tokenId );
 }

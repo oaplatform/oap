@@ -37,9 +37,6 @@ import static com.mongodb.client.model.Filters.eq;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 22.12.2017.
- */
 public class AclRoleStorageTest extends AbstractTest {
     private AclRoleStorage storage;
     private MongoClient mongoClient;

@@ -37,9 +37,6 @@ import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertTrue;
 
-/**
- * Created by Igor Petrenko on 15.04.2016.
- */
 public class DictionaryTest extends AbstractTest {
     @Test
     public void testParse() {

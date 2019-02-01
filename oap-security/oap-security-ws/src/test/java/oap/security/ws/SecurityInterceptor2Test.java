@@ -52,9 +52,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * Created by igor.petrenko on 22.12.2017.
- */
 public class SecurityInterceptor2Test {
     private static final Reflection REFLECTION = Reflect.reflect( TestAPI.class );
 

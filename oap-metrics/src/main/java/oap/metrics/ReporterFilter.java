@@ -32,9 +32,6 @@ import java.util.regex.Pattern;
 
 import static oap.util.Lists.Collectors.toArrayList;
 
-/**
- * Created by Igor Petrenko on 01.12.2015.
- */
 public class ReporterFilter implements MetricFilter {
     public final List<Pattern> include;
     public final List<Pattern> exclude;

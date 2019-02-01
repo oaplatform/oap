@@ -13,9 +13,6 @@ import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.assertFile;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by macchiatow on 8/31/16.
- */
 public class ChunkedStorageTest {
 
 

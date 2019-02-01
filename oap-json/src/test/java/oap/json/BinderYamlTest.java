@@ -30,9 +30,6 @@ import org.testng.annotations.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
-/**
- * Created by Igor Petrenko on 01.12.2015.
- */
 public class BinderYamlTest {
     @Test
     public void testYaml() {

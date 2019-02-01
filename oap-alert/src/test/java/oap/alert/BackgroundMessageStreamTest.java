@@ -34,9 +34,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-/**
- * Created by Admin on 03.06.2016.
- */
 public class BackgroundMessageStreamTest extends AbstractTest {
 
     @Mock

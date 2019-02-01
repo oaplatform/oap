@@ -37,9 +37,6 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
 
-/**
- * Created by Igor Petrenko on 29.04.2016.
- */
 @EqualsAndHashCode( callSuper = true )
 @ToString( callSuper = true )
 @JsonPropertyOrder( { "id", "externalId", "enabled", "properties", "values" } )

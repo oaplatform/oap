@@ -29,9 +29,6 @@ import oap.storage.mongo.MongoStorage;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 
-/**
- * Created by igor.petrenko on 27.12.2017.
- */
 public class TemporaryTokenStorage extends MongoStorage<TemporaryToken> {
     public TemporaryTokenStorage( MongoClient mongoClient, String table ) {
         super( mongoClient, table, SERIALIZED );

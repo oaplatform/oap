@@ -31,9 +31,6 @@ import org.testng.annotations.Test;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 06.02.2018.
- */
 public class UriTest {
     @Test
     public void testUri() {

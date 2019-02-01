@@ -33,9 +33,6 @@ import org.testng.annotations.Test;
 import static com.mongodb.client.model.Filters.eq;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 30.01.2018.
- */
 public class DirectoryMigrationTest extends AbstractMongoTest {
     @BeforeMethod
     public void deploy() {

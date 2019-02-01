@@ -27,9 +27,6 @@ package oap.security.acl;
 import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
 
-/**
- * Created by igor.petrenko on 07.11.2018.
- */
 public class MemorySchemaStorage extends MemoryStorage<AclSchemaContainer> implements SchemaStorage {
     public MemorySchemaStorage() {
         super( Identifier.forAnnotationFixed(), Lock.SERIALIZED );

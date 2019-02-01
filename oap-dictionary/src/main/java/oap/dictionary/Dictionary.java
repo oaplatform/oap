@@ -32,9 +32,6 @@ import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toList;
 
-/**
- * Created by Igor Petrenko on 29.04.2016.
- */
 public interface Dictionary {
     int getOrDefault( String id, int defaultValue );
 

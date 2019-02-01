@@ -37,9 +37,6 @@ import org.slf4j.Logger;
 import java.io.Reader;
 import java.util.Map;
 
-/**
- * Created by Igor Petrenko on 11.11.6015.
- */
 public class HoconFactoryWithFallback extends HoconFactory {
     private final Config additinal;
     private final boolean withSystemProperties;

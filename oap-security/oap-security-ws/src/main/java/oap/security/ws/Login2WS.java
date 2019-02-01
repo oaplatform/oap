@@ -38,9 +38,6 @@ import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.PATH;
 import static oap.ws.WsParam.From.QUERY;
 
-/**
- * Created by igor.petrenko on 27.12.2017.
- */
 @Slf4j
 public class Login2WS {
     private final AuthService2 authService;

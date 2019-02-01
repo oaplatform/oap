@@ -24,9 +24,6 @@
 
 package oap.template;
 
-/**
- * Created by macchiatow on 07.06.17.
- */
 public class StringAccumulator implements Accumulator<String> {
 
     private final java.lang.StringBuilder sb = new java.lang.StringBuilder();

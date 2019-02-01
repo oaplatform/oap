@@ -33,9 +33,6 @@ import org.testng.annotations.Test;
 import static oap.testng.Asserts.assertString;
 import static oap.ws.cat.CatApi.table;
 
-/**
- * Created by Admin on 09.06.2016.
- */
 public class CatApiTest extends AbstractTest {
     @Test
     public void testTable() throws Exception {

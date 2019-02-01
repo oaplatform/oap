@@ -27,9 +27,6 @@ package oap.json;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.ToString;
 
-/**
- * Created by igor.petrenko on 06.07.2018.
- */
 @ToString
 public final class CustomValue<T> {
     private final T value;

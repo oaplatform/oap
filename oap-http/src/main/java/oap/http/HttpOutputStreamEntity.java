@@ -32,9 +32,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.function.Consumer;
 
-/**
- * Created by Igor Petrenko on 22.01.2016.
- */
 public class HttpOutputStreamEntity extends AbstractHttpEntity {
     private final Consumer<OutputStream> cons;
 

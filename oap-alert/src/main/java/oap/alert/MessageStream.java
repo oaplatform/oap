@@ -24,9 +24,6 @@
 
 package oap.alert;
 
-/**
- * Created by Anton on 02.06.2016.
- */
 public interface MessageStream<Message> extends MessageTransport<Message> {
 
 }

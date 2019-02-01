@@ -26,9 +26,6 @@ package oap.template;
 
 import org.apache.commons.lang3.builder.Builder;
 
-/**
- * Created by macchiatow on 07.06.17.
- */
 public interface Accumulator<T> extends Builder<T> {
     default Accumulator accept( String str ) {
         return accept( ( Object ) str );

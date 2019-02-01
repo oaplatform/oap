@@ -26,9 +26,6 @@ package oap.json.schema;
 
 import lombok.EqualsAndHashCode;
 
-/**
- * Created by Igor Petrenko on 29.04.2016.
- */
 @EqualsAndHashCode
 public class SchemaId {
     private final String schema;

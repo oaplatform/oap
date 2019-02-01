@@ -26,9 +26,6 @@ package oap.metrics;
 
 import oap.concurrent.LongAdder;
 
-/**
- * Created by igor.petrenko on 26.05.2017.
- */
 public class Counter implements Metric, Counting {
     public final LongAdder count = new LongAdder();
 

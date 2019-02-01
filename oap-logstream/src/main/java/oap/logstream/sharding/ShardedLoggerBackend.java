@@ -38,9 +38,6 @@ import java.util.stream.Collectors;
 import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 
-/**
- * Created by anton on 11/2/16.
- */
 public class ShardedLoggerBackend extends LoggerBackend {
     public final LoggerBackend[] loggers;
     public final ShardMapper shardMapper;

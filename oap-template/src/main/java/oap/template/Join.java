@@ -24,9 +24,6 @@
 
 package oap.template;
 
-/**
- * Created by igor.petrenko on 19.10.2016.
- */
 public class Join {
     public final int index;
     public final int size;

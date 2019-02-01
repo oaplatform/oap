@@ -24,9 +24,6 @@
 
 package oap.application.link;
 
-/**
- * Created by igor.petrenko on 08.01.2019.
- */
 public interface LinkReflection {
     boolean set( Object value );
 

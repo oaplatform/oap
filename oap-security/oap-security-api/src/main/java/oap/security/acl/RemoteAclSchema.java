@@ -31,9 +31,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-/**
- * Created by igor.petrenko on 21.03.2018.
- */
 public class RemoteAclSchema implements AclSchema {
     private final AclSchema remoteSchema;
 
