@@ -33,18 +33,25 @@ public class Teamcity {
             switch( value.charAt( i ) ) {
                 case '\'':
                     sb.append( "|'" );
+                    break;
                 case '\n':
                     sb.append( "|n" );
+                    break;
                 case '\r':
                     sb.append( "|r" );
+                    break;
                 case '|':
                     sb.append( "||" );
+                    break;
                 case '[':
                     sb.append( "|[" );
+                    break;
                 case ']':
                     sb.append( "|]" );
+                    break;
                 default:
                     sb.append( value.charAt( i ) );
+                    break;
             }
 
         return sb.toString();

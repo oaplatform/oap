@@ -20,8 +20,6 @@ public class TestListener implements ITestListener {
     public void onTestStart( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
 
-        System.out.println( "debug: teamcity[testStarted name='" + Teamcity.escape( method ) + "' captureStandardOutput='true']" );
-
         System.out.println( "##teamcity[testStarted name='" + Teamcity.escape( method ) + "' captureStandardOutput='true']" );
     }
 
