@@ -19,7 +19,7 @@ public class TestListener implements ITestListener {
     @Override
     public void onTestStart( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
-        System.out.println( "#1#teamcity[testStarted name='" + Teamcity.escape( method ) + "' captureStandardOutput='true']" );
+        System.out.println( "##teamcity[testStarted name='" + Teamcity.escape( method ) + "' captureStandardOutput='true']" );
     }
 
     private String getParameters( ITestResult iTestResult ) {
@@ -33,7 +33,7 @@ public class TestListener implements ITestListener {
     public void onTestSuccess( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
         val time = iTestResult.getEndMillis() - iTestResult.getStartMillis();
-        System.out.println( "#1#teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
+        System.out.println( "##teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
     }
 
     public String getMethodName( ITestResult iTestResult ) {
@@ -46,22 +46,22 @@ public class TestListener implements ITestListener {
         val t = iTestResult.getThrowable();
         val message = t != null ? t.getMessage() : "";
         val details = t != null ? Throwables.getStackTraceAsString( t ) : "";
-        System.out.println( "#1#teamcity[testFailed type='comparisonFailure' name='" + Teamcity.escape( method + getParameters( iTestResult ) ) + "' message='" + Teamcity.escape( message ) + "' details='" + Teamcity.escape( details ) + "']" );
+        System.out.println( "##teamcity[testFailed type='comparisonFailure' name='" + Teamcity.escape( method + getParameters( iTestResult ) ) + "' message='" + Teamcity.escape( message ) + "' details='" + Teamcity.escape( details ) + "']" );
         val time = iTestResult.getEndMillis() - iTestResult.getStartMillis();
-        System.out.println( "#1#teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
+        System.out.println( "##teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
     }
 
     @Override
     public void onTestSkipped( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
-        System.out.println( "#1#teamcity[testIgnored name='" + Teamcity.escape( method ) + "' message='skipped']" );
+        System.out.println( "##teamcity[testIgnored name='" + Teamcity.escape( method ) + "' message='skipped']" );
     }
 
     @Override
     public void onTestFailedButWithinSuccessPercentage( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
         val time = iTestResult.getEndMillis() - iTestResult.getStartMillis();
-        System.out.println( "#1#teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
+        System.out.println( "##teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
     }
 
     @Override
