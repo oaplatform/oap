@@ -37,12 +37,12 @@ public class Teamcity {
                     sb.append( "|n" );
                 case '\r':
                     sb.append( "|r" );
-//                case '|':
-//                    sb.append( "||" );
-//                case '[':
-//                    sb.append( "|[" );
-//                case ']':
-//                    sb.append( "|]" );
+                case '|':
+                    sb.append( "||" );
+                case '[':
+                    sb.append( "|[" );
+                case ']':
+                    sb.append( "|]" );
                 default:
                     sb.append( value.charAt( i ) );
             }

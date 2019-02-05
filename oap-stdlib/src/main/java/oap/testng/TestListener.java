@@ -46,7 +46,7 @@ public class TestListener implements ITestListener {
         val t = iTestResult.getThrowable();
         val message = t != null ? t.getMessage() : "";
         val details = t != null ? Throwables.getStackTraceAsString( t ) : "";
-        System.out.println( "##teamcity[testFailed type='comparisonFailure' name='" + Teamcity.escape( method + getParameters( iTestResult ) ) + "' message='" + Teamcity.escape( message ) + "' details='" + Teamcity.escape( details ) + "']" );
+        System.out.println( "##teamcity[testFailed type='comparisonFailure' name='" + Teamcity.escape( method ) + "' message='" + Teamcity.escape( message ) + "' details='" + Teamcity.escape( details ) + "']" );
         val time = iTestResult.getEndMillis() - iTestResult.getStartMillis();
         System.out.println( "##teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
     }
