@@ -237,6 +237,7 @@ public abstract class Dimension {
         final long head = qValue[0];
         switch( operationType ) {
             case CONTAINS:
+            case CONTAINS_ALL:
                 if( qValueLength == 1 ) {
                     if( head > nodeValue ) return Direction.RIGHT;
                     else if( head < nodeValue ) return Direction.LEFT;
@@ -256,8 +257,8 @@ public abstract class Dimension {
                 }
 
             case NOT_CONTAINS:
-                return qValueLength > 1 || head != nodeValue ?
-                    Direction.EQUAL | Direction.LEFT | Direction.RIGHT
+                return qValueLength > 1 || head != nodeValue
+                    ? Direction.EQUAL | Direction.LEFT | Direction.RIGHT
                     : Direction.LEFT | Direction.RIGHT;
 
             case GREATER_THEN:
@@ -305,6 +306,7 @@ public abstract class Dimension {
 
     public enum OperationType {
         CONTAINS,
+        CONTAINS_ALL,
         NOT_CONTAINS,
         GREATER_THEN,
         GREATER_THEN_OR_EQUAL_TO,

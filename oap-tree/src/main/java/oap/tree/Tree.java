@@ -60,6 +60,7 @@ import static java.util.stream.Collectors.toMap;
 import static oap.tree.Consts.ANY_AS_ARRAY;
 import static oap.tree.Dimension.Direction;
 import static oap.tree.Dimension.OperationType.CONTAINS;
+import static oap.tree.Dimension.OperationType.CONTAINS_ALL;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
 import static oap.util.Pair.__;
 
@@ -104,8 +105,8 @@ public class Tree<T> {
     }
 
     @SafeVarargs
-    public static <T> Array a( boolean include, T... values ) {
-        return new Array( l( values ), include );
+    public static <T> Array a( ArrayOperation operationType, T... values ) {
+        return new Array( l( values ), operationType );
     }
 
     public long getMemory() {
@@ -134,11 +135,11 @@ public class Tree<T> {
         if( root instanceof Tree.Node ) {
             final List<ArrayBitSet> sets = ( ( Node ) root ).sets;
 
-            final long includeCount = Lists.count( sets, s -> s.include );
-            final long excludeCount = sets.size() - includeCount;
+            tas.update( ArrayOperation.OR, Lists.count( sets, s -> s.operation == ArrayOperation.OR ) );
+            tas.update( ArrayOperation.AND, Lists.count( sets, s -> s.operation == ArrayOperation.AND ) );
+            tas.update( ArrayOperation.NOT, Lists.count( sets, s -> s.operation == ArrayOperation.NOT ) );
 
-            tas.update( includeCount, excludeCount );
-            sets.forEach( s -> tas.updateSize( s.include, s.bitSet.stream().count() ) );
+            sets.forEach( s -> tas.updateSize( s.operation, s.bitSet.stream().count() ) );
 
             arrayStatistics( ( ( Node ) root ).any, tas );
             arrayStatistics( ( ( Node ) root ).left, tas );
@@ -229,7 +230,7 @@ public class Tree<T> {
                 s -> s.data.get( splitDimension.dimension )
             ).entrySet(), es -> {
                 final Array key = ( Array ) es.getKey();
-                return new ArrayBitSet( dimension.toBitSet( key ), key.include, toNode( es.getValue(), uniqueCount, bitSetWithDimension ) );
+                return new ArrayBitSet( dimension.toBitSet( key ), key.operation, toNode( es.getValue(), uniqueCount, bitSetWithDimension ) );
             } );
 
             return new Node(
@@ -333,7 +334,7 @@ public class Tree<T> {
                 .stream()
                 .mapToLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] ).distinct().toArray();
 
-            if( dimension.operationType == CONTAINS
+            if( ( dimension.operationType == CONTAINS || dimension.operationType == CONTAINS_ALL )
                 && unique.length > 1
                 && ( double ) unique.length / uniqueCount[finalSplitDimension] > hashFillFactor ) {
                 final List<ValueData<T>> any = partitionAnyOther._1.collect( toList() );
@@ -546,13 +547,13 @@ public class Tree<T> {
                 for( ArrayBitSet set : n.sets ) {
                     trace( set.equal, query, result,
                         buffer.cloneWith( n.dimension, set.bitSet.stream(),
-                            set.include ? CONTAINS : NOT_CONTAINS, false ), false );
+                            set.operation.operationType, false ), false );
                 }
             } else if( !n.sets.isEmpty() ) {
                 for( ArrayBitSet set : n.sets ) {
                     final boolean eqSuccess = set.find( qValue );
                     trace( set.equal, query, result, buffer.cloneWith( n.dimension, set.bitSet.stream(),
-                        set.include ? CONTAINS : NOT_CONTAINS, eqSuccess ), success && eqSuccess );
+                        set.operation.operationType, eqSuccess ), success && eqSuccess );
                 }
             } else {
                 final int direction = dimension.direction( qValue, n.eqValue );
@@ -655,6 +656,16 @@ public class Tree<T> {
         }
     }
 
+    public enum ArrayOperation {
+        OR( CONTAINS ), AND( CONTAINS_ALL ), NOT( NOT_CONTAINS );
+
+        public final OperationType operationType;
+
+        ArrayOperation( OperationType operationType ) {
+            this.operationType = operationType;
+        }
+    }
+
     private interface TreeNode<T> {
         List<Pair<String, TreeNode<T>>> children();
 
@@ -664,11 +675,11 @@ public class Tree<T> {
     @ToString( callSuper = true )
     @EqualsAndHashCode( callSuper = true )
     public static class Array extends ArrayList<Object> {
-        public final boolean include;
+        public final ArrayOperation operation;
 
-        public Array( Collection<?> c, boolean include ) {
+        public Array( Collection<?> c, ArrayOperation operation ) {
             super( c );
-            this.include = include;
+            this.operation = operation;
         }
     }
 
@@ -765,22 +776,21 @@ public class Tree<T> {
     }
 
     public static class TreeArrayStatistic {
-        public final Map<Long, AtomicInteger> includeCounts = new HashMap<>();
-        public final Map<Long, AtomicInteger> excludeCounts = new HashMap<>();
-        public final Map<Long, AtomicInteger> includeSize = new HashMap<>();
-        public final Map<Long, AtomicInteger> excludeSize = new HashMap<>();
+        public final HashMap<ArrayOperation, HashMap<Long, AtomicInteger>> counts = new HashMap<>();
+        public final HashMap<ArrayOperation, HashMap<Long, AtomicInteger>> size = new HashMap<>();
 
-        public void update( long includeCount, long excludeCount ) {
-            if( includeCount > 0 )
-                includeCounts.computeIfAbsent( includeCount, ( ai ) -> new AtomicInteger() ).incrementAndGet();
-
-            if( excludeCount > 0 )
-                excludeCounts.computeIfAbsent( excludeCount, ( ai ) -> new AtomicInteger() ).incrementAndGet();
+        public void update( ArrayOperation operationType, long count ) {
+            if( count > 0 )
+                counts
+                    .computeIfAbsent( operationType, op -> new HashMap<>() )
+                    .computeIfAbsent( count, ( i ) -> new AtomicInteger() )
+                    .incrementAndGet();
         }
 
-        public void updateSize( boolean include, long count ) {
-            ( include ? includeSize : excludeSize )
-                .computeIfAbsent( count, ( ai ) -> new AtomicInteger() )
+        public void updateSize( ArrayOperation operationType, long count ) {
+            size
+                .computeIfAbsent( operationType, op -> new HashMap<>() )
+                .computeIfAbsent( count, ( i ) -> new AtomicInteger() )
                 .incrementAndGet();
         }
     }
@@ -788,29 +798,39 @@ public class Tree<T> {
     @ToString
     private class ArrayBitSet {
         private final BitSet bitSet;
-        private final boolean include;
+        private final ArrayOperation operation;
         private final TreeNode<T> equal;
 
-        public ArrayBitSet( BitSet bitSet, boolean include, TreeNode<T> equal ) {
+        public ArrayBitSet( BitSet bitSet, ArrayOperation operation, TreeNode<T> equal ) {
             this.bitSet = bitSet;
-            this.include = include;
+            this.operation = operation;
             this.equal = equal;
         }
 
         public final boolean find( long[] qValue ) {
-            if( include ) {
-                for( long value : qValue ) {
-                    if( bitSet.get( ( int ) value ) ) return true;
-                }
+            switch( operation ) {
+                case OR:
+                    for( long value : qValue ) {
+                        if( bitSet.get( ( int ) value ) ) return true;
+                    }
 
-                return false;
+                    return false;
+                case AND:
+                    val newBitSet = ( BitSet ) bitSet.clone();
+                    for( long value : qValue ) {
+                        newBitSet.clear( ( int ) value );
+                    }
+
+                    return newBitSet.isEmpty();
+                case NOT:
+                    for( long value : qValue ) {
+                        if( bitSet.get( ( int ) value ) ) return false;
+                    }
+
+                    return true;
+                default:
+                    throw new IllegalStateException( "Unknown Operation type " + operation.name() );
             }
-
-            for( long value : qValue ) {
-                if( bitSet.get( ( int ) value ) ) return false;
-            }
-
-            return true;
         }
     }
 
@@ -910,7 +930,7 @@ public class Tree<T> {
             result.add( __( "a", any ) );
 
             for( ArrayBitSet set : sets )
-                result.add( __( ( set.include ? "in:" : "not in:" ) + bitSetToData( set.bitSet ), set.equal ) );
+                result.add( __( ( set.operation.name() + ":" ) + bitSetToData( set.bitSet ), set.equal ) );
 
             return result;
         }

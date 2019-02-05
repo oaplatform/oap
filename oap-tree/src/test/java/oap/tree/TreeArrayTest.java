@@ -33,6 +33,9 @@ import static oap.tree.Dimension.ARRAY_LONG;
 import static oap.tree.Dimension.ARRAY_STRING;
 import static oap.tree.Dimension.LONG;
 import static oap.tree.Dimension.OperationType.CONTAINS;
+import static oap.tree.Tree.ArrayOperation.AND;
+import static oap.tree.Tree.ArrayOperation.NOT;
+import static oap.tree.Tree.ArrayOperation.OR;
 import static oap.tree.Tree.a;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
@@ -45,8 +48,8 @@ public class TreeArrayTest {
         return Sets.of( data );
     }
 
-    private static <T> Tree.Array as( boolean include, Set<T> values ) {
-        return new Tree.Array( values, include );
+    private static <T> Tree.Array as( Tree.ArrayOperation operation, Set<T> values ) {
+        return new Tree.Array( values, operation );
     }
 
     @Test
@@ -54,9 +57,9 @@ public class TreeArrayTest {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_LONG( "d1", null ) )
             .load( l(
-                v( "1", l( a( true, 1L, 2L ) ) ),
-                v( "2", l( a( true, 2L ) ) ),
-                v( "3", l( a( true, 1L, 2L, 3L ) ) )
+                v( "1", l( a( OR, 1L, 2L ) ) ),
+                v( "2", l( a( OR, 2L ) ) ),
+                v( "3", l( a( OR, 1L, 2L, 3L ) ) )
             ) );
 
         System.out.println( tree.toString() );
@@ -72,6 +75,22 @@ public class TreeArrayTest {
         assertThat( ( ( Tree.Node ) tree.root ).sets ).hasSize( 3 );
     }
 
+    @Test
+    public void testArrayAND() {
+        final Tree<String> tree = Tree
+            .<String>tree( ARRAY_LONG( "d1", null ) )
+            .load( l(
+                v( "1", l( a( AND, 1L, 2L ) ) )
+            ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( l( 1L ) ) ) ).isEmpty();
+        assertThat( tree.find( l( l( 2L, 3L ) ) ) ).isEmpty();
+        assertThat( tree.find( l( l( 1L, 2L ) ) ) ).containsOnly( "1" );
+        assertThat( tree.find( l( l( 1L, 2L, 3L ) ) ) ).containsOnly( "1" );
+    }
+
     @Test( enabled = false )
     public void testArrayExpand() {
         final Tree<String> tree = Tree
@@ -79,9 +98,9 @@ public class TreeArrayTest {
             .withArrayToTree( 4 )
             .withHashFillFactor( 1 )
             .load( l(
-                v( "1", l( a( true, 1L, 2L ) ) ),
-                v( "2", l( a( true, 2L ) ) ),
-                v( "3", l( a( true, 1L, 2L, 3L ) ) )
+                v( "1", l( a( OR, 1L, 2L ) ) ),
+                v( "2", l( a( OR, 2L ) ) ),
+                v( "3", l( a( OR, 1L, 2L, 3L ) ) )
             ) );
 
         System.out.println( tree.toString() );
@@ -101,7 +120,7 @@ public class TreeArrayTest {
     public void testArrayString() {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_STRING( "d1" ) )
-            .load( l( v( "1", l( a( true, "s1", "s2" ) ) ) ) );
+            .load( l( v( "1", l( a( OR, "s1", "s2" ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -115,9 +134,9 @@ public class TreeArrayTest {
             .<String>tree( ARRAY_LONG( "d1", null ), LONG( "sv1", CONTAINS, null ) )
             .withHashFillFactor( 1 )
             .load( l(
-                v( "1", l( a( false, 1L, 2L ), 1 ) ),
-                v( "2", l( a( false, 2L ), 1 ) ),
-                v( "3", l( a( false, 1L, 2L, 3L ), 1 ) )
+                v( "1", l( a( NOT, 1L, 2L ), 1 ) ),
+                v( "2", l( a( NOT, 2L ), 1 ) ),
+                v( "3", l( a( NOT, 1L, 2L, 3L ), 1 ) )
             ) );
 
         System.out.println( tree.toString() );
@@ -136,8 +155,8 @@ public class TreeArrayTest {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_LONG( "d1", null ) )
             .load( l(
-                v( "1", l( a( false, 1L, 2L ) ) ),
-                v( "2", l( a( false, 2L ) ) )
+                v( "1", l( a( NOT, 1L, 2L ) ) ),
+                v( "2", l( a( NOT, 2L ) ) )
             ) );
 
         System.out.println( tree.toString() );
@@ -153,11 +172,11 @@ public class TreeArrayTest {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_LONG( "d1", null ), ARRAY_STRING( "d2" ) )
             .load( l(
-                v( "1", l( a( true, 1L, 2L ), a( true, "1", "2" ) ) ),
-                v( "2", l( a( true, 1L, 2L ), a( true, "1", "2" ) ) ),
-                v( "3", l( a( true, 1L, 2L, 3L ), a( true, "1", "2", "3" ) ) ),
-                v( "e1", l( a( true ), a( true ) ) ),
-                v( "e2", l( a( false ), a( false ) ) )
+                v( "1", l( a( OR, 1L, 2L ), a( OR, "1", "2" ) ) ),
+                v( "2", l( a( OR, 1L, 2L ), a( OR, "1", "2" ) ) ),
+                v( "3", l( a( OR, 1L, 2L, 3L ), a( OR, "1", "2", "3" ) ) ),
+                v( "e1", l( a( OR ), a( OR ) ) ),
+                v( "e2", l( a( NOT ), a( NOT ) ) )
             ) );
 
         System.out.println( tree.toString() );
@@ -174,7 +193,7 @@ public class TreeArrayTest {
     public void testArrayAnyAny() {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_LONG( "d1", null ) )
-            .load( l( v( "1", l( a( false ) ) ) ) );
+            .load( l( v( "1", l( a( NOT ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -186,8 +205,8 @@ public class TreeArrayTest {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_STRING( "d1" ), ARRAY_STRING( "d2" ) )
             .load( l(
-                v( "1", l( a( true ), a( false ) ) ),
-                v( "2", l( a( false ), a( true ) ) )
+                v( "1", l( a( OR ), a( NOT ) ) ),
+                v( "2", l( a( NOT ), a( OR ) ) )
             ) );
 
         System.out.println( tree.toString() );
@@ -201,7 +220,7 @@ public class TreeArrayTest {
     public void testFindQueryAnyAndDimensionRequired() {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_LONG( "d1", null ) )
-            .load( l( v( "1", l( a( true ) ) ), v( "2", l( a( true, 2L ) ) ) ) );
+            .load( l( v( "1", l( a( OR ) ) ), v( "2", l( a( OR, 2L ) ) ) ) );
 
         System.out.println( tree.toString() );
 
@@ -215,7 +234,7 @@ public class TreeArrayTest {
     public void testSet() {
         final Tree<String> tree = Tree
             .<String>tree( ARRAY_LONG( "d1", null ) )
-            .load( l( v( "1", l( as( true, s( 1L, 2L ) ) ) ) ) );
+            .load( l( v( "1", l( as( OR, s( 1L, 2L ) ) ) ) ) );
 
         System.out.println( tree.toString() );
 
