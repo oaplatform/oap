@@ -37,10 +37,10 @@ public class TestListener implements ITestListener {
         val parameters = iTestResult.getParameters();
         if( parameters.length > 0 ) {
             pStr = Stream.of( parameters )
-                .filter( p -> p == null || !CaseContext.class.equals( getClass() ) )
+                .filter( p -> p == null || !CaseContext.class.equals( p.getClass() ) )
                 .map( Object::toString )
                 .collect( Collectors.joining( ",", "[", "]" ) );
-            if( parameters[0] != null && CaseContext.class.equals( getClass() ) ) {
+            if( parameters[0] != null && CaseContext.class.equals( parameters[0].getClass() ) ) {
                 className = parameters[0].toString();
             }
         }
