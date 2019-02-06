@@ -8,6 +8,7 @@ package oap.testng;
 
 import com.google.common.base.Throwables;
 import lombok.val;
+import oap.testng.casesuite.CaseContext;
 import oap.util.Stream;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
@@ -23,13 +24,6 @@ public class TestListener implements ITestListener {
         System.out.println( "##teamcity[testStarted name='" + Teamcity.escape( method ) + "' captureStandardOutput='true']" );
     }
 
-    private String getParameters( ITestResult iTestResult ) {
-        val parameters = iTestResult.getParameters();
-        if( parameters.length == 0 ) return "";
-
-        return Stream.of( parameters ).map( Object::toString ).collect( Collectors.joining( ",", "[", "]" ) );
-    }
-
     @Override
     public void onTestSuccess( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
@@ -38,7 +32,22 @@ public class TestListener implements ITestListener {
     }
 
     public String getMethodName( ITestResult iTestResult ) {
-        return iTestResult.getMethod().getRealClass().getSimpleName() + "." + iTestResult.getMethod().getMethodName() + getParameters( iTestResult );
+        String pStr = "";
+        String className = null;
+        val parameters = iTestResult.getParameters();
+        if( parameters.length > 0 ) {
+            pStr = Stream.of( parameters )
+                .filter( p -> p == null || !CaseContext.class.equals( getClass() ) )
+                .map( Object::toString )
+                .collect( Collectors.joining( ",", "[", "]" ) );
+            if( parameters[0] != null && CaseContext.class.equals( getClass() ) ) {
+                className = parameters[0].toString();
+            }
+        }
+
+        return className != null
+            ? className + pStr
+            : iTestResult.getMethod().getRealClass().getSimpleName() + "." + iTestResult.getMethod().getMethodName() + pStr;
     }
 
     @Override
