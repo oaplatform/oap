@@ -28,13 +28,15 @@ import com.google.common.base.Throwables;
 import lombok.val;
 import oap.testng.casesuite.CaseContext;
 import oap.util.Stream;
+import org.testng.ISuite;
+import org.testng.ISuiteListener;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
 import java.util.stream.Collectors;
 
-public class TestListener implements ITestListener {
+public class TestListener implements ITestListener, ISuiteListener {
     @Override
     public void onTestStart( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
@@ -119,5 +121,15 @@ public class TestListener implements ITestListener {
             name = methods[0].getTestClass().getName();
         }
         System.out.println( "##teamcity[" + method + " name='" + Teamcity.escape( name ) + "']" );
+    }
+
+    @Override
+    public void onStart( ISuite suite ) {
+        System.out.println( "##teamcity[testSuiteStarted name='" + Teamcity.escape( suite.getName() ) + "']" );
+    }
+
+    @Override
+    public void onFinish( ISuite suite ) {
+        System.out.println( "##teamcity[testSuiteFinished name='" + Teamcity.escape( suite.getName() ) + "']" );
     }
 }
