@@ -1,7 +1,25 @@
 /*
- * Copyright (c) Madberry Oy
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Proprietary and confidential
+ * The MIT License (MIT)
+ *
+ * Copyright (c) Open Application Platform Authors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 package oap.testng;
@@ -26,12 +44,16 @@ public class TestListener implements ITestListener {
 
     @Override
     public void onTestSuccess( ITestResult iTestResult ) {
+        finish( iTestResult );
+    }
+
+    public void finish( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
         val time = iTestResult.getEndMillis() - iTestResult.getStartMillis();
         System.out.println( "##teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
     }
 
-    private String getClassName( ITestResult result ) {
+    private static String getClassName( ITestResult result ) {
         String className = null;
         val parameters = result.getParameters();
         if( parameters.length > 0 ) {
@@ -44,7 +66,7 @@ public class TestListener implements ITestListener {
     }
 
     public String getMethodName( ITestResult iTestResult ) {
-        String pStr = "";
+        String pStr;
         val parameters = iTestResult.getParameters();
         if( parameters.length > 0 ) {
             pStr = Stream.of( parameters )
@@ -65,8 +87,8 @@ public class TestListener implements ITestListener {
         val message = t != null ? t.getMessage() : "";
         val details = t != null ? Throwables.getStackTraceAsString( t ) : "";
         System.out.println( "##teamcity[testFailed type='comparisonFailure' name='" + Teamcity.escape( method ) + "' message='" + Teamcity.escape( message ) + "' details='" + Teamcity.escape( details ) + "']" );
-        val time = iTestResult.getEndMillis() - iTestResult.getStartMillis();
-        System.out.println( "##teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
+
+        finish( iTestResult );
     }
 
     @Override
@@ -77,9 +99,7 @@ public class TestListener implements ITestListener {
 
     @Override
     public void onTestFailedButWithinSuccessPercentage( ITestResult iTestResult ) {
-        String method = getMethodName( iTestResult );
-        val time = iTestResult.getEndMillis() - iTestResult.getStartMillis();
-        System.out.println( "##teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
+        finish( iTestResult );
     }
 
     @Override
@@ -92,7 +112,7 @@ public class TestListener implements ITestListener {
         onTestClass( context, "testSuiteFinished" );
     }
 
-    private void onTestClass( ITestContext context, String method ) {
+    private static void onTestClass( ITestContext context, String method ) {
         String name = context.getName();
         val methods = context.getAllTestMethods();
         if( methods.length > 0 ) {
