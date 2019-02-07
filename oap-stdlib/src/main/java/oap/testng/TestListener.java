@@ -74,7 +74,7 @@ public class TestListener implements ITestListener {
                 .map( Object::toString )
                 .collect( Collectors.joining( ",", "(", ")" ) );
         } else {
-            pStr = "." + iTestResult.getTestName();
+            pStr = "." + iTestResult.getMethod().getMethodName();
         }
 
         return getClassName( iTestResult ) + pStr;
