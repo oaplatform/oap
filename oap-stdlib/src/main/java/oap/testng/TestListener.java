@@ -39,7 +39,7 @@ import org.testng.ITestResult;
 import java.util.stream.Collectors;
 
 public class TestListener implements ITestListener, ISuiteListener, IClassListener {
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
 
     private static String getClassName( ITestResult result ) {
         String className = null;
