@@ -41,7 +41,7 @@ public class TestListener implements ITestListener, IInvokedMethodListener {
             pStr = Stream.of( parameters )
                 .filter( p -> p == null || !CaseContext.class.equals( p.getClass() ) )
                 .map( Object::toString )
-                .collect( Collectors.joining( ",", "[", "]" ) );
+                .collect( Collectors.joining( ",", "(", ")" ) );
             if( parameters[0] != null && CaseContext.class.equals( parameters[0].getClass() ) ) {
                 className = parameters[0].toString();
             }
