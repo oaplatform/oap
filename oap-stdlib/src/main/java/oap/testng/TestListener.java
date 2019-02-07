@@ -10,15 +10,13 @@ import com.google.common.base.Throwables;
 import lombok.val;
 import oap.testng.casesuite.CaseContext;
 import oap.util.Stream;
-import org.testng.IInvokedMethod;
-import org.testng.IInvokedMethodListener;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
 import java.util.stream.Collectors;
 
-public class TestListener implements ITestListener, IInvokedMethodListener {
+public class TestListener implements ITestListener {
     @Override
     public void onTestStart( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
@@ -33,23 +31,31 @@ public class TestListener implements ITestListener, IInvokedMethodListener {
         System.out.println( "##teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
     }
 
+    private String getClassName( ITestResult result ) {
+        String className = null;
+        val parameters = result.getParameters();
+        if( parameters.length > 0 ) {
+            if( parameters[0] != null && CaseContext.class.equals( parameters[0].getClass() ) ) {
+                className = parameters[0].toString();
+            }
+        }
+
+        return className != null ? className : result.getMethod().getRealClass().getSimpleName();
+    }
+
     public String getMethodName( ITestResult iTestResult ) {
         String pStr = "";
-        String className = null;
         val parameters = iTestResult.getParameters();
         if( parameters.length > 0 ) {
             pStr = Stream.of( parameters )
                 .filter( p -> p == null || !CaseContext.class.equals( p.getClass() ) )
                 .map( Object::toString )
                 .collect( Collectors.joining( ",", "(", ")" ) );
-            if( parameters[0] != null && CaseContext.class.equals( parameters[0].getClass() ) ) {
-                className = parameters[0].toString();
-            }
+        } else {
+            pStr = "." + iTestResult.getTestName();
         }
 
-        return className != null
-            ? className + pStr
-            : iTestResult.getMethod().getRealClass().getSimpleName() + "." + iTestResult.getMethod().getMethodName() + pStr;
+        return getClassName( iTestResult ) + pStr;
     }
 
     @Override
@@ -77,31 +83,21 @@ public class TestListener implements ITestListener, IInvokedMethodListener {
     }
 
     @Override
-    public void onStart( ITestContext iTestContext ) {
-
+    public void onStart( ITestContext context ) {
+        onTestClass( context, "testSuiteStarted" );
     }
 
     @Override
-    public void onFinish( ITestContext iTestContext ) {
-
+    public void onFinish( ITestContext context ) {
+        onTestClass( context, "testSuiteFinished" );
     }
 
-    @Override
-    public void beforeInvocation( IInvokedMethod method, ITestResult testResult ) {
-    }
-
-    @Override
-    public void afterInvocation( IInvokedMethod invokeMethod, ITestResult testResult ) {
-        if( !invokeMethod.isConfigurationMethod() ) return;
-
-        val methodName = testResult.getMethod().getRealClass().getSimpleName() + "." + testResult.getMethod().getMethodName();
-        val t = testResult.getThrowable();
-        if( t != null ) {
-            val message = t.getMessage();
-            val details = Throwables.getStackTraceAsString( t );
-
-            System.out.println( "##teamcity[testMetadata name='" + Teamcity.escape( methodName ) + "' name='message' value='" + Teamcity.escape( message ) + "']" );
-            System.out.println( "##teamcity[testMetadata name='" + Teamcity.escape( methodName ) + "' name='details' value='" + Teamcity.escape( details ) + "']" );
+    private void onTestClass( ITestContext context, String method ) {
+        String name = context.getName();
+        val methods = context.getAllTestMethods();
+        if( methods.length > 0 ) {
+            name = methods[0].getTestClass().getName();
         }
+        System.out.println( "##teamcity[" + method + " name='" + Teamcity.escape( name ) + "']" );
     }
 }
