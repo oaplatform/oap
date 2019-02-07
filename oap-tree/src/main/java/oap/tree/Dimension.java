@@ -24,6 +24,7 @@
 
 package oap.tree;
 
+import com.google.common.base.Preconditions;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import oap.util.Stream;
@@ -61,6 +62,8 @@ public abstract class Dimension {
     }
 
     public static <T extends Enum> Dimension ENUM( String name, Class<T> clazz, OperationType operationType, T nullValue ) {
+        Preconditions.checkNotNull( nullValue );
+
         return ENUM( name, clazz, operationType, PRIORITY_DEFAULT, nullValue );
     }
 
