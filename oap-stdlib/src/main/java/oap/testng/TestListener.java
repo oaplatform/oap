@@ -37,23 +37,7 @@ import org.testng.ITestResult;
 import java.util.stream.Collectors;
 
 public class TestListener implements ITestListener, ISuiteListener {
-    @Override
-    public void onTestStart( ITestResult iTestResult ) {
-        String method = getMethodName( iTestResult );
-
-        System.out.println( "##teamcity[testStarted name='" + Teamcity.escape( method ) + "' captureStandardOutput='true']" );
-    }
-
-    @Override
-    public void onTestSuccess( ITestResult iTestResult ) {
-        finish( iTestResult );
-    }
-
-    public void finish( ITestResult iTestResult ) {
-        String method = getMethodName( iTestResult );
-        val time = iTestResult.getEndMillis() - iTestResult.getStartMillis();
-        System.out.println( "##teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
-    }
+    public static final boolean DEBUG = false;
 
     private static String getClassName( ITestResult result ) {
         String className = null;
@@ -65,6 +49,48 @@ public class TestListener implements ITestListener, ISuiteListener {
         }
 
         return className != null ? className : result.getMethod().getRealClass().getSimpleName();
+    }
+
+    private static void onTestClass( ITestContext context, String method ) {
+        String name = context.getName();
+        val methods = context.getAllTestMethods();
+        if( methods.length > 0 ) {
+            name = methods[0].getTestClass().getName();
+        }
+        System.out.println( "##teamcity[" + method + " name='" + Teamcity.escape( name ) + "']" );
+
+        if( DEBUG ) {
+            System.out.println();
+            System.out.println( "DEBUG::teamcity[" + method + " name='" + Teamcity.escape( name ) + "']" );
+        }
+    }
+
+    @Override
+    public void onTestStart( ITestResult iTestResult ) {
+        String method = getMethodName( iTestResult );
+
+        System.out.println( "##teamcity[testStarted name='" + Teamcity.escape( method ) + "' captureStandardOutput='true']" );
+
+        if( DEBUG ) {
+            System.out.println();
+            System.out.println( "DEBUG::teamcity[testStarted name='" + Teamcity.escape( method ) + "' captureStandardOutput='true']" );
+        }
+    }
+
+    @Override
+    public void onTestSuccess( ITestResult iTestResult ) {
+        finish( iTestResult );
+    }
+
+    public void finish( ITestResult iTestResult ) {
+        String method = getMethodName( iTestResult );
+        val time = iTestResult.getEndMillis() - iTestResult.getStartMillis();
+        System.out.println( "##teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
+
+        if( DEBUG ) {
+            System.out.println();
+            System.out.println( "DEBUG::teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
+        }
     }
 
     public String getMethodName( ITestResult iTestResult ) {
@@ -90,6 +116,11 @@ public class TestListener implements ITestListener, ISuiteListener {
         val details = t != null ? Throwables.getStackTraceAsString( t ) : "";
         System.out.println( "##teamcity[testFailed type='comparisonFailure' name='" + Teamcity.escape( method ) + "' message='" + Teamcity.escape( message ) + "' details='" + Teamcity.escape( details ) + "']" );
 
+        if( DEBUG ) {
+            System.out.println();
+            System.out.println( "DEBUG::teamcity[testFailed type='comparisonFailure' name='" + Teamcity.escape( method ) + "' message='" + Teamcity.escape( message ) + "' details='" + Teamcity.escape( details ) + "']" );
+        }
+
         finish( iTestResult );
     }
 
@@ -97,6 +128,11 @@ public class TestListener implements ITestListener, ISuiteListener {
     public void onTestSkipped( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
         System.out.println( "##teamcity[testIgnored name='" + Teamcity.escape( method ) + "' message='skipped']" );
+
+        if( DEBUG ) {
+            System.out.println();
+            System.out.println( "DEBUG::teamcity[testIgnored name='" + Teamcity.escape( method ) + "' message='skipped']" );
+        }
     }
 
     @Override
@@ -114,22 +150,23 @@ public class TestListener implements ITestListener, ISuiteListener {
         onTestClass( context, "testSuiteFinished" );
     }
 
-    private static void onTestClass( ITestContext context, String method ) {
-        String name = context.getName();
-        val methods = context.getAllTestMethods();
-        if( methods.length > 0 ) {
-            name = methods[0].getTestClass().getName();
-        }
-        System.out.println( "##teamcity[" + method + " name='" + Teamcity.escape( name ) + "']" );
-    }
-
     @Override
     public void onStart( ISuite suite ) {
         System.out.println( "##teamcity[testSuiteStarted name='" + Teamcity.escape( suite.getName() ) + "']" );
+
+        if( DEBUG ) {
+            System.out.println();
+            System.out.println( "DEBUG::teamcity[testSuiteStarted name='" + Teamcity.escape( suite.getName() ) + "']" );
+        }
     }
 
     @Override
     public void onFinish( ISuite suite ) {
         System.out.println( "##teamcity[testSuiteFinished name='" + Teamcity.escape( suite.getName() ) + "']" );
+
+        if( DEBUG ) {
+            System.out.println();
+            System.out.println( "DEBUG::teamcity[testSuiteFinished name='" + Teamcity.escape( suite.getName() ) + "']" );
+        }
     }
 }
