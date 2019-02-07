@@ -39,7 +39,7 @@ import org.testng.ITestResult;
 import java.util.stream.Collectors;
 
 public class TestListener implements ITestListener, ISuiteListener, IClassListener {
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     private static String getClassName( ITestResult result ) {
         String className = null;
@@ -138,22 +138,22 @@ public class TestListener implements ITestListener, ISuiteListener, IClassListen
 
     @Override
     public void onStart( ISuite suite ) {
-        System.out.println( "##teamcity[testSuiteStarted name='" + Teamcity.escape( suite.getName() ) + "']" );
-
-        if( DEBUG ) {
-            System.out.println();
-            System.out.println( "DEBUG::teamcity[testSuiteStarted name='" + Teamcity.escape( suite.getName() ) + "']" );
-        }
+//        System.out.println( "##teamcity[testSuiteStarted name='" + Teamcity.escape( suite.getName() ) + "']" );
+//
+//        if( DEBUG ) {
+//            System.out.println();
+//            System.out.println( "DEBUG::teamcity[testSuiteStarted name='" + Teamcity.escape( suite.getName() ) + "']" );
+//        }
     }
 
     @Override
     public void onFinish( ISuite suite ) {
-        System.out.println( "##teamcity[testSuiteFinished name='" + Teamcity.escape( suite.getName() ) + "']" );
-
-        if( DEBUG ) {
-            System.out.println();
-            System.out.println( "DEBUG::teamcity[testSuiteFinished name='" + Teamcity.escape( suite.getName() ) + "']" );
-        }
+//        System.out.println( "##teamcity[testSuiteFinished name='" + Teamcity.escape( suite.getName() ) + "']" );
+//
+//        if( DEBUG ) {
+//            System.out.println();
+//            System.out.println( "DEBUG::teamcity[testSuiteFinished name='" + Teamcity.escape( suite.getName() ) + "']" );
+//        }
     }
 
     @Override
