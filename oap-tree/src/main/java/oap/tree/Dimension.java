@@ -89,9 +89,9 @@ public abstract class Dimension {
 
             @Override
             protected long _getOrDefault( Object value ) {
-                assert value instanceof Enum : "[" + name + "] value (" + value.getClass() + " ) must be Enum";
+                assert value == null || value instanceof Enum : "[" + name + "] value (" + value.getClass() + " ) must be Enum";
 
-                return ordinalToSorted[( ( Enum<?> ) value ).ordinal()];
+                return ordinalToSorted[( ( Enum<?> ) ( value != null ? value : nullValue ) ).ordinal()];
             }
         };
     }
