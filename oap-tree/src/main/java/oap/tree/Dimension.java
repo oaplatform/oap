@@ -62,8 +62,6 @@ public abstract class Dimension {
     }
 
     public static <T extends Enum> Dimension ENUM( String name, Class<T> clazz, OperationType operationType, T nullValue ) {
-        Preconditions.checkNotNull( nullValue );
-
         return ENUM( name, clazz, operationType, PRIORITY_DEFAULT, nullValue );
     }
 
@@ -92,11 +90,9 @@ public abstract class Dimension {
 
             @Override
             protected long _getOrDefault( Object value ) {
-                Object newValue = value != null ? value : nullValue;
-
                 Preconditions.checkArgument( value instanceof Enum, "[" + name + "] value (" + value + " ) must be Enum" );
 
-                return ordinalToSorted[( ( Enum<?> ) newValue ).ordinal()];
+                return ordinalToSorted[( ( Enum<?> ) value ).ordinal()];
             }
         };
     }
