@@ -28,16 +28,18 @@ import com.google.common.base.Throwables;
 import lombok.val;
 import oap.testng.casesuite.CaseContext;
 import oap.util.Stream;
+import org.testng.IClassListener;
 import org.testng.ISuite;
 import org.testng.ISuiteListener;
+import org.testng.ITestClass;
 import org.testng.ITestContext;
 import org.testng.ITestListener;
 import org.testng.ITestResult;
 
 import java.util.stream.Collectors;
 
-public class TestListener implements ITestListener, ISuiteListener {
-    public static final boolean DEBUG = true;
+public class TestListener implements ITestListener, ISuiteListener, IClassListener {
+    private static final boolean DEBUG = false;
 
     private static String getClassName( ITestResult result ) {
         String className = null;
@@ -49,20 +51,6 @@ public class TestListener implements ITestListener, ISuiteListener {
         }
 
         return className != null ? className : result.getMethod().getRealClass().getSimpleName();
-    }
-
-    private static void onTestClass( ITestContext context, String method ) {
-        String name = context.getName();
-        val methods = context.getAllTestMethods();
-        if( methods.length > 0 ) {
-            name = methods[0].getTestClass().getName();
-        }
-        System.out.println( "##teamcity[" + method + " name='" + Teamcity.escape( name ) + "']" );
-
-        if( DEBUG ) {
-            System.out.println();
-            System.out.println( "DEBUG::teamcity[" + method + " name='" + Teamcity.escape( name ) + "']" );
-        }
     }
 
     @Override
@@ -142,12 +130,10 @@ public class TestListener implements ITestListener, ISuiteListener {
 
     @Override
     public void onStart( ITestContext context ) {
-        onTestClass( context, "testSuiteStarted" );
     }
 
     @Override
     public void onFinish( ITestContext context ) {
-        onTestClass( context, "testSuiteFinished" );
     }
 
     @Override
@@ -167,6 +153,26 @@ public class TestListener implements ITestListener, ISuiteListener {
         if( DEBUG ) {
             System.out.println();
             System.out.println( "DEBUG::teamcity[testSuiteFinished name='" + Teamcity.escape( suite.getName() ) + "']" );
+        }
+    }
+
+    @Override
+    public void onBeforeClass( ITestClass testClass ) {
+        System.out.println( "##teamcity[testSuiteStarted name='" + Teamcity.escape( testClass.getName() ) + "']" );
+
+        if( DEBUG ) {
+            System.out.println();
+            System.out.println( "DEBUG::teamcity[testSuiteStarted name='" + Teamcity.escape( testClass.getName() ) + "']" );
+        }
+    }
+
+    @Override
+    public void onAfterClass( ITestClass testClass ) {
+        System.out.println( "##teamcity[testSuiteFinished name='" + Teamcity.escape( testClass.getName() ) + "']" );
+
+        if( DEBUG ) {
+            System.out.println();
+            System.out.println( "DEBUG::teamcity[testSuiteFinished name='" + Teamcity.escape( testClass.getName() ) + "']" );
         }
     }
 }
