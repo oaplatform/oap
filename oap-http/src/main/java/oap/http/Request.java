@@ -191,7 +191,7 @@ public class Request {
     }
 
     public enum HttpMethod {
-        GET, POST, PUT, DELETE, HEAD, OPTIONS
+        GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH
     }
 
 }
