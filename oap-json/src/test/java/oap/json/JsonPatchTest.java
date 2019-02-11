@@ -26,6 +26,8 @@ package oap.json;
 
 import org.testng.annotations.Test;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -40,7 +42,8 @@ public class JsonPatchTest {
             "}";
 
         TestObj testObj = new TestObj( "i1", 0L, "descr" );
-        testObj = JsonPatch.patchObject( testObj, test );
+        Map<String, Object> immutableMap = JsonPatch.patchObject( testObj, test );
+        testObj = Binder.json.unmarshal( TestObj.class, immutableMap );
         assertThat( testObj.count ).isEqualTo( 10L );
         assertThat( testObj.id ).isEqualTo( "i1" );
         assertThat( testObj.description ).isEqualTo( "descr" );
