@@ -24,18 +24,20 @@
 
 package oap.json;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
 import java.io.Serializable;
 
-@AllArgsConstructor
-@NoArgsConstructor
-@Getter
-public class TestObj implements Serializable {
-    private String id;
-    private Long count;
-    private String description;
 
+public class TestObj implements Serializable {
+    public String id;
+    public Long count;
+    public String description;
+
+    public TestObj( String id, Long count, String description ) {
+        this.id = id;
+        this.count = count;
+        this.description = description;
+    }
+
+    public TestObj() {
+    }
 }

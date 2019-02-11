@@ -403,6 +403,16 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
+    public <T> T unmarshal( TypeReference<T> ref, Object fromValue ) {
+        try {
+            return ( T ) mapper.convertValue( fromValue, ref );
+        } catch( Exception e ) {
+            log.trace( String.valueOf( fromValue ) );
+            throw new JsonException( e.getMessage(), e );
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( Class<?> clazz, List<Object> map ) {
         try {
             return ( T ) mapper.convertValue( map, clazz );

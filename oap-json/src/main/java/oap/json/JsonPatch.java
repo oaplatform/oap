@@ -24,40 +24,23 @@
 
 package oap.json;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
+import oap.reflect.TypeRef;
 import oap.util.Stream;
 
-import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.Map;
 
 @Slf4j
 public class JsonPatch {
-    public <T> T patchObject( Object dest, String draftJson ) {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
-        Gson gson = new Gson();
+    public static <T> T patchObject( Object dest, String draftJson ) {
+        Map<String, Object> destSchema = Binder.json.unmarshal( new TypeReference<Map<String, Object>>() {}, dest );
+        Map<String, Object> sourceSchema = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, draftJson );
 
-        Map<String, Object> destSchema = mapper.convertValue( dest, new TypeReference<Map<String, Object>>() {} );
-        Map<String, Object> sourceSchema;
-        try {
-            sourceSchema = mapper.readValue( draftJson, new TypeReference<Map<String, Object>>() {} );
+        Stream.of( destSchema.entrySet() ).filter( e -> !e.getKey().equals( "id" ) )
+            .filter( e -> sourceSchema.containsKey( e.getKey() ) )
+            .forEach( e -> e.setValue( sourceSchema.get( e.getKey() ) ) );
 
-            Map<String, Object> finalSourceSchema = sourceSchema;
-            Stream.of( destSchema.entrySet() ).filter( e -> !e.getKey().equals( "id" ) )
-                .filter( e -> finalSourceSchema.containsKey( e.getKey() ) )
-                .forEach( e -> e.setValue( finalSourceSchema.get( e.getKey() ) ) );
-        } catch( IOException e ) {
-            log.error( "Something went wrong ", e );
-            return ( T ) dest;
-        }
-
-        String json = gson.toJson( destSchema );
-        return gson.fromJson( json, ( Type ) dest.getClass() );
+        return Binder.json.unmarshal( dest.getClass(), destSchema );
     }
 }

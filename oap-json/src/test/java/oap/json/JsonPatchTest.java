@@ -30,7 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 public class JsonPatchTest {
-    JsonPatch patchJ = new JsonPatch();
 
     @Test
     public void patchObjectSuccess() throws Exception {
@@ -41,10 +40,10 @@ public class JsonPatchTest {
             "}";
 
         TestObj testObj = new TestObj( "i1", 0L, "descr" );
-        testObj = patchJ.patchObject( testObj, test );
-        assertThat( testObj.getCount() ).isEqualTo( 10L );
-        assertThat( testObj.getId() ).isEqualTo( "i1" );
-        assertThat( testObj.getDescription() ).isEqualTo( "descr" );
+        testObj = JsonPatch.patchObject( testObj, test );
+        assertThat( testObj.count ).isEqualTo( 10L );
+        assertThat( testObj.id ).isEqualTo( "i1" );
+        assertThat( testObj.description ).isEqualTo( "descr" );
     }
 
     @Test
@@ -57,11 +56,11 @@ public class JsonPatchTest {
 
         TestObj testObj = new TestObj( "i1", 0L, "descr" );
 
-        patchJ.patchObject( testObj, test );
-
-        assertThat( testObj.getCount() ).isEqualTo( 0L );
-        assertThat( testObj.getId() ).isEqualTo( "i1" );
-        assertThat( testObj.getDescription() ).isEqualTo( "descr" );
-
+        try {
+            JsonPatch.patchObject( testObj, test );
+            fail( "Test fail" );
+        } catch( JsonException e ) {
+            assertThat( e ).hasMessageContaining( "json error: Unexpected character ('\"' (code 34)): was expecting comma to separate Object entries" );
+        }
     }
 }
