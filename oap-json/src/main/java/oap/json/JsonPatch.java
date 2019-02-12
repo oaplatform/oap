@@ -26,6 +26,7 @@ package oap.json;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
+import oap.util.Lists;
 
 import java.util.List;
 import java.util.Map;
@@ -40,18 +41,24 @@ public class JsonPatch {
 
     public static Map<String, Object> patch( Object o, Function<Map<String, Object>, Map<String, Object>> select, String patch ) {
         Map<String, Object> objectMap = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, o );
-        Map<String, Object> internal = select.apply( objectMap );
-        Map<String, Object> destSchema = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, patch );
-        internal.putAll( destSchema );
+        Map<String, Object> patchSchema = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, patch );
+        Map<String, Object> innerSchema = select.apply( objectMap );
+        innerSchema.putAll( patchSchema );
         return objectMap;
     }
 
-    public static Map<String, Object> patchAddNew( Object o, String key,  Function<Map<String, Object>, List<Map<String, Object>>> select, String patch  ) {
+    public static Map<String, Object> patch( Object o, String key, Function<Map<String, Object>, Map<String, Object>> select, String patch ) {
         Map<String, Object> objectMap = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, o );
-        List<Map<String, Object>> innerList = select.apply( objectMap );
-        Map<String, Object> destSchema = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, patch );
-        innerList.add( destSchema );
-        objectMap.put( key, innerList );
+        Map<String, Object> patchSchema = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, patch );
+        if( key != null ) {
+            Function<Map<String, Object>, List<Map<String, Object>>> listFunction = map -> ( List<Map<String, Object>> ) map.getOrDefault( key, Lists.empty() );
+            List<Map<String, Object>> innerList = listFunction.apply( objectMap );
+            innerList.add( patchSchema );
+            objectMap.put( key, innerList );
+        } else {
+            Map<String, Object> innerSchema = select.apply( objectMap );
+            innerSchema.putAll( patchSchema );
+        }
         return objectMap;
     }
 }
