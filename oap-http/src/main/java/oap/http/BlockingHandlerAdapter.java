@@ -66,7 +66,7 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
         final Request request = new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) );
 
         RequestCors cors = corsPolicy.getCors( request );
-        final Response response = new Response( httpResponse, cors );
+        final Response response = new Response( request, httpResponse, cors );
 
         if( Protocol.LOCAL.equals( this.protocol ) && !Inet.isLocalAddress( remoteAddress ) ) {
             response.respond( HTTP_FORBIDDEN );

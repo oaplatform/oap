@@ -90,7 +90,7 @@ public class NioHandlerAdapter implements HttpAsyncRequestHandler<HttpRequest> {
             response.setStatusCode( HTTP_FORBIDDEN );
         } else {
             Request request = new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) );
-            handler.handle( request, new Response( response, corsPolicy.getCors( request ) ) );
+            handler.handle( request, new Response( request, response, corsPolicy.getCors( request ) ) );
         }
 
         httpAsyncExchange.submitResponse();

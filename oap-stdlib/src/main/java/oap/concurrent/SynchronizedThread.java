@@ -26,6 +26,7 @@ package oap.concurrent;
 import java.util.concurrent.Semaphore;
 
 public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyListener {
+    public long stopTimeout = 60000;
     private Thread thread = new Thread( this );
     private Runnable child;
     private Semaphore semaphore = new Semaphore( 0 );
@@ -38,6 +39,11 @@ public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyLi
 
     public SynchronizedThread( Runnable child ) {
         this.child = child;
+    }
+
+    public SynchronizedThread( Runnable child, long stopTimeout ) {
+        this( child );
+        this.stopTimeout = stopTimeout;
     }
 
     public SynchronizedThread( String name, Runnable child ) {
@@ -70,7 +76,7 @@ public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyLi
         stopped = true;
         thread.interrupt();
         try {
-            thread.join( 60000 );
+            thread.join( stopTimeout );
         } catch( InterruptedException e ) {
             thread.stop();
         }

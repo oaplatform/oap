@@ -24,15 +24,21 @@
 package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.http.cors.RequestCors;
 import oap.util.Pair;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
 @Slf4j
 public class Response {
+    private final Request request;
     private org.apache.http.HttpResponse resp;
     private RequestCors cors;
 
-    public Response( org.apache.http.HttpResponse resp, RequestCors cors ) {
+    public Response( Request request, org.apache.http.HttpResponse resp, RequestCors cors ) {
+        this.request = request;
         this.resp = resp;
         this.cors = cors;
     }
@@ -41,6 +47,8 @@ public class Response {
         log.trace( "responding {} {}", response.code, response.reasonPhrase );
 
         cors.setHeaders( resp );
+
+        val isGzip = request.isGzipSupport();
 
         resp.setStatusCode( response.code );
 
@@ -53,6 +61,8 @@ public class Response {
                 resp.setHeader( header._1, header._2 );
             }
         }
+        if( isGzip )
+            resp.setHeader( "Content-encoding", "gzip" );
 
         if( !response.cookies.isEmpty() ) {
             for( Pair<String, String> cookie : response.cookies ) {
@@ -61,7 +71,17 @@ public class Response {
         }
 
         if( response.contentEntity != null ) {
-            resp.setEntity( response.contentEntity );
+            if( isGzip ) {
+                resp.setEntity( new HttpGzipOutputStreamEntity( out -> {
+                    try {
+                        response.contentEntity.writeTo( out );
+                    } catch( IOException e ) {
+                        throw new UncheckedIOException( e );
+                    }
+                }, null ) );
+            } else {
+                resp.setEntity( response.contentEntity );
+            }
         }
     }
 

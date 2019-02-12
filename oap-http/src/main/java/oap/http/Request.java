@@ -98,6 +98,19 @@ public class Request {
         return false;
     }
 
+    public boolean isGzipSupport() {
+        final List<String> headers = headers( "Accept-encoding" );
+        if( headers != null ) {
+            for( final String header : headers ) {
+                if( header.contains( "gzip" ) ) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     private Optional<InputStream> content( HttpRequest req ) {
         try {
             if( req instanceof HttpEntityEnclosingRequest ) {
