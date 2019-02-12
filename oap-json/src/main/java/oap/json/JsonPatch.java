@@ -26,8 +26,8 @@ package oap.json;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.reflect.TypeRef;
-import oap.util.Lists;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -46,10 +46,12 @@ public class JsonPatch {
         return objectMap;
     }
 
-    public static Map<String, Object> patchAddNew( Object o, String key, String patch ) {
+    public static Map<String, Object> patchAddNew( Object o, String key,  Function<Map<String, Object>, List<Map<String, Object>>> select, String patch  ) {
         Map<String, Object> objectMap = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, o );
+        List<Map<String, Object>> innerList = select.apply( objectMap );
         Map<String, Object> destSchema = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, patch );
-        objectMap.put( key, Lists.of( destSchema ) );
+        innerList.add( destSchema );
+        objectMap.put( key, innerList );
         return objectMap;
     }
 }

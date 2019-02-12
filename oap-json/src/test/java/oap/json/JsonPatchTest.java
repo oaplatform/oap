@@ -25,6 +25,7 @@
 package oap.json;
 
 import oap.util.Lists;
+import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -86,9 +87,24 @@ public class JsonPatchTest {
         TestObj obj = new TestObj( "1", 0L, "desc" );
 
         String patch = "{\"id\": \"i2\", \"description\":\"newdesc\", \"count\": 0 }";
-        String marshal = Binder.json.marshal( JsonPatch.patchAddNew( obj, "list", patch ) );
+
+        String marshal = Binder.json.marshal( JsonPatch.patchAddNew( obj, "list", o -> ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), patch ) );
         assertJson( marshal )
             .isStructurallyEqualTo( Binder.json.marshal( new TestObj( "1", 0L, "desc" )
+                .add( new TestObj( "i2", 0L, "newdesc" ) ) ) );
+    }
+
+    @Test
+    public void patchAddNewToExistList() {
+        TestObj obj = new TestObj( "1", 0L, "desc" )
+            .add( new TestObj( "i3", 0L, "desc2" ) );
+
+        String patch = "{\"id\": \"i2\", \"description\":\"newdesc\", \"count\": 0 }";
+
+        String marshal = Binder.json.marshal( JsonPatch.patchAddNew( obj, "list", o -> ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), patch ) );
+        assertJson( marshal )
+            .isStructurallyEqualTo( Binder.json.marshal( new TestObj( "1", 0L, "desc" )
+                .add( new TestObj( "i3", 0L, "desc2" ) )
                 .add( new TestObj( "i2", 0L, "newdesc" ) ) ) );
     }
 
