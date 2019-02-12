@@ -24,8 +24,10 @@
 
 package oap.json;
 
+import oap.util.Lists;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static oap.json.testng.JsonAsserts.assertJson;
@@ -36,14 +38,14 @@ public class JsonPatchTest {
 
     @Test
     public void patchObjectSuccess() throws Exception {
-        String test = "{\n" +
-            "\t\"id\": \"i1\",\n" +
-            "\t\"count\": 10,\n" +
-            "\t\"unknown\": 0.0\n" +
-            "}";
+        String test = "{\n"
+            + "\t\"id\": \"i1\",\n"
+            + "\t\"count\": 10,\n"
+            + "\t\"unknown\": 0.0\n"
+            + "}";
 
         TestObj testObj = new TestObj( "i1", 0L, "descr" );
-        Map<String, Object> immutableMap = JsonPatch.patchObject( testObj, test );
+        Map<String, Object> immutableMap = JsonPatch.patch( testObj, test );
         testObj = Binder.json.unmarshal( TestObj.class, immutableMap );
         assertThat( testObj.count ).isEqualTo( 10L );
         assertThat( testObj.id ).isEqualTo( "i1" );
@@ -52,16 +54,16 @@ public class JsonPatchTest {
 
     @Test
     public void patchObjectFailIncorrectJson() throws Exception {
-        String test = "{\n" +
-            "\t\"id\": \"i1\",\n" +
-            "\t\"count\": 10\n" +
-            "\t\"unknown\": 0.0\n" +
-            "}";
+        String test = "{\n"
+            + "\t\"id\": \"i1\",\n"
+            + "\t\"count\": 10\n"
+            + "\t\"unknown\": 0.0\n"
+            + "}";
 
         TestObj testObj = new TestObj( "i1", 0L, "descr" );
 
         try {
-            JsonPatch.patchObject( testObj, test );
+            JsonPatch.patch( testObj, test );
             fail( "Test fail" );
         } catch( JsonException e ) {
             assertThat( e ).hasMessageContaining( "json error: Unexpected character ('\"' (code 34)): was expecting comma to separate Object entries" );
@@ -73,8 +75,19 @@ public class JsonPatchTest {
         TestObj obj = new TestObj( "1", 0L, "desc" )
             .add( new TestObj( "i2", 0L, "i2" ) );
 
-        String patch = "{\"id\": \"i2\", \"desc\":\"newdesc\"}";
-        assertJson( Binder.json.marshal( JsonPatch.patch( obj, o -> ( Map<String, Object> ) o.get( "i2" ), patch ) ) )
+        String patch = "{\"id\": \"i2\", \"description\":\"newdesc\"}";
+        assertJson( Binder.json.marshal( JsonPatch.patch( obj, o -> Lists.find( ( List<Map<String, Object>> ) o.get( "list" ), p -> p.get( "id" ).equals( "i2" ) ).get(), patch ) ) )
+            .isStructurallyEqualTo( Binder.json.marshal( new TestObj( "1", 0L, "desc" )
+                .add( new TestObj( "i2", 0L, "newdesc" ) ) ) );
+    }
+
+    @Test
+    public void patchAddNew() {
+        TestObj obj = new TestObj( "1", 0L, "desc" );
+
+        String patch = "{\"id\": \"i2\", \"description\":\"newdesc\", \"count\": 0 }";
+        String marshal = Binder.json.marshal( JsonPatch.patchAddNew( obj, "list", patch ) );
+        assertJson( marshal )
             .isStructurallyEqualTo( Binder.json.marshal( new TestObj( "1", 0L, "desc" )
                 .add( new TestObj( "i2", 0L, "newdesc" ) ) ) );
     }

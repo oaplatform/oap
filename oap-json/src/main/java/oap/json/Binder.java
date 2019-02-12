@@ -403,9 +403,9 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( TypeReference<T> ref, Object fromValue ) {
+    public <T> T unmarshal( TypeRef<T> ref, Object fromValue ) {
         try {
-            return ( T ) mapper.convertValue( fromValue, ref );
+            return ( T ) mapper.convertValue( fromValue, toTypeReference( ref ) );
         } catch( Exception e ) {
             log.trace( String.valueOf( fromValue ) );
             throw new JsonException( e.getMessage(), e );
