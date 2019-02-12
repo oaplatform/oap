@@ -28,6 +28,7 @@ import org.testng.annotations.Test;
 
 import java.util.Map;
 
+import static oap.json.testng.JsonAsserts.assertJson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -66,4 +67,17 @@ public class JsonPatchTest {
             assertThat( e ).hasMessageContaining( "json error: Unexpected character ('\"' (code 34)): was expecting comma to separate Object entries" );
         }
     }
+
+    @Test
+    public void patch() {
+        TestObj obj = new TestObj( "1", 0L, "desc" )
+            .add( new TestObj( "i2", 0L, "i2" ) );
+
+        String patch = "{\"id\": \"i2\", \"desc\":\"newdesc\"}";
+        assertJson( Binder.json.marshal( JsonPatch.patch( obj, o -> ( Map<String, Object> ) o.get( "i2" ), patch ) ) )
+            .isStructurallyEqualTo( Binder.json.marshal( new TestObj( "1", 0L, "desc" )
+                .add( new TestObj( "i2", 0L, "newdesc" ) ) ) );
+    }
+
+
 }

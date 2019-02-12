@@ -34,6 +34,7 @@ import oap.util.Stream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -78,5 +79,9 @@ public class JsonPatch {
                     }
                 }
             ) );
+    }
+
+    public static Map<String, Object> patch( Object o, Function<Map<String, Object>, Map<String, Object>> select, String patch ) {
+        return null;
     }
 }

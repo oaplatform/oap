@@ -25,12 +25,15 @@
 package oap.json;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class TestObj implements Serializable {
     public String id;
-    public Long count;
+    public long count;
     public String description;
+    public List<TestObj> list = new ArrayList<>();
 
     public TestObj( String id, Long count, String description ) {
         this.id = id;
@@ -39,5 +42,10 @@ public class TestObj implements Serializable {
     }
 
     public TestObj() {
+    }
+
+    public TestObj add( TestObj o ) {
+        this.list.add( o );
+        return this;
     }
 }
