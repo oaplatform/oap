@@ -41,16 +41,13 @@ public class JsonPatch {
 
     public static Map<String, Object> patch( Object o, String key, Function<Map<String, Object>, Map<String, Object>> select, String patch ) {
         Map<String, Object> objectMap = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, o );
-        Map<String, Object> patchSchema = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, patch );
-        Map<String, Object> innerSchema = select.apply( objectMap );
-        if( innerSchema.isEmpty() ) {
-            Function<Map<String, Object>, List<Map<String, Object>>> listFunction = map -> ( List<Map<String, Object>> ) map.getOrDefault( key, Lists.empty() );
-            List<Map<String, Object>> innerList = listFunction.apply( objectMap );
-            innerList.add( patchSchema );
+        Map<String, Object> patchMap = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, patch );
+        Map<String, Object> innerMap = select.apply( objectMap );
+        if( innerMap.isEmpty() ) {
+            List<Map<String, Object>> innerList = ( List<Map<String, Object>> ) objectMap.getOrDefault( key, Lists.empty() );
+            innerList.add( patchMap );
             objectMap.put( key, innerList );
-        } else {
-            innerSchema.putAll( patchSchema );
-        }
+        } else innerMap.putAll( patchMap );
         return objectMap;
     }
 }
