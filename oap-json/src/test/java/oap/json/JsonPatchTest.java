@@ -30,6 +30,7 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static oap.json.testng.JsonAsserts.assertJson;
 import static oap.json.testng.JsonAsserts.unmarshalTestResource;
@@ -83,7 +84,7 @@ public class JsonPatchTest {
 
         String patch = "{\"id\": \"i3\", \"description\":\"newdesc\", \"count\": 1 }";
 
-        Map<String, Object> patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> p.get( "id" ).equals( "i3" ) ).orElseGet( Maps::empty ), patch );
+        Map<String, Object> patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.get( "list" ), p -> Objects.equals( p.get( "id" ), "i3" ) ).orElseGet( Maps::empty ), patch );
         assertJson( patched )
             .isStructurallyEqualToResource( getClass(), "added.json" );
     }
@@ -94,7 +95,7 @@ public class JsonPatchTest {
 
         String patch = "{\"id\": \"i2\", \"description\":\"newdesc\", \"count\": 0 }";
 
-        Map<String, Object> patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> p.get( "id" ).equals( "i2" ) ).orElseGet( Maps::empty ), patch  );
+        Map<String, Object> patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> Objects.equals( p.get( "id" ), "i2" ) ).orElseGet( Maps::empty ), patch );
         assertJson( patched )
             .isStructurallyEqualToResource( getClass(), "added_no_list.json" );
     }
