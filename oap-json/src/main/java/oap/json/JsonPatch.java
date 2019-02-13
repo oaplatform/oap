@@ -36,27 +36,19 @@ import java.util.function.Function;
 public class JsonPatch {
 
     public static Map<String, Object> patch( Object o, String patch ) {
-        return patch( o, map -> map, patch );
-    }
-
-    public static Map<String, Object> patch( Object o, Function<Map<String, Object>, Map<String, Object>> select, String patch ) {
-        Map<String, Object> objectMap = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, o );
-        Map<String, Object> patchSchema = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, patch );
-        Map<String, Object> innerSchema = select.apply( objectMap );
-        innerSchema.putAll( patchSchema );
-        return objectMap;
+        return patch( o, null, map -> map, patch );
     }
 
     public static Map<String, Object> patch( Object o, String key, Function<Map<String, Object>, Map<String, Object>> select, String patch ) {
         Map<String, Object> objectMap = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, o );
         Map<String, Object> patchSchema = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, patch );
-        if( key != null ) {
+        Map<String, Object> innerSchema = select.apply( objectMap );
+        if( innerSchema.isEmpty() ) {
             Function<Map<String, Object>, List<Map<String, Object>>> listFunction = map -> ( List<Map<String, Object>> ) map.getOrDefault( key, Lists.empty() );
             List<Map<String, Object>> innerList = listFunction.apply( objectMap );
             innerList.add( patchSchema );
             objectMap.put( key, innerList );
         } else {
-            Map<String, Object> innerSchema = select.apply( objectMap );
             innerSchema.putAll( patchSchema );
         }
         return objectMap;

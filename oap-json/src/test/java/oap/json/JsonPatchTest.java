@@ -77,7 +77,7 @@ public class JsonPatchTest {
             .add( new TestObj( "i2", 0L, "i2" ) );
 
         String patch = "{\"id\": \"i2\", \"description\":\"newdesc\"}";
-        assertJson( Binder.json.marshal( JsonPatch.patch( obj, o -> Lists.find( ( List<Map<String, Object>> ) o.get( "list" ), p -> p.get( "id" ).equals( "i2" ) ).get(), patch ) ) )
+        assertJson( Binder.json.marshal( JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> p.get( "id" ).equals( "i2" ) ).orElseGet( Maps::empty ), patch ) ) )
             .isStructurallyEqualTo( Binder.json.marshal( new TestObj( "1", 0L, "desc" )
                 .add( new TestObj( "i2", 0L, "newdesc" ) ) ) );
     }
@@ -88,7 +88,7 @@ public class JsonPatchTest {
 
         String patch = "{\"id\": \"i2\", \"description\":\"newdesc\", \"count\": 0 }";
 
-        String marshal = Binder.json.marshal( JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.get( "list" ), p -> p.get( "id" ).equals( "i2" ) ).get(), patch ) );
+        String marshal = Binder.json.marshal( JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> p.get( "id" ).equals( "i2" ) ).orElseGet( Maps::empty ), patch ) );
         assertJson( marshal )
             .isStructurallyEqualTo( Binder.json.marshal( new TestObj( "1", 0L, "desc" )
                 .add( new TestObj( "i2", 0L, "newdesc" ) ) ) );
@@ -101,7 +101,7 @@ public class JsonPatchTest {
 
         String patch = "{\"id\": \"i2\", \"description\":\"newdesc\", \"count\": 0 }";
 
-        String marshal = Binder.json.marshal( JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.get( "list" ), p -> p.get( "id" ).equals( "i2" ) ).get(), patch ) );
+        String marshal = Binder.json.marshal( JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> p.get( "id" ).equals( "i2" ) ).orElseGet( Maps::empty ), patch ) );
         assertJson( marshal )
             .isStructurallyEqualTo( Binder.json.marshal( new TestObj( "1", 0L, "desc" )
                 .add( new TestObj( "i3", 0L, "desc2" ) )
