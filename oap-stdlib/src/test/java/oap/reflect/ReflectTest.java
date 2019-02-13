@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ReflectTest {
 
     @Test
-    public void declaredMethods() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public void declaredMethods() {
         assertThat( Reflection.declared( B.class, Class::getDeclaredMethods ) )
             .containsAll( concat(
                 Lists.of( Object.class.getDeclaredMethods() ),
@@ -46,7 +46,7 @@ public class ReflectTest {
     }
 
     @Test
-    public void declaredFields() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public void declaredFields() {
         assertThat( Reflection.declared( B.class, Class::getDeclaredFields ) )
             .containsAll( concat(
                 Lists.of( Object.class.getDeclaredFields() ),

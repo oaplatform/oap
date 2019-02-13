@@ -135,12 +135,16 @@ public class Reflect {
             else map.put( key, value );
         } else if( field.startsWith( "[" ) && next instanceof List<?> ) {
             List<Object> list = ( List<Object> ) next;
-            int key = Integer.parseInt( field.substring( 1, field.length() - 1 ) );
-            if( value == null && removeNullValues ) {
-                if( key < list.size() ) list.remove( key );
-            } else {
-                while( list.size() <= key ) list.add( null );
-                list.set( key, value );
+            String index = field.substring( 1, field.length() - 1 ).trim();
+            if( "*".equals( index ) ) list.add( value );
+            else {
+                int key = Integer.parseInt( index );
+                if( value == null && removeNullValues ) {
+                    if( key < list.size() ) list.remove( key );
+                } else {
+                    while( list.size() <= key ) list.add( null );
+                    list.set( key, value );
+                }
             }
         } else {
             reflect( next.getClass() )

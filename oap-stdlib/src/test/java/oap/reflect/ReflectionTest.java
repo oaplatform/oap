@@ -172,7 +172,8 @@ public class ReflectionTest {
         Reflect.set( deepBean, "bean.str", "new string" );
         Reflect.set( deepBean, "bean.x.y.z", "anything" );
         Reflect.set( deepBean, "list.[0]", new Bean( 10, "aaa" ) );
-        Reflect.set( deepBean, "list.[1]", new Bean( 10, "aaa" ) );
+        Reflect.set( deepBean, "list.[1]", new Bean( 11, "bbb" ) );
+        Reflect.set( deepBean, "list.[*]", new Bean( 12, "ccc" ) );
         Reflect.set( deepBean, "map.[x]", Maps.empty() );
         Reflect.set( deepBean, "map.[x].[1]", 1 );
         Reflect.set( deepBean, "bean.optional", "optional present" );
@@ -183,7 +184,7 @@ public class ReflectionTest {
             .isEqualTo( new DeepBean(
                 new Bean( 42, "new string", Optional.of( "optional present" ) ),
                 Optional.empty(),
-                Lists.of( new Bean( 10, "aaa" ), new Bean( 10, "aaa" ) ),
+                Lists.of( new Bean( 10, "aaa" ), new Bean( 11, "bbb" ) , new Bean( 12, "ccc" ) ),
                 Maps.of( __( "x", Maps.of( __( "1", 1 ) ) ) )
             ) );
     }
