@@ -81,6 +81,11 @@ public class JsonAsserts {
         return new JsonAssertion( json );
     }
 
+    public static JsonAssertion assertJson( Map<String, Object> json ) {
+        return new JsonAssertion( Binder.json.marshal( json ) );
+    }
+
+    @SuppressWarnings( "UnusedReturnValue" )
     public static class JsonAssertion extends AbstractAssert<JsonAssertion, String> {
 
         public JsonAssertion( String json ) {
@@ -99,6 +104,14 @@ public class JsonAsserts {
             isNotNull();
             assertThat( Binder.json.<Map<String, Object>>unmarshal( Map.class, actual ) )
                 .isEqualTo( Binder.json.<Map<String, Object>>unmarshal( Map.class, expected ) );
+            return this;
+
+        }
+
+        public JsonAssertion isStructurallyEqualToResource( Class<?> contextClass, String resource ) {
+            isNotNull();
+            assertThat( Binder.json.<Map<String, Object>>unmarshal( Map.class, actual ) )
+                .isEqualTo( unmarshalTestResource( contextClass, Map.class, resource ) );
             return this;
 
         }
