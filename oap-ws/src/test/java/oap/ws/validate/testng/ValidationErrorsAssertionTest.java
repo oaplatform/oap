@@ -38,33 +38,33 @@ public class ValidationErrorsAssertionTest {
     @Test
     public void validatedCall() {
         assertThat(
-            validating( I.class )
+            validating( new CWS() )
                 .isError( 404, "not found" )
-                .forInstance( new C() )
+                .build()
                 .m( "a" ) )
             .isNull();
         assertThat(
-            validating( I.class )
+            validating( new CWS() )
                 .isFailed()
                 .hasCode( 404 )
                 .containsErrors( "not found" )
-                .forInstance( new C() )
+                .build()
                 .m( "b" ) )
             .isNull();
-        assertThat( validating( I.class )
+        assertThat( validating( new CWS() )
             .isNotFailed()
-            .forInstance( new C() )
+            .build()
             .m( "c" ) )
             .isEqualTo( "c" );
     }
 
     @Test
     public void validateSchemaPreUnmarshalValidation() {
-        validating( I.class )
+        validating( new CWS() )
             .isFailed()
             .hasCode( 400 )
             .containsErrors( "/b: required property is missing", "additional properties are not permitted [a]" )
-            .forInstance( new C() )
+            .build()
             .b( new B() );
     }
 
@@ -75,21 +75,13 @@ class B {
     int a;
 }
 
-interface I {
-    String m( String a );
-
-    B b( B b );
-}
-
 @SuppressWarnings( "unused" )
-class C implements I {
+class CWS {
     @WsValidate( "validateM" )
-    @Override
     public String m( @WsValidate( "validateP" ) String a ) {
         return a;
     }
 
-    @Override
     public B b( @WsValidateJson( schema = "/oap/ws/validate/testng/ValidationErrorsAssertionTest/schema.conf" ) B b ) {
         return b;
     }

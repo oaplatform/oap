@@ -23,17 +23,19 @@
  */
 package oap.ws.validate.testng;
 
+import javassist.util.proxy.MethodHandler;
+import javassist.util.proxy.ProxyFactory;
+import lombok.val;
 import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.util.Stream;
+import oap.util.Throwables;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.assertj.core.api.AbstractAssert;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -55,8 +57,8 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
         return new ValidationErrorsAssertion( actual );
     }
 
-    public static <I> ValidatedInvocation<I> validating( Class<I> anInterface ) {
-        return new ValidatedInvocation<>( anInterface );
+    public static <I> ValidatedInvocation<I> validating( I instance ) {
+        return new ValidatedInvocation<>( instance );
     }
 
     public ValidationErrorsAssertion hasCode( int code ) {
@@ -87,14 +89,64 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
         return this;
     }
 
-    public static class ValidatedInvocation<I> implements InvocationHandler {
+    public static class ValidatedInvocation<I> {
         private final I proxy;
         private List<Function<ValidationErrorsAssertion, ValidationErrorsAssertion>> assertions = new ArrayList<>();
-        private I instance;
 
         @SuppressWarnings( "unchecked" )
-        public ValidatedInvocation( Class<I> anInterface ) {
-            proxy = ( I ) Proxy.newProxyInstance( anInterface.getClassLoader(), new Class[] { anInterface }, this );
+        public ValidatedInvocation( I instance ) {
+            try {
+                val factory = new ProxyFactory();
+                factory.setSuperclass( instance.getClass() );
+
+                MethodHandler handler = ( self, jmethod, proceed, args ) -> {
+                    Optional<Reflection.Method> methodOpt = Reflect.reflect( instance.getClass() )
+                        .method( jmethod );
+                    if( !methodOpt.isPresent() ) throw new NoSuchMethodError( jmethod.toString() );
+                    return methodOpt
+                        .map( method -> {
+                            ValidationErrors paramErrors = ValidationErrors.empty();
+
+                            List<Reflection.Parameter> parameters = method.parameters;
+
+                            Map<Reflection.Parameter, Object> originalValues = Stream.of( parameters )
+                                .zipWithIndex()
+                                .<Reflection.Parameter, Object>map( ( parameter, i ) -> __( parameter, Binder.json.marshal( args[i] ) ) )
+                                .toMap();
+
+                            paramErrors.validateParameters( originalValues, method, instance, true );
+
+                            if( paramErrors.failed() ) {
+                                runAsserts( paramErrors );
+                                return null;
+                            }
+
+                            LinkedHashMap<Reflection.Parameter, Object> values = new LinkedHashMap<>();
+
+                            for( int i = 0; i < parameters.size(); i++ ) values.put( parameters.get( i ), args[i] );
+
+                            paramErrors.validateParameters( values, method, instance, false );
+
+                            if( paramErrors.failed() ) {
+                                runAsserts( paramErrors );
+                                return null;
+                            }
+
+                            ValidationErrors methodErrors = Validators
+                                .forMethod( method, instance, false )
+                                .validate( args, values );
+                            runAsserts( methodErrors );
+                            if( methodErrors.failed() ) return null;
+
+                            return method.invoke( instance, args );
+                        } )
+                        .orElse( null );
+                };
+
+                proxy = ( I ) factory.create( new Class<?>[0], new Object[0], handler );
+            } catch( NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e ) {
+                throw Throwables.propagate( e );
+            }
         }
 
         public ValidatedInvocation<I> hasCode( int code ) {
@@ -121,58 +173,12 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
             return this;
         }
 
-        @Override
-        public Object invoke( Object proxy, Method jmethod, Object[] args ) {
-            Optional<Reflection.Method> methodOpt = Reflect.reflect( instance.getClass() )
-                .method( jmethod );
-            if( !methodOpt.isPresent() ) throw new NoSuchMethodError( jmethod.toString() );
-            return methodOpt
-                .map( method -> {
-                    ValidationErrors paramErrors = ValidationErrors.empty();
-
-                    List<Reflection.Parameter> parameters = method.parameters;
-
-                    Map<Reflection.Parameter, Object> originalValues = Stream.of( parameters )
-                        .zipWithIndex()
-                        .<Reflection.Parameter, Object>map( ( parameter, i ) -> __( parameter, Binder.json.marshal( args[i] ) ) )
-                        .toMap();
-
-                    paramErrors.validateParameters( originalValues, method, instance, true );
-
-                    if( paramErrors.failed() ) {
-                        runAsserts( paramErrors );
-                        return null;
-                    }
-
-                    LinkedHashMap<Reflection.Parameter, Object> values = new LinkedHashMap<>();
-
-                    for( int i = 0; i < parameters.size(); i++ ) values.put( parameters.get( i ), args[i] );
-
-                    paramErrors.validateParameters( values, method, instance, false );
-
-                    if( paramErrors.failed() ) {
-                        runAsserts( paramErrors );
-                        return null;
-                    }
-
-                    ValidationErrors methodErrors = Validators
-                        .forMethod( method, instance, false )
-                        .validate( args, values );
-                    runAsserts( methodErrors );
-                    if( methodErrors.failed() ) return null;
-
-                    return method.invoke( instance, args );
-                } )
-                .orElse( null );
-        }
-
         private void runAsserts( ValidationErrors errors ) {
             ValidationErrorsAssertion assertion = ValidationErrorsAssertion.assertValidationErrors( errors );
             assertions.forEach( f -> f.apply( assertion ) );
         }
 
-        public I forInstance( I instance ) {
-            this.instance = instance;
+        public I build() {
             return proxy;
         }
     }
