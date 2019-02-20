@@ -42,5 +42,5 @@ public @interface WsMethod {
 
     boolean raw() default false;
 
-    Request.HttpMethod[] method() default { Request.HttpMethod.GET, Request.HttpMethod.POST };
+    Request.HttpMethod[] method() default { Request.HttpMethod.GET, Request.HttpMethod.POST, Request.HttpMethod.PATCH };
 }
