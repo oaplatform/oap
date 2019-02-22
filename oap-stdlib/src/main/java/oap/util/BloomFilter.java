@@ -20,6 +20,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.BitSet;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * Implementation of a Bloom-filter, as described here:
@@ -191,26 +192,13 @@ public class BloomFilter<E> implements Serializable {
      */
     @Override
     public boolean equals( Object obj ) {
-        if( obj == null ) {
-            return false;
-        }
-        if( getClass() != obj.getClass() ) {
-            return false;
-        }
-        @SuppressWarnings( "unchecked" ) final BloomFilter<E> other = ( BloomFilter<E> ) obj;
-        if( this.expectedNumberOfFilterElements != other.expectedNumberOfFilterElements ) {
-            return false;
-        }
-        if( this.k != other.k ) {
-            return false;
-        }
-        if( this.bitSetSize != other.bitSetSize ) {
-            return false;
-        }
-        if( this.bitset != other.bitset && ( this.bitset == null || !this.bitset.equals( other.bitset ) ) ) {
-            return false;
-        }
-        return true;
+        if( obj == null ) return false;
+        if( getClass() != obj.getClass() ) return false;
+        @SuppressWarnings( "unchecked" ) BloomFilter<E> other = ( BloomFilter<E> ) obj;
+        if( this.expectedNumberOfFilterElements != other.expectedNumberOfFilterElements ) return false;
+        if( this.k != other.k ) return false;
+        if( this.bitSetSize != other.bitSetSize ) return false;
+        return Objects.equals( this.bitset, other.bitset );
     }
 
     /**

@@ -45,6 +45,7 @@ import java.util.regex.Pattern;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
+import static oap.util.Characters.HEX_CHARACTERS;
 import static oap.util.Pair.__;
 import static oap.util.Strings.FriendlyIdOption.FILL;
 import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
@@ -53,9 +54,8 @@ public final class Strings {
     public static final String DEFAULT = "DEFAULT";
     public static final String UNDEFINED = "UNDEFINED";
     public static final String UNKNOWN = "UNKNOWN";
-    private static char[] hex = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-    private static Pattern significantSymbolsNoVowels = Pattern.compile( "[^bcdfghjklmnpqrstvwxz0-9]+", CASE_INSENSITIVE );
-    private static Pattern significantSymbols = Pattern.compile( "[^abcdefghijklmnopqrstuvwxyz0-9]+", CASE_INSENSITIVE );
+    private static final Pattern significantSymbolsNoVowels = Pattern.compile( "[^bcdfghjklmnpqrstvwxz0-9]+", CASE_INSENSITIVE );
+    private static final Pattern significantSymbols = Pattern.compile( "[^abcdefghijklmnopqrstuvwxyz0-9]+", CASE_INSENSITIVE );
 
     private Strings() {}
 
@@ -122,8 +122,8 @@ public final class Strings {
         char[] buf = new char[bytes.length * 2];
         for( int i = 0; i < bytes.length; i++ ) {
             int masked = bytes[i] & 0xFF;
-            buf[i * 2] = hex[masked >> 4];
-            buf[i * 2 + 1] = hex[masked & 0x0F];
+            buf[i * 2] = HEX_CHARACTERS[masked >> 4];
+            buf[i * 2 + 1] = HEX_CHARACTERS[masked & 0x0F];
         }
         return new String( buf );
     }
@@ -134,7 +134,7 @@ public final class Strings {
         int chars = Math.max( ( significantBits + 3 ) / 4, 1 );
         char[] buf = new char[chars];
         for( int i = 0; i < chars; i++ )
-            buf[chars - ( i + 1 )] = hex[( int ) ( ( l >> ( i * 4 ) ) & 0xF )];
+            buf[chars - ( i + 1 )] = HEX_CHARACTERS[( int ) ( ( l >> ( i * 4 ) ) & 0xF )];
         return new String( buf );
     }
 
@@ -248,24 +248,22 @@ public final class Strings {
     }
 
     public static boolean isGuid( String s ) {
-        return s != null && s.length() == 36
-            && check( s, 0, 8 ) && s.charAt( 8 ) == '-'
-            && check( s, 9, 4 ) && s.charAt( 13 ) == '-'
-            && check( s, 14, 4 ) && s.charAt( 18 ) == '-'
-            && check( s, 19, 4 ) && s.charAt( 23 ) == '-'
-            && check( s, 24, 12 );
-
+        if( s == null || s.length() != 36 ) return false;
+        for( int i = 0; i < s.length(); i++ ) {
+            char c = s.charAt( i );
+            if( ( ( i != 8 && i != 13 && i != 18 && i != 23 ) || c != '-' ) && !Characters.isHex( c ) ) return false;
+        }
+        return true;
     }
 
-    private static boolean check( String idfa, int start, int length ) {
-        for( int i = start; i < start + length; i++ ) {
-            char ch = idfa.charAt( i );
-            if( !( ( ch >= '0' && ch <= '9' )
-                || ( ch >= 'A' && ch <= 'F' )
-                || ( ch >= 'a' && ch <= 'f' ) ) ) return false;
-        }
 
-        return true;
+    public static String toSyntheticGuid( String id ) {
+        String hash = Hash.hash( "", id, "MD5" );
+        return hash.substring( 0, 8 ) + "-"
+            + hash.substring( 8, 12 ) + "-"
+            + hash.substring( 12, 16 ) + "-"
+            + hash.substring( 16, 20 ) + "-"
+            + hash.substring( 20 );
     }
 
     public static String deepToString( Object value ) {

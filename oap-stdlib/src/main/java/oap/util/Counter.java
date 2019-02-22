@@ -41,7 +41,7 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
     private Counter() {
     }
 
-    protected abstract long _currentTick();
+    protected abstract long getCurrentTick();
 
     public final void inc() {
         inc( 1 );
@@ -62,8 +62,8 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
         return this;
     }
 
-    public synchronized final void inc( long value ) {
-        val currentTick = _currentTick();
+    public final synchronized void inc( long value ) {
+        val currentTick = getCurrentTick();
         if( this.tick != currentTick ) {
             this.value = value;
             this.tick = currentTick;
@@ -71,7 +71,7 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
             this.value += value;
     }
 
-    public synchronized final void reset() {
+    public final synchronized void reset() {
         tick = -1;
         value = 0;
     }
@@ -86,7 +86,7 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
         }
 
         @Override
-        protected final long _currentTick() {
+        protected final long getCurrentTick() {
             return currentTick();
         }
     }
@@ -101,7 +101,7 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
         }
 
         @Override
-        protected final long _currentTick() {
+        protected final long getCurrentTick() {
             return currentTick();
         }
     }
@@ -116,7 +116,7 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
         }
 
         @Override
-        protected final long _currentTick() {
+        protected final long getCurrentTick() {
             return currentTick();
         }
     }

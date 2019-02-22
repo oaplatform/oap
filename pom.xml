@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>4.3.0</version>
+    <version>4.3.1</version>
 
     <name>oap</name>
 
@@ -45,6 +45,7 @@
         <module>oap-json-schema</module>
         <module>oap-cli</module>
         <module>oap-http</module>
+        <module>oap-http-useragent</module>
         <module>oap-ws</module>
         <module>oap-remoting-server</module>
         <module>oap-application</module>

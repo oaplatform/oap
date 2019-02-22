@@ -24,30 +24,11 @@
 
 package oap.util;
 
-import oap.testng.AbstractTest;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeUtils;
-import org.testng.annotations.Test;
+public class Characters {
+    public static final char[] VALID_HEX_CHARACTERS = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'A', 'B', 'C', 'D', 'E', 'F' };
+    public static final char[] HEX_CHARACTERS = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.joda.time.DateTimeZone.UTC;
-
-public class DatesTest extends AbstractTest {
-    @Test
-    public void parseIsoDate() {
-        assertThat( Dates.parseDateWithMillis( "2016-01-01T00:00:00.000" ).successValue )
-            .isEqualTo( new DateTime( 2016, 1, 1, 0, 0, 0, UTC ) );
-        assertThat( Dates.parseDate( "2016-01-01T00:00:00" ).successValue )
-            .isEqualTo( new DateTime( 2016, 1, 1, 0, 0, 0, UTC ) );
+    public static boolean isHex( char ch ) {
+        return Character.digit( ch, 16 ) != -1;
     }
-
-    @Test
-    public void currentTimeDay() {
-        DateTimeUtils.setCurrentMillisFixed( new DateTime( 1970, 1, 1, 0, 0, UTC ).getMillis() );
-        assertThat( Dates.currentTimeDay() ).isEqualTo( 0 );
-
-        DateTimeUtils.setCurrentMillisFixed( new DateTime( 1970, 2, 10, 0, 0, UTC ).getMillis() );
-        assertThat( Dates.currentTimeDay() ).isEqualTo( 40 );
-    }
-
 }

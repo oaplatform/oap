@@ -34,60 +34,63 @@ import static oap.util.Pair.__;
 import static oap.util.Strings.FriendlyIdOption.FILL;
 import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
 
 public class StringsTest {
     @Test
     public void toHexStringLong() {
-        assertEquals( Strings.toHexString( 0xFF000000L ), "FF000000" );
-        assertEquals( Strings.toHexString( 0x10L ), "10" );
-        assertEquals( Strings.toHexString( 0x101L ), "101" );
+        assertString( Strings.toHexString( 0xFF000000L ) ).isEqualTo( "FF000000" );
+        assertString( Strings.toHexString( 0x10L ) ).isEqualTo( "10" );
+        assertString( Strings.toHexString( 0x101L ) ).isEqualTo( "101" );
         long millis = DateTimeUtils.currentTimeMillis();
-        assertEquals( Strings.toHexString( millis ), Long.toHexString( millis ).toUpperCase() );
+        assertString( Strings.toHexString( millis ) ).isEqualTo( Long.toHexString( millis ).toUpperCase() );
     }
 
     @Test
     public void toHexStringBytes() {
-        assertEquals( Strings.toHexString( new byte[] { 16 } ), "10" );
-        assertEquals( Strings.toHexString( new byte[] { 1, 10, 120, -78 } ), "010A78B2" );
-        assertEquals( Strings.toHexString( new byte[] { 40, -78, -67, 42, -93, -91 } ), "28B2BD2AA3A5" );
+        assertString( Strings.toHexString( new byte[] { 16 } ) ).isEqualTo( "10" );
+        assertString( Strings.toHexString( new byte[] { 1, 10, 120, -78 } ) ).isEqualTo( "010A78B2" );
+        assertString( Strings.toHexString( new byte[] { 40, -78, -67, 42, -93, -91 } ) ).isEqualTo( "28B2BD2AA3A5" );
     }
 
 
     @Test
     public void substringAfter() {
-        assertEquals( Strings.substringAfter( "/bbb/aaa", "/bbb" ), "/aaa" );
+        assertString( Strings.substringAfter( "/bbb/aaa", "/bbb" ) ).isEqualTo( "/aaa" );
     }
 
     @Test
     public void substringBeforeLast() {
-        assertEquals( Strings.substringBeforeLast( "aa.conf.bak", "." ), "aa.conf" );
+        assertString( Strings.substringBeforeLast( "aa.conf.bak", "." ) ).isEqualTo( "aa.conf" );
     }
 
     @Test
     public void split() {
-        assertEquals( Strings.split( "aaaa.bb.cc", "." ), __( "aaaa", "bb.cc" ) );
+        assertThat( Strings.split( "aaaa.bb.cc", "." ) ).isEqualTo( __( "aaaa", "bb.cc" ) );
     }
 
     @Test
     public void regex() {
-        assertEquals( Strings.regexAll( "aaaXbbb:cccXddd", "X([^:]*)" ), Lists.of( "bbb", "ddd" ) );
-        assertEquals( Strings.regex( "aaaXbbb:cccXddd", "X([^:]*)" ), "bbb" );
+        assertThat( Strings.regexAll( "aaaXbbb:cccXddd", "X([^:]*)" ) ).containsExactly( "bbb", "ddd" );
+        assertString( Strings.regex( "aaaXbbb:cccXddd", "X([^:]*)" ) ).isEqualTo( "bbb" );
     }
 
     @Test
-    public void testIndexOfAny() {
-        assertEquals( Strings.indexOfAny( "test", "e", 0 ), 1 );
-        assertEquals( Strings.indexOfAny( "test", "et", 0 ), 0 );
-        assertEquals( Strings.indexOfAny( "test", "bso", 1 ), 2 );
+    public void indexOfAny() {
+        assertThat( Strings.indexOfAny( "test", "e", 0 ) ).isEqualTo( 1 );
+        assertThat( Strings.indexOfAny( "test", "et", 0 ) ).isEqualTo( 0 );
+        assertThat( Strings.indexOfAny( "test", "bso", 1 ) ).isEqualTo( 2 );
     }
 
     @Test
     public void isGuid() {
-        assertTrue( Strings.isGuid( "22345200-abe8-4f60-90c8-0d43c5f6c0f6" ) );
-        assertFalse( Strings.isGuid( "2i345200-abe8-4f60-90c8-0d43c5f6c0f6" ) );
+        assertThat( Strings.isGuid( "22345200-abe8-4f60-90c8-0d43c5f6c0f6" ) ).isTrue();
+        assertThat( Strings.isGuid( "2i345200-abe8-4f60-90c8-0d43c5f6c0f6" ) ).isFalse();
+    }
+
+    @Test
+    public void toSyntheticGuid() {
+        assertString( Strings.toSyntheticGuid( "a" ) ).isEqualTo( "0CC175B9-C0F1-B6A8-31C3-99E269772661" );
+        assertThat( Strings.isGuid( Strings.toSyntheticGuid( "a" ) ) ).isTrue();
     }
 
     @Test
@@ -111,7 +114,7 @@ public class StringsTest {
     }
 
     @Test
-    public void testReplace() {
+    public void replace() {
         assertString( Strings.replace( "test", "a", "b" ) ).isEqualTo( "test" );
         assertString( Strings.replace( "test", "te", "b" ) ).isEqualTo( "bst" );
         assertString( Strings.replace( "test", "st", "b" ) ).isEqualTo( "teb" );
