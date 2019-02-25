@@ -54,7 +54,6 @@ import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -115,7 +114,7 @@ public class Kernel {
         for( val module : modules ) {
             log.trace( "module {} services {}", module.name, module.services.keySet() );
             for( val service : module.services.entrySet() ) {
-                if( service.getValue().profile != null && !profiles.contains( service.getValue().profile ) ) continue;
+                if( !profileEnabled( service.getValue().profile ) ) continue;
 
                 log.trace( "fix deps for {} in {}", service.getKey(), module.name );
                 service.getValue().parameters.forEach( ( key, value ) ->
@@ -236,7 +235,7 @@ public class Kernel {
                     log.debug( "service {} is disabled.", implName );
                     return;
                 }
-                if( service.profile != null && !config.profiles.contains( service.profile ) ) {
+                if( !profileEnabled( service.profile ) ) {
                     log.debug( "skipping {} with profile {}", implName, service.profile );
                     return;
                 }
@@ -438,6 +437,8 @@ public class Kernel {
     }
 
     public boolean profileEnabled( String profile ) {
+        if( profile == null ) return true;
+        if( profile.startsWith( "-" ) ) return !profiles.contains( profile.substring( 1 ) );
         return profiles.contains( profile );
     }
 
