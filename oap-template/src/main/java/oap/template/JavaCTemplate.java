@@ -354,7 +354,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
             } else
                 return type1.getDeclaredMethod( field.substring( 0, i ) ).getGenericReturnType();
         } catch( NoSuchMethodException | NoSuchFieldException e ) {
-            if( !type1.getSuperclass().equals( Object.class ) )
+            if( type1.getSuperclass() != null && !type1.getSuperclass().equals( Object.class ) )
                 return getDeclaredFieldOrFunctionType( type1.getGenericSuperclass(), field );
             else throw e;
         }

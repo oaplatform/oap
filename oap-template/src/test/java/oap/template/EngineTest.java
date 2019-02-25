@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import lombok.val;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
+import oap.util.Maps;
 import org.mockito.internal.util.collections.Sets;
 import org.testng.annotations.Test;
 
@@ -146,6 +147,8 @@ public class EngineTest extends AbstractTest {
     public void testProcessFunction() {
         assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "f", "getTestInt()", 10 ) ), " " )
             .renderString( new Test1( 235 ) ) ).isEqualTo( "235" );
+        assertThat( engine.getTemplate( "test", Map.class, Lists.of( line( "f", "getTest()", 10 ) ), " " )
+            .renderString( Maps.of2( "getTest()", 235 ) ) ).isEqualTo( "" );
     }
 
     @Test
