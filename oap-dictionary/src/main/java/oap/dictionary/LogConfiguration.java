@@ -32,11 +32,13 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Optional;
+import java.util.function.Predicate;
 
 import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 
 public class LogConfiguration extends Configuration {
+    public static final Predicate<Dictionary> FILTER_TAG_NE_SYSTEM = ( dictionary ) -> !dictionary.getTags().contains( "system" );
+
     public static final int MAX_VERSIONS_TO_LOAD = 5;
     private static final String STANDARD_DELIMITER = "\t";
     private final Engine engine;
@@ -66,18 +68,22 @@ public class LogConfiguration extends Configuration {
         return LogConfiguration.STANDARD_DELIMITER;
     }
 
-    public <F> Template<F, Template.Line> forType( Class<F> clazz, String type, Optional<String> tag ) {
-        return forType( clazz, type, tag, TemplateStrategy.DEFAULT );
+    public <F> Template<F, Template.Line> forType( Class<F> clazz, String type ) {
+        return forType( clazz, type, dictionary -> true );
     }
 
-    public <F> Template<F, Template.Line> forType( Class<F> clazz, String type, Optional<String> tag, TemplateStrategy<Template.Line> strategy ) {
+    public <F> Template<F, Template.Line> forType( Class<F> clazz, String type, Predicate<Dictionary> predicate ) {
+        return forType( clazz, type, predicate, TemplateStrategy.DEFAULT );
+    }
+
+    public <F> Template<F, Template.Line> forType( Class<F> clazz, String type, Predicate<Dictionary> predicate, TemplateStrategy<Template.Line> strategy ) {
         final Dictionary value = getLatestDictionary().getValue( type );
 
         if( value == null ) throw new IllegalArgumentException( "Unknown type " + type );
 
         val lines = new ArrayList<Template.Line>();
 
-        for( Dictionary field : value.getValues( d -> tag.map( t -> d.getTags().contains( t ) ).orElse( true ) ) ) {
+        for( Dictionary field : value.getValues( predicate ) ) {
             if( !field.containsProperty( "path" ) ) continue;
 
             final String id = field.getId();
