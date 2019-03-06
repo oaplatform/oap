@@ -32,6 +32,7 @@ import org.assertj.core.api.AbstractAssert;
 import org.testng.Assert;
 
 import java.util.Map;
+import java.util.function.Function;
 
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -121,15 +122,23 @@ public class JsonAsserts {
             return isEqualTo( String.valueOf( expected ) );
         }
 
-        public JsonAssertion isEqualCanonically( Class<?> clazz, String expected ) {
+        private JsonAssertion isEqualCanonically( Class<?> clazz, String actual, String expected ) {
             assertString( Binder.json.canonicalize( clazz, actual ) )
                 .isEqualTo( Binder.json.canonicalize( clazz, expected ) );
             return this;
         }
 
+        public JsonAssertion isEqualCanonically( Class<?> clazz, String expected ) {
+            return isEqualCanonically( clazz, this.actual, expected );
+        }
+
         @SafeVarargs
         public final JsonAssertion isEqualCanonically( Class<?> clazz, String expected, Pair<String, Object>... substitutions ) {
             return isEqualCanonically( clazz, Strings.substitute( expected, substitutions ) );
+        }
+
+        public final JsonAssertion isEqualCanonically( Class<?> clazz, String expected, Function<String, String> substitutions ) {
+            return isEqualCanonically( clazz, substitutions.apply( actual ), expected );
         }
     }
 }
