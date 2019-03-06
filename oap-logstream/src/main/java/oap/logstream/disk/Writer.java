@@ -32,6 +32,7 @@ import oap.concurrent.scheduler.Scheduler;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.IoStreams.Encoding;
+import oap.logstream.LogId;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
 import oap.metrics.Metrics;
@@ -40,7 +41,6 @@ import org.joda.time.DateTime;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -48,9 +48,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 @Slf4j
 public class Writer implements Closeable {
-    private final String ext;
     private final Path logDirectory;
-    private final String filename;
+    private final String filePattern;
+    private final LogId logId;
     private final Timestamp timestamp;
     private int bufferSize;
     private CountingOutputStream out;
@@ -58,10 +58,10 @@ public class Writer implements Closeable {
     private Scheduled refresher;
     private Stopwatch stopwatch = new Stopwatch();
 
-    public Writer( Path logDirectory, String filename, String ext, int bufferSize, Timestamp timestamp ) {
+    public Writer( Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp ) {
         this.logDirectory = logDirectory;
-        this.filename = filename;
-        this.ext = ext;
+        this.filePattern = filePattern;
+        this.logId = logId;
         this.bufferSize = bufferSize;
         this.timestamp = timestamp;
         this.lastPattern = currentPattern();
@@ -100,13 +100,13 @@ public class Writer implements Closeable {
             Path filename = filename();
             if( out == null )
                 if( Files.isFileEncodingValid( filename ) )
-                    out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( ext ), bufferSize, true ) );
+                    out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize, true ) );
                 else {
                     error.accept( "corrupted file, cannot append " + filename );
                     log.error( "corrupted file, cannot append {}", filename );
                     Files.rename( filename, logDirectory.resolve( ".corrupted" )
                         .resolve( logDirectory.relativize( filename ) ) );
-                    out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( ext ), bufferSize ) );
+                    out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize ) );
                 }
             log.trace( "writing {} bytes to {}", length, this );
             out.write( buffer, offset, length );
@@ -123,7 +123,7 @@ public class Writer implements Closeable {
     }
 
     private Path filename() {
-        return Paths.get( Timestamp.path( logDirectory.toString(), lastPattern, filename, ext ) );
+        return logDirectory.resolve( lastPattern );
     }
 
     private synchronized void refresh() {
@@ -135,7 +135,7 @@ public class Writer implements Closeable {
     }
 
     private String currentPattern() {
-        return timestamp.format( DateTime.now() );
+        return logId.filename( filePattern, new DateTime(), timestamp );
     }
 
     @Override

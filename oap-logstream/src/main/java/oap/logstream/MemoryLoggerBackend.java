@@ -24,6 +24,7 @@
 
 package oap.logstream;
 
+import lombok.val;
 import oap.io.Closeables;
 
 import java.io.BufferedReader;
@@ -35,20 +36,17 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 
 public class MemoryLoggerBackend extends LoggerBackend {
-    private final HashMap<String, HashMap<String, ByteArrayOutputStream>> outputs = new HashMap<>();
+    private final HashMap<LogId, ByteArrayOutputStream> outputs = new HashMap<>();
 
     @Override
-    public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
+    public void log( String hostName, String fileName, String logType, int version, byte[] buffer, int offset, int length ) {
         outputs
-            .computeIfAbsent( hostName, ( hn ) -> new HashMap<>() )
-            .computeIfAbsent( fileName, ( fn ) -> new ByteArrayOutputStream() )
+            .computeIfAbsent( new LogId( fileName, logType, hostName, version ), ( fn ) -> new ByteArrayOutputStream() )
             .write( buffer, offset, length );
     }
 
-    public List<String> getLines( String hostName, String fileName ) {
-        String s = outputs.getOrDefault( hostName, new HashMap<>() )
-            .getOrDefault( fileName, new ByteArrayOutputStream() )
-            .toString();
+    public List<String> getLines( LogId id ) {
+        val s = outputs.getOrDefault( id, new ByteArrayOutputStream() ).toString();
         return new BufferedReader( new StringReader( s ) )
             .lines()
             .collect( toList() );
@@ -56,10 +54,7 @@ public class MemoryLoggerBackend extends LoggerBackend {
 
     @Override
     public void close() {
-        outputs.values()
-            .stream()
-            .flatMap( v -> v.values().stream() )
-            .forEach( Closeables::close );
+        outputs.values().forEach( Closeables::close );
     }
 
     @Override

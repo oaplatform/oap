@@ -31,6 +31,7 @@ import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
 import oap.logstream.AvailabilityReport;
+import oap.logstream.LogId;
 import oap.logstream.LoggerBackend;
 import oap.logstream.LoggerException;
 import oap.metrics.Metrics;
@@ -153,8 +154,8 @@ public class SocketLoggerBackend extends LoggerBackend {
     }
 
     @Override
-    public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
-        buffers.put( fileName, buffer, offset, length );
+    public void log( String hostName, String fileName, String logType, int version, byte[] buffer, int offset, int length ) {
+        buffers.put( new LogId( fileName, logType, hostName, version ), buffer, offset, length );
     }
 
     @Override

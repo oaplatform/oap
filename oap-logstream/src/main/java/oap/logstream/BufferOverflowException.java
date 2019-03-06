@@ -27,16 +27,20 @@ package oap.logstream;
 public class BufferOverflowException extends LoggerException {
     public final String hostName;
     public final byte clientId;
-    public final String selector;
+    public final String logName;
+    public final String logType;
+    public final int version;
     public final int bufferSize;
     public final int size;
 
-    public BufferOverflowException( String hostName, byte clientId, String selector, int bufferSize, int size ) {
+    public BufferOverflowException( String hostName, byte clientId, String logName, String logType, int version, int bufferSize, int size ) {
         super( "buffer overflow: chunk size is " + size + " when buffer size is "
-            + bufferSize + " from " + hostName + "/" + clientId + " with " + selector );
+            + bufferSize + " from " + hostName + "/" + clientId + " with " + logName + "/" + logType + "/" + version );
         this.hostName = hostName;
         this.clientId = clientId;
-        this.selector = selector;
+        this.logName = logName;
+        this.logType = logType;
+        this.version = version;
         this.bufferSize = bufferSize;
         this.size = size;
     }
