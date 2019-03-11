@@ -106,19 +106,22 @@ public class Writer implements Closeable {
         try {
             refresh();
             Path filename = filename();
-            if( out == null )
+            if( out == null ) {
+                boolean exists = Files.exists( filename );
                 if( Files.isFileEncodingValid( filename ) ) {
-                    val exists = Files.exists( filename );
                     out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize, true ) );
-                    if( !exists )
-                        out.write( getHeaders( logId.logType, logId.version ).getBytes() );
                 } else {
                     error.accept( "corrupted file, cannot append " + filename );
                     log.error( "corrupted file, cannot append {}", filename );
                     Files.rename( filename, logDirectory.resolve( ".corrupted" )
                         .resolve( logDirectory.relativize( filename ) ) );
                     out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize ) );
+                    exists = false;
                 }
+
+                if( !exists )
+                    out.write( getHeaders( logId.logType, logId.version ).getBytes() );
+            }
             log.trace( "writing {} bytes to {}", length, this );
             out.write( buffer, offset, length );
 
