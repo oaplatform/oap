@@ -162,6 +162,7 @@ public class SocketLoggerServer extends SocketServer {
                     String logName = in.readUTF();
                     String logType = in.readUTF();
                     String clientHostname = in.readUTF();
+                    int shard = in.readInt();
                     int logVersion = in.readInt();
                     if( size > bufferSize ) {
                         out.writeInt( SocketError.BUFFER_OVERFLOW.code );
@@ -178,7 +179,7 @@ public class SocketLoggerServer extends SocketServer {
                     }
                     if( lastId.get() < digestionId ) {
                         log.trace( "[{}/{}] logging ({}, {}/{}/{}, {})", hostName, clientId, digestionId, logName, logType, logVersion, size );
-                        backend.log( clientHostname, logName, logType, logVersion, buffer, 0, size );
+                        backend.log( clientHostname, logName, logType, shard, logVersion, buffer, 0, size );
                         lastId.set( digestionId );
                     } else {
                         val message = "[" + hostName + "/" + clientId + "] buffer (" + digestionId + ", " + logName + "/" + logType + "/" + logVersion

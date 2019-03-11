@@ -5,7 +5,7 @@ package oap.logstream;
 
 public class NullLoggerBackend extends LoggerBackend {
     @Override
-    public void log( String hostName, String fileName, String logType, int version, byte[] buffer, int offset, int length ) {
+    public void log( String hostName, String fileName, String logType, int shard, int version, byte[] buffer, int offset, int length ) {
 
     }
 

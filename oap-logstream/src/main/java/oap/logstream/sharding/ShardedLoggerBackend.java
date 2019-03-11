@@ -75,9 +75,9 @@ public class ShardedLoggerBackend extends LoggerBackend {
     }
 
     @Override
-    public void log( String hostName, String fileName, String logType, int version, byte[] buffer, int offset, int length ) {
+    public void log( String hostName, String fileName, String logType, int shard, int version, byte[] buffer, int offset, int length ) {
         int shardNumber = shardMapper.getShardNumber( hostName, fileName, buffer );
-        loggers[shardNumber].log( hostName, fileName, logType, version, buffer, offset, length );
+        loggers[shardNumber].log( hostName, fileName, logType, shard, version, buffer, offset, length );
     }
 
     @Override

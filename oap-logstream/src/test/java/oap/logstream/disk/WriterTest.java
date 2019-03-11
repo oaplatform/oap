@@ -28,7 +28,6 @@ import lombok.val;
 import oap.dictionary.LogConfiguration;
 import oap.io.Files;
 import oap.logstream.LogId;
-import oap.logstream.Timestamp;
 import oap.template.Engine;
 import oap.testng.AbstractTest;
 import oap.util.Dates;
@@ -40,6 +39,7 @@ import java.nio.file.Paths;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
+import static oap.logstream.Timestamp.BPH_12;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
 
@@ -63,7 +63,7 @@ public class WriterTest extends AbstractTest {
         Files.writeString(
             logs.resolve( "test/2015-10/10/v1_file-2015-10-10-01-00.log.gz" ),
             PLAIN, "corrupted file" );
-        Writer writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "log", "hn", 1 ), 10, Timestamp.BPH_12, logConfiguration );
+        Writer writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "log", "hn", 1, 1 ), 10, BPH_12, logConfiguration );
 
         writer.write( bytes, ( msg ) -> {} );
 
@@ -75,7 +75,7 @@ public class WriterTest extends AbstractTest {
 
         writer.close();
 
-        writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "log", "hn", 1 ), 10, Timestamp.BPH_12, logConfiguration );
+        writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "log", "hn", 1, 1 ), 10, BPH_12, logConfiguration );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
         writer.write( bytes, ( msg ) -> {} );
@@ -84,7 +84,7 @@ public class WriterTest extends AbstractTest {
         writer.write( bytes, ( msg ) -> {} );
         writer.close();
 
-        writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "log", "hn", 2 ), 10, Timestamp.BPH_12, logConfiguration );
+        writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "log", "hn", 1, 2 ), 10, BPH_12, logConfiguration );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
         writer.write( bytes, ( msg ) -> {} );

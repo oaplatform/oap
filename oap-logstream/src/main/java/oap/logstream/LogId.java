@@ -42,12 +42,14 @@ public class LogId implements Serializable {
     public final String logName;
     public final String logType;
     public final String clientHostname;
+    public final int shard;
     public final int version;
 
-    public LogId( String logName, String logType, String clientHostname, int version ) {
+    public LogId( String logName, String logType, String clientHostname, int shard, int version ) {
         this.logName = logName;
         this.logType = logType;
         this.clientHostname = clientHostname;
+        this.shard = shard;
         this.version = version;
     }
 
@@ -64,6 +66,8 @@ public class LogId implements Serializable {
                     return Inet.HOSTNAME;
                 case "CLIENT_HOST":
                     return clientHostname;
+                case "SHARD":
+                    return shard;
                 case "YEAR":
                     return time.getYear();
                 case "MONTH":
@@ -85,6 +89,6 @@ public class LogId implements Serializable {
     }
 
     public final String lock() {
-        return ( logName + logType + clientHostname + version ).intern();
+        return ( logName + logType + clientHostname + shard + version ).intern();
     }
 }

@@ -29,15 +29,15 @@ import java.io.Closeable;
 public abstract class LoggerBackend implements Closeable {
     public final LoggerListeners listeners = new LoggerListeners();
 
-    public void log( String hostName, String fileName, String logType, int version, String line ) {
-        log( hostName, fileName, logType, version, ( line + "\n" ).getBytes() );
+    public void log( String hostName, String fileName, String logType, int shard, int version, String line ) {
+        log( hostName, fileName, logType, shard, version, ( line + "\n" ).getBytes() );
     }
 
-    public void log( String hostName, String fileName, String logType, int version, byte[] buffer ) {
-        log( hostName, fileName, logType, version, buffer, 0, buffer.length );
+    public void log( String hostName, String fileName, String logType, int shard, int version, byte[] buffer ) {
+        log( hostName, fileName, logType, shard, version, buffer, 0, buffer.length );
     }
 
-    public abstract void log( String hostName, String fileName, String logType, int version, byte[] buffer, int offset, int length );
+    public abstract void log( String hostName, String fileName, String logType, int shard, int version, byte[] buffer, int offset, int length );
 
     public abstract void close();
 

@@ -84,7 +84,7 @@ public class DiskLoggerBackend extends LoggerBackend {
 
     @Override
     @SneakyThrows
-    public void log( String hostName, String fileName, String logType, int version, byte[] buffer, int offset, int length ) {
+    public void log( String hostName, String fileName, String logType, int shard, int version, byte[] buffer, int offset, int length ) {
         if( closed ) {
             val exception = new LoggerException( "already closed!" );
             listeners.fireError( exception );
@@ -93,7 +93,7 @@ public class DiskLoggerBackend extends LoggerBackend {
 
         Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_DISK ).tag( "from", hostName ) );
         Metrics.measureHistogram( Metrics.name( METRICS_LOGGING_DISK_BUFFERS ).tag( "from", hostName ), length );
-        Writer writer = writers.get( new LogId( fileName, logType, hostName, version ) );
+        Writer writer = writers.get( new LogId( fileName, logType, hostName, shard, version ) );
         log.trace( "logging {} bytes to {}", length, writer );
         writer.write( buffer, offset, length, this.listeners::fireError );
     }

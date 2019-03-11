@@ -39,7 +39,7 @@ public class BufferTest {
 
     @Test
     public void data() throws IOException {
-        Buffer buffer = new Buffer( 200, new LogId( "s", "l", "h", 1 ) );
+        Buffer buffer = new Buffer( 200, new LogId( "s", "l", "h", 1, 2 ) );
         assertTrue( buffer.putInt( 10 ) );
         assertTrue( buffer.putLong( 10 ) );
         assertTrue( buffer.putUTF( "aaaa" ) );
@@ -54,6 +54,7 @@ public class BufferTest {
         assertEquals( dis.readUTF(), "l" );
         assertEquals( dis.readUTF(), "h" );
         assertEquals( dis.readInt(), 1 );
+        assertEquals( dis.readInt(), 2 );
         assertEquals( dis.readInt(), 10 );
         assertEquals( dis.readLong(), 10 );
         assertEquals( dis.readUTF(), "aaaa" );

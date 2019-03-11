@@ -32,10 +32,10 @@ public class MemoryLoggerBackendTest {
     @Test
     public void testGetLines() {
         final MemoryLoggerBackend lb = new MemoryLoggerBackend();
-        lb.log( "test1", "file1", "type1", 1, "line1" );
-        lb.log( "test1", "file1", "type1", 1, "line2" );
+        lb.log( "test1", "file1", "type1", 1, 1, "line1" );
+        lb.log( "test1", "file1", "type1", 1, 1, "line2" );
 
-        assertThat( lb.getLines( new LogId( "file1", "type1", "test1", 1 ) ) )
+        assertThat( lb.getLines( new LogId( "file1", "type1", "test1", 1, 1 ) ) )
             .containsExactly( "line1", "line2" );
     }
 

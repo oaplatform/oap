@@ -68,10 +68,10 @@ public class LoggerTest extends AbstractTest {
         val content2WithHeaders = "DATETIME\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
         try( DiskLoggerBackend backend = new DiskLoggerBackend( tmpPath( "logs" ), BPH_12, DEFAULT_BUFFER, logConfiguration ) ) {
             Logger logger = new Logger( backend );
-            logger.log( "lfn1", "log", 2, content );
-            logger.log( "lfn2", "log", 2, content );
-            logger.log( "lfn1", "log", 2, content );
-            logger.log( "lfn1", "log2", 2, content );
+            logger.log( "lfn1", "log", 1, 2, content );
+            logger.log( "lfn2", "log", 1, 2, content );
+            logger.log( "lfn1", "log", 1, 2, content );
+            logger.log( "lfn1", "log2", 1, 2, content );
         }
 
         assertFile( tmpPath( "logs/lfn1/2015-10/10/log_v2_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
@@ -98,7 +98,7 @@ public class LoggerTest extends AbstractTest {
                 serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 1000L;
                 assertFalse( serverBackend.isLoggingAvailable() );
                 val logger = new Logger( clientBackend );
-                logger.log( "lfn1", "log", 2, content );
+                logger.log( "lfn1", "log", 1, 2, content );
                 clientBackend.send();
                 assertFalse( logger.isLoggingAvailable() );
                 server.start();
@@ -108,9 +108,9 @@ public class LoggerTest extends AbstractTest {
                 assertTrue( serverBackend.isLoggingAvailable() );
                 clientBackend.send();
                 assertTrue( logger.isLoggingAvailable() );
-                logger.log( "lfn2", "log", 2, content );
-                logger.log( "lfn1", "log", 2, content );
-                logger.log( "lfn1", "log2", 2, content );
+                logger.log( "lfn2", "log", 1, 2, content );
+                logger.log( "lfn1", "log", 1, 2, content );
+                logger.log( "lfn1", "log2", 1, 2, content );
                 clientBackend.send();
             } finally {
                 server.stop();
