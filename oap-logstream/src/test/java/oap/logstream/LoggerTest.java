@@ -93,7 +93,7 @@ public class LoggerTest extends AbstractTest {
         try( val serverBackend = new DiskLoggerBackend( tmpPath( "logs" ), BPH_12, DEFAULT_BUFFER, logConfiguration ) ) {
             SocketLoggerServer server = new SocketLoggerServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
             try( val clientBackend = new SocketLoggerBackend( ( byte ) 1, "localhost", Env.port( "net" ),
-                tmpPath( "buffers" ), 70 ) ) {
+                tmpPath( "buffers" ), 80 ) ) {
 
                 serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 1000L;
                 assertFalse( serverBackend.isLoggingAvailable() );
