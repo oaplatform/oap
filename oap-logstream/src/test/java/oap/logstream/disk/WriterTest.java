@@ -25,11 +25,10 @@
 package oap.logstream.disk;
 
 import oap.io.Files;
-import oap.io.IoStreams.Encoding;
+import oap.logstream.LogId;
 import oap.logstream.Timestamp;
 import oap.testng.AbstractTest;
 import oap.util.Dates;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
@@ -40,23 +39,18 @@ import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
 
 public class WriterTest extends AbstractTest {
+    private static final String FILE_PATTERN = "test/2015-10/10/file-2015-10-10-01-${INTERVAL}.log.gz";
 
-    @DataProvider
-    public Object[][] encodings() {
-        return new Object[][] { { PLAIN }, { GZIP } };
-    }
-
-    @Test( dataProvider = "encodings" )
-    public void write( Encoding encoding ) {
+    @Test
+    public void write() {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "1234567890";
         byte[] bytes = content.getBytes();
         Path logs = tmpPath( "logs" );
-        if( encoding == GZIP ) Files.writeString(
+        Files.writeString(
             logs.resolve( "test/2015-10/10/file-2015-10-10-01-00.log.gz" ),
             PLAIN, "corrupted file" );
-        String ext = ".log" + encoding.extension;
-        Writer writer = new Writer( logs, "test/file", ext, 10, Timestamp.BPH_12 );
+        Writer writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "lt", "hn", 1 ), 10, Timestamp.BPH_12 );
 
         writer.write( bytes, ( msg ) -> {} );
 
@@ -68,7 +62,7 @@ public class WriterTest extends AbstractTest {
 
         writer.close();
 
-        writer = new Writer( logs, "test/file", ext, 10, Timestamp.BPH_12 );
+        writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "lt", "hn", 1 ), 10, Timestamp.BPH_12 );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
         writer.write( bytes, ( msg ) -> {} );
@@ -76,18 +70,13 @@ public class WriterTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 59 );
         writer.write( bytes, ( msg ) -> {} );
         writer.close();
-        assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-01" + ext ) )
-            .hasContent( content, encoding );
-        assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-02" + ext ) )
-            .hasContent( content + content, encoding );
-        assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-11" + ext ) )
-            .hasContent( content, encoding );
-        if( encoding == GZIP )
-            assertFile( logs.resolve( ".corrupted/test/2015-10/10/file-2015-10-10-01-00.log.gz" ) )
-                .hasContent( "corrupted file" );
-        else
-            assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-00" + ext ) )
-                .hasContent( content, encoding );
-
+        assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-01.log.gz" ) )
+            .hasContent( content, GZIP );
+        assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-02.log.gz" ) )
+            .hasContent( content + content, GZIP );
+        assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-11.log.gz" ) )
+            .hasContent( content, GZIP );
+        assertFile( logs.resolve( ".corrupted/test/2015-10/10/file-2015-10-10-01-00.log.gz" ) )
+            .hasContent( "corrupted file" );
     }
 }

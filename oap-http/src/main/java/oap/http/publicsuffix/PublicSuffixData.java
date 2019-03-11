@@ -49,6 +49,7 @@ public class PublicSuffixData {
 
     public static String baseDomainOf( String domain ) {
         if( domain == null ) return null;
+        if( domain.isEmpty() ) return domain;
         String normalized = IDN.toUnicode( domain.startsWith( "." ) ? domain.substring( 1 ) : domain ).toLowerCase();
         if( suffixes.contains( normalized ) ) return normalized;
         String[] split = StringUtils.split( normalized, '.' );

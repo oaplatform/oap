@@ -46,6 +46,7 @@ class Buffer implements Serializable {
         result &= putInt( 0 ); //reserved for data length
         result &= putUTF( id.logName );
         result &= putUTF( id.logType );
+        result &= putUTF( id.clientHostname );
         result &= putInt( id.version );
         this.dataStart = this.position;
         if( !result ) throw new IllegalArgumentException( "buffer is too small!" );

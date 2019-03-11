@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.linesOfTestResource;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PublicSuffixDataTest {
     @DataProvider
@@ -55,4 +56,9 @@ public class PublicSuffixDataTest {
         assertString( PublicSuffixData.baseDomainOf( domain ) ).isEqualTo( expeted );
     }
 
+    @Test
+    public void testEmpty() {
+        assertThat( PublicSuffixData.baseDomainOf( null ) ).isNull();
+        assertThat( PublicSuffixData.baseDomainOf( "" ) ).isEmpty();
+    }
 }

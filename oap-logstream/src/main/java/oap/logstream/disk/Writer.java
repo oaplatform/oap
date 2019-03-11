@@ -37,6 +37,7 @@ import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
 import oap.metrics.Metrics;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -135,7 +136,7 @@ public class Writer implements Closeable {
     }
 
     private String currentPattern() {
-        return logId.filename( filePattern, new DateTime(), timestamp );
+        return logId.filename( filePattern, new DateTime( DateTimeZone.UTC ), timestamp );
     }
 
     @Override

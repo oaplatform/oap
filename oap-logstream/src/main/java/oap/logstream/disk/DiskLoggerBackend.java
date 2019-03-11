@@ -53,14 +53,13 @@ public class DiskLoggerBackend extends LoggerBackend {
     public static final String METRICS_LOGGING_DISK = "logging.disk";
     public static final String METRICS_LOGGING_DISK_BUFFERS = "logging.disk.buffers";
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
-    public final String filePattern = "${LOG_NAME}/%{YEAR}-%{MONTH}/%{DAY}/%{LOG_TYPE}_v%{LOG_VERSION}-%{YEAR}-%{MONTH}-%{DAY}-%{HOUR}-%{INTERVAL}.tsv.gz";
+    public final String filePattern = "${LOG_NAME}/${YEAR}-${MONTH}/${DAY}/${LOG_TYPE}_v${LOG_VERSION}_${CLIENT_HOST}-${YEAR}-${MONTH}-${DAY}-${HOUR}-${INTERVAL}.tsv.gz";
     private final Path logDirectory;
     private final Timestamp timestamp;
     private final int bufferSize;
     private final LoadingCache<LogId, Writer> writers;
     private final Name writersMetric;
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
-    protected String prefix = "";
     private boolean closed;
 
     public DiskLoggerBackend( Path logDirectory, Timestamp timestamp, int bufferSize ) {

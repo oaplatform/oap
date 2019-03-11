@@ -24,6 +24,7 @@
 
 package oap.logstream.net;
 
+import oap.logstream.LogId;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -38,7 +39,7 @@ public class BufferTest {
 
     @Test
     public void data() throws IOException {
-        Buffer buffer = new Buffer( 200, "sel" );
+        Buffer buffer = new Buffer( 200, new LogId( "s", "l", "h", 1 ) );
         assertTrue( buffer.putInt( 10 ) );
         assertTrue( buffer.putLong( 10 ) );
         assertTrue( buffer.putUTF( "aaaa" ) );
@@ -49,7 +50,10 @@ public class BufferTest {
         DataInputStream dis = new DataInputStream( new ByteArrayInputStream( Arrays.copyOf( buffer.data(), buffer.length() ) ) );
         assertEquals( dis.readLong(), 1 );
         assertEquals( dis.readInt(), 26 );
-        assertEquals( dis.readUTF(), "sel" );
+        assertEquals( dis.readUTF(), "s" );
+        assertEquals( dis.readUTF(), "l" );
+        assertEquals( dis.readUTF(), "h" );
+        assertEquals( dis.readInt(), 1 );
         assertEquals( dis.readInt(), 10 );
         assertEquals( dis.readLong(), 10 );
         assertEquals( dis.readUTF(), "aaaa" );

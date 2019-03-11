@@ -60,12 +60,12 @@ public class LoggerTest extends AbstractTest {
             logger.log( "lfn1", "lft1", 1, content );
         }
 
-        assertFile( tmpPath( "logs/" + HOSTNAME + "2015-10/10/a-2015-10-10-01-00.tsv.gz" ) )
+        assertFile( tmpPath( "logs/lfn1/2015-10/10/lft_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n"
                 + formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
-        assertFile( tmpPath( "logs/" + HOSTNAME + "/2015-10/10/b-2015-10-10-01-00.tsv.gz" ) )
+        assertFile( tmpPath( "logs/lfn2/2015-10/10/lft_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
-        assertFile( tmpPath( "logs/" + HOSTNAME + "/2015-10/10/d-2015-10-10-01-00.tsv.gz" ) )
+        assertFile( tmpPath( "logs/lfn1/2015-10/10/lft1_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
     }
 
@@ -77,7 +77,7 @@ public class LoggerTest extends AbstractTest {
         try( val serverBackend = new DiskLoggerBackend( tmpPath( "logs" ), Timestamp.BPH_12, DEFAULT_BUFFER ) ) {
             SocketLoggerServer server = new SocketLoggerServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
             try( val clientBackend = new SocketLoggerBackend( ( byte ) 1, "localhost", Env.port( "net" ),
-                tmpPath( "buffers" ), 50 ) ) {
+                tmpPath( "buffers" ), 70 ) ) {
 
                 serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 1000L;
                 assertFalse( serverBackend.isLoggingAvailable() );
@@ -101,17 +101,12 @@ public class LoggerTest extends AbstractTest {
             }
         }
 
-        String localhost = "localhost";
-        if( !Files.exists( tmpPath( "logs/localhost/2015-10/10/a-2015-10-10-01-00.log" ) ) ) {
-            localhost = "127.0.0.1";
-        }
-
-        assertFile( tmpPath( "logs/" + localhost + "/2015-10/10/a-2015-10-10-01-00.log" ) )
+        assertFile( tmpPath( "logs/lfn1/2015-10/10/lft_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n"
-                + formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-        assertFile( tmpPath( "logs/" + localhost + "/2015-10/10/b-2015-10-10-01-00.log" ) )
-            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n" );
-        assertFile( tmpPath( "logs/" + localhost + "/2015-10/10/d-2015-10-10-01-00.log" ) )
-            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n" );
+                + formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
+        assertFile( tmpPath( "logs/lfn2/2015-10/10/lft_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
+        assertFile( tmpPath( "logs/lfn1/2015-10/10/lft3_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
     }
 }

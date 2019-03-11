@@ -30,12 +30,15 @@ import oap.net.Inet;
 import oap.util.Strings;
 import org.joda.time.DateTime;
 
+import java.io.Serializable;
+
 /**
  * Created by igor.petrenko on 06.03.2019.
  */
 @ToString
 @EqualsAndHashCode
-public class LogId {
+public class LogId implements Serializable {
+    private static final long serialVersionUID = -6026646143366760882L;
     public final String logName;
     public final String logType;
     public final String clientHostname;
@@ -60,7 +63,7 @@ public class LogId {
                 case "SERVER_HOST":
                     return Inet.HOSTNAME;
                 case "CLIENT_HOST":
-                    return Inet.HOSTNAME;
+                    return clientHostname;
                 case "YEAR":
                     return time.getYear();
                 case "MONTH":
@@ -82,6 +85,6 @@ public class LogId {
     }
 
     public final String lock() {
-        return (logName + logType + version).intern();
+        return ( logName + logType + clientHostname + version ).intern();
     }
 }
