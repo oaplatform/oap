@@ -103,6 +103,6 @@ public class WriterTest extends AbstractTest {
             .hasContent( "corrupted file" );
 
         assertFile( logs.resolve( "test/2015-10/10/v2_file-2015-10-10-01-02.log.gz" ) )
-            .hasContent( "REQUEST_ID\tREQUEST_ID2\n" + content, GZIP );
+            .hasContent( "DATETIME\tREQUEST_ID\tREQUEST_ID2\n" + content, GZIP );
     }
 }

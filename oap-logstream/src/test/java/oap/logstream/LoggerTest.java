@@ -63,28 +63,32 @@ public class LoggerTest extends AbstractTest {
     public void disk() {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-        String content = "12345678";
+        val content = "12345678";
+        val contentWithHeaders = "DATETIME\tREQUEST_ID\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
+        val content2WithHeaders = "DATETIME\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
         try( DiskLoggerBackend backend = new DiskLoggerBackend( tmpPath( "logs" ), BPH_12, DEFAULT_BUFFER, logConfiguration ) ) {
             Logger logger = new Logger( backend );
-            logger.log( "lfn1", "lft", 1, content );
-            logger.log( "lfn2", "lft", 1, content );
-            logger.log( "lfn1", "lft", 1, content );
-            logger.log( "lfn1", "lft1", 1, content );
+            logger.log( "lfn1", "log", 2, content );
+            logger.log( "lfn2", "log", 2, content );
+            logger.log( "lfn1", "log", 2, content );
+            logger.log( "lfn1", "log2", 2, content );
         }
 
-        assertFile( tmpPath( "logs/lfn1/2015-10/10/lft_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n"
+        assertFile( tmpPath( "logs/lfn1/2015-10/10/log_v2_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            .hasContent( contentWithHeaders + "\n"
                 + formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
-        assertFile( tmpPath( "logs/lfn2/2015-10/10/lft_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
-        assertFile( tmpPath( "logs/lfn1/2015-10/10/lft1_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
+        assertFile( tmpPath( "logs/lfn2/2015-10/10/log_v2_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            .hasContent( contentWithHeaders + "\n", Encoding.GZIP );
+        assertFile( tmpPath( "logs/lfn1/2015-10/10/log2_v2_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            .hasContent( content2WithHeaders + "\n", Encoding.GZIP );
     }
 
     @Test
     public void net() {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
-        String content = "12345678";
+        val content = "12345678";
+        val contentWithHeaders = "DATETIME\tREQUEST_ID\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
+        val content2WithHeaders = "DATETIME\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
 
         try( val serverBackend = new DiskLoggerBackend( tmpPath( "logs" ), BPH_12, DEFAULT_BUFFER, logConfiguration ) ) {
             SocketLoggerServer server = new SocketLoggerServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
@@ -94,7 +98,7 @@ public class LoggerTest extends AbstractTest {
                 serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 1000L;
                 assertFalse( serverBackend.isLoggingAvailable() );
                 val logger = new Logger( clientBackend );
-                logger.log( "lfn1", "lft", 1, content );
+                logger.log( "lfn1", "log", 2, content );
                 clientBackend.send();
                 assertFalse( logger.isLoggingAvailable() );
                 server.start();
@@ -104,21 +108,21 @@ public class LoggerTest extends AbstractTest {
                 assertTrue( serverBackend.isLoggingAvailable() );
                 clientBackend.send();
                 assertTrue( logger.isLoggingAvailable() );
-                logger.log( "lfn2", "lft", 1, content );
-                logger.log( "lfn1", "lft", 1, content );
-                logger.log( "lfn1", "lft3", 1, content );
+                logger.log( "lfn2", "log", 2, content );
+                logger.log( "lfn1", "log", 2, content );
+                logger.log( "lfn1", "log2", 2, content );
                 clientBackend.send();
             } finally {
                 server.stop();
             }
         }
 
-        assertFile( tmpPath( "logs/lfn1/2015-10/10/lft_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n"
+        assertFile( tmpPath( "logs/lfn1/2015-10/10/log_v2_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            .hasContent( contentWithHeaders + "\n"
                 + formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
-        assertFile( tmpPath( "logs/lfn2/2015-10/10/lft_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
-        assertFile( tmpPath( "logs/lfn1/2015-10/10/lft3_v1_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( formatDateWithMillis( currentTimeMillis() ) + "\t" + content + "\n", Encoding.GZIP );
+        assertFile( tmpPath( "logs/lfn2/2015-10/10/log_v2_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            .hasContent( contentWithHeaders + "\n", Encoding.GZIP );
+        assertFile( tmpPath( "logs/lfn1/2015-10/10/log2_v2_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
+            .hasContent( content2WithHeaders + "\n", Encoding.GZIP );
     }
 }
