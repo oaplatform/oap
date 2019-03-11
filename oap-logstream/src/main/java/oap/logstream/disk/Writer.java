@@ -119,8 +119,13 @@ public class Writer implements Closeable {
                     exists = false;
                 }
 
-                if( !exists )
-                    out.write( getHeaders( logId.logType, logId.version ).getBytes() );
+                if( !exists ) {
+                    val headers = getHeaders( logId.logType, logId.version );
+                    out.write( headers.getBytes() );
+                    log.debug( "[{}] write headers {}", filename, headers );
+                } else {
+                    log.trace( "[{}] file exists", filename );
+                }
             }
             log.trace( "writing {} bytes to {}", length, this );
             out.write( buffer, offset, length );
