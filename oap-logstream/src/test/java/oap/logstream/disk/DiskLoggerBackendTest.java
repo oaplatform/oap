@@ -24,40 +24,30 @@
 
 package oap.logstream.disk;
 
+import lombok.val;
+import oap.dictionary.LogConfiguration;
 import oap.logstream.Timestamp;
-import oap.net.Inet;
+import oap.template.Engine;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import oap.util.Dates;
 import org.testng.annotations.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.nio.file.Paths;
+
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class DiskLoggerBackendTest extends AbstractTest {
     @Test
     public void spaceAvailable() {
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( Env.tmpPath( "logs" ), "log", Timestamp.BPH_12, 4000 ) ) {
+        val engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
+        val logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( Env.tmpPath( "logs" ), Timestamp.BPH_12, 4000, logConfiguration ) ) {
             assertTrue( backend.isLoggingAvailable() );
             backend.requiredFreeSpace *= 1000;
             assertFalse( backend.isLoggingAvailable() );
             backend.requiredFreeSpace /= 1000;
             assertTrue( backend.isLoggingAvailable() );
         }
-    }
-
-    @Test
-    public void testPrefix() {
-        Dates.setTimeFixed( 2017, 8, 22, 12, 51 );
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( Env.tmpPath( "logs" ), "log", Timestamp.BPH_12, 4000 ) ) {
-            backend.prefix = "${HOST}--";
-            backend.useClientHostPrefix = false;
-
-            backend.log( "test-host", "0/file.txt", "line" );
-
-        }
-
-        assertThat( Env.tmpPath( "logs/" + Inet.hostname() + "--0/2017-08/22/file.txt-2017-08-22-12-10.log" ) ).exists();
     }
 }

@@ -62,11 +62,11 @@ public class ShardedLoggerBackendTest {
         when( mapper.getShardNumber( anyString(), eq( "34/df/file1" ), any( byte[].class ) ) ).thenReturn( 34 );
         when( mapper.getShardNumber( anyString(), eq( "142/345/file1" ), any( byte[].class ) ) ).thenReturn( 142 );
 
-        slb.log( "localhost", "34/df/file1", "line1" );
-        slb.log( "localhost", "142/345/file1", "line2" );
+        slb.log( "localhost", "34/df/file1", "t1", 1, "line1" );
+        slb.log( "localhost", "142/345/file1", "t1", 1, "line2" );
 
-        verify( log1 ).log( "localhost", "34/df/file1", "line1\n".getBytes(), 0, "line1\n".getBytes().length );
-        verify( log2 ).log( "localhost", "142/345/file1", "line2\n".getBytes(), 0, "line2\n".getBytes().length );
+        verify( log1 ).log( "localhost", "34/df/file1", "t1", 1, "line1\n".getBytes(), 0, "line1\n".getBytes().length );
+        verify( log2 ).log( "localhost", "142/345/file1", "t1", 1, "line2\n".getBytes(), 0, "line2\n".getBytes().length );
     }
 
     @Test( expectedExceptions = NoLoggerConfiguredForShardsException.class )

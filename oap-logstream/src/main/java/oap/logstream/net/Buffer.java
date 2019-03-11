@@ -23,26 +23,31 @@
  */
 package oap.logstream.net;
 
+import oap.logstream.LogId;
+
 import java.io.Serializable;
 
 class Buffer implements Serializable {
-    private final String selector;
+    private final LogId id;
     private byte[] data;
     private int position = 0;
     private boolean closed = false;
     private int dataStart;
 
-    public Buffer( int size, String selector ) {
-        this.selector = selector;
+    public Buffer( int size, LogId id ) {
+        this.id = id;
         this.data = new byte[size];
-        initMetadata( selector );
+        initMetadata( id );
     }
 
-    private void initMetadata( String selector ) {
+    private void initMetadata( LogId id ) {
         if( position != 0 ) throw new IllegalStateException( "metadata could be set for empty buffer only!" );
         boolean result = putLong( 0 ); //reserved for digestion control
         result &= putInt( 0 ); //reserved for data length
-        result &= putUTF( selector );
+        result &= putUTF( id.logName );
+        result &= putUTF( id.logType );
+        result &= putUTF( id.clientHostname );
+        result &= putInt( id.version );
         this.dataStart = this.position;
         if( !result ) throw new IllegalArgumentException( "buffer is too small!" );
     }
@@ -140,10 +145,10 @@ class Buffer implements Serializable {
         return this.data;
     }
 
-    public final void reset( String selector ) {
+    public final void reset( LogId id ) {
         this.closed = false;
         this.position = 0;
-        initMetadata( selector );
+        initMetadata( id );
     }
 
     public final boolean isEmpty() {
@@ -172,6 +177,6 @@ class Buffer implements Serializable {
 
     @Override
     public final String toString() {
-        return ( selector + "," + position );
+        return ( id + "," + position );
     }
 }

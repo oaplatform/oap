@@ -159,10 +159,13 @@ public class SocketLoggerServer extends SocketServer {
                     long digestionId = in.readLong();
                     val lastId = control.computeIfAbsent( digestKey, h -> new AtomicLong( 0L ) );
                     int size = in.readInt();
-                    String selector = in.readUTF();
+                    String logName = in.readUTF();
+                    String logType = in.readUTF();
+                    String clientHostname = in.readUTF();
+                    int logVersion = in.readInt();
                     if( size > bufferSize ) {
                         out.writeInt( SocketError.BUFFER_OVERFLOW.code );
-                        val exception = new BufferOverflowException( hostName, clientId, selector, bufferSize, size );
+                        val exception = new BufferOverflowException( hostName, clientId, logName, logType, logVersion, bufferSize, size );
                         backend.listeners.fireError( exception );
                         throw exception;
                     }
@@ -174,11 +177,12 @@ public class SocketLoggerServer extends SocketServer {
                         throw exception;
                     }
                     if( lastId.get() < digestionId ) {
-                        log.trace( "[{}/{}] logging ({}, {}, {})", hostName, clientId, digestionId, selector, size );
-                        backend.log( hostName, selector, buffer, 0, size );
+                        log.trace( "[{}/{}] logging ({}, {}/{}/{}, {})", hostName, clientId, digestionId, logName, logType, logVersion, size );
+                        backend.log( clientHostname, logName, logType, logVersion, buffer, 0, size );
                         lastId.set( digestionId );
                     } else {
-                        val message = "[" + hostName + "/" + clientId + "] buffer (" + digestionId + ", " + selector + ", " + size + ") already written. Last written buffer is (" + lastId + ")";
+                        val message = "[" + hostName + "/" + clientId + "] buffer (" + digestionId + ", " + logName + "/" + logType + "/" + logVersion
+                            + ", " + size + ") already written. Last written buffer is (" + lastId + ")";
                         log.warn( message );
                         backend.listeners.fireWarning( message );
                     }

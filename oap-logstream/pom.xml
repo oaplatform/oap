@@ -45,13 +45,18 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>4.3.6</version>
+        <version>4.4.0</version>
     </parent>
 
     <dependencies>
         <dependency>
             <groupId>${project.parent.groupId}</groupId>
             <artifactId>oap-stdlib</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.parent.groupId}</groupId>
+            <artifactId>oap-dictionary</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>

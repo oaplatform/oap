@@ -102,7 +102,7 @@ public class Timestamp {
             .plusMinutes( Integer.parseInt( timestamp.substring( 14, 16 ) ) * 60 / bucketsPerHour );
     }
 
-    private int currentBucket( DateTime date ) {
+    public int currentBucket( DateTime date ) {
         return ( int ) Math.floor( date.getMinuteOfHour() / ( 60d / bucketsPerHour ) );
     }
 

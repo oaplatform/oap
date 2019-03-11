@@ -31,16 +31,16 @@ import com.google.common.cache.LoadingCache;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import oap.dictionary.LogConfiguration;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.logstream.AvailabilityReport;
+import oap.logstream.LogId;
 import oap.logstream.LoggerBackend;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
 import oap.metrics.Metrics;
 import oap.metrics.Name;
-import oap.net.Inet;
-import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
@@ -54,31 +54,26 @@ public class DiskLoggerBackend extends LoggerBackend {
     public static final String METRICS_LOGGING_DISK = "logging.disk";
     public static final String METRICS_LOGGING_DISK_BUFFERS = "logging.disk.buffers";
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
+    public final String filePattern = "${LOG_NAME}/${YEAR}-${MONTH}/${DAY}/${LOG_TYPE}_v${LOG_VERSION}_${CLIENT_HOST}-${YEAR}-${MONTH}-${DAY}-${HOUR}-${INTERVAL}.tsv.gz";
     private final Path logDirectory;
-    private final String ext;
     private final Timestamp timestamp;
     private final int bufferSize;
-    private final LoadingCache<String, Writer> writers;
+    private final LoadingCache<LogId, Writer> writers;
     private final Name writersMetric;
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
-    public boolean useClientHostPrefix = true;
-    protected String prefix = "";
     private boolean closed;
 
-    public DiskLoggerBackend( Path logDirectory, String ext, Timestamp timestamp, int bufferSize ) {
+    public DiskLoggerBackend( Path logDirectory, Timestamp timestamp, int bufferSize, LogConfiguration logConfiguration ) {
         this.logDirectory = logDirectory;
-        this.ext = ext;
         this.timestamp = timestamp;
         this.bufferSize = bufferSize;
         this.writers = CacheBuilder.newBuilder()
             .expireAfterAccess( 60 / timestamp.bucketsPerHour * 3, TimeUnit.MINUTES )
             .removalListener( notification -> Closeables.close( ( Writer ) notification.getValue() ) )
-            .build( new CacheLoader<String, Writer>() {
+            .build( new CacheLoader<LogId, Writer>() {
                 @Override
-                public Writer load( String fullFileName ) throws Exception {
-                    return new Writer( logDirectory,
-                        StringUtils.replace( prefix, "${HOST}", Inet.hostname() ) + fullFileName,
-                        ext, bufferSize, timestamp );
+                public Writer load( LogId id ) throws Exception {
+                    return new Writer( logDirectory, filePattern, id, bufferSize, timestamp, logConfiguration );
                 }
             } );
         this.writersMetric = Metrics.measureGauge(
@@ -89,7 +84,7 @@ public class DiskLoggerBackend extends LoggerBackend {
 
     @Override
     @SneakyThrows
-    public void log( String hostName, String fileName, byte[] buffer, int offset, int length ) {
+    public void log( String hostName, String fileName, String logType, int version, byte[] buffer, int offset, int length ) {
         if( closed ) {
             val exception = new LoggerException( "already closed!" );
             listeners.fireError( exception );
@@ -98,8 +93,7 @@ public class DiskLoggerBackend extends LoggerBackend {
 
         Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_DISK ).tag( "from", hostName ) );
         Metrics.measureHistogram( Metrics.name( METRICS_LOGGING_DISK_BUFFERS ).tag( "from", hostName ), length );
-        String fullFileName = useClientHostPrefix ? hostName + "/" + fileName : fileName;
-        Writer writer = writers.get( fullFileName );
+        Writer writer = writers.get( new LogId( fileName, logType, hostName, version ) );
         log.trace( "logging {} bytes to {}", length, writer );
         writer.write( buffer, offset, length, this.listeners::fireError );
     }
@@ -123,10 +117,9 @@ public class DiskLoggerBackend extends LoggerBackend {
     public String toString() {
         return MoreObjects.toStringHelper( this )
             .add( "path", logDirectory )
-            .add( "ext", ext )
+            .add( "filePattern", filePattern )
             .add( "buffer", bufferSize )
             .add( "bucketsPerHour", timestamp.bucketsPerHour )
-            .add( "hostPrefix", useClientHostPrefix )
             .add( "writers", writers.size() )
             .toString();
     }

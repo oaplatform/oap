@@ -34,12 +34,12 @@ public class Logger {
         this.backend = backend;
     }
 
-    public void log( String selector, String line ) {
-        logWithoutTime( selector, Dates.formatDateWithMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
+    public void log( String logFileName, String logType, int version, String line ) {
+        logWithoutTime( logFileName, logType, version, Dates.formatDateWithMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
     }
 
-    public void logWithoutTime( String selector, String line ) {
-        backend.log( Inet.HOSTNAME, selector, line );
+    public void logWithoutTime( String logFileName, String logType, int version, String line ) {
+        backend.log( Inet.HOSTNAME, logFileName, logType, version, line );
     }
 
     public boolean isLoggingAvailable() {

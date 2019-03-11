@@ -28,6 +28,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.io.Files;
+import oap.logstream.LogId;
 import oap.logstream.net.BufferConfigurationMap.BufferConfiguration;
 import oap.metrics.Metrics;
 import oap.util.Cuid;
@@ -52,7 +53,7 @@ public class Buffers implements Closeable {
     private final Path location;
     //    private final int bufferSize;
     private final ConcurrentHashMap<String, Buffer> currentBuffers = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, BufferConfiguration> configurationForSelector = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<LogId, BufferConfiguration> configurationForSelector = new ConcurrentHashMap<>();
     private final BufferConfigurationMap configurations;
     ReadyQueue readyBuffers = new ReadyQueue();
     BufferCache cache;
@@ -72,34 +73,34 @@ public class Buffers implements Closeable {
         Files.delete( location );
     }
 
-    public final void put( String key, byte[] buffer ) {
+    public final void put( LogId key, byte[] buffer ) {
         put( key, buffer, 0, buffer.length );
     }
 
-    public final void put( String selector, byte[] buffer, int offset, int length ) {
+    public final void put( LogId id, byte[] buffer, int offset, int length ) {
         if( closed ) throw new IllegalStateException( "current buffers already closed" );
 
-        BufferConfiguration conf = configurationForSelector.computeIfAbsent( selector, this::findConfiguration );
+        BufferConfiguration conf = configurationForSelector.computeIfAbsent( id, this::findConfiguration );
 
         final int bufferSize = conf.bufferSize;
-        String intern = selector.intern();
+        String intern = id.lock();
         synchronized( intern ) {
-            Buffer b = currentBuffers.computeIfAbsent( intern, k -> cache.get( intern, bufferSize ) );
+            Buffer b = currentBuffers.computeIfAbsent( intern, k -> cache.get( id, bufferSize ) );
             if( bufferSize - b.headerLength() < length )
-                throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize );
+                throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize + "; headers = " + b.headerLength() );
             if( !b.available( length ) ) {
                 readyBuffers.ready( b );
-                currentBuffers.put( intern, b = cache.get( intern, bufferSize ) );
+                currentBuffers.put( intern, b = cache.get( id, bufferSize ) );
             }
             b.put( buffer, offset, length );
         }
     }
 
-    private BufferConfiguration findConfiguration( String selection ) {
+    private BufferConfiguration findConfiguration( LogId id ) {
         for( val conf : configurations.entrySet() ) {
-            if( conf.getValue().pattern.matcher( selection ).find() ) return conf.getValue();
+            if( conf.getValue().pattern.matcher( id.logType ).find() ) return conf.getValue();
         }
-        throw new IllegalStateException( "Pattern for " + selection + " not found" );
+        throw new IllegalStateException( "Pattern for " + id + " not found" );
     }
 
     private void flush() {
@@ -148,13 +149,13 @@ public class Buffers implements Closeable {
     public static class BufferCache {
         private final HashMap<Integer, Queue<Buffer>> cache = new HashMap<>();
 
-        private synchronized Buffer get( String selector, int bufferSize ) {
+        private synchronized Buffer get( LogId id, int bufferSize ) {
             final Queue<Buffer> list = cache.computeIfAbsent( bufferSize, ( bs ) -> new LinkedList<>() );
 
-            if( list.isEmpty() ) return new Buffer( bufferSize, selector );
+            if( list.isEmpty() ) return new Buffer( bufferSize, id );
             else {
                 Buffer buffer = list.poll();
-                buffer.reset( selector );
+                buffer.reset( id );
                 return buffer;
             }
         }
