@@ -24,21 +24,25 @@
 
 package oap.logstream.disk;
 
+import lombok.val;
+import oap.dictionary.LogConfiguration;
 import oap.logstream.Timestamp;
-import oap.net.Inet;
+import oap.template.Engine;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
-import oap.util.Dates;
 import org.testng.annotations.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.nio.file.Paths;
+
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class DiskLoggerBackendTest extends AbstractTest {
     @Test
     public void spaceAvailable() {
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( Env.tmpPath( "logs" ), Timestamp.BPH_12, 4000 ) ) {
+        val engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
+        val logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( Env.tmpPath( "logs" ), Timestamp.BPH_12, 4000, logConfiguration ) ) {
             assertTrue( backend.isLoggingAvailable() );
             backend.requiredFreeSpace *= 1000;
             assertFalse( backend.isLoggingAvailable() );

@@ -24,14 +24,19 @@
 
 package oap.logstream.disk;
 
+import lombok.val;
+import oap.dictionary.LogConfiguration;
 import oap.io.Files;
 import oap.logstream.LogId;
 import oap.logstream.Timestamp;
+import oap.template.Engine;
 import oap.testng.AbstractTest;
 import oap.util.Dates;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
@@ -39,7 +44,15 @@ import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
 
 public class WriterTest extends AbstractTest {
-    private static final String FILE_PATTERN = "test/2015-10/10/file-2015-10-10-01-${INTERVAL}.log.gz";
+    private static final String FILE_PATTERN = "test/2015-10/10/v${LOG_VERSION}_file-2015-10-10-01-${INTERVAL}.log.gz";
+
+    private LogConfiguration logConfiguration;
+
+    @BeforeMethod
+    public void beforeMethod() {
+        val engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
+        logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
+    }
 
     @Test
     public void write() {
@@ -48,9 +61,9 @@ public class WriterTest extends AbstractTest {
         byte[] bytes = content.getBytes();
         Path logs = tmpPath( "logs" );
         Files.writeString(
-            logs.resolve( "test/2015-10/10/file-2015-10-10-01-00.log.gz" ),
+            logs.resolve( "test/2015-10/10/v1_file-2015-10-10-01-00.log.gz" ),
             PLAIN, "corrupted file" );
-        Writer writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "lt", "hn", 1 ), 10, Timestamp.BPH_12 );
+        Writer writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "log", "hn", 1 ), 10, Timestamp.BPH_12, logConfiguration );
 
         writer.write( bytes, ( msg ) -> {} );
 
@@ -62,7 +75,7 @@ public class WriterTest extends AbstractTest {
 
         writer.close();
 
-        writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "lt", "hn", 1 ), 10, Timestamp.BPH_12 );
+        writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "log", "hn", 1 ), 10, Timestamp.BPH_12, logConfiguration );
 
         Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
         writer.write( bytes, ( msg ) -> {} );
@@ -70,13 +83,26 @@ public class WriterTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 59 );
         writer.write( bytes, ( msg ) -> {} );
         writer.close();
-        assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-01.log.gz" ) )
-            .hasContent( content, GZIP );
-        assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-02.log.gz" ) )
-            .hasContent( content + content, GZIP );
-        assertFile( logs.resolve( "test/2015-10/10/file-2015-10-10-01-11.log.gz" ) )
-            .hasContent( content, GZIP );
-        assertFile( logs.resolve( ".corrupted/test/2015-10/10/file-2015-10-10-01-00.log.gz" ) )
+
+        writer = new Writer( logs, FILE_PATTERN, new LogId( "test/file", "log", "hn", 2 ), 10, Timestamp.BPH_12, logConfiguration );
+
+        Dates.setTimeFixed( 2015, 10, 10, 1, 14 );
+        writer.write( bytes, ( msg ) -> {} );
+        writer.close();
+
+
+        assertFile( logs.resolve( "test/2015-10/10/v1_file-2015-10-10-01-01.log.gz" ) )
+            .hasContent( "REQUEST_ID\n" + content, GZIP );
+        assertFile( logs.resolve( "test/2015-10/10/v1_file-2015-10-10-01-02.log.gz" ) )
+            .hasContent( "REQUEST_ID\n" + content + content, GZIP );
+        assertFile( logs.resolve( "test/2015-10/10/v1_file-2015-10-10-01-11.log.gz" ) )
+            .hasContent( "REQUEST_ID\n" + content, GZIP );
+        assertFile( logs.resolve( "test/2015-10/10/v1_file-2015-10-10-01-11.log.gz" ) )
+            .hasContent( "REQUEST_ID\n" + content, GZIP );
+        assertFile( logs.resolve( ".corrupted/test/2015-10/10/v1_file-2015-10-10-01-00.log.gz" ) )
             .hasContent( "corrupted file" );
+
+        assertFile( logs.resolve( "test/2015-10/10/v2_file-2015-10-10-01-02.log.gz" ) )
+            .hasContent( "REQUEST_ID\tREQUEST_ID2\n" + content, GZIP );
     }
 }

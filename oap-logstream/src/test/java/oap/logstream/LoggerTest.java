@@ -25,17 +25,21 @@
 package oap.logstream;
 
 import lombok.val;
+import oap.dictionary.LogConfiguration;
 import oap.io.IoStreams.Encoding;
 import oap.logstream.disk.DiskLoggerBackend;
 import oap.logstream.net.SocketLoggerBackend;
 import oap.logstream.net.SocketLoggerServer;
+import oap.template.Engine;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Dates;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.nio.file.Files;
+import java.nio.file.Paths;
 
+import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_FREE_SPACE_REQUIRED;
 import static oap.net.Inet.HOSTNAME;
@@ -47,12 +51,20 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class LoggerTest extends AbstractTest {
+    private LogConfiguration logConfiguration;
+
+    @BeforeMethod
+    public void beforeMethod() {
+        val engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
+        logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
+    }
+
     @Test
     public void disk() {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
         String content = "12345678";
-        try( DiskLoggerBackend backend = new DiskLoggerBackend( tmpPath( "logs" ), Timestamp.BPH_12, DEFAULT_BUFFER ) ) {
+        try( DiskLoggerBackend backend = new DiskLoggerBackend( tmpPath( "logs" ), BPH_12, DEFAULT_BUFFER, logConfiguration ) ) {
             Logger logger = new Logger( backend );
             logger.log( "lfn1", "lft", 1, content );
             logger.log( "lfn2", "lft", 1, content );
@@ -74,7 +86,7 @@ public class LoggerTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
         String content = "12345678";
 
-        try( val serverBackend = new DiskLoggerBackend( tmpPath( "logs" ), Timestamp.BPH_12, DEFAULT_BUFFER ) ) {
+        try( val serverBackend = new DiskLoggerBackend( tmpPath( "logs" ), BPH_12, DEFAULT_BUFFER, logConfiguration ) ) {
             SocketLoggerServer server = new SocketLoggerServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
             try( val clientBackend = new SocketLoggerBackend( ( byte ) 1, "localhost", Env.port( "net" ),
                 tmpPath( "buffers" ), 70 ) ) {

@@ -31,6 +31,7 @@ import com.google.common.cache.LoadingCache;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import oap.dictionary.LogConfiguration;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.logstream.AvailabilityReport;
@@ -62,7 +63,7 @@ public class DiskLoggerBackend extends LoggerBackend {
     public long requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED;
     private boolean closed;
 
-    public DiskLoggerBackend( Path logDirectory, Timestamp timestamp, int bufferSize ) {
+    public DiskLoggerBackend( Path logDirectory, Timestamp timestamp, int bufferSize, LogConfiguration logConfiguration ) {
         this.logDirectory = logDirectory;
         this.timestamp = timestamp;
         this.bufferSize = bufferSize;
@@ -72,7 +73,7 @@ public class DiskLoggerBackend extends LoggerBackend {
             .build( new CacheLoader<LogId, Writer>() {
                 @Override
                 public Writer load( LogId id ) throws Exception {
-                    return new Writer( logDirectory, filePattern, id, bufferSize, timestamp );
+                    return new Writer( logDirectory, filePattern, id, bufferSize, timestamp, logConfiguration );
                 }
             } );
         this.writersMetric = Metrics.measureGauge(

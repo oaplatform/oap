@@ -26,9 +26,12 @@ package oap.logstream.disk;
 
 import com.google.common.io.CountingOutputStream;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import oap.concurrent.Stopwatch;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
+import oap.dictionary.Dictionary;
+import oap.dictionary.LogConfiguration;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.IoStreams.Encoding;
@@ -46,25 +49,29 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.joining;
 
 @Slf4j
 public class Writer implements Closeable {
+    public static final String LOG_TAG = "LOG";
     private final Path logDirectory;
     private final String filePattern;
     private final LogId logId;
     private final Timestamp timestamp;
+    private final LogConfiguration logConfiguration;
     private int bufferSize;
     private CountingOutputStream out;
     private String lastPattern;
     private Scheduled refresher;
     private Stopwatch stopwatch = new Stopwatch();
 
-    public Writer( Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp ) {
+    public Writer( Path logDirectory, String filePattern, LogId logId, int bufferSize, Timestamp timestamp, LogConfiguration logConfiguration ) {
         this.logDirectory = logDirectory;
         this.filePattern = filePattern;
         this.logId = logId;
         this.bufferSize = bufferSize;
         this.timestamp = timestamp;
+        this.logConfiguration = logConfiguration;
         this.lastPattern = currentPattern();
         this.refresher = Scheduler.scheduleWithFixedDelay( 10, SECONDS, this::refresh );
         log.debug( "spawning {}", this );
@@ -100,9 +107,12 @@ public class Writer implements Closeable {
             refresh();
             Path filename = filename();
             if( out == null )
-                if( Files.isFileEncodingValid( filename ) )
+                if( Files.isFileEncodingValid( filename ) ) {
+                    val exists = Files.exists( filename );
                     out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize, true ) );
-                else {
+                    if( !exists )
+                        out.write( getHeaders( logId.logType, logId.version ).getBytes() );
+                } else {
                     error.accept( "corrupted file, cannot append " + filename );
                     log.error( "corrupted file, cannot append {}", filename );
                     Files.rename( filename, logDirectory.resolve( ".corrupted" )
@@ -121,6 +131,20 @@ public class Writer implements Closeable {
             }
             throw new LoggerException( e );
         }
+    }
+
+    private String getHeaders( String logType, int version ) {
+        val versionDictionary = logConfiguration.getDictionary( version );
+        val logTypeDictionary = versionDictionary.getValue( logType.toUpperCase() );
+        if( logTypeDictionary == null ) {
+            throw new LoggerException( "Unknown log type " + logType.toUpperCase() );
+        }
+
+        return logTypeDictionary
+            .getValues( d -> d.getTags().contains( LOG_TAG ) )
+            .stream()
+            .map( Dictionary::getId )
+            .collect( joining( "\t" ) ) + '\n';
     }
 
     private Path filename() {
