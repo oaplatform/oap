@@ -87,7 +87,7 @@ public class Buffers implements Closeable {
         synchronized( intern ) {
             Buffer b = currentBuffers.computeIfAbsent( intern, k -> cache.get( id, bufferSize ) );
             if( bufferSize - b.headerLength() < length )
-                throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize );
+                throw new IllegalArgumentException( "buffer size is too big: " + length + " for buffer of " + bufferSize + "; headers = " + b.headerLength() );
             if( !b.available( length ) ) {
                 readyBuffers.ready( b );
                 currentBuffers.put( intern, b = cache.get( id, bufferSize ) );
