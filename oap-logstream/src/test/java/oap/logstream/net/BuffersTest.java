@@ -75,7 +75,7 @@ public class BuffersTest {
 
     @Test(
         expectedExceptions = IllegalArgumentException.class,
-        expectedExceptionsMessageRegExp = "buffer size is too big: 2 for buffer of 26" )
+        expectedExceptionsMessageRegExp = "buffer size is too big: 2 for buffer of 26; headers = 25" )
     public void length() {
         Buffers.ReadyQueue.digestionIds = Cuid.incremental( 0 );
         Buffers buffers = new Buffers( Env.tmpPath( "bfrs" ), BufferConfigurationMap.DEFAULT( HEADER + 1 ) );
