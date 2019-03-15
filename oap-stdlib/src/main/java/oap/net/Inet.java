@@ -24,6 +24,7 @@
 package oap.net;
 
 import lombok.SneakyThrows;
+import oap.testng.Env;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -34,7 +35,7 @@ public class Inet {
 
     @SneakyThrows
     public static String hostname() {
-        return InetAddress.getLocalHost().getHostName();
+        return Env.getEnvOrDefault( "HOSTNAME", InetAddress.getLocalHost().getHostName() );
     }
 
     public static boolean isLocalAddress( InetAddress addr ) {
