@@ -23,41 +23,15 @@
  */
 package oap.io;
 
-import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Cleaner;
 
 import java.io.Closeable;
-import java.io.File;
-import java.io.RandomAccessFile;
-import java.lang.reflect.Field;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Closeables {
     private static final Logger logger = LoggerFactory.getLogger( Closeables.class );
-
-
-    private static Field cleanerField;
-
-    @SneakyThrows
-    private static void init() {
-        File tempFile = File.createTempFile( "test", "test" );
-        try( RandomAccessFile file = new RandomAccessFile( tempFile, "rw" );
-             FileChannel channel = file.getChannel() ) {
-            MappedByteBuffer buffer =
-                channel.map( FileChannel.MapMode.READ_WRITE, 0, 1 );
-            cleanerField = buffer.getClass().getDeclaredField( "cleaner" );
-            cleanerField.setAccessible( true );
-
-            close( buffer );
-        } finally {
-            tempFile.delete();
-        }
-    }
 
     public static void close( Closeable closeable ) {
         try {
@@ -75,20 +49,6 @@ public class Closeables {
             }
         } catch( Exception e ) {
             logger.error( e.getMessage() );
-        }
-    }
-
-    public static void close( MappedByteBuffer buffer ) {
-        try {
-            if( cleanerField == null ) {
-                synchronized( Closeables.class ) {
-                    if( cleanerField == null ) init();
-                }
-            }
-            Cleaner cleaner = ( Cleaner ) cleanerField.get( buffer );
-            cleaner.clean();
-        } catch( IllegalAccessException e ) {
-            logger.warn( e.getMessage(), e );
         }
     }
 }
