@@ -32,7 +32,7 @@ public class CircularBufferTest {
 
     @Test
     public void cycle() {
-        CircularBuffer<Integer> buffer = new CircularBuffer<>( 3 );
+        CircularBuffer<Integer> buffer = new CircularBuffer<>( Integer.class,3 );
         buffer.add( 1 );
         buffer.add( 2 );
         assertThat( buffer.getElements() ).containsExactly( 1, 2 );
