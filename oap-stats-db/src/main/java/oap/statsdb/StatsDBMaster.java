@@ -27,6 +27,7 @@ package oap.statsdb;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import oap.storage.Storage;
+import oap.util.Lists;
 import oap.util.Stream;
 
 import java.io.Closeable;
@@ -100,7 +101,7 @@ public class StatsDBMaster extends StatsDB<StatsDBMaster.MasterDatabase> impleme
         nodes.forEach( node -> {
             if( node.v instanceof Node.Container ) {
                 init( Stream.of( node.db.values() ) );
-                ( ( Node.Container ) node.v ).aggregate( Stream.of( node.db.values() ).map( b -> b.v ) );
+                ( ( Node.Container ) node.v ).aggregate( Lists.map( node.db.values(), b -> b.v ) );
             }
         } );
     }
