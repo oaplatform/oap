@@ -32,8 +32,8 @@
     <artifactId>oap-stats-db</artifactId>
 
     <parent>
-        <groupId>oap</groupId>
-        <artifactId>oap-jdk11</artifactId>
+        <groupId>oap-jdk11</groupId>
+        <artifactId>oap</artifactId>
         <version>4.6.0</version>
     </parent>
 
