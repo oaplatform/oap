@@ -33,7 +33,7 @@
 
     <parent>
         <groupId>oap</groupId>
-        <artifactId>oap</artifactId>
+        <artifactId>oap-jdk11</artifactId>
         <version>4.6.0</version>
     </parent>
 

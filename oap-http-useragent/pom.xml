@@ -30,7 +30,7 @@
     <artifactId>oap-http-useragent</artifactId>
 
     <parent>
-        <artifactId>oap</artifactId>
+        <artifactId>oap-jdk11</artifactId>
         <groupId>oap</groupId>
         <version>4.6.0</version>
     </parent>
