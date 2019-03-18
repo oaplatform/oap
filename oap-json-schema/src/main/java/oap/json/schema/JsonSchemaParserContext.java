@@ -100,7 +100,12 @@ public class JsonSchemaParserContext {
 
     @SuppressWarnings( "unchecked" )
     public <T extends SchemaAST> T computeIfAbsent( SchemaId id, Supplier<T> s ) {
-        return ( T ) ast.computeIfAbsent( id, ( c ) -> s.get() );
+        SchemaAST r = ast.get( id );
+        if( r == null ) {
+            r = s.get();
+            ast.put( id, r );
+        }
+        return ( T ) r;
     }
 
     public String error( String message ) {
