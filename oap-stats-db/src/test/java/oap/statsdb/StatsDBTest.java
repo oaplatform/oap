@@ -39,6 +39,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.util.List;
 
 import static oap.storage.Storage.Lock.CONCURRENT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -267,8 +268,8 @@ public class StatsDBTest extends AbstractTest {
         }
 
         @Override
-        public MockValue aggregate( Stream<MockChild> children ) {
-            sum = children.mapToLong( c -> c.sum + c.ci ).sum();
+        public MockValue aggregate( List<MockChild> children ) {
+            sum = children.stream().mapToLong( c -> c.sum + c.ci ).sum();
 
             return this;
         }
@@ -303,8 +304,8 @@ public class StatsDBTest extends AbstractTest {
         }
 
         @Override
-        public MockChild aggregate( Stream<MockChild> children ) {
-            sum = children.mapToLong( c -> c.ci ).sum();
+        public MockChild aggregate( List<MockChild> children ) {
+            sum = children.stream().mapToLong( c -> c.ci ).sum();
             return this;
         }
     }

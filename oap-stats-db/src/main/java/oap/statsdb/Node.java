@@ -38,6 +38,7 @@ import org.joda.time.DateTimeUtils;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -108,6 +109,6 @@ public class Node implements Serializable {
     }
 
     public interface Container<T extends Value<T>, TChild extends Value<TChild>> extends Value<T> {
-        T aggregate( Stream<TChild> children );
+        T aggregate( List<TChild> children );
     }
 }

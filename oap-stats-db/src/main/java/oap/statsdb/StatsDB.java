@@ -36,6 +36,9 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 @Slf4j
 public abstract class StatsDB<T extends StatsDB.Database> {
@@ -58,6 +61,7 @@ public abstract class StatsDB<T extends StatsDB.Database> {
             ( ( Node.Container ) value ).aggregate( Stream.of( mnode.db.values() )
                 .map( n -> n.v )
                 .filter( Objects::nonNull )
+                .collect( toList())
             );
         }
     }
