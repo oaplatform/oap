@@ -24,10 +24,16 @@
 
 package oap.util;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
@@ -37,15 +43,17 @@ import java.util.stream.Stream;
 /**
  * Created by igor.petrenko on 19.03.2019.
  */
-public class LinkedHashSetRO<T> extends HashSet<T> {
+public class LinkedHashSetRO<T> implements Set<T>, Externalizable {
     private final ArrayList<T> list;
+    private final HashSet<T> set;
 
     public LinkedHashSetRO() {
-        this.list = new ArrayList<>();
+        set = new HashSet<>();
+        list = new ArrayList<>();
     }
 
     public LinkedHashSetRO( int initialCapacity ) {
-        super( initialCapacity );
+        set = new HashSet<>( initialCapacity );
         list = new ArrayList<>( initialCapacity );
     }
 
@@ -56,7 +64,7 @@ public class LinkedHashSetRO<T> extends HashSet<T> {
 
     @Override
     public boolean add( T t ) {
-        var add = super.add( t );
+        var add = set.add( t );
         if( add ) list.add( t );
         return add;
     }
@@ -68,7 +76,7 @@ public class LinkedHashSetRO<T> extends HashSet<T> {
 
     @Override
     public boolean contains( Object o ) {
-        return super.contains( o );
+        return set.contains( o );
     }
 
     @Override
@@ -113,7 +121,7 @@ public class LinkedHashSetRO<T> extends HashSet<T> {
 
     @Override
     public boolean containsAll( Collection<?> c ) {
-        return super.containsAll( c );
+        return set.containsAll( c );
     }
 
     @Override
@@ -154,5 +162,20 @@ public class LinkedHashSetRO<T> extends HashSet<T> {
     @Override
     public boolean retainAll( Collection<?> c ) {
         throw new IllegalAccessError();
+    }
+
+    public void trim() {
+        list.trimToSize();
+    }
+
+    @Override
+    public void writeExternal( ObjectOutput out ) throws IOException {
+        out.writeObject( list );
+    }
+
+    @Override
+    public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException {
+        var l = ( List<T> ) in.readObject();
+        addAll( l );
     }
 }
