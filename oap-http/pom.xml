@@ -32,7 +32,7 @@
     <parent>
         <artifactId>oap</artifactId>
         <groupId>oap-jdk11</groupId>
-        <version>4.6.0</version>
+        <version>4.6.1</version>
     </parent>
     <dependencies>
         <dependency>
