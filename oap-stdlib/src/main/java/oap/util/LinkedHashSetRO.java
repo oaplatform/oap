@@ -40,6 +40,10 @@ import java.util.stream.Stream;
 public class LinkedHashSetRO<T> extends HashSet<T> {
     private final ArrayList<T> list;
 
+    public LinkedHashSetRO() {
+        this.list = new ArrayList<>();
+    }
+
     public LinkedHashSetRO( int initialCapacity ) {
         super( initialCapacity );
         list = new ArrayList<>( initialCapacity );

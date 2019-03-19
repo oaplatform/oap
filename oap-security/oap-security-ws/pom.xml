@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap-jdk11</groupId>
         <artifactId>oap</artifactId>
-        <version>4.6.1</version>
+        <version>4.6.2</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
