@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap-jdk11</groupId>
     <artifactId>oap</artifactId>
-    <version>4.6.2</version>
+    <version>4.6.3</version>
 
     <name>oap</name>
 

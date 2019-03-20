@@ -108,16 +108,6 @@ public class Writer implements Closeable {
             Path filename = filename();
             if( out == null ) {
                 boolean exists = Files.exists( filename );
-                if( Files.isFileEncodingValid( filename ) ) {
-                    out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize, true ) );
-                } else {
-                    error.accept( "corrupted file, cannot append " + filename );
-                    log.error( "corrupted file, cannot append {}", filename );
-                    Files.rename( filename, logDirectory.resolve( ".corrupted" )
-                        .resolve( logDirectory.relativize( filename ) ) );
-                    out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize ) );
-                    exists = false;
-                }
 
                 if( !exists ) {
                     val headers = getHeaders( logId.logType, logId.version );
@@ -125,6 +115,17 @@ public class Writer implements Closeable {
                     log.debug( "[{}] write headers {}", filename, headers );
                 } else {
                     log.trace( "[{}] file exists", filename );
+
+                    if( Files.isFileEncodingValid( filename ) ) {
+                        out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize, true ) );
+                    } else {
+                        error.accept( "corrupted file, cannot append " + filename );
+                        log.error( "corrupted file, cannot append {}", filename );
+                        Files.rename( filename, logDirectory.resolve( ".corrupted" )
+                            .resolve( logDirectory.relativize( filename ) ) );
+                        out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize ) );
+                        exists = false;
+                    }
                 }
             }
             log.trace( "writing {} bytes to {}", length, this );
@@ -162,6 +163,7 @@ public class Writer implements Closeable {
     private synchronized void refresh() {
         String currentPattern = currentPattern();
         if( !Objects.equals( this.lastPattern, currentPattern ) ) {
+            log.trace( "change pattern from '{}' to '{}'", this.lastPattern, currentPattern );
             closeOutput();
             lastPattern = currentPattern;
         }

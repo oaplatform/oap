@@ -464,11 +464,10 @@ public final class Files {
     }
 
     public static void ensureFileEncodingValid( Path path ) {
-        if( !path.toFile().exists() ) return;
         try( InputStream is = IoStreams.in( path, Encoding.from( path ) ) ) {
             IOUtils.copy( is, NullOutputStream.NULL_OUTPUT_STREAM );
         } catch( Exception e ) {
-            throw new InvalidFileEncodingException( path );
+            throw new InvalidFileEncodingException( path, e );
         }
     }
 
@@ -477,6 +476,7 @@ public final class Files {
             ensureFileEncodingValid( path );
             return true;
         } catch( InvalidFileEncodingException e ) {
+            log.trace( e.getMessage() );
             return false;
         }
     }
