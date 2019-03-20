@@ -36,7 +36,7 @@ import java.io.Serializable;
  * Created by igor.petrenko on 06.03.2019.
  */
 @ToString
-@EqualsAndHashCode
+@EqualsAndHashCode( of = { "logName", "logType", "shard", "version" } )
 public class LogId implements Serializable {
     private static final long serialVersionUID = -6026646143366760882L;
     public final String logName;
