@@ -110,6 +110,7 @@ public class Writer implements Closeable {
                 boolean exists = Files.exists( filename );
 
                 if( !exists ) {
+                    out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize ) );
                     val headers = getHeaders( logId.logType, logId.version );
                     out.write( headers.getBytes() );
                     log.debug( "[{}] write headers {}", filename, headers );
@@ -124,7 +125,6 @@ public class Writer implements Closeable {
                         Files.rename( filename, logDirectory.resolve( ".corrupted" )
                             .resolve( logDirectory.relativize( filename ) ) );
                         out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize ) );
-                        exists = false;
                     }
                 }
             }
