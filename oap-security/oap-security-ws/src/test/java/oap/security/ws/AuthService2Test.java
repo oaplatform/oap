@@ -29,7 +29,7 @@ import oap.security.acl.MockUser2;
 import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
 import oap.util.Lists;
-import oap.ws.security.PasswordHasher;
+import oap.sso.PasswordHasher;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;

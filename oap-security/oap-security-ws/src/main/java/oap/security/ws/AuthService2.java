@@ -29,7 +29,7 @@ import lombok.val;
 import oap.security.acl.User2;
 import oap.storage.Storage;
 import oap.util.Stream;
-import oap.ws.security.PasswordHasher;
+import oap.sso.PasswordHasher;
 import org.joda.time.DateTimeUtils;
 
 import java.util.List;

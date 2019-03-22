@@ -51,9 +51,9 @@ public class KernelProfileTest extends AbstractTest {
         try {
             kernel.start( pathOfTestResource( getClass(), "appWithProfileName.conf" ) );
 
-            assertThat( kernel.<ServiceOne>service( "profile1" ) ).isNotNull();
-            assertThat( kernel.<ServiceOne>service( "profile2" ) ).isNull();
-            assertThat( kernel.<ServiceOne>service( "profile3" ) ).isNotNull();
+            assertThat( kernel.<TestProfile1>service( "profile1" ) ).isNotNull();
+            assertThat( kernel.<TestProfile2>service( "profile2" ) ).isNull();
+            assertThat( kernel.<TestProfile3>service( "profile3" ) ).isNotNull();
         } finally {
             kernel.stop();
         }
@@ -67,9 +67,9 @@ public class KernelProfileTest extends AbstractTest {
         try {
             kernel.start( pathOfTestResource( getClass(), "appWithProfileName2.conf" ) );
 
-            assertThat( kernel.<ServiceOne>service( "profile1" ) ).isNull();
-            assertThat( kernel.<ServiceOne>service( "profile2" ) ).isNotNull();
-            assertThat( kernel.<ServiceOne>service( "profile3" ) ).isNotNull();
+            assertThat( kernel.<TestProfile1>service( "profile1" ) ).isNull();
+            assertThat( kernel.<TestProfile2>service( "profile2" ) ).isNotNull();
+            assertThat( kernel.<TestProfile3>service( "profile3" ) ).isNotNull();
         } finally {
             kernel.stop();
         }

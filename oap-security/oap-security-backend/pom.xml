@@ -31,9 +31,9 @@
     <artifactId>oap-security-backend</artifactId>
 
     <parent>
-        <groupId>oap</groupId>
+        <groupId>oap-jdk11</groupId>
         <artifactId>oap</artifactId>
-        <version>4.6.0</version>
+        <version>4.6.4</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -63,7 +63,7 @@
 
 
         <dependency>
-            <groupId>oap</groupId>
+            <groupId>oap-jdk11</groupId>
             <artifactId>oap-application</artifactId>
             <version>${project.parent.version}</version>
             <scope>test</scope>

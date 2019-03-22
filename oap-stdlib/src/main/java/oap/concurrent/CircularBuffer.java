@@ -24,16 +24,19 @@
 
 package oap.concurrent;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 
 public class CircularBuffer<T> {
+    private final Class<T> clazz;
     private final T[] data;
     private int index = 0;
     private boolean cycled = false;
 
     @SuppressWarnings( "unchecked" )
-    public CircularBuffer( int size ) {
-        this.data = ( T[] ) new Object[size];
+    public CircularBuffer( Class<T> clazz, int size ) {
+        this.clazz = clazz;
+        this.data = ( T[] ) Array.newInstance( clazz, size );
     }
 
     public synchronized void add( T element ) {
@@ -45,7 +48,7 @@ public class CircularBuffer<T> {
     @SuppressWarnings( "unchecked" )
     public synchronized T[] getElements() {
         if( cycled ) {
-            T[] result = ( T[] ) new Object[data.length];
+            T[] result = ( T[] ) Array.newInstance( clazz, data.length );
             System.arraycopy( data, index, result, 0, data.length - index );
             System.arraycopy( data, 0, result, data.length - index, index );
             return result;

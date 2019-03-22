@@ -33,19 +33,15 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
             </plugin>
         </plugins>
     </build>
     <artifactId>oap-logstream</artifactId>
 
     <parent>
-        <groupId>oap</groupId>
+        <groupId>oap-jdk11</groupId>
         <artifactId>oap</artifactId>
-        <version>4.6.0</version>
+        <version>4.6.4</version>
     </parent>
 
     <dependencies>

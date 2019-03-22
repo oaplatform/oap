@@ -120,7 +120,7 @@ public class MemoryClassLoader extends ClassLoader {
         private final String content;
 
         Source( String name, Kind kind, String content ) {
-            super( URI.create( "string:///" + name.replace( '.', '/' ) + kind.extension ), kind );
+            super( URI.create( "memo:///" + name.replace( '.', '/' ) + kind.extension ), kind );
             this.content = content;
             this.originalName = name;
         }

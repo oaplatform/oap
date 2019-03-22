@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>oap</artifactId>
-        <groupId>oap</groupId>
-        <version>4.6.0</version>
+        <groupId>oap-jdk11</groupId>
+        <version>4.6.4</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>oap-ws-cat</artifactId>

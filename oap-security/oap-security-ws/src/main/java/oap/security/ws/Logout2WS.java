@@ -26,9 +26,10 @@ package oap.security.ws;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.http.HttpResponse;
+import oap.sso.User;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
-import oap.ws.security.User;
+
 import oap.ws.validate.ValidationErrors;
 import org.joda.time.DateTime;
 

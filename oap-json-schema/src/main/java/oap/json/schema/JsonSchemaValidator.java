@@ -207,7 +207,11 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
                 m -> m.forEach( ( okey, value ) -> {
                     String key = ( String ) okey;
                     JsonSchemaParserContext newContext = context.withNode( key, value );
-                    SchemaASTWrapper astw = newContext.astW.computeIfAbsent( newContext.getId(), ( id ) -> context.mapParser.apply( newContext ) );
+                    SchemaASTWrapper astw = newContext.astW.get( newContext.getId() );
+                    if( astw == null ) {
+                        astw = context.mapParser.apply( newContext );
+                        newContext.astW.put( newContext.getId(), astw );
+                    }
                     p.put( key, astw );
                 } )
             );

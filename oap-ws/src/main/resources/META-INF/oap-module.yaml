@@ -87,3 +87,6 @@ services:
     name: security-interceptor
     profile: "ws-security-mock"
     implementation: oap.ws.security.MockSecurityInterceptor
+
+  ws-log:
+    implementation: oap.ws.LogWS

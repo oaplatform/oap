@@ -33,9 +33,9 @@
     <packaging>pom</packaging>
 
     <parent>
-        <groupId>oap</groupId>
+        <groupId>oap-jdk11</groupId>
         <artifactId>oap</artifactId>
-        <version>4.6.0</version>
+        <version>4.6.4</version>
     </parent>
 
     <modules>
@@ -49,7 +49,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>3.4</version>
+                <version>3.6.0</version>
                 <configuration>
                     <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
                 </configuration>
@@ -70,7 +70,7 @@
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-plugin-api</artifactId>
-            <version>3.5.0</version>
+            <version>3.6.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -80,7 +80,7 @@
         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
-            <version>3.5</version>
+            <version>3.6.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

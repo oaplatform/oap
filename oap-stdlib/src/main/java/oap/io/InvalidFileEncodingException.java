@@ -26,7 +26,7 @@ package oap.io;
 import java.nio.file.Path;
 
 public class InvalidFileEncodingException extends IllegalArgumentException {
-    public InvalidFileEncodingException( Path path ) {
-        super( path.toString() );
+    public InvalidFileEncodingException( Path path, Exception e ) {
+        super( e.getMessage() + ": " + path.toString() );
     }
 }
