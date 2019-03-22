@@ -151,13 +151,35 @@ public class Tree<T> {
     }
 
     public void load( List<ValueData<T>> data ) {
-        init( data );
-        final long[] uniqueCount = getUniqueCount( data );
-        root = toNode( data, uniqueCount, new BitSet( dimensions.size() ) );
+        var newData = fixEmptyAsFailed( data );
+        init( newData );
+        final long[] uniqueCount = getUniqueCount( newData );
+        root = toNode( newData, uniqueCount, new BitSet( dimensions.size() ) );
 
         updateCount( root );
 
         memory = MemoryMeter.get().measureDeep( this );
+    }
+
+    private List<ValueData<T>> fixEmptyAsFailed( List<ValueData<T>> data ) {
+        if( Lists.find2( dimensions, d -> d.emptyAsFailed ) == null ) return data;
+
+        var res = new ArrayList<ValueData<T>>( data.size() );
+
+        next:
+        for( var vd : data ) {
+            for( int i = 0; i < dimensions.size(); i++ ) {
+                if( !dimensions.get( i ).emptyAsFailed ) continue;
+
+                var v = vd.data.get( i );
+                if( v == null ) break next;
+                if( v instanceof Optional && ( ( Optional ) v ).isEmpty() ) break next;
+                if( v instanceof Array && ( ( Array ) v ).isEmpty() ) break next;
+            }
+            res.add( vd );
+        }
+
+        return res;
     }
 
     private long[] getUniqueCount( List<ValueData<T>> data ) {
@@ -189,13 +211,20 @@ public class Tree<T> {
 
     @SuppressWarnings( "unchecked" )
     private void init( List<ValueData<T>> data ) {
-        Stream.of( dimensions )
-            .zipWithIndex()
-            .forEach( p -> p._1.init( Stream.of( data ).flatMap( d -> toStream( d.data.get( p._2 ) ) ) ) );
-    }
+        for( int i = 0; i < dimensions.size(); i++ ) {
+            var p = dimensions.get( i );
 
-    private Stream<?> toStream( Object item ) {
-        return item instanceof Array ? Stream.of( ( ( Array ) item ) ) : Stream.of( item );
+            for( var dv : data ) {
+                var v = dv.data.get( i );
+                if( v instanceof Array ) {
+                    for( var item : ( ( Array ) v ) ) {
+                        p.init( item );
+                    }
+                } else {
+                    p.init( v );
+                }
+            }
+        }
     }
 
     private long[][] convertQueryToLong( List<?> query ) {

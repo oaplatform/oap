@@ -40,6 +40,7 @@ import static oap.tree.Dimension.OperationType.GREATER_THEN_OR_EQUAL_TO;
 import static oap.tree.Dimension.OperationType.LESS_THEN;
 import static oap.tree.Dimension.OperationType.LESS_THEN_OR_EQUAL_TO;
 import static oap.tree.Dimension.OperationType.NOT_CONTAINS;
+import static oap.tree.Dimension.PRIORITY_DEFAULT;
 import static oap.tree.Dimension.STRING;
 import static oap.tree.Tree.l;
 import static oap.tree.Tree.v;
@@ -86,6 +87,21 @@ public class TreeTest {
         System.out.println( tree.toString() );
 
         assertThat( tree.find( l( 5L ) ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 0 );
+    }
+
+    @Test
+    public void testEmptyAsFailed() {
+        final Tree<String> tree = Tree
+            .<String>tree( LONG( "d1", CONTAINS, PRIORITY_DEFAULT, null, true ),
+                LONG( "d2", CONTAINS, PRIORITY_DEFAULT, null, true ) )
+            .withHashFillFactor( 1 )
+            .load( l( v( "1", 1L, null ) ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( 1L, 2L ) ) ).isEmpty();
 
         assertThat( tree.getMaxDepth() ).isEqualTo( 0 );
     }
@@ -214,7 +230,7 @@ public class TreeTest {
     @Test
     public void testEnum() {
         final Tree<String> tree = Tree
-            .<String>tree( ENUM( "d1", TestEnum.class, CONTAINS, 0, UNKNOWN ) )
+            .<String>tree( ENUM( "d1", TestEnum.class, CONTAINS, 0, UNKNOWN, false ) )
             .withHashFillFactor( 1 )
             .load( l( v( "1", Test1 ), v( "2", Test2 ), v( "3", Test3 ), v( "33", Test3 ) ) );
 
@@ -288,7 +304,7 @@ public class TreeTest {
     @Test
     public void testFindAny() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, -1, null ), LONG( "d2", CONTAINS, null ), LONG( "d3", CONTAINS, null ) )
+            .<String>tree( LONG( "d1", CONTAINS, -1, null, false ), LONG( "d2", CONTAINS, null ), LONG( "d3", CONTAINS, null ) )
             .withHashFillFactor( 1 )
             .load( l(
                 v( "1", 1L, null, 1L ),

@@ -243,4 +243,20 @@ public class TreeArrayTest {
 
         assertThat( tree.getMaxDepth() ).isEqualTo( 2 );
     }
+
+    @Test
+    public void testEmptyFailed() {
+        final Tree<String> tree = Tree
+            .<String>tree( ARRAY_STRING( "d1", true ), ARRAY_STRING( "d2", true ) )
+            .load( l(
+                v( "1", l( a( OR, 1L ), a( NOT ) ) ),
+                v( "2", l( a( NOT ), a( OR, 2L ) ) )
+            ) );
+
+        System.out.println( tree.toString() );
+
+        assertThat( tree.find( l( "1", null ) ) ).isEmpty();
+
+        assertThat( tree.getMaxDepth() ).isEqualTo( 0 );
+    }
 }
