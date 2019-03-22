@@ -27,8 +27,6 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <name>oap-security-ws</name>
-    <artifactId>oap-security-ws</artifactId>
 
     <parent>
         <groupId>oap-jdk11</groupId>
@@ -37,10 +35,12 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
+    <artifactId>oap-ws-sso</artifactId>
+
     <dependencies>
         <dependency>
             <groupId>${project.parent.groupId}</groupId>
-            <artifactId>oap-security-api</artifactId>
+            <artifactId>oap-sso</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
@@ -49,16 +49,10 @@
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
-            <groupId>${project.parent.groupId}</groupId>
-            <artifactId>oap-storage</artifactId>
-            <version>${project.parent.version}</version>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
         </dependency>
-        <dependency>
-            <groupId>${project.parent.groupId}</groupId>
-            <artifactId>oap-sso</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -66,4 +60,6 @@
             <scope>provided</scope>
         </dependency>
     </dependencies>
+
+    
 </project>

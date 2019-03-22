@@ -47,6 +47,8 @@
         <module>oap-http</module>
         <module>oap-http-useragent</module>
         <module>oap-ws</module>
+        <module>oap-ws-sso/oap-sso</module>
+        <module>oap-ws-sso/oap-ws-sso</module>
         <module>oap-remoting-server</module>
         <module>oap-application</module>
         <module>oap-application-spring</module>

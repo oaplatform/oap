@@ -22,58 +22,57 @@
  * SOFTWARE.
  */
 
-package oap.security.ws;
+package oap.ws.sso;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.http.HttpResponse;
-import oap.sso.User;
+import oap.sso.AuthService;
+import oap.sso.Token;
 import oap.ws.WsMethod;
 import oap.ws.WsParam;
-
-import oap.ws.validate.ValidationErrors;
 import org.joda.time.DateTime;
 
-import java.util.Objects;
+import java.util.Optional;
 
-import static java.lang.String.format;
-import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
-import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static oap.http.Request.HttpMethod.GET;
-import static oap.ws.WsParam.From.SESSION;
+import static oap.ws.WsParam.From.QUERY;
 
 @Slf4j
-public class Logout2WS {
-    private final AuthService2 authService;
-    private final String cookieDomain;
+public class LoginWS {
 
-    public Logout2WS( AuthService2 authService, String cookieDomain ) {
+    private final AuthService authService;
+    private final String cookieDomain;
+    private final int cookieExpiration;
+
+    public LoginWS( AuthService authService, String cookieDomain, int cookieExpiration ) {
         this.authService = authService;
         this.cookieDomain = cookieDomain;
+        this.cookieExpiration = cookieExpiration;
     }
 
     @WsMethod( method = GET, path = "/" )
-    @WsSecurity2
-    public HttpResponse logout( @WsParam( from = SESSION ) String userid ) {
-        log.debug( "Invalidating token for user [{}]", userid );
+    public HttpResponse login( @WsParam( from = QUERY ) String email, @WsParam( from = QUERY ) String password ) {
+        final Optional<Token> optionalToken = authService.generateToken( email, password );
 
-        authService.invalidateUser( userid );
+        if( optionalToken.isPresent() ) {
+            final Token token = optionalToken.get();
+            final HttpResponse ok = HttpResponse.ok( token );
+            return withAuthorization( ok, token );
+        } else {
+            return HttpResponse.status( HTTP_UNAUTHORIZED, "Username or password is invalid" );
+        }
+    }
 
-
-        return HttpResponse
-            .status( HTTP_NO_CONTENT )
+    public HttpResponse withAuthorization( HttpResponse response, Token token ) {
+        return response.withHeader( "Authorization", token.id )
             .withCookie( new HttpResponse.CookieBuilder()
-                .withCustomValue( "Authorization", "expired" )
+                .withCustomValue( "Authorization", token.id )
                 .withDomain( cookieDomain )
                 .withPath( "/" )
-                .withExpires( DateTime.now() )
+                .withExpires( DateTime.now().plusMinutes( cookieExpiration ) )
                 .build()
             );
     }
 
-    @SuppressWarnings( "unused" )
-    public ValidationErrors validateUserAccess( final String email, final User user ) {
-        return Objects.equals( user.getEmail(), email )
-            ? ValidationErrors.empty()
-            : ValidationErrors.error( HTTP_FORBIDDEN, format( "User [%s] doesn't have enough permissions", user.getEmail() ) );
-    }
 }
