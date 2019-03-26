@@ -29,7 +29,7 @@
     <packaging>pom</packaging>
     <groupId>oap-jdk11</groupId>
     <artifactId>oap</artifactId>
-    <version>4.6.5</version>
+    <version>4.7.0</version>
 
     <name>oap</name>
 
@@ -61,7 +61,6 @@
         <module>oap-alert-slack</module>
         <module>oap-media</module>
         <module>oap-mail</module>
-        <module>oap-stats-db</module>
         <module>oap-zabbix</module>
         <module>maven</module>
         <module>oap-security/oap-security-api</module>
