@@ -55,7 +55,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
     public OplogService oplogService;
     private long lastFsync = -1;
 
-    public MongoStorage( MongoClient mongoClient, String table, Lock lock ) {
+    public MongoStorage( MongoClientWrapper mongoClient, String table, Lock lock ) {
         this( mongoClient, table, Identifier
             .<T>forAnnotation()
             .suggestion( ar -> ObjectId.get().toString() )
@@ -64,10 +64,10 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
             .build(), lock );
     }
 
-    public MongoStorage( MongoClient mongoClient, String table, Identifier<T> identifier, Lock lock ) {
+    public MongoStorage( MongoClientWrapper mongoClient, String table, Identifier<T> identifier, Lock lock ) {
         super( identifier, lock );
 
-        TypeRef<Metadata<T>> ref = new TypeRef<Metadata<T>>() {};
+        TypeRef<Metadata<T>> ref = new TypeRef<>() {};
 
         CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JsonCodec<>( ref, m -> this.identifier.get( m.object ) ) ),

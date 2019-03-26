@@ -30,15 +30,18 @@ import org.testng.annotations.Test;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * Deply a Replica Set in order this test passes
+ * @see <a href=https://docs.mongodb.com/manual/tutorial/deploy-replica-set/>Deploy a Replica Set</a>
+ */
 public class OplogServiceTest extends AbstractMongoTest {
     @Test
     public void oplog() {
-        try( var oplogListener = new OplogService( mongoClient ) ) {
-            oplogListener.start();
+        try( var oplogService = new OplogService( mongoClient ) ) {
 
             var sb = new StringBuilder();
 
-            oplogListener.addListener( "test_OplogServiceTest", new OplogService.OplogListener() {
+            oplogService.addListener( "test_OplogServiceTest", new OplogService.OplogListener() {
                 @Override
                 public void updated( String table, String id ) {
                     sb.append( 'u' );
@@ -54,6 +57,8 @@ public class OplogServiceTest extends AbstractMongoTest {
                     sb.append( 'i' );
                 }
             } );
+
+            oplogService.start();
 
             mongoClient.database.getCollection( "test_OplogServiceTest" ).insertOne( new Document( "test", "test" ) );
             mongoClient.database.getCollection( "test_OplogServiceTest2" ).updateOne( new Document( "test", "test" ), new Document( "$set", new Document( "test", "test2" ) ) );

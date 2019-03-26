@@ -31,13 +31,16 @@ import org.bson.codecs.configuration.CodecRegistries;
 
 import java.io.Closeable;
 
-public class MongoClient implements Closeable {
+/**
+ * Wrapper for the {@link com.mongodb.MongoClient}
+ */
+public class MongoClientWrapper implements Closeable {
     public final MongoDatabase database;
     public final com.mongodb.MongoClient mongoClient;
     public boolean dropDatabaseBeforeMigration = false;
     private final Migration migration;
 
-    public MongoClient( String host, int port, String database, Migration migration ) {
+    public MongoClientWrapper( String host, int port, String database, Migration migration ) {
         this.migration = migration;
         var codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JodaTimeCodec() ),
