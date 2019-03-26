@@ -24,7 +24,6 @@
 
 package oap.json.schema;
 
-import lombok.val;
 import oap.json.Binder;
 import org.testng.annotations.Test;
 
@@ -35,7 +34,7 @@ import static oap.json.testng.JsonAsserts.assertJson;
 public class ResourceSchemaStorageTest {
     @Test
     public void testGet() {
-        val schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema.conf" );
+        var schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema.conf" );
 
         assertJson( Binder.json.marshal( Binder.hoconWithoutSystemProperties.unmarshal( Map.class, schema ) ) )
             .isEqualTo( "{"
@@ -50,7 +49,7 @@ public class ResourceSchemaStorageTest {
 
     @Test
     public void testGetWithExtends() {
-        val schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema-1.conf" );
+        var schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema-1.conf" );
 
         assertJson( Binder.json.marshal( Binder.hoconWithoutSystemProperties.unmarshal( Map.class, schema ) ) )
             .isEqualTo( "{"

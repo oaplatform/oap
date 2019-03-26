@@ -24,7 +24,6 @@
 
 package oap.security.ws;
 
-import lombok.val;
 import oap.security.acl.MockUser2;
 import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
@@ -60,11 +59,11 @@ public class AuthService2Test {
         authProvider.addUser( new MockUser2( "id" ) );
 
 
-        val token1 = authService.generateToken( "id" ).get();
+        var token1 = authService.generateToken( "id" ).get();
         assertThat( token1.lastAccess ).isEqualTo( 0 );
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
-        val token2 = authService.getToken( token1.id ).get();
+        var token2 = authService.getToken( token1.id ).get();
         assertThat( token2 ).isSameAs( token1 );
         assertThat( authService.generateToken( "id" ).get().lastAccess ).isEqualTo( 100 );
     }

@@ -27,7 +27,6 @@ package oap.storage.mongo;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.FindOneAndUpdateOptions;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.io.Files;
 import oap.util.Maps;
 import org.bson.Document;
@@ -52,25 +51,25 @@ public class DirectoryMigration implements Migration {
 
     private void nextMigration( MongoDatabase db, int fromVersion, String functions ) {
         log.info( "directory {} ...", directory );
-        val versionDirectory = directory.resolve( String.valueOf( fromVersion ) );
+        var versionDirectory = directory.resolve( String.valueOf( fromVersion ) );
         log.debug( "try version directory {} ...", versionDirectory );
         if( java.nio.file.Files.isDirectory( versionDirectory ) ) {
             log.info( "{} exists", versionDirectory );
-            for( val file : Files.fastWildcard( versionDirectory, "*.js" ) ) {
+            for( var file : Files.fastWildcard( versionDirectory, "*.js" ) ) {
                 log.info( "file {} ...", file );
 
-                val script = Files.readString( file );
+                var script = Files.readString( file );
 
-                val vars = variables
+                var vars = variables
                     .entrySet()
                     .stream()
                     .map( entry -> "var " + entry.getKey() + " = " + entry.getValue() + ";" )
                     .collect( Collectors.joining( "\n" ) );
 
-                val eval = new Document( "eval", "function() {\n" + functions + "\n" + vars + "\n" + script + "\n}\n" );
-                log.trace( "eval = {}", eval );
-                final Document response = db.runCommand( eval );
-                val ok = response.getDouble( "ok" );
+                var evar = new Document( "eval", "function() {\n" + functions + "\n" + vars + "\n" + script + "\n}\n" );
+                log.trace( "evar = {}", evar );
+                final Document response = db.runCommand( evar );
+                var ok = response.getDouble( "ok" );
                 if( ok < 1.0 ) {
                     log.debug( "response ok={}, code={}, errmsg={}", response.get( "ok" ), response.get( "code" ), response.get( "errmsg" ) );
                     throw new MigrationExceptin( response.get( "code" ) + ": " + response.get( "errmsg" ) );
@@ -85,8 +84,8 @@ public class DirectoryMigration implements Migration {
 
     @Override
     public void run( MongoDatabase database ) {
-        val toVersion = Integer.parseInt( Files.readString( directory.resolve( "version.txt" ) ) );
-        val versionCollection = database.getCollection( "version" );
+        var toVersion = Integer.parseInt( Files.readString( directory.resolve( "version.txt" ) ) );
+        var versionCollection = database.getCollection( "version" );
         Document versionDocument = versionCollection.find( eq( "_id", "version" ) ).first();
         if( versionDocument == null ) {
             versionDocument = new Document( Maps.of2( "_id", "version", "value", 0 ) );

@@ -24,7 +24,6 @@
 
 package oap.io;
 
-import lombok.val;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.Test;
@@ -38,8 +37,8 @@ public class FileSystemFileSyncTest extends AbstractTest {
     public void testSync() throws Exception {
         StringBuilder b = new StringBuilder();
 
-        val remoteFile = Env.tmpPath( "rtest.file" ).toUri();
-        val localFile = Env.tmpPath( "ltest.file" );
+        var remoteFile = Env.tmpPath( "rtest.file" ).toUri();
+        var localFile = Env.tmpPath( "ltest.file" );
 
         Files.writeString( Paths.get( remoteFile ), "test" );
 

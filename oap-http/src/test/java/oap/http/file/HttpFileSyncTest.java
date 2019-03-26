@@ -24,7 +24,6 @@
 
 package oap.http.file;
 
-import lombok.val;
 import oap.io.FileSync;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
@@ -63,15 +62,15 @@ public class HttpFileSyncTest extends AbstractTest {
 
     @Test
     public void testSync() throws Exception {
-        val b = new StringBuilder();
+        var b = new StringBuilder();
         DateTimeUtils.setCurrentMillisFixed( 10 * 1000 );
 
-        val date10 = new Date( 10 * 1000 );
-        val date20 = new Date( 20 * 1000 );
+        var date10 = new Date( 10 * 1000 );
+        var date20 = new Date( 20 * 1000 );
 
-        val localFile = Env.tmpPath( "ltest.file" );
+        var localFile = Env.tmpPath( "ltest.file" );
 
-        val fileSync = FileSync.create( "http://localhost:" + PORT + "/file", localFile );
+        var fileSync = FileSync.create( "http://localhost:" + PORT + "/file", localFile );
         fileSync.addListener( path -> b.append( "f" ) );
 
         mockServer

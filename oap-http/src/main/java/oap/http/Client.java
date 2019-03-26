@@ -27,7 +27,6 @@ import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.concurrent.AsyncCallbacks;
 import oap.io.Closeables;
 import oap.io.Files;
@@ -169,7 +168,7 @@ public class Client implements Closeable {
 
     @SneakyThrows
     private static SSLContext createSSLContext( Path certificateLocation, String certificatePassword ) {
-        try( val inputStream = IoStreams.in( certificateLocation, PLAIN ) ) {
+        try( var inputStream = IoStreams.in( certificateLocation, PLAIN ) ) {
             KeyStore keyStore = KeyStore.getInstance( "JKS" );
             keyStore.load( inputStream, certificatePassword.toCharArray() );
 
@@ -290,8 +289,8 @@ public class Client implements Closeable {
 
     private Response post( ThrowingIOExceptionConsumer<OutputStream> outputStream, ContentType contentType, HttpPost request ) throws UncheckedIOException {
         try {
-            val pos = new PipedOutputStream();
-            val pis = new PipedInputStream( pos );
+            var pos = new PipedOutputStream();
+            var pis = new PipedInputStream( pos );
             request.setEntity( new InputStreamEntity( pis, contentType ) );
 
             return execute( request, Maps.empty(), FOREVER, () -> {
@@ -393,11 +392,11 @@ public class Client implements Closeable {
             builder.onSuccess.accept( this );
             return Optional.of( result );
         } catch( ExecutionException e ) {
-            val newEx = new UncheckedIOException( request.getURI().toString(), new IOException( e.getCause().getMessage(), e.getCause() ) );
+            var newEx = new UncheckedIOException( request.getURI().toString(), new IOException( e.getCause().getMessage(), e.getCause() ) );
             builder.onError.accept( this, newEx );
             throw newEx;
         } catch( IOException e ) {
-            val newEx = new UncheckedIOException( request.getURI().toString(), e );
+            var newEx = new UncheckedIOException( request.getURI().toString(), e );
             builder.onError.accept( this, newEx );
             throw newEx;
         } catch( InterruptedException | TimeoutException e ) {
@@ -409,10 +408,10 @@ public class Client implements Closeable {
     @SneakyThrows
     public Optional<Path> download( String url, Optional<Long> modificationTime, Optional<Path> file, Consumer<Integer> progress ) {
         try {
-            val response = resolve( url, modificationTime ).orElse( null );
+            var response = resolve( url, modificationTime ).orElse( null );
             if( response == null ) return Optional.empty();
 
-            val entity = response.getEntity();
+            var entity = response.getEntity();
 
             final Path path = file.orElseGet( Try.supply( () -> {
                 final IoStreams.Encoding encoding = IoStreams.Encoding.from( url );
@@ -495,12 +494,12 @@ public class Client implements Closeable {
             .build();
 
 
-        val response = client.newCall( request ).execute();
+        var response = client.newCall( request ).execute();
 
-        val headers = response.headers();
+        var headers = response.headers();
         final Stream<String> stream = Stream.of( headers.names() );
         final Map<String, String> h = stream.collect( Collectors.toMap( n -> n, headers::get ) );
-        val responseBody = response.body();
+        var responseBody = response.body();
         return new Response( response.code(), response.message(), h,
             Optional.ofNullable( responseBody.contentType() ).map( mt -> ContentType.create( mt.type() + "/" + mt.subtype(), mt.charset() ) ),
             responseBody.byteStream() );
@@ -547,7 +546,7 @@ public class Client implements Closeable {
         }
 
         public String contentString() {
-            val content = content();
+            var content = content();
 
             if( content == null ) return null;
 
@@ -563,7 +562,7 @@ public class Client implements Closeable {
                 }
             }
 
-            val contentString = contentString();
+            var contentString = contentString();
             if( contentString == null ) return Optional.empty();
 
             return Optional.of( Binder.json.unmarshal( clazz, contentString ) );
@@ -578,7 +577,7 @@ public class Client implements Closeable {
                 }
             }
 
-            val contentString = contentString();
+            var contentString = contentString();
             if( contentString == null ) return Optional.empty();
 
 

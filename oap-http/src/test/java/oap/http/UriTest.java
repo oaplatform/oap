@@ -24,7 +24,6 @@
 
 package oap.http;
 
-import lombok.val;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 
@@ -34,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class UriTest {
     @Test
     public void testUri() {
-        val uri = Uri.uri( "http://test", Maps.of2( "id", asList( 1, 2 ) ) );
+        var uri = Uri.uri( "http://test", Maps.of2( "id", asList( 1, 2 ) ) );
         assertThat( uri ).hasQuery( "id=1&id=2" );
     }
 }

@@ -24,7 +24,6 @@
 
 package oap.util;
 
-import lombok.val;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 
@@ -41,10 +40,10 @@ public class IdAccessorFactory {
         return ids.computeIfAbsent( clazz, c -> {
             Reflection reflect = Reflect.reflect( c );
 
-            val idFields = reflect.annotatedFields( Id.class );
+            var idFields = reflect.annotatedFields( Id.class );
             if( !idFields.isEmpty() ) return new FieldAccessor( Lists.head( idFields ) );
 
-            val idMethods = reflect.annotatedMethods( Id.class );
+            var idMethods = reflect.annotatedMethods( Id.class );
 
             Reflection.Method setter = null;
             Reflection.Method getter = null;

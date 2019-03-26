@@ -27,7 +27,6 @@ package oap.security.acl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.ToString;
-import lombok.val;
 import oap.util.Mergeable;
 import oap.util.Stream;
 import org.apache.commons.lang3.StringUtils;
@@ -95,7 +94,7 @@ public interface AclSchema {
         }
 
         public AclSchemaBean findByPath( String path ) {
-            val nodes = StringUtils.split( path, '.' );
+            var nodes = StringUtils.split( path, '.' );
 
             return findByPath( this, nodes, 0 );
         }
@@ -103,8 +102,8 @@ public interface AclSchema {
         private AclSchemaBean findByPath( AclSchemaBean schema, String[] nodes, int index ) {
             if( index >= nodes.length ) return schema;
 
-            val node = nodes[index];
-            val nodeBean = schema.children.get( node );
+            var node = nodes[index];
+            var nodeBean = schema.children.get( node );
             if( nodeBean == null ) throw new IllegalArgumentException( "Unknown node " + node );
             return findByPath( nodeBean, nodes, index + 1 );
         }

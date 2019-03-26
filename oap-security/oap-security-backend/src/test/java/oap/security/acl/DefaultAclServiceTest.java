@@ -24,7 +24,6 @@
 
 package oap.security.acl;
 
-import lombok.val;
 import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
 import org.testng.annotations.AfterMethod;
@@ -63,9 +62,9 @@ public class DefaultAclServiceTest {
         objectStorage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
         roleStorage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
 
-        val gaRole = roleStorage.store( new AclRole( AclService.GLOBAL_ADMIN_ROLE, "ga", singletonList( "*" ) ) );
+        var gaRole = roleStorage.store( new AclRole( AclService.GLOBAL_ADMIN_ROLE, "ga", singletonList( "*" ) ) );
 
-        val aclSchema = new MockAclSchema( objectStorage );
+        var aclSchema = new MockAclSchema( objectStorage );
         aclService = new DefaultAclService( roleStorage, aclSchema );
 
         aclService.start();
@@ -113,7 +112,7 @@ public class DefaultAclServiceTest {
 
     @Test
     public void testPattern() {
-        val role = roleStorage.store( new AclRole( "pr", "pr", singletonList( "object" ) ) ).id;
+        var role = roleStorage.store( new AclRole( "pr", "pr", singletonList( "object" ) ) ).id;
         aclService.add( childId, subjectId, role, true );
 
         assertThat( aclService.checkOne( childId2, subjectId, "object.child.read" ) ).isTrue();

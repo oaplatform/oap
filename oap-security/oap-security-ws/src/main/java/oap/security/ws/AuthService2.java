@@ -25,7 +25,6 @@
 package oap.security.ws;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.security.acl.User2;
 import oap.storage.Storage;
 import oap.util.Stream;
@@ -85,7 +84,7 @@ public class AuthService2 implements Runnable {
 
     @Override
     public void run() {
-        val now = DateTimeUtils.currentTimeMillis();
+        var now = DateTimeUtils.currentTimeMillis();
 
         storage
             .select()

@@ -24,7 +24,6 @@
 
 package oap.dictionary;
 
-import lombok.val;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -56,7 +55,7 @@ public class DictionaryTest extends AbstractTest {
 
     @Test
     public void testExtends() {
-        val values = Dictionaries
+        var values = Dictionaries
             .getDictionary( "test-dictionary-extends" )
             .getValue( "id2" )
             .getValues();
@@ -73,7 +72,7 @@ public class DictionaryTest extends AbstractTest {
 
     @Test
     public void testExtendsFilter() {
-        val values = Dictionaries
+        var values = Dictionaries
             .getDictionary( "test-dictionary-extends-filter" )
             .getValue( "id2" )
             .getValues();

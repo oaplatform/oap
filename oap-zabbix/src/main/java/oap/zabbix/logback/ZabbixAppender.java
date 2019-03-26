@@ -30,7 +30,6 @@ import ch.qos.logback.core.net.DefaultSocketConnector;
 import ch.qos.logback.core.net.SocketConnector;
 import ch.qos.logback.core.util.CloseUtil;
 import ch.qos.logback.core.util.Duration;
-import lombok.val;
 import oap.net.Inet;
 import oap.zabbix.Data;
 import oap.zabbix.Request;
@@ -70,7 +69,7 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
     private SocketConnector connector;
 
     private static void addEvent( ILoggingEvent event, ArrayList<Data> list ) {
-        val data = new Data( Inet.hostname(), event.getLoggerName().substring( prefixLength ), event.getFormattedMessage() );
+        var data = new Data( Inet.hostname(), event.getLoggerName().substring( prefixLength ), event.getFormattedMessage() );
 
         list.add( data );
     }
@@ -162,10 +161,10 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
     private void dispatchEvents() throws InterruptedException, IOException {
         ILoggingEvent event = deque.takeFirst();
 
-        val events = new ArrayList<ILoggingEvent>();
+        var events = new ArrayList<ILoggingEvent>();
         events.add( event );
 
-        val list = new ArrayList<Data>();
+        var list = new ArrayList<Data>();
 
         addEvent( event, list );
 
@@ -175,7 +174,7 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
         }
 
 
-        val request = new Request( list );
+        var request = new Request( list );
 
         try {
             if( !socketConnectionCouldBeEstablished() ) {
@@ -184,15 +183,15 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
 
             addInfo( peerId + "connection established" );
 
-            val outputStream = socket.getOutputStream();
-            val inputStream = socket.getInputStream();
+            var outputStream = socket.getOutputStream();
+            var inputStream = socket.getInputStream();
 
             addInfo( "zabbixRequest = " + request );
             ZabbixRequest.writeExternal( request, outputStream );
             outputStream.flush();
 
-            val buf = new byte[1024];
-            val responseBaos = new ByteArrayOutputStream();
+            var buf = new byte[1024];
+            var responseBaos = new ByteArrayOutputStream();
 
 
             while( true ) {
@@ -203,7 +202,7 @@ public class ZabbixAppender extends AppenderBase<ILoggingEvent> implements Socke
                 responseBaos.write( buf, 0, read );
             }
 
-            val bResponse = responseBaos.toByteArray();
+            var bResponse = responseBaos.toByteArray();
 
             if( bResponse.length < 13 ) {
                 addInfo( "response.length < 13" );

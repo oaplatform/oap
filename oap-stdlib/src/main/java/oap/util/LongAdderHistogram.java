@@ -24,7 +24,6 @@
 
 package oap.util;
 
-import lombok.val;
 import oap.concurrent.LongAdder;
 import org.joda.time.DateTimeUtils;
 
@@ -80,7 +79,7 @@ public class LongAdderHistogram implements Serializable {
             ct = currentTick( period );
             if( ct == lastTick ) return;
 
-            val sc = ( int ) ( ct - lastTick );
+            var sc = ( int ) ( ct - lastTick );
             int len = values.length;
             if( sc < values.length ) {
                 System.arraycopy( values, 0, values, sc, len - sc );
@@ -102,8 +101,8 @@ public class LongAdderHistogram implements Serializable {
     public long[] get( long period ) {
         shift( period );
 
-        val length = values.length;
-        val ret = new long[length];
+        var length = values.length;
+        var ret = new long[length];
         for( int i = 0; i < length; i++ ) {
             ret[i] = values[i].longValue();
         }

@@ -24,7 +24,6 @@
 
 package oap.security.acl;
 
-import lombok.val;
 import oap.storage.Storage;
 import org.joda.time.DateTimeUtils;
 
@@ -54,7 +53,7 @@ public class DefaultTemporaryTokenService implements TemporaryTokenService, Runn
 
     @Override
     public void run() {
-        val now = DateTimeUtils.currentTimeMillis() - expiration;
+        var now = DateTimeUtils.currentTimeMillis() - expiration;
         storage.forEach( token -> {
             if( token.time < now ) {
                 storage.delete( token.id );

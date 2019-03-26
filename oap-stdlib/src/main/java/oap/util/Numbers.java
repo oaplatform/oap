@@ -23,17 +23,15 @@
  */
 package oap.util;
 
-import lombok.val;
-
 public final class Numbers {
     private Numbers() {
     }
 
     public static long parseLongWithUnits( String value ) {
         if( value != null ) {
-            val v = value.trim();
-            val unit = new StringBuilder();
-            val number = new StringBuilder();
+            var v = value.trim();
+            var unit = new StringBuilder();
+            var number = new StringBuilder();
             boolean stillNumber = true;
             for( int i = 0; i < v.length(); i++ ) {
                 char c = value.charAt( i );
@@ -43,7 +41,7 @@ public final class Numbers {
                     unit.append( c );
                 }
             }
-            val strNumber = number.toString();
+            var strNumber = number.toString();
             switch( unit.toString().trim().toLowerCase() ) {
                 case "kb":
                     return Long.parseLong( strNumber ) * 1024;

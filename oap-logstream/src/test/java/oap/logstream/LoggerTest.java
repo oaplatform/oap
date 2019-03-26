@@ -24,7 +24,6 @@
 
 package oap.logstream;
 
-import lombok.val;
 import oap.dictionary.LogConfiguration;
 import oap.io.IoStreams.Encoding;
 import oap.logstream.disk.DiskLoggerBackend;
@@ -55,7 +54,7 @@ public class LoggerTest extends AbstractTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        val engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
+        var engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
         logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
     }
 
@@ -63,9 +62,9 @@ public class LoggerTest extends AbstractTest {
     public void disk() {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
-        val content = "12345678";
-        val contentWithHeaders = "DATETIME\tREQUEST_ID\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
-        val content2WithHeaders = "DATETIME\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
+        var content = "12345678";
+        var contentWithHeaders = "DATETIME\tREQUEST_ID\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
+        var content2WithHeaders = "DATETIME\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
         try( DiskLoggerBackend backend = new DiskLoggerBackend( tmpPath( "logs" ), BPH_12, DEFAULT_BUFFER, logConfiguration ) ) {
             Logger logger = new Logger( backend );
             logger.log( "lfn1", "log", 1, 2, content );
@@ -86,18 +85,18 @@ public class LoggerTest extends AbstractTest {
     @Test
     public void net() {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
-        val content = "12345678";
-        val contentWithHeaders = "DATETIME\tREQUEST_ID\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
-        val content2WithHeaders = "DATETIME\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
+        var content = "12345678";
+        var contentWithHeaders = "DATETIME\tREQUEST_ID\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
+        var content2WithHeaders = "DATETIME\tREQUEST_ID2\n" + formatDateWithMillis( currentTimeMillis() ) + "\t12345678";
 
-        try( val serverBackend = new DiskLoggerBackend( tmpPath( "logs" ), BPH_12, DEFAULT_BUFFER, logConfiguration ) ) {
+        try( var serverBackend = new DiskLoggerBackend( tmpPath( "logs" ), BPH_12, DEFAULT_BUFFER, logConfiguration ) ) {
             SocketLoggerServer server = new SocketLoggerServer( Env.port( "net" ), 1024, serverBackend, tmpPath( "control" ) );
-            try( val clientBackend = new SocketLoggerBackend( ( byte ) 1, "localhost", Env.port( "net" ),
+            try( var clientBackend = new SocketLoggerBackend( ( byte ) 1, "localhost", Env.port( "net" ),
                 tmpPath( "buffers" ), 256 ) ) {
 
                 serverBackend.requiredFreeSpace = DEFAULT_FREE_SPACE_REQUIRED * 1000L;
                 assertFalse( serverBackend.isLoggingAvailable() );
-                val logger = new Logger( clientBackend );
+                var logger = new Logger( clientBackend );
                 logger.log( "lfn1", "log", 1, 2, content );
                 clientBackend.send();
                 assertFalse( logger.isLoggingAvailable() );

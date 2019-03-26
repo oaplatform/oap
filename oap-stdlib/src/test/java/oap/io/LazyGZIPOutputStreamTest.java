@@ -24,7 +24,6 @@
 
 package oap.io;
 
-import lombok.val;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.Test;
@@ -36,13 +35,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class LazyGZIPOutputStreamTest extends AbstractTest {
     @Test
     public void testGzip() throws IOException {
-        val path = Env.tmpPath( "test.gz" );
+        var path = Env.tmpPath( "test.gz" );
         new LazyGZIPOutputStream( new LazyFileOutputStream( path ) ).close();
 
         assertThat( path ).doesNotExist();
 
-        try( val lfos = new LazyFileOutputStream( path );
-             val lgos = new LazyGZIPOutputStream( lfos ) ) {
+        try( var lfos = new LazyFileOutputStream( path );
+             var lgos = new LazyGZIPOutputStream( lfos ) ) {
             lgos.write( '1' );
         }
 

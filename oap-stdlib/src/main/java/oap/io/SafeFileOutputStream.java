@@ -23,8 +23,6 @@
  */
 package oap.io;
 
-import lombok.val;
-
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +37,7 @@ public class SafeFileOutputStream extends FileOutputStream {
         this.path = path;
 
         if( append && java.nio.file.Files.exists( path ) ) {
-            val sourceEncoding = IoStreams.Encoding.from( path );
+            var sourceEncoding = IoStreams.Encoding.from( path );
             try( InputStream is = IoStreams.in( path,
                 sourceEncoding == encoding ? IoStreams.Encoding.PLAIN : encoding ) ) {
                 IoStreams.write( Paths.get( path + ".unsafe" ),

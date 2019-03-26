@@ -27,7 +27,6 @@ package oap.json.schema.elasticsearch;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import lombok.SneakyThrows;
-import lombok.val;
 import oap.json.schema.DefaultSchemaAST;
 import oap.json.schema.SchemaAST;
 import oap.json.schema.validator.array.ArraySchemaAST;
@@ -44,10 +43,10 @@ import java.io.IOException;
 public class ElasticSearchSchema {
     @SneakyThrows
     public static String convert( SchemaAST<?> schemaAST ) {
-        val jfactory = new JsonFactory();
-        val stringBuilder = new StringBuilder();
-        try( val stringBuilderWriter = new StringBuilderWriter( stringBuilder );
-             val jsonGenerator = jfactory.createGenerator( stringBuilderWriter ) ) {
+        var jfactory = new JsonFactory();
+        var stringBuilder = new StringBuilder();
+        try( var stringBuilderWriter = new StringBuilderWriter( stringBuilder );
+             var jsonGenerator = jfactory.createGenerator( stringBuilderWriter ) ) {
             jsonGenerator.writeStartObject();
             convert( schemaAST, jsonGenerator, true );
             jsonGenerator.writeEndObject();
@@ -58,12 +57,12 @@ public class ElasticSearchSchema {
 
     private static void convert( SchemaAST<?> schemaAST, JsonGenerator jsonGenerator, boolean top ) throws IOException {
         if( schemaAST instanceof ObjectSchemaAST ) {
-            val objectSchemaAST = ( ObjectSchemaAST ) schemaAST;
+            var objectSchemaAST = ( ObjectSchemaAST ) schemaAST;
 
             if( !objectSchemaAST.common.index.orElse( true ) )
                 jsonGenerator.writeBooleanField( "enabled", false );
 
-            val nested = objectSchemaAST.nested.orElse( false );
+            var nested = objectSchemaAST.nested.orElse( false );
             if( !top || nested )
                 jsonGenerator.writeStringField( "type", !nested ? "object" : "nested" );
 
@@ -82,7 +81,7 @@ public class ElasticSearchSchema {
             }
 
             jsonGenerator.writeObjectFieldStart( "properties" );
-            for( val entry : objectSchemaAST.properties.entrySet() ) {
+            for( var entry : objectSchemaAST.properties.entrySet() ) {
                 if( entry.getKey().equals( "_id" ) ) continue;
                 jsonGenerator.writeObjectFieldStart( entry.getKey() );
 
@@ -94,7 +93,7 @@ public class ElasticSearchSchema {
         } else if( schemaAST instanceof ArraySchemaAST ) {
             convert( ( ( ArraySchemaAST ) schemaAST ).items, jsonGenerator, false );
         } else {
-            val schemaType = schemaAST.common.schemaType;
+            var schemaType = schemaAST.common.schemaType;
             if( schemaAST instanceof DefaultSchemaAST ) {
                 switch( schemaType ) {
                     case "boolean":

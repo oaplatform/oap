@@ -27,7 +27,6 @@ package oap.storage.mongo;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.storage.Identifier;
 import oap.util.Id;
 import org.testng.annotations.Test;
@@ -90,7 +89,7 @@ public class MongoStorageTest extends AbstractMongoTest {
     public void updateMongo() {
         store();
         try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED );
-             val oplogService = new OplogService( mongoClient ) ) {
+             var oplogService = new OplogService( mongoClient ) ) {
             oplogService.start();
             storage.oplogService = oplogService;
             storage.start();

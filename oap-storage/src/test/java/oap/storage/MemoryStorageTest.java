@@ -26,7 +26,6 @@ package oap.storage;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.ToString;
-import lombok.val;
 import oap.util.Id;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
@@ -41,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MemoryStorageTest {
     @Test
     public void constraintStoreAdd() {
-        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
+        try( var storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name ) );
 
             storage.store( new TestClass( "id1", "name1" ) );
@@ -54,7 +53,7 @@ public class MemoryStorageTest {
 
     @Test
     public void constraintStoreAddList() {
-        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
+        try( var storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.names ) );
 
             storage.store( new TestClass( "id1", "name1", asList( "1", "2" ) ) );
@@ -67,7 +66,7 @@ public class MemoryStorageTest {
 
     @Test
     public void constraintStoreAddFilter() {
-        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
+        try( var storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name, ( n, o ) -> false ) );
 
             storage.store( new TestClass( "id1", "name1" ) );
@@ -79,7 +78,7 @@ public class MemoryStorageTest {
 
     @Test
     public void constraintStoreUpdate() {
-        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
+        try( var storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name ) );
 
             storage.store( new TestClass( "id1", "name1" ) );
@@ -94,7 +93,7 @@ public class MemoryStorageTest {
 
     @Test
     public void constraintUpdate() {
-        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
+        try( var storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name ) );
 
             storage.store( new TestClass( "id1", "name1" ) );
@@ -109,7 +108,7 @@ public class MemoryStorageTest {
 
     @Test
     public void constraintUpdateObject() {
-        try( val storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
+        try( var storage = new MemoryStorage<TestClass>( Identifier.forAnnotationFixed(), SERIALIZED ) ) {
             storage.addConstraint( new UniqueField<>( "objtype", tc -> tc.name ) );
 
             storage.updateObject( "id1", ( a ) -> true, ( tc ) -> {

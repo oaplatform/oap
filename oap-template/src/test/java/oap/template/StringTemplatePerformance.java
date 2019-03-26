@@ -24,7 +24,6 @@
 
 package oap.template;
 
-import lombok.val;
 import oap.io.Files;
 import oap.testng.Env;
 import org.testng.annotations.Test;
@@ -41,15 +40,15 @@ public class StringTemplatePerformance {
         String clazz = Engine.getName( "test" );
 
 //        benchmark( "template-compile", 10, () -> {
-//            val engine = new Engine( null );
-//            val template = engine.getTemplate( clazz, Test1.class, "test${id}" );
+//            var engine = new Engine( null );
+//            var template = engine.getTemplate( clazz, Test1.class, "test${id}" );
 //
 //            template.renderString( new Test1("1") );
 //        } ).inThreads( 5, 10 ).experiments( 5 ).run();
 
         benchmark( "template-disk-cache", 500, () -> {
-            val engine = new Engine( test );
-            val template = engine.getTemplate( clazz, Test1.class, "test${id}" );
+            var engine = new Engine( test );
+            var template = engine.getTemplate( clazz, Test1.class, "test${id}" );
 
             template.renderString( new Test1( "1" ) );
         } ).inThreads( 5, 1000 ).experiments( 5 ).run();

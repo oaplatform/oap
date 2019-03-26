@@ -25,7 +25,6 @@
 package oap.application.link;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.reflect.Reflection;
 
 @Slf4j
@@ -42,7 +41,7 @@ public class FieldLinkReflection implements LinkReflection {
 
     @Override
     public boolean set( Object value ) {
-        val field = reflection.field( this.field ).orElse( null );
+        var field = reflection.field( this.field ).orElse( null );
         if( field != null ) {
             field.set( instance, value );
             return true;
@@ -53,7 +52,7 @@ public class FieldLinkReflection implements LinkReflection {
 
     @Override
     public Object get() {
-        val field = reflection.field( this.field ).orElse( null );
+        var field = reflection.field( this.field ).orElse( null );
         if( field != null ) {
             return field.get( instance );
         } else {

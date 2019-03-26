@@ -23,7 +23,6 @@
  */
 package oap.json.schema.validator.object;
 
-import lombok.val;
 import oap.json.schema.SchemaAST;
 
 import java.util.LinkedHashMap;
@@ -68,7 +67,7 @@ public class ObjectSchemaAST extends SchemaAST<ObjectSchemaAST> {
         current.entrySet().stream().filter( e -> !parentProperties.containsKey( e.getKey() ) ).forEach( e -> result.put( e.getKey(), e.getValue() ) );
 
         parentProperties.forEach( ( k, v ) -> {
-            val cs = current.get( k );
+            var cs = current.get( k );
             if( cs == null || !v.common.schemaType.equals( cs.common.schemaType ) )
                 result.put( k, v );
             else {

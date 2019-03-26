@@ -25,7 +25,6 @@ package oap.testng;
 
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
-import lombok.val;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Maps;
@@ -64,11 +63,11 @@ public class Env {
     public static String teamcityBuildPrefix() {
         String prefix = "";
 
-        val teamcityBuildconfName = System.getenv( "TEAMCITY_BUILDCONF_NAME" );
+        var teamcityBuildconfName = System.getenv( "TEAMCITY_BUILDCONF_NAME" );
         prefix += "_";
         if( teamcityBuildconfName != null ) prefix += teamcityBuildconfName;
 
-        val buildNumber = System.getenv( "BUILD_NUMBER" );
+        var buildNumber = System.getenv( "BUILD_NUMBER" );
         prefix += "_";
         if( buildNumber != null ) prefix += buildNumber;
 
@@ -117,7 +116,7 @@ public class Env {
     public static int port( String key ) {
         return ports.computeIfAbsent( key, k -> {
             try( ServerSocket socket = new ServerSocket( 0 ) ) {
-                val localPort = socket.getLocalPort();
+                var localPort = socket.getLocalPort();
                 System.out.println( "ENV::key=" + key + "; port = " + localPort );
                 return localPort;
             } catch( IOException e ) {
@@ -127,7 +126,7 @@ public class Env {
     }
 
     public static String getEnvOrDefault( String name, String defaultValue ) {
-        val res = System.getenv( name );
+        var res = System.getenv( name );
         return res != null ? res : defaultValue;
     }
 
@@ -138,7 +137,7 @@ public class Env {
 
     @SneakyThrows
     public static void putEnv( String name, String value ) {
-        val newenv = Maps.of2( name, value );
+        var newenv = Maps.of2( name, value );
 
         try {
             Class<?> processEnvironmentClass = Class.forName( "java.lang.ProcessEnvironment" );

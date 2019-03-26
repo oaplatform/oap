@@ -24,7 +24,6 @@
 
 package oap.logstream;
 
-import lombok.val;
 import oap.io.Closeables;
 
 import java.io.BufferedReader;
@@ -46,7 +45,7 @@ public class MemoryLoggerBackend extends LoggerBackend {
     }
 
     public List<String> getLines( LogId id ) {
-        val s = outputs.getOrDefault( id, new ByteArrayOutputStream() ).toString();
+        var s = outputs.getOrDefault( id, new ByteArrayOutputStream() ).toString();
         return new BufferedReader( new StringReader( s ) )
             .lines()
             .collect( toList() );

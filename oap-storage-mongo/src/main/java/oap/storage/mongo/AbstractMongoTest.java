@@ -31,7 +31,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 @Slf4j
-public class AbstractMongoTest extends AbstractTest {
+public abstract class AbstractMongoTest extends AbstractTest {
     protected String dbName;
     protected MongoClient mongoClient;
 

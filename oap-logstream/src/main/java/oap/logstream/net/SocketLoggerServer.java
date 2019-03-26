@@ -25,7 +25,6 @@ package oap.logstream.net;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.concurrent.SynchronizedThread;
 import oap.concurrent.ThreadPoolExecutor;
 import oap.io.Closeables;
@@ -142,22 +141,22 @@ public class SocketLoggerServer extends SocketServer {
             byte clientId = -1;
 
             try {
-                val out = new DataOutputStream( socket.getOutputStream() );
-                val in = new DataInputStream( socket.getInputStream() );
+                var out = new DataOutputStream( socket.getOutputStream() );
+                var in = new DataInputStream( socket.getInputStream() );
                 socket.setSoTimeout( soTimeout );
                 socket.setKeepAlive( true );
                 socket.setTcpNoDelay( true );
 
                 hostName = socket.getInetAddress().getCanonicalHostName();
                 clientId = in.readByte();
-                val digestKey = hostName + clientId;
+                var digestKey = hostName + clientId;
 
                 log.info( "client = {}/{}", hostName, clientId );
 
                 log.debug( "[{}] start logging... ", hostName, clientId );
                 while( !closed && !isInterrupted() ) {
                     long digestionId = in.readLong();
-                    val lastId = control.computeIfAbsent( digestKey, h -> new AtomicLong( 0L ) );
+                    var lastId = control.computeIfAbsent( digestKey, h -> new AtomicLong( 0L ) );
                     int size = in.readInt();
                     String logName = in.readUTF();
                     String logType = in.readUTF();
@@ -166,14 +165,14 @@ public class SocketLoggerServer extends SocketServer {
                     int logVersion = in.readInt();
                     if( size > bufferSize ) {
                         out.writeInt( SocketError.BUFFER_OVERFLOW.code );
-                        val exception = new BufferOverflowException( hostName, clientId, logName, logType, logVersion, bufferSize, size );
+                        var exception = new BufferOverflowException( hostName, clientId, logName, logType, logVersion, bufferSize, size );
                         backend.listeners.fireError( exception );
                         throw exception;
                     }
                     in.readFully( buffer, 0, size );
                     if( !backend.isLoggingAvailable() ) {
                         out.writeInt( SocketError.BACKEND_UNAVAILABLE.code );
-                        val exception = new BackendLoggerNotAvailableException( hostName, clientId );
+                        var exception = new BackendLoggerNotAvailableException( hostName, clientId );
                         backend.listeners.fireError( exception );
                         throw exception;
                     }
@@ -182,7 +181,7 @@ public class SocketLoggerServer extends SocketServer {
                         backend.log( clientHostname, logName, logType, shard, logVersion, buffer, 0, size );
                         lastId.set( digestionId );
                     } else {
-                        val message = "[" + hostName + "/" + clientId + "] buffer (" + digestionId + ", " + logName + "/" + logType + "/" + logVersion
+                        var message = "[" + hostName + "/" + clientId + "] buffer (" + digestionId + ", " + logName + "/" + logType + "/" + logVersion
                             + ", " + size + ") already written. Last written buffer is (" + lastId + ")";
                         log.warn( message );
                         backend.listeners.fireWarning( message );
@@ -190,11 +189,11 @@ public class SocketLoggerServer extends SocketServer {
                     out.writeInt( size );
                 }
             } catch( EOFException e ) {
-                val msg = "[" + hostName + "/" + clientId + "] " + socket + " ended, closed";
+                var msg = "[" + hostName + "/" + clientId + "] " + socket + " ended, closed";
                 backend.listeners.fireWarning( msg );
                 log.debug( msg );
             } catch( SocketTimeoutException e ) {
-                val msg = "[" + hostName + "/" + clientId + "] no activity on socket for " + soTimeout + "ms, timeout, closing...";
+                var msg = "[" + hostName + "/" + clientId + "] no activity on socket for " + soTimeout + "ms, timeout, closing...";
                 backend.listeners.fireWarning( msg );
                 log.info( msg );
                 log.trace( "[" + hostName + "/" + clientId + "] " + e.getMessage(), e );

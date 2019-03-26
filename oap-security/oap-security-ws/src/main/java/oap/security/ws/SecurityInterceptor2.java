@@ -25,7 +25,6 @@
 package oap.security.ws;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Session;
@@ -57,7 +56,7 @@ public class SecurityInterceptor2 implements Interceptor {
                                              Function<Reflection.Parameter, Object> getParameterValueFunc ) {
         log.trace( "intercept method={}, request={}", method, request.requestLine );
 
-        val annotation = method.findAnnotation( WsSecurity2.class ).orElse( null );
+        var annotation = method.findAnnotation( WsSecurity2.class ).orElse( null );
         if( annotation == null ) return Optional.empty();
 
         if( session == null ) {
@@ -68,7 +67,7 @@ public class SecurityInterceptor2 implements Interceptor {
             return Optional.of( httpResponse );
         }
 
-        val sessionToken = Interceptor.getSessionToken( request );
+        var sessionToken = Interceptor.getSessionToken( request );
         if( sessionToken == null ) {
             final HttpResponse httpResponse = HttpResponse.status( 401, "Session token is missing in header or cookie" );
 
@@ -79,7 +78,7 @@ public class SecurityInterceptor2 implements Interceptor {
 
         String userId = ( String ) session.get( USER_ID ).orElse( null );
         if( userId == null ) {
-            val token = tokenService.getToken( sessionToken ).orElse( null );
+            var token = tokenService.getToken( sessionToken ).orElse( null );
             if( token == null ) {
                 final HttpResponse httpResponse = HttpResponse.status( 401, format( "Token id [%s] expired or was "
                     + "not created", sessionToken ) );
@@ -95,10 +94,10 @@ public class SecurityInterceptor2 implements Interceptor {
         }
 
         if( !annotation.object().isEmpty() && !annotation.permission().isEmpty() ) {
-            val objectId = getObjectId( method, annotation, getParameterValueFunc );
+            var objectId = getObjectId( method, annotation, getParameterValueFunc );
 
             if( !aclService.checkOne( objectId, userId, annotation.permission() ) ) {
-                val httpResponse = HttpResponse.status( 403, String.format( "User [%s] has no access to method [%s]", userId, method.name() ) );
+                var httpResponse = HttpResponse.status( 403, String.format( "User [%s] has no access to method [%s]", userId, method.name() ) );
 
                 log.debug( httpResponse.toString() );
 
@@ -111,16 +110,16 @@ public class SecurityInterceptor2 implements Interceptor {
 
     @Override
     public Object postProcessing( Object value, Session session, Reflection.Method method ) {
-        val annotation = method.findAnnotation( WsSecurityWithPermissions.class ).orElse( null );
+        var annotation = method.findAnnotation( WsSecurityWithPermissions.class ).orElse( null );
         if( annotation == null ) return value;
 
         if( value instanceof List<?> ) {
             return ( ( List<?> ) value ).stream().map( v -> postProcessing( v, session, method ) ).collect( toList() );
         }
 
-        val userId = ( String ) session.get( USER_ID ).orElse( null );
+        var userId = ( String ) session.get( USER_ID ).orElse( null );
 
-        val id = IdAccessorFactory.getter( value );
+        var id = IdAccessorFactory.getter( value );
 
         List<String> res = aclService.checkAll( id, userId );
         if( annotation.includeRootPermissions() ) {
@@ -133,9 +132,9 @@ public class SecurityInterceptor2 implements Interceptor {
 
     private String getObjectId( Reflection.Method method, WsSecurity2 annotation,
                                 Function<Reflection.Parameter, Object> getParameterValueFunc ) {
-        val parameterName = annotation.object();
+        var parameterName = annotation.object();
         if( parameterName.startsWith( "{" ) ) {
-            val parameter = method.getParameter( parameterName.substring( 1, parameterName.length() - 1 ) );
+            var parameter = method.getParameter( parameterName.substring( 1, parameterName.length() - 1 ) );
             return ( String ) getParameterValueFunc.apply( parameter );
         } else return parameterName;
     }

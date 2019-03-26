@@ -30,7 +30,6 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.val;
 import oap.concurrent.LongAdder;
 import oap.json.testng.JsonAsserts;
 import oap.reflect.TypeRef;
@@ -285,7 +284,7 @@ public class BinderTest extends AbstractTest {
 
     @Test
     public void testUpdate() {
-        val obj = new Bean( "1", 1, null );
+        var obj = new Bean( "1", 1, null );
         Binder.update( obj, singletonMap( "str", "test" ) );
         assertThat( obj.str ).isEqualTo( "test" );
 

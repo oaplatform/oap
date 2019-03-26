@@ -29,7 +29,6 @@ import com.github.rholder.retry.StopStrategies;
 import com.google.common.hash.Hashing;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.io.IoStreams.Encoding;
 import oap.util.Lists;
 import oap.util.Sets;
@@ -228,7 +227,7 @@ public final class Files {
 
     @SneakyThrows
     public static void delete( Path path ) {
-        val retryer = RetryerBuilder.<FileVisitResult>newBuilder()
+        var retryer = RetryerBuilder.<FileVisitResult>newBuilder()
             .retryIfException()
             .withStopStrategy( StopStrategies.stopAfterAttempt( 3 ) )
             .build();

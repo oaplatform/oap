@@ -25,7 +25,6 @@
 package oap.template;
 
 import lombok.AllArgsConstructor;
-import lombok.val;
 import oap.io.Files;
 import oap.template.StringTemplateTest.Tst.Test1;
 import oap.template.StringTemplateTest.Tst.Test2;
@@ -54,7 +53,7 @@ public class StringTemplateTest extends AbstractTest {
         Path test = ensureDirectory( tmpPath( "test" ) );
         Engine engine = new Engine( test );
         String clazz = Engine.getName( "test" );
-        val template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
+        var template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
 
         template.renderString( new EngineTest.Test1() );
         engine.run();
@@ -76,13 +75,13 @@ public class StringTemplateTest extends AbstractTest {
         Path test = ensureDirectory( tmpPath( "test" ) );
         Engine engine = new Engine( test );
         String clazz = Engine.getName( "test" );
-        val template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
+        var template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
 
         template.renderString( new EngineTest.Test1() );
 
         Engine engine2 = new Engine( test );
 
-        val template2 = engine2.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
+        var template2 = engine2.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
         template2.renderString( new EngineTest.Test1() );
     }
 
@@ -124,7 +123,7 @@ public class StringTemplateTest extends AbstractTest {
         Test4 test4 = new Test4( 320, 50 );
         test.test4 = Optional.of( test4 );
 
-        val template = engine.getTemplate( "tmp", Container.class,
+        var template = engine.getTemplate( "tmp", Container.class,
             Lists.of( new JavaCTemplate.Line( "WaH", "tst.test4.{a,\"xx\",b}", "" ) ), "œ", new JoinAsSingleTemplateStrategy() );
 
         InvocationAccumulator invAccumulator = new InvocationAccumulator();
@@ -170,7 +169,7 @@ public class StringTemplateTest extends AbstractTest {
         Test1 test1 = new Test1( "id1" );
         test.test1 = Optional.of( test1 );
 
-        val override = new HashMap<String, String>();
+        var override = new HashMap<String, String>();
         override.put( "tst.test2.id", "tst.test1.id" );
         override.put( "PRICE", "1.2.3" );
 
@@ -186,7 +185,7 @@ public class StringTemplateTest extends AbstractTest {
         Test1 test1 = new Test1( "id1" );
         test.test1 = Optional.of( test1 );
 
-        val mapper = new HashMap<String, Supplier<String>>();
+        var mapper = new HashMap<String, Supplier<String>>();
         mapper.put( "tst.test2.id", () -> "new value" );
 
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id}", emptyMap(), mapper )
@@ -201,7 +200,7 @@ public class StringTemplateTest extends AbstractTest {
         Test1 test1 = new Test1( "id1" );
         test.test1 = Optional.of( test1 );
 
-        val mapper = new HashMap<String, Supplier<String>>();
+        var mapper = new HashMap<String, Supplier<String>>();
         mapper.put( "tst.test2.id", () -> "new value" );
 
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id ; urlencode(1)}", emptyMap(), mapper )
@@ -258,7 +257,7 @@ public class StringTemplateTest extends AbstractTest {
     public void testMap() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
-        val map = Maps.of2( "a", 1, "b", "test", "c (1)", 0.0 );
+        var map = Maps.of2( "a", 1, "b", "test", "c (1)", 0.0 );
 
         assertThat( engine.getTemplate( "tmp", Map.class, "id=${a},id2=${b},id3=${c ((1)}" )
             .renderString( map ) ).isEqualTo( "id=1,id2=test,id3=0.0" );

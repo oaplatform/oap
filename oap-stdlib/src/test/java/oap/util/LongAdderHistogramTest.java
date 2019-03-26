@@ -24,7 +24,6 @@
 
 package oap.util;
 
-import lombok.val;
 import oap.concurrent.LongAdder;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.AfterMethod;
@@ -44,7 +43,7 @@ public class LongAdderHistogramTest {
     @Test
     public void testHour() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
-        val histogram = new LongAdderHistogram( 5, PERIOD_HOUR );
+        var histogram = new LongAdderHistogram( 5, PERIOD_HOUR );
         histogram.inc( PERIOD_HOUR, 1 );
         assertThat( histogram.get( PERIOD_HOUR ) ).isEqualTo( new long[] { 1, 0, 0, 0, 0 } );
         DateTimeUtils.setCurrentMillisFixed( 1000 );
@@ -55,7 +54,7 @@ public class LongAdderHistogramTest {
     @Test
     public void testHourShiftOne() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
-        val histogram = new LongAdderHistogram( 5, PERIOD_HOUR );
+        var histogram = new LongAdderHistogram( 5, PERIOD_HOUR );
         histogram.inc( PERIOD_HOUR, 3 );
 
         DateTimeUtils.setCurrentMillisFixed( PERIOD_HOUR + 10 );
@@ -69,7 +68,7 @@ public class LongAdderHistogramTest {
     @Test
     public void testHistogramShiftAll() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
-        val histogram = new LongAdderHistogram( 5, PERIOD_HOUR );
+        var histogram = new LongAdderHistogram( 5, PERIOD_HOUR );
         histogram.inc( PERIOD_HOUR, 3 );
 
         DateTimeUtils.setCurrentMillisFixed( PERIOD_HOUR * 100 + 10 );
@@ -79,8 +78,8 @@ public class LongAdderHistogramTest {
     @Test
     public void testMerge() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
-        val master = new LongAdderHistogram( new LongAdder[] { new LongAdder( 1 ), new LongAdder( 4 ), new LongAdder( 0 ) }, 0 );
-        val update = new LongAdderHistogram( new LongAdder[] { new LongAdder( 2 ), new LongAdder( 0 ), new LongAdder( 0 ) }, 0 );
+        var master = new LongAdderHistogram( new LongAdder[] { new LongAdder( 1 ), new LongAdder( 4 ), new LongAdder( 0 ) }, 0 );
+        var update = new LongAdderHistogram( new LongAdder[] { new LongAdder( 2 ), new LongAdder( 0 ), new LongAdder( 0 ) }, 0 );
 
         master.merge( PERIOD_HOUR, update );
 
@@ -90,9 +89,9 @@ public class LongAdderHistogramTest {
     @Test
     public void testMergeShift() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
-        val master = new LongAdderHistogram( new LongAdder[] { new LongAdder( 1 ), new LongAdder( 4 ), new LongAdder( 0 ) }, 0 );
+        var master = new LongAdderHistogram( new LongAdder[] { new LongAdder( 1 ), new LongAdder( 4 ), new LongAdder( 0 ) }, 0 );
 
-        val update = new LongAdderHistogram( new LongAdder[] { new LongAdder( 2 ), new LongAdder( 0 ), new LongAdder( 0 ) }, 1 );
+        var update = new LongAdderHistogram( new LongAdder[] { new LongAdder( 2 ), new LongAdder( 0 ), new LongAdder( 0 ) }, 1 );
 
         DateTimeUtils.setCurrentMillisFixed( PERIOD_HOUR * 2 + 1 );
 

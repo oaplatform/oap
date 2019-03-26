@@ -25,7 +25,6 @@ package oap.ws.validate.testng;
 
 import javassist.util.proxy.MethodHandler;
 import javassist.util.proxy.ProxyFactory;
-import lombok.val;
 import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
@@ -96,7 +95,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
         @SuppressWarnings( "unchecked" )
         public ValidatedInvocation( I instance ) {
             try {
-                val factory = new ProxyFactory();
+                var factory = new ProxyFactory();
                 factory.setSuperclass( instance.getClass() );
 
                 MethodHandler handler = ( self, jmethod, proceed, args ) -> {

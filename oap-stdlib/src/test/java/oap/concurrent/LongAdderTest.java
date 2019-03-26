@@ -24,7 +24,6 @@
 
 package oap.concurrent;
 
-import lombok.val;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -38,16 +37,16 @@ import static org.assertj.core.api.Java6Assertions.assertThat;
 public class LongAdderTest {
     @Test
     public void testSerializarion() throws IOException, ClassNotFoundException {
-        val bot = new ByteArrayOutputStream();
-        try( val oos = new ObjectOutputStream( bot ) ) {
-            val la = new LongAdder();
+        var bot = new ByteArrayOutputStream();
+        try( var oos = new ObjectOutputStream( bot ) ) {
+            var la = new LongAdder();
             la.increment();
             oos.writeObject( la );
         }
 
-        try( val bis = new ByteArrayInputStream( bot.toByteArray() );
-             val ois = new ObjectInputStream( bis ) ) {
-            val la = ( LongAdder ) ois.readObject();
+        try( var bis = new ByteArrayInputStream( bot.toByteArray() );
+             var ois = new ObjectInputStream( bis ) ) {
+            var la = ( LongAdder ) ois.readObject();
 
             assertThat( la.longValue() ).isEqualTo( 1L );
         }

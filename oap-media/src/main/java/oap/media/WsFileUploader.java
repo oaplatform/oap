@@ -28,7 +28,6 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.Request;
@@ -67,7 +66,7 @@ public class WsFileUploader extends FileUploader implements Handler {
 
         oap.io.Files.ensureDirectory( path );
 
-        val factory = new DiskFileItemFactory();
+        var factory = new DiskFileItemFactory();
         factory.setSizeThreshold( ( int ) maxMemorySize );
         factory.setRepository( path.toFile() );
         upload = new FileUpload( factory );
@@ -79,9 +78,9 @@ public class WsFileUploader extends FileUploader implements Handler {
     public void handle( Request request, Response response ) {
         log.trace( "request = {}", request );
 
-        val ctx = new RequestUploadContext( request );
+        var ctx = new RequestUploadContext( request );
         if( FileUpload.isMultipartContent( ctx ) ) {
-            val items = upload.parseRequest( ctx );
+            var items = upload.parseRequest( ctx );
 
             if( items.stream().filter( i -> !i.isFormField() ).count() != 1 ) {
                 log.trace( "Only one file allowed" );
@@ -95,15 +94,15 @@ public class WsFileUploader extends FileUploader implements Handler {
                 return;
             }
 
-            val fileItem = items.stream().filter( i -> !i.isFormField() ).findAny().get();
-            val prefixItem = items.stream().filter( FileItem::isFormField ).findAny().get();
+            var fileItem = items.stream().filter( i -> !i.isFormField() ).findAny().get();
+            var prefixItem = items.stream().filter( FileItem::isFormField ).findAny().get();
 
             try {
-                val id = cuid.next();
+                var id = cuid.next();
 
-                val prefix = prefixItem.getString();
-                val fileName = fileItem.getName();
-                val file = new Media(
+                var prefix = prefixItem.getString();
+                var fileName = fileItem.getName();
+                var file = new Media(
                     ( prefix.endsWith( "/" ) ? prefix + id
                         : prefix + "/" + id ) + "." + FilenameUtils.getExtension( fileName ),
                     fileName,
@@ -116,11 +115,11 @@ public class WsFileUploader extends FileUploader implements Handler {
                     fileItem.write( file.path.toFile() );
                 }
 
-                val mediaInfo = new MediaInfo();
+                var mediaInfo = new MediaInfo();
 
-                val mediaContext = new MediaContext();
+                var mediaContext = new MediaContext();
 
-                val media = Stream.of( postprocessing ).foldLeft( file, ( f, p ) -> p.process( f, mediaInfo, mediaContext ) );
+                var media = Stream.of( postprocessing ).foldLeft( file, ( f, p ) -> p.process( f, mediaInfo, mediaContext ) );
 
                 if( log.isTraceEnabled() ) {
                     log.trace( "media = {}", media );

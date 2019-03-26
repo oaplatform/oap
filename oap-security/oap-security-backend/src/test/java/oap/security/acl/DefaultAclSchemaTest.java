@@ -24,7 +24,6 @@
 
 package oap.security.acl;
 
-import lombok.val;
 import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
 import oap.storage.Storage;
@@ -69,14 +68,14 @@ public class DefaultAclSchemaTest {
         schema.validateNewObject( schema.getObject( ROOT ).get(), "organization" );
         assertThatThrownBy( () -> schema.validateNewObject( schema.getObject( ROOT ).get(), "unknown" ) ).hasMessageStartingWith( "unknown is not" );
 
-        val organization = storage.store( new SecurityContainer<>( new TestAclObject( "org1" ), new AclObject( "organization", singletonList( ROOT ), singletonList( ROOT ), emptyList(), ROOT ) ) );
+        var organization = storage.store( new SecurityContainer<>( new TestAclObject( "org1" ), new AclObject( "organization", singletonList( ROOT ), singletonList( ROOT ), emptyList(), ROOT ) ) );
         schema.validateNewObject( organization.acl, "user" );
         assertThatThrownBy( () -> schema.validateNewObject( organization.acl, "root" ) ).hasMessageStartingWith( "root is not" );
     }
 
     @Test
     public void testGetPermissions() {
-        val organization = storage.store( new SecurityContainer<>( new TestAclObject( "org1" ), new AclObject( "organization", singletonList( ROOT ), singletonList( ROOT ), emptyList(), ROOT ) ) );
+        var organization = storage.store( new SecurityContainer<>( new TestAclObject( "org1" ), new AclObject( "organization", singletonList( ROOT ), singletonList( ROOT ), emptyList(), ROOT ) ) );
         assertThat( schema.getPermissions( organization.id ) ).contains( "organization.read" );
     }
 }

@@ -26,7 +26,6 @@ package oap.media;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -45,11 +44,11 @@ public class MediaUtils {
     public static String getContentType( Path file, Optional<String> fileName ) {
         log.trace( "file = {}", file );
 
-        try( val is = new FileInputStream( file.toFile() );
-             val bis = new BufferedInputStream( is ) ) {
-            val md = new Metadata();
+        try( var is = new FileInputStream( file.toFile() );
+             var bis = new BufferedInputStream( is ) ) {
+            var md = new Metadata();
             md.add( Metadata.RESOURCE_NAME_KEY, fileName.orElse( file.toString() ) );
-            val mediaType = DETECTOR.detect( bis, md );
+            var mediaType = DETECTOR.detect( bis, md );
             return mediaType.toString();
         }
     }

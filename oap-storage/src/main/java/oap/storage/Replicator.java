@@ -25,7 +25,6 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.util.Lists;
@@ -61,8 +60,8 @@ public class Replicator<T> implements Closeable {
     public synchronized void replicate( long last ) {
         List<Metadata<T>> newUpdates = Lists.empty();
         for( int b = 0; b < 100000; b++ ) {
-            int offset = b * batchSize;
-            List<Metadata<T>> updates = master.updatedSince( last, batchSize, offset );
+            var offset = b * batchSize;
+            var updates = master.updatedSince( last, batchSize, offset );
             log.trace( "replicate {} to {} last: {}, length {}, batch {}, offset {}",
                 master, slave, last, updates.size(), batchSize, offset );
             if( updates.isEmpty() ) break;
@@ -75,16 +74,16 @@ public class Replicator<T> implements Closeable {
 
         for( Metadata<T> metadata : newUpdates ) {
             log.trace( "replicate {}", metadata );
-            String id = slave.identifier.get( metadata.object );
+            var id = slave.identifier.get( metadata.object );
             if( slave.data.put( id, metadata ) != null ) updatedObjects.add( metadata.object );
             else newObjects.add( metadata.object );
         }
         if( !newObjects.isEmpty() ) slave.fireUpdated( newObjects, true );
         if( !updatedObjects.isEmpty() ) slave.fireUpdated( updatedObjects, false );
 
-        val ids = master.ids();
+        var ids = master.ids();
         log.trace( "master ids {}", ids );
-        List<T> deletedObjects = Stream.of( slave.data.keySet() )
+        var deletedObjects = Stream.of( slave.data.keySet() )
             .filter( id -> !ids.contains( id ) )
             .map( slave::deleteObject )
             .filter( Optional::isPresent )

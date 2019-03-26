@@ -24,7 +24,6 @@
 
 package oap.storage;
 
-import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
@@ -49,8 +48,8 @@ public class UniqueField<T> implements Constraint<T> {
 
     @Override
     public void check( T object, Storage<T> storage, Function<T, String> id ) throws ConstraintException {
-        val idValue = id.apply( object );
-        val value = valueFunc.apply( object );
+        var idValue = id.apply( object );
+        var value = valueFunc.apply( object );
 
         if( storage
             .select()

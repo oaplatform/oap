@@ -24,7 +24,6 @@
 
 package oap.json;
 
-import lombok.val;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,8 +32,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BinderYamlTest {
     @Test
     public void testYaml() {
-        val pattern = "test:\n  b: 10";
-        val obj = Binder.yaml.<BeanPattern>unmarshal( BeanPattern.class, pattern );
+        var pattern = "test:\n  b: 10";
+        var obj = Binder.yaml.<BeanPattern>unmarshal( BeanPattern.class, pattern );
 
         assertThat( obj.test.b ).isEqualTo( 10 );
     }

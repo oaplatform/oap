@@ -24,7 +24,6 @@
 
 package oap.storage.mongo;
 
-import lombok.val;
 import org.bson.Document;
 import org.testng.annotations.Test;
 
@@ -34,10 +33,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class OplogServiceTest extends AbstractMongoTest {
     @Test
     public void oplog() {
-        try( val oplogListener = new OplogService( mongoClient ) ) {
+        try( var oplogListener = new OplogService( mongoClient ) ) {
             oplogListener.start();
 
-            val sb = new StringBuilder();
+            var sb = new StringBuilder();
 
             oplogListener.addListener( "test_OplogServiceTest", new OplogService.OplogListener() {
                 @Override

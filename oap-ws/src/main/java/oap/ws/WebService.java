@@ -24,7 +24,6 @@
 package oap.ws;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.Request;
@@ -109,9 +108,9 @@ public class WebService implements Handler {
         else if( e instanceof InvocationTargetException )
             wsError( response, ( ( InvocationTargetException ) e ).getTargetException() );
         else if( e instanceof WsClientException ) {
-            WsClientException clientException = ( WsClientException ) e;
+            var clientException = ( WsClientException ) e;
             log.debug( service() + ": " + e.toString(), e );
-            HttpResponse wsResponse = HttpResponse.status( clientException.code, e.getMessage() );
+            var wsResponse = HttpResponse.status( clientException.code, e.getMessage() );
             if( !clientException.errors.isEmpty() ) {
                 if( defaultResponse == TEXT ) {
                     wsResponse.withContent( String.join( "\n", clientException.errors ), TEXT_PLAIN );
@@ -124,13 +123,13 @@ public class WebService implements Handler {
         } else {
             log.error( service() + ": " + e.toString(), e );
 
-            val code = exceptionToHttpCode.getOrDefault( e.getClass(), HTTP_INTERNAL_ERROR );
+            var code = exceptionToHttpCode.getOrDefault( e.getClass(), HTTP_INTERNAL_ERROR );
 
-            HttpResponse wsResponse = HttpResponse.status( code, e.getMessage() );
+            var wsResponse = HttpResponse.status( code, e.getMessage() );
             if( defaultResponse == TEXT ) {
                 wsResponse.withContent( Throwables.getRootCause( e ).getMessage(), TEXT_PLAIN );
             } else {
-                String json = Binder.json.marshal( new JsonStackTraceResponse( e ) );
+                var json = Binder.json.marshal( new JsonStackTraceResponse( e ) );
                 wsResponse.withContent( json, APPLICATION_JSON );
             }
 
@@ -150,9 +149,9 @@ public class WebService implements Handler {
     @Override
     public void handle( Request request, Response response ) {
         try {
-            val method = reflection.method( m -> methodMatches( request.requestLine, request.httpMethod, m ), ( o1, o2 ) -> {
-                val path1 = o1.findAnnotation( WsMethod.class ).map( WsMethod::path ).orElse( o1.name() );
-                val path2 = o2.findAnnotation( WsMethod.class ).map( WsMethod::path ).orElse( o1.name() );
+            var method = reflection.method( m -> methodMatches( request.requestLine, request.httpMethod, m ), ( o1, o2 ) -> {
+                var path1 = o1.findAnnotation( WsMethod.class ).map( WsMethod::path ).orElse( o1.name() );
+                var path2 = o2.findAnnotation( WsMethod.class ).map( WsMethod::path ).orElse( o1.name() );
 
                 return path1.compareTo( path2 );
             } )
@@ -162,7 +161,7 @@ public class WebService implements Handler {
                 log.trace( "[{}] not found", request.requestLine );
                 response.respond( NOT_FOUND );
             } else {
-                Name name = Metrics
+                var name = Metrics
                     .name( "rest_timer" )
                     .tag( "service", service() )
                     .tag( "method", method.name() );
@@ -170,8 +169,8 @@ public class WebService implements Handler {
                 if( !sessionAware ) {
                     handleInternal( request, response, method, name, null );
                 } else {
-                    String cookieId = request.cookie( SessionManager.COOKIE_ID ).orElse( null );
-                    val authToken = Interceptor.getSessionToken( request );
+                    var cookieId = request.cookie( SessionManager.COOKIE_ID ).orElse( null );
+                    var authToken = Interceptor.getSessionToken( request );
                     Session session;
                     if( cookieId != null
                         && ( session = sessionManager.getSessionById( cookieId ) ) != null
@@ -206,53 +205,53 @@ public class WebService implements Handler {
                                  Name name, Pair<String, Session> session ) {
         log.trace( "{}: Internal session status: [{}]", service(), session );
 
-        Optional<WsMethod> wsMethod = method.findAnnotation( WsMethod.class );
+        var wsMethod = method.findAnnotation( WsMethod.class );
 
         Function<Reflection.Parameter, Object> func = p -> {
-            val ret = getValue( session, request, wsMethod, p ).orElse( Optional.empty() );
+            var ret = getValue( session, request, wsMethod, p ).orElse( Optional.empty() );
             if( ret instanceof Optional ) return ( ( Optional<?> ) ret ).orElse( null );
 
             return ret;
         };
 
-        HttpResponse interceptorResponse = session != null
+        var interceptorResponse = session != null
             ? runInterceptors( request, session._2, method, func )
             : null;
 
         if( interceptorResponse != null ) response.respond( interceptorResponse );
         else Metrics.measureTimer( name, () -> {
-            List<Reflection.Parameter> parameters = method.parameters;
-            LinkedHashMap<Reflection.Parameter, Object> originalValues = getOriginalValues( session, parameters, request, wsMethod );
+            var parameters = method.parameters;
+            var originalValues = getOriginalValues( session, parameters, request, wsMethod );
 
-            ValidationErrors paramValidation = ValidationErrors.empty()
+            var paramValidation = ValidationErrors.empty()
                 .validateParameters( originalValues, method, instance, true )
                 .throwIfInvalid();
 
             Validators.forMethod( method, instance, true )
-                .validate( originalValues.values().toArray( new Object[originalValues.size()] ), originalValues )
+                .validate( originalValues.values().toArray( new Object[0] ), originalValues )
                 .throwIfInvalid();
 
-            LinkedHashMap<Reflection.Parameter, Object> values = getValues( originalValues );
+            var values = getValues( originalValues );
 
             paramValidation
                 .validateParameters( values, method, instance, false )
                 .throwIfInvalid();
 
-            Object[] paramValues = values.values().toArray( new Object[values.size()] );
+            var paramValues = values.values().toArray( new Object[0] );
 
             Validators.forMethod( method, instance, false )
                 .validate( paramValues, values )
                 .throwIfInvalid();
 
-            Object result = method.invoke( instance, paramValues );
+            var result = method.invoke( instance, paramValues );
 
-            Boolean isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
-            ContentType produces =
+            var isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
+            var produces =
                 wsMethod.map( wsm -> ContentType.create( wsm.produces() )
                     .withCharset( UTF_8 ) )
                     .orElse( APPLICATION_JSON );
 
-            String cookie = session != null
+            var cookie = session != null
                 ? new HttpResponse.CookieBuilder()
                 .withSID( session._1 )
                 .withPath( sessionManager.cookiePath )
@@ -272,7 +271,7 @@ public class WebService implements Handler {
                         .orElse( NOT_FOUND )
                 );
             } else if( result instanceof Result<?, ?> ) {
-                Result<HttpResponse, HttpResponse> resp = ( ( Result<?, ?> ) result )
+                var resp = ( ( Result<?, ?> ) result )
                     .mapSuccess( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) )
                     .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r )
                         .withCookie( cookie ) );
@@ -296,7 +295,7 @@ public class WebService implements Handler {
 
     private Object runPostInterceptors( Object value, Pair<String, Session> session, Reflection.Method method ) {
         if( session == null ) return value;
-        Object result = value;
+        var result = value;
         for( Interceptor interceptor : interceptors ) result = interceptor.postProcessing( value, session._2, method );
 
         return result;
@@ -304,7 +303,7 @@ public class WebService implements Handler {
 
     private LinkedHashMap<Reflection.Parameter, Object> getValues( LinkedHashMap<Reflection.Parameter, Object> values ) {
         try {
-            val res = new LinkedHashMap<Reflection.Parameter, Object>();
+            var res = new LinkedHashMap<Reflection.Parameter, Object>();
 
             values.forEach( ( key, value ) -> {
                 Object map = map( key.type(), value );
@@ -339,8 +338,8 @@ public class WebService implements Handler {
     private HttpResponse runInterceptors( Request request, Session session, Reflection.Method method,
                                           Function<Reflection.Parameter, Object> getParameterValueFunc ) {
 
-        for( Interceptor interceptor : interceptors ) {
-            val interceptorResponse = interceptor.intercept( request, session, method, getParameterValueFunc );
+        for( var interceptor : interceptors ) {
+            var interceptorResponse = interceptor.intercept( request, session, method, getParameterValueFunc );
             if( interceptorResponse.isPresent() ) return interceptorResponse.get();
         }
 

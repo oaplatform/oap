@@ -24,7 +24,6 @@
 
 package oap.application;
 
-import lombok.val;
 import oap.reflect.Reflect;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -41,10 +40,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class KernelHelperTest {
     @Test
     public void testFixLinksForConstructorValueExists() {
-        val parameters = new LinkedHashMap<String, Object>( Maps.of2( "service", "@service:test-service" ) );
+        var parameters = new LinkedHashMap<String, Object>( Maps.of2( "service", "@service:test-service" ) );
 
-        val si = new ServiceInitialization( "test-service", this, new Module( "n1" ), new Module.Service(), Reflect.reflect( getClass() ) );
-        val newParameters = KernelHelper.fixLinksForConstructor( null, Maps.of2( "test-service", si ), parameters );
+        var si = new ServiceInitialization( "test-service", this, new Module( "n1" ), new Module.Service(), Reflect.reflect( getClass() ) );
+        var newParameters = KernelHelper.fixLinksForConstructor( null, Maps.of2( "test-service", si ), parameters );
 
         assertThat( newParameters ).isNotSameAs( parameters );
         assertThat( newParameters ).containsKeys( "service" );
@@ -53,9 +52,9 @@ public class KernelHelperTest {
 
     @Test
     public void testFixLinksForConstructorValue() {
-        val parameters = new LinkedHashMap<String, Object>( Maps.of2( "service", "@service:test-service" ) );
+        var parameters = new LinkedHashMap<String, Object>( Maps.of2( "service", "@service:test-service" ) );
 
-        val newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
+        var newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
 
         assertThat( newParameters ).isNotSameAs( parameters );
         assertThat( newParameters ).containsKeys( "service" );
@@ -64,9 +63,9 @@ public class KernelHelperTest {
 
     @Test
     public void testFixLinksForConstructorList() {
-        val parameters = new LinkedHashMap<String, Object>( Maps.of2( "services", singletonList( "@service:test-service" ) ) );
+        var parameters = new LinkedHashMap<String, Object>( Maps.of2( "services", singletonList( "@service:test-service" ) ) );
 
-        val newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
+        var newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
 
         assertThat( newParameters ).isNotSameAs( parameters );
         assertThat( newParameters ).containsKeys( "services" );
@@ -76,11 +75,11 @@ public class KernelHelperTest {
 
     @Test
     public void testFixLinksForConstructorMap() {
-        val parameters = new LinkedHashMap<String, Object>(
+        var parameters = new LinkedHashMap<String, Object>(
             Maps.of2( "services", Lists.of( Maps.of2( "link", "@service:test-service" ) ) )
         );
 
-        val newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
+        var newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
 
         assertThat( newParameters ).isNotSameAs( parameters );
         assertThat( newParameters ).containsKeys( "services" );

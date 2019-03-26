@@ -24,7 +24,6 @@
 
 package oap.io;
 
-import lombok.val;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.Test;
@@ -36,13 +35,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class LazyFileOutputStreamTest extends AbstractTest {
     @Test
     public void testWrite() throws IOException {
-        val path = Env.tmpRoot.resolve( "test/file1.txt" );
+        var path = Env.tmpRoot.resolve( "test/file1.txt" );
 
         new LazyFileOutputStream( path ).close();
 
         assertThat( path ).doesNotExist();
 
-        try( val lfos = new LazyFileOutputStream( path ) ) {
+        try( var lfos = new LazyFileOutputStream( path ) ) {
             lfos.write( '1' );
         }
 

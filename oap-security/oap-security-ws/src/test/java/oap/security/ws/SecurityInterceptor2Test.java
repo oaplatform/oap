@@ -24,7 +24,6 @@
 
 package oap.security.ws;
 
-import lombok.val;
 import oap.http.Context;
 import oap.http.Protocol;
 import oap.http.Request;
@@ -62,18 +61,18 @@ public class SecurityInterceptor2Test {
 
     @Test
     public void testShouldNotCheckMethodWithoutAnnotation() {
-        val methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithoutAnnotation" ) ).get();
+        var methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithoutAnnotation" ) ).get();
 
-        val httpResponse = securityInterceptor.intercept( new MockRequest(), new Session(), methodWithAnnotation, p -> null );
+        var httpResponse = securityInterceptor.intercept( new MockRequest(), new Session(), methodWithAnnotation, p -> null );
 
         assertThat( httpResponse ).isEmpty();
     }
 
     @Test
     public void testShouldVerifyUserIfPresentInSession() {
-        val methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
+        var methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
 
-        val userId = "testUser";
+        var userId = "testUser";
 
         final Session session = new Session();
         session.set( USER_ID, userId );
@@ -82,7 +81,7 @@ public class SecurityInterceptor2Test {
 
         final MockRequest request = new MockRequest();
         request.headers.put( "authorization", "token1" );
-        val httpResponse = securityInterceptor.intercept( request,
+        var httpResponse = securityInterceptor.intercept( request,
             session, methodWithAnnotation, p -> "obj" );
 
         assertThat( httpResponse ).isEmpty();
@@ -90,27 +89,27 @@ public class SecurityInterceptor2Test {
 
     @Test
     public void testShouldVerifyAndSetUserInSessionIfAuthorizationHeaderIsPresent() throws UnknownHostException {
-        val methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
+        var methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
 
-        val context = new Context( "/", InetAddress.getLocalHost(), Protocol.HTTP.name() );
-        val tokenId = UUID.randomUUID().toString();
+        var context = new Context( "/", InetAddress.getLocalHost(), Protocol.HTTP.name() );
+        var tokenId = UUID.randomUUID().toString();
 
-        val httpRequest = new HttpGet();
+        var httpRequest = new HttpGet();
         httpRequest.setHeader( "Authorization", tokenId );
         httpRequest.setHeader( "Host", "localhost" );
 
-        val request = new Request( httpRequest, context );
+        var request = new Request( httpRequest, context );
 
-        val userId = "testUser";
+        var userId = "testUser";
 
-        val token = new Token2( tokenId, userId, DateTimeUtils.currentTimeMillis() );
+        var token = new Token2( tokenId, userId, DateTimeUtils.currentTimeMillis() );
 
         when( mockTokenService.getToken( tokenId ) ).thenReturn( Optional.of( token ) );
 
-        val session = new Session();
+        var session = new Session();
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( true );
 
-        val httpResponse = securityInterceptor.intercept( request,
+        var httpResponse = securityInterceptor.intercept( request,
             session, methodWithAnnotation, p -> "obj" );
 
         assertThat( httpResponse ).isEmpty();
@@ -119,16 +118,16 @@ public class SecurityInterceptor2Test {
 
     @Test
     public void testAccessDenied() {
-        val methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
+        var methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
 
-        val userId = "testUser";
+        var userId = "testUser";
 
         final Session session = new Session();
         session.set( USER_ID, userId );
 
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( false );
 
-        val httpResponse = securityInterceptor.intercept( new MockRequest(), session, methodWithAnnotation, p -> "obj" );
+        var httpResponse = securityInterceptor.intercept( new MockRequest(), session, methodWithAnnotation, p -> "obj" );
 
         assertThat( httpResponse ).isPresent();
     }
@@ -140,8 +139,8 @@ public class SecurityInterceptor2Test {
         final Session session = new Session();
         session.set( USER_ID, "testUser" );
 
-        val methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
-        val op = ( ObjectWithPermissions ) securityInterceptor.postProcessing( new TestAPI.Res( "1" ), session, methodWithAnnotation );
+        var methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
+        var op = ( ObjectWithPermissions ) securityInterceptor.postProcessing( new TestAPI.Res( "1" ), session, methodWithAnnotation );
         assertThat( op.permissions ).containsExactlyInAnyOrder( "test1.read" );
     }
 
@@ -153,8 +152,8 @@ public class SecurityInterceptor2Test {
         final Session session = new Session();
         session.set( USER_ID, "testUser" );
 
-        val methodList = REFLECTION.method( method -> method.name().equals( "methodList" ) ).get();
-        val op = ( ( List<ObjectWithPermissions> ) securityInterceptor.postProcessing( singletonList( new TestAPI.Res( "1" ) ), session, methodList ) ).get( 0 );
+        var methodList = REFLECTION.method( method -> method.name().equals( "methodList" ) ).get();
+        var op = ( ( List<ObjectWithPermissions> ) securityInterceptor.postProcessing( singletonList( new TestAPI.Res( "1" ) ), session, methodList ) ).get( 0 );
         assertThat( op.permissions ).containsExactlyInAnyOrder( "test1.read" );
     }
 
@@ -166,8 +165,8 @@ public class SecurityInterceptor2Test {
         final Session session = new Session();
         session.set( USER_ID, "testUser" );
 
-        val methodWithAnnotation2 = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation2" ) ).get();
-        val op = ( ObjectWithPermissions ) securityInterceptor.postProcessing( new TestAPI.Res( "1" ), session, methodWithAnnotation2 );
+        var methodWithAnnotation2 = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation2" ) ).get();
+        var op = ( ObjectWithPermissions ) securityInterceptor.postProcessing( new TestAPI.Res( "1" ), session, methodWithAnnotation2 );
         assertThat( op.permissions ).containsExactlyInAnyOrder( "test1.read", "gl.create" );
     }
 

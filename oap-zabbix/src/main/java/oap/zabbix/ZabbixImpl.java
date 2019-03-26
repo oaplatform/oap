@@ -25,7 +25,6 @@
 package oap.zabbix;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.io.Closeables;
 import oap.json.Binder;
 import oap.net.Inet;
@@ -68,13 +67,13 @@ public class ZabbixImpl implements Zabbix {
             outputStream = socket.getOutputStream();
             inputStream = socket.getInputStream();
 
-            val data = new Data( Inet.hostname(), item, value );
-            val request = new Request( singletonList( data ) );
+            var data = new Data( Inet.hostname(), item, value );
+            var request = new Request( singletonList( data ) );
 
             ZabbixRequest.writeExternal( request, outputStream );
 
-            val buf = new byte[1024];
-            val responseBaos = new ByteArrayOutputStream();
+            var buf = new byte[1024];
+            var responseBaos = new ByteArrayOutputStream();
 
             while( true ) {
                 int read = inputStream.read( buf );
@@ -84,7 +83,7 @@ public class ZabbixImpl implements Zabbix {
                 responseBaos.write( buf, 0, read );
             }
 
-            val bResponse = responseBaos.toByteArray();
+            var bResponse = responseBaos.toByteArray();
 
             if( bResponse.length < 13 ) {
                 log.trace( "response.length < 13" );

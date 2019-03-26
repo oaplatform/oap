@@ -27,7 +27,6 @@ package oap.security.acl;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
@@ -80,9 +79,9 @@ public class DefaultAclSchema implements AclSchema {
         final Optional<URL> url = Resources.url( getClass(), schemaPath );
         log.debug( "found2 {}", url );
 
-        val configs = Lists.tail( urls ).stream().map( Strings::readString ).toArray( String[]::new );
+        var configs = Lists.tail( urls ).stream().map( Strings::readString ).toArray( String[]::new );
 
-        val lSchema = Binder.hoconWithConfig( configs ).unmarshal( new TypeRef<AclSchemaBean>() {}, Lists.head( urls ) );
+        var lSchema = Binder.hoconWithConfig( configs ).unmarshal( new TypeRef<AclSchemaBean>() {}, Lists.head( urls ) );
 
 
         schemaStorage.forEach( aclSchemaContainer -> {
@@ -103,7 +102,7 @@ public class DefaultAclSchema implements AclSchema {
     public void validateNewObject( AclObject parent, String newObjectType ) throws AclSecurityException {
         log.trace( "validateNewObject parent = {}, newObjectType = {}", parent, newObjectType );
 
-        val parentSchema = getSchemas( parent );
+        var parentSchema = getSchemas( parent );
         if( parentSchema.stream().noneMatch( schema -> schema.containsChild( newObjectType ) ) ) {
             throw new AclSecurityException( newObjectType + " is not allowed here." );
         }
@@ -111,7 +110,7 @@ public class DefaultAclSchema implements AclSchema {
 
     @Override
     public Optional<AclObject> getObject( String id ) {
-        for( val storage : objectStorage.values() ) {
+        for( var storage : objectStorage.values() ) {
             Optional<? extends SecurityContainer<?>> con;
             if( ( con = storage.get( id ) ).isPresent() ) return con.map( c -> c.acl );
         }
@@ -143,8 +142,8 @@ public class DefaultAclSchema implements AclSchema {
 
     @Override
     public Optional<AclObject> updateLocalObject( String id, Consumer<AclObject> cons ) {
-        for( val os : objectStorage.values() ) {
-            val res = os.update( id, con -> {
+        for( var os : objectStorage.values() ) {
+            var res = os.update( id, con -> {
                 cons.accept( con.acl );
                 return con;
             } );
@@ -167,7 +166,7 @@ public class DefaultAclSchema implements AclSchema {
 
     @Override
     public void deleteObject( String id ) {
-        for( val os : objectStorage.values() ) {
+        for( var os : objectStorage.values() ) {
             if( os.delete( id ).isPresent() ) return;
         }
 
@@ -176,10 +175,10 @@ public class DefaultAclSchema implements AclSchema {
 
     @Override
     public List<String> getPermissions( String objectId ) {
-        val object = getObject( objectId ).orElse( null );
+        var object = getObject( objectId ).orElse( null );
         if( object == null ) return emptyList();
 
-        val objectSchema = getSchemas( object );
+        var objectSchema = getSchemas( object );
 
         return objectSchema
             .stream()

@@ -27,7 +27,6 @@ package oap.storage.mongo;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
-import lombok.val;
 import org.bson.codecs.configuration.CodecRegistries;
 
 import java.io.Closeable;
@@ -40,11 +39,11 @@ public class MongoClient implements Closeable {
 
     public MongoClient( String host, int port, String database, Migration migration ) {
         this.migration = migration;
-        val codecRegistry = CodecRegistries.fromRegistries(
+        var codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JodaTimeCodec() ),
             com.mongodb.MongoClient.getDefaultCodecRegistry() );
 
-        val options = MongoClientOptions.builder().codecRegistry( codecRegistry ).build();
+        var options = MongoClientOptions.builder().codecRegistry( codecRegistry ).build();
 
         mongoClient = new com.mongodb.MongoClient( new ServerAddress( host, port ), options );
         this.database = mongoClient.getDatabase( database );

@@ -26,7 +26,6 @@ package oap.testng;
 
 
 import com.google.common.base.Throwables;
-import lombok.val;
 import oap.testng.casesuite.CaseContext;
 import oap.util.Stream;
 import org.testng.IClassListener;
@@ -44,7 +43,7 @@ public class TestListener implements ITestListener, ISuiteListener, IClassListen
 
     private static String getClassName( ITestResult result ) {
         String className = null;
-        val parameters = result.getParameters();
+        var parameters = result.getParameters();
         if( parameters.length > 0 ) {
             if( parameters[0] != null && CaseContext.class.equals( parameters[0].getClass() ) ) {
                 className = parameters[0].toString();
@@ -73,7 +72,7 @@ public class TestListener implements ITestListener, ISuiteListener, IClassListen
 
     public void finish( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
-        val time = iTestResult.getEndMillis() - iTestResult.getStartMillis();
+        var time = iTestResult.getEndMillis() - iTestResult.getStartMillis();
         System.out.println( "##teamcity[testFinished name='" + Teamcity.escape( method ) + "' duration='" + time + "']" );
 
         if( DEBUG ) {
@@ -84,7 +83,7 @@ public class TestListener implements ITestListener, ISuiteListener, IClassListen
 
     public String getMethodName( ITestResult iTestResult ) {
         String pStr;
-        val parameters = iTestResult.getParameters();
+        var parameters = iTestResult.getParameters();
         if( parameters.length > 0 ) {
             pStr = Stream.of( parameters )
                 .filter( p -> p == null || !CaseContext.class.equals( p.getClass() ) )
@@ -100,9 +99,9 @@ public class TestListener implements ITestListener, ISuiteListener, IClassListen
     @Override
     public void onTestFailure( ITestResult iTestResult ) {
         String method = getMethodName( iTestResult );
-        val t = iTestResult.getThrowable();
-        val message = t != null ? t.getMessage() : "";
-        val details = t != null ? Throwables.getStackTraceAsString( t ) : "";
+        var t = iTestResult.getThrowable();
+        var message = t != null ? t.getMessage() : "";
+        var details = t != null ? Throwables.getStackTraceAsString( t ) : "";
         System.out.println( "##teamcity[testFailed type='comparisonFailure' name='" + Teamcity.escape( method ) + "' message='" + Teamcity.escape( message ) + "' details='" + Teamcity.escape( details ) + "']" );
 
         if( DEBUG ) {

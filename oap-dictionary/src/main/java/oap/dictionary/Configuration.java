@@ -26,7 +26,6 @@ package oap.dictionary;
 
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.util.Pair;
@@ -60,7 +59,7 @@ public abstract class Configuration {
         int maxVersionsToLoad,
         DictionaryParser.IdStrategy idStrategy ) {
 
-        val logConfigs = new ArrayList<URL>();
+        var logConfigs = new ArrayList<URL>();
         if( mappingLocation != null ) {
             log.info( "mappingLocation = {}", mappingLocation );
             logConfigs.addAll( Stream.of( Files.fastWildcard( mappingLocation, "*.json" ).stream() )

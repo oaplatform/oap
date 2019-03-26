@@ -24,7 +24,6 @@
 package oap.tsv;
 
 import lombok.ToString;
-import lombok.val;
 import oap.util.Sets;
 import oap.util.Strings;
 
@@ -74,7 +73,7 @@ public class TypedListModel extends Model<List<Object>> {
     public List<Object> map( List<String> line ) {
         final ArrayList<Object> result = new ArrayList<>( line.size() );
 
-        for( val column : columns ) {
+        for( var column : columns ) {
             try {
                 result.add( column.apply( line ) );
             } catch( IndexOutOfBoundsException e ) {

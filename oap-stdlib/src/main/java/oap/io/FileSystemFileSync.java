@@ -26,7 +26,6 @@ package oap.io;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -43,11 +42,11 @@ public class FileSystemFileSync extends FileSync {
     @Override
     @SneakyThrows
     protected Optional<Path> download() {
-        val remoteFile = Paths.get( uri );
-        val localFile = this.localFile.toAbsolutePath();
+        var remoteFile = Paths.get( uri );
+        var localFile = this.localFile.toAbsolutePath();
 
-        val remoteFileLastModifiedTime = java.nio.file.Files.getLastModifiedTime( remoteFile ).toMillis();
-        val localFileLastModifiedTime = Files.exists( localFile )
+        var remoteFileLastModifiedTime = java.nio.file.Files.getLastModifiedTime( remoteFile ).toMillis();
+        var localFileLastModifiedTime = Files.exists( localFile )
             ? java.nio.file.Files.getLastModifiedTime( localFile ).toMillis()
             : Long.MIN_VALUE;
 

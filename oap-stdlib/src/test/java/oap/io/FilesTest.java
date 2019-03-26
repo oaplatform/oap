@@ -23,7 +23,6 @@
  */
 package oap.io;
 
-import lombok.val;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
@@ -182,8 +181,8 @@ public class FilesTest extends AbstractTest {
         Files.writeString( Env.tmp( "/dir1/1.txt" ), "1" );
         Files.writeString( Env.tmp( "/dir1/dir2/1.txt" ), "1" );
 
-        val dir3 = Env.tmpPath( "/dir1/dir3" );
-        val dir4 = Env.tmpPath( "/dir1/dir3/dir4" );
+        var dir3 = Env.tmpPath( "/dir1/dir3" );
+        var dir4 = Env.tmpPath( "/dir1/dir3/dir4" );
 
         java.nio.file.Files.createDirectories( dir3 );
         java.nio.file.Files.createDirectories( dir4 );

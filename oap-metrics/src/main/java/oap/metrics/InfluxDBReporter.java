@@ -34,7 +34,6 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Timer;
 import lombok.SneakyThrows;
-import lombok.val;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Throwables;
@@ -235,7 +234,7 @@ class InfluxDBReporter extends ScheduledReporter {
         );
 
         if( resetTimersAfterReport ) {
-            for( val timerName : timers.keySet() ) {
+            for( var timerName : timers.keySet() ) {
                 Metrics.registry.remove( timerName );
             }
         }

@@ -26,7 +26,6 @@ package oap.logstream.disk;
 
 import com.google.common.io.CountingOutputStream;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.concurrent.Stopwatch;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
@@ -111,7 +110,7 @@ public class Writer implements Closeable {
 
                 if( !exists ) {
                     out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize ) );
-                    val headers = getHeaders( logId.logType, logId.version );
+                    var headers = getHeaders( logId.logType, logId.version );
                     out.write( headers.getBytes() );
                     log.debug( "[{}] write headers {}", filename, headers );
                 } else {
@@ -143,8 +142,8 @@ public class Writer implements Closeable {
     }
 
     private String getHeaders( String logType, int version ) {
-        val versionDictionary = logConfiguration.getDictionary( version );
-        val logTypeDictionary = versionDictionary.getValue( logType.toUpperCase() );
+        var versionDictionary = logConfiguration.getDictionary( version );
+        var logTypeDictionary = versionDictionary.getValue( logType.toUpperCase() );
         if( logTypeDictionary == null ) {
             throw new LoggerException( "Unknown log type " + logType.toUpperCase() );
         }

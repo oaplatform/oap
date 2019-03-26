@@ -24,7 +24,6 @@
 package oap.testng;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.io.Files;
 import org.joda.time.DateTimeUtils;
 import org.mockito.MockitoAnnotations;
@@ -59,7 +58,7 @@ public abstract class AbstractTest {
             boolean empty = true;
             if( !java.nio.file.Files.exists( Env.tmp ) ) return;
 
-            try( val stream = java.nio.file.Files.newDirectoryStream( Env.tmp ) ) {
+            try( var stream = java.nio.file.Files.newDirectoryStream( Env.tmp ) ) {
                 for( Path build : stream ) {
                     final boolean self = Env.tmpRoot.equals( build );
                     final long lastModified = java.nio.file.Files.getLastModifiedTime( build ).toMillis();

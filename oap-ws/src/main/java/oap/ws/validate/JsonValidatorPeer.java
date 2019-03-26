@@ -24,7 +24,6 @@
 package oap.ws.validate;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.json.schema.JsonSchema;
@@ -53,7 +52,7 @@ public class JsonValidatorPeer implements ValidatorPeer {
         try {
             final Map mapValue = Binder.json.unmarshal( Map.class, ( String ) value );
 
-            val factory = getJsonSchema( originalValues );
+            var factory = getJsonSchema( originalValues );
 
             return ValidationErrors.errors( factory.validate( mapValue, validate.ignoreRequired() ) );
         } catch( JsonException e ) {
@@ -68,12 +67,12 @@ public class JsonValidatorPeer implements ValidatorPeer {
 
         StringBuilder id = new StringBuilder();
 
-        val ref = Strings.substitute( schemaRef, ( key ) -> originalValues
+        var ref = Strings.substitute( schemaRef, ( key ) -> originalValues
             .entrySet()
             .stream()
             .filter( e -> key.equals( e.getKey().name() ) )
             .map( e -> {
-                val value = e.getValue().toString();
+                var value = e.getValue().toString();
                 log.trace( "key={}, value={}", e.getKey(), e.getValue() );
 
                 id.append( value );

@@ -26,7 +26,6 @@ package oap.tree;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.val;
 import oap.tree.Dimension.OperationType;
 import oap.util.Lists;
 import oap.util.MemoryMeter;
@@ -317,7 +316,7 @@ public class Tree<T> {
             final HashSet<Long> unique = new HashSet<>();
             final HashSet<Array> uniqueArray = new HashSet<>();
 
-            for( val vd : data ) {
+            for( var vd : data ) {
                 final Object value = vd.data.get( i );
                 if( value instanceof Array ) {
                     final Array array = ( Array ) value;
@@ -353,7 +352,7 @@ public class Tree<T> {
             return new SplitDimension( finalSplitDimension, Consts.ANY, emptyList(), emptyList(), emptyList(), partition._2, partition._1, emptyList() );
         } else {
 
-            val partitionAnyOther = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY ) == ANY_AS_ARRAY );
+            var partitionAnyOther = Stream.of( data ).partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY ) == ANY_AS_ARRAY );
 
             final List<ValueData<T>> sorted = partitionAnyOther._2
                 .sorted( Comparator.comparingLong( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] ) )
@@ -374,9 +373,9 @@ public class Tree<T> {
 //                final long splitValue = dimension.getOrDefault( sorted.get( sorted.size() / 2).data.get( finalSplitDimension ), ANY_AS_ARRAY )[0];
                 final long splitValue = unique[unique.length / 2];
 
-                val partitionLeftEqRight = Stream.of( sorted )
+                var partitionLeftEqRight = Stream.of( sorted )
                     .partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] < splitValue );
-                val partitionEqRight = partitionLeftEqRight._2
+                var partitionEqRight = partitionLeftEqRight._2
                     .partition( sd -> dimension.getOrDefault( sd.data.get( finalSplitDimension ), ANY_AS_ARRAY )[0] == splitValue );
 
                 final List<ValueData<T>> left = partitionLeftEqRight._1.collect( toList() );
@@ -411,7 +410,7 @@ public class Tree<T> {
 
             if( qValue == ANY_AS_ARRAY ) return;
 
-            val sets = n.sets;
+            var sets = n.sets;
             if( !sets.isEmpty() ) {
                 for( ArrayBitSet set : sets ) {
                     if( set.find( qValue ) ) {
@@ -419,7 +418,7 @@ public class Tree<T> {
                     }
                 }
             } else {
-                val direction = dimension.direction( qValue, n.eqValue );
+                var direction = dimension.direction( qValue, n.eqValue );
                 if( ( direction & Direction.LEFT ) > 0 )
                     find( n.left, query, result );
                 if( ( direction & Direction.EQUAL ) > 0 )
@@ -671,7 +670,7 @@ public class Tree<T> {
             node.print( out );
             out.append( "\n" );
 
-            val children = Lists.filter( node.children(), p -> p._2 != null );
+            var children = Lists.filter( node.children(), p -> p._2 != null );
 
             for( int i = 0; i < children.size(); i++ ) {
                 final Pair<String, TreeNode<T>> child = children.get( i );
@@ -722,7 +721,7 @@ public class Tree<T> {
         }
 
         public ValueData<T> cloneWith( int index, Object item ) {
-            val data = new ArrayList<Object>( this.data );
+            var data = new ArrayList<Object>( this.data );
             data.set( index, item );
             return new ValueData<>( data, value );
         }
@@ -845,7 +844,7 @@ public class Tree<T> {
 
                     return false;
                 case AND:
-                    val newBitSet = ( BitSet ) bitSet.clone();
+                    var newBitSet = ( BitSet ) bitSet.clone();
                     for( long value : qValue ) {
                         newBitSet.clear( ( int ) value );
                     }

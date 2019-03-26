@@ -23,7 +23,6 @@
  */
 package oap.application;
 
-import lombok.val;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.util.Stream;
@@ -52,7 +51,7 @@ public class Configuration<T> {
     }
 
     public List<URL> urlsFromClassPath() {
-        val ret = new ArrayList<URL>();
+        var ret = new ArrayList<URL>();
         ret.addAll( Resources.urls( "META-INF/" + name + ".json" ) );
         ret.addAll( Resources.urls( "META-INF/" + name + ".conf" ) );
         ret.addAll( Resources.urls( "META-INF/" + name + ".yaml" ) );

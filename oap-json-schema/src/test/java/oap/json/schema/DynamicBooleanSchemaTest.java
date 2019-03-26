@@ -24,13 +24,12 @@
 
 package oap.json.schema;
 
-import lombok.val;
 import org.testng.annotations.Test;
 
 public class DynamicBooleanSchemaTest extends AbstractSchemaTest {
     @Test
     public void testEq() {
-        val schema = "{additionalProperties: false, type: object, properties: {" +
+        var schema = "{additionalProperties: false, type: object, properties: {" +
             "a.type=string,b:{type = string, enabled: {json-path:a, eq=b}}" +
             "}}";
 
@@ -43,7 +42,7 @@ public class DynamicBooleanSchemaTest extends AbstractSchemaTest {
 
     @Test
     public void testNe() {
-        val schema = "{additionalProperties: false, type: object, properties: {" +
+        var schema = "{additionalProperties: false, type: object, properties: {" +
             "a.type=string,b:{type = string, enabled: {json-path:a, ne=b}}" +
             "}}";
 
@@ -56,7 +55,7 @@ public class DynamicBooleanSchemaTest extends AbstractSchemaTest {
 
     @Test
     public void testIn() {
-        val schema = "{additionalProperties: false, type: object, properties: {" +
+        var schema = "{additionalProperties: false, type: object, properties: {" +
             "a.type=string,b:{type = string, enabled: {json-path:a, in=[a,b]}}" +
             "}}";
 

@@ -34,7 +34,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.deser.Deserializers;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import lombok.val;
 
 import java.io.IOException;
 
@@ -42,11 +41,11 @@ class CustomValueModule extends SimpleModule {
     static class CustomValueDeserializer extends JsonDeserializer<CustomValue<?>> {
         @Override
         public CustomValue<?> deserialize( JsonParser jsonParser, DeserializationContext deserializationContext ) throws IOException, JsonProcessingException {
-            val id = jsonParser.getCurrentName();
+            var id = jsonParser.getCurrentName();
 
-            val valueClass = TypeIdFactory.get( id );
+            var valueClass = TypeIdFactory.get( id );
 
-            val value = valueClass != null
+            var value = valueClass != null
                 ? deserializationContext.readValue( jsonParser, valueClass )
                 : deserializationContext.readValue( jsonParser, Object.class );
 

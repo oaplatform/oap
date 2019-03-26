@@ -24,7 +24,6 @@
 package oap.logstream;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams.Encoding;
 import oap.util.Optionals;
@@ -57,7 +56,7 @@ public abstract class Archiver implements Runnable {
     @Override
     public void run() {
         log.debug( "let's start packing of {} in {}", mask, sourceDirectory );
-        val timestampStr = timestamp.format( DateTime.now() );
+        var timestampStr = timestamp.format( DateTime.now() );
 
         log.debug( "current timestamp is {}", timestampStr );
         final long bucketStartTime = timestamp.currentBucketStartMillis();

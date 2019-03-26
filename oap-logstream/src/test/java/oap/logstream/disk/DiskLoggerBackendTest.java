@@ -24,7 +24,6 @@
 
 package oap.logstream.disk;
 
-import lombok.val;
 import oap.dictionary.LogConfiguration;
 import oap.logstream.Timestamp;
 import oap.template.Engine;
@@ -40,8 +39,8 @@ import static org.testng.Assert.assertTrue;
 public class DiskLoggerBackendTest extends AbstractTest {
     @Test
     public void spaceAvailable() {
-        val engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
-        val logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
+        var engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
+        var logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
         try( DiskLoggerBackend backend = new DiskLoggerBackend( Env.tmpPath( "logs" ), Timestamp.BPH_12, 4000, logConfiguration ) ) {
             assertTrue( backend.isLoggingAvailable() );
             backend.requiredFreeSpace *= 1000;

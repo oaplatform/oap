@@ -26,7 +26,6 @@ package oap.util;
 import com.google.common.base.Preconditions;
 import it.unimi.dsi.fastutil.ints.AbstractIntCollection;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import lombok.val;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -91,7 +90,7 @@ public class Lists extends oap.util.Collections {
 
     public static <E, R> ArrayList<R> map( Collection<? extends E> list, Function<? super E, R> mapper ) {
         final ArrayList<R> result = new ArrayList<>( list.size() );
-        for( val e : list ) {
+        for( var e : list ) {
             result.add( mapper.apply( e ) );
         }
         return result;
@@ -132,7 +131,7 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E> ArrayList<E> shuffle( List<E> list ) {
-        val localCopy = new ArrayList<E>( list );
+        var localCopy = new ArrayList<E>( list );
         Collections.shuffle( localCopy );
         return localCopy;
     }
@@ -174,8 +173,8 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <T> int[] mapToIntArray( List<T> list, ToIntFunction<T> func ) {
-        val size = list.size();
-        val array = new int[size];
+        var size = list.size();
+        var array = new int[size];
 
         for( int i = 0; i < size; i++ ) {
             array[i] = func.applyAsInt( list.get( i ) );

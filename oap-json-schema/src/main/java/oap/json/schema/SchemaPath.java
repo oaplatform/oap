@@ -25,7 +25,6 @@
 package oap.json.schema;
 
 import lombok.AllArgsConstructor;
-import lombok.val;
 import oap.json.schema.validator.array.ArraySchemaAST;
 import oap.json.schema.validator.object.ObjectSchemaAST;
 import org.apache.commons.lang3.StringUtils;
@@ -57,13 +56,13 @@ public final class SchemaPath {
 
     public static Result traverse( SchemaAST root, String path ) {
         SchemaAST schemaAST = root;
-        val additionalProperties = new MutableObject<Boolean>( null );
+        var additionalProperties = new MutableObject<Boolean>( null );
 
         final Supplier<Result> empty = () -> new Result( Optional.empty(), Optional.ofNullable( additionalProperties.getValue() ) );
 
-        for( val item : StringUtils.split( path, '.' ) ) {
+        for( var item : StringUtils.split( path, '.' ) ) {
             if( schemaAST instanceof ObjectSchemaAST ) {
-                val objectSchemaAST = ( ObjectSchemaAST ) schemaAST;
+                var objectSchemaAST = ( ObjectSchemaAST ) schemaAST;
                 schemaAST = objectSchemaAST.properties.get( item );
                 objectSchemaAST.additionalProperties.ifPresent( additionalProperties::setValue );
                 if( schemaAST == null )

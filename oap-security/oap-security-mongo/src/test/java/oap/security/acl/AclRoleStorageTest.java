@@ -24,7 +24,6 @@
 
 package oap.security.acl;
 
-import lombok.val;
 import oap.storage.mongo.Migration;
 import oap.storage.mongo.MongoClient;
 import oap.testng.AbstractTest;
@@ -43,7 +42,7 @@ public class AclRoleStorageTest extends AbstractTest {
 
     @BeforeMethod
     public void init() {
-        val dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
+        var dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
         mongoClient = new MongoClient( Env.getEnvOrDefault( "MONGO_HOST", "localhost" ), 27017, dbName, Migration.NONE );
         mongoClient.database.drop();
@@ -53,9 +52,9 @@ public class AclRoleStorageTest extends AbstractTest {
 
     @Test
     public void testId() {
-        val role = storage.store( new AclRole( "role1", singletonList( "test.permission" ) ) );
+        var role = storage.store( new AclRole( "role1", singletonList( "test.permission" ) ) );
         storage.fsync();
-        val role2 = storage.collection.find( eq( "_id", role.id ) ).first();
+        var role2 = storage.collection.find( eq( "_id", role.id ) ).first();
 
         assertThat( role2.object ).isEqualTo( role );
     }

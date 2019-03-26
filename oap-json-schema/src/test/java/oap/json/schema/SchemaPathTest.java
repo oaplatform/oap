@@ -24,7 +24,6 @@
 
 package oap.json.schema;
 
-import lombok.val;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +33,7 @@ public class SchemaPathTest extends AbstractSchemaTest {
     public void testTraverse() throws Exception {
         String schema = "{additionalProperties = true, type: object, properties: {a: {type: boolean, required: true}}}";
 
-        val schemaAST = schema( schema );
+        var schemaAST = schema( schema );
 
         assertThat( SchemaPath.traverse( schemaAST, "properties.b" ).schema ).isEmpty();
         assertThat( SchemaPath.traverse( schemaAST, "b" ).schema ).isEmpty();
@@ -47,7 +46,7 @@ public class SchemaPathTest extends AbstractSchemaTest {
     public void testTraverseArray() throws Exception {
         String schema = "{type: array, items { type = object, properties: {a: {type: array, items {type = boolean, required: true}}}}}";
 
-        val schemaAST = schema( schema );
+        var schemaAST = schema( schema );
 
         assertThat( SchemaPath.traverse( schemaAST, "items.properties.b" ).schema ).isEmpty();
         assertThat( SchemaPath.traverse( schemaAST, "b" ).schema ).isEmpty();

@@ -24,7 +24,6 @@
 
 package oap.http;
 
-import lombok.val;
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.IoStreams;
@@ -72,13 +71,13 @@ public class GzipHttpTest {
         server.start();
         thread.start();
 
-        val response = Client.DEFAULT.get( "http://localhost:" + port + "/test" );
+        var response = Client.DEFAULT.get( "http://localhost:" + port + "/test" );
 
         assertThat( response.code ).isEqualTo( HTTP_OK );
         assertThat( response.contentType.map( ContentType::toString ) ).contains( ContentTypes.TEXT_PLAIN.toString() );
         assertThat( response.contentString() ).isEqualTo( "test" );
 
-        val responseGzip = Client.DEFAULT.get( "http://localhost:" + port + "/test",
+        var responseGzip = Client.DEFAULT.get( "http://localhost:" + port + "/test",
             emptyMap(), Maps.of2( "Accept-encoding", "gzip" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );

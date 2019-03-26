@@ -25,7 +25,6 @@
 package oap.security.acl;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.util.IdBean;
 import oap.util.Pair;
 
@@ -65,7 +64,7 @@ public class MockAclService implements AclService {
     @Override
     public void validate( String objectId, String subjectId, String... permissions ) throws AclSecurityException {
         log.debug( "validate objectId={}, subjectId={}, permissions={}", objectId, subjectId, asList( permissions ) );
-        val p = checkAll( objectId, subjectId );
+        var p = checkAll( objectId, subjectId );
 
         if( p.isEmpty() || !p.containsAll( asList( permissions ) ) ) {
             throw new AclSecurityException();
@@ -75,7 +74,7 @@ public class MockAclService implements AclService {
     @Override
     public List<Boolean> check( String objectId, String subjectId, List<String> permissions ) {
         log.debug( "check objectId={}, subjectId={}, permissions={}", objectId, subjectId, permissions );
-        val p = checkAll( objectId, subjectId );
+        var p = checkAll( objectId, subjectId );
 
         return permissions.stream().map( p::contains ).collect( toList() );
     }
@@ -111,7 +110,7 @@ public class MockAclService implements AclService {
 
     @Override
     public List<String> getChildren( String parentId, String type, boolean recursive, String subjectId, String permission ) {
-        val ret = children.get( parentId + "_" + type + "_" + recursive + "_" + subjectId + "_" + permission );
+        var ret = children.get( parentId + "_" + type + "_" + recursive + "_" + subjectId + "_" + permission );
         return ret != null ? ret : emptyList();
     }
 

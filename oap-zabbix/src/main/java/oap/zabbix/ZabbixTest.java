@@ -24,13 +24,11 @@
 
 package oap.zabbix;
 
-import lombok.val;
-
 import java.io.IOException;
 
 public class ZabbixTest {
     public static void main( String[] args ) throws IOException {
-        val zabbix = new ZabbixImpl( "zabbix.quple.rocks", 10051 );
+        var zabbix = new ZabbixImpl( "zabbix.quple.rocks", 10051 );
 
         zabbix.updateItem( "test-item", "19" );
         zabbix.updateItem( "test-item", "20" );

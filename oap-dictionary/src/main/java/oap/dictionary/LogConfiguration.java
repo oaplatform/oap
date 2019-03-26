@@ -24,7 +24,6 @@
 
 package oap.dictionary;
 
-import lombok.val;
 import oap.template.Engine;
 import oap.template.Template;
 import oap.template.TemplateStrategy;
@@ -81,7 +80,7 @@ public class LogConfiguration extends Configuration {
 
         if( value == null ) throw new IllegalArgumentException( "Unknown type " + type );
 
-        val lines = new ArrayList<Template.Line>();
+        var lines = new ArrayList<Template.Line>();
 
         for( Dictionary field : value.getValues( predicate ) ) {
             if( !field.containsProperty( "path" ) ) continue;

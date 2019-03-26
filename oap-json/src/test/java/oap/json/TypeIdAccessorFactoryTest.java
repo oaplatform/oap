@@ -32,7 +32,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.val;
 import oap.testng.AbstractTest;
 import oap.util.Id;
 import oap.util.Maps;
@@ -46,19 +45,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TypeIdAccessorFactoryTest extends AbstractTest {
     @Test
     public void testClassMapping() {
-        val b = new TestBean( "1" );
-        val marshal = Binder.json.marshal( new TestContainer( b ) );
+        var b = new TestBean( "1" );
+        var marshal = Binder.json.marshal( new TestContainer( b ) );
         assertThat( marshal ).isEqualTo( "{\"ref\":{\"@object:type\":\"b\",\"id\":\"1\"}}" );
 
-        val unmarshal = Binder.json.<TestContainer>unmarshal( TestContainer.class, marshal );
+        var unmarshal = Binder.json.<TestContainer>unmarshal( TestContainer.class, marshal );
         assertThat( unmarshal.ref ).isEqualTo( b );
     }
 
     @Test
     public void testAnySetterWithCustomValueWithTypeId() {
-        val json = "{\"b\":{\"id\":\"val\"}}";
+        var json = "{\"b\":{\"id\":\"val\"}}";
 
-        val vm = Binder.json.<TestCustomValueMap>unmarshal( TestCustomValueMap.class, json );
+        var vm = Binder.json.<TestCustomValueMap>unmarshal( TestCustomValueMap.class, json );
         assertThat( vm.properties )
             .isNotNull()
             .containsKey( "b" )
@@ -67,9 +66,9 @@ public class TypeIdAccessorFactoryTest extends AbstractTest {
 
     @Test
     public void testAnySetterWithCustomValueWithoutTypeId() {
-        val json = "{\"unknown-typeid1\":\"10\", \"unknown-typeid2\":{\"a\":\"10\"}}";
+        var json = "{\"unknown-typeid1\":\"10\", \"unknown-typeid2\":{\"a\":\"10\"}}";
 
-        val vm = Binder.json.<TestCustomValueMap>unmarshal( TestCustomValueMap.class, json );
+        var vm = Binder.json.<TestCustomValueMap>unmarshal( TestCustomValueMap.class, json );
         assertThat( vm.properties )
             .isNotNull()
             .containsEntry( "unknown-typeid1", "10" )

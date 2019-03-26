@@ -25,7 +25,6 @@
 package oap.dictionary;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import lombok.val;
 import oap.json.Binder;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
@@ -107,7 +106,7 @@ public class DictionaryParser {
                 return new DictionaryRoot( name, externalIdAs, values, p );
             }
 
-            val anExtends = getExtendsOpt( valueMap ).orElse( null );
+            var anExtends = getExtendsOpt( valueMap ).orElse( null );
             if( anExtends != null ) return new DictionaryExtends( anExtends );
 
             final String id = getString( valueMap, ID );
@@ -180,12 +179,12 @@ public class DictionaryParser {
         final ListIterator<Dictionary> iterator = ( ListIterator<Dictionary> ) parent.getValues().listIterator();
         int lastExtendsId = -1;
         while( iterator.hasNext() ) {
-            val child = iterator.next();
+            var child = iterator.next();
             if( child instanceof DictionaryExtends ) {
                 iterator.remove();
 
-                val anExtends = ( ( DictionaryExtends ) child ).anExtends;
-                for( val v : getValues( dictionaryRoot, anExtends ) ) {
+                var anExtends = ( ( DictionaryExtends ) child ).anExtends;
+                for( var v : getValues( dictionaryRoot, anExtends ) ) {
                     if( !anExtends.filter.isPresent() || anExtends.filter.filter( f -> v.getTags().contains( f ) ).isPresent() ) {
                         iterator.add( v );
                         lastExtendsId = v.getExternalId();
@@ -209,7 +208,7 @@ public class DictionaryParser {
     private static List<? extends Dictionary> getValues( DictionaryRoot dictionaryRoot, Extends anExtends ) {
         Dictionary value = dictionaryRoot;
 
-        for( val id : StringUtils.split( anExtends.path, "/" ) ) {
+        for( var id : StringUtils.split( anExtends.path, "/" ) ) {
             value = value.getValue( id );
         }
         return value.getValues();
@@ -246,11 +245,11 @@ public class DictionaryParser {
     }
 
     private static Optional<Extends> getExtendsOpt( Map map ) {
-        val m = getValueOpt( Map.class, map, "extends", o -> Optional.empty() ).orElse( null );
+        var m = getValueOpt( Map.class, map, "extends", o -> Optional.empty() ).orElse( null );
         if( m == null ) return Optional.empty();
 
-        val path = getString( m, "path" );
-        val filter = getStringOpt( m, "filter" );
+        var path = getString( m, "path" );
+        var filter = getStringOpt( m, "filter" );
 
         return Optional.of( new Extends( path, filter ) );
     }
@@ -320,7 +319,7 @@ public class DictionaryParser {
         jsonGenerator.writeFieldName( VALUES );
         jsonGenerator.writeStartArray();
 
-        for( val value : values ) {
+        for( var value : values ) {
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField( ID, value.getId() );
             if( !value.isEnabled() ) jsonGenerator.writeBooleanField( ENABLED, false );

@@ -53,7 +53,6 @@ import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
@@ -110,7 +109,7 @@ public class Binder {
     }
 
     public static Binder getBinder( URL url ) {
-        val strUrl = url.toString().toLowerCase();
+        var strUrl = url.toString().toLowerCase();
         if( strUrl.endsWith( "json" ) ) return Binder.json;
         else if( strUrl.endsWith( "conf" ) ) return Binder.hocon;
         else if( strUrl.endsWith( "yaml" ) ) return Binder.yaml;
@@ -261,7 +260,7 @@ public class Binder {
     }
 
     public <T> T unmarshal( Class<T> clazz, Path path ) {
-        try( val in = IoStreams.in( path ) ) {
+        try( var in = IoStreams.in( path ) ) {
             return unmarshal( clazz, in );
         } catch( IOException e ) {
             throw new JsonException( e );
@@ -269,7 +268,7 @@ public class Binder {
     }
 
     public <T> T unmarshal( Class<T> clazz, URL url ) {
-        try( val in = url.openStream() ) {
+        try( var in = url.openStream() ) {
             return unmarshal( clazz, in );
         } catch( IOException e ) {
             throw new JsonException( e );
@@ -329,7 +328,7 @@ public class Binder {
     }
 
     public <T> T unmarshal( TypeRef<T> ref, Path path ) {
-        try( val in = IoStreams.in( path ) ) {
+        try( var in = IoStreams.in( path ) ) {
             return unmarshal( ref, in );
         } catch( IOException e ) {
             throw new JsonException( e );
@@ -339,7 +338,7 @@ public class Binder {
 
     @Deprecated
     public <T> T unmarshal( TypeReference<T> ref, Path path ) {
-        try( val in = IoStreams.in( path ) ) {
+        try( var in = IoStreams.in( path ) ) {
             return unmarshal( ref, in );
         } catch( IOException e ) {
             throw new JsonException( e );
@@ -347,7 +346,7 @@ public class Binder {
     }
 
     public <T> T unmarshal( TypeRef<T> ref, URL url ) {
-        try( val in = url.openStream() ) {
+        try( var in = url.openStream() ) {
             return unmarshal( ref, in );
         } catch( IOException e ) {
             throw new JsonException( e );
@@ -356,7 +355,7 @@ public class Binder {
 
     @Deprecated
     public <T> T unmarshal( TypeReference<T> ref, URL url ) {
-        try( val in = url.openStream() ) {
+        try( var in = url.openStream() ) {
             return unmarshal( ref, in );
         } catch( IOException e ) {
             throw new JsonException( e );

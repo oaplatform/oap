@@ -26,7 +26,6 @@ package oap.logstream.net;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.io.Files;
 import oap.logstream.LogId;
 import oap.logstream.net.BufferConfigurationMap.BufferConfiguration;
@@ -97,7 +96,7 @@ public class Buffers implements Closeable {
     }
 
     private BufferConfiguration findConfiguration( LogId id ) {
-        for( val conf : configurations.entrySet() ) {
+        for( var conf : configurations.entrySet() ) {
             if( conf.getValue().pattern.matcher( id.logType ).find() ) return conf.getValue();
         }
         throw new IllegalStateException( "Pattern for " + id + " not found" );

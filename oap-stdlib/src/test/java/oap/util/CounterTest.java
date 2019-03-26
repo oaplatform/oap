@@ -24,7 +24,6 @@
 
 package oap.util;
 
-import lombok.val;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +33,7 @@ public class CounterTest {
     public void testHourly() throws Exception {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
-        val counter = new Counter.HourlyCounter();
+        var counter = new Counter.HourlyCounter();
 
         counter.inc();
         counter.inc( 2 );
@@ -49,7 +48,7 @@ public class CounterTest {
     public void testDaily() throws Exception {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
-        val counter = new Counter.DailyCounter();
+        var counter = new Counter.DailyCounter();
 
         counter.inc();
         counter.inc( 2 );
@@ -64,7 +63,7 @@ public class CounterTest {
     public void testMonthly() throws Exception {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
-        val counter = new Counter.MonthlyCounter();
+        var counter = new Counter.MonthlyCounter();
 
         counter.inc();
         counter.inc( 2 );
@@ -78,14 +77,14 @@ public class CounterTest {
     @Test
     public void testMerge() throws Exception {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
-        val counter1 = new Counter.HourlyCounter();
+        var counter1 = new Counter.HourlyCounter();
         counter1.inc();
 
-        val counter2 = new Counter.HourlyCounter();
+        var counter2 = new Counter.HourlyCounter();
         counter2.inc();
 
         Dates.setTimeFixed( 2017, 6, 2, 14 + 1, 16, 10 );
-        val counter3 = new Counter.HourlyCounter();
+        var counter3 = new Counter.HourlyCounter();
         counter3.inc();
 
         counter1.merge( counter2 );

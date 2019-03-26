@@ -25,7 +25,6 @@
 package oap.application;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.util.Lists;
 
 import java.util.ArrayList;
@@ -45,7 +44,7 @@ import static org.apache.commons.collections4.CollectionUtils.subtract;
 public class KernelHelper {
 
     static Set<Module> forEachModule( Set<Module> modules, Set<String> initializedModules, Consumer<Module> cons ) {
-        val deferred = new HashSet<Module>();
+        var deferred = new HashSet<Module>();
 
         for( Module module : modules ) {
             log.debug( "module {}", module.name );
@@ -73,7 +72,7 @@ public class KernelHelper {
         HashMap<String, Module.Service> deferred = new HashMap<>();
 
         for( Map.Entry<String, Module.Service> entry : services.entrySet() ) {
-            val service = entry.getValue();
+            var service = entry.getValue();
 
             List<String> dependsOn = Lists.filter( service.dependsOn, d -> serviceEnabled( modules, d ) );
             if( initializedServices.containsAll( dependsOn ) ) {
@@ -104,7 +103,7 @@ public class KernelHelper {
                                                                  LinkedHashMap<String, Object> parameters ) {
         fixLinks( kernel, initialized, parameters );
 
-        val ret = new LinkedHashMap<String, Object>();
+        var ret = new LinkedHashMap<String, Object>();
 
         parameters.forEach( ( name, value ) -> {
             Object newValue = fixValue( kernel, initialized, value );
@@ -118,25 +117,25 @@ public class KernelHelper {
     static Object fixValue( Kernel kernel, Map<String, ServiceInitialization> initialized, Object value ) {
         Object newValue;
         if( isServiceLink( value ) ) {
-            val linkName = referenceName( value );
-            val si = initialized.get( linkName );
+            var linkName = referenceName( value );
+            var si = initialized.get( linkName );
             newValue = si != null ? si.instance : null;
         } else if( isKernel( value ) ) {
             newValue = kernel;
         } else if( value instanceof String && ( ( String ) value ).matches( "@[^:]+:.+" ) ) {
             newValue = null;
         } else if( value instanceof List<?> ) {
-            val newList = new ArrayList<>();
-            for( val lValue : ( List<?> ) value ) {
-                val fixLValue = fixValue( kernel, initialized, lValue );
+            var newList = new ArrayList<>();
+            for( var lValue : ( List<?> ) value ) {
+                var fixLValue = fixValue( kernel, initialized, lValue );
                 if( fixLValue != null ) newList.add( fixLValue );
             }
             newValue = newList;
         } else if( value instanceof Map<?, ?> ) {
-            val newMap = new LinkedHashMap<Object, Object>();
+            var newMap = new LinkedHashMap<Object, Object>();
 
             ( ( Map<String, Object> ) value ).forEach( ( key, mValue ) -> {
-                val v = fixValue( kernel, initialized, mValue );
+                var v = fixValue( kernel, initialized, mValue );
                 if( v != null ) newMap.put( key, v );
             } );
 
@@ -165,20 +164,20 @@ public class KernelHelper {
 
     static Object fixLinks( Kernel kernel, Map<String, ServiceInitialization> initialized, Object value ) {
         if( isServiceLink( value ) ) {
-            val linkName = referenceName( value );
-            val si = initialized.get( linkName );
+            var linkName = referenceName( value );
+            var si = initialized.get( linkName );
             return si != null ? si.instance : null;
         } else if( isKernel( value ) ) {
             return kernel;
         } else if( value instanceof List<?> ) {
             ListIterator<Object> it = ( ( List<Object> ) value ).listIterator();
             while( it.hasNext() ) {
-                val v = fixLinks( kernel, initialized, it.next() );
+                var v = fixLinks( kernel, initialized, it.next() );
                 if( v != null ) it.set( v );
             }
         } else if( value instanceof Map<?, ?> ) {
-            for( val entry : ( ( Map<?, Object> ) value ).entrySet() ) {
-                val v = fixLinks( kernel, initialized, entry.getValue() );
+            for( var entry : ( ( Map<?, Object> ) value ).entrySet() ) {
+                var v = fixLinks( kernel, initialized, entry.getValue() );
                 if( v != null ) entry.setValue( v );
             }
         }

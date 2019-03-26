@@ -27,7 +27,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <packaging>pom</packaging>
-    <groupId>oap-jdk11</groupId>
+    <groupId>oap</groupId>
     <artifactId>oap</artifactId>
     <version>4.7.0</version>
 

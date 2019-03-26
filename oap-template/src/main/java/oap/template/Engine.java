@@ -27,7 +27,6 @@ package oap.template;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -66,7 +65,7 @@ public class Engine implements Runnable {
     public static String getName( String template ) {
         final HashFunction hashFunction = Hashing.murmur3_128();
 
-        val hash = hashFunction.hashUnencodedChars( template ).asLong();
+        var hash = hashFunction.hashUnencodedChars( template ).asLong();
         return hashToName( hash );
     }
 
@@ -77,11 +76,11 @@ public class Engine implements Runnable {
     public static <TLine extends Template.Line> String getName( List<TLine> pathAndDefault, String delimiter ) {
         final HashFunction hashFunction = Hashing.murmur3_32();
 
-        val hash = hashFunction
+        var hash = hashFunction
             .newHasher();
 
 
-        for( val line : pathAndDefault ) {
+        for( var line : pathAndDefault ) {
             hash.putUnencodedChars( line.path );
         }
 
@@ -123,7 +122,7 @@ public class Engine implements Runnable {
         StringBuilder text = new StringBuilder();
 
         for( int i = 0; i < template.length(); i++ ) {
-            val ch = template.charAt( i );
+            var ch = template.charAt( i );
             switch( ch ) {
                 case '$':
                     if( variable ) {
@@ -185,11 +184,11 @@ public class Engine implements Runnable {
 
     private Template.Line.Function getFunction( CharSequence function ) {
         boolean args = false;
-        val name = new StringBuilder();
-        val arguments = new StringBuilder();
+        var name = new StringBuilder();
+        var arguments = new StringBuilder();
 
         for( int i = 0; i < function.length(); i++ ) {
-            val ch = function.charAt( i );
+            var ch = function.charAt( i );
             switch( ch ) {
                 case '(':
                     args = true;

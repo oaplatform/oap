@@ -27,7 +27,6 @@ package oap.logstream.net;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.val;
 import oap.util.Pair;
 
 import java.util.HashMap;
@@ -57,7 +56,7 @@ public final class BufferConfigurationMap extends HashMap<String, BufferConfigur
     @SafeVarargs
     public static BufferConfigurationMap custom( Pair<String, BufferConfiguration>... bufferConfiguration ) {
         final BufferConfigurationMap bufferConfigurationMap = new BufferConfigurationMap();
-        for( val p : bufferConfiguration ) {
+        for( var p : bufferConfiguration ) {
             bufferConfigurationMap.put( p._1, p._2 );
         }
         return bufferConfigurationMap;

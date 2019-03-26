@@ -24,7 +24,6 @@
 
 package oap.application;
 
-import lombok.val;
 import oap.testng.AbstractTest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -46,7 +45,7 @@ public class KernelLinkImplementationsTest extends AbstractTest {
 
     @Test
     public void fieldReference() {
-        val kernel = new Kernel(
+        var kernel = new Kernel(
             singletonList( urlOfTestResource( getClass(), "field-reference.conf" ) )
         );
 
@@ -63,7 +62,7 @@ public class KernelLinkImplementationsTest extends AbstractTest {
 
     @Test
     public void fieldReferences() {
-        val kernel = new Kernel(
+        var kernel = new Kernel(
             singletonList( urlOfTestResource( getClass(), "field-references.conf" ) )
         );
 
@@ -81,7 +80,7 @@ public class KernelLinkImplementationsTest extends AbstractTest {
 
     @Test
     public void fieldReferenceUnknownInterface() {
-        val kernel = new Kernel(
+        var kernel = new Kernel(
             singletonList( urlOfTestResource( getClass(), "field-reference-unknown-interface.conf" ) )
         );
 
@@ -94,7 +93,7 @@ public class KernelLinkImplementationsTest extends AbstractTest {
 
     @Test
     public void fieldReferencesUnknownInterface() {
-        val kernel = new Kernel(
+        var kernel = new Kernel(
             singletonList( urlOfTestResource( getClass(), "field-references-unknown-interface.conf" ) )
         );
 

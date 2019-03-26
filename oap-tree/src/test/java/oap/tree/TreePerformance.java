@@ -24,7 +24,6 @@
 
 package oap.tree;
 
-import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.testng.annotations.Test;
 
@@ -50,21 +49,21 @@ public class TreePerformance {
     }
 
     public void benchmarkTree( double fillFactor, int selections, int dimensions, int[] bNs ) {
-        val id = new ArrayList<Dimension>();
+        var id = new ArrayList<Dimension>();
 
         for( int i = 0; i < dimensions; i++ ) {
             id.add( LONG( "s" + i, CONTAINS, null ) );
         }
 
 
-        val qData = new ArrayList<ArrayList<Object>>();
+        var qData = new ArrayList<ArrayList<Object>>();
 
-        val gen = new HashMap<String, ArrayList<Object>>();
+        var gen = new HashMap<String, ArrayList<Object>>();
 
-        val random = new Random();
+        var random = new Random();
 
         for( int i = 0; i < selections; i++ ) {
-            val data = new ArrayList<Object>();
+            var data = new ArrayList<Object>();
 
             for( int x = 0; x < dimensions; x++ ) {
                 data.add( 1L + random.nextInt( selections / 2 - 1 ) );
@@ -74,7 +73,7 @@ public class TreePerformance {
             qData.add( data );
         }
 
-        val data = new ArrayList<Tree.ValueData<String>>();
+        var data = new ArrayList<Tree.ValueData<String>>();
 
         gen.forEach( ( selection, v ) -> {
             data.add( new Tree.ValueData<>( v, selection ) );
@@ -86,7 +85,7 @@ public class TreePerformance {
             .withArrayToTree( Integer.MIN_VALUE )
             .load( data );
 
-        for( val bN : bNs ) {
+        for( var bN : bNs ) {
 
             benchmark( "dims = " + dimensions + ", selections = " + selections + ", queries = " + bN, bN, ( i ) -> {
                 tree.find( qData.get( RandomUtils.nextInt( 0, qData.size() ) ) );

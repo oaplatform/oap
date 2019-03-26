@@ -28,7 +28,6 @@ import com.google.common.base.Preconditions;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.application.link.FieldLinkReflection;
 import oap.application.link.LinkReflection;
 import oap.application.link.ListLinkReflection;
@@ -98,10 +97,10 @@ public class Kernel {
                 addDeps( module, service, Lists.of( linkName ) );
             }
         } else if( value instanceof List<?> )
-            for( val item : ( List<?> ) value )
+            for( var item : ( List<?> ) value )
                 fixDepsParameter( module, service, item, true );
         else if( value instanceof Map<?, ?> )
-            for( val item : ( ( Map<?, ?> ) value ).values() )
+            for( var item : ( ( Map<?, ?> ) value ).values() )
                 fixDepsParameter( module, service, item, false );
     }
 
@@ -111,9 +110,9 @@ public class Kernel {
     }
 
     private void fixDeps() {
-        for( val module : modules ) {
+        for( var module : modules ) {
             log.trace( "module {} services {}", module.name, module.services.keySet() );
-            for( val service : module.services.entrySet() ) {
+            for( var service : module.services.entrySet() ) {
                 if( !profileEnabled( service.getValue().profile ) ) continue;
 
                 log.trace( "fix deps for {} in {}", service.getKey(), module.name );
@@ -131,7 +130,7 @@ public class Kernel {
             Object linked = services.get( Module.Reference.of( reference ).name );
             if( linked == null )
                 throw new ApplicationException( "for " + service.name + " listening object " + reference + " is not found" );
-            val m = Reflect.reflect( linked.getClass() ).method( methodName ).orElse( null );
+            var m = Reflect.reflect( linked.getClass() ).method( methodName ).orElse( null );
             if( m != null ) m.invoke( linked, instance );
             else
                 throw new ReflectException( "listener " + listener + " should have method " + methodName + " in " + reference );
@@ -146,7 +145,7 @@ public class Kernel {
             Object linked = services.get( ref.name );
             if( linked == null )
                 throw new ApplicationException( "for " + service.name + " linked object " + ref + " is not found" );
-            val f = Reflect.reflect( linked.getClass() ).field( field ).orElse( null );
+            var f = Reflect.reflect( linked.getClass() ).field( field ).orElse( null );
             if( f != null ) {
                 Object value = f.get( linked );
                 if( value instanceof PrioritySet<?> ) {
@@ -165,14 +164,14 @@ public class Kernel {
 
     @SneakyThrows
     public void start( String appConfigPath, String confd ) {
-        val configURL =
+        var configURL =
             appConfigPath.startsWith( "classpath:" )
                 ? Thread.currentThread().getContextClassLoader().getResource( appConfigPath.substring( 10 ) )
                 : new File( appConfigPath ).toURI().toURL();
 
         Preconditions.checkNotNull( configURL, appConfigPath + " not found" );
 
-        val confdPath = confd != null ? Paths.get( confd )
+        var confdPath = confd != null ? Paths.get( confd )
             : new File( configURL.toURI() ).toPath().getParent().resolve( "conf.d" );
 
         start( ApplicationConfiguration.load( configURL, confdPath.toString() ) );
@@ -208,7 +207,7 @@ public class Kernel {
 
         fixServiceName();
         fixDeps();
-        val map = instantiateServices( config );
+        var map = instantiateServices( config );
         registerServices( map );
         linkServices( map );
         startServices( map );
@@ -220,13 +219,13 @@ public class Kernel {
     }
 
     private void fixServiceName() {
-        for( val module : modules )
+        for( var module : modules )
             module.services.forEach( ( implName, service ) ->
                 service.name = service.name != null ? service.name : implName );
     }
 
     private Map<String, ServiceInitialization> instantiateServices( ApplicationConfiguration config ) {
-        val ret = new HashMap<String, ServiceInitialization>();
+        var ret = new HashMap<String, ServiceInitialization>();
 
         Set<String> initializedServices = new HashSet<>();
         forEachModule( modules, new HashSet<>(), module ->
@@ -248,7 +247,7 @@ public class Kernel {
                 Reflection reflect = Reflect.reflect( service.implementation, Module.coersions );
                 Object instance;
                 if( !service.isRemoteService() ) try {
-                    val parametersWithoutLinks = fixLinksForConstructor( this, ret, service.parameters );
+                    var parametersWithoutLinks = fixLinksForConstructor( this, ret, service.parameters );
                     instance = reflect.newInstance( parametersWithoutLinks );
                 } catch( ReflectException e ) {
                     log.info( "service name = {}, remote = {}, profile = {}", implName, service.remote, service.profile );
@@ -271,7 +270,7 @@ public class Kernel {
     }
 
     private void linkServices( Map<String, ServiceInitialization> services ) {
-        for( val si : services.values() ) {
+        for( var si : services.values() ) {
             log.trace( "linking service {}...", si.implementationName );
             linkLinks( si.service, si.instance );
             linkListeners( si.service, si.instance );
@@ -287,23 +286,23 @@ public class Kernel {
     private void linkService( LinkReflection lRef, Object parameterValue, ServiceInitialization si,
                               boolean failIfNotFound ) {
         if( isServiceLink( parameterValue ) ) {
-            val linkName = referenceName( parameterValue );
-            val linkService = service( linkName );
+            var linkName = referenceName( parameterValue );
+            var linkService = service( linkName );
 
             if( failIfNotFound && linkService == null )
                 throw new ApplicationException( "for " + si.implementationName + " linked object " + linkName + " is not found" );
 
             lRef.set( linkService );
         } else if( isImplementations( parameterValue ) ) {
-            val interfaceName = referenceName( parameterValue );
+            var interfaceName = referenceName( parameterValue );
             try {
-                val linkServices = ofClass( Class.forName( interfaceName ) );
+                var linkServices = ofClass( Class.forName( interfaceName ) );
                 if( linkServices.isEmpty() ) {
                     if( failIfNotFound )
                         throw new ApplicationException( "for " + si.implementationName + " service link " + interfaceName + " is not found" );
                     lRef.set( null );
                 } else {
-                    for( val linkService : linkServices ) {
+                    for( var linkService : linkServices ) {
                         lRef.set( linkService );
                     }
                 }
@@ -312,20 +311,20 @@ public class Kernel {
             }
 
         } else if( parameterValue instanceof List<?> ) {
-            val parameterList = ( List<?> ) parameterValue;
-            val instanceList = ( List<Object> ) lRef.get();
-            val instanceIterator = instanceList.listIterator();
-            for( val parameter : parameterList ) {
+            var parameterList = ( List<?> ) parameterValue;
+            var instanceList = ( List<Object> ) lRef.get();
+            var instanceIterator = instanceList.listIterator();
+            for( var parameter : parameterList ) {
                 linkService( new ListLinkReflection( instanceIterator ), parameter, si, false );
             }
         } else if( parameterValue instanceof Map ) {
-            val parameterMap = ( Map<Object, Object> ) parameterValue;
-            val instance = lRef.get();
+            var parameterMap = ( Map<Object, Object> ) parameterValue;
+            var instance = lRef.get();
 
             if( instance == null ) return;
 
-            for( val entry : parameterMap.entrySet() ) {
-                val isMap = instance instanceof Map;
+            for( var entry : parameterMap.entrySet() ) {
+                var isMap = instance instanceof Map;
                 final LinkReflection linkReflection = isMap
                     ? new MapLinkReflection( ( Map<Object, Object> ) instance, entry.getKey() )
                     : new FieldLinkReflection( Reflect.reflect( instance.getClass() ), instance, entry.getKey().toString() );
@@ -350,7 +349,7 @@ public class Kernel {
         return forEachModule( modules, initializedModules, module -> {
             Map<String, Module.Service> def = startModule( module.services, services, initializedServices );
             if( !def.isEmpty() ) {
-                val names = def.keySet();
+                var names = def.keySet();
                 log.error( "failed to initialize: {}", names );
                 throw new ApplicationException( "failed to initialize services: " + names );
             }
@@ -363,7 +362,7 @@ public class Kernel {
         return forEachService( modules, services, initializedServices, ( implName, service ) -> {
             log.debug( "starting {} as {}", implName, service.name );
 
-            val si = sis.get( service.name );
+            var si = sis.get( service.name );
             if( si != null ) {
                 startService( si );
             }
@@ -371,8 +370,8 @@ public class Kernel {
     }
 
     private void startService( ServiceInitialization si ) {
-        val service = si.service;
-        val instance = si.instance;
+        var service = si.service;
+        var instance = si.instance;
         if( service.supervision.supervise ) {
             supervisor.startSupervised( service.name, instance,
                 service.supervision.startWith,

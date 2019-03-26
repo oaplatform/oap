@@ -24,7 +24,6 @@
 
 package oap.logstream.disk;
 
-import lombok.val;
 import oap.dictionary.LogConfiguration;
 import oap.io.Files;
 import oap.logstream.LogId;
@@ -50,7 +49,7 @@ public class WriterTest extends AbstractTest {
 
     @BeforeMethod
     public void beforeMethod() {
-        val engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
+        var engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
         logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
     }
 

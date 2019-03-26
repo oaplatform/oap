@@ -24,7 +24,6 @@
 
 package oap.util;
 
-import lombok.val;
 import org.testng.annotations.Test;
 
 import java.util.LinkedHashSet;
@@ -41,21 +40,21 @@ public class CollectionsTest {
 
     @Test
     public void testFind() {
-        val list = asList( "a", "b", "ab" );
+        var list = asList( "a", "b", "ab" );
         assertThat( Collections.find( list, ( str ) -> str.startsWith( "a" ) ) ).contains( "a" );
         assertThat( Collections.find( list, ( str ) -> str.startsWith( "z" ) ) ).isEmpty();
     }
 
     @Test
     public void testFind2() {
-        val list = asList( "a", "b", "ab" );
+        var list = asList( "a", "b", "ab" );
         assertThat( Collections.find2( list, ( str ) -> str.startsWith( "a" ) ) ).isEqualTo( "a" );
         assertThat( Collections.find2( list, ( str ) -> str.startsWith( "z" ) ) ).isNull();
     }
 
     @Test
     public void testAllMatch() {
-        val list = asList( 1, 2, 4, 5 );
+        var list = asList( 1, 2, 4, 5 );
 
         assertThat( Collections.allMatch( list, i -> i <= 5 ) ).isTrue();
         assertThat( Collections.allMatch( list, i -> i >= 5 ) ).isFalse();
@@ -63,7 +62,7 @@ public class CollectionsTest {
 
     @Test
     public void testAnyMatch() {
-        val list = asList( 1, 2, 4, 5 );
+        var list = asList( 1, 2, 4, 5 );
 
         assertThat( Collections.anyMatch( list, i -> i == 1 ) ).isTrue();
         assertThat( Collections.anyMatch( list, i -> i == 6 ) ).isFalse();
@@ -71,7 +70,7 @@ public class CollectionsTest {
 
     @Test
     public void testGroupBy() {
-        val list = asList( 1, 2, 1, 4 );
+        var list = asList( 1, 2, 1, 4 );
 
         assertThat( Collections.groupBy( list, ( i ) -> i + 1 ) )
             .containsOnly( entry( 2, asList( 1, 1 ) ), entry( 3, asList( 2 ) ), entry( 5, asList( 4 ) ) );
@@ -80,7 +79,7 @@ public class CollectionsTest {
 
     @Test
     public void testMax() {
-        val list = asList( 1, 2, 1, 4 );
+        var list = asList( 1, 2, 1, 4 );
 
         assertThat( Collections.max( list ) ).isEqualTo( 4 );
     }

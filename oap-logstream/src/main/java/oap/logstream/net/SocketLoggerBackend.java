@@ -26,7 +26,6 @@ package oap.logstream.net;
 
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.io.Closeables;
@@ -58,8 +57,8 @@ public class SocketLoggerBackend extends LoggerBackend {
     private boolean loggingAvailable = true;
     private boolean closed = false;
 
-    public SocketLoggerBackend( byte clientId, String host, int port, Path location, int bufferSize, long flushInterval ) {
-        this( clientId, host, port, location, BufferConfigurationMap.DEFAULT( bufferSize ), flushInterval );
+    public SocketLoggerBackend( byte clientId, String host, int port, Path location, int bufferSize, long flushIntervar ) {
+        this( clientId, host, port, location, BufferConfigurationMap.DEFAULT( bufferSize ), flushIntervar );
     }
 
     public SocketLoggerBackend( byte clientId, String host, int port, Path location, BufferConfigurationMap configurations, long flushInterval ) {
@@ -134,7 +133,7 @@ public class SocketLoggerBackend extends LoggerBackend {
                 int size = connection.read();
                 if( size <= 0 ) {
                     loggingAvailable = false;
-                    val msg = "Error completing remote write: " + SocketError.fromCode( size );
+                    var msg = "Error completing remote write: " + SocketError.fromCode( size );
                     listeners.fireError( msg );
                     log.error( msg );
                     return false;

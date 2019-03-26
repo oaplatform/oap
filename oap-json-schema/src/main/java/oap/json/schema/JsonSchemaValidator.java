@@ -23,7 +23,6 @@
  */
 package oap.json.schema;
 
-import lombok.val;
 import oap.util.Lists;
 import oap.util.Pair;
 
@@ -155,14 +154,14 @@ public abstract class JsonSchemaValidator<A extends SchemaAST<A>> {
                 String jsonPath = ( String ) map.get( JSON_PATH );
                 Function<Object, List<Object>> sourceFunc = ( obj ) -> new JsonPath( jsonPath ).traverse( obj );
 
-                val of = getOperationFunction( map );
+                var of = getOperationFunction( map );
 
                 Map filterMap = ( Map ) map.get( "filter" );
                 if( filterMap != null ) {
                     Map source = ( Map ) filterMap.get( "source" );
                     String filterJsonPath = ( String ) source.get( JSON_PATH );
                     Function<Object, List<Object>> filterSourceFunc = ( obj ) -> new JsonPath( filterJsonPath ).traverse( obj );
-                    val filterOf = getOperationFunction( filterMap );
+                    var filterOf = getOperationFunction( filterMap );
 
                     return Optional.of( new FilteredEnumFunction( sourceFunc, of, Pair.__( filterSourceFunc, filterOf ) ) );
                 } else {

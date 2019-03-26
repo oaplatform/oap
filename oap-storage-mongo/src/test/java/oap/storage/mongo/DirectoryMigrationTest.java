@@ -24,7 +24,6 @@
 
 package oap.storage.mongo;
 
-import lombok.val;
 import oap.testng.Env;
 import org.bson.Document;
 import org.testng.annotations.BeforeMethod;
@@ -41,7 +40,7 @@ public class DirectoryMigrationTest extends AbstractMongoTest {
 
     @Test
     public void testMigration() {
-        val migration = new DirectoryMigration( Env.deployTestData( getClass() ) );
+        var migration = new DirectoryMigration( Env.deployTestData( getClass() ) );
         migration.variables.put( "testB", "true" );
         migration.variables.put( "testS", "\"true\"" );
 

@@ -25,7 +25,6 @@ package oap.mail;
 
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.storage.Storage;
 import oap.util.Strings;
 import org.apache.commons.codec.EncoderException;
@@ -124,7 +123,7 @@ public class DefaultMailman implements Mailman, Runnable {
     public void run() {
         Message message;
 
-        val failed = new ArrayList<Message>();
+        var failed = new ArrayList<Message>();
 
         while( ( message = this.messages.poll() ) != null ) {
             try {

@@ -25,7 +25,6 @@
 package oap.metrics;
 
 import lombok.AllArgsConstructor;
-import lombok.val;
 
 import java.util.ArrayList;
 
@@ -37,8 +36,8 @@ public class Measurement {
     public static Measurement name( String measurement, String... tagWithValue ) {
         assert tagWithValue.length % 2 == 0;
 
-        val result = new Measurement( measurement );
-        val tags = result.tags;
+        var result = new Measurement( measurement );
+        var tags = result.tags;
 
         for( int i = 0; i < measurement.length(); i += 2 ) {
             tags.add( new Tag( tagWithValue[i], tagWithValue[i + 1] ) );

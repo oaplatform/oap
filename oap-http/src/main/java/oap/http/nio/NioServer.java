@@ -25,7 +25,6 @@ package oap.http.nio;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.http.Handler;
 import oap.http.Protocol;
 import oap.http.Server;
@@ -77,8 +76,8 @@ public class NioServer implements oap.http.HttpServer {
         this.port = port;
         this.mapper.register( "/static/*", new NioClasspathResourceHandler( "/static", "/WEB-INF" ) );
 
-        val ioReactorConfig = IOReactorConfig.custom().setIoThreadCount( workers ).build();
-        val httpProcessor = HttpProcessorBuilder.create()
+        var ioReactorConfig = IOReactorConfig.custom().setIoThreadCount( workers ).build();
+        var httpProcessor = HttpProcessorBuilder.create()
             .add( new ResponseDate() )
             .add( new ResponseServer( "OAP Server/1.0" ) )
             .add( new ResponseContent() )
@@ -103,7 +102,7 @@ public class NioServer implements oap.http.HttpServer {
     public SSLContext getSslContext( int port ) throws IOException, KeyStoreException, NoSuchAlgorithmException, CertificateException, UnrecoverableKeyException, KeyManagementException {
         SSLContext sslContext;
         if( keystoreLocation != null && Files.exists( keystoreLocation ) ) {
-            try( val inputStream = IoStreams.in( keystoreLocation, PLAIN ) ) {
+            try( var inputStream = IoStreams.in( keystoreLocation, PLAIN ) ) {
                 log.info( "Keystore {} exists, trying to initialize", keystoreLocation );
                 KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
                 keyStore.load( inputStream, keystorePassword.toCharArray() );

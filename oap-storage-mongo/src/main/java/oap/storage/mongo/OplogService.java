@@ -30,7 +30,6 @@ import com.mongodb.CursorType;
 import com.mongodb.MongoInterruptedException;
 import com.mongodb.client.MongoCursor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.bson.BsonTimestamp;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -66,7 +65,7 @@ public class OplogService implements Runnable, Closeable {
 
     public synchronized void start() {
         log.debug( "starting oplog listening {} for {}", this, mongoClient.database.getName() );
-        val oplogRs = mongoClient.mongoClient.getDatabase( "local" ).getCollection( "oplog.rs" );
+        var oplogRs = mongoClient.mongoClient.getDatabase( "local" ).getCollection( "oplog.rs" );
         final Bson filter = and(
             in( "op", "i", "u", "d" ),
             gt( "ts", new BsonTimestamp( ( int ) ( DateTimeUtils.currentTimeMillis() / 1000 ), 0 ) ),
@@ -105,30 +104,30 @@ public class OplogService implements Runnable, Closeable {
     public void run() {
         try {
             while( cursor.hasNext() ) {
-                val document = cursor.next();
+                var document = cursor.next();
                 log.trace( "oplog {}", document );
 
-                val operation = document.getString( "op" ).charAt( 0 );
-                val tableName = getTableName( document );
+                var operation = document.getString( "op" ).charAt( 0 );
+                var tableName = getTableName( document );
                 switch( operation ) {
                     case 'i': {
-                        val objO = ( Document ) document.get( "o" );
-                        val id = objO.get( "_id" ).toString();
-                        val l = listeners.get( tableName );
+                        var objO = ( Document ) document.get( "o" );
+                        var id = objO.get( "_id" ).toString();
+                        var l = listeners.get( tableName );
                         l.forEach( ll -> ll.inserted( tableName, id ) );
                         break;
                     }
                     case 'u': {
-                        val objO2 = ( Document ) document.get( "o2" );
-                        val id = objO2.get( "_id" ).toString();
-                        val l = listeners.get( tableName );
+                        var objO2 = ( Document ) document.get( "o2" );
+                        var id = objO2.get( "_id" ).toString();
+                        var l = listeners.get( tableName );
                         l.forEach( ll -> ll.updated( tableName, id ) );
                         break;
                     }
                     case 'd': {
-                        val objO = ( Document ) document.get( "o" );
-                        val id = objO.get( "_id" ).toString();
-                        val l = listeners.get( tableName );
+                        var objO = ( Document ) document.get( "o" );
+                        var id = objO.get( "_id" ).toString();
+                        var l = listeners.get( tableName );
                         l.forEach( ll -> ll.deleted( tableName, id ) );
                         break;
                     }
@@ -144,8 +143,8 @@ public class OplogService implements Runnable, Closeable {
     }
 
     private String getTableName( Document document ) {
-        val fns = document.getString( "ns" );
-        val tableIndex = fns.lastIndexOf( '.' );
+        var fns = document.getString( "ns" );
+        var tableIndex = fns.lastIndexOf( '.' );
 
         return fns.substring( tableIndex + 1 );
     }

@@ -27,7 +27,6 @@ package oap.storage;
 import com.google.common.io.CountingOutputStream;
 import lombok.SneakyThrows;
 import lombok.ToString;
-import lombok.val;
 import oap.concurrent.Threads;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
@@ -117,7 +116,7 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
                     persist( metadata );
                 }
 
-                val id = storage.identifier.get( metadata.object );
+                var id = storage.identifier.get( metadata.object );
 
                 storage.data.put( id, metadata );
 
@@ -138,7 +137,7 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
             log.debug( "migration {}", fn );
 
-            val migration = Lists.find2( migrations, m -> m.fromVersion() == fn.version );
+            var migration = Lists.find2( migrations, m -> m.fromVersion() == fn.version );
             if( migration == null )
                 throw new MigrationException( "migration from version " + fn + " not found" );
 
@@ -148,7 +147,7 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
             long writeLen = -1;
             while( name.toFile().length() != writeLen ) {
-                try( val out = new CountingOutputStream( IoStreams.out( name, PLAIN, DEFAULT_BUFFER, false, true ) ) ) {
+                try( var out = new CountingOutputStream( IoStreams.out( name, PLAIN, DEFAULT_BUFFER, false, true ) ) ) {
                     Binder.json.marshal( out, newV.underlying );
                     writeLen = out.getCount();
                 }
@@ -163,7 +162,7 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
     private void fsync( long last ) {
         Threads.synchronously( lock, () -> {
             log.trace( "fsyncing, last: {}, storage length: {}", last, storage.data.size() );
-            for( val value : storage.data.values() )
+            for( var value : storage.data.values() )
                 if( value.modified >= last ) persist( value );
         } );
     }

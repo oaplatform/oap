@@ -26,7 +26,6 @@ package oap.util;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.val;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
@@ -63,7 +62,7 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
     }
 
     public final synchronized void inc( long value ) {
-        val currentTick = getCurrentTick();
+        var currentTick = getCurrentTick();
         if( this.tick != currentTick ) {
             this.value = value;
             this.tick = currentTick;

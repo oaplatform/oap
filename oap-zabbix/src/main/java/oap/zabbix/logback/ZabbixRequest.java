@@ -25,7 +25,6 @@
 package oap.zabbix.logback;
 
 import lombok.ToString;
-import lombok.val;
 import oap.json.Binder;
 import oap.zabbix.Request;
 
@@ -39,8 +38,8 @@ public final class ZabbixRequest {
     public static void writeExternal( Request request, OutputStream out ) throws IOException {
         out.write( header );
 
-        val bRequest = Binder.json.marshal( request ).getBytes();
-        val bRequestLength = bRequest.length;
+        var bRequest = Binder.json.marshal( request ).getBytes();
+        var bRequestLength = bRequest.length;
 
         out.write( new byte[] { ( byte ) ( bRequestLength & 0xFF ),
             ( byte ) ( ( bRequestLength >> 8 ) & 0x00FF ),

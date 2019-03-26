@@ -27,7 +27,6 @@ package oap.storage.mongo;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import lombok.SneakyThrows;
-import lombok.val;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
 import org.bson.BsonReader;
@@ -58,7 +57,7 @@ public class JsonCodec<T> implements Codec<T> {
     @SneakyThrows
     @Override
     public T decode( BsonReader bsonReader, DecoderContext decoderContext ) {
-        val doc = documentCodec.decode( bsonReader, decoderContext );
+        var doc = documentCodec.decode( bsonReader, decoderContext );
         doc.remove( "_id" );
 
         return fileReader.readValue( Binder.json.marshal( doc ) );
@@ -67,9 +66,9 @@ public class JsonCodec<T> implements Codec<T> {
     @SneakyThrows
     @Override
     public void encode( BsonWriter bsonWriter, T data, EncoderContext encoderContext ) {
-        val doc = Document.parse( fileWriter.writeValueAsString( data ) );
+        var doc = Document.parse( fileWriter.writeValueAsString( data ) );
 
-        val id = identifier.apply( data );
+        var id = identifier.apply( data );
 
         doc.put( "_id", id );
 

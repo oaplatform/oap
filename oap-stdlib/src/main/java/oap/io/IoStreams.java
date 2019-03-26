@@ -26,7 +26,6 @@ package oap.io;
 import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.archive.Archiver;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
@@ -184,7 +183,7 @@ public class IoStreams {
                 return Archiver.ungzip( fos );
             case ZIP:
                 if( append ) throw new IllegalArgumentException( "cannot append zip file" );
-                val zip = new ZipOutputStream( fos );
+                var zip = new ZipOutputStream( fos );
                 zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
                 return zip;
             case LZ4:

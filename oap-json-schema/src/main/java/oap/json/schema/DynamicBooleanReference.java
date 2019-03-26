@@ -26,7 +26,6 @@ package oap.json.schema;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.val;
 
 import java.util.List;
 import java.util.Optional;
@@ -44,9 +43,9 @@ public class DynamicBooleanReference implements BooleanReference {
 
     @Override
     public boolean apply( Object rootJson, Object currentJson, Optional<String> currentPath, Optional<String> prefix ) {
-        val isRoot = !prefix.isPresent() || !jsonPath.startsWith( prefix.get() );
-        val localJsonPath = isRoot ? jsonPath : jsonPath.substring( prefix.get().length() );
-        val traverseObject = isRoot ? rootJson : currentJson;
+        var isRoot = !prefix.isPresent() || !jsonPath.startsWith( prefix.get() );
+        var localJsonPath = isRoot ? jsonPath : jsonPath.substring( prefix.get().length() );
+        var traverseObject = isRoot ? rootJson : currentJson;
 
         final List<Object> traverse = new JsonPath( localJsonPath, currentPath ).traverse( traverseObject );
         return !traverse.isEmpty() && of.apply( traverseObject, currentPath, traverse.get( 0 ) );

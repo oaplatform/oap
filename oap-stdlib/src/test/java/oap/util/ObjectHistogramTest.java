@@ -26,7 +26,6 @@ package oap.util;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.val;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
@@ -44,7 +43,7 @@ public class ObjectHistogramTest {
     @Test
     public void testHour() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
-        val histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
+        var histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
         histogram.update( PERIOD_HOUR, new TestObject( 1 ) );
         assertThat( histogram.get( PERIOD_HOUR ) ).isEqualTo( new TestObject[] { new TestObject( 1 ), null, null, null, null } );
         DateTimeUtils.setCurrentMillisFixed( 1000 );
@@ -55,7 +54,7 @@ public class ObjectHistogramTest {
     @Test
     public void testUpdateForTime() {
         DateTimeUtils.setCurrentMillisFixed( 10000000 );
-        val histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
+        var histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
         histogram.update( PERIOD_HOUR, new TestObject( 1 ) );
 
         histogram.update( PERIOD_HOUR, 10000000 - PERIOD_HOUR, new TestObject( 2 ) );
@@ -67,7 +66,7 @@ public class ObjectHistogramTest {
     @Test
     public void testHourShiftOne() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
-        val histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
+        var histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
         histogram.update( PERIOD_HOUR, new TestObject( 3 ) );
 
         DateTimeUtils.setCurrentMillisFixed( PERIOD_HOUR + 10 );
@@ -83,7 +82,7 @@ public class ObjectHistogramTest {
     @Test
     public void testHistogramShiftAll() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
-        val histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
+        var histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
         histogram.update( PERIOD_HOUR, new TestObject( 3 ) );
 
         DateTimeUtils.setCurrentMillisFixed( PERIOD_HOUR * 100 + 10 );
@@ -93,8 +92,8 @@ public class ObjectHistogramTest {
     @Test
     public void testMerge() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
-        val master = new TestObjectHistogram( new TestObject[] { new TestObject( 1 ), new TestObject( 4 ), null }, 0 );
-        val update = new TestObjectHistogram( new TestObject[] { new TestObject( 2 ), null, null }, 0 );
+        var master = new TestObjectHistogram( new TestObject[] { new TestObject( 1 ), new TestObject( 4 ), null }, 0 );
+        var update = new TestObjectHistogram( new TestObject[] { new TestObject( 2 ), null, null }, 0 );
 
         master.merge( PERIOD_HOUR, update );
 
@@ -104,9 +103,9 @@ public class ObjectHistogramTest {
     @Test
     public void testMergeShift() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
-        val master = new TestObjectHistogram( new TestObject[] { new TestObject( 1 ), new TestObject( 4 ), null }, 0 );
+        var master = new TestObjectHistogram( new TestObject[] { new TestObject( 1 ), new TestObject( 4 ), null }, 0 );
 
-        val update = new TestObjectHistogram( new TestObject[] { new TestObject( 2 ), null, null }, 1 );
+        var update = new TestObjectHistogram( new TestObject[] { new TestObject( 2 ), null, null }, 1 );
 
         DateTimeUtils.setCurrentMillisFixed( PERIOD_HOUR * 2 + 1 );
 

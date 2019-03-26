@@ -25,7 +25,6 @@ package oap.application.remote;
 
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.http.Client;
 import oap.util.Result;
 
@@ -110,13 +109,13 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             if( retException != null )
                 log.trace( retException.getMessage(), retException );
             try {
-                val response = client.post( uri.toString(), content, timeout ).orElse( null );
+                var response = client.post( uri.toString(), content, timeout ).orElse( null );
                 if( response == null ) continue;
 
                 if( response.code == HTTP_OK ) {
-                    val b = response.content();
+                    var b = response.content();
                     if( b != null ) {
-                        val res = ( Result<Object, Throwable> ) fst.conf.asObject( b );
+                        var res = ( Result<Object, Throwable> ) fst.conf.asObject( b );
 
                         if( res.isSuccess() ) return res.successValue;
 

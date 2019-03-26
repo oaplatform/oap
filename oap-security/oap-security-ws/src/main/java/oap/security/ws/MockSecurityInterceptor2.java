@@ -24,7 +24,6 @@
 
 package oap.security.ws;
 
-import lombok.val;
 import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Session;
@@ -42,7 +41,7 @@ public class MockSecurityInterceptor2 implements Interceptor {
     @Override
     public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
                                              Function<Reflection.Parameter, Object> getParameterValueFunc ) {
-        val user = request.header( USER_ID_HEADER ).orElse( USER );
+        var user = request.header( USER_ID_HEADER ).orElse( USER );
         session.set( "sessionToken", SESSION_TOKEN );
         session.set( USER_ID, user );
 

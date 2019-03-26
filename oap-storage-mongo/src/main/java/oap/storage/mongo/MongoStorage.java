@@ -29,7 +29,6 @@ import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.WriteModel;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.reflect.TypeRef;
 import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
@@ -84,7 +83,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
         lastFsync = DateTimeUtils.currentTimeMillis();
 
         final Consumer<Metadata<T>> cons = metadata -> {
-            val id = identifier.get( metadata.object );
+            var id = identifier.get( metadata.object );
             data.put( id, metadata );
         };
 
@@ -110,7 +109,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
     public void fsync() {
         super.fsync();
 
-        val count = new MutableInt();
+        var count = new MutableInt();
 
         Stream.of( data.values()
             .stream()
@@ -121,7 +120,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
 
                 final List<? extends WriteModel<Metadata<T>>> bulk = Lists.map( list,
                     metadata -> {
-                        val id = identifier.get( metadata.object );
+                        var id = identifier.get( metadata.object );
                         return new ReplaceOneModel<>( eq( "_id", id ), metadata, UPDATE_OPTIONS_UPSERT );
                     } );
                 collection.bulkWrite( bulk );
@@ -150,10 +149,10 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
     }
 
     public void refresh( String id ) {
-        val m = collection.find( eq( "_id", id ) ).first();
+        var m = collection.find( eq( "_id", id ) ).first();
         if( m != null ) {
             lock.synchronizedOn( id, () -> {
-                val oldM = data.get( id );
+                var oldM = data.get( id );
                 if( oldM == null || m.modified > oldM.modified ) {
                     log.debug( "refresh from mongo {}", id );
                     data.put( id, m );

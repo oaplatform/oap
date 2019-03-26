@@ -25,7 +25,6 @@
 package oap.io;
 
 import lombok.SneakyThrows;
-import lombok.val;
 
 import java.io.IOException;
 import java.net.URI;
@@ -55,7 +54,7 @@ public abstract class FileSync implements Runnable {
 
     @SneakyThrows
     public static FileSync create( URI uri, Path localFile ) {
-        val protocol = uri.getScheme();
+        var protocol = uri.getScheme();
 
         final ServiceLoader<FileSync> load = ServiceLoader.load( FileSync.class );
         for( FileSync fs : load ) {

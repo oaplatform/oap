@@ -24,7 +24,6 @@
 
 package oap.logstream.net;
 
-import lombok.val;
 import oap.logstream.LogId;
 import oap.testng.Env;
 import oap.util.Cuid;
@@ -69,7 +68,7 @@ public class BuffersTest {
 
     @BeforeClass
     public void beforeClass() {
-        val buffer = new Buffer( 1024, new LogId( "x/y", "", "", 1, 1 ) );
+        var buffer = new Buffer( 1024, new LogId( "x/y", "", "", 1, 1 ) );
         HEADER = buffer.length();
     }
 

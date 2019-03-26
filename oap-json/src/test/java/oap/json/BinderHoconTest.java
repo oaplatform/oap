@@ -24,7 +24,6 @@
 
 package oap.json;
 
-import lombok.val;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -37,18 +36,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BinderHoconTest {
     @Test
     public void testPattern() {
-        val pattern = "{test = \"[^a]+\"}";
-        val obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, pattern );
+        var pattern = "{test = \"[^a]+\"}";
+        var obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, pattern );
 
         assertThat( obj.test.pattern() ).isEqualTo( "[^a]+" );
     }
 
     @Test
     public void testEnvList() {
-        val json = "{list = [${?LIST_ENV}]}";
+        var json = "{list = [${?LIST_ENV}]}";
         System.setProperty( "LIST_ENV", "1a,2a" );
 
-        val obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, json );
+        var obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, json );
 
         assertThat( obj.list ).isEqualTo( singletonList( "1a,2a" ) );
     }

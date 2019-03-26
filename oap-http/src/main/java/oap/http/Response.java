@@ -24,7 +24,6 @@
 package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.http.cors.RequestCors;
 import oap.util.Pair;
 
@@ -48,7 +47,7 @@ public class Response {
 
         cors.setHeaders( resp );
 
-        val isGzip = request.isGzipSupport();
+        var isGzip = request.isGzipSupport();
 
         resp.setStatusCode( response.code );
 

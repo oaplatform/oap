@@ -1,6 +1,5 @@
 package oap.http;
 
-import lombok.val;
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.IoStreams;
@@ -49,7 +48,7 @@ public class SecureHttpListenerTest {
     @Test
     public void testShouldVerifySSLCommunication() throws Exception {
 
-        try( val inputStream = IoStreams.in( pathOfTestResource( getClass(), "client_truststore.jks" ), PLAIN ) ) {
+        try( var inputStream = IoStreams.in( pathOfTestResource( getClass(), "client_truststore.jks" ), PLAIN ) ) {
             KeyStore keyStore = KeyStore.getInstance( "JKS" );
             keyStore.load( inputStream, KEYSTORE_PASSWORD.toCharArray() );
 

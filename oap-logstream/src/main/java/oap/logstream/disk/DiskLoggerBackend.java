@@ -30,7 +30,6 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.dictionary.LogConfiguration;
 import oap.io.Closeables;
 import oap.io.Files;
@@ -86,7 +85,7 @@ public class DiskLoggerBackend extends LoggerBackend {
     @SneakyThrows
     public void log( String hostName, String fileName, String logType, int shard, int version, byte[] buffer, int offset, int length ) {
         if( closed ) {
-            val exception = new LoggerException( "already closed!" );
+            var exception = new LoggerException( "already closed!" );
             listeners.fireError( exception );
             throw exception;
         }

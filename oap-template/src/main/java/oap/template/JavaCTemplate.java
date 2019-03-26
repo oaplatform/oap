@@ -26,7 +26,6 @@ package oap.template;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.tools.MemoryClassLoader;
 import oap.util.Pair;
 import oap.util.Try;
@@ -113,7 +112,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 .collect( joining( "\n" ) )
             );
 
-            val fullTemplateName = getClass().getPackage().getName() + "." + name;
+            var fullTemplateName = getClass().getPackage().getName() + "." + name;
             MemoryClassLoader mcl = new MemoryClassLoader( fullTemplateName, c.toString(), cacheFile );
             func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( fullTemplateName ).newInstance();
 
@@ -147,12 +146,12 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
     private void buildPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c,
                             AtomicInteger num, FieldStack fields, boolean last, AtomicInteger tab, boolean validation ) throws NoSuchFieldException, NoSuchMethodException {
-        val orPath = StringUtils.split( line.path, '|' );
+        var orPath = StringUtils.split( line.path, '|' );
         int orIndex = 0;
 
         for( int i = 0; i < orPath.length; i++ ) {
-            val path = orPath[i].trim();
-            val newPath = overrides.get( path );
+            var path = orPath[i].trim();
+            var newPath = overrides.get( path );
             orPath[i] = newPath != null ? newPath : path;
         }
 
@@ -187,9 +186,9 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
     private void addPathOr( Class<T> clazz, String delimiter, StringBuilder c, AtomicInteger num,
                             FieldStack fields, boolean last, AtomicInteger tab,
                             String[] orPath, int orIndex, TLine line ) throws NoSuchFieldException, NoSuchMethodException {
-        val currentPath = orPath[orIndex].trim();
+        var currentPath = orPath[orIndex].trim();
 
-        val m = mapper.get( currentPath );
+        var m = mapper.get( currentPath );
         if( m != null ) {
             printDefaultValue( tab( c, tab ), m.get(), line );
         } else {
@@ -270,9 +269,9 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                     tab( c.append( "\n" ), tab );
                     map.map( c, String.class, line, cField, delimiter, join );
                 } else {
-                    val isParentMap = isMap( parentClass );
+                    var isParentMap = isMap( parentClass );
 
-                    val ff = ( isParentMap ? "get( \"" + StringUtils.replace( cField, "((", "(" ) + "\" )" : cField );
+                    var ff = ( isParentMap ? "get( \"" + StringUtils.replace( cField, "((", "(" ) + "\" )" : cField );
 
                     if( isOptionalParent ) {
                         newPath = new StringBuilder( in > 0 ? optField + "." + ff : cField );

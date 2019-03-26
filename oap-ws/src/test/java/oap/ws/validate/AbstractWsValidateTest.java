@@ -24,7 +24,6 @@
 
 package oap.ws.validate;
 
-import lombok.val;
 import oap.application.Kernel;
 import oap.concurrent.SynchronizedThread;
 import oap.http.PlainHttpListener;
@@ -57,7 +56,7 @@ public abstract class AbstractWsValidateTest extends AbstractTest {
         Env.resetPorts();
         Metrics.resetAll();
         server.start();
-        for( val wsInstance : getWsInstances() )
+        for( var wsInstance : getWsInstances() )
             ws.bind( "test", GenericCorsPolicy.DEFAULT, wsInstance, false, SESSION_MANAGER, Collections.emptyList(), Protocol.HTTP );
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );

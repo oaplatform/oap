@@ -26,7 +26,6 @@ package oap.application;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.io.Files;
 import oap.json.Binder;
 import oap.util.Lists;
@@ -71,7 +70,7 @@ public class ApplicationConfiguration {
         List<Path> paths = confd != null ? Files.wildcard( confd, "*.conf" ) : emptyList();
         log.info( "global configurations: {}", paths );
 
-        val confs = paths.stream().map( Files::readString ).toArray( String[]::new );
+        var confs = paths.stream().map( Files::readString ).toArray( String[]::new );
 
         return load( appConfigPath, confs );
     }

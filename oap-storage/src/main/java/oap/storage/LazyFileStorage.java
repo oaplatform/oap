@@ -26,7 +26,6 @@ package oap.storage;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
@@ -111,7 +110,7 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         if( java.nio.file.Files.exists( path ) ) {
             Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {}, path )
                 .forEach( m -> {
-                    val id = identifier.get( m.object );
+                    var id = identifier.get( m.object );
                     data.put( id, m );
                 } );
         }

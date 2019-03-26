@@ -24,7 +24,6 @@
 package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Optionals;
@@ -71,7 +70,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public T store( T object ) {
         String id = identifier.getOrInit( object, this::get );
         lock.synchronizedOn( id, () -> {
-            val metadata = data.get( id );
+            var metadata = data.get( id );
 
             if( metadata != null ) {
 
@@ -96,7 +95,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     @Override
     public Optional<T> update( String id, T object ) {
         return lock.synchronizedOn( id, () -> {
-            val metadata = data.get( id );
+            var metadata = data.get( id );
             if( metadata != null ) {
                 identifier.set( object, id );
 
@@ -117,7 +116,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         for( T object : objects ) {
             String id = identifier.getOrInit( object, this::get );
             lock.synchronizedOn( id, () -> {
-                val metadata = data.get( id );
+                var metadata = data.get( id );
                 if( metadata != null ) {
                     metadata.update( object );
 
@@ -153,7 +152,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                 if( init == null ) return Optional.empty();
 
                 metadata = data.computeIfAbsent( id, ( id1 ) -> {
-                    val object = init.get();
+                    var object = init.get();
                     identifier.set( object, id );
 
                     checkConstraints( object );
@@ -167,7 +166,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                     if( constraints.isEmpty() ) {
                         metadata.update( update.apply( metadata.object ) );
                     } else {
-                        val newObject = update.apply( Binder.json.clone( metadata.object ) );
+                        var newObject = update.apply( Binder.json.clone( metadata.object ) );
 
                         checkConstraints( newObject );
 

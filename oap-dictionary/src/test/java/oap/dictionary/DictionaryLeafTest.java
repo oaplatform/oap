@@ -24,7 +24,6 @@
 
 package oap.dictionary;
 
-import lombok.val;
 import oap.json.Binder;
 import oap.util.Maps;
 import org.testng.annotations.Test;
@@ -35,14 +34,14 @@ import static oap.testng.Asserts.assertString;
 public class DictionaryLeafTest {
     @Test
     public void testSerializeProperties() {
-        val dictionaryLeaf = new DictionaryLeaf( "id", true, 1, Maps.of2( "p1", "v1" ) );
+        var dictionaryLeaf = new DictionaryLeaf( "id", true, 1, Maps.of2( "p1", "v1" ) );
         assertString( Binder.json.marshal( dictionaryLeaf ) )
             .isEqualTo( "{\"id\":\"id\",\"externalId\":1,\"properties\":{\"p1\":\"v1\"}}" );
     }
 
     @Test
     public void testSerializeEnabled() {
-        val dictionaryLeaf = new DictionaryLeaf( "id", false, 1, emptyMap() );
+        var dictionaryLeaf = new DictionaryLeaf( "id", false, 1, emptyMap() );
         assertString( Binder.json.marshal( dictionaryLeaf ) )
             .isEqualTo( "{\"id\":\"id\",\"externalId\":1,\"enabled\":false}" );
     }

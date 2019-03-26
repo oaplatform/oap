@@ -25,7 +25,6 @@
 package oap.http;
 
 import lombok.SneakyThrows;
-import lombok.val;
 import oap.util.Maps;
 import oap.util.Pair;
 import org.apache.http.client.utils.URIBuilder;
@@ -42,7 +41,7 @@ public class Uri {
             String name = entry.getKey();
             Object value = entry.getValue();
             if( value instanceof Collection<?> )
-                for( val v : ( Collection<?> ) value )
+                for( var v : ( Collection<?> ) value )
                     uriBuilder.addParameter( name, v == null ? "" : v.toString() );
             else uriBuilder.addParameter( name, value == null ? "" : value.toString() );
         }
