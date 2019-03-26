@@ -54,9 +54,9 @@ public class JsonDiff {
     public static JsonDiff diff( String oldJson, String newJson, SchemaAST schema ) {
         final ArrayList<Line> result = new ArrayList<>();
 
-        final Map<String, Object> to = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
+        final Map<String, Object> to = Binder.json.unmarshal( new TypeRef<>() {
         }, newJson );
-        final Map<String, Object> from = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
+        final Map<String, Object> from = Binder.json.unmarshal( new TypeRef<>() {
         }, oldJson );
 
         diff( "", schema, result, to, from );

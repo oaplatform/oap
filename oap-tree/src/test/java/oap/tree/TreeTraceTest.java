@@ -120,7 +120,7 @@ public class TreeTraceTest {
     @Test
     public void testTraceHash() {
         final Tree<String> tree = Tree
-            .<String>tree( LONG( "d1", CONTAINS, null ), ENUM( "d2", TestEnum.class, CONTAINS, 0, UNKNOWN ) )
+            .<String>tree( LONG( "d1", CONTAINS, null ), ENUM( "d2", TestEnum.class, CONTAINS, 0, UNKNOWN, false ) )
             .withHashFillFactor( 0 )
             .load( l( v( "1", 1L, Test1 ), v( "2", 2L, Test2 ), v( "3", 1L, Test3 ), v( "33", 1L, Test3 ) ) );
 
