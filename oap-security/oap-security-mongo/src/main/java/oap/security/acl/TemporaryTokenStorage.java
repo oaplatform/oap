@@ -24,13 +24,13 @@
 
 package oap.security.acl;
 
-import oap.storage.mongo.MongoClient;
+import oap.storage.mongo.MongoClientWrapper;
 import oap.storage.mongo.MongoStorage;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 
 public class TemporaryTokenStorage extends MongoStorage<TemporaryToken> {
-    public TemporaryTokenStorage( MongoClient mongoClient, String table ) {
+    public TemporaryTokenStorage( MongoClientWrapper mongoClient, String table ) {
         super( mongoClient, table, SERIALIZED );
     }
 }

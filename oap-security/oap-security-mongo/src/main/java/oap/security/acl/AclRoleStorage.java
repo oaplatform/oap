@@ -24,13 +24,13 @@
 
 package oap.security.acl;
 
-import oap.storage.mongo.MongoClient;
+import oap.storage.mongo.MongoClientWrapper;
 import oap.storage.mongo.MongoStorage;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 
 public class AclRoleStorage extends MongoStorage<AclRole> {
-    public AclRoleStorage( MongoClient mongoClient, String table ) {
+    public AclRoleStorage( MongoClientWrapper mongoClient, String table ) {
         super( mongoClient, table, SERIALIZED );
     }
 }

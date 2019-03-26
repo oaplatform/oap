@@ -33,13 +33,13 @@ import org.testng.annotations.BeforeMethod;
 @Slf4j
 public abstract class AbstractMongoTest extends AbstractTest {
     protected String dbName;
-    protected MongoClient mongoClient;
+    protected MongoClientWrapper mongoClient;
 
     @BeforeMethod
     public void init() {
         dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
-        mongoClient = new MongoClient( Env.getEnvOrDefault( "MONGO_HOST", "localhost" ), 27017, dbName, Migration.NONE );
+        mongoClient = new MongoClientWrapper( Env.getEnvOrDefault( "MONGO_HOST", "localhost" ), 27017, dbName, Migration.NONE );
         mongoClient.database.drop();
         log.debug( "drop database {}", mongoClient.database.getName() );
     }
