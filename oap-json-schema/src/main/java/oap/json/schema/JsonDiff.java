@@ -31,6 +31,7 @@ import oap.json.schema.validator.array.ArraySchemaAST;
 import oap.json.schema.validator.object.ObjectSchemaAST;
 import oap.reflect.TypeRef;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -191,13 +192,15 @@ public class JsonDiff {
 
     @EqualsAndHashCode
     @ToString
-    public static class Line {
+    public static class Line implements Serializable {
+        private static final long serialVersionUID = 5804735144221122177L;
+
         public final String path;
         public final Optional<String> oldValue;
         public final LineType lineType;
         public final Optional<String> newValue;
 
-        Line( String path, LineType lineType, Optional<String> oldValue, Optional<String> newValue ) {
+        public Line( String path, LineType lineType, Optional<String> oldValue, Optional<String> newValue ) {
             this.path = path;
             this.lineType = lineType;
             this.newValue = newValue;
