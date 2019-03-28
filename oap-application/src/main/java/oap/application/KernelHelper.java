@@ -75,12 +75,13 @@ public class KernelHelper {
             var service = entry.getValue();
 
             List<String> dependsOn = Lists.filter( service.dependsOn, d -> serviceEnabled( modules, d ) );
-            log.trace( "Dependency-check {} - {}/filtered:{}/containsAll:{}/deferring {}",
-                entry.getKey(),
-                service.dependsOn,
-                dependsOn,
-                initializedServices.containsAll( dependsOn ),
-                subtract( service.dependsOn, initializedServices ) );
+            if( log.isTraceEnabled() )
+                log.trace( "Dependency-check {} - {}/filtered:{}/containsAll:{}/deferring {}",
+                    entry.getKey(),
+                    service.dependsOn,
+                    dependsOn,
+                    initializedServices.containsAll( dependsOn ),
+                    subtract( service.dependsOn, initializedServices ) );
 
             if( initializedServices.containsAll( dependsOn ) ) {
                 cons.accept( entry.getKey(), service );
