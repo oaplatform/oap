@@ -66,10 +66,10 @@ public class HoconFactoryWithFallback extends HoconFactory {
 
     @Override
     protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) {
-        ConfigParseOptions options = ConfigParseOptions.defaults();
-        Config config = ConfigFactory.parseReader( r, options );
+        var options = ConfigParseOptions.defaults();
+        var config = ConfigFactory.parseReader( r, options );
 
-        Config unresolvedConfig = additinal.withFallback( config );
+        var unresolvedConfig = additinal.withFallback( config );
 
         if( withSystemProperties )
             unresolvedConfig = unresolvedConfig.withFallback( ConfigFactory.systemProperties() );
@@ -77,7 +77,7 @@ public class HoconFactoryWithFallback extends HoconFactory {
 //        log.trace( unresolvedConfig.root().render() );
 
         try {
-            Config resolvedConfig = unresolvedConfig.resolve();
+            var resolvedConfig = unresolvedConfig.resolve();
             return new HoconTreeTraversingParser( resolvedConfig.root(), _objectCodec );
         } catch( ConfigException e ) {
             log.error( unresolvedConfig.root().render() );

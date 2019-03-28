@@ -39,6 +39,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 
 import static java.util.Arrays.asList;
 
@@ -52,15 +53,15 @@ public class Module {
     @JsonAlias( { "name", "%name" } )
     public String name;
     @JsonAlias( { "dependsOn", "%dependsOn" } )
-    public LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
+    public final LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
     @JsonAlias( { "extends", "%extends" } )
     @Deprecated
-    public ArrayList<String> extendsModules = new ArrayList<>();
+    public final ArrayList<String> extendsModules = new ArrayList<>();
     @JsonAlias( { "abstract", "%abstract" } )
     @Deprecated
     public boolean isAbstract = false;
     @JsonAlias( { "services", "%services" } )
-    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
+    public final LinkedHashMap<String, Service> services = new LinkedHashMap<>();
 
     @JsonCreator
     public Module( String name ) {

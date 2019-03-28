@@ -46,10 +46,10 @@ public class HoconFactoryWithSystemProperties extends HoconFactory {
 
     @Override
     protected HoconTreeTraversingParser _createParser( Reader r, IOContext ctxt ) throws IOException {
-        final ConfigParseOptions options = ConfigParseOptions.defaults();
-        final Config config = ConfigFactory.parseReader( r, options );
+        var options = ConfigParseOptions.defaults();
+        var config = ConfigFactory.parseReader( r, options );
 
-        final Config unresolvedConfig = config.withFallback( ConfigFactory.systemProperties() );
+        var unresolvedConfig = config.withFallback( ConfigFactory.systemProperties() );
 //        log.trace( unresolvedConfig.root().render() );
         try {
             final Config resolvedConfig = unresolvedConfig.resolve();

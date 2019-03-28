@@ -51,8 +51,8 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -76,8 +76,8 @@ public class Kernel {
     public final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
     final String name;
     private final List<URL> configurations;
-    private final Set<String> profiles = Sets.empty();
-    private final Set<Module> modules = Sets.empty();
+    private final LinkedHashSet<String> profiles = new LinkedHashSet<>();
+    private final LinkedHashSet<Module> modules = new LinkedHashSet<>();
     private final Supervisor supervisor = new Supervisor();
 
     public Kernel( String name, List<URL> configurations ) {
@@ -186,7 +186,7 @@ public class Kernel {
     }
 
     public void start( Path appConfigPath, Map<Object, Object> properties ) {
-        Map<Object, Object> map = new HashMap<>();
+        Map<Object, Object> map = new LinkedHashMap<>();
         map.putAll( System.getProperties() );
         map.putAll( properties );
 
@@ -201,7 +201,7 @@ public class Kernel {
 
         this.modules.addAll( Stream.of( configurations )
             .map( module -> Module.CONFIGURATION.fromFile( module, config.services ) )
-            .toSet() );
+            .toList() );
         log.debug( "modules = " + Sets.map( this.modules, m -> m.name ) );
         log.trace( "modules configs = " + this.modules );
 
@@ -225,10 +225,10 @@ public class Kernel {
     }
 
     private Map<String, ServiceInitialization> instantiateServices( ApplicationConfiguration config ) {
-        var ret = new HashMap<String, ServiceInitialization>();
+        var ret = new LinkedHashMap<String, ServiceInitialization>();
 
-        Set<String> initializedServices = new HashSet<>();
-        forEachModule( modules, new HashSet<>(), module ->
+        var initializedServices = new LinkedHashSet<String>();
+        forEachModule( modules, new LinkedHashSet<>(), module ->
             forEachService( modules, module.services, initializedServices, ( implName, service ) -> {
                 if( !service.enabled ) {
                     log.debug( "service {} is disabled.", implName );
@@ -256,6 +256,8 @@ public class Kernel {
                 else instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
 
                 ret.put( service.name, new ServiceInitialization( implName, instance, module, service, reflect ) );
+
+                initializedServices.add( service.name );
             } ) );
 
         return ret;
@@ -335,7 +337,7 @@ public class Kernel {
     }
 
     private void startServices( Map<String, ServiceInitialization> services ) {
-        Set<Module> def = startModules( this.modules, services, new HashSet<>(), new HashSet<>() );
+        Set<Module> def = startModules( this.modules, services, new LinkedHashSet<>(), new LinkedHashSet<>() );
         if( !def.isEmpty() ) {
             Set<String> names = Sets.map( def, m -> m.name );
             log.error( "failed to initialize: {} ", names );
@@ -344,10 +346,10 @@ public class Kernel {
     }
 
     private Set<Module> startModules( Set<Module> modules, Map<String, ServiceInitialization> services,
-                                      Set<String> initializedModules, Set<String> initializedServices ) {
+                                      Set<String> initializedModules, Set<String> startedServices ) {
 
         return forEachModule( modules, initializedModules, module -> {
-            Map<String, Module.Service> def = startModule( module.services, services, initializedServices );
+            Map<String, Module.Service> def = startModule( module.services, services, startedServices );
             if( !def.isEmpty() ) {
                 var names = def.keySet();
                 log.error( "failed to initialize: {}", names );
@@ -357,15 +359,16 @@ public class Kernel {
     }
 
     private Map<String, Module.Service> startModule( Map<String, Module.Service> services, Map<String, ServiceInitialization> sis,
-                                                     Set<String> initializedServices ) {
+                                                     Set<String> startedServices ) {
 
-        return forEachService( modules, services, initializedServices, ( implName, service ) -> {
+        return forEachService( modules, services, startedServices, ( implName, service ) -> {
             log.debug( "starting {} as {}", implName, service.name );
 
             var si = sis.get( service.name );
             if( si != null ) {
                 startService( si );
             }
+            startedServices.add( service.name );
         } );
     }
 

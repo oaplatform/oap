@@ -28,9 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 import oap.util.Lists;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -44,7 +43,7 @@ import static org.apache.commons.collections4.CollectionUtils.subtract;
 public class KernelHelper {
 
     static Set<Module> forEachModule( Set<Module> modules, Set<String> initializedModules, Consumer<Module> cons ) {
-        var deferred = new HashSet<Module>();
+        var deferred = new LinkedHashSet<Module>();
 
         for( Module module : modules ) {
             log.debug( "module {}", module.name );
@@ -69,24 +68,14 @@ public class KernelHelper {
                                                        Map<String, Module.Service> services,
                                                        Set<String> initializedServices,
                                                        BiConsumer<String, Module.Service> cons ) {
-        HashMap<String, Module.Service> deferred = new HashMap<>();
+        var deferred = new LinkedHashMap<String, Module.Service>();
 
         for( Map.Entry<String, Module.Service> entry : services.entrySet() ) {
             var service = entry.getValue();
 
             List<String> dependsOn = Lists.filter( service.dependsOn, d -> serviceEnabled( modules, d ) );
-            if( log.isTraceEnabled() )
-                log.trace( "Dependency-check {} - {}/filtered:{}/containsAll:{}/deferring {}",
-                    entry.getKey(),
-                    service.dependsOn,
-                    dependsOn,
-                    initializedServices.containsAll( dependsOn ),
-                    subtract( service.dependsOn, initializedServices ) );
-
             if( initializedServices.containsAll( dependsOn ) ) {
                 cons.accept( entry.getKey(), service );
-
-                initializedServices.add( service.name );
             } else {
                 log.debug( "dependencies are not ready - deferring {}: {}, initialized {}",
                     service.name, subtract( service.dependsOn, initializedServices ), initializedServices );

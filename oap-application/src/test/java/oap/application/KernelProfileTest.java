@@ -24,8 +24,8 @@
 
 package oap.application;
 
+import com.google.common.base.Preconditions;
 import oap.testng.AbstractTest;
-import oap.testng.Env;
 import oap.util.Lists;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -75,13 +75,36 @@ public class KernelProfileTest extends AbstractTest {
         }
     }
 
-    public static class TestProfile1 {
+    @Test
+    public void testProfile3() {
+        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "module3.yaml" ) );
+
+        Kernel kernel = new Kernel( modules );
+        try {
+            kernel.start( pathOfTestResource( getClass(), "appWithProfileName.conf" ) );
+            assertThat( kernel.<TestContainer>service( "container" ) ).isNotNull();
+        } finally {
+            kernel.stop();
+        }
     }
 
-    public static class TestProfile2 {
+    public interface TestProfile {
+
     }
 
-    public static class TestProfile3 {
+    public static class TestProfile1 implements TestProfile {
+    }
+
+    public static class TestProfile2 implements TestProfile {
+    }
+
+    public static class TestProfile3 implements TestProfile {
+    }
+
+    public static class TestContainer {
+        public TestContainer( TestProfile profile ) {
+            assertThat( profile ).isNotNull();
+        }
     }
 }
 
