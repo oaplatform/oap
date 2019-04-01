@@ -50,12 +50,14 @@ public class Dictionaries {
         if( dictionaries.isEmpty() ) {
             dictionaries.putAll( Stream.of( Files.fastWildcard( DEFAULT_PATH, "*.json" ).stream() )
                 .concat( Files.fastWildcard( DEFAULT_PATH, "*.conf" ).stream() )
+                .concat( Files.fastWildcard( DEFAULT_PATH, "*.yaml" ).stream() )
                 .map( Try.map( p -> p.toUri().toURL() ) )
                 .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
                 .toMap() );
 
             dictionaries.putAll( Stream.of( Stream.of( Resources.urls( "dictionary", "json" ) )
                 .concat( Resources.urls( "dictionary", "conf" ).stream() )
+                .concat( Resources.urls( "dictionary", "yaml" ).stream() )
                 .collect( toList() ) )
                 .mapToPairs( r -> __( Files.nameWithoutExtention( r ), r ) )
                 .filter( p -> !dictionaries.containsKey( p._1 ) )
