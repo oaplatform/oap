@@ -32,8 +32,10 @@ import org.testng.annotations.Test;
 
 import java.util.List;
 
+import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertTrue;
 
 public class DictionaryTest extends AbstractTest {
@@ -68,6 +70,28 @@ public class DictionaryTest extends AbstractTest {
         assertThat( values.get( 0 ).getExternalId() ).isEqualTo( 111 );
         assertThat( values.get( 1 ).getExternalId() ).isEqualTo( 112 );
         assertThat( values.get( 2 ).getExternalId() ).isEqualTo( 113 );
+    }
+
+    @Test
+    public void testExtendsDuplicate() {
+        assertThatThrownBy( () ->
+            Dictionaries
+                .getDictionary( "test-dictionary-extends-duplicate" )
+                .getValue( "id2" )
+                .getValues() );
+    }
+
+    @Test
+    public void testExtendsIgnoreDuplicate() {
+        var values = Dictionaries
+            .getDictionary( "test-dictionary-extends-ignore-duplicate", INCREMENTAL_ID_STRATEGY )
+            .getValue( "id2" )
+            .getValues();
+
+        assertThat( values ).hasSize( 3 );
+        assertThat( values.get( 0 ).getId() ).isEqualTo( "id111" );
+        assertThat( values.get( 1 ).getId() ).isEqualTo( "id112" );
+        assertThat( values.get( 2 ).getId() ).isEqualTo( "id22" );
     }
 
     @Test

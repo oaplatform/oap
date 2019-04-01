@@ -34,9 +34,10 @@ import java.util.Optional;
 class Extends implements Cloneable {
     public final String path;
     public final Optional<String> filter;
+    public boolean ignoreDuplicate = false;
 
     @Override
     protected Extends clone() {
-        return new Extends( path, filter );
+        return new Extends( path, filter, ignoreDuplicate );
     }
 }

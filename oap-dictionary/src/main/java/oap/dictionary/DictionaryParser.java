@@ -26,6 +26,7 @@ package oap.dictionary;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import oap.json.Binder;
+import oap.util.Lists;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
 
@@ -176,8 +177,9 @@ public class DictionaryParser {
 
     @SuppressWarnings( "unchecked" )
     private static void resolveExtends( DictionaryRoot dictionaryRoot, Dictionary parent ) {
-        final ListIterator<Dictionary> iterator = ( ListIterator<Dictionary> ) parent.getValues().listIterator();
-        int lastExtendsId = -1;
+        var values = parent.getValues();
+        var iterator = ( ListIterator<Dictionary> ) values.listIterator();
+        var lastExtendsId = -1;
         while( iterator.hasNext() ) {
             var child = iterator.next();
             if( child instanceof DictionaryExtends ) {
@@ -185,9 +187,14 @@ public class DictionaryParser {
 
                 var anExtends = ( ( DictionaryExtends ) child ).anExtends;
                 for( var v : getValues( dictionaryRoot, anExtends ) ) {
-                    if( !anExtends.filter.isPresent() || anExtends.filter.filter( f -> v.getTags().contains( f ) ).isPresent() ) {
-                        iterator.add( v );
-                        lastExtendsId = v.getExternalId();
+                    if( anExtends.filter.isEmpty() || anExtends.filter.filter( f -> v.getTags().contains( f ) ).isPresent() ) {
+                        if( Lists.anyMatch( values, pv -> !( pv instanceof DictionaryExtends ) && pv.getId().equals( v.getId() ) ) ) {
+                            if( !anExtends.ignoreDuplicate )
+                                throw new DictionaryError( "duplicate id " + v.getId() + " from " + anExtends );
+                        } else {
+                            iterator.add( v );
+                            lastExtendsId = v.getExternalId();
+                        }
                     }
                 }
             } else {
@@ -250,8 +257,9 @@ public class DictionaryParser {
 
         var path = getString( m, "path" );
         var filter = getStringOpt( m, "filter" );
+        var ignoreDuplicate = getBooleanOpt( m, "ignoreDuplicate" ).orElse( false );
 
-        return Optional.of( new Extends( path, filter ) );
+        return Optional.of( new Extends( path, filter, ignoreDuplicate ) );
     }
 
     private static String getString( Map map, String field ) {

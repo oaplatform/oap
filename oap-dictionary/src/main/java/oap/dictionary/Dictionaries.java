@@ -42,9 +42,9 @@ import static oap.util.Pair.__;
 
 @Slf4j
 public class Dictionaries {
+    public static final String DEFAULT_PATH = "/opt/oap-dictionary";
     private static final Map<String, URL> dictionaries = new HashMap<>();
     private static final ConcurrentHashMap<String, DictionaryRoot> cache = new ConcurrentHashMap<>();
-    public static final String DEFAULT_PATH = "/opt/oap-dictionary";
 
     private static synchronized void load() {
         if( dictionaries.isEmpty() ) {
@@ -72,10 +72,14 @@ public class Dictionaries {
     }
 
     public static DictionaryRoot getDictionary( String name ) {
+        return getDictionary( name, DictionaryParser.PROPERTY_ID_STRATEGY );
+    }
+
+    public static DictionaryRoot getDictionary( String name, DictionaryParser.IdStrategy idStrategy ) {
         load();
 
         return Maps.get( dictionaries, name )
-            .map( DictionaryParser::parse )
+            .map( d -> DictionaryParser.parse( d, idStrategy ) )
             .orElseThrow( () -> new DictionaryNotFoundError( name ) );
     }
 
