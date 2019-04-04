@@ -78,6 +78,8 @@ public class LogId implements Serializable {
                     return print2Chars( time.getHourOfDay() );
                 case "INTERVAL":
                     return print2Chars( timestamp.currentBucket( time ) );
+                case "REGION":
+                    return System.getenv( "REGION" );
                 default:
                     throw new IllegalArgumentException( "Unknown variable '" + v + "'" );
             }
