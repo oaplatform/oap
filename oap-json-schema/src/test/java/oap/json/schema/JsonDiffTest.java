@@ -216,26 +216,26 @@ public class JsonDiffTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testUpdStringIntoArrayObject() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"array\"," +
-            "    \"id\":\"test\"," +
-            "    \"items\":{" +
-            "      \"type\":\"object\"," +
-            "      \"properties\":{" +
-            "        \"test\":{" +
-            "          \"type\":\"string\"" +
-            "        }," +
-            "        \"testin\":{" +
-            "          \"type\":\"string\"" +
-            "        }" +
-            "      }" +
-            "    }" +
-            "  }" +
-            "}}";
+    public void testUpdStringIntoArrayObject() {
+        var schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"id\":\"test\","
+            + "    \"items\":{"
+            + "      \"type\":\"object\","
+            + "      \"properties\":{"
+            + "        \"test\":{"
+            + "          \"type\":\"string\""
+            + "        },"
+            + "        \"testin\":{"
+            + "          \"type\":\"string\""
+            + "        }"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
 
         assertThat( __diff( schema, "{\"test\":[{\"test\":\"id\",\"testin\":\"old value\"}]}",
             "{\"test\":[{\"test\":\"id\",\"testin\":\"new value\"}]}" ) )
@@ -243,26 +243,26 @@ public class JsonDiffTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testAddArrayObject() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"array\"," +
-            "    \"id\":\"test\"," +
-            "    \"items\":{" +
-            "      \"type\":\"object\"," +
-            "      \"properties\":{" +
-            "        \"test\":{" +
-            "          \"type\":\"string\"" +
-            "        }," +
-            "        \"testin\":{" +
-            "          \"type\":\"string\"" +
-            "        }" +
-            "      }" +
-            "    }" +
-            "  }" +
-            "}}";
+    public void testAddArrayObject() {
+        var schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"id\":\"test\","
+            + "    \"items\":{"
+            + "      \"type\":\"object\","
+            + "      \"properties\":{"
+            + "        \"test\":{"
+            + "          \"type\":\"string\""
+            + "        },"
+            + "        \"testin\":{"
+            + "          \"type\":\"string\""
+            + "        }"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
 
         assertThat( __diff( schema, "{\"test\":[]}",
             "{\"test\":[{\"test\":\"id\",\"testin\":\"new value\"}]}" ) )
@@ -270,30 +270,111 @@ public class JsonDiffTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testRemoveArrayObject() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"array\"," +
-            "    \"id\":\"test\"," +
-            "    \"items\":{" +
-            "      \"type\":\"object\"," +
-            "      \"properties\":{" +
-            "        \"test\":{" +
-            "          \"type\":\"string\"" +
-            "        }," +
-            "        \"testin\":{" +
-            "          \"type\":\"string\"" +
-            "        }" +
-            "      }" +
-            "    }" +
-            "  }" +
-            "}}";
+    public void testRemoveArrayObject() {
+        var schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"id\":\"test\","
+            + "    \"items\":{"
+            + "      \"type\":\"object\","
+            + "      \"properties\":{"
+            + "        \"test\":{"
+            + "          \"type\":\"string\""
+            + "        },"
+            + "        \"testin\":{"
+            + "          \"type\":\"string\""
+            + "        }"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
 
         assertThat( __diff( schema, "{\"test\":[{\"test\":\"id\",\"testin\":\"new value\"}]}",
             "{\"test\":[]}" ) )
             .containsOnly( __delO( "test[id]", "{\"test\":\"id\",\"testin\":\"new value\"}" ) );
+    }
+
+    @Test
+    public void testUpdateArrayObjectWithoutId() {
+        var schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"id\":\"{index}\","
+            + "    \"items\":{"
+            + "      \"type\":\"object\","
+            + "      \"properties\":{"
+            + "        \"test\":{"
+            + "          \"type\":\"string\""
+            + "        },"
+            + "        \"testin\":{"
+            + "          \"type\":\"string\""
+            + "        }"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
+
+        assertThat( __diff( schema, "{\"test\":[{\"test\":\"id\",\"testin\":\"old value\"}]}",
+            "{\"test\":[{\"test\":\"id\",\"testin\":\"new value\"}]}" ) )
+            .containsOnly( __updF( "test[0].testin", "\"old value\"", "\"new value\"" ) );
+    }
+
+    @Test
+    public void testAddArrayObjectWithoutId() {
+        var schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"id\":\"{index}\","
+            + "    \"items\":{"
+            + "      \"type\":\"object\","
+            + "      \"properties\":{"
+            + "        \"test\":{"
+            + "          \"type\":\"string\""
+            + "        },"
+            + "        \"testin\":{"
+            + "          \"type\":\"string\""
+            + "        }"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
+
+        assertThat( __diff( schema, "{\"test\":[{}]}",
+            "{\"test\":[{}, {\"test\":\"id\",\"testin\":\"new value\"}]}" ) )
+            .containsOnly( __newO( "test[1]", "{\"test\":\"id\",\"testin\":\"new value\"}" ) );
+    }
+
+    @Test
+    public void testRemoveArrayObjectWithoutId() {
+        var schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"id\":\"{index}\","
+            + "    \"items\":{"
+            + "      \"type\":\"object\","
+            + "      \"properties\":{"
+            + "        \"test\":{"
+            + "          \"type\":\"string\""
+            + "        },"
+            + "        \"testin\":{"
+            + "          \"type\":\"string\""
+            + "        }"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
+
+        assertThat( __diff( schema, "{\"test\":[{\"test\":\"id\",\"testin\":\"new value\"}]}",
+            "{\"test\":[]}" ) )
+            .containsOnly( __delO( "test[0]", "{\"test\":\"id\",\"testin\":\"new value\"}" ) );
     }
 
     private List<JsonDiff.Line> __diff( String schema, String from, String to ) {

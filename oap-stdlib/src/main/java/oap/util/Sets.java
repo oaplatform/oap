@@ -23,6 +23,7 @@
  */
 package oap.util;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -42,7 +43,7 @@ public final class Sets {
         return of();
     }
 
-    public static <E, R> Set<R> map( Set<E> set, Function<? super E, R> mapper ) {
+    public static <E, R> Set<R> map( Collection<E> set, Function<? super E, R> mapper ) {
         return Stream.of( set ).map( mapper ).toSet();
     }
 }

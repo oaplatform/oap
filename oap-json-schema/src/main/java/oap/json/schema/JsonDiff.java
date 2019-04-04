@@ -30,19 +30,20 @@ import oap.json.Binder;
 import oap.json.schema.validator.array.ArraySchemaAST;
 import oap.json.schema.validator.object.ObjectSchemaAST;
 import oap.reflect.TypeRef;
+import oap.util.Lists;
+import oap.util.Sets;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
+import static java.lang.Math.min;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.collections4.CollectionUtils.subtract;
 
 public class JsonDiff {
@@ -53,11 +54,11 @@ public class JsonDiff {
     }
 
     public static JsonDiff diff( String oldJson, String newJson, SchemaAST schema ) {
-        final ArrayList<Line> result = new ArrayList<>();
+        var result = new ArrayList<Line>();
 
-        final Map<String, Object> to = Binder.json.unmarshal( new TypeRef<>() {
+        var to = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
         }, newJson );
-        final Map<String, Object> from = Binder.json.unmarshal( new TypeRef<>() {
+        var from = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
         }, oldJson );
 
         diff( "", schema, result, to, from );
@@ -89,45 +90,58 @@ public class JsonDiff {
     private static void diffArray( String prefix, ArraySchemaAST schema, ArrayList<Line> result, Object to, Object from ) {
         if( !( to instanceof List ) || !( from instanceof List ) )
             throw new IllegalArgumentException( prefix + ": invalid json" );
-        final List<?> toList = ( List<?> ) to;
-        final List<?> fromList = ( List<?> ) from;
+        var toList = ( List<?> ) to;
+        var fromList = ( List<?> ) from;
 
-        final Collection<?> diffDel = subtract( fromList, toList );
-        final Collection<?> diffAdd = subtract( toList, fromList );
+        var diffDel = subtract( fromList, toList );
+        var diffAdd = subtract( toList, fromList );
 
-        final SchemaAST items = schema.items;
+        var items = schema.items;
         if( items instanceof ObjectSchemaAST ) {
-            final String idField = schema.idField
+            var idField = schema.idField
                 .orElseThrow( () -> new IllegalArgumentException( prefix + ": schema: id field is required" ) );
 
-            List added = unique( toList, fromList, idField );
-            List removed = unique( fromList, toList, idField );
+            var added = unique( toList, fromList, idField );
+            var removed = unique( fromList, toList, idField );
 
-            for( Object item : added ) {
-                diffField( prefixWithIndex( prefix, getId( idField, item ) ), items, result, item, null );
+            for( var i = 0; i < added.size(); i++ ) {
+                var item = added.get( i );
+
+                var id = isIndex( idField ) ? fromList.size() : getId( idField, item );
+                diffField( prefixWithIndex( prefix, id ), items, result, item, null );
             }
 
-            for( Object item : removed ) {
-                diffField( prefixWithIndex( prefix, getId( idField, item ) ), items, result, null, item );
+            for( var i = 0; i < removed.size(); i++ ) {
+                var item = removed.get( i );
+
+                var id = isIndex( idField ) ? toList.size() : getId( idField, item );
+
+                diffField( prefixWithIndex( prefix, id ), items, result, null, item );
             }
 
 
-            for( Object fromItem : fromList ) {
-                final Map fromItemMap = ( Map ) fromItem;
-                final Object id = fromItemMap.get( idField );
-                if( id == null )
-                    throw new IllegalArgumentException( prefix + ": id field " + idField + ": not found" );
+            if( isIndex( idField ) ) {
+                for( int i = 0; i < min( fromList.size(), toList.size() ); i++ ) {
+                    diff( prefixWithIndex( prefix, i ), items, result, toList.get( i ), fromList.get( i ) );
+                }
+            } else {
+                for( var fromItem : fromList ) {
+                    var fromItemMap = ( Map ) fromItem;
+                    var id = fromItemMap.get( idField );
+                    if( id == null )
+                        throw new IllegalArgumentException( prefix + ": id field " + idField + ": not found" );
 
-                toList
-                    .stream()
-                    .filter( toItem -> {
-                        final Map toItemMap = ( Map ) toItem;
-                        final Object toId = toItemMap.get( idField );
+                    toList
+                        .stream()
+                        .filter( toItem -> {
+                            var toItemMap = ( Map ) toItem;
+                            var toId = toItemMap.get( idField );
 
-                        return Objects.equals( toId, id );
-                    } )
-                    .findAny()
-                    .ifPresent( toItem -> diff( prefixWithIndex( prefix, id ), items, result, toItem, fromItemMap ) );
+                            return Objects.equals( toId, id );
+                        } )
+                        .findAny()
+                        .ifPresent( toItem -> diff( prefixWithIndex( prefix, id ), items, result, toItem, fromItemMap ) );
+                }
             }
         } else if( items instanceof ArraySchemaAST ) {
             throw new IllegalArgumentException( prefix + ": sub-array" );
@@ -137,21 +151,27 @@ public class JsonDiff {
         }
     }
 
+    private static boolean isIndex( String idField ) {
+        return "{index}".equals( idField );
+    }
+
     private static String prefixWithIndex( String prefix, Object id ) {
         return prefix.isEmpty() ? "[" + id + "]" : prefix + "[" + id + "]";
     }
 
-    private static List unique( List<?> l1, List<?> l2, String idField ) {
-        final Set<Object> ids2 = l2.stream().map( i -> getId( idField, i ) ).collect( toSet() );
+    private static List unique( List<?> to, List<?> from, String idField ) {
+        if( isIndex( idField ) ) {
+            if( to.size() <= from.size() ) return emptyList();
+            return to.subList( from.size(), to.size() );
+        } else {
+            final Set<Object> ids2 = Sets.map( from, i -> getId( idField, i ) );
 
-        return l1
-            .stream()
-            .filter( i -> {
-                final Object id = getId( idField, i );
+            return Lists.filter( to, i -> {
+                var id = getId( idField, i );
 
                 return !ids2.contains( id );
-            } )
-            .collect( toList() );
+            } );
+        }
     }
 
     private static Object getId( String idField, Object i ) {
@@ -160,17 +180,17 @@ public class JsonDiff {
 
     private static void diffObject( String prefix, ObjectSchemaAST schema, ArrayList<Line> result, Object to, Object from ) {
 
-        final Map toMap = ( Map ) to;
-        final Map fromMap = ( Map ) from;
+        var toMap = ( Map ) to;
+        var fromMap = ( Map ) from;
 
-        for( Map.Entry<String, SchemaAST> child : schema.properties.entrySet() ) {
-            final String property = child.getKey();
-            final Object fromProperty = fromMap.get( property );
-            final Object toProperty = toMap.get( property );
+        for( var child : schema.properties.entrySet() ) {
+            var property = child.getKey();
+            var fromProperty = fromMap.get( property );
+            var toProperty = toMap.get( property );
 
-            final String newPrefix = prefix.length() > 0 ? prefix + "." + property : property;
+            var newPrefix = prefix.length() > 0 ? prefix + "." + property : property;
 
-            final SchemaAST schemaAST = child.getValue();
+            var schemaAST = child.getValue();
 
             if( ( fromProperty == null && toProperty != null ) || ( toProperty == null && fromProperty != null ) ) {
                 diffField( newPrefix, schemaAST, result, toProperty, fromProperty );
