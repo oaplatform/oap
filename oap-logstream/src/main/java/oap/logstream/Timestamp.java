@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 public class Timestamp {
-    public static final Pattern FILE_NAME_WITH_TIMESTAMP = Pattern.compile( ".+-(\\d{4}-\\d\\d-\\d\\d-\\d\\d-\\d\\d)\\..+" );
+    public static final Pattern FILE_NAME_WITH_TIMESTAMP = Pattern.compile( ".+-(\\d{4}-\\d\\d-\\d\\d-\\d\\d-\\d\\d)(?:-[^.]+)?\\..+" );
     public static final DateTimeFormatter FILE_FORMATTER = DateTimeFormat
         .forPattern( "yyyy-MM-dd-HH" )
         .withZoneUTC();
