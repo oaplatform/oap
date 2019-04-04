@@ -39,6 +39,7 @@ import oap.storage.migration.JsonMetadata;
 import oap.storage.migration.Migration;
 import oap.storage.migration.MigrationException;
 import oap.util.Lists;
+import org.assertj.core.util.VisibleForTesting;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
@@ -46,7 +47,6 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
@@ -68,11 +68,13 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
     private MemoryStorage<T> storage;
     private PeriodicScheduled scheduled;
 
-    public DirectoryPersistence( Path path, long fsync, int version, List<Migration> migrations, MemoryStorage<T> storage ) {
+    @VisibleForTesting
+    DirectoryPersistence( Path path, long fsync, int version, List<Migration> migrations, MemoryStorage<T> storage ) {
         this( path, plainResolve(), fsync, version, migrations, storage );
     }
 
-    public DirectoryPersistence( Path path, MemoryStorage<T> storage ) {
+    @VisibleForTesting
+    DirectoryPersistence( Path path, MemoryStorage<T> storage ) {
         this( path, plainResolve(), 60000, 0, Lists.of(), storage );
     }
 
@@ -107,7 +109,7 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
                 for( long version = persisted.version; version < this.version; version++ ) file = migration( file );
 
-                Metadata<T> metadata = Binder.json.unmarshal( new TypeRef<Metadata<T>>() {}, file );
+                Metadata<T> metadata = Binder.json.unmarshal( new TypeRef<>() {}, file );
 
                 Path newPath = pathFor( metadata.object );
                 if( !newPath.equals( file ) ) {
@@ -130,7 +132,7 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
     private Path migration( Path path ) {
 
         return Threads.synchronously( lock, () -> {
-            JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
+            JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeRef<>() {
             }, path ) );
 
             Persisted fn = Persisted.valueOf( path );
@@ -177,25 +179,20 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
         }
     }
 
-    public void delete( T id ) {
-        Threads.synchronously( lock, () -> Files.delete( pathFor( id ) ) );
-    }
-
     @Override
     public void close() {
         log.debug( "closing {}...", this );
         Threads.synchronously( lock, () -> {
             Scheduled.cancel( scheduled );
             fsync( scheduled.lastExecuted() );
+            storage.close();
         } );
         log.debug( "closed {}", this );
     }
 
     @Override
     public void fsync() {
-        Threads.synchronously( lock, () -> {
-            fsync( scheduled.lastExecuted() );
-        } );
+        Threads.synchronously( lock, () -> fsync( scheduled.lastExecuted() ) );
     }
 
     private Path pathFor( T object ) {
@@ -204,6 +201,10 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
             .resolve( this.storage.identifier.get( object ) + ver + ".json" );
     }
 
+    /**
+     * @return the same as {@link Object#toString()} except delimiter. Here is '/' instead of '@'
+     * TODO: do we need it?
+     */
     @Override
     public String toString() {
         return getClass().getSimpleName() + "/" + hashCode();
@@ -211,7 +212,7 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
     @Override
     public void deleted( T object ) {
-        delete( object );
+        Threads.synchronously( lock, () -> Files.delete( pathFor( object ) ) );
     }
 
     @Override

@@ -25,33 +25,29 @@
 package oap.storage.mongo;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.storage.Identifier;
+import oap.storage.MemoryStorage;
 import org.testng.annotations.Test;
 
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.eq;
-import static com.mongodb.client.model.Updates.inc;
-import static com.mongodb.client.model.Updates.set;
 import static oap.storage.Storage.Lock.SERIALIZED;
-import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * It requires installed MongoDB on the machine with enabled Replica Set Oplog
+ * It requires installed MongoDB on the machine
  *
  * @see <a href="https://docs.mongodb.com/manual/administration/install-community/">Install MongoDB Community Edition</a>
- * @see <a href="https://docs.mongodb.com/manual/tutorial/deploy-replica-set-for-testing/">Deploy a Replica Set for
- *      Testing and Development</a>
  */
 @Slf4j
-public class MongoStorageTest extends AbstractMongoTest {
+public class MongoPersistenceTest extends AbstractMongoTest {
 
     @Test
     public void store() {
-        try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", beanIdentifier, SERIALIZED ) ) {
-            storage.start();
+        try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+             MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage)) {
+
+            persistence.start();
             Bean bean1 = storage.store( new Bean( "test1" ) );
             Bean bean2 = storage.store( new Bean( "test2" ) );
-            // check that new Bean storing with the same id isn't performed
             storage.store( new Bean( bean1.id, "test3" ) );
 
             log.debug( "bean1 = {}", bean1 );
@@ -60,61 +56,49 @@ public class MongoStorageTest extends AbstractMongoTest {
             assertThat( bean1.id ).isEqualTo( "TST1XXXXXX" );
             assertThat( bean2.id ).isEqualTo( "TST2XXXXXX" );
         }
-        try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED ) ) {
-            storage.start();
+
+        try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED);
+             MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+            persistence.start();
             assertThat( storage.select() ).containsOnly(
                 new Bean( "TST1XXXXXX", "test1" ),
                 new Bean( "TST2XXXXXX", "test3" )
             );
-            assertThat( storage.collection.count() ).isEqualTo( 2 );
-
+            assertThat( persistence.collection.count() ).isEqualTo( 2 );
         }
     }
 
     @Test
     public void delete() {
-        try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED ) ) {
-            storage.start();
+        try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifierWithoutName, SERIALIZED);
+             MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+            persistence.start();
             Bean bean1 = storage.store( new Bean() );
             storage.store( new Bean() );
 
             storage.delete( bean1.id );
-            storage.fsync();
 
-            assertThat( storage.collection.count() ).isEqualTo( 1 );
+            assertThat( persistence.collection.count() ).isEqualTo( 1 );
         }
     }
 
     @Test()
     public void updateMongo() {
-        store();
-        try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED );
-             var oplogService = new OplogService( mongoClient ) ) {
-            oplogService.start();
-            storage.oplogService = oplogService;
-            storage.start();
-            Bean bean1 = storage.store( new Bean() );
-            Bean bean2 = storage.store( new Bean() );
-            storage.fsync();
+        try( MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED);
+             MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+            persistence.start();
+            storage.store( new Bean("111", "initialName") );
+            storage.update( "111", bean -> {
+                bean.name = "newName";
+                return bean;
+            } );
+        }
 
-            storage.collection.updateOne(
-                eq( "_id", bean1.id ),
-                and( set( "object.c", 1 ), inc( "modified", 1 ) )
-            );
-
-            assertEventually( 100, 100, () -> assertThat( storage.get( bean1.id ).get().c ).isEqualTo( 1 ) );
-
-            storage.collection.updateOne(
-                eq( "_id", bean1.id ),
-                and( set( "object.c", -1 ) )
-            );
-            storage.collection.updateOne(
-                eq( "_id", bean2.id ),
-                and( set( "object.c", 100 ), inc( "modified", 1 ) )
-            );
-
-            assertEventually( 100, 100, () -> assertThat( storage.get( bean2.id ).get().c ).isEqualTo( 100 ) );
-            assertThat( storage.get( bean1.id ).get().c ).isEqualTo( 1 );
+        try( MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED);
+             MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+            persistence.start();
+            assertThat( storage.select() )
+                .containsExactly( new Bean( "111", "newName") );
         }
     }
 }
