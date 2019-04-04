@@ -145,7 +145,5 @@ public class TimestampTest extends AbstractTest {
     public void parsePath() {
         assertThat( Timestamp.BPH_12.parse( Paths.get( "/tmp/test/2016-02/01/tes-t1-2016-02-01-01-00.tsv.gz" ) ) )
             .contains( new DateTime( 2016, 2, 1, 1, 0, UTC ) );
-        assertThat( Timestamp.BPH_12.parse( Paths.get( "/tmp/test/2016-02/01/tes-t1-2016-02-01-01-00-us.tsv.gz" ) ) )
-            .contains( new DateTime( 2016, 2, 1, 1, 0, UTC ) );
     }
 }
