@@ -61,7 +61,7 @@ public class JvmMetrics {
 
         var garbageCollectors = ManagementFactory.getGarbageCollectorMXBeans();
         for( var gc : garbageCollectors ) {
-            var name = WHITESPACE.matcher( gc.getName() ).replaceAll( "-" );
+            var name = WHITESPACE.matcher( gc.getName() ).replaceAll( "_" );
 
             Metrics.measureGauge( metricName( "jmx-gc." + name + "_count" ), gc::getCollectionCount );
             Metrics.measureGauge( metricName( "jmx-gc." + name + "_time" ), gc::getCollectionTime );
