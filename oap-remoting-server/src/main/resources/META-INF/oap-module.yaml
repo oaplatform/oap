@@ -15,8 +15,6 @@ services:
 
   remoting-listener:
     profile: remoting
-    dependsOn:
-    - oap-http-server
     implementation: oap.http.SecureHttpListener
     parameters:
       port: 8980
