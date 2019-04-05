@@ -69,6 +69,6 @@ public class JvmMetrics {
     }
 
     public Name metricName( String name ) {
-        return Metrics.name( name ).tag( "host", Inet.HOSTNAME ).tag( "app", application );
+        return Metrics.name( name ).tag( "app", application );
     }
 }
