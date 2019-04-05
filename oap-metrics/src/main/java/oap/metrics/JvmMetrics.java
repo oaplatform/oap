@@ -31,41 +31,44 @@ import java.util.regex.Pattern;
 
 /**
  * Created by igor.petrenko on 05.04.2019.
- *
+ * <p>
  * filters: jmx-memory.*, jmx-gc.*
  */
 public class JvmMetrics {
     private static final Pattern WHITESPACE = Pattern.compile( "[\\s]+" );
+    private final String application;
 
-    public JvmMetrics() {
+    public JvmMetrics( String application ) {
+        this.application = application;
         var mxBean = ManagementFactory.getMemoryMXBean();
-        Metrics.measureGauge( Metrics.name( "jmx-memory.heap_init" ).tag( "host", Inet.HOSTNAME ),
+        Metrics.measureGauge( metricName( "jmx-memory.heap_init" ),
             () -> mxBean.getHeapMemoryUsage().getInit() );
-        Metrics.measureGauge( Metrics.name( "jmx-memory.heap_used" ).tag( "host", Inet.HOSTNAME ),
+        Metrics.measureGauge( metricName( "jmx-memory.heap_used" ),
             () -> mxBean.getHeapMemoryUsage().getUsed() );
-        Metrics.measureGauge( Metrics.name( "jmx-memory.heap_max" ).tag( "host", Inet.HOSTNAME ),
+        Metrics.measureGauge( metricName( "jmx-memory.heap_max" ),
             () -> mxBean.getHeapMemoryUsage().getMax() );
-        Metrics.measureGauge( Metrics.name( "jmx-memory.heap_committed" ).tag( "host", Inet.HOSTNAME ),
+        Metrics.measureGauge( metricName( "jmx-memory.heap_committed" ),
             () -> mxBean.getHeapMemoryUsage().getCommitted() );
 
-        Metrics.measureGauge( Metrics.name( "jmx-memory.non_heap_init" ).tag( "host", Inet.HOSTNAME ),
+        Metrics.measureGauge( metricName( "jmx-memory.non_heap_init" ),
             () -> mxBean.getNonHeapMemoryUsage().getInit() );
-        Metrics.measureGauge( Metrics.name( "jmx-memory.non_heap_used" ).tag( "host", Inet.HOSTNAME ),
+        Metrics.measureGauge( metricName( "jmx-memory.non_heap_used" ),
             () -> mxBean.getNonHeapMemoryUsage().getUsed() );
-        Metrics.measureGauge( Metrics.name( "jmx-memory.non_heap_max" ).tag( "host", Inet.HOSTNAME ),
+        Metrics.measureGauge( metricName( "jmx-memory.non_heap_max" ),
             () -> mxBean.getNonHeapMemoryUsage().getMax() );
-        Metrics.measureGauge( Metrics.name( "jmx-memory.non_heap_committed" ).tag( "host", Inet.HOSTNAME ),
+        Metrics.measureGauge( metricName( "jmx-memory.non_heap_committed" ),
             () -> mxBean.getNonHeapMemoryUsage().getCommitted() );
 
         var garbageCollectors = ManagementFactory.getGarbageCollectorMXBeans();
         for( var gc : garbageCollectors ) {
             var name = WHITESPACE.matcher( gc.getName() ).replaceAll( "-" );
 
-            Metrics.measureGauge( Metrics.name( "jmx-gc." + name + "_count" ).tag( "host", Inet.HOSTNAME ),
-                gc::getCollectionCount );
-
-            Metrics.measureGauge( Metrics.name( "jmx-gc." + name + "_time" ).tag( "host", Inet.HOSTNAME ),
-                gc::getCollectionTime );
+            Metrics.measureGauge( metricName( "jmx-gc." + name + "_count" ), gc::getCollectionCount );
+            Metrics.measureGauge( metricName( "jmx-gc." + name + "_time" ), gc::getCollectionTime );
         }
+    }
+
+    public Name metricName( String name ) {
+        return Metrics.name( name ).tag( "host", Inet.HOSTNAME ).tag( "app", application );
     }
 }
