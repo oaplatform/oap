@@ -117,8 +117,11 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E> Optional<E> random( List<E> list ) {
-        return list.isEmpty() ? Optional.empty()
-            : Optional.of( list.get( random.nextInt( list.size() ) ) );
+        return Optional.ofNullable( randomNull( list ) );
+    }
+
+    public static <E> E randomNull( List<E> list ) {
+        return list.isEmpty() ? null : list.get( random.nextInt( list.size() ) );
     }
 
     public static <E> List<E> randomSublist( List<E> list ) {

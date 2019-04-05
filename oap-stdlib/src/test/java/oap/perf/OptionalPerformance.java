@@ -36,12 +36,11 @@ import static oap.benchmark.Benchmark.benchmark;
 public class OptionalPerformance {
     public static final int SAMPLES = 10000000;
     public static final int EXPERIMENTS = 5;
-    private TestOuter outer = new TestOuter( 77 );
 
     @Test
     public void testOptionalVsNull() {
-        benchmark( "Optional", SAMPLES, () -> {
-            optionalTest();
+        benchmark( "OptionalChain", SAMPLES, () -> {
+            optionalChainTest();
         } ).experiments( EXPERIMENTS ).run();
 
         benchmark( "Null", SAMPLES, () -> {
@@ -49,7 +48,12 @@ public class OptionalPerformance {
         } ).experiments( EXPERIMENTS ).run();
     }
 
-    public Integer optionalTest() {
+    public Optional<TestOuterOptional> getOuterOf() {
+        return Optional.ofNullable( new TestOuterOptional( 6 ) );
+    }
+
+    public Integer optionalChainTest() {
+        var outer = getOuter();
         return Optional.of( outer )
             .flatMap( o -> Optional.ofNullable( o.nested ) )
             .flatMap( n -> Optional.ofNullable( n.inner ) )
@@ -58,8 +62,14 @@ public class OptionalPerformance {
     }
 
     public Integer nullTest() {
+        var outer = getOuter();
+
         return ( outer != null && outer.nested != null && outer.nested.inner != null ) ? outer.nested.inner.value
             : null;
+    }
+
+    public TestOuter getOuter() {
+        return new TestOuter( 77 );
     }
 
     public class TestOuter {
@@ -86,6 +96,33 @@ public class OptionalPerformance {
 
         public TestInner( Integer foo ) {
             this.value = foo;
+        }
+    }
+
+    public class TestOuterOptional {
+
+        public Optional<TestNestedOptional> nested;
+
+        public TestOuterOptional( Integer value ) {
+            this.nested = Optional.ofNullable( new TestNestedOptional( value ) );
+        }
+    }
+
+    public class TestNestedOptional {
+
+        public Optional<TestInnerOptional> inner;
+
+        public TestNestedOptional( Integer value ) {
+            this.inner = Optional.ofNullable( new TestInnerOptional( value ) );
+        }
+    }
+
+    public class TestInnerOptional {
+
+        public Optional<Integer> value;
+
+        public TestInnerOptional( Integer foo ) {
+            this.value = Optional.ofNullable( foo );
         }
     }
 }
