@@ -161,9 +161,6 @@ public class Binder {
         mapper.enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
 
-        // Null skipping (on deserialization)
-        mapper.setDefaultSetterInfo( JsonSetter.Value.forValueNulls( Nulls.SKIP ) );
-
         if( !nonNullInclusion ) mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
 
         modules.forEach( mapper::registerModule );
