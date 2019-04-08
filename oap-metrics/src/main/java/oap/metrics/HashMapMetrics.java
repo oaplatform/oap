@@ -63,8 +63,8 @@ public class HashMapMetrics {
         int max = 1;
         int collisions = 0;
 
-        for( int i = 0; i < table.length; i++ ) {
-            Map.Entry<?, ?> entry = table[i];
+        for( Map.Entry<?, ?> value : table ) {
+            Map.Entry<?, ?> entry = value;
 
             if( entry == null ) empty++;
 
