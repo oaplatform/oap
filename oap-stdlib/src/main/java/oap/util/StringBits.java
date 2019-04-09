@@ -37,7 +37,7 @@ import static java.util.stream.Collectors.toList;
 public class StringBits {
     public static final long UNKNOWN = 0;
 
-    private final HashMap<String, Long> bits = new HashMap<>();
+    public final HashMap<String, Long> bits = new HashMap<>();
     private final AtomicLong bit = new AtomicLong( 1L );
 
     public StringBits() {
