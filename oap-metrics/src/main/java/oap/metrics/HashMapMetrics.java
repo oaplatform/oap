@@ -24,8 +24,10 @@
 
 package oap.metrics;
 
+import com.google.common.base.Preconditions;
 import lombok.SneakyThrows;
 import lombok.ToString;
+import oap.util.Throwables;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -41,27 +43,34 @@ import java.util.Map;
 public class HashMapMetrics {
     private static final String application;
     private static final boolean enabled;
+    private static final Field tableField;
+    private static final Field nextField;
 
     static {
         application = System.getenv( "APPLICATION" );
         enabled = "true".equalsIgnoreCase( System.getenv( "HashMapMetrics" ) );
+
+        try {
+            tableField = HashMap.class.getDeclaredField( "table" );
+            tableField.setAccessible( true );
+
+            Class<?> hashMapEntryClass = null;
+            for( Class<?> c : HashMap.class.getDeclaredClasses() )
+                if( "java.util.HashMap.Node".equals( c.getCanonicalName() ) )
+                    hashMapEntryClass = c;
+
+            Preconditions.checkNotNull( hashMapEntryClass, "java.util.HashMap.Node not found" );
+
+            nextField = hashMapEntryClass.getDeclaredField( "next" );
+            nextField.setAccessible( true );
+        } catch( NoSuchFieldException e ) {
+            throw Throwables.propagate( e );
+        }
     }
 
     @SneakyThrows
     public static HashmapStats dumpBuckets( HashMap<?, ?> map ) {
-
-        Field f = HashMap.class.getDeclaredField( "table" );
-        f.setAccessible( true );
-
-        Map.Entry<?, ?>[] table = ( Map.Entry<?, ?>[] ) f.get( map );
-
-        Class<?> hashMapEntryClass = null;
-        for( Class<?> c : HashMap.class.getDeclaredClasses() )
-            if( "java.util.HashMap.Node".equals( c.getCanonicalName() ) )
-                hashMapEntryClass = c;
-
-        Field nextField = hashMapEntryClass.getDeclaredField( "next" );
-        nextField.setAccessible( true );
+        var table = ( Map.Entry<?, ?>[] ) tableField.get( map );
 
         int empty = 0;
         int max = 1;
