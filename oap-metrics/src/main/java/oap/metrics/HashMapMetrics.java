@@ -33,14 +33,18 @@ import java.util.Map;
 
 /**
  * Created by igor.petrenko on 08.04.2019.
+ * <p>
+ * Env:
+ * - APPLICATION: (app name)
+ * - HashMapMetrics: (true/false), default: false
  */
 public class HashMapMetrics {
     private final String application;
     private final boolean enabled;
 
-    public HashMapMetrics( String application, boolean enabled ) {
-        this.application = application;
-        this.enabled = enabled;
+    public HashMapMetrics() {
+        this.application = System.getenv( "APPLICATION" );
+        this.enabled = "true".equalsIgnoreCase( System.getenv( "HashMapMetrics" ) );
     }
 
     @SneakyThrows
