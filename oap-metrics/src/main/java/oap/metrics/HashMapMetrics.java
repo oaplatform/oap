@@ -39,12 +39,12 @@ import java.util.Map;
  * - HashMapMetrics: (true/false), default: false
  */
 public class HashMapMetrics {
-    private final String application;
-    private final boolean enabled;
+    private static final String application;
+    private static final boolean enabled;
 
-    public HashMapMetrics() {
-        this.application = System.getenv( "APPLICATION" );
-        this.enabled = "true".equalsIgnoreCase( System.getenv( "HashMapMetrics" ) );
+    static {
+        application = System.getenv( "APPLICATION" );
+        enabled = "true".equalsIgnoreCase( System.getenv( "HashMapMetrics" ) );
     }
 
     @SneakyThrows
@@ -86,7 +86,7 @@ public class HashMapMetrics {
         return new HashmapStats( table.length, empty, max, collisions );
     }
 
-    public void meter( String hashMapName, HashMap<?, ?> hashmap ) {
+    public static void meter( String hashMapName, HashMap<?, ?> hashmap ) {
         if( !enabled ) return;
 
         Metrics.measureGauge( metricName( hashMapName, "hashmap.size" ), hashmap::size );
@@ -95,14 +95,14 @@ public class HashMapMetrics {
         Metrics.measureGauge( metricName( hashMapName, "hashmap.collisions_count" ), () -> dumpBuckets( hashmap ).collisions );
     }
 
-    public void unregister( String hashMapName ) {
+    public static void unregister( String hashMapName ) {
         Metrics.unregister( metricName( hashMapName, "hashmap.size" ) );
         Metrics.unregister( metricName( hashMapName, "hashmap.entries" ) );
         Metrics.unregister( metricName( hashMapName, "hashmap.collisions_max" ) );
         Metrics.unregister( metricName( hashMapName, "hashmap.collisions_count" ) );
     }
 
-    private Name metricName( String hashMapName, String name ) {
+    private static Name metricName( String hashMapName, String name ) {
         return Metrics.name( name ).tag( "name", hashMapName ).tag( "app", application );
     }
 
