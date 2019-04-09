@@ -37,10 +37,16 @@ import static java.util.stream.Collectors.toList;
 public class StringBits {
     public static final long UNKNOWN = 0;
 
-    public final HashMap<String, Long> bits = new HashMap<>();
+    public final HashMap<String, Long> bits;
     private final AtomicLong bit = new AtomicLong( 1L );
 
     public StringBits() {
+        bits = new HashMap<>();
+        bits.put( Strings.UNKNOWN, UNKNOWN );
+    }
+
+    public StringBits( int initialCapacity, float loadFactor ) {
+        bits = new HashMap<>( initialCapacity, loadFactor );
         bits.put( Strings.UNKNOWN, UNKNOWN );
     }
 
