@@ -24,9 +24,13 @@
 
 package oap.template;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.metrics.Metrics;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -36,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static java.util.Collections.emptyMap;
@@ -43,6 +48,10 @@ import static oap.template.Template.Line.line;
 import static oap.template.TemplateStrategy.DEFAULT;
 
 @Slf4j
+/**
+ *    metrics:
+ *      - templates.*
+ */
 public class Engine implements Runnable {
     private final static HashMap<String, String> builtInFunction = new HashMap<>();
 
@@ -52,6 +61,8 @@ public class Engine implements Runnable {
 
     public final Path tmpPath;
     public final long ttl;
+    private final Cache<String, Template<?, ?>> templates;
+
 
     public Engine( Path tmpPath ) {
         this( tmpPath, 1000L * 60 * 60 * 24 * 30 );
@@ -60,6 +71,13 @@ public class Engine implements Runnable {
     public Engine( Path tmpPath, long ttl ) {
         this.tmpPath = tmpPath;
         this.ttl = ttl;
+
+        templates = CacheBuilder.newBuilder()
+            .expireAfterAccess( ttl, TimeUnit.MILLISECONDS )
+            .build();
+
+        Metrics.unregister( "templates.cache_size" );
+        Metrics.measureGauge( "templates.cache_size", templates::size );
     }
 
     public static String getName( String template ) {
@@ -113,57 +131,63 @@ public class Engine implements Runnable {
         return getTemplate( name, clazz, template, overrides, mapper, DEFAULT );
     }
 
+    @SuppressWarnings( "unchecked" )
+    @SneakyThrows
     public <T> Template<T, Template.Line> getTemplate( String name, Class<T> clazz, String template,
                                                        Map<String, String> overrides, Map<String, Supplier<String>> mapper, TemplateStrategy<Template.Line> map ) {
-        boolean variable = false;
-        StringBuilder function = null;
 
-        ArrayList<Template.Line> lines = new ArrayList<>();
-        StringBuilder text = new StringBuilder();
+        var id = name + template;
+        return ( Template<T, Template.Line> ) templates.get( id, () -> {
+            boolean variable = false;
+            StringBuilder function = null;
 
-        for( int i = 0; i < template.length(); i++ ) {
-            var ch = template.charAt( i );
-            switch( ch ) {
-                case '$':
-                    if( variable ) {
-                        variable = false;
+            ArrayList<Template.Line> lines = new ArrayList<>();
+            StringBuilder text = new StringBuilder();
+
+            for( int i = 0; i < template.length(); i++ ) {
+                var ch = template.charAt( i );
+                switch( ch ) {
+                    case '$':
+                        if( variable ) {
+                            variable = false;
+                            add( text, ch, function );
+                        } else {
+                            variable = true;
+                        }
+                        break;
+                    case '{':
+                        if( variable )
+                            startVariable( lines, text );
+                        else
+                            add( text, ch, function );
+                        break;
+                    case '}':
+                        if( variable ) {
+                            endVariable( lines, text, function, true );
+                            variable = false;
+                            function = null;
+                        } else add( text, ch, function );
+                        break;
+                    case ';':
+                        if( variable ) {
+                            function = new StringBuilder();
+                        } else {
+                            add( text, ch, function );
+                        }
+                        break;
+                    default:
                         add( text, ch, function );
-                    } else {
-                        variable = true;
-                    }
-                    break;
-                case '{':
-                    if( variable )
-                        startVariable( lines, text );
-                    else
-                        add( text, ch, function );
-                    break;
-                case '}':
-                    if( variable ) {
-                        endVariable( lines, text, function, true );
-                        variable = false;
-                        function = null;
-                    } else add( text, ch, function );
-                    break;
-                case ';':
-                    if( variable ) {
-                        function = new StringBuilder();
-                    } else {
-                        add( text, ch, function );
-                    }
-                    break;
-                default:
-                    add( text, ch, function );
+                }
             }
-        }
 
-        endVariable( lines, text, function, false );
+            endVariable( lines, text, function, false );
 
-        if( lines.size() == 1 && lines.get( 0 ).path == null ) {
-            return new ConstTemplate<>( lines.get( 0 ).defaultValue );
-        }
+            if( lines.size() == 1 && lines.get( 0 ).path == null ) {
+                return new ConstTemplate<>( lines.get( 0 ).defaultValue );
+            }
 
-        return new JavaCTemplate<>( name, clazz, lines, null, map, overrides, mapper, tmpPath );
+            return new JavaCTemplate<>( name, clazz, lines, null, map, overrides, mapper, tmpPath );
+        } );
     }
 
     private void add( StringBuilder text, char ch, StringBuilder function ) {
