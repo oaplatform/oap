@@ -35,6 +35,7 @@ import oap.metrics.Metrics;
 import oap.net.Inet;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpConnection;
+import org.apache.http.client.protocol.RequestClientConnControl;
 import org.apache.http.impl.DefaultBHttpServerConnectionFactory;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
@@ -77,7 +78,7 @@ public class Server implements HttpServer {
         .add( new ResponseDate() )
         .add( new ResponseServer( "OAP Server/1.0" ) )
         .add( new ResponseContent() )
-        .add( new ResponseConnControl() )
+//        .add( new ResponseConnControl() )
         .build(),
         DefaultConnectionReuseStrategy.INSTANCE,
         DefaultHttpResponseFactory.INSTANCE,
@@ -95,7 +96,7 @@ public class Server implements HttpServer {
     }
 
     //TODO Fix resolution of local through headers instead of socket inet address
-    private static HttpContext createHttpContext( final Socket socket ) {
+    private static HttpContext createHttpContext( Socket socket ) {
         var httpContext = HttpCoreContext.create();
 
         final Protocol protocol;
