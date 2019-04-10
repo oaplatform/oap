@@ -72,9 +72,10 @@ public class NioServer implements oap.http.HttpServer {
     private HttpServer server;
 
     @SneakyThrows
-    public NioServer( int port, int workers ) {
+    public NioServer( int port, int workers, boolean registerStatic ) {
         this.port = port;
-        this.mapper.register( "/static/*", new NioClasspathResourceHandler( "/static", "/WEB-INF" ) );
+        if( registerStatic )
+            this.mapper.register( "/static/*", new NioClasspathResourceHandler( "/static", "/WEB-INF" ) );
 
         var ioReactorConfig = IOReactorConfig.custom().setIoThreadCount( workers ).build();
         var httpProcessor = HttpProcessorBuilder.create()

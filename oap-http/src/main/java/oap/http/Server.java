@@ -56,7 +56,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static oap.io.Sockets.connectionReset;
 import static oap.io.Sockets.socketClosed;
@@ -77,7 +76,6 @@ public class Server implements HttpServer {
     private final ConcurrentHashMap<String, HttpConnection> connections;
     private final LongAdder handled = new LongAdder();
     private final LongAdder requests = new LongAdder();
-    private final AtomicLong rw = new AtomicLong();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
         .add( new ResponseDate() )
@@ -91,12 +89,13 @@ public class Server implements HttpServer {
 
     private final ExecutorService executor;
 
-    public Server( int workers ) {
+    public Server( int workers, boolean registerStatic ) {
         connections = new ConcurrentHashMap<>( ( int ) ( workers / 0.7f ) );
         this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, new SynchronousQueue<>(),
             new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build() );
 
-        mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
+        if( registerStatic )
+            mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
     }
 
     //TODO Fix resolution of local through headers instead of socket inet address
@@ -113,14 +112,13 @@ public class Server implements HttpServer {
     }
 
     @Override
-    public void bind( final String context, final CorsPolicy corsPolicy, final Handler handler,
-                      final Protocol protocol ) {
+    public void bind( String context, CorsPolicy corsPolicy, Handler handler, Protocol protocol ) {
         var location1 = "/" + context + "/*";
         var location2 = "/" + context;
         mapper.register( location1, new BlockingHandlerAdapter( "/" + context, handler, corsPolicy, protocol ) );
         mapper.register( location2, new BlockingHandlerAdapter( "/" + context, handler, corsPolicy, protocol ) );
 
-        log.debug( handler + " bound to [" + location1 + ", " + location2 + "]" );
+        log.debug( "{} bound to [{}, {}]", handler, location1, location2 );
     }
 
     @Override
@@ -132,7 +130,7 @@ public class Server implements HttpServer {
         Metrics.measureGauge( "http.connections", connections::size );
         Metrics.measureGauge( "http.handled", handled::longValue );
         Metrics.measureGauge( "http.requests", requests::longValue );
-        Metrics.measureGauge( "http.rw", rw::longValue );
+        Metrics.measureGauge( "http.rw", BlockingHandlerAdapter.rw::longValue );
     }
 
     @SneakyThrows
@@ -154,13 +152,8 @@ public class Server implements HttpServer {
 
                     log.trace( "start handling {}", connection );
                     while( !Thread.interrupted() && connection.isOpen() ) {
+                        httpService.handleRequest( connection, httpContext );
                         requests.increment();
-                        rw.incrementAndGet();
-                        try {
-                            httpService.handleRequest( connection, httpContext );
-                        } finally {
-                            rw.decrementAndGet();
-                        }
                     }
                 } catch( SocketException e ) {
                     if( socketClosed( e ) )

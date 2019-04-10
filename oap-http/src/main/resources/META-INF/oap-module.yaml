@@ -6,6 +6,7 @@ services:
     name: oap-http-server
     parameters:
       workers: 500
+      registerStatic: false
     supervision:
       supervise: true
 
@@ -15,5 +16,6 @@ services:
     name: oap-http-server
     parameters:
       workers: 500
+      registerStatic: false
     supervision:
       supervise: true
