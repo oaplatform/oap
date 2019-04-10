@@ -47,7 +47,7 @@ oap_status_q() {
 
 
 oap_start() {
-    $SUEXEC java $VM_OPTS -cp $CP oap.application.Boot --start $CONFIGDIRECTORY --config=$APPHOME/conf/application.conf > /var/log/$APPNAME/console.log 2>&1 &
+    $SUEXEC java $VM_OPTS $VM_OAP_OPTS -cp $CP oap.application.Boot --start $CONFIGDIRECTORY --config=$APPHOME/conf/application.conf > /var/log/$APPNAME/console.log 2>&1 &
     retval=$?
     pid=$!
     [ $retval -eq 0 ] && echo $pid > $PIDFILE
@@ -55,7 +55,7 @@ oap_start() {
 }
 
 oap_run() {
-    java $VM_OPTS -cp $CP oap.application.Boot --start --config=$APPHOME/conf/application.conf
+    java $VM_OPTS $VM_OAP_OPTS -cp $CP oap.application.Boot --start --config=$APPHOME/conf/application.conf
     retval=$?
     return $retval
 }
