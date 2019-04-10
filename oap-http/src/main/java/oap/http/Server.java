@@ -27,6 +27,7 @@ package oap.http;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.LongAdder;
 import oap.concurrent.ThreadPoolExecutor;
 import oap.http.cors.CorsPolicy;
 import oap.io.Closeables;
@@ -34,7 +35,6 @@ import oap.metrics.Metrics;
 import oap.net.Inet;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpConnection;
-import org.apache.http.impl.DefaultBHttpServerConnection;
 import org.apache.http.impl.DefaultBHttpServerConnectionFactory;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
@@ -56,6 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static oap.io.Sockets.connectionReset;
 import static oap.io.Sockets.socketClosed;
@@ -63,6 +64,9 @@ import static oap.io.Sockets.socketClosed;
 
 /**
  * @author Vladimir Kirichenko <vladimir.kirichenko@gmail.com>
+ * <p>
+ * metrics:
+ * - http.*
  */
 @Slf4j
 public class Server implements HttpServer {
@@ -70,7 +74,10 @@ public class Server implements HttpServer {
     private static final DefaultBHttpServerConnectionFactory connectionFactory =
         DefaultBHttpServerConnectionFactory.INSTANCE;
 
-    private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, HttpConnection> connections;
+    private final LongAdder handled = new LongAdder();
+    private final LongAdder requests = new LongAdder();
+    private final AtomicLong rw = new AtomicLong();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
         .add( new ResponseDate() )
@@ -84,7 +91,8 @@ public class Server implements HttpServer {
 
     private final ExecutorService executor;
 
-    public Server( final int workers ) {
+    public Server( int workers ) {
+        connections = new ConcurrentHashMap<>( ( int ) ( workers / 0.7f ) );
         this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, new SynchronousQueue<>(),
             new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build() );
 
@@ -93,11 +101,11 @@ public class Server implements HttpServer {
 
     //TODO Fix resolution of local through headers instead of socket inet address
     private static HttpContext createHttpContext( final Socket socket ) {
-        final HttpContext httpContext = HttpCoreContext.create();
+        var httpContext = HttpCoreContext.create();
 
         final Protocol protocol;
         if( !Inet.isLocalAddress( socket.getInetAddress() ) ) protocol = Protocol.LOCAL;
-        else protocol = SSLSocket.class.isInstance( socket ) ? Protocol.HTTPS : Protocol.HTTP;
+        else protocol = socket instanceof SSLSocket ? Protocol.HTTPS : Protocol.HTTP;
 
         httpContext.setAttribute( "protocol", protocol );
 
@@ -107,8 +115,8 @@ public class Server implements HttpServer {
     @Override
     public void bind( final String context, final CorsPolicy corsPolicy, final Handler handler,
                       final Protocol protocol ) {
-        final String location1 = "/" + context + "/*";
-        final String location2 = "/" + context;
+        var location1 = "/" + context + "/*";
+        var location2 = "/" + context;
         mapper.register( location1, new BlockingHandlerAdapter( "/" + context, handler, corsPolicy, protocol ) );
         mapper.register( location2, new BlockingHandlerAdapter( "/" + context, handler, corsPolicy, protocol ) );
 
@@ -121,34 +129,44 @@ public class Server implements HttpServer {
     }
 
     public void start() {
-        Metrics.measureGauge( "connections", connections::size );
+        Metrics.measureGauge( "http.connections", connections::size );
+        Metrics.measureGauge( "http.handled", handled::longValue );
+        Metrics.measureGauge( "http.requests", requests::longValue );
+        Metrics.measureGauge( "http.rw", rw::longValue );
     }
 
     @SneakyThrows
     public void accepted( final Socket socket ) {
         try {
-            final DefaultBHttpServerConnection connection =
-                connectionFactory.createConnection( socket );
-            final String connectionId = connection.toString();
+            var connection = connectionFactory.createConnection( socket );
+            var connectionId = connection.toString();
 
             executor.submit( () -> {
                 try {
+                    handled.increment();
                     connections.put( connectionId, connection );
 
                     log.debug( "connection accepted: {}", connection );
 
-                    final HttpContext httpContext = createHttpContext( socket );
+                    var httpContext = createHttpContext( socket );
 
                     Thread.currentThread().setName( connection.toString() );
 
-                    log.debug( "start handling {}", connection );
-                    while( !Thread.interrupted() && connection.isOpen() )
-                        httpService.handleRequest( connection, httpContext );
+                    log.trace( "start handling {}", connection );
+                    while( !Thread.interrupted() && connection.isOpen() ) {
+                        requests.increment();
+                        rw.incrementAndGet();
+                        try {
+                            httpService.handleRequest( connection, httpContext );
+                        } finally {
+                            rw.decrementAndGet();
+                        }
+                    }
                 } catch( SocketException e ) {
                     if( socketClosed( e ) )
                         log.debug( "Socket closed: {}", connection );
                     else if( connectionReset( e ) )
-                        log.warn( "Connection reset: {}", connection );
+                        log.debug( "Connection reset: {}", connection );
                     else log.error( e.getMessage(), e );
                 } catch( ConnectionClosedException e ) {
                     log.debug( "connection closed: {}", connection );
@@ -171,6 +189,12 @@ public class Server implements HttpServer {
 
     public void stop() {
         connections.forEach( ( key, connection ) -> Closeables.close( connection ) );
+
+
+        Metrics.unregister( "http.connections" );
+        Metrics.unregister( "http.handled" );
+        Metrics.unregister( "http.requests" );
+        Metrics.unregister( "http.rw" );
 
         Closeables.close( executor );
 
