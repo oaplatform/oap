@@ -26,6 +26,7 @@ package oap.metrics;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.net.Inet;
+import oap.util.Strings;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class InfluxReporter {
+    public String application = Strings.UNKNOWN;
     protected String host;
     protected int port;
     protected String database;
@@ -45,24 +47,22 @@ public class InfluxReporter {
     protected long connectionTimeout = 1000;
     protected long readTimeout = 1000;
     protected long writeTimeout = 1000;
-
     protected long period = 60 * 1000;
     protected boolean reset_timers_after_report = false;
 
     private InfluxDBReporter reporter;
 
     public void start() {
-        log.info( "host = {}", host );
-        log.info( "database = {}", database );
-        log.info( "login = {}", login );
+        log.info( "host = {}, application = {}, database = {}, login = {}, period = {} ms",
+            host, application, database, login, period );
         log.info( "aggregates = {}", aggregates );
-        log.info( "period = {} ms", period );
 
         InfluxDBReporter.Builder builder = InfluxDBReporter
             .forRegistry( Metrics.registry )
             .withFilter( new ReporterFilter( include, exclude ) )
             .withAggregates( aggregates )
             .withTag( "host", Inet.HOSTNAME )
+            .withTag( "app", application )
             .convertRatesTo( TimeUnit.MINUTES )
             .convertDurationsTo( TimeUnit.MICROSECONDS )
             .withConnect( this.host, port, database, login, password )
