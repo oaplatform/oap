@@ -24,7 +24,7 @@ public class SecureHttpListenerTest {
 
     private static final String KEYSTORE_PASSWORD = "123456";
 
-    private final Server server = new Server( 10 );
+    private final Server server = new Server( 10, false );
     private SynchronizedThread listener;
 
     @BeforeClass

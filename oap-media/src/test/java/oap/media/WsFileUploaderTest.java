@@ -74,7 +74,7 @@ public class WsFileUploaderTest extends AbstractTest {
 
         medias.clear();
 
-        server = new Server( 100 );
+        server = new Server( 100, false );
         ws = new WebServices( kernel, server, new SessionManager( 10, null, "/" ),
             GenericCorsPolicy.DEFAULT,
             WsConfig.CONFIGURATION.fromResource( getClass(), "ws-multipart.conf" )

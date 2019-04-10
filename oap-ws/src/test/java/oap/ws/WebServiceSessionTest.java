@@ -55,7 +55,7 @@ public class WebServiceSessionTest {
 
     private final SessionManager sessionManager = new SessionManager( 10, null, "/" );
 
-    private final Server server = new Server( 100 );
+    private final Server server = new Server( 100, false );
     private final WebServices ws = new WebServices( new Kernel( Lists.empty() ), server, sessionManager, GenericCorsPolicy.DEFAULT );
 
     private SynchronizedThread listener;

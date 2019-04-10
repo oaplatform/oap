@@ -52,7 +52,7 @@ public class WebServicesPerformance {
 
     @Test
     public void blockingThreads() {
-        Server server = new Server( 5000 );
+        Server server = new Server( 5000, false );
         SynchronizedThread listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
         listener.start();
         try {
@@ -74,7 +74,7 @@ public class WebServicesPerformance {
 
     @Test
     public void nioThreads() throws Exception {
-        NioServer server = new NioServer( Env.port(), 500 );
+        NioServer server = new NioServer( Env.port(), 500, false );
         try {
             WebServices ws = new WebServices( new Kernel( Lists.empty() ), server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
             ws.bind( "x/v/math", GenericCorsPolicy.DEFAULT, new MathWS(), false, SESSION_MANAGER,
