@@ -41,13 +41,11 @@ import java.util.Map;
  * - HashMapMetrics: (true/false), default: false
  */
 public class HashMapMetrics {
-    private static final String application;
     private static final boolean enabled;
     private static final Field tableField;
     private static final Field nextField;
 
     static {
-        application = System.getenv( "APPLICATION" );
         enabled = "true".equalsIgnoreCase( System.getenv( "HashMapMetrics" ) );
 
         try {
@@ -112,7 +110,7 @@ public class HashMapMetrics {
     }
 
     private static Name metricName( String hashMapName, String name ) {
-        return Metrics.name( name ).tag( "name", hashMapName ).tag( "app", application );
+        return Metrics.name( name ).tag( "name", hashMapName );
     }
 
     @ToString
