@@ -57,9 +57,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
-import static oap.io.Sockets.connectionReset;
-import static oap.io.Sockets.socketClosed;
-
 
 /**
  * @author Vladimir Kirichenko <vladimir.kirichenko@gmail.com>
@@ -75,7 +72,6 @@ public class Server implements HttpServer {
 
     private final ConcurrentHashMap<String, HttpConnection> connections;
     private final LongAdder handled = new LongAdder();
-    private final LongAdder requests = new LongAdder();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
         .add( new ResponseDate() )
@@ -129,7 +125,7 @@ public class Server implements HttpServer {
     public void start() {
         Metrics.measureGauge( "http.connections", connections::size );
         Metrics.measureGauge( "http.handled", handled::longValue );
-        Metrics.measureGauge( "http.requests", requests::longValue );
+        Metrics.measureGauge( "http.requests", BlockingHandlerAdapter.requests::longValue );
         Metrics.measureGauge( "http.rw", BlockingHandlerAdapter.rw::longValue );
     }
 
@@ -151,16 +147,10 @@ public class Server implements HttpServer {
                     Thread.currentThread().setName( connection.toString() );
 
                     log.trace( "start handling {}", connection );
-                    while( !Thread.interrupted() && connection.isOpen() ) {
+                    while( !Thread.interrupted() && connection.isOpen() )
                         httpService.handleRequest( connection, httpContext );
-                        requests.increment();
-                    }
                 } catch( SocketException e ) {
-                    if( socketClosed( e ) )
-                        log.debug( "Socket closed: {}", connection );
-                    else if( connectionReset( e ) )
-                        log.debug( "Connection reset: {}", connection );
-                    else log.error( e.getMessage(), e );
+                    log.debug( "{}: {}", connection, e.getMessage() );
                 } catch( ConnectionClosedException e ) {
                     log.debug( "connection closed: {}", connection );
                 } catch( Throwable e ) {

@@ -24,6 +24,7 @@
 package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.LongAdder;
 import oap.http.cors.CorsPolicy;
 import oap.net.Inet;
 import org.apache.http.HttpInetConnection;
@@ -45,6 +46,7 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     private final Handler handler;
     private final CorsPolicy corsPolicy;
     static final AtomicLong rw = new AtomicLong();
+    static final LongAdder requests = new LongAdder();
 
     public BlockingHandlerAdapter( final String location, final Handler handler,
                                    final CorsPolicy corsPolicy, final Protocol protocol ) {
@@ -58,6 +60,7 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     public void handle( final HttpRequest httpRequest, final HttpResponse httpResponse,
                         final HttpContext httpContext ) {
         rw.incrementAndGet();
+        requests.increment();
         try {
             log.trace( "Handling [{}]", httpRequest );
 
