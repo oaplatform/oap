@@ -29,6 +29,8 @@ import oap.util.Pair;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collections;
+import java.util.List;
 
 @Slf4j
 public class Response {
@@ -43,6 +45,11 @@ public class Response {
     }
 
     public void respond( HttpResponse response ) {
+        respond( response, Collections.emptyList() );
+    }
+
+    public void respond( HttpResponse response, List<Pair<String, String>> headers ) {
+
         log.trace( "responding {} {}", response.code, response.reasonPhrase );
 
         cors.setHeaders( resp );
@@ -57,6 +64,11 @@ public class Response {
 
         if( !response.headers.isEmpty() ) {
             for( Pair<String, String> header : response.headers ) {
+                resp.setHeader( header._1, header._2 );
+            }
+        }
+        if( !headers.isEmpty() ) {
+            for( Pair<String, String> header : headers ) {
                 resp.setHeader( header._1, header._2 );
             }
         }

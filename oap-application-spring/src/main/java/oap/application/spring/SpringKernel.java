@@ -75,6 +75,7 @@ public class SpringKernel {
     @PreDestroy
     public void stop() {
         try {
+            log.info( "###STOPing###" );
             if( kernel != null ) kernel.stop();
             log.debug( "stopped" );
         } catch( Exception e ) {
