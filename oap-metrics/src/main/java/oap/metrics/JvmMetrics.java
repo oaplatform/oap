@@ -24,8 +24,6 @@
 
 package oap.metrics;
 
-import oap.net.Inet;
-
 import java.lang.management.ManagementFactory;
 import java.util.regex.Pattern;
 
@@ -36,39 +34,33 @@ import java.util.regex.Pattern;
  */
 public class JvmMetrics {
     private static final Pattern WHITESPACE = Pattern.compile( "[\\s]+" );
-    private final String application;
 
-    public JvmMetrics( String application ) {
-        this.application = application;
+    public JvmMetrics() {
         var mxBean = ManagementFactory.getMemoryMXBean();
-        Metrics.measureGauge( metricName( "jmx-memory.heap_init" ),
+        Metrics.measureGauge( Metrics.name( "jmx-memory.heap_init" ),
             () -> mxBean.getHeapMemoryUsage().getInit() );
-        Metrics.measureGauge( metricName( "jmx-memory.heap_used" ),
+        Metrics.measureGauge( Metrics.name( "jmx-memory.heap_used" ),
             () -> mxBean.getHeapMemoryUsage().getUsed() );
-        Metrics.measureGauge( metricName( "jmx-memory.heap_max" ),
+        Metrics.measureGauge( Metrics.name( "jmx-memory.heap_max" ),
             () -> mxBean.getHeapMemoryUsage().getMax() );
-        Metrics.measureGauge( metricName( "jmx-memory.heap_committed" ),
+        Metrics.measureGauge( Metrics.name( "jmx-memory.heap_committed" ),
             () -> mxBean.getHeapMemoryUsage().getCommitted() );
 
-        Metrics.measureGauge( metricName( "jmx-memory.non_heap_init" ),
+        Metrics.measureGauge( Metrics.name( "jmx-memory.non_heap_init" ),
             () -> mxBean.getNonHeapMemoryUsage().getInit() );
-        Metrics.measureGauge( metricName( "jmx-memory.non_heap_used" ),
+        Metrics.measureGauge( Metrics.name( "jmx-memory.non_heap_used" ),
             () -> mxBean.getNonHeapMemoryUsage().getUsed() );
-        Metrics.measureGauge( metricName( "jmx-memory.non_heap_max" ),
+        Metrics.measureGauge( Metrics.name( "jmx-memory.non_heap_max" ),
             () -> mxBean.getNonHeapMemoryUsage().getMax() );
-        Metrics.measureGauge( metricName( "jmx-memory.non_heap_committed" ),
+        Metrics.measureGauge( Metrics.name( "jmx-memory.non_heap_committed" ),
             () -> mxBean.getNonHeapMemoryUsage().getCommitted() );
 
         var garbageCollectors = ManagementFactory.getGarbageCollectorMXBeans();
         for( var gc : garbageCollectors ) {
             var name = WHITESPACE.matcher( gc.getName() ).replaceAll( "_" );
 
-            Metrics.measureGauge( metricName( "jmx-gc." + name + "_count" ), gc::getCollectionCount );
-            Metrics.measureGauge( metricName( "jmx-gc." + name + "_time" ), gc::getCollectionTime );
+            Metrics.measureGauge( Metrics.name( "jmx-gc." + name + "_count" ), gc::getCollectionCount );
+            Metrics.measureGauge( Metrics.name( "jmx-gc." + name + "_time" ), gc::getCollectionTime );
         }
-    }
-
-    public Name metricName( String name ) {
-        return Metrics.name( name ).tag( "app", application );
     }
 }
