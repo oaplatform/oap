@@ -35,7 +35,6 @@ import oap.metrics.Metrics;
 import oap.net.Inet;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.HttpConnection;
-import org.apache.http.client.protocol.RequestClientConnControl;
 import org.apache.http.impl.DefaultBHttpServerConnectionFactory;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
@@ -43,12 +42,12 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpCoreContext;
 import org.apache.http.protocol.HttpProcessorBuilder;
 import org.apache.http.protocol.HttpService;
-import org.apache.http.protocol.ResponseConnControl;
 import org.apache.http.protocol.ResponseContent;
 import org.apache.http.protocol.ResponseDate;
 import org.apache.http.protocol.ResponseServer;
 import org.apache.http.protocol.UriHttpRequestHandlerMapper;
 
+import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.Socket;
@@ -150,7 +149,7 @@ public class Server implements HttpServer {
                     log.trace( "start handling {}", connection );
                     while( !Thread.interrupted() && connection.isOpen() )
                         httpService.handleRequest( connection, httpContext );
-                } catch( SocketException e ) {
+                } catch( SocketException | SSLException e ) {
                     log.debug( "{}: {}", connection, e.getMessage() );
                 } catch( ConnectionClosedException e ) {
                     log.debug( "connection closed: {}", connection );
