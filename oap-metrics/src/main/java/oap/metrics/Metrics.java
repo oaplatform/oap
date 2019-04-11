@@ -68,6 +68,7 @@ public final class Metrics {
     }
 
     public static <T> void measureGauge( String metric, Supplier<T> get ) {
+        registry.remove( metric );
         registry.register( metric, ( Gauge ) get::get );
     }
 
