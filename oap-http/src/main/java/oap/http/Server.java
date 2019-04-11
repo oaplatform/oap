@@ -73,6 +73,7 @@ public class Server implements HttpServer {
 
     private final ConcurrentHashMap<String, HttpConnection> connections;
     private final LongAdder handled = new LongAdder();
+    private final LongAdder keepaliveTimeout = new LongAdder();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
         .add( new ResponseDate() )
@@ -130,6 +131,7 @@ public class Server implements HttpServer {
         Metrics.measureGauge( "http.handled", handled::longValue );
         Metrics.measureGauge( "http.requests", BlockingHandlerAdapter.requests::longValue );
         Metrics.measureGauge( "http.rw", BlockingHandlerAdapter.rw::longValue );
+        Metrics.measureGauge( "http.keepalive_timeout", keepaliveTimeout::longValue );
     }
 
     @SneakyThrows
@@ -154,6 +156,7 @@ public class Server implements HttpServer {
                     while( !Thread.interrupted() && connection.isOpen() )
                         httpService.handleRequest( connection, httpContext );
                 } catch( SocketTimeoutException e ) {
+                    keepaliveTimeout.increment();
                     log.trace( "{}: timeout", connection );
                 } catch( SocketException | SSLException e ) {
                     log.debug( "{}: {}", connection, e.getMessage() );
@@ -179,7 +182,7 @@ public class Server implements HttpServer {
     public void stop() {
         connections.forEach( ( key, connection ) -> Closeables.close( connection ) );
 
-
+        Metrics.unregister( "http.keepalive_timeout" );
         Metrics.unregister( "http.connections" );
         Metrics.unregister( "http.handled" );
         Metrics.unregister( "http.requests" );
