@@ -45,10 +45,6 @@ public class Response {
     }
 
     public void respond( HttpResponse response ) {
-        respond( response, Collections.emptyList() );
-    }
-
-    public void respond( HttpResponse response, List<Pair<String, String>> headers ) {
 
         log.trace( "responding {} {}", response.code, response.reasonPhrase );
 
@@ -64,11 +60,6 @@ public class Response {
 
         if( !response.headers.isEmpty() ) {
             for( Pair<String, String> header : response.headers ) {
-                resp.setHeader( header._1, header._2 );
-            }
-        }
-        if( !headers.isEmpty() ) {
-            for( Pair<String, String> header : headers ) {
                 resp.setHeader( header._1, header._2 );
             }
         }

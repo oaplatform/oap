@@ -52,6 +52,7 @@ import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
@@ -84,6 +85,8 @@ public class Server implements HttpServer {
         mapper );
 
     private final ExecutorService executor;
+
+    public int keepAliveTimeout = 1000 * 5;
 
     public Server( int workers, boolean registerStatic ) {
         connections = new ConcurrentHashMap<>( ( int ) ( workers / 0.7f ) );
@@ -130,7 +133,8 @@ public class Server implements HttpServer {
     }
 
     @SneakyThrows
-    public void accepted( final Socket socket ) {
+    public void accepted( Socket socket ) {
+        socket.setSoTimeout( keepAliveTimeout );
         try {
             var connection = connectionFactory.createConnection( socket );
             var connectionId = connection.toString();
@@ -149,6 +153,8 @@ public class Server implements HttpServer {
                     log.trace( "start handling {}", connection );
                     while( !Thread.interrupted() && connection.isOpen() )
                         httpService.handleRequest( connection, httpContext );
+                } catch( SocketTimeoutException e ) {
+                    log.trace( "{}: timeout", connection );
                 } catch( SocketException | SSLException e ) {
                     log.debug( "{}: {}", connection, e.getMessage() );
                 } catch( ConnectionClosedException e ) {

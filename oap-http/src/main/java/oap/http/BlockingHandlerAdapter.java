@@ -48,8 +48,8 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     static final AtomicLong rw = new AtomicLong();
     static final LongAdder requests = new LongAdder();
 
-    public BlockingHandlerAdapter( final String location, final Handler handler,
-                                   final CorsPolicy corsPolicy, final Protocol protocol ) {
+    public BlockingHandlerAdapter( String location, Handler handler,
+                                   CorsPolicy corsPolicy, Protocol protocol ) {
         this.location = location;
         this.handler = handler;
         this.corsPolicy = corsPolicy;
@@ -57,8 +57,8 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     }
 
     @Override
-    public void handle( final HttpRequest httpRequest, final HttpResponse httpResponse,
-                        final HttpContext httpContext ) {
+    public void handle( HttpRequest httpRequest, HttpResponse httpResponse,
+                        HttpContext httpContext ) {
         rw.incrementAndGet();
         requests.increment();
         try {
