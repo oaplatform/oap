@@ -25,7 +25,7 @@
 package oap.security.acl;
 
 import oap.storage.mongo.Migration;
-import oap.storage.mongo.MongoClientWrapper;
+import oap.storage.mongo.MongoClient;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.AfterMethod;
@@ -38,13 +38,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class AclRoleStorageTest extends AbstractTest {
     private AclRoleStorage storage;
-    private MongoClientWrapper mongoClient;
+    private MongoClient mongoClient;
 
     @BeforeMethod
     public void init() {
         var dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
-        mongoClient = new MongoClientWrapper( Env.getEnvOrDefault( "MONGO_HOST", "localhost" ), 27017, dbName, Migration.NONE );
+        mongoClient = new MongoClient( Env.getEnvOrDefault( "MONGO_HOST", "localhost" ), 27017, dbName, Migration.NONE );
         mongoClient.database.drop();
 
         storage = new AclRoleStorage( mongoClient, "roles" );

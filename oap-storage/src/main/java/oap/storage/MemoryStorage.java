@@ -46,10 +46,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public final Identifier<T> identifier;
-    public final Lock lock;
+    protected final Lock lock;
     private final List<DataListener<T>> dataListeners = new ArrayList<>();
     private final ArrayList<Constraint<T>> constraints = new ArrayList<>();
-    public volatile ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
+    protected volatile ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
 
     public MemoryStorage( Identifier<T> identifier, Lock lock ) {
         this.identifier = identifier;
@@ -160,7 +160,6 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                     return new Metadata<>( object );
                 } );
                 data.put( id, metadata );
-                metadata.setUpdated(); // TODO: do we need it? It was updated within Metadata instance creation
             } else {
                 if( predicate.test( metadata.object ) ) {
                     if( constraints.isEmpty() ) {

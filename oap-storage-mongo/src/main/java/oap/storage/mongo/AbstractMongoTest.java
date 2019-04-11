@@ -38,7 +38,7 @@ import org.testng.annotations.BeforeMethod;
 @Slf4j
 public abstract class AbstractMongoTest extends AbstractTest {
     protected String dbName;
-    protected MongoClientWrapper mongoClient;
+    protected MongoClient mongoClient;
     protected Identifier<Bean> beanIdentifier =
         Identifier.<Bean>forAnnotation()
             .suggestion( o -> o.name )
@@ -55,7 +55,7 @@ public abstract class AbstractMongoTest extends AbstractTest {
     public void init() {
         dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
 
-        mongoClient = new MongoClientWrapper( Env.getEnvOrDefault( "MONGO_HOST", "localhost" ), 27017, dbName, Migration.NONE );
+        mongoClient = new MongoClient( Env.getEnvOrDefault( "MONGO_HOST", "localhost" ), 27017, dbName, Migration.NONE );
         mongoClient.database.drop();
         log.debug( "drop database {}", mongoClient.database.getName() );
     }
@@ -66,11 +66,8 @@ public abstract class AbstractMongoTest extends AbstractTest {
         mongoClient.close();
     }
 
-    /**
-     * TODO: factor out it along with oap.storage.Bean from oap-storage module to {@link AbstractTest}
-     */
     @ToString
-    @EqualsAndHashCode( of = { "id" } )
+    @EqualsAndHashCode
     public static class Bean {
         @Id
         public String id;

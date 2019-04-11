@@ -22,12 +22,12 @@
  * SOFTWARE.
  */
 
-package oap.storage.mongo;
+package oap.storage;
 
 import com.mongodb.MongoNamespace;
-import com.mongodb.annotations.ThreadSafe;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.model.ReplaceOptions;
+import com.mongodb.client.result.UpdateResult;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
@@ -35,19 +35,16 @@ import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.reflect.TypeRef;
-import oap.storage.MemoryStorage;
-import oap.storage.Metadata;
-import oap.storage.Storage;
+import oap.storage.mongo.JsonCodec;
+import oap.storage.mongo.MongoClient;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 
 import java.io.Closeable;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.eq;
 
@@ -57,7 +54,6 @@ import static com.mongodb.client.model.Filters.eq;
  * @param <T> Type of Metadata
  */
 @Slf4j
-@ThreadSafe
 public class MongoPersistence<T> implements Closeable, Storage.DataListener<T> {
 
     public static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
@@ -67,7 +63,7 @@ public class MongoPersistence<T> implements Closeable, Storage.DataListener<T> {
     private MemoryStorage<T> storage;
     private PeriodicScheduled scheduled;
 
-    public MongoPersistence( MongoClientWrapper mongoClient,
+    public MongoPersistence( MongoClient mongoClient,
                              String table,
                              long delay,
                              MemoryStorage<T> storage ) {
@@ -87,9 +83,11 @@ public class MongoPersistence<T> implements Closeable, Storage.DataListener<T> {
     }
 
     public void start() {
-        this.load();
-        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), delay, this::fsync );
-        this.storage.addDataListener( this );
+        Threads.synchronously( lock, () -> {
+            this.load();
+            this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), delay, this::fsync );
+            this.storage.addDataListener( this );
+        } );
     }
 
     /**
@@ -98,28 +96,27 @@ public class MongoPersistence<T> implements Closeable, Storage.DataListener<T> {
     private void load() {
         MongoNamespace namespace = collection.getNamespace();
         log.debug( "loading data from {}", namespace );
-        Threads.synchronously( lock, () -> {
-            final Consumer<Metadata<T>> cons = metadata -> {
-                var id = storage.identifier.get( metadata.object );
-                storage.data.put( id, metadata );
-            };
-            log.info( "Load {} documents from [{}] Mongo namespace", collection.countDocuments(), namespace );
-            collection.find().forEach( cons );
-        } );
+        final Consumer<Metadata<T>> cons = metadata -> {
+            var id = storage.identifier.get( metadata.object );
+            storage.data.put( id, metadata );
+        };
+        log.info( "Load {} documents from [{}] Mongo namespace", collection.countDocuments(), namespace );
+        collection.find().forEach( cons );
         log.info( storage.data.size() + " object(s) loaded." );
     }
 
+/*
+// It can be used for synchronous operations executing for in-memory storage and MongoPersistence
+
     @Override
     public void updated( T object, boolean added ) {
-        Threads.synchronously( lock, () -> {
-            var id = storage.identifier.get( object );
-            Metadata<T> metadata = storage.data.get( id );
-            if (added) {
-                collection.insertOne( metadata );
-            } else {
-                collection.replaceOne( eq( "_id", id ), metadata, REPLACE_OPTIONS_UPSERT );
-            }
-        } );
+        var id = storage.identifier.get( object );
+        Metadata<T> metadata = storage.data.get( id );
+        if (added) {
+            collection.insertOne( metadata );
+        } else {
+            collection.replaceOne( eq( "_id", id ), metadata, REPLACE_OPTIONS_UPSERT );
+        }
     }
 
     @Override
@@ -131,27 +128,25 @@ public class MongoPersistence<T> implements Closeable, Storage.DataListener<T> {
 //        Map<String, Metadata<T>> data = objects.stream()
 //            .map( object -> storage.identifier.get( object ) )
 //            .collect( Collectors.toMap( id -> id, id -> storage.data.get( id ) ) );
-//
 //        collection.updateMany( all( "_id", data.keySet() ), new BsonDocument( data.values() ) )
     }
 
     @Override
     public void updated( Collection<T> objects, boolean added ) {
         if( added ) {
-            Threads.synchronously( lock, () -> {
-                List<Metadata<T>> metadataValues = objects.stream()
-                    .map( object -> storage.data.get( storage.identifier.get( object ) ) )
-                    .collect( Collectors.toList() );
-                collection.insertMany( metadataValues );
-            } );
+            List<Metadata<T>> metadataValues = objects.stream()
+                .map( object -> storage.data.get( storage.identifier.get( object ) ) )
+                .collect( Collectors.toList() );
+            collection.insertMany( metadataValues );
         } else {
             updated( objects );
         }
     }
+*/
 
     @Override
     public void deleted( T object ) {
-        Threads.synchronously( lock, () -> collection.deleteOne( eq( "_id", storage.identifier.get( object ) ) ) );
+        collection.deleteOne( eq( "_id", storage.identifier.get( object ) ) );
     }
 
     @Override
@@ -162,10 +157,12 @@ public class MongoPersistence<T> implements Closeable, Storage.DataListener<T> {
 
     @Override
     public void fsync() {
-        Threads.synchronously( lock, () -> fsync( scheduled.lastExecuted() ) );
+        fsync( scheduled.lastExecuted() );
     }
 
     /**
+     * It persists the objects modified earlier than {@code last} to MongoDB
+     *
      * @param last executed sync
      * TODO: avoid explicit usage of fsync
      */
@@ -178,23 +175,31 @@ public class MongoPersistence<T> implements Closeable, Storage.DataListener<T> {
         } );
     }
 
+    /**
+     * Upsert (replace or insert) metadata objects in MongoDB
+     *
+     * @param metadata
+     */
     @SneakyThrows
-    private void persist( Metadata<T> value ) {
-        if (collection.countDocuments( eq( "_id", storage.identifier.get( value.object ) ) ) == 0 ) {
-            log.debug( "storing {} with modification time {}", value, value.modified );
-            collection.insertOne( value );
-            log.trace( "storing {} done", value );
-        }
+    private void persist( Metadata<T> metadata ) {
+        var id = storage.identifier.get( metadata.object );
+        log.debug( "Replacing {} with modification time {}", id, metadata.modified );
+        UpdateResult result = collection.replaceOne( eq( "_id", id ), metadata, REPLACE_OPTIONS_UPSERT );
+        log.trace( "Replacing done. {}", result );
     }
 
     @Override
     public void close() {
-        log.debug( "closing {}...", this );
-        Threads.synchronously( lock, () -> {
-            Scheduled.cancel( scheduled );
-            fsync( scheduled.lastExecuted() );
-            storage.close();
-        } );
-        log.debug( "closed {}", this );
+        log.debug( "Closing {}...", this );
+        if( scheduled != null && storage != null ) {
+            Threads.synchronously( lock, () -> {
+                Scheduled.cancel( scheduled );
+                fsync( scheduled.lastExecuted() );
+                storage.close();
+                log.debug( "Closed {}", this );
+            } );
+        } else {
+            log.debug( "This {} was't started or already closed", this );
+        }
     }
 }

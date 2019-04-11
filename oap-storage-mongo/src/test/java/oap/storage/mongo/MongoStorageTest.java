@@ -51,8 +51,8 @@ public class MongoStorageTest extends AbstractMongoTest {
             storage.start();
             Bean bean1 = storage.store( new Bean( "test1" ) );
             Bean bean2 = storage.store( new Bean( "test2" ) );
-            // check that new Bean storing with the same id isn't performed
-            storage.store( new Bean( bean1.id, "test3" ) );
+            // rewrite bean2 'test2' with 'test3' name
+            bean2 = storage.store( new Bean( bean2.id, "test3" ) );
 
             log.debug( "bean1 = {}", bean1 );
             log.debug( "bean2 = {}", bean2 );
@@ -86,7 +86,7 @@ public class MongoStorageTest extends AbstractMongoTest {
     }
 
     @Test()
-    public void updateMongo() {
+    public void update() {
         store();
         try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED );
              var oplogService = new OplogService( mongoClient ) ) {

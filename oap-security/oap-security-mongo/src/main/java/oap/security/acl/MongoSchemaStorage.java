@@ -24,13 +24,13 @@
 
 package oap.security.acl;
 
-import oap.storage.mongo.MongoClientWrapper;
+import oap.storage.mongo.MongoClient;
 import oap.storage.mongo.MongoStorage;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
 
 public class MongoSchemaStorage extends MongoStorage<AclSchemaContainer> implements SchemaStorage {
-    public MongoSchemaStorage( MongoClientWrapper mongoClient, String table ) {
+    public MongoSchemaStorage( MongoClient mongoClient, String table ) {
         super( mongoClient, table, SERIALIZED );
     }
 }

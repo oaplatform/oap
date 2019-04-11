@@ -39,7 +39,6 @@ import oap.storage.migration.JsonMetadata;
 import oap.storage.migration.Migration;
 import oap.storage.migration.MigrationException;
 import oap.util.Lists;
-import org.assertj.core.util.VisibleForTesting;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
@@ -68,13 +67,11 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
     private MemoryStorage<T> storage;
     private PeriodicScheduled scheduled;
 
-    @VisibleForTesting
-    DirectoryPersistence( Path path, long fsync, int version, List<Migration> migrations, MemoryStorage<T> storage ) {
+    public DirectoryPersistence( Path path, long fsync, int version, List<Migration> migrations, MemoryStorage<T> storage ) {
         this( path, plainResolve(), fsync, version, migrations, storage );
     }
 
-    @VisibleForTesting
-    DirectoryPersistence( Path path, MemoryStorage<T> storage ) {
+    public DirectoryPersistence( Path path, MemoryStorage<T> storage ) {
         this( path, plainResolve(), 60000, 0, Lists.of(), storage );
     }
 
@@ -91,41 +88,41 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
 
     public void start() {
-        this.load();
-        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
-        this.storage.addDataListener( this );
+        Threads.synchronously( lock, () -> {
+            this.load();
+            this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
+            this.storage.addDataListener( this );
+        } );
     }
 
     @SneakyThrows
     private void load() {
         log.debug( "loading data from {}", path );
-        Threads.synchronously( lock, () -> {
-            Files.ensureDirectory( path );
-            List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
-            log.debug( "found {} files", paths.size() );
 
-            for( Path file : paths ) {
-                Persisted persisted = Persisted.valueOf( file );
+        Files.ensureDirectory( path );
+        List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
+        log.debug( "found {} files", paths.size() );
 
-                for( long version = persisted.version; version < this.version; version++ ) file = migration( file );
+        for( Path file : paths ) {
+            Persisted persisted = Persisted.valueOf( file );
 
-                Metadata<T> metadata = Binder.json.unmarshal( new TypeRef<>() {}, file );
+            for( long version = persisted.version; version < this.version; version++ ) file = migration( file );
 
-                Path newPath = pathFor( metadata.object );
-                if( !newPath.equals( file ) ) {
-                    log.trace( "moving {} => {}", file, newPath );
-                    Files.delete( file );
-                    persist( metadata );
-                }
+            Metadata<T> metadata = Binder.json.unmarshal( new TypeRef<>() {}, file );
 
-                var id = storage.identifier.get( metadata.object );
-
-                storage.data.put( id, metadata );
-
+            Path newPath = pathFor( metadata.object );
+            if( !newPath.equals( file ) ) {
+                log.trace( "moving {} => {}", file, newPath );
+                Files.delete( file );
+                persist( metadata );
             }
 
-            log.info( storage.data.size() + " object(s) loaded." );
-        } );
+            var id = storage.identifier.get( metadata.object );
+
+            storage.data.put( id, metadata );
+        }
+
+        log.info( storage.data.size() + " object(s) loaded." );
     }
 
     @SneakyThrows
@@ -182,17 +179,20 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
     @Override
     public void close() {
         log.debug( "closing {}...", this );
-        Threads.synchronously( lock, () -> {
-            Scheduled.cancel( scheduled );
-            fsync( scheduled.lastExecuted() );
-            storage.close();
-        } );
-        log.debug( "closed {}", this );
+        if( scheduled != null && storage != null ) {
+            Threads.synchronously( lock, () -> {
+                Scheduled.cancel( scheduled );
+                fsync( scheduled.lastExecuted() );
+                storage.close();
+            } );
+        } else {
+            log.debug( "This {} was't started or already closed", this );
+        }
     }
 
     @Override
     public void fsync() {
-        Threads.synchronously( lock, () -> fsync( scheduled.lastExecuted() ) );
+        fsync( scheduled.lastExecuted() );
     }
 
     private Path pathFor( T object ) {
@@ -201,13 +201,9 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
             .resolve( this.storage.identifier.get( object ) + ver + ".json" );
     }
 
-    /**
-     * @return the same as {@link Object#toString()} except delimiter. Here is '/' instead of '@'
-     * TODO: do we need it?
-     */
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "/" + hashCode();
+        return String.join( "/", getClass().getSimpleName(), path.toString(), Integer.toString( hashCode() ) );
     }
 
     @Override

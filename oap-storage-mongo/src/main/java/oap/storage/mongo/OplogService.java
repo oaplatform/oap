@@ -36,7 +36,6 @@ import org.bson.conversions.Bson;
 import org.joda.time.DateTimeUtils;
 
 import java.io.Closeable;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.gt;
@@ -49,14 +48,14 @@ import static com.mongodb.client.model.Filters.regex;
  */
 @Slf4j
 public class OplogService implements Runnable, Closeable {
-    private final MongoClientWrapper mongoClient;
+    private final MongoClient mongoClient;
     private final ListMultimap<String, OplogListener> listeners = MultimapBuilder.hashKeys().arrayListValues().build();
     private MongoCursor<Document> cursor;
     private Thread thread;
-    private final AtomicBoolean running = new AtomicBoolean(false);
+    private boolean running;
 
 
-    public OplogService( MongoClientWrapper mongoClient ) {
+    public OplogService( MongoClient mongoClient ) {
         this.mongoClient = mongoClient;
     }
 
@@ -73,7 +72,7 @@ public class OplogService implements Runnable, Closeable {
      */
     public synchronized void start() {
         log.debug( "starting oplog listening {} for {}", this, mongoClient.database.getName() );
-        running.set(true);
+        running = true;
         var oplogRs = mongoClient.mongoClient.getDatabase( "local" ).getCollection( "oplog.rs" );
         final Bson filter = and(
             in( "op", "i", "u", "d" ),
@@ -102,7 +101,7 @@ public class OplogService implements Runnable, Closeable {
         log.debug( "stopping oplog listening {} for {}", this, mongoClient.database.getName() );
         if( thread != null ) {
             thread.interrupt();
-            running.set(false);
+            running = false;
             thread = null;
         }
         if( cursor != null ) cursor.close();
@@ -111,7 +110,7 @@ public class OplogService implements Runnable, Closeable {
     @Override
     public void run() {
         try {
-            while( cursor.hasNext() && running.get()) {
+            while( cursor.hasNext() && running) {
                 var document = cursor.next();
                 log.trace( "oplog {}", document );
 
