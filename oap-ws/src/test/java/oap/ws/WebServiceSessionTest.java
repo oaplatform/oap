@@ -64,7 +64,6 @@ public class WebServiceSessionTest {
     public void startServer() {
         Env.resetPorts();
         Metrics.resetAll();
-        server.start();
         ws.bind( "test", GenericCorsPolicy.DEFAULT, new TestWS(), true, sessionManager, Collections.emptyList(), Protocol.HTTP );
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );

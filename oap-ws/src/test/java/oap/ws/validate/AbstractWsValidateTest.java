@@ -55,7 +55,6 @@ public abstract class AbstractWsValidateTest extends AbstractTest {
     public void start() {
         Env.resetPorts();
         Metrics.resetAll();
-        server.start();
         for( var wsInstance : getWsInstances() )
             ws.bind( "test", GenericCorsPolicy.DEFAULT, wsInstance, false, SESSION_MANAGER, Collections.emptyList(), Protocol.HTTP );
 

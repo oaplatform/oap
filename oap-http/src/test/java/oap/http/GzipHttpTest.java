@@ -68,7 +68,6 @@ public class GzipHttpTest {
         server.bind( "test", GenericCorsPolicy.DEFAULT,
             ( request, response ) -> response.respond( HttpResponse.ok( "test", true, ContentTypes.TEXT_PLAIN ) ), Protocol.HTTP );
 
-        server.start();
         thread.start();
 
         var response = Client.DEFAULT.get( "http://localhost:" + port + "/test" );
