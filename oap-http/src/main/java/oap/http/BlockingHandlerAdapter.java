@@ -23,9 +23,11 @@
  */
 package oap.http;
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.LongAdder;
 import oap.http.cors.CorsPolicy;
+import oap.metrics.Metrics;
 import oap.net.Inet;
 import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
@@ -41,12 +43,14 @@ import static org.apache.http.protocol.HttpCoreContext.HTTP_CONNECTION;
 
 @Slf4j
 class BlockingHandlerAdapter implements HttpRequestHandler {
+    private static final Counter requests = Metrics.counter( "http.requests" );
+    private static final AtomicLong rw = new AtomicLong();
+    private static final Histogram rwHistogram = Metrics.histogram( "http.rw" );
+
     private final Protocol protocol;
     private final String location;
     private final Handler handler;
     private final CorsPolicy corsPolicy;
-    static final AtomicLong rw = new AtomicLong();
-    static final LongAdder requests = new LongAdder();
 
     public BlockingHandlerAdapter( String location, Handler handler,
                                    CorsPolicy corsPolicy, Protocol protocol ) {
@@ -59,8 +63,8 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     @Override
     public void handle( HttpRequest httpRequest, HttpResponse httpResponse,
                         HttpContext httpContext ) {
-        rw.incrementAndGet();
-        requests.increment();
+        rwHistogram.update( rw.incrementAndGet() );
+        requests.inc();
         try {
             log.trace( "Handling [{}]", httpRequest );
 
@@ -81,7 +85,7 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
                 handler.handle( request, response );
             }
         } finally {
-            rw.decrementAndGet();
+            rwHistogram.update( rw.decrementAndGet() );
         }
     }
 }

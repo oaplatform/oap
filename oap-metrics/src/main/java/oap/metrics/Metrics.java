@@ -24,8 +24,10 @@
 package oap.metrics;
 
 import com.codahale.metrics.CachedGauge;
+import com.codahale.metrics.Counter;
 import com.codahale.metrics.Counting;
 import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Metered;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
@@ -127,6 +129,10 @@ public final class Metrics {
         registry.histogram( metric.line ).update( value );
     }
 
+    public static Histogram histogram( String name ) {
+        return registry.histogram( name );
+    }
+
     @Deprecated
     public static <T extends Metric> T register( Name name, T metric ) {
         return registry.register( MetricRegistry.name( name.line ), metric );
@@ -138,6 +144,10 @@ public final class Metrics {
 
     public static void measureCounterIncrement( Name metric, long count ) {
         registry.counter( metric.line ).inc( count );
+    }
+
+    public static Counter counter( String name ) {
+        return registry.counter( name );
     }
 
     public static void measureCounterDecrement( Name metric ) {

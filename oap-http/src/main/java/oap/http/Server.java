@@ -24,10 +24,11 @@
 package oap.http;
 
 
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Histogram;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.LongAdder;
 import oap.concurrent.ThreadPoolExecutor;
 import oap.http.cors.CorsPolicy;
 import oap.io.Closeables;
@@ -67,16 +68,16 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class Server implements HttpServer {
+    private static final DefaultBHttpServerConnectionFactory connectionFactory = DefaultBHttpServerConnectionFactory.INSTANCE;
 
-    private static final DefaultBHttpServerConnectionFactory connectionFactory =
-        DefaultBHttpServerConnectionFactory.INSTANCE;
+    private static final Counter handled = Metrics.counter( "http.handled" );
+    private static final Counter keepaliveTimeout = Metrics.counter( "http.keepalive_timeout" );
+    private static final Histogram histogramConnections = Metrics.histogram( "http.connections" );
 
-    private final ConcurrentHashMap<String, HttpConnection> connections;
-    private final LongAdder handled = new LongAdder();
-    private final LongAdder keepaliveTimeout = new LongAdder();
+    private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
-        .add( new ResponseDate() )
+//        .add( new ResponseDate() )
         .add( new ResponseServer( "OAP Server/1.0" ) )
         .add( new ResponseContent() )
 //        .add( new ResponseConnControl() )
@@ -84,13 +85,10 @@ public class Server implements HttpServer {
         DefaultConnectionReuseStrategy.INSTANCE,
         DefaultHttpResponseFactory.INSTANCE,
         mapper );
-
     private final ExecutorService executor;
-
     public int keepAliveTimeout = 1000 * 5;
 
     public Server( int workers, boolean registerStatic ) {
-        connections = new ConcurrentHashMap<>( ( int ) ( workers / 0.7f ) );
         this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, new SynchronousQueue<>(),
             new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build() );
 
@@ -126,14 +124,6 @@ public class Server implements HttpServer {
         mapper.unregister( "/" + context + "/*" );
     }
 
-    public void start() {
-        Metrics.measureGauge( "http.connections", connections::size );
-        Metrics.measureGauge( "http.handled", handled::longValue );
-        Metrics.measureGauge( "http.requests", BlockingHandlerAdapter.requests::longValue );
-        Metrics.measureGauge( "http.rw", BlockingHandlerAdapter.rw::longValue );
-        Metrics.measureGauge( "http.keepalive_timeout", keepaliveTimeout::longValue );
-    }
-
     @SneakyThrows
     public void accepted( Socket socket ) {
         socket.setSoTimeout( keepAliveTimeout );
@@ -143,8 +133,9 @@ public class Server implements HttpServer {
 
             executor.submit( () -> {
                 try {
-                    handled.increment();
+                    handled.inc();
                     connections.put( connectionId, connection );
+                    histogramConnections.update( connections.size() );
 
                     log.debug( "connection accepted: {}", connection );
 
@@ -156,7 +147,7 @@ public class Server implements HttpServer {
                     while( !Thread.interrupted() && connection.isOpen() )
                         httpService.handleRequest( connection, httpContext );
                 } catch( SocketTimeoutException e ) {
-                    keepaliveTimeout.increment();
+                    keepaliveTimeout.inc();
                     log.trace( "{}: timeout", connection );
                 } catch( SocketException | SSLException e ) {
                     log.debug( "{}: {}", connection, e.getMessage() );
@@ -166,6 +157,7 @@ public class Server implements HttpServer {
                     log.error( e.getMessage(), e );
                 } finally {
                     connections.remove( connectionId );
+                    histogramConnections.update( connections.size() );
                     Closeables.close( connection );
                 }
             } );
@@ -181,12 +173,6 @@ public class Server implements HttpServer {
 
     public void stop() {
         connections.forEach( ( key, connection ) -> Closeables.close( connection ) );
-
-        Metrics.unregister( "http.keepalive_timeout" );
-        Metrics.unregister( "http.connections" );
-        Metrics.unregister( "http.handled" );
-        Metrics.unregister( "http.requests" );
-        Metrics.unregister( "http.rw" );
 
         Closeables.close( executor );
 
