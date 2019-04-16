@@ -28,6 +28,7 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Counting;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metered;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
@@ -67,6 +68,10 @@ public final class Metrics {
 
     public static void measureTimer( Name metric, long duration, TimeUnit unit ) {
         registry.timer( metric.line ).update( duration, unit );
+    }
+
+    public static Timer timer( String name ) {
+        return registry.timer( name );
     }
 
     public static <T> void measureGauge( String metric, Supplier<T> get ) {
@@ -119,6 +124,10 @@ public final class Metrics {
 
     public static void measureMeter( Name metric, long n ) {
         registry.meter( MetricRegistry.name( metric.line ) ).mark( n );
+    }
+
+    public static Meter meter( String metric ) {
+        return registry.meter( metric );
     }
 
     public static void measureHistogram( String metric, long value ) {
