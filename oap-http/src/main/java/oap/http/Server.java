@@ -30,6 +30,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.ThreadPoolExecutor;
+import oap.concurrent.Threads;
 import oap.http.cors.CorsPolicy;
 import oap.io.Closeables;
 import oap.metrics.Metrics;
@@ -44,7 +45,6 @@ import org.apache.http.protocol.HttpCoreContext;
 import org.apache.http.protocol.HttpProcessorBuilder;
 import org.apache.http.protocol.HttpService;
 import org.apache.http.protocol.ResponseContent;
-import org.apache.http.protocol.ResponseDate;
 import org.apache.http.protocol.ResponseServer;
 import org.apache.http.protocol.UriHttpRequestHandlerMapper;
 
@@ -73,6 +73,7 @@ public class Server implements HttpServer {
     private static final Counter handled = Metrics.counter( "http.handled" );
     private static final Counter keepaliveTimeout = Metrics.counter( "http.keepalive_timeout" );
     private static final Histogram histogramConnections = Metrics.histogram( "http.connections" );
+    private static final Histogram rwHistogram = Metrics.histogram( "http.rw" );
 
     private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
@@ -86,6 +87,7 @@ public class Server implements HttpServer {
         DefaultHttpResponseFactory.INSTANCE,
         mapper );
     private final ExecutorService executor;
+    private final Thread thread;
     public int keepAliveTimeout = 1000 * 5;
 
     public Server( int workers, boolean registerStatic ) {
@@ -94,6 +96,10 @@ public class Server implements HttpServer {
 
         if( registerStatic )
             mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
+
+        thread = new Thread( this::stats );
+        thread.setName( "HTTP-Server-stats" );
+        thread.start();
     }
 
     //TODO Fix resolution of local through headers instead of socket inet address
@@ -107,6 +113,14 @@ public class Server implements HttpServer {
         httpContext.setAttribute( "protocol", protocol );
 
         return httpContext;
+    }
+
+    private void stats() {
+        while( !Thread.interrupted() ) {
+            rwHistogram.update( BlockingHandlerAdapter.rw.longValue() );
+            histogramConnections.update( connections.size() );
+            Threads.sleepSafely( 999 );
+        }
     }
 
     @Override
@@ -135,7 +149,6 @@ public class Server implements HttpServer {
                 try {
                     handled.inc();
                     connections.put( connectionId, connection );
-                    histogramConnections.update( connections.size() );
 
                     log.debug( "connection accepted: {}", connection );
 
@@ -157,7 +170,6 @@ public class Server implements HttpServer {
                     log.error( e.getMessage(), e );
                 } finally {
                     connections.remove( connectionId );
-                    histogramConnections.update( connections.size() );
                     Closeables.close( connection );
                 }
             } );
@@ -175,6 +187,9 @@ public class Server implements HttpServer {
         connections.forEach( ( key, connection ) -> Closeables.close( connection ) );
 
         Closeables.close( executor );
+
+
+        thread.stop();
 
         log.info( "server gone down" );
     }

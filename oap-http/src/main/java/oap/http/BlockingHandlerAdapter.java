@@ -44,8 +44,7 @@ import static org.apache.http.protocol.HttpCoreContext.HTTP_CONNECTION;
 @Slf4j
 class BlockingHandlerAdapter implements HttpRequestHandler {
     private static final Counter requests = Metrics.counter( "http.requests" );
-    private static final AtomicLong rw = new AtomicLong();
-    private static final Histogram rwHistogram = Metrics.histogram( "http.rw" );
+    static final AtomicLong rw = new AtomicLong();
 
     private final Protocol protocol;
     private final String location;
@@ -63,7 +62,7 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     @Override
     public void handle( HttpRequest httpRequest, HttpResponse httpResponse,
                         HttpContext httpContext ) {
-        rwHistogram.update( rw.incrementAndGet() );
+        rw.incrementAndGet();
         requests.inc();
         try {
             log.trace( "Handling [{}]", httpRequest );
@@ -85,7 +84,7 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
                 handler.handle( request, response );
             }
         } finally {
-            rwHistogram.update( rw.decrementAndGet() );
+            rw.decrementAndGet();
         }
     }
 }
