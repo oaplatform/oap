@@ -73,7 +73,6 @@ public class Server implements HttpServer {
     private static final Counter handled = Metrics.counter( "http.handled" );
     private static final Counter keepaliveTimeout = Metrics.counter( "http.keepalive_timeout" );
     private static final Histogram histogramConnections = Metrics.histogram( "http.connections" );
-    private static final Histogram rwHistogram = Metrics.histogram( "http.rw" );
 
     private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
@@ -117,9 +116,8 @@ public class Server implements HttpServer {
 
     private void stats() {
         while( !Thread.interrupted() ) {
-            rwHistogram.update( BlockingHandlerAdapter.rw.longValue() );
             histogramConnections.update( connections.size() );
-            Threads.sleepSafely( 999 );
+            Threads.sleepSafely( 400 );
         }
     }
 

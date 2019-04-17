@@ -24,7 +24,6 @@
 package oap.http;
 
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.Histogram;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.cors.CorsPolicy;
 import oap.metrics.Metrics;
@@ -35,8 +34,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import static oap.http.HttpResponse.HTTP_FORBIDDEN;
 import static oap.http.HttpResponse.NO_CONTENT;
 import static org.apache.http.protocol.HttpCoreContext.HTTP_CONNECTION;
@@ -44,7 +41,6 @@ import static org.apache.http.protocol.HttpCoreContext.HTTP_CONNECTION;
 @Slf4j
 class BlockingHandlerAdapter implements HttpRequestHandler {
     private static final Counter requests = Metrics.counter( "http.requests" );
-    static final AtomicLong rw = new AtomicLong();
 
     private final Protocol protocol;
     private final String location;
@@ -62,29 +58,25 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     @Override
     public void handle( HttpRequest httpRequest, HttpResponse httpResponse,
                         HttpContext httpContext ) {
-        rw.incrementAndGet();
         requests.inc();
-        try {
-            log.trace( "Handling [{}]", httpRequest );
 
-            var connection = ( HttpInetConnection ) httpContext.getAttribute( HTTP_CONNECTION );
-            var remoteAddress = connection.getRemoteAddress();
+        log.trace( "Handling [{}]", httpRequest );
 
-            var httpContextProtocol = String.valueOf( httpContext.getAttribute( "protocol" ) );
-            var request = new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) );
+        var connection = ( HttpInetConnection ) httpContext.getAttribute( HTTP_CONNECTION );
+        var remoteAddress = connection.getRemoteAddress();
 
-            var cors = corsPolicy.getCors( request );
-            var response = new Response( request, httpResponse, cors );
+        var httpContextProtocol = String.valueOf( httpContext.getAttribute( "protocol" ) );
+        var request = new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) );
 
-            if( Protocol.LOCAL.equals( this.protocol ) && !Inet.isLocalAddress( remoteAddress ) ) {
-                response.respond( HTTP_FORBIDDEN );
-            } else if( cors.autoOptions && request.httpMethod == Request.HttpMethod.OPTIONS ) {
-                response.respond( NO_CONTENT );
-            } else {
-                handler.handle( request, response );
-            }
-        } finally {
-            rw.decrementAndGet();
+        var cors = corsPolicy.getCors( request );
+        var response = new Response( request, httpResponse, cors );
+
+        if( Protocol.LOCAL.equals( this.protocol ) && !Inet.isLocalAddress( remoteAddress ) ) {
+            response.respond( HTTP_FORBIDDEN );
+        } else if( cors.autoOptions && request.httpMethod == Request.HttpMethod.OPTIONS ) {
+            response.respond( NO_CONTENT );
+        } else {
+            handler.handle( request, response );
         }
     }
 }
