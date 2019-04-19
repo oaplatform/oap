@@ -39,7 +39,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 
 import static java.util.Arrays.asList;
 
@@ -50,18 +49,12 @@ public class Module {
     public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
     @SuppressWarnings( "unchecked" )
     static final Coercions coersions = Coercions.basic().withIdentity();
-    @JsonAlias( { "name", "%name" } )
-    public String name;
-    @JsonAlias( { "dependsOn", "%dependsOn" } )
     public final LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
-    @JsonAlias( { "extends", "%extends" } )
     @Deprecated
     public final ArrayList<String> extendsModules = new ArrayList<>();
-    @JsonAlias( { "abstract", "%abstract" } )
-    @Deprecated
-    public boolean isAbstract = false;
-    @JsonAlias( { "services", "%services" } )
+    @JsonAlias( { "service", "services" } )
     public final LinkedHashMap<String, Service> services = new LinkedHashMap<>();
+    public String name;
 
     @JsonCreator
     public Module( String name ) {
@@ -75,7 +68,8 @@ public class Module {
         public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
         public Supervision supervision = new Supervision();
         public LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
-        public String profile;
+        @JsonAlias( { "profile", "profiles" } )
+        public ArrayList<String> profiles = new ArrayList<>();
         public String name;
         public LinkedHashMap<String, String> listen = new LinkedHashMap<>();
         public LinkedHashMap<String, Object> link = new LinkedHashMap<>(); // String | Reference

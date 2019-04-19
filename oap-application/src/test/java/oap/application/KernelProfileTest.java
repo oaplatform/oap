@@ -24,16 +24,12 @@
 
 package oap.application;
 
-import com.google.common.base.Preconditions;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.net.URL;
-import java.util.List;
-
-import static oap.testng.Asserts.pathOfTestResource;
+import static java.util.Arrays.asList;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,46 +41,59 @@ public class KernelProfileTest extends AbstractTest {
 
     @Test
     public void testProfileName() {
-        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "module.conf" ) );
-
-        Kernel kernel = new Kernel( modules );
-        try {
-            kernel.start( pathOfTestResource( getClass(), "appWithProfileName.conf" ) );
+        try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module.yaml" ) ) ) ) {
+            startWithProfile( kernel, "profile-name" );
 
             assertThat( kernel.<TestProfile1>service( "profile1" ) ).isNotNull();
             assertThat( kernel.<TestProfile2>service( "profile2" ) ).isNull();
             assertThat( kernel.<TestProfile3>service( "profile3" ) ).isNotNull();
-        } finally {
-            kernel.stop();
         }
     }
 
     @Test
-    public void testProfileName2() {
-        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "module.conf" ) );
+    public void testServiceProfiles() {
+        var modules = Lists.of( urlOfTestResource( getClass(), "module-profiles.yaml" ) );
 
-        Kernel kernel = new Kernel( modules );
-        try {
-            kernel.start( pathOfTestResource( getClass(), "appWithProfileName2.conf" ) );
+        try( var kernel = new Kernel( modules ) ) {
+            startWithProfile( kernel, "profile-name1" );
+            assertThat( kernel.<TestProfile1>service( "profile" ) ).isNotNull();
+        }
+        try( var kernel = new Kernel( modules ) ) {
+            startWithProfile( kernel, "profile-name1", "profile-name2" );
+            assertThat( kernel.<TestProfile1>service( "profile" ) ).isNull();
+        }
+        try( var kernel = new Kernel( modules ) ) {
+            startWithProfile( kernel, "profile-name2" );
+            assertThat( kernel.<TestProfile1>service( "profile" ) ).isNull();
+        }
+        try( var kernel = new Kernel( modules ) ) {
+            startWithProfile( kernel );
+            assertThat( kernel.<TestProfile1>service( "profile" ) ).isNull();
+        }
+    }
+
+    private void startWithProfile( Kernel kernel, String... profiles ) {
+        var applicationConfiguration = new ApplicationConfiguration();
+        applicationConfiguration.profiles.addAll( asList( profiles ) );
+        kernel.start( applicationConfiguration );
+    }
+
+    @Test
+    public void testProfileName2() {
+        try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module.yaml" ) ) ) ) {
+            startWithProfile( kernel, "profile-name-2" );
 
             assertThat( kernel.<TestProfile1>service( "profile1" ) ).isNull();
             assertThat( kernel.<TestProfile2>service( "profile2" ) ).isNotNull();
             assertThat( kernel.<TestProfile3>service( "profile3" ) ).isNotNull();
-        } finally {
-            kernel.stop();
         }
     }
 
     @Test
     public void testProfile3() {
-        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "module3.yaml" ) );
-
-        Kernel kernel = new Kernel( modules );
-        try {
-            kernel.start( pathOfTestResource( getClass(), "appWithProfileName.conf" ) );
+        try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module3.yaml" ) ) ) ) {
+            startWithProfile( kernel, "profile-name" );
             assertThat( kernel.<TestContainer>service( "container" ) ).isNotNull();
-        } finally {
-            kernel.stop();
         }
     }
 

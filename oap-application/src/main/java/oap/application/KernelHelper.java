@@ -129,7 +129,7 @@ public class KernelHelper {
             }
             newValue = newList;
         } else if( value instanceof Map<?, ?> ) {
-            var newMap = new LinkedHashMap<Object, Object>();
+            var newMap = new LinkedHashMap<>();
 
             ( ( Map<String, Object> ) value ).forEach( ( key, mValue ) -> {
                 var v = fixValue( kernel, initialized, mValue );

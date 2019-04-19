@@ -23,6 +23,8 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import lombok.SneakyThrows;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.util.Stream;
@@ -60,8 +62,12 @@ public class Configuration<T> {
         return ret;
     }
 
+    @SneakyThrows
     public T fromUrl( URL url ) {
-        return Binder.getBinder( url ).unmarshal( clazz, Strings.readString( url ) );
+        var binder = Binder.getBinder( url );
+        var mapper = binder.getMapper();
+        mapper.enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+        return mapper.readValue( Strings.readString( url ), clazz );
     }
 
     public T fromResource( Class<?> contextClass, String name ) {

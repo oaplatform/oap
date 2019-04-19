@@ -46,6 +46,7 @@ import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.Closeable;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
@@ -71,7 +72,7 @@ import static oap.application.KernelHelper.serviceEnabled;
 
 @Slf4j
 @ToString( of = "name" )
-public class Kernel {
+public class Kernel implements Closeable {
     public static final String DEFAULT = Strings.DEFAULT;
     public final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
     final String name;
@@ -113,7 +114,7 @@ public class Kernel {
         for( var module : modules ) {
             log.trace( "module {} services {}", module.name, module.services.keySet() );
             for( var service : module.services.entrySet() ) {
-                if( !profileEnabled( service.getValue().profile ) ) continue;
+                if( !profileEnabled( service.getValue().profiles ) ) continue;
 
                 log.trace( "fix deps for {} in {}", service.getKey(), module.name );
                 service.getValue().parameters.forEach( ( key, value ) ->
@@ -193,7 +194,7 @@ public class Kernel {
         start( ApplicationConfiguration.load( appConfigPath, new String[] { Binder.json.marshal( map ) } ) );
     }
 
-    private void start( ApplicationConfiguration config ) {
+    void start( ApplicationConfiguration config ) {
         log.debug( "initializing application kernel..." );
         Application.register( this );
         log.debug( "application config {}", config );
@@ -234,8 +235,8 @@ public class Kernel {
                     log.debug( "service {} is disabled.", implName );
                     return;
                 }
-                if( !profileEnabled( service.profile ) ) {
-                    log.debug( "skipping {} with profile {}", implName, service.profile );
+                if( !profileEnabled( service.profiles ) ) {
+                    log.debug( "skipping {} with profiles {}", implName, service.profiles );
                     return;
                 }
 
@@ -250,7 +251,7 @@ public class Kernel {
                     var parametersWithoutLinks = fixLinksForConstructor( this, ret, service.parameters );
                     instance = reflect.newInstance( parametersWithoutLinks );
                 } catch( ReflectException e ) {
-                    log.info( "service name = {}, remote = {}, profile = {}", implName, service.remote, service.profile );
+                    log.info( "service name = {}, remote = {}, profiles = {}", implName, service.remote, service.profiles );
                     throw e;
                 }
                 else instance = RemoteInvocationHandler.proxy( service.remote, reflect.underlying );
@@ -438,13 +439,31 @@ public class Kernel {
         services.clear();
     }
 
-    public boolean profileEnabled( String profile ) {
-        if( profile == null ) return true;
-        if( profile.startsWith( "-" ) ) return !profiles.contains( profile.substring( 1 ) );
-        return profiles.contains( profile );
+    public boolean profileEnabled( List<String> profiles ) {
+        if( profiles.isEmpty() ) return true;
+
+        boolean enabled = false;
+        boolean foundIncludeProfile = false;
+
+        for( var profile : profiles ) {
+            if( profile.startsWith( "-" ) ) {
+                if( this.profiles.contains( profile.substring( 1 ) ) ) return false;
+            } else {
+                if( this.profiles.contains( profile ) ) enabled = true;
+                foundIncludeProfile = true;
+            }
+
+        }
+
+        return enabled || !foundIncludeProfile;
     }
 
     public void enableProfiles( String profile ) {
         this.profiles.add( profile );
+    }
+
+    @Override
+    public void close() {
+        stop();
     }
 }
