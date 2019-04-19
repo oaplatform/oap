@@ -1,17 +1,6 @@
 name: oap-mailman
 abstract: true
 services:
-#  oap-mailman-smtp:
-#    implementation: oap.mail.DefaultMailman
-#    profile: mail
-#    name: oap-mailman
-#    parameters:
-#      storage: "@service:mail-storage"
-#    dependsOn:
-#      - mail-storage
-#    supervision:
-#      schedule: true
-#      delay: 1m
 
   oap-mailman-mock:
     implementation: oap.mail.MockMailman
