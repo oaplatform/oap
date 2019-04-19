@@ -23,6 +23,7 @@
  */
 package oap.ws;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.application.Configuration;
@@ -44,10 +45,11 @@ public class WsConfig {
     @EqualsAndHashCode
     @ToString
     public static class Service {
+        @JsonAlias( { "profile", "profiles" } )
+        public final ArrayList<String> profiles = new ArrayList<>();
         public String service;
         public CorsPolicy corsPolicy = null;
         public Protocol protocol;
-        public String profile;
         public boolean sessionAware;
     }
 }

@@ -33,7 +33,6 @@ import oap.http.cors.CorsPolicy;
 import oap.json.Binder;
 import oap.util.Lists;
 import oap.util.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.entity.ContentType;
 
 import java.util.HashMap;
@@ -87,9 +86,9 @@ public class WebServices {
 
                 log.trace( "service = {}", entry );
 
-                if( StringUtils.isNotEmpty( serviceConfig.profile ) && !kernel.profileEnabled( serviceConfig.profile ) ) {
+                if( !serviceConfig.profiles.isEmpty() && !kernel.profileEnabled( serviceConfig.profiles ) ) {
                     log.debug( "skipping " + entry.getKey() + " web service initialization with "
-                        + "service profile " + serviceConfig.profile );
+                        + "service profiles " + serviceConfig.profiles );
                     continue;
                 }
 
