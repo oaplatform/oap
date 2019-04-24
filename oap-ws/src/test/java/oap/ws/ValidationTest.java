@@ -60,17 +60,16 @@ public class ValidationTest extends AbstractWebServicesTest {
 
     @Test
     public void testWrongValidatorName() {
+        String errorMessage = "No such method wrongValidatorName with the following parameters: [int requiredParameter]";
         assertGet( httpUrl( "/vaildation/service/methodWithWrongValidatorName?requiredParameter=10" ) )
-            .responded( 500, "no such method wrongValidatorName", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ),
-                "no such method wrongValidatorName" );
+            .responded( 500, errorMessage, TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), errorMessage );
     }
 
     @Test
     public void testValidatorWithWrongParameters() {
+        String errorMessage = "missedParam required by validator wrongArgsValidator is not supplied by web method";
         assertGet( httpUrl( "/vaildation/service/methodWithWrongValidatorArgs?requiredParameter=10" ) )
-            .responded( 500, "missedParam required by validator wrongArgsValidatoris not supplied by web method",
-                TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ),
-                "missedParam required by validator wrongArgsValidatoris not supplied by web method" );
+            .responded( 500, errorMessage, TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), errorMessage );
     }
 
     @Test

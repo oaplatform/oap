@@ -174,13 +174,36 @@ public class Reflection extends Annotated<Class<?>> {
     }
 
     public Optional<Method> method( Predicate<Method> matcher ) {
-        return this.methods.stream().filter( matcher ).findFirst();
+        return this.methods.stream()
+            .filter( matcher )
+            .findFirst();
     }
 
     public Optional<Method> method( Predicate<Method> matcher, Comparator<Method> comparator ) {
-        return this.methods.stream().sorted( comparator ).filter( matcher ).findFirst();
+        return this.methods.stream()
+            .sorted( comparator )
+            .filter( matcher )
+            .findFirst();
     }
 
+
+    /**
+     * @param name Method name
+     * @param parameters list
+     * @return {@link Method} - method wrapper of {@link java.lang.reflect.Method}
+     */
+    public Optional<Method> method( String name, List<Parameter> parameters ) {
+        return method( m -> Objects.equals( m.name(), name ) && m.parameters.equals( parameters ) );
+    }
+
+    /**
+     * @param name Method name
+     * @return {@link Method} - method wrapper of {@link java.lang.reflect.Method}
+     *
+     * @deprecated JVM is responsible to pick random method if there are several overloaded methods.
+     * Use {@link #method(String, List)} or {@link #method(java.lang.reflect.Method)} instead
+     */
+    @Deprecated
     public Optional<Method> method( String name ) {
         return method( m -> Objects.equals( m.name(), name ) );
     }
@@ -459,7 +482,6 @@ public class Reflection extends Annotated<Class<?>> {
 
         Parameter( java.lang.reflect.Parameter parameter ) {
             super( parameter );
-
         }
 
         public Reflection type() {
