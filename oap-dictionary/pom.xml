@@ -34,7 +34,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>4.8.0</version>
+        <version>${revision}</version>
     </parent>
 
     <dependencies>
