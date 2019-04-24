@@ -84,7 +84,7 @@
     </distributionManagement>
 
     <properties>
-        <revision>4.8.1</revision>
+        <revision>4.8.2</revision>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
 

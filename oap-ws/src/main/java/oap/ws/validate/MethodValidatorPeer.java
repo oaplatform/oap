@@ -65,7 +65,8 @@ public class MethodValidatorPeer implements ValidatorPeer {
         protected Validator( String method, Reflection.Method targetMethod, Object instance ) {
             this.method = Reflect.reflect( instance.getClass() )
                 .method( method, targetMethod.parameters )
-                .orElseThrow( () -> new WsException( "no such method " + method ) );
+                .orElseThrow( () -> new WsException( String.format( "No such method %s with the following parameters: %s",
+                    method, targetMethod.parameters ) ) );
             this.instance = instance;
         }
 
