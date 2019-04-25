@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
@@ -156,9 +157,12 @@ public class DictionaryParser {
     }
 
     private static DictionaryRoot parse( Map map, IdStrategy idStrategy ) {
-        final DictionaryRoot dictionaryRoot = ( DictionaryRoot ) parseAsDictionaryValue( map, "", true, idStrategy );
-        final ArrayList<InvalidEntry> invalid = new ArrayList<>();
-        resolveExtends( dictionaryRoot, dictionaryRoot );
+        var dictionaryRoot = ( DictionaryRoot ) parseAsDictionaryValue( map, "", true, idStrategy );
+        var invalid = new ArrayList<InvalidEntry>();
+
+        var lastId = idStrategy.getMaxExtendsId( dictionaryRoot );
+
+        resolveExtends( dictionaryRoot, dictionaryRoot, new AtomicInteger( lastId + 1 ) );
         validate( "", invalid, dictionaryRoot );
 
         if( !invalid.isEmpty() ) {
@@ -176,7 +180,7 @@ public class DictionaryParser {
     }
 
     @SuppressWarnings( "unchecked" )
-    private static void resolveExtends( DictionaryRoot dictionaryRoot, Dictionary parent ) {
+    private static void resolveExtends( DictionaryRoot dictionaryRoot, Dictionary parent, AtomicInteger id ) {
         var values = parent.getValues();
         var iterator = ( ListIterator<Dictionary> ) values.listIterator();
         var lastExtendsId = -1;
@@ -202,12 +206,12 @@ public class DictionaryParser {
                     iterator.remove();
 
                     if( child instanceof DictionaryLeaf ) {
-                        iterator.add( new DictionaryLeaf( child.getId(), child.isEnabled(), child.getExternalId() + lastExtendsId, child.getProperties() ) );
+                        iterator.add( new DictionaryLeaf( child.getId(), child.isEnabled(), id.incrementAndGet(), child.getProperties() ) );
                     } else {
-                        iterator.add( new DictionaryValue( child.getId(), child.isEnabled(), child.getExternalId() + lastExtendsId, child.getValues(), child.getProperties() ) );
+                        iterator.add( new DictionaryValue( child.getId(), child.isEnabled(), id.incrementAndGet(), child.getValues(), child.getProperties() ) );
                     }
                 }
-                resolveExtends( dictionaryRoot, child );
+                resolveExtends( dictionaryRoot, child, id );
             }
         }
     }
@@ -350,6 +354,8 @@ public class DictionaryParser {
 
     public interface IdStrategy {
         int get( Map<Object, Object> valueMap );
+
+        int getMaxExtendsId( DictionaryRoot root );
     }
 
     private static class InvalidEntry {
@@ -371,12 +377,31 @@ public class DictionaryParser {
         public int get( Map<Object, Object> valueMap ) {
             return id.incrementAndGet();
         }
+
+        @Override
+        public int getMaxExtendsId( DictionaryRoot root ) {
+            return id.get() + 1;
+        }
     }
 
     public static class PropertyIdStrategy implements IdStrategy {
         @Override
         public int get( Map<Object, Object> valueMap ) {
             return getInt( valueMap, EXTERNAL_ID );
+        }
+
+        @Override
+        public int getMaxExtendsId( DictionaryRoot root ) {
+            return max( root.getExternalId(), _getMaxExtendsId( root ) );
+        }
+
+        private static int _getMaxExtendsId( Dictionary root ) {
+            int max = Integer.MAX_VALUE;
+            for( var child : root.getValues() ) {
+                max = max( max, _getMaxExtendsId( child ) );
+            }
+
+            return max;
         }
     }
 }
