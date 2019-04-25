@@ -162,7 +162,7 @@ public class DictionaryParser {
 
         var lastId = idStrategy.getMaxExtendsId( dictionaryRoot );
 
-        resolveExtends( dictionaryRoot, dictionaryRoot, new AtomicInteger( lastId + 1 ) );
+        resolveExtends( dictionaryRoot, dictionaryRoot, new AtomicInteger( lastId ) );
         validate( "", invalid, dictionaryRoot );
 
         if( !invalid.isEmpty() ) {
@@ -385,6 +385,18 @@ public class DictionaryParser {
     }
 
     public static class PropertyIdStrategy implements IdStrategy {
+        private static int _getMaxExtendsId( Dictionary root ) {
+            if( root instanceof DictionaryExtends ) return Integer.MIN_VALUE;
+
+            int max = root.getExternalId();
+
+            for( var child : root.getValues() ) {
+                max = max( max, _getMaxExtendsId( child ) );
+            }
+
+            return max;
+        }
+
         @Override
         public int get( Map<Object, Object> valueMap ) {
             return getInt( valueMap, EXTERNAL_ID );
@@ -392,16 +404,7 @@ public class DictionaryParser {
 
         @Override
         public int getMaxExtendsId( DictionaryRoot root ) {
-            return max( root.getExternalId(), _getMaxExtendsId( root ) );
-        }
-
-        private static int _getMaxExtendsId( Dictionary root ) {
-            int max = Integer.MAX_VALUE;
-            for( var child : root.getValues() ) {
-                max = max( max, _getMaxExtendsId( child ) );
-            }
-
-            return max;
+            return _getMaxExtendsId( root );
         }
     }
 }

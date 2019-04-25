@@ -106,6 +106,6 @@ public class DictionaryTest extends AbstractTest {
         assertThat( values.get( 1 ).getId() ).isEqualTo( "id22" );
 
         assertThat( values.get( 0 ).getExternalId() ).isEqualTo( 111 );
-        assertThat( values.get( 1 ).getExternalId() ).isEqualTo( 112 );
+        assertThat( values.get( 1 ).getExternalId() ).isEqualTo( 113 );
     }
 }
