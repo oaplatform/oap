@@ -34,7 +34,7 @@
     <name>oap</name>
 
     <prerequisites>
-        <maven>3.1</maven>
+        <maven>3.2.5</maven>
     </prerequisites>
 
     <modules>
