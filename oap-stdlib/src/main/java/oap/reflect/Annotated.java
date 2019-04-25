@@ -27,7 +27,6 @@ import oap.util.Lists;
 
 import java.lang.annotation.Annotation;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 abstract class Annotated<T extends java.lang.reflect.AnnotatedElement> {
@@ -60,19 +59,4 @@ abstract class Annotated<T extends java.lang.reflect.AnnotatedElement> {
     }
 
 
-    @Override
-    public boolean equals( Object o ) {
-        if( this == o ) return true;
-        if( o == null || getClass() != o.getClass() ) return false;
-        Annotated<?> annotated = ( Annotated<?> ) o;
-        System.out.println(underlying + " and " + annotated.underlying + " are: ");
-        System.out.println(Objects.equals( underlying, annotated.underlying ));
-        // TODO: make equals similar to java.lang.reflect equals methods
-        return Objects.equals( underlying.toString(), annotated.underlying.toString() );
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash( underlying );
-    }
 }
