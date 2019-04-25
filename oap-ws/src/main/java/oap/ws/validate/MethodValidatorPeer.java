@@ -43,7 +43,7 @@ public class MethodValidatorPeer implements ValidatorPeer {
     public MethodValidatorPeer( WsValidate validate, Reflection.Method targetMethod, Object instance, Type type ) {
         if( type == Type.PARAMETER )
             this.validators = Stream.of( validate.value() )
-                .<Validator>map( m -> new ParameterValidator( m, instance ) )
+                .<Validator>map( m -> new ParameterValidator( m, targetMethod, instance ) )
                 .toList();
         else
             this.validators = Stream.of( validate.value() )
@@ -62,10 +62,11 @@ public class MethodValidatorPeer implements ValidatorPeer {
         protected final Reflection.Method method;
         protected final Object instance;
 
-        protected Validator( String method, Object instance ) {
+        protected Validator( String method, Reflection.Method targetMethod, Object instance ) {
             this.method = Reflect.reflect( instance.getClass() )
-                .method( method )
-                .orElseThrow( () -> new WsException( "no such method " + method ) );
+                .method( method, targetMethod.parameters )
+                .orElseThrow( () -> new WsException( String.format( "No such method %s with the following parameters: %s",
+                    method, targetMethod.parameters ) ) );
             this.instance = instance;
         }
 
@@ -73,8 +74,8 @@ public class MethodValidatorPeer implements ValidatorPeer {
     }
 
     private static class ParameterValidator extends Validator {
-        public ParameterValidator( String method, Object instatnce ) {
-            super( method, instatnce );
+        public ParameterValidator( String method, Reflection.Method targetMethod, Object instatnce ) {
+            super( method, targetMethod, instatnce );
         }
 
         @Override
@@ -87,7 +88,7 @@ public class MethodValidatorPeer implements ValidatorPeer {
         private final Map<String, Integer> validatorMethodParamIndices;
 
         protected MethodValidator( String method, Reflection.Method targetMethod, Object instance ) {
-            super( method, instance );
+            super( method, targetMethod, instance );
             validatorMethodParamIndices = Stream.of( targetMethod.parameters )
                 .map( Reflection.Parameter::name )
                 .zipWithIndex()
@@ -103,7 +104,7 @@ public class MethodValidatorPeer implements ValidatorPeer {
                 Integer argumentIndex = validatorMethodParamIndices.get( argumentName );
                 if( argumentIndex == null ) {
                     throw new IllegalArgumentException( argumentName + " required by validator " + this.method.name()
-                        + "is not supplied by web method" );
+                        + " is not supplied by web method" );
                 }
                 params[i] = ( ( Object[] ) value )[argumentIndex];
             }
@@ -112,7 +113,9 @@ public class MethodValidatorPeer implements ValidatorPeer {
             } catch( ReflectException e ) {
                 log.error( e.getMessage() );
                 log.info( "method = " + method.name() );
-                log.info( "method parameters = " + method.parameters.stream().map( p -> p.type().underlying ).collect( toList() ) );
+                log.info( "method parameters = " + method.parameters.stream()
+                    .map( p -> p.type().underlying )
+                    .collect( toList() ) );
                 log.info( "method parameters = " + Arrays.stream( params ).map( p -> p == null ? "<NULL>"
                     : p.getClass() ).collect( toList() ) );
                 throw e;

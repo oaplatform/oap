@@ -131,7 +131,9 @@ public class Kernel implements Closeable {
             Object linked = services.get( Module.Reference.of( reference ).name );
             if( linked == null )
                 throw new ApplicationException( "for " + service.name + " listening object " + reference + " is not found" );
-            var m = Reflect.reflect( linked.getClass() ).method( methodName ).orElse( null );
+            var m = Reflect.reflect( linked.getClass() )
+                .method( methodName )
+                .orElse( null );
             if( m != null ) m.invoke( linked, instance );
             else
                 throw new ReflectException( "listener " + listener + " should have method " + methodName + " in " + reference );
@@ -208,7 +210,7 @@ public class Kernel implements Closeable {
 
         fixServiceName();
         fixDeps();
-        var map = instantiateServices( config );
+        var map = instantiateServices();
         registerServices( map );
         linkServices( map );
         startServices( map );
@@ -225,7 +227,7 @@ public class Kernel implements Closeable {
                 service.name = service.name != null ? service.name : implName );
     }
 
-    private Map<String, ServiceInitialization> instantiateServices( ApplicationConfiguration config ) {
+    private Map<String, ServiceInitialization> instantiateServices() {
         var ret = new LinkedHashMap<String, ServiceInitialization>();
 
         var initializedServices = new LinkedHashSet<String>();
@@ -277,10 +279,8 @@ public class Kernel implements Closeable {
             log.trace( "linking service {}...", si.implementationName );
             linkLinks( si.service, si.instance );
             linkListeners( si.service, si.instance );
-            si.service.parameters.forEach( ( parameter, value ) -> {
-                linkService( new FieldLinkReflection( si.reflection, si.instance, parameter ), value, si,
-                    true );
-            } );
+            si.service.parameters.forEach( ( parameter, value ) -> linkService( new FieldLinkReflection( si.reflection,
+                    si.instance, parameter ), value, si, true ) );
 
         }
     }

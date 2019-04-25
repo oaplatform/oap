@@ -13,3 +13,4 @@ libraries
 inspectionProfiles
 kotlinc.xml
 .attach*
+.flattened-pom.xml
