@@ -27,17 +27,14 @@ package oap.ws.validate;
 import oap.reflect.Reflect;
 import org.testng.annotations.Test;
 
-import java.lang.reflect.Method;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ValidatorsTest {
     @Test
-    public void caching() throws Exception {
-        Method method = Validatee.class.getMethod( "m", String.class );
-        Validators.Validator v1 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( method ).orElseThrow(),
+    public void caching() {
+        Validators.Validator v1 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(),
             new Validatee(), false );
-        Validators.Validator v2 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( method ).orElseThrow(),
+        Validators.Validator v2 = Validators.forMethod( Reflect.reflect( Validatee.class ).method( "m" ).get(),
             new Validatee(), false );
 
         assertThat( v1 ).isNotSameAs( v2 );
@@ -45,7 +42,9 @@ public class ValidatorsTest {
 
     public static class Validatee {
         @WsValidate( "validate" )
-        public void m( String a ) { }
+        public void m( String a ) {
+
+        }
 
         public ValidationErrors validate( String a ) {
             return ValidationErrors.empty();
