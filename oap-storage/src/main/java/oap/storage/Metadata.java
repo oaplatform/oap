@@ -55,6 +55,9 @@ public class Metadata<T> implements Serializable {
         setUpdated();
     }
 
+    /**
+     * Indicate when metadata object was updated
+     */
     public void setUpdated() {
         this.modified = DateTimeUtils.currentTimeMillis();
     }

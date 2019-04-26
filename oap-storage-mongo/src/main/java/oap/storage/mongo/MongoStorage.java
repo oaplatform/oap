@@ -47,6 +47,7 @@ import java.util.function.Consumer;
 
 import static com.mongodb.client.model.Filters.eq;
 
+@Deprecated
 @Slf4j
 public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, OplogService.OplogListener {
     public static final UpdateOptions UPDATE_OPTIONS_UPSERT = new UpdateOptions().upsert( true );
@@ -56,18 +57,19 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
     private long lastFsync = -1;
 
     public MongoStorage( MongoClient mongoClient, String table, Lock lock ) {
-        this( mongoClient, table, Identifier
-            .<T>forAnnotation()
-            .suggestion( ar -> ObjectId.get().toString() )
-            .length( 24 )
-            .options()
-            .build(), lock );
+        this( mongoClient, table,
+            Identifier.<T>forAnnotation()
+                .suggestion( ar -> ObjectId.get().toString() )
+                .length( 24 )
+                .options()
+                .build(),
+            lock );
     }
 
     public MongoStorage( MongoClient mongoClient, String table, Identifier<T> identifier, Lock lock ) {
         super( identifier, lock );
 
-        TypeRef<Metadata<T>> ref = new TypeRef<Metadata<T>>() {};
+        TypeRef<Metadata<T>> ref = new TypeRef<>() {};
 
         CodecRegistry codecRegistry = CodecRegistries.fromRegistries(
             CodecRegistries.fromCodecs( new JsonCodec<>( ref, m -> this.identifier.get( m.object ) ) ),
@@ -106,6 +108,7 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
     }
 
     @Override
+    @Deprecated(forRemoval=true)
     public void fsync() {
         super.fsync();
 

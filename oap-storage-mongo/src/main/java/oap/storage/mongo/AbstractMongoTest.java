@@ -24,9 +24,14 @@
 
 package oap.storage.mongo;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.storage.Identifier;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.util.Id;
+import org.bson.types.ObjectId;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
@@ -34,6 +39,17 @@ import org.testng.annotations.BeforeMethod;
 public abstract class AbstractMongoTest extends AbstractTest {
     protected String dbName;
     protected MongoClient mongoClient;
+    protected Identifier<Bean> beanIdentifier =
+        Identifier.<Bean>forAnnotation()
+            .suggestion( o -> o.name )
+            .length( 10 )
+            .build();
+    protected Identifier<Bean> beanIdentifierWithoutName =
+        Identifier.<Bean>forAnnotation()
+            .suggestion( ar -> ObjectId.get().toString() )
+            .length( 10 )
+            .options()
+            .build();
 
     @BeforeMethod
     public void init() {
@@ -48,5 +64,26 @@ public abstract class AbstractMongoTest extends AbstractTest {
     public void done() {
         mongoClient.database.drop();
         mongoClient.close();
+    }
+
+    @ToString
+    @EqualsAndHashCode
+    public static class Bean {
+        @Id
+        public String id;
+        public String name;
+        public int c;
+
+        Bean( String id, String name ) {
+            this(name);
+            this.id = id;
+        }
+
+        Bean( String name ) {
+            this.name = name;
+        }
+
+        Bean() {
+        }
     }
 }

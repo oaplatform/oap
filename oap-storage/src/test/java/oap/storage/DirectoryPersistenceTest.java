@@ -114,7 +114,8 @@ public class DirectoryPersistenceTest extends AbstractTest {
         assertThat( path.resolve( "2.json" ) ).exists();
 
         try( MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
-             DirectoryPersistence<Bean> persistence = new DirectoryPersistence<>( path, ( p, s ) -> p.resolve( s.s ), 50, 0, empty(), storage ) ) {
+             DirectoryPersistence<Bean> persistence =
+                 new DirectoryPersistence<>( path, ( p, s ) -> p.resolve( s.s ), 50, 0, empty(), storage ) ) {
             persistence.start();
 
             assertThat( storage.select() ).containsExactly( new Bean( "1", "aaa" ), new Bean( "2", "bbb" ) );
