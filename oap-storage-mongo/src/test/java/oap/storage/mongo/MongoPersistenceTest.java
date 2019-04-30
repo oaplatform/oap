@@ -69,7 +69,7 @@ public class MongoPersistenceTest extends AbstractMongoTest {
                     new Bean( "TST1XXXXXX", "test1" ),
                     new Bean( "TST2XXXXXX", "test3" )
                 );
-                assertThat( persistence.collection.count() ).isEqualTo( 2 );
+                assertThat( persistence.collection.countDocuments() ).isEqualTo( 2 );
             }
         } finally {
             try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
@@ -92,7 +92,7 @@ public class MongoPersistenceTest extends AbstractMongoTest {
             storage.delete( bean1.id );
             Threads.sleepSafely( 100 );
 
-            assertThat( persistence.collection.count() ).isEqualTo( 1 );
+            assertThat( persistence.collection.countDocuments() ).isEqualTo( 1 );
         } finally {
             try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
                  MongoPersistence<Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage ) ) {
