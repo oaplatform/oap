@@ -73,7 +73,8 @@ public class MongoPersistenceTest extends AbstractMongoTest {
             }
         } finally {
             try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED);
-                 MongoPersistence<Bean> ignored = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+                 MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+                persistence.start();
                 storage.deleteAll();
             }
         }
@@ -94,7 +95,8 @@ public class MongoPersistenceTest extends AbstractMongoTest {
             assertThat( persistence.collection.count() ).isEqualTo( 1 );
         } finally {
             try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED);
-                 MongoPersistence<Bean> ignored = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+                 MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+                persistence.start();
                 storage.deleteAll();
             }
         }
@@ -121,7 +123,8 @@ public class MongoPersistenceTest extends AbstractMongoTest {
             }
         } finally {
             try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED);
-                 MongoPersistence<Bean> ignored = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+                 MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+                persistence.start();
                 storage.deleteAll();
             }
         }
