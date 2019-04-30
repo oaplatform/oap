@@ -46,7 +46,7 @@ public class MongoPersistenceTest extends AbstractMongoTest {
     public void store() {
         try {
             try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
-                 MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage)) {
+                 MongoPersistence<Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage ) ) {
 
                 persistence.start();
                 Bean bean1 = storage.store( new Bean( "test1" ) );
@@ -62,8 +62,8 @@ public class MongoPersistenceTest extends AbstractMongoTest {
             }
 
             // Make sure that for a new connection the objects still present in MongoDB
-            try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED);
-                 MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+            try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+                 MongoPersistence<Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage ) ) {
                 persistence.start();
                 assertThat( storage.select() ).containsOnly(
                     new Bean( "TST1XXXXXX", "test1" ),
@@ -72,8 +72,8 @@ public class MongoPersistenceTest extends AbstractMongoTest {
                 assertThat( persistence.collection.count() ).isEqualTo( 2 );
             }
         } finally {
-            try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED);
-                 MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+            try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+                 MongoPersistence<Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage ) ) {
                 persistence.start();
                 storage.deleteAll();
             }
@@ -83,8 +83,8 @@ public class MongoPersistenceTest extends AbstractMongoTest {
 
     @Test
     public void delete() {
-        try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifierWithoutName, SERIALIZED);
-             MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 50, storage) ) {
+        try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifierWithoutName, SERIALIZED );
+             MongoPersistence<Bean> persistence = new MongoPersistence<>( mongoClient, "test", 50, storage ) ) {
             persistence.start();
             Bean bean1 = storage.store( new Bean() );
             storage.store( new Bean() );
@@ -94,8 +94,8 @@ public class MongoPersistenceTest extends AbstractMongoTest {
 
             assertThat( persistence.collection.count() ).isEqualTo( 1 );
         } finally {
-            try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED);
-                 MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+            try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+                 MongoPersistence<Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage ) ) {
                 persistence.start();
                 storage.deleteAll();
             }
@@ -105,25 +105,25 @@ public class MongoPersistenceTest extends AbstractMongoTest {
     @Test()
     public void update() {
         try {
-            try( MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED);
-                 MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+            try( MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+                 MongoPersistence<Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage ) ) {
                 persistence.start();
-                storage.store( new Bean("111", "initialName") );
+                storage.store( new Bean( "111", "initialName" ) );
                 storage.update( "111", bean -> {
                     bean.name = "newName";
                     return bean;
                 } );
             }
 
-            try( MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED);
-                 MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+            try( MemoryStorage<Bean> storage = new MemoryStorage<>( Identifier.forAnnotationFixed(), SERIALIZED );
+                 MongoPersistence<Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage ) ) {
                 persistence.start();
                 assertThat( storage.select() )
-                    .containsExactly( new Bean( "111", "newName") );
+                    .containsExactly( new Bean( "111", "newName" ) );
             }
         } finally {
-            try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED);
-                 MongoPersistence<Bean> persistence = new MongoPersistence<>(mongoClient, "test", 6000, storage) ) {
+            try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
+                 MongoPersistence<Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage ) ) {
                 persistence.start();
                 storage.deleteAll();
             }
