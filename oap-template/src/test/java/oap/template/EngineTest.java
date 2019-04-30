@@ -46,7 +46,6 @@ import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EngineTest extends AbstractTest {
-
     private final Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
     @Test

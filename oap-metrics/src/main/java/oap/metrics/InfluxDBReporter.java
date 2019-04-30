@@ -34,6 +34,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Timer;
 import lombok.SneakyThrows;
+import oap.util.Lists;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Throwables;
@@ -65,7 +66,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.toList;
 import static oap.util.Pair.__;
 
 class InfluxDBReporter extends ScheduledReporter {
@@ -97,10 +97,8 @@ class InfluxDBReporter extends ScheduledReporter {
 
         key_escaper.set( null, ( Function<String, String> ) s -> s.replace( " ", "\\ " ) );
 
-        this.aggregates = aggregates
-            .stream()
-            .map( a -> Pattern.compile( a.replace( ".", "\\." ).replace( "\\.*", "(\\.[^,\\s]+)([^\\s]*)" ) ) )
-            .collect( toList() );
+        this.aggregates = Lists.map( aggregates,
+            a -> Pattern.compile( a.replace( ".", "\\." ).replace( "\\.*", "(\\.[^,\\s]+)([^\\s]*)" ) ) );
 
     }
 

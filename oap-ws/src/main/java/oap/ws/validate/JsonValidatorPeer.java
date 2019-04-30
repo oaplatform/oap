@@ -50,7 +50,7 @@ public class JsonValidatorPeer implements ValidatorPeer {
     @Override
     public ValidationErrors validate( Object value, Map<Reflection.Parameter, Object> originalValues ) {
         try {
-            final Map mapValue = Binder.json.unmarshal( Map.class, ( String ) value );
+            var mapValue = Binder.json.unmarshal( Map.class, ( String ) value );
 
             var factory = getJsonSchema( originalValues );
 

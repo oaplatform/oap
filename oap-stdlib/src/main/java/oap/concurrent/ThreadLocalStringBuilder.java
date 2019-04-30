@@ -22,29 +22,21 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.concurrent;
 
-import org.testng.annotations.Test;
-
-import java.util.Iterator;
-
-import static org.assertj.core.api.Java6Assertions.assertThat;
-
-public class IteratorsTest {
-
-    @Test
-    public void flatTraverse() {
-        var iterator = Iterators.flatTraverse( 0, x -> x < 3
-            ? Lists.of( x + 1, x + 2 ).iterator()
-            : Iterators.empty() );
-        assertThat( iterator ).toIterable().containsExactly( 0, 1, 2, 3, 4, 3, 2, 3, 4 );
+/**
+ * Created by igor.petrenko on 30.04.2019.
+ */
+public class ThreadLocalStringBuilder extends ThreadLocal<StringBuilder> {
+    @Override
+    protected StringBuilder initialValue() {
+        return new StringBuilder();
     }
 
-    @Test
-    public void traverse() {
-        Iterator<Integer> traverse = Iterators.traverse( 1, x -> x < 10 ? x + 1 : null );
-        assertThat( traverse ).toIterable().containsExactly( 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 );
+    @Override
+    public StringBuilder get() {
+        var b = super.get();
+        b.setLength( 0 );
+        return b;
     }
-
-
 }

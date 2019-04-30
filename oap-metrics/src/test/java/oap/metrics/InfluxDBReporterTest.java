@@ -106,7 +106,7 @@ public class InfluxDBReporterTest extends AbstractTest {
 
     @Test
     public void aggregatesWithTags() {
-        final InfluxDBReporter reporter = createReporter( influxDB, registry, singletonList( "test.*" ) );
+        var reporter = createReporter( influxDB, registry, singletonList( "test.*" ) );
 
         registry.counter( "test.name1,b=10,v=20" ).inc();
         registry.counter( "test.name2,b=10,v=20" ).inc( 2 );

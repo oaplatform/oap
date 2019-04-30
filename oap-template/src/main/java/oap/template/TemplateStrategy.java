@@ -121,7 +121,7 @@ public interface TemplateStrategy<TLine extends JavaCTemplate.Line> {
     }
 
     default void escape( StringBuilder c, Runnable run ) {
-        c.append( "CharMatcher.JAVA_ISO_CONTROL.removeFrom( " );
+        c.append( "CharMatcher.javaIsoControl().removeFrom( " );
         run.run();
         c.append( " )" );
     }

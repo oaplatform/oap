@@ -83,15 +83,18 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
             c.append( "package " ).append( getClass().getPackage().getName() ).append( ";\n"
                 + "\n"
                 + "import oap.util.Strings;\n"
+                + "import oap.concurrent.ThreadLocalStringBuilder;\n"
                 + "\n"
                 + "import java.util.*;\n"
                 + "import java.util.function.BiFunction;\n"
                 + "import com.google.common.base.CharMatcher;\n"
                 + "\n"
                 + "public  class " ).append( name ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
+                + "   private static ThreadLocalStringBuilder tlsb = new ThreadLocalStringBuilder();\n"
+                + "\n"
                 + "   @Override\n"
                 + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
-                + "     StringBuilder jb = new StringBuilder();\n"
+                + "     StringBuilder jb = tlsb.get();\n"
                 + "\n" );
 
             int size = pathAndDefault.size();

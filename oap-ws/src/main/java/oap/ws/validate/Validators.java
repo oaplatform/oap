@@ -83,11 +83,11 @@ public class Validators {
         private final List<ValidatorPeer> peers = new ArrayList<>();
 
         public ValidationErrors validate( Object value, Map<Reflection.Parameter, Object> originalValues ) {
-            ValidationErrors total = ValidationErrors.empty();
-            for( ValidatorPeer peer : peers ) {
-                ValidationErrors result = peer.validate( value, originalValues );
+            var total = ValidationErrors.empty();
+            for( var peer : peers ) {
+                var result = peer.validate( value, originalValues );
                 if( result.failed() && !result.hasDefaultCode() ) return result;
-                total.merge( result );
+                total = total.merge( result );
             }
             return total;
         }
