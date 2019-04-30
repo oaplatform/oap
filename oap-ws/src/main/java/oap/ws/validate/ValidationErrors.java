@@ -30,40 +30,42 @@ import oap.util.Lists;
 import oap.util.Mergeable;
 import oap.ws.WsClientException;
 
-import java.util.ArrayList;
+import javax.annotation.concurrent.Immutable;
 import java.util.List;
 import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static oap.util.Lists.concat;
 import static oap.ws.validate.Validators.forParameter;
 
 @ToString
 @EqualsAndHashCode
+@Immutable
 public final class ValidationErrors implements Mergeable<ValidationErrors> {
     public static final int DEFAULT_CODE = HTTP_BAD_REQUEST;
-    public final List<String> errors = new ArrayList<>();
+    public final List<String> errors;
     public int code;
 
     private ValidationErrors( int code, List<String> errors ) {
         this.code = code;
-        this.errors.addAll( errors );
+        this.errors = List.copyOf( errors );
     }
 
     public static ValidationErrors empty() {
-        return errors( Lists.empty() );
+        return errors( List.of() );
     }
 
     @Deprecated
     public static ValidationErrors create( String error ) {
-        return errors( Lists.of( error ) );
+        return errors( List.of( error ) );
     }
 
     public static ValidationErrors error( String error ) {
-        return errors( Lists.of( error ) );
+        return errors( List.of( error ) );
     }
 
     public static ValidationErrors error( String message, Object... args ) {
-        return errors( Lists.of( String.format( message, args ) ) );
+        return errors( List.of( String.format( message, args ) ) );
     }
 
     @Deprecated
@@ -98,17 +100,19 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
     }
 
     public ValidationErrors merge( ValidationErrors otherErrors ) {
-        if( hasDefaultCode() ) this.code = otherErrors.code;
-        this.errors.addAll( otherErrors.errors );
-        return this;
+        return new ValidationErrors(
+            hasDefaultCode() ? otherErrors.code : this.code, concat( this.errors, otherErrors.errors ) );
     }
 
     public ValidationErrors validateParameters( Map<Reflection.Parameter, Object> values, Reflection.Method method, Object instance, boolean beforeUnmarshaling ) {
-        values.forEach( ( parameter, value ) ->
-            merge( forParameter( method, parameter, instance, beforeUnmarshaling )
-                .validate( value, values )
-            ) );
-        return this;
+        var ret = ValidationErrors.empty();
+
+        for( var entry : values.entrySet() ) {
+            ret = ret.merge( forParameter( method, entry.getKey(), instance, beforeUnmarshaling )
+                .validate( entry.getValue(), values ) );
+        }
+
+        return ret;
     }
 
     public boolean failed() {

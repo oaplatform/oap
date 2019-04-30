@@ -63,7 +63,7 @@ public class BuffersTest {
             assertThat( Arrays.copyOf( b.data(), b.length() ) ).isEqualTo( Arrays.copyOf( next.data(), next.length() ) );
             return true;
         } );
-        assertThat( expected ).isEmpty();
+        assertThat( expected ).asList().isEmpty();
     }
 
     @BeforeClass

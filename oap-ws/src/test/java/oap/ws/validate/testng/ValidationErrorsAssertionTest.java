@@ -45,16 +45,37 @@ public class ValidationErrorsAssertionTest {
             .isNull();
         assertThat(
             validating( new CWS() )
+                .isError( 404, "not found" )
+                .build()
+                .m2( "a" ) )
+            .isNull();
+
+        assertThat(
+            validating( new CWS() )
                 .isFailed()
                 .hasCode( 404 )
                 .containsErrors( "not found" )
                 .build()
                 .m( "b" ) )
             .isNull();
+        assertThat(
+            validating( new CWS() )
+                .isFailed()
+                .hasCode( 404 )
+                .containsErrors( "not found" )
+                .build()
+                .m2( "b" ) )
+            .isNull();
+
         assertThat( validating( new CWS() )
             .isNotFailed()
             .build()
             .m( "c" ) )
+            .isEqualTo( "c" );
+        assertThat( validating( new CWS() )
+            .isNotFailed()
+            .build()
+            .m2( "c" ) )
             .isEqualTo( "c" );
     }
 
@@ -84,6 +105,13 @@ class CWS {
 
     public B b( @WsValidateJson( schema = "/oap/ws/validate/testng/ValidationErrorsAssertionTest/schema.conf" ) B b ) {
         return b;
+    }
+
+    public String m2( String a ) {
+        validateM( a )
+            .merge( validateP( a ) )
+            .throwIfInvalid();
+        return a;
     }
 
     public ValidationErrors validateM( String a ) {

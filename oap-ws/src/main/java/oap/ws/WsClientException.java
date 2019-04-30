@@ -23,8 +23,6 @@
  */
 package oap.ws;
 
-import oap.util.Lists;
-
 import java.util.List;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
@@ -45,16 +43,16 @@ public class WsClientException extends WsException {
     }
 
     public WsClientException( String message ) {
-        this( message, Lists.of( message ) );
+        this( message, List.of( message ) );
     }
 
     public WsClientException( String message, Throwable cause ) {
         super( message, cause );
-        this.errors = Lists.of( message );
+        this.errors = List.of( message );
     }
 
     public WsClientException( Throwable cause ) {
         super( cause );
-        this.errors = Lists.of( cause.getMessage() );
+        this.errors = List.of( cause.getMessage() );
     }
 }

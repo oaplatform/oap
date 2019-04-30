@@ -27,9 +27,11 @@ import javassist.util.proxy.MethodHandler;
 import javassist.util.proxy.ProxyFactory;
 import oap.json.Binder;
 import oap.reflect.Reflect;
+import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
 import oap.util.Stream;
 import oap.util.Throwables;
+import oap.ws.WsClientException;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.assertj.core.api.AbstractAssert;
@@ -39,7 +41,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 import static oap.util.Pair.__;
@@ -99,47 +100,60 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                 factory.setSuperclass( instance.getClass() );
 
                 MethodHandler handler = ( self, jmethod, proceed, args ) -> {
-                    Optional<Reflection.Method> methodOpt = Reflect.reflect( instance.getClass() )
-                        .method( jmethod );
-                    if( !methodOpt.isPresent() ) throw new NoSuchMethodError( jmethod.toString() );
-                    return methodOpt
-                        .map( method -> {
-                            ValidationErrors paramErrors = ValidationErrors.empty();
-
-                            List<Reflection.Parameter> parameters = method.parameters;
-
-                            Map<Reflection.Parameter, Object> originalValues = Stream.of( parameters )
-                                .zipWithIndex()
-                                .<Reflection.Parameter, Object>map( ( parameter, i ) -> __( parameter, Binder.json.marshal( args[i] ) ) )
-                                .toMap();
-
-                            paramErrors.validateParameters( originalValues, method, instance, true );
-
-                            if( paramErrors.failed() ) {
-                                runAsserts( paramErrors );
-                                return null;
-                            }
-
-                            LinkedHashMap<Reflection.Parameter, Object> values = new LinkedHashMap<>();
-
-                            for( int i = 0; i < parameters.size(); i++ ) values.put( parameters.get( i ), args[i] );
-
-                            paramErrors.validateParameters( values, method, instance, false );
-
-                            if( paramErrors.failed() ) {
-                                runAsserts( paramErrors );
-                                return null;
-                            }
-
-                            ValidationErrors methodErrors = Validators
-                                .forMethod( method, instance, false )
-                                .validate( args, values );
-                            runAsserts( methodErrors );
-                            if( methodErrors.failed() ) return null;
-
-                            return method.invoke( instance, args );
-                        } )
+                    var method = Reflect.reflect( instance.getClass() )
+                        .method( jmethod )
                         .orElse( null );
+                    if( method == null ) throw new NoSuchMethodError( jmethod.toString() );
+                    var paramErrors = ValidationErrors.empty();
+
+                    var parameters = method.parameters;
+
+                    Map<Reflection.Parameter, Object> originalValues = Stream.of( parameters )
+                        .zipWithIndex()
+                        .<Reflection.Parameter, Object>map( ( parameter, i ) -> __( parameter, Binder.json.marshal( args[i] ) ) )
+                        .toMap();
+
+                    paramErrors = paramErrors.validateParameters( originalValues, method, instance, true );
+
+                    if( paramErrors.failed() ) {
+                        runAsserts( paramErrors );
+                        return null;
+                    }
+
+                    var values = new LinkedHashMap<Reflection.Parameter, Object>();
+
+                    for( int i = 0; i < parameters.size(); i++ ) values.put( parameters.get( i ), args[i] );
+
+                    paramErrors = paramErrors.validateParameters( values, method, instance, false );
+
+                    if( paramErrors.failed() ) {
+                        runAsserts( paramErrors );
+                        return null;
+                    }
+
+                    var methodErrors = Validators
+                        .forMethod( method, instance, false )
+                        .validate( args, values );
+                    if( methodErrors.failed() )
+                        runAsserts( methodErrors );
+                    if( methodErrors.failed() ) return null;
+
+                    try {
+                        return method.invoke( instance, args );
+                    } catch( ReflectException e ) {
+                        var cause = e.getCause();
+                        if( cause instanceof InvocationTargetException && ( cause = cause.getCause() ) instanceof WsClientException ) {
+                            var wsClientException = ( WsClientException ) cause;
+                            var code = wsClientException.code;
+                            var errors = wsClientException.errors;
+
+                            var validationErrors = ValidationErrors.errors( code, errors );
+                            runAsserts( validationErrors );
+                            return null;
+                        } else {
+                            throw Throwables.propagate( e );
+                        }
+                    }
                 };
 
                 proxy = ( I ) factory.create( new Class<?>[0], new Object[0], handler );
@@ -173,7 +187,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
         }
 
         private void runAsserts( ValidationErrors errors ) {
-            ValidationErrorsAssertion assertion = ValidationErrorsAssertion.assertValidationErrors( errors );
+            var assertion = ValidationErrorsAssertion.assertValidationErrors( errors );
             assertions.forEach( f -> f.apply( assertion ) );
         }
 

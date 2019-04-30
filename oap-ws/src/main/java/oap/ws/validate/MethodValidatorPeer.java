@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
+import oap.util.Lists;
 import oap.util.Stream;
 import oap.ws.WsException;
 
@@ -42,20 +43,19 @@ public class MethodValidatorPeer implements ValidatorPeer {
 
     public MethodValidatorPeer( WsValidate validate, Reflection.Method targetMethod, Object instance, Type type ) {
         if( type == Type.PARAMETER )
-            this.validators = Stream.of( validate.value() )
-                .<Validator>map( m -> new ParameterValidator( m, instance ) )
-                .toList();
+            this.validators = Lists.map( validate.value(), m -> new ParameterValidator( m, instance ) );
         else
-            this.validators = Stream.of( validate.value() )
-                .<Validator>map( m -> new MethodValidator( m, targetMethod, instance ) )
-                .toList();
+            this.validators = Lists.map( validate.value(), m -> new MethodValidator( m, targetMethod, instance ) );
     }
 
     @Override
     public ValidationErrors validate( Object value, Map<Reflection.Parameter, Object> originalValues ) {
-        return Stream.of( validators )
-            .foldLeft( ValidationErrors.empty(),
-                ( e, v ) -> e.merge( v.validate( value ) ) );
+        var ret = ValidationErrors.empty();
+        for( var validator : validators ) {
+            ret = ret.merge( validator.validate( value ) );
+        }
+
+        return ret;
     }
 
     private abstract static class Validator {
