@@ -160,7 +160,6 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
                     return new Metadata<>( object );
                 } );
                 data.put( id, metadata );
-                metadata.setUpdated();
             } else {
                 if( predicate.test( metadata.object ) ) {
                     if( constraints.isEmpty() ) {
@@ -229,12 +228,16 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         return data;
     }
 
+    /**
+     * @see Storage#fsync()
+     */
     @Override
+    @Deprecated(forRemoval=true)
     public void fsync() {
         for( DataListener<T> dataListener : this.dataListeners ) dataListener.fsync();
     }
 
-    protected void fireUpdated( T object, boolean isNew ) {
+    public void fireUpdated( T object, boolean isNew ) {
         for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( object, isNew );
     }
 
@@ -277,6 +280,7 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public void close() {
+        data = null; // to make it accessible for GC
     }
 
 

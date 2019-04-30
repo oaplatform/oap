@@ -31,6 +31,9 @@ import org.bson.codecs.configuration.CodecRegistries;
 
 import java.io.Closeable;
 
+/**
+ * Wrapper for the {@link com.mongodb.MongoClient}
+ */
 public class MongoClient implements Closeable {
     public final MongoDatabase database;
     public final com.mongodb.MongoClient mongoClient;

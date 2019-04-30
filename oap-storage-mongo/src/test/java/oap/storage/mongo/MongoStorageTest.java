@@ -24,11 +24,7 @@
 
 package oap.storage.mongo;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.storage.Identifier;
-import oap.util.Id;
 import org.testng.annotations.Test;
 
 import static com.mongodb.client.model.Filters.and;
@@ -39,20 +35,24 @@ import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * It requires installed MongoDB on the machine with enabled Replica Set Oplog
+ *
+ * @see <a href="https://docs.mongodb.com/manual/administration/install-community/">Install MongoDB Community Edition</a>
+ * @see <a href="https://docs.mongodb.com/manual/tutorial/deploy-replica-set-for-testing/">Deploy a Replica Set for
+ *      Testing and Development</a>
+ */
 @Slf4j
 public class MongoStorageTest extends AbstractMongoTest {
 
     @Test
     public void store() {
-        try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test",
-            Identifier.<Bean>forAnnotation()
-                .suggestion( o -> o.name )
-                .length( 10 )
-                .build(), SERIALIZED ) ) {
+        try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", beanIdentifier, SERIALIZED ) ) {
             storage.start();
             Bean bean1 = storage.store( new Bean( "test1" ) );
             Bean bean2 = storage.store( new Bean( "test2" ) );
-            storage.store( new Bean( bean1.id, "test3" ) );
+            // rewrite bean2 'test2' with 'test3' name
+            bean2 = storage.store( new Bean( bean2.id, "test3" ) );
 
             log.debug( "bean1 = {}", bean1 );
             log.debug( "bean2 = {}", bean2 );
@@ -86,7 +86,7 @@ public class MongoStorageTest extends AbstractMongoTest {
     }
 
     @Test()
-    public void updateMongo() {
+    public void update() {
         store();
         try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED );
              var oplogService = new OplogService( mongoClient ) ) {
@@ -115,27 +115,6 @@ public class MongoStorageTest extends AbstractMongoTest {
 
             assertEventually( 100, 100, () -> assertThat( storage.get( bean2.id ).get().c ).isEqualTo( 100 ) );
             assertThat( storage.get( bean1.id ).get().c ).isEqualTo( 1 );
-        }
-    }
-
-    @ToString
-    @EqualsAndHashCode( of = { "id" } )
-    public static class Bean {
-        @Id
-        public String id;
-        public String name;
-        public int c;
-
-        public Bean( String id, String name ) {
-            this.id = id;
-            this.name = name;
-        }
-
-        public Bean( String name ) {
-            this.name = name;
-        }
-
-        public Bean() {
         }
     }
 }

@@ -45,6 +45,12 @@ public interface Storage<T> extends Iterable<T>, AutoCloseable {
 
     long size();
 
+    /**
+     * Insert or Update object within Metadata
+     *
+     * @param object to be stored in this Storage
+     * @return stored object
+     */
     T store( T object );
 
     void store( Collection<T> objects );
@@ -87,8 +93,10 @@ public interface Storage<T> extends Iterable<T>, AutoCloseable {
     Map<String, T> snapshot( boolean clean );
 
     /**
+     * TODO:
      * remove it. There must be no need to sync storage explicitly!
      */
+    @Deprecated
     void fsync();
 
     void addConstraint( Constraint<T> constraint );
@@ -97,11 +105,15 @@ public interface Storage<T> extends Iterable<T>, AutoCloseable {
 
     void removeDataListener( DataListener<T> dataListener );
 
+    /**
+     * Data change listener
+     *
+     * @param <T2> object in {@link Storage}, which is changed
+     */
     interface DataListener<T2> {
 
         default void updated( T2 object, boolean added ) {
         }
-
 
         default void updated( Collection<T2> objects ) {
         }

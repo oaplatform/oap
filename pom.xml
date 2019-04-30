@@ -34,7 +34,7 @@
     <name>oap</name>
 
     <prerequisites>
-        <maven>3.2.5</maven>
+        <maven>3.5.0</maven>
     </prerequisites>
 
     <modules>
@@ -132,6 +132,9 @@
                         -Dlogback.configurationFile=${session.executionRootDirectory}/oap-stdlib/src/test/resources/logback-test.xml
                     </argLine>
                     <trimStackTrace>false</trimStackTrace>
+                    <!--TODO: remove this ignore once all tests pass
+                         For tests dependent on the external services, make the separate profile to run them
+                         within a specific environment-->
                     <testFailureIgnore>true</testFailureIgnore>
                     <useFile>true</useFile>
                     <disableXmlReport>false</disableXmlReport>

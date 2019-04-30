@@ -46,7 +46,6 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
@@ -89,48 +88,48 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
 
     public void start() {
-        this.load();
-        this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
-        this.storage.addDataListener( this );
+        Threads.synchronously( lock, () -> {
+            this.load();
+            this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), fsync, this::fsync );
+            this.storage.addDataListener( this );
+        } );
     }
 
     @SneakyThrows
     private void load() {
         log.debug( "loading data from {}", path );
-        Threads.synchronously( lock, () -> {
-            Files.ensureDirectory( path );
-            List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
-            log.debug( "found {} files", paths.size() );
 
-            for( Path file : paths ) {
-                Persisted persisted = Persisted.valueOf( file );
+        Files.ensureDirectory( path );
+        List<Path> paths = Files.deepCollect( path, p -> p.getFileName().toString().endsWith( ".json" ) );
+        log.debug( "found {} files", paths.size() );
 
-                for( long version = persisted.version; version < this.version; version++ ) file = migration( file );
+        for( Path file : paths ) {
+            Persisted persisted = Persisted.valueOf( file );
 
-                Metadata<T> metadata = Binder.json.unmarshal( new TypeRef<Metadata<T>>() {}, file );
+            for( long version = persisted.version; version < this.version; version++ ) file = migration( file );
 
-                Path newPath = pathFor( metadata.object );
-                if( !newPath.equals( file ) ) {
-                    log.trace( "moving {} => {}", file, newPath );
-                    Files.delete( file );
-                    persist( metadata );
-                }
+            Metadata<T> metadata = Binder.json.unmarshal( new TypeRef<>() {}, file );
 
-                var id = storage.identifier.get( metadata.object );
-
-                storage.data.put( id, metadata );
-
+            Path newPath = pathFor( metadata.object );
+            if( !newPath.equals( file ) ) {
+                log.trace( "moving {} => {}", file, newPath );
+                Files.delete( file );
+                persist( metadata );
             }
 
-            log.info( storage.data.size() + " object(s) loaded." );
-        } );
+            var id = storage.identifier.get( metadata.object );
+
+            storage.data.put( id, metadata );
+        }
+
+        log.info( storage.data.size() + " object(s) loaded." );
     }
 
     @SneakyThrows
     private Path migration( Path path ) {
 
         return Threads.synchronously( lock, () -> {
-            JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {
+            JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeRef<>() {
             }, path ) );
 
             Persisted fn = Persisted.valueOf( path );
@@ -177,25 +176,23 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
         }
     }
 
-    public void delete( T id ) {
-        Threads.synchronously( lock, () -> Files.delete( pathFor( id ) ) );
-    }
-
     @Override
     public void close() {
         log.debug( "closing {}...", this );
-        Threads.synchronously( lock, () -> {
-            Scheduled.cancel( scheduled );
-            fsync( scheduled.lastExecuted() );
-        } );
-        log.debug( "closed {}", this );
+        if( scheduled != null && storage != null ) {
+            Threads.synchronously( lock, () -> {
+                Scheduled.cancel( scheduled );
+                fsync( scheduled.lastExecuted() );
+                storage.close();
+            } );
+        } else {
+            log.debug( "This {} was't started or already closed", this );
+        }
     }
 
     @Override
     public void fsync() {
-        Threads.synchronously( lock, () -> {
-            fsync( scheduled.lastExecuted() );
-        } );
+        fsync( scheduled.lastExecuted() );
     }
 
     private Path pathFor( T object ) {
@@ -206,12 +203,12 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "/" + hashCode();
+        return String.join( "/", getClass().getSimpleName(), path.toString(), Integer.toString( hashCode() ) );
     }
 
     @Override
     public void deleted( T object ) {
-        delete( object );
+        Threads.synchronously( lock, () -> Files.delete( pathFor( object ) ) );
     }
 
     @Override

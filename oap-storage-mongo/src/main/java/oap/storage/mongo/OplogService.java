@@ -42,12 +42,17 @@ import static com.mongodb.client.model.Filters.gt;
 import static com.mongodb.client.model.Filters.in;
 import static com.mongodb.client.model.Filters.regex;
 
+/**
+ * This service runs within a separate {@link Thread} and detects the changes on the Mongo collection via
+ * {@link OplogListener}
+ */
 @Slf4j
 public class OplogService implements Runnable, Closeable {
     private final MongoClient mongoClient;
     private final ListMultimap<String, OplogListener> listeners = MultimapBuilder.hashKeys().arrayListValues().build();
     private MongoCursor<Document> cursor;
     private Thread thread;
+    private boolean running;
 
 
     public OplogService( MongoClient mongoClient ) {
@@ -56,15 +61,18 @@ public class OplogService implements Runnable, Closeable {
 
     public synchronized void addListener( String table, OplogListener listener ) {
         listeners.put( table, listener );
-
         if( cursor != null ) {
             close();
             start();
         }
     }
 
+    /**
+     * Starts Mongo OpLog Service
+     */
     public synchronized void start() {
         log.debug( "starting oplog listening {} for {}", this, mongoClient.database.getName() );
+        running = true;
         var oplogRs = mongoClient.mongoClient.getDatabase( "local" ).getCollection( "oplog.rs" );
         final Bson filter = and(
             in( "op", "i", "u", "d" ),
@@ -91,19 +99,18 @@ public class OplogService implements Runnable, Closeable {
 
     public synchronized void stop() {
         log.debug( "stopping oplog listening {} for {}", this, mongoClient.database.getName() );
-        if( thread != null ) thread.interrupt();
-        if( cursor != null ) cursor.close();
-        try {
-            if( thread != null ) thread.stop();
-        } catch( ThreadDeath e ) {
-            //
+        if( thread != null ) {
+            thread.interrupt();
+            running = false;
+            thread = null;
         }
+        if( cursor != null ) cursor.close();
     }
 
     @Override
     public void run() {
         try {
-            while( cursor.hasNext() ) {
+            while( cursor.hasNext() && running) {
                 var document = cursor.next();
                 log.trace( "oplog {}", document );
 
@@ -137,8 +144,6 @@ public class OplogService implements Runnable, Closeable {
         } catch( MongoInterruptedException ignored ) {
         } catch( IllegalStateException ise ) {
             log.debug( ise.getMessage() );
-        } catch( ThreadDeath ignored ) {
-//why ??
         }
     }
 
@@ -149,6 +154,10 @@ public class OplogService implements Runnable, Closeable {
         return fns.substring( tableIndex + 1 );
     }
 
+    /**
+     * Listener interface, which listens changes on the MongoStorage and do the appropriate changes (update, delete,
+     * insert) in the other storages, for example internal {@link oap.storage.MemoryStorage}
+     */
     public interface OplogListener {
         void updated( String table, String id );
 
