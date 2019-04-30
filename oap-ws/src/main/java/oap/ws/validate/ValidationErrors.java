@@ -48,7 +48,7 @@ public final class ValidationErrors implements Mergeable<ValidationErrors> {
 
     private ValidationErrors( int code, List<String> errors ) {
         this.code = code;
-        this.errors = List.copyOf( errors );
+        this.errors = Lists.distinct( List.copyOf( errors ) );
     }
 
     public static ValidationErrors empty() {
