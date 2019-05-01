@@ -26,6 +26,7 @@ package oap.template;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.StringBuilderPool;
 import oap.tools.MemoryClassLoader;
 import oap.util.Pair;
 import oap.util.Try;
@@ -72,29 +73,30 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
         this.map = map;
         this.overrides = overrides;
         this.mapper = mapper;
-        StringBuilder c = new StringBuilder();
+        var c = new StringBuilder();
 
         try {
-            AtomicInteger num = new AtomicInteger();
-            FieldStack fields = new FieldStack();
+            var num = new AtomicInteger();
+            var fields = new FieldStack();
 
-            String className = clazz.getName().replace( '$', '.' );
+            var className = clazz.getName().replace( '$', '.' );
 
             c.append( "package " ).append( getClass().getPackage().getName() ).append( ";\n"
                 + "\n"
                 + "import oap.util.Strings;\n"
-                + "import oap.concurrent.ThreadLocalStringBuilder;\n"
+                + "import oap.concurrent.StringBuilderPool;\n"
                 + "\n"
                 + "import java.util.*;\n"
                 + "import java.util.function.BiFunction;\n"
                 + "import com.google.common.base.CharMatcher;\n"
                 + "\n"
                 + "public  class " ).append( name ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
-                + "   private final ThreadLocalStringBuilder tlsb = new ThreadLocalStringBuilder();\n"
                 + "\n"
                 + "   @Override\n"
                 + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
-                + "     StringBuilder jb = tlsb.get();\n"
+                + "     var jbPool = StringBuilderPool.claim();\n"
+                + "     var jb = jbPool.sb;\n"
+                + "     try {\n"
                 + "\n" );
 
             int size = pathAndDefault.size();
@@ -105,10 +107,13 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
             c.append( "\n"
                 + "     return acc.build();\n"
+                + "     } finally {\n"
+                + "       jbPool.release();\n"
+                + "     }\n"
                 + "   }\n"
                 + "}" );
 
-            AtomicInteger line = new AtomicInteger( 0 );
+            var line = new AtomicInteger( 0 );
             log.trace( "\n{}", new BufferedReader( new StringReader( c.toString() ) )
                 .lines()
                 .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
@@ -116,7 +121,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
             );
 
             var fullTemplateName = getClass().getPackage().getName() + "." + name;
-            MemoryClassLoader mcl = new MemoryClassLoader( fullTemplateName, c.toString(), cacheFile );
+            var mcl = new MemoryClassLoader( fullTemplateName, c.toString(), cacheFile );
             func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( fullTemplateName ).newInstance();
 
         } catch( Exception e ) {
@@ -128,7 +133,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
     private void addPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c,
                           AtomicInteger num, FieldStack fields,
                           boolean last ) throws NoSuchMethodException, NoSuchFieldException {
-        AtomicInteger tab = new AtomicInteger( 5 );
+        var tab = new AtomicInteger( 5 );
 
         c.append( "\n" );
         tab( c, tab ).append( "// " ).append(
@@ -150,9 +155,9 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
     private void buildPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c,
                             AtomicInteger num, FieldStack fields, boolean last, AtomicInteger tab, boolean validation ) throws NoSuchFieldException, NoSuchMethodException {
         var orPath = StringUtils.split( line.path, '|' );
-        int orIndex = 0;
+        var orIndex = 0;
 
-        for( int i = 0; i < orPath.length; i++ ) {
+        for( var i = 0; i < orPath.length; i++ ) {
             var path = orPath[i].trim();
             var newPath = overrides.get( path );
             orPath[i] = newPath != null ? newPath : path;
@@ -199,8 +204,8 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
             int sp = 0;
             StringBuilder newPath = new StringBuilder( "s." );
             MutableObject<Type> lc = new MutableObject<>( clazz );
-            AtomicInteger psp = new AtomicInteger( 0 );
-            AtomicInteger opts = new AtomicInteger( 0 );
+            var psp = new AtomicInteger( 0 );
+            var opts = new AtomicInteger( 0 );
             while( sp >= 0 ) {
                 sp = currentPath.indexOf( '.', sp + 1 );
 
@@ -241,16 +246,16 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 }
             }
 
-            int in = newPath.toString().lastIndexOf( '.' );
+            var in = newPath.toString().lastIndexOf( '.' );
             String pField = in > 0 ? newPath.substring( 0, in ) : newPath.toString();
             String cField = newPath.substring( in + 1 );
 
-            boolean isJoin = cField.startsWith( "{" );
+            var isJoin = cField.startsWith( "{" );
             String[] cFields = isJoin
                 ? StringUtils.split( cField.substring( 1, cField.length() - 1 ), ',' ) : new String[] { cField };
 
             Type parentClass = lc.getValue();
-            boolean isOptionalParent = isOptional( parentClass ) && !cField.startsWith( "isPresent" );
+            var isOptionalParent = isOptional( parentClass ) && !cField.startsWith( "isPresent" );
             String optField = null;
             if( isOptionalParent ) {
                 opts.incrementAndGet();
@@ -434,7 +439,12 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
     @Override
     public String renderString( T source ) {
-        return render( source, new StringAccumulator() );
+        var sbPool = StringBuilderPool.claim();
+        try {
+            return render( source, new StringAccumulator( sbPool.sb ) );
+        } finally {
+            sbPool.release();
+        }
     }
 
     private static class FieldStack {

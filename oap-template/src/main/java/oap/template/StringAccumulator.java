@@ -25,8 +25,11 @@
 package oap.template;
 
 public class StringAccumulator implements Accumulator<String> {
+    private final StringBuilder sb;
 
-    private final java.lang.StringBuilder sb = new java.lang.StringBuilder();
+    public StringAccumulator( StringBuilder sb ) {
+        this.sb = sb;
+    }
 
     @Override
     public String build() {
