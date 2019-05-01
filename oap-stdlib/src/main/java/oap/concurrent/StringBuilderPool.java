@@ -39,15 +39,16 @@ import java.util.concurrent.TimeUnit;
  * Created by igor.petrenko on 01.05.2019.
  */
 public final class StringBuilderPool {
+    private static final Timeout TIMEOUT = new Timeout( 10, TimeUnit.SECONDS );
     private static Pool<StringBuilderPoolable> pool;
-    private static Timeout timeout;
 
     static {
         var allocator = new StringBuilderAllocator();
         var config = new Config<StringBuilderPoolable>()
+            .setBackgroundExpirationEnabled( false )
+            .setExpiration( info -> false )
             .setAllocator( allocator );
         pool = new BlazePool<>( config );
-        timeout = new Timeout( 10, TimeUnit.SECONDS );
     }
 
     private StringBuilderPool() {
@@ -55,7 +56,9 @@ public final class StringBuilderPool {
 
     @SneakyThrows
     public static StringBuilderPoolable claim() {
-        var claim = pool.claim( timeout );
+        var claim = pool.claim( TIMEOUT );
+        while( claim == null ) claim = pool.claim( TIMEOUT );
+
         claim.reset();
         return claim;
     }
