@@ -90,7 +90,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 + "import com.google.common.base.CharMatcher;\n"
                 + "\n"
                 + "public  class " ).append( name ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
-                + "   private static ThreadLocalStringBuilder tlsb = new ThreadLocalStringBuilder();\n"
+                + "   private final ThreadLocalStringBuilder tlsb = new ThreadLocalStringBuilder();\n"
                 + "\n"
                 + "   @Override\n"
                 + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
