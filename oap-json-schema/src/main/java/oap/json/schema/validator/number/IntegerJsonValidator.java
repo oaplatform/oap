@@ -33,4 +33,8 @@ public class IntegerJsonValidator extends NumberJsonValidator<Integer> {
         return value instanceof Long && ( Long ) value == ( long ) ( ( Long ) value ).intValue();
     }
 
+    @Override
+    protected String print( double value ) {
+        return String.valueOf( ( int ) value );
+    }
 }

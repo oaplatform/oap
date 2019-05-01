@@ -33,4 +33,8 @@ public class LongJsonValidator extends NumberJsonValidator<Long> {
         return value instanceof Long;
     }
 
+    @Override
+    protected String print( double value ) {
+        return String.valueOf( ( long ) value );
+    }
 }

@@ -46,18 +46,22 @@ public abstract class NumberJsonValidator<T extends Number> extends JsonSchemaVa
         final List<String> errors = new ArrayList<>();
 
         schema.minimum.filter( minimum -> doubleValue < minimum && !schema.exclusiveMinimum.orElse( false ) )
-            .ifPresent( minimum -> errors.add( properties.error( "number " + doubleValue + " is lower than the required minimum " + minimum ) ) );
+            .ifPresent( minimum -> errors.add( properties.error( "number " + print( doubleValue ) + " is lower than the required minimum " + print( minimum ) ) ) );
 
         schema.maximum.filter( maximum -> doubleValue > maximum && !schema.exclusiveMaximum.orElse( false ) )
-            .ifPresent( maximum -> errors.add( properties.error( "number " + doubleValue + " is greater than the required maximum " + maximum ) ) );
+            .ifPresent( maximum -> errors.add( properties.error( "number " + print( doubleValue ) + " is greater than the required maximum " + print( maximum ) ) ) );
 
         schema.minimum.filter( minimum -> doubleValue <= minimum && schema.exclusiveMinimum.orElse( false ) )
-            .ifPresent( minimum -> errors.add( properties.error( "number " + doubleValue + " is not strictly greater than the required minimum " + minimum ) ) );
+            .ifPresent( minimum -> errors.add( properties.error( "number " + print( doubleValue ) + " is not strictly greater than the required minimum " + print( minimum ) ) ) );
 
         schema.maximum.filter( maximum -> doubleValue >= maximum && schema.exclusiveMaximum.orElse( false ) )
-            .ifPresent( maximum -> errors.add( properties.error( "number " + doubleValue + " is not strictly lower than the required maximum " + maximum ) ) );
+            .ifPresent( maximum -> errors.add( properties.error( "number " + print( doubleValue ) + " is not strictly lower than the required maximum " + print( maximum ) ) ) );
 
         return errors;
+    }
+
+    protected String print( double value ) {
+        return String.valueOf( value );
     }
 
     @Override

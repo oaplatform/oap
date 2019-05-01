@@ -72,8 +72,8 @@ public class NumberSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "2" );
         assertOk( schema, "20" );
 
-        assertFailure( schema, "1", "number 1.0 is lower than the required minimum 2.0" );
-        assertFailure( schema, "-3", "number -3.0 is lower than the required minimum 2.0" );
+        assertFailure( schema, "1", "number 1 is lower than the required minimum 2" );
+        assertFailure( schema, "-3", "number -3 is lower than the required minimum 2" );
     }
 
     @Test
@@ -82,7 +82,7 @@ public class NumberSchemaTest extends AbstractSchemaTest {
 
         assertOk( schema, "3" );
 
-        assertFailure( schema, "2", "number 2.0 is not strictly greater than the required minimum 2.0" );
+        assertFailure( schema, "2", "number 2 is not strictly greater than the required minimum 2" );
     }
 
     @Test
@@ -92,7 +92,7 @@ public class NumberSchemaTest extends AbstractSchemaTest {
         assertOk( schema, "2" );
         assertOk( schema, "-100" );
 
-        assertFailure( schema, "4", "number 4.0 is greater than the required maximum 3.0" );
+        assertFailure( schema, "4", "number 4 is greater than the required maximum 3" );
     }
 
     @Test
@@ -101,6 +101,6 @@ public class NumberSchemaTest extends AbstractSchemaTest {
 
         assertOk( schema, "2" );
 
-        assertFailure( schema, "3", "number 3.0 is not strictly lower than the required maximum 3.0" );
+        assertFailure( schema, "3", "number 3 is not strictly lower than the required maximum 3" );
     }
 }
