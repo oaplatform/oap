@@ -266,6 +266,10 @@ public class StringTemplateTest extends AbstractTest {
     private static class InvocationAccumulator extends StringAccumulator {
         int invs = 0;
 
+        public InvocationAccumulator() {
+            super( new StringBuilder() );
+        }
+
         @Override
         public Accumulator accept( String o ) {
             invs++;
