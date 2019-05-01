@@ -55,18 +55,20 @@ public final class StringBuilderPool {
 
     @SneakyThrows
     public static StringBuilderPoolable claim() {
-        return pool.claim( timeout );
+        var claim = pool.claim( timeout );
+        claim.reset();
+        return claim;
     }
 
     private static class StringBuilderAllocator implements Allocator<StringBuilderPoolable> {
 
         @Override
-        public StringBuilderPoolable allocate( Slot slot ) {
+        public final StringBuilderPoolable allocate( Slot slot ) {
             return new StringBuilderPoolable( slot );
         }
 
         @Override
-        public void deallocate( StringBuilderPoolable stringBuilder ) {
+        public final void deallocate( StringBuilderPoolable stringBuilder ) {
             stringBuilder.release();
         }
     }
@@ -80,8 +82,12 @@ public final class StringBuilderPool {
         }
 
         @Override
-        public void release() {
+        public final void release() {
             slot.release( this );
+        }
+
+        public final void reset() {
+            sb.delete( 0, sb.length() );
         }
     }
 }
