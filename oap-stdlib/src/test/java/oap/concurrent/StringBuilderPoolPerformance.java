@@ -33,10 +33,20 @@ import org.testng.annotations.Test;
 public class StringBuilderPoolPerformance {
     @Test
     public void test() {
+        var pool1 = new StringBuilderPool();
+        var pool2 = new StringBuilderPool();
+        var pool3 = new StringBuilderPool();
+
         Benchmark.benchmark( "BlazePool", 10000000, () -> {
-            var sbp = StringBuilderPool.claim();
-            sbp.sb.append( "test" );
-            sbp.release();
+            var sbp1 = pool1.claim();
+            var sbp2 = pool2.claim();
+            var sbp3 = pool3.claim();
+            sbp1.sb.append( "test" );
+            sbp2.sb.append( "test1" );
+            sbp3.sb.append( "test2" );
+            sbp1.release();
+            sbp2.release();
+            sbp3.release();
 
         } ).inThreads( 128 ).experiments( 5 ).run();
     }

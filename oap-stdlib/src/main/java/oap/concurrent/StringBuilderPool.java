@@ -38,11 +38,11 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by igor.petrenko on 01.05.2019.
  */
-public final class StringBuilderPool {
-    private static final Timeout TIMEOUT = new Timeout( 10, TimeUnit.SECONDS );
-    private static Pool<StringBuilderPoolable> pool;
+public class StringBuilderPool {
+    private static final Timeout TIMEOUT = new Timeout( 10, TimeUnit.MICROSECONDS );
+    private Pool<StringBuilderPoolable> pool;
 
-    static {
+    public StringBuilderPool() {
         var allocator = new StringBuilderAllocator();
         var config = new Config<StringBuilderPoolable>()
             .setBackgroundExpirationEnabled( false )
@@ -51,11 +51,8 @@ public final class StringBuilderPool {
         pool = new BlazePool<>( config );
     }
 
-    private StringBuilderPool() {
-    }
-
     @SneakyThrows
-    public static StringBuilderPoolable claim() {
+    public StringBuilderPoolable claim() {
         var claim = pool.claim( TIMEOUT );
         while( claim == null ) claim = pool.claim( TIMEOUT );
 
