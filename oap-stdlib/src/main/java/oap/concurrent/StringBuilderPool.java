@@ -25,6 +25,7 @@
 package oap.concurrent;
 
 import lombok.SneakyThrows;
+import oap.util.Throwables;
 import stormpot.Allocator;
 import stormpot.BlazePool;
 import stormpot.Config;
@@ -33,6 +34,8 @@ import stormpot.Poolable;
 import stormpot.Slot;
 import stormpot.Timeout;
 
+import java.io.Writer;
+import java.lang.reflect.Field;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -40,11 +43,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class StringBuilderPool {
     private static final Timeout TIMEOUT = new Timeout( 10, TimeUnit.MICROSECONDS );
-    private Pool<StringBuilderPoolable> pool;
+    private Pool<StringBuilderWriter> pool;
 
     public StringBuilderPool() {
         var allocator = new StringBuilderAllocator();
-        var config = new Config<StringBuilderPoolable>()
+        var config = new Config<StringBuilderWriter>()
             .setBackgroundExpirationEnabled( false )
             .setExpiration( info -> false )
             .setAllocator( allocator );
@@ -52,7 +55,7 @@ public class StringBuilderPool {
     }
 
     @SneakyThrows
-    public StringBuilderPoolable claim() {
+    public StringBuilderWriter claim() {
         var claim = pool.claim( TIMEOUT );
         while( claim == null ) claim = pool.claim( TIMEOUT );
 
@@ -60,34 +63,102 @@ public class StringBuilderPool {
         return claim;
     }
 
-    private static class StringBuilderAllocator implements Allocator<StringBuilderPoolable> {
+    private static class StringBuilderAllocator implements Allocator<StringBuilderWriter> {
 
         @Override
-        public final StringBuilderPoolable allocate( Slot slot ) {
-            return new StringBuilderPoolable( slot );
+        public final StringBuilderWriter allocate( Slot slot ) {
+            return new StringBuilderWriter( slot );
         }
 
         @Override
-        public final void deallocate( StringBuilderPoolable stringBuilder ) {
+        public final void deallocate( StringBuilderWriter stringBuilder ) {
             stringBuilder.release();
         }
     }
 
-    public static class StringBuilderPoolable implements Poolable {
+    public static class StringBuilderWriter extends Writer implements Poolable {
+        private static Field countField;
+
+        static {
+            try {
+                countField = StringBuilder.class.getSuperclass().getDeclaredField( "count" );
+                countField.setAccessible( true );
+            } catch( NoSuchFieldException e ) {
+                throw Throwables.propagate( e );
+            }
+        }
+
         public final StringBuilder sb = new StringBuilder();
         private final Slot slot;
 
-        public StringBuilderPoolable( Slot slot ) {
+        public StringBuilderWriter( Slot slot ) {
             this.slot = slot;
         }
 
         @Override
-        public final void release() {
+        public void write( char[] cbuf, int off, int len ) {
+            sb.append( cbuf, off, len );
+        }
+
+        @Override
+        public void write( char[] cbuf ) {
+            sb.append( cbuf );
+        }
+
+        @Override
+        public void write( String str ) {
+            sb.append( str );
+        }
+
+        @Override
+        public void write( String str, int off, int len ) {
+            sb.append( str, off, len );
+        }
+
+        @Override
+        public void write( int c ) {
+            sb.append( ( char ) c );
+        }
+
+        @Override
+        public Writer append( char c ) {
+            sb.append( c );
+            return this;
+        }
+
+        @Override
+        public Writer append( CharSequence csq ) {
+            sb.append( csq );
+            return this;
+        }
+
+        @Override
+        public Writer append( CharSequence csq, int start, int end ) {
+            sb.append( csq, start, end );
+            return this;
+        }
+
+        @Override
+        public void flush() {
+        }
+
+        @Override
+        public void close() {
+        }
+
+        @Override
+        public void release() {
             slot.release( this );
         }
 
-        public final void reset() {
-            sb.delete( 0, sb.length() );
+        @Override
+        public String toString() {
+            return sb.toString();
+        }
+
+        @SneakyThrows
+        public void reset() {
+            countField.set( sb, 0 );
         }
     }
 }

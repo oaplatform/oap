@@ -26,9 +26,7 @@ package oap.json;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -67,6 +65,7 @@ import org.joda.time.ReadableInstant;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Writer;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.nio.file.Path;
@@ -222,6 +221,14 @@ public class Binder {
     public String marshal( Object value ) {
         try {
             return mapper.writeValueAsString( value );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
+    }
+
+    public void marshal( Object value, Writer writer ) {
+        try {
+            mapper.writeValue( writer, value );
         } catch( IOException e ) {
             throw new JsonException( e );
         }
