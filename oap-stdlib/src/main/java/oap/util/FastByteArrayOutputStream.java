@@ -46,4 +46,9 @@ public class FastByteArrayOutputStream extends it.unimi.dsi.fastutil.io.FastByte
     public InputStream getInputStream() {
         return new FastByteArrayInputStream( array, 0, length );
     }
+
+    @Override
+    public String toString() {
+        return new String( array, 0, length );
+    }
 }

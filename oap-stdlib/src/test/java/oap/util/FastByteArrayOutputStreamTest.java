@@ -40,6 +40,7 @@ public class FastByteArrayOutputStreamTest {
         baos.write( '3' );
 
         assertThat( baos.getInputStream() ).hasContent( "123" );
+        assertThat( baos.toString() ).isEqualTo( "123" );
     }
 
 }
