@@ -61,7 +61,6 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
     private static final String math = "/*+-%";
     private final Map<String, String> overrides;
     private final Map<String, Supplier<String>> mapper;
-    private final StringBuilderPool renderStringPool = new StringBuilderPool();
     private BiFunction<T, Accumulator, ?> func;
     private TemplateStrategy<TLine> map;
 
@@ -92,13 +91,11 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 + "import com.google.common.base.CharMatcher;\n"
                 + "\n"
                 + "public  class " ).append( name ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
-                + "  public final StringBuilderPool sbPool = new StringBuilderPool();\n"
                 + "\n"
                 + "   @Override\n"
                 + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
-                + "     var jbPool = sbPool.claim();\n"
-                + "     var jb = jbPool.sb;\n"
-                + "     try {\n"
+                + "     try(var jbPool = StringBuilderPool.borrowObject()) {\n"
+                + "     var jb = jbPool.getObject();\n"
                 + "\n" );
 
             int size = pathAndDefault.size();
@@ -109,8 +106,6 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
             c.append( "\n"
                 + "     return acc.build();\n"
-                + "     } finally {\n"
-                + "       jbPool.release();\n"
                 + "     }\n"
                 + "   }\n"
                 + "}" );
@@ -441,11 +436,8 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
     @Override
     public String renderString( T source ) {
-        var sbPool = renderStringPool.claim();
-        try {
-            return render( source, new StringAccumulator( sbPool.sb ) );
-        } finally {
-            sbPool.release();
+        try( var sbPool = StringBuilderPool.borrowObject() ) {
+            return render( source, new StringAccumulator( sbPool.getObject() ) );
         }
     }
 

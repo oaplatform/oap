@@ -31,24 +31,33 @@ import org.testng.annotations.Test;
  * Created by igor.petrenko on 01.05.2019.
  */
 public class StringBuilderPoolPerformance {
+    private static final int THREADS = 64;
+    private static final int SAMPLES = 100;
+    private static final int ITERATIONS = 100;
+
     @Test
     public void test() {
-        var pool1 = new StringBuilderPool();
-        var pool2 = new StringBuilderPool();
-        var pool3 = new StringBuilderPool();
+        var threads = new Thread[THREADS];
 
-        Benchmark.benchmark( "BlazePool", 10000000, () -> {
-            var sbp1 = pool1.claim();
-            var sbp2 = pool2.claim();
-            var sbp3 = pool3.claim();
-            sbp1.sb.append( "test" );
-            sbp2.sb.append( "test1" );
-            sbp3.sb.append( "test2" );
-            sbp1.release();
-            sbp2.release();
-            sbp3.release();
+        Benchmark.benchmark( "FastObjectPool", SAMPLES, () -> {
+            for( var i1 = 0; i1 < THREADS; i1++ ) {
+                threads[i1] = new Thread( () -> {
+                    for( var i = 0; i < ITERATIONS; i++ ) {
+                        try( var sbp1 = StringBuilderPool.borrowObject() ) {
+                            sbp1.getObject().append( "test" );
+                        }
+                    }
+                } );
+            }
+            for( var i1 = 0; i1 < THREADS; i1++ ) {
+                threads[i1].start();
+            }
+            for( var i1 = 0; i1 < THREADS; i1++ ) {
+                threads[i1].join();
+            }
+        } ).experiments( 5 ).run();
 
-        } ).inThreads( 128 ).experiments( 5 ).run();
+        System.out.println( StringBuilderPool.getSize() );
     }
 
 }

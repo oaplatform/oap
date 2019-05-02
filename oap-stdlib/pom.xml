@@ -128,9 +128,19 @@
             <version>3.2.0</version>
         </dependency>
         <dependency>
-            <groupId>com.github.chrisvest</groupId>
-            <artifactId>stormpot</artifactId>
-            <version>2.4.1</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-configuration2</artifactId>
+            <version>2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>cn.danielw</groupId>
+            <artifactId>fast-object-pool</artifactId>
+            <version>2.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.conversantmedia</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>1.2.1</version>
         </dependency>
 
         <dependency>

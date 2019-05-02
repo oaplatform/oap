@@ -24,141 +24,62 @@
 
 package oap.concurrent;
 
+import cn.danielw.fop.DisruptorObjectPool;
+import cn.danielw.fop.ObjectFactory;
+import cn.danielw.fop.PoolConfig;
+import cn.danielw.fop.Poolable;
 import lombok.SneakyThrows;
-import oap.util.Throwables;
-import stormpot.Allocator;
-import stormpot.BlazePool;
-import stormpot.Config;
-import stormpot.Pool;
-import stormpot.Poolable;
-import stormpot.Slot;
-import stormpot.Timeout;
-
-import java.io.Writer;
-import java.lang.reflect.Field;
-import java.util.concurrent.TimeUnit;
+import org.apache.commons.configuration2.EnvironmentConfiguration;
 
 /**
  * Created by igor.petrenko on 01.05.2019.
+ * <p>
+ * env:
+ * - POOL_PARTITION_SIZE: 20
+ * - POOL_MAX_SIZE: 150
+ * - POOL_MIN_SIZE: 5
+ * - POOL_MAX_IDLE_MILLISECONDS: 300000
  */
-public class StringBuilderPool {
-    private static final Timeout TIMEOUT = new Timeout( 10, TimeUnit.MICROSECONDS );
-    private Pool<StringBuilderWriter> pool;
+public final class StringBuilderPool {
+    private static final DisruptorObjectPool<StringBuilder> pool;
 
-    public StringBuilderPool() {
-        var allocator = new StringBuilderAllocator();
-        var config = new Config<StringBuilderWriter>()
-            .setBackgroundExpirationEnabled( false )
-            .setExpiration( info -> false )
-            .setAllocator( allocator );
-        pool = new BlazePool<>( config );
+    static {
+        var envConfig = new EnvironmentConfiguration();
+        PoolConfig config = new PoolConfig();
+        config.setPartitionSize( envConfig.getInt( "POOL_PARTITION_SIZE", 20 ) );
+        config.setMaxSize( envConfig.getInt( "POOL_MAX_SIZE", 3000 / 20 ) );
+        config.setMinSize( envConfig.getInt( "POOL_MIN_SIZE", 5 ) );
+        config.setMaxIdleMilliseconds( envConfig.getInt( "POOL_MAX_IDLE_MILLISECONDS", 60 * 1000 * 5 ) );
+
+        ObjectFactory<StringBuilder> factory = new ObjectFactory<>() {
+            @Override
+            public StringBuilder create() {
+                return new StringBuilder();
+            }
+
+            @Override
+            public void destroy( StringBuilder o ) {
+            }
+
+            @Override
+            public boolean validate( StringBuilder o ) {
+                o.delete( 0, o.length() );
+                return true;
+            }
+        };
+
+        pool = new DisruptorObjectPool<>( config, factory );
+    }
+
+    private StringBuilderPool() {
     }
 
     @SneakyThrows
-    public StringBuilderWriter claim() {
-        var claim = pool.claim( TIMEOUT );
-        while( claim == null ) claim = pool.claim( TIMEOUT );
-
-        claim.reset();
-        return claim;
+    public static Poolable<StringBuilder> borrowObject() {
+        return pool.borrowObject();
     }
 
-    private static class StringBuilderAllocator implements Allocator<StringBuilderWriter> {
-
-        @Override
-        public final StringBuilderWriter allocate( Slot slot ) {
-            return new StringBuilderWriter( slot );
-        }
-
-        @Override
-        public final void deallocate( StringBuilderWriter stringBuilder ) {
-            stringBuilder.release();
-        }
-    }
-
-    public static class StringBuilderWriter extends Writer implements Poolable {
-        private static Field countField;
-
-        static {
-            try {
-                countField = StringBuilder.class.getSuperclass().getDeclaredField( "count" );
-                countField.setAccessible( true );
-            } catch( NoSuchFieldException e ) {
-                throw Throwables.propagate( e );
-            }
-        }
-
-        public final StringBuilder sb = new StringBuilder();
-        private final Slot slot;
-
-        public StringBuilderWriter( Slot slot ) {
-            this.slot = slot;
-        }
-
-        @Override
-        public void write( char[] cbuf, int off, int len ) {
-            sb.append( cbuf, off, len );
-        }
-
-        @Override
-        public void write( char[] cbuf ) {
-            sb.append( cbuf );
-        }
-
-        @Override
-        public void write( String str ) {
-            sb.append( str );
-        }
-
-        @Override
-        public void write( String str, int off, int len ) {
-            sb.append( str, off, len );
-        }
-
-        @Override
-        public void write( int c ) {
-            sb.append( ( char ) c );
-        }
-
-        @Override
-        public Writer append( char c ) {
-            sb.append( c );
-            return this;
-        }
-
-        @Override
-        public Writer append( CharSequence csq ) {
-            sb.append( csq );
-            return this;
-        }
-
-        @Override
-        public Writer append( CharSequence csq, int start, int end ) {
-            sb.append( csq, start, end );
-            return this;
-        }
-
-        @Override
-        public void flush() {
-        }
-
-        @Override
-        public void close() {
-        }
-
-        @Override
-        public void release() {
-            slot.release( this );
-        }
-
-        @Override
-        public String toString() {
-            return sb.toString();
-        }
-
-        @SneakyThrows
-        public void reset() {
-            countField.set( sb, 0 );
-        }
+    public static int getSize() {
+        return pool.getSize();
     }
 }
