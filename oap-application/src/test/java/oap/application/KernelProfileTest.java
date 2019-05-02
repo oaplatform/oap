@@ -97,6 +97,14 @@ public class KernelProfileTest extends AbstractTest {
         }
     }
 
+    @Test
+    public void testProfile4() {
+        try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module4.yaml" ) ) ) ) {
+            startWithProfile( kernel, "run" );
+            assertThat( kernel.<Object>service( "container" ) ).isInstanceOf( TestContainer2.class );
+        }
+    }
+
     public interface TestProfile {
 
     }
@@ -113,6 +121,11 @@ public class KernelProfileTest extends AbstractTest {
     public static class TestContainer {
         public TestContainer( TestProfile profile ) {
             assertThat( profile ).isNotNull();
+        }
+    }
+
+    public static class TestContainer2 {
+        public TestContainer2() {
         }
     }
 }

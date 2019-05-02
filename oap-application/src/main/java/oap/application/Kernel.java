@@ -113,12 +113,13 @@ public class Kernel implements Closeable {
     private void fixDeps() {
         for( var module : modules ) {
             log.trace( "module {} services {}", module.name, module.services.keySet() );
-            for( var service : module.services.entrySet() ) {
-                if( !profileEnabled( service.getValue().profiles ) ) continue;
+            for( var serviceEntry : module.services.entrySet() ) {
+                var service = serviceEntry.getValue();
+                if( !profileEnabled( service.profiles ) ) continue;
 
-                log.trace( "fix deps for {} in {}", service.getKey(), module.name );
-                service.getValue().parameters.forEach( ( key, value ) ->
-                    fixDepsParameter( module, service.getValue(), value, false )
+                log.trace( "fix deps for {} in {}", serviceEntry.getKey(), module.name );
+                service.parameters.forEach( ( key, value ) ->
+                    fixDepsParameter( module, service, value, false )
                 );
             }
         }
@@ -280,7 +281,7 @@ public class Kernel implements Closeable {
             linkLinks( si.service, si.instance );
             linkListeners( si.service, si.instance );
             si.service.parameters.forEach( ( parameter, value ) -> linkService( new FieldLinkReflection( si.reflection,
-                    si.instance, parameter ), value, si, true ) );
+                si.instance, parameter ), value, si, true ) );
 
         }
     }
@@ -423,8 +424,8 @@ public class Kernel implements Closeable {
     }
 
     protected Object resolve( String serviceName, String field, String reference, boolean required ) {
-        String linkName = Module.Reference.of( reference ).name;
-        Object linkedService = service( linkName );
+        var linkName = Module.Reference.of( reference ).name;
+        var linkedService = service( linkName );
         log.debug( "for {} linking {} -> {} with {}", serviceName, field, reference, linkedService );
         if( linkedService == null && required && serviceEnabled( modules, linkName ) )
             throw new ApplicationException( "for " + serviceName + " service link " + reference + " is not found" );
@@ -440,22 +441,16 @@ public class Kernel implements Closeable {
     }
 
     public boolean profileEnabled( List<String> profiles ) {
-        if( profiles.isEmpty() ) return true;
-
-        boolean enabled = false;
-        boolean foundIncludeProfile = false;
-
         for( var profile : profiles ) {
             if( profile.startsWith( "-" ) ) {
                 if( this.profiles.contains( profile.substring( 1 ) ) ) return false;
             } else {
-                if( this.profiles.contains( profile ) ) enabled = true;
-                foundIncludeProfile = true;
+                if( !this.profiles.contains( profile ) ) return false;
             }
 
         }
 
-        return enabled || !foundIncludeProfile;
+        return true;
     }
 
     public void enableProfiles( String profile ) {
