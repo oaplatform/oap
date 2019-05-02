@@ -1,4 +1,7 @@
 name: test-profile4
+dependsOn:
+  - module: unknown
+    profile: not-set
 services:
   profile1:
     profiles:

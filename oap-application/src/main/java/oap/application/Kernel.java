@@ -67,6 +67,7 @@ import static oap.application.KernelHelper.forEachModule;
 import static oap.application.KernelHelper.forEachService;
 import static oap.application.KernelHelper.isImplementations;
 import static oap.application.KernelHelper.isServiceLink;
+import static oap.application.KernelHelper.profileEnabled;
 import static oap.application.KernelHelper.referenceName;
 import static oap.application.KernelHelper.serviceEnabled;
 
@@ -77,7 +78,7 @@ public class Kernel implements Closeable {
     public final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
     final String name;
     private final List<URL> configurations;
-    private final LinkedHashSet<String> profiles = new LinkedHashSet<>();
+    public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     private final LinkedHashSet<Module> modules = new LinkedHashSet<>();
     private final Supervisor supervisor = new Supervisor();
 
@@ -115,7 +116,7 @@ public class Kernel implements Closeable {
             log.trace( "module {} services {}", module.name, module.services.keySet() );
             for( var serviceEntry : module.services.entrySet() ) {
                 var service = serviceEntry.getValue();
-                if( !profileEnabled( service.profiles ) ) continue;
+                if( !profileEnabled( service.profiles, this.profiles ) ) continue;
 
                 log.trace( "fix deps for {} in {}", serviceEntry.getKey(), module.name );
                 service.parameters.forEach( ( key, value ) ->
@@ -232,13 +233,13 @@ public class Kernel implements Closeable {
         var ret = new LinkedHashMap<String, ServiceInitialization>();
 
         var initializedServices = new LinkedHashSet<String>();
-        forEachModule( modules, new LinkedHashSet<>(), module ->
+        forEachModule( modules, profiles, new LinkedHashSet<>(), module ->
             forEachService( modules, module.services, initializedServices, ( implName, service ) -> {
                 if( !service.enabled ) {
                     log.debug( "service {} is disabled.", implName );
                     return;
                 }
-                if( !profileEnabled( service.profiles ) ) {
+                if( !profileEnabled( service.profiles, this.profiles ) ) {
                     log.debug( "skipping {} with profiles {}", implName, service.profiles );
                     return;
                 }
@@ -350,7 +351,7 @@ public class Kernel implements Closeable {
     private Set<Module> startModules( Set<Module> modules, Map<String, ServiceInitialization> services,
                                       Set<String> initializedModules, Set<String> startedServices ) {
 
-        return forEachModule( modules, initializedModules, module -> {
+        return forEachModule( modules, profiles, initializedModules, module -> {
             Map<String, Module.Service> def = startModule( module.services, services, startedServices );
             if( !def.isEmpty() ) {
                 var names = def.keySet();
@@ -438,19 +439,6 @@ public class Kernel implements Closeable {
 
     public void unregisterServices() {
         services.clear();
-    }
-
-    public boolean profileEnabled( List<String> profiles ) {
-        for( var profile : profiles ) {
-            if( profile.startsWith( "-" ) ) {
-                if( this.profiles.contains( profile.substring( 1 ) ) ) return false;
-            } else {
-                if( !this.profiles.contains( profile ) ) return false;
-            }
-
-        }
-
-        return true;
     }
 
     public void enableProfiles( String profile ) {

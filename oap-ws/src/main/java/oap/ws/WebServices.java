@@ -26,6 +26,7 @@ package oap.ws;
 import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
+import oap.application.KernelHelper;
 import oap.http.HttpResponse;
 import oap.http.HttpServer;
 import oap.http.Protocol;
@@ -86,7 +87,7 @@ public class WebServices {
 
                 log.trace( "service = {}", entry );
 
-                if( !serviceConfig.profiles.isEmpty() && !kernel.profileEnabled( serviceConfig.profiles ) ) {
+                if( !serviceConfig.profiles.isEmpty() && !KernelHelper.profileEnabled( serviceConfig.profiles, kernel.profiles ) ) {
                     log.debug( "skipping " + entry.getKey() + " web service initialization with "
                         + "service profiles " + serviceConfig.profiles );
                     continue;

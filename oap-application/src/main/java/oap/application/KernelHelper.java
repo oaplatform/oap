@@ -42,26 +42,26 @@ import static org.apache.commons.collections4.CollectionUtils.subtract;
 @Slf4j( topic = "oap.application.Kernel" )
 public class KernelHelper {
 
-    static Set<Module> forEachModule( Set<Module> modules, Set<String> initializedModules, Consumer<Module> cons ) {
+    static Set<Module> forEachModule( Set<Module> modules, Set<String> profiles, Set<String> initializedModules, Consumer<Module> cons ) {
         var deferred = new LinkedHashSet<Module>();
 
         for( Module module : modules ) {
             log.debug( "module {}", module.name );
 
-            if( initializedModules.containsAll( module.dependsOn ) ) {
+            if( initializedModules.containsAll( getDependsOn( module.dependsOn, profiles ) ) ) {
                 cons.accept( module );
 
                 initializedModules.add( module.name );
             } else {
                 log.debug( "dependencies are not ready - deferring {}: {}",
-                    module.name, subtract( module.dependsOn, initializedModules ) );
+                    module.name, subtract( getDependsOn( module.dependsOn, profiles ), initializedModules ) );
                 deferred.add( module );
             }
         }
 
         return deferred.size() == modules.size()
             ? deferred
-            : forEachModule( deferred, initializedModules, cons );
+            : forEachModule( deferred, profiles, initializedModules, cons );
     }
 
     static Map<String, Module.Service> forEachService( Set<Module> modules,
@@ -148,7 +148,7 @@ public class KernelHelper {
     }
 
     static boolean isKernel( Object value ) {
-        return "@kernel".equals( value );
+        return "@kernel" .equals( value );
     }
 
     static boolean isImplementations( Object value ) {
@@ -180,5 +180,29 @@ public class KernelHelper {
         }
 
         return value;
+    }
+
+    public static Set<String> getDependsOn( Set<Module.Depends> profiles, Set<String> systemProfiles ) {
+        var ret = new LinkedHashSet<String>();
+
+        for( var d : profiles ) {
+            if( profileEnabled( d.profiles, systemProfiles ) )
+                ret.add( d.name );
+        }
+
+        return ret;
+    }
+
+    public static boolean profileEnabled( Set<String> profiles, Set<String> systemProfiles ) {
+        for( var profile : profiles ) {
+            if( profile.startsWith( "-" ) ) {
+                if( systemProfiles.contains( profile.substring( 1 ) ) ) return false;
+            } else {
+                if( !systemProfiles.contains( profile ) ) return false;
+            }
+
+        }
+
+        return true;
     }
 }

@@ -26,6 +26,7 @@ package oap.application;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.application.remote.RemoteLocation;
@@ -39,8 +40,11 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static oap.application.KernelHelper.profileEnabled;
 
 @EqualsAndHashCode
 @ToString
@@ -49,7 +53,8 @@ public class Module {
     public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
     @SuppressWarnings( "unchecked" )
     static final Coercions coersions = Coercions.basic().withIdentity();
-    public final LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
+    @JsonDeserialize( contentUsing = ModuleDependsDeserializer.class )
+    public final LinkedHashSet<Depends> dependsOn = new LinkedHashSet<>();
     @Deprecated
     public final ArrayList<String> extendsModules = new ArrayList<>();
     @JsonAlias( { "service", "services" } )
@@ -69,7 +74,7 @@ public class Module {
         public Supervision supervision = new Supervision();
         public LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
         @JsonAlias( { "profile", "profiles" } )
-        public ArrayList<String> profiles = new ArrayList<>();
+        public LinkedHashSet<String> profiles = new LinkedHashSet<>();
         public String name;
         public LinkedHashMap<String, String> listen = new LinkedHashMap<>();
         public LinkedHashMap<String, Object> link = new LinkedHashMap<>(); // String | Reference
@@ -118,6 +123,19 @@ public class Module {
                 return Binder.hocon.unmarshal( Reference.class, ( Map<String, Object> ) reference );
             throw new ApplicationException( "could not parse reference " + reference );
         }
+    }
 
+    @ToString
+    @EqualsAndHashCode
+    public static class Depends {
+        @JsonAlias( { "name", "service", "module" } )
+        public final String name;
+        @JsonAlias( { "profile", "profiles" } )
+        public LinkedHashSet<String> profiles = new LinkedHashSet<>();
+
+        public Depends( String name, List<String> profiles ) {
+            this.name = name;
+            this.profiles.addAll( profiles != null ? profiles : emptyList() );
+        }
     }
 }

@@ -21,37 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.ws;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-import oap.application.Configuration;
-import oap.application.Module;
-import oap.http.Protocol;
-import oap.http.cors.CorsPolicy;
+package oap.application;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.TextNode;
 
-@EqualsAndHashCode
-@ToString
-public class WsConfig {
-    public static final Configuration<WsConfig> CONFIGURATION = new Configuration<>( WsConfig.class, "oap-ws" );
-    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
-    public LinkedHashMap<String, Service> handlers = new LinkedHashMap<>();
-    public List<String> interceptors = new ArrayList<>();
+import java.io.IOException;
 
-    @EqualsAndHashCode
-    @ToString
-    public static class Service {
-        @JsonAlias( { "profile", "profiles" } )
-        public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
-        public String service;
-        public CorsPolicy corsPolicy = null;
-        public Protocol protocol;
-        public boolean sessionAware;
+/**
+ * Created by igor.petrenko on 02.05.2019.
+ */
+public class ModuleDependsDeserializer extends JsonDeserializer<Module.Depends> {
+    @Override
+    public Module.Depends deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
+        var tree = p.readValueAsTree();
+
+        if( tree instanceof TextNode ) {
+            return new Module.Depends( ( ( TextNode ) tree ).textValue(), null );
+        }
+
+        var objectMapper = ( ObjectMapper ) p.getCodec();
+        return objectMapper.treeToValue( tree, Module.Depends.class );
     }
 }
