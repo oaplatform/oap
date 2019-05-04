@@ -38,7 +38,10 @@ public class CoercionsTest extends AbstractTest {
     public void cast() {
         Coercions coercions = Coercions.basic().withIdentity();
         assertThat( coercions.cast( Reflect.reflect( int.class ), 1L ) ).isEqualTo( 1 );
+        assertThat( coercions.cast( Reflect.reflect( int.class ), "1" ) ).isEqualTo( 1 );
+        assertThat( coercions.cast( Reflect.reflect( int.class ), "-1" ) ).isEqualTo( -1 );
         assertThat( coercions.cast( Reflect.reflect( Integer.class ), 1L ) ).isEqualTo( 1 );
+        assertThat( coercions.cast( Reflect.reflect( Integer.class ), -1L ) ).isEqualTo( -1 );
         assertThat( coercions.cast( Reflect.reflect( boolean.class ), true ) ).isEqualTo( true );
         assertThat( coercions.cast( Reflect.reflect( Boolean.class ), true ) ).isEqualTo( true );
         assertThat( coercions.cast( Reflect.reflect( char.class ), "c" ) ).isEqualTo( 'c' );

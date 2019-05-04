@@ -32,9 +32,14 @@ public final class Numbers {
             var v = value.trim();
             var unit = new StringBuilder();
             var number = new StringBuilder();
-            boolean stillNumber = true;
-            for( int i = 0; i < v.length(); i++ ) {
-                char c = value.charAt( i );
+            var negative = false;
+            var stillNumber = true;
+            for( var i = 0; i < v.length(); i++ ) {
+                var c = value.charAt( i );
+                if( c == '-' && i == 0 ) {
+                    negative = true;
+                    continue;
+                }
                 if( Character.isDigit( c ) && stillNumber ) number.append( c );
                 else {
                     stillNumber = false;
@@ -42,40 +47,51 @@ public final class Numbers {
                 }
             }
             var strNumber = number.toString();
+            long res;
             switch( unit.toString().trim().toLowerCase() ) {
                 case "kb":
-                    return Long.parseLong( strNumber ) * 1024;
+                    res = Long.parseLong( strNumber ) * 1024;
+                    break;
                 case "mb":
-                    return Long.parseLong( strNumber ) * 1024 * 1024;
+                    res = Long.parseLong( strNumber ) * 1024 * 1024;
+                    break;
                 case "gb":
-                    return Long.parseLong( strNumber ) * 1024 * 1024 * 1024;
+                    res = Long.parseLong( strNumber ) * 1024 * 1024 * 1024;
+                    break;
                 case "ms":
-                    return Long.parseLong( strNumber );
+                case "":
+                    res = Long.parseLong( strNumber );
+                    break;
                 case "s":
                 case "second":
                 case "seconds":
-                    return Long.parseLong( strNumber ) * 1000;
+                    res = Long.parseLong( strNumber ) * 1000;
+                    break;
                 case "m":
                 case "minute":
                 case "minutes":
-                    return Long.parseLong( strNumber ) * 1000 * 60;
+                    res = Long.parseLong( strNumber ) * 1000 * 60;
+                    break;
                 case "h":
                 case "hour":
                 case "hours":
-                    return Long.parseLong( strNumber ) * 1000 * 60 * 60;
+                    res = Long.parseLong( strNumber ) * 1000 * 60 * 60;
+                    break;
                 case "d":
                 case "day":
                 case "days":
-                    return Long.parseLong( strNumber ) * 1000 * 60 * 60 * 24;
+                    res = Long.parseLong( strNumber ) * 1000 * 60 * 60 * 24;
+                    break;
                 case "w":
                 case "week":
                 case "weeks":
-                    return Long.parseLong( strNumber ) * 1000 * 60 * 60 * 24 * 7;
-                case "":
-                    return Long.parseLong( strNumber );
+                    res = Long.parseLong( strNumber ) * 1000 * 60 * 60 * 24 * 7;
+                    break;
                 default:
                     throw new NumberFormatException( value );
             }
+
+            return negative ? -res : res;
         }
         throw new NumberFormatException( "value is null" );
     }
