@@ -25,13 +25,13 @@
 package oap.storage.mongo;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.Threads;
 import oap.storage.Identifier;
 import oap.storage.MemoryStorage;
 import oap.storage.MongoPersistence;
 import org.testng.annotations.Test;
 
 import static oap.storage.Storage.Lock.SERIALIZED;
+import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -90,9 +90,8 @@ public class MongoPersistenceTest extends AbstractMongoTest {
             storage.store( new Bean() );
 
             storage.delete( bean1.id );
-            Threads.sleepSafely( 100 );
 
-            assertThat( persistence.collection.countDocuments() ).isEqualTo( 1 );
+            assertEventually( 100, 100, () -> assertThat( persistence.collection.countDocuments() ).isEqualTo( 1 ) );
         } finally {
             try( MemoryStorage<Bean> storage = new MemoryStorage<>( beanIdentifier, SERIALIZED );
                  MongoPersistence<Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage ) ) {
