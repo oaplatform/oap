@@ -43,6 +43,12 @@ public class FastByteArrayOutputStream extends it.unimi.dsi.fastutil.io.FastByte
         super( a );
     }
 
+    public FastByteArrayOutputStream( byte[] a, long position, long length ) {
+        super( a );
+        this.position( position );
+        this.length = ( int ) length;
+    }
+
     public InputStream getInputStream() {
         return new FastByteArrayInputStream( array, 0, length );
     }
