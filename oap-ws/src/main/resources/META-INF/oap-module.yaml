@@ -68,25 +68,3 @@ services:
       - oap-http-server
     supervision:
       thread: true
-
-  token-service:
-    profile: "ws-security"
-    implementation: oap.ws.security.TokenService
-    remoteName: "ws-token"
-
-  security-interceptor-https:
-    name: security-interceptor
-    profile: "ws-security"
-    implementation: oap.ws.security.SecurityInterceptor
-    parameters:
-      tokenService: "@service:token-service"
-    dependsOn:
-      - token-service
-
-  security-interceptor-mock:
-    name: security-interceptor
-    profile: "ws-security-mock"
-    implementation: oap.ws.security.MockSecurityInterceptor
-
-  ws-log:
-    implementation: oap.ws.LogWS
