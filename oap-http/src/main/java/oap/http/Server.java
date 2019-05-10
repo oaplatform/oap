@@ -26,6 +26,7 @@ package oap.http;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -47,9 +48,12 @@ import org.apache.http.protocol.HttpService;
 import org.apache.http.protocol.ResponseContent;
 import org.apache.http.protocol.ResponseServer;
 import org.apache.http.protocol.UriHttpRequestHandlerMapper;
+import org.joda.time.DateTimeUtils;
+import org.joda.time.Duration;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -73,8 +77,10 @@ public class Server implements HttpServer {
     private static final Counter handled = Metrics.counter( "http.handled" );
     private static final Counter keepaliveTimeout = Metrics.counter( "http.keepalive_timeout" );
     private static final Histogram histogramConnections = Metrics.histogram( "http.connections" );
+    private static final Histogram histogramRequestsPerConnection = Metrics.histogram( "http.connection_requests" );
+    private static final Timer timeOfLive = Metrics.timer( "http.connection_timeoflive" );
 
-    private final ConcurrentHashMap<String, HttpConnection> connections = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ConnectionInfo> connections = new ConcurrentHashMap<>();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
 //        .add( new ResponseDate() )
@@ -87,7 +93,7 @@ public class Server implements HttpServer {
         mapper );
     private final ExecutorService executor;
     private final Thread thread;
-    public int keepAliveTimeout = 1000 * 5;
+    public int keepAliveTimeout = 1000 * 20;
 
     public Server( int workers, boolean registerStatic ) {
         this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, new SynchronousQueue<>(),
@@ -146,7 +152,8 @@ public class Server implements HttpServer {
             executor.submit( () -> {
                 try {
                     handled.inc();
-                    connections.put( connectionId, connection );
+                    var info = new ConnectionInfo( connection );
+                    connections.put( connectionId, info );
 
                     log.debug( "connection accepted: {}", connection );
 
@@ -156,8 +163,10 @@ public class Server implements HttpServer {
 
                     if( log.isTraceEnabled() )
                         log.trace( "start handling {}", connection );
-                    while( !Thread.interrupted() && connection.isOpen() )
+                    while( !Thread.interrupted() && connection.isOpen() ) {
+                        info.requests++;
                         httpService.handleRequest( connection, httpContext );
+                    }
                 } catch( SocketTimeoutException e ) {
                     keepaliveTimeout.inc();
                     if( log.isTraceEnabled() )
@@ -169,7 +178,13 @@ public class Server implements HttpServer {
                 } catch( Throwable e ) {
                     log.error( e.getMessage(), e );
                 } finally {
-                    connections.remove( connectionId );
+                    var info = connections.remove( connectionId );
+                    histogramRequestsPerConnection.update( info.requests );
+                    var duration = DateTimeUtils.currentTimeMillis() - info.start;
+                    timeOfLive.update( duration, TimeUnit.MILLISECONDS );
+                    if( log.isTraceEnabled() )
+                        log.trace( "connection: {}, requests: {}, duration: {}",
+                            info.httpConnection, info.requests, new Duration( duration ) );
                     try {
                         connection.close();
                     } catch( IOException e ) {
@@ -196,6 +211,21 @@ public class Server implements HttpServer {
         thread.stop();
 
         log.info( "server gone down" );
+    }
+
+    private static class ConnectionInfo implements Closeable {
+        final HttpConnection httpConnection;
+        long requests = 0;
+        long start = DateTimeUtils.currentTimeMillis();
+
+        ConnectionInfo( HttpConnection httpConnection ) {
+            this.httpConnection = httpConnection;
+        }
+
+        @Override
+        public void close() throws IOException {
+            httpConnection.close();
+        }
     }
 }
 
