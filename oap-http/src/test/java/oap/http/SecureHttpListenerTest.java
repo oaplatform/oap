@@ -1,5 +1,6 @@
 package oap.http;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.IoStreams;
@@ -20,6 +21,7 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.pathOfTestResource;
 import static org.testng.Assert.assertEquals;
 
+@Slf4j
 public class SecureHttpListenerTest {
 
     private static final String KEYSTORE_PASSWORD = "123456";
@@ -32,10 +34,10 @@ public class SecureHttpListenerTest {
         Env.resetPorts();
         server.bind( "test", GenericCorsPolicy.DEFAULT, ( request, response ) -> {
 
-            System.out.println( "Base URL " + request.baseUrl );
-            System.out.println( "Headers:" );
+            log.debug( "Base URL {}", request.getBaseUrl() );
+            log.debug( "Headers:" );
 
-            System.out.println( request.headers );
+            log.debug( "{}", request.getHeaders() );
 
             response.respond( new HttpResponse( 200 ) );
         }, Protocol.HTTPS );

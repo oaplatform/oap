@@ -26,7 +26,9 @@ package oap.http.testng;
 
 import lombok.SneakyThrows;
 import oap.http.Context;
+import oap.http.Protocol;
 import oap.http.Request;
+import oap.http.ServerHttpContext;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.methods.HttpGet;
 
@@ -34,7 +36,7 @@ import java.net.InetAddress;
 
 public class MockRequest extends Request {
     public MockRequest( HttpRequest req ) {
-        super( req, new Context( "", getLocalHost(), "http" ) );
+        super( req, new Context( "", getLocalHost(), new ServerHttpContext( new MockHttpContext(), Protocol.HTTP, null ) ) );
     }
 
     public MockRequest() {
@@ -45,4 +47,5 @@ public class MockRequest extends Request {
     private static InetAddress getLocalHost() {
         return InetAddress.getLocalHost();
     }
+
 }

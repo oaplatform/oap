@@ -149,7 +149,7 @@ public class WebService implements Handler {
     @Override
     public void handle( Request request, Response response ) {
         try {
-            var method = reflection.method( m -> methodMatches( request.requestLine, request.httpMethod, m ), ( o1, o2 ) -> {
+            var method = reflection.method( m -> methodMatches( request.getRequestLine(), request.getHttpMethod(), m ), ( o1, o2 ) -> {
                 var path1 = o1.findAnnotation( WsMethod.class ).map( WsMethod::path ).orElse( o1.name() );
                 var path2 = o2.findAnnotation( WsMethod.class ).map( WsMethod::path ).orElse( o1.name() );
 
@@ -158,7 +158,8 @@ public class WebService implements Handler {
                 .orElse( null );
 
             if( method == null ) {
-                log.trace( "[{}] not found", request.requestLine );
+                if( log.isTraceEnabled() )
+                    log.trace( "[{}] not found", request.getRequestLine() );
                 response.respond( NOT_FOUND );
             } else {
                 var name = Metrics
@@ -389,7 +390,7 @@ public class WebService implements Handler {
                     case HEADER:
                         return unwrap( parameter, request.header( parameter.name() ) );
                     case PATH:
-                        return wsMethod.map( wsm -> WsServices.pathParam( wsm.path(), request.requestLine,
+                        return wsMethod.map( wsm -> WsServices.pathParam( wsm.path(), request.getRequestLine(),
                             parameter.name() ) )
                             .orElseThrow( () -> new WsException(
                                 "path parameter " + parameter.name() + " without "

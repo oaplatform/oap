@@ -91,7 +91,7 @@ public class SecurityInterceptor2Test {
     public void testShouldVerifyAndSetUserInSessionIfAuthorizationHeaderIsPresent() throws UnknownHostException {
         var methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
 
-        var context = new Context( "/", InetAddress.getLocalHost(), Protocol.HTTP.name() );
+        var context = new Context( "/", InetAddress.getLocalHost(), Protocol.HTTP.name(), httpContext );
         var tokenId = UUID.randomUUID().toString();
 
         var httpRequest = new HttpGet();

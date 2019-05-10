@@ -22,36 +22,31 @@
  * SOFTWARE.
  */
 
-package oap.http.cors;
+package oap.http.testng;
 
-import oap.http.Context;
-import oap.http.Protocol;
-import oap.http.Request;
-import oap.http.ServerHttpContext;
-import oap.http.testng.MockHttpContext;
-import org.apache.http.message.BasicHttpRequest;
-import org.testng.annotations.Test;
+import org.apache.http.protocol.HttpContext;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.util.HashMap;
 
-import static org.assertj.core.api.Assertions.assertThat;
+/**
+ * Created by igor.petrenko on 10.05.2019.
+ */
+public class MockHttpContext implements HttpContext {
 
-public class GenericCorsPolicyTest {
+    public final HashMap<String, Object> map = new HashMap<>();
 
-    @Test
-    public void testShouldVerifyDefaultAllowMethods() throws UnknownHostException {
-        var basicHttpRequest = new BasicHttpRequest( "GET", "http://test.com" );
-        basicHttpRequest.addHeader( "Origin", "*" );
-        basicHttpRequest.addHeader( "Host", "some-host" );
-
-        var request = new Request( basicHttpRequest, new Context( "not important",
-            InetAddress.getLocalHost(), new ServerHttpContext( new MockHttpContext(), Protocol.HTTP, null ) )
-        );
-
-        final RequestCors requestCors = GenericCorsPolicy.DEFAULT.getCors( request );
-
-        assertThat( requestCors.allowMethods ).isEqualTo( "HEAD, POST, GET, PUT, DELETE, OPTIONS" );
+    @Override
+    public Object getAttribute( String id ) {
+        return map.get( id );
     }
 
+    @Override
+    public void setAttribute( String id, Object obj ) {
+        map.put( id, obj );
+    }
+
+    @Override
+    public Object removeAttribute( String id ) {
+        return map.remove( id );
+    }
 }

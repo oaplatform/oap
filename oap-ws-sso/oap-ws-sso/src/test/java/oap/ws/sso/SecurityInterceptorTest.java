@@ -92,7 +92,7 @@ public class SecurityInterceptorTest {
         final Reflection.Method methodWithAnnotation = REFLECTION.method(
             method -> method.name().equals( "methodWithAnnotation" ) ).get();
 
-        final Context context = new Context( "/", InetAddress.getLocalHost(), Protocol.HTTP.name() );
+        final Context context = new Context( "/", InetAddress.getLocalHost(), Protocol.HTTP.name(), httpContext );
         final String tokenId = UUID.randomUUID().toString();
 
         final HttpRequest httpRequest = new HttpGet();

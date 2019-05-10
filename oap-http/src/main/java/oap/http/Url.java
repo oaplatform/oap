@@ -44,12 +44,18 @@ public class Url {
     }
 
     public static ListMultimap<String, String> parseQuery( String params ) {
-        return Strings.isEmpty( params )
-            ? ArrayListMultimap.create()
-            : Stream.of( StringUtils.split( params, '&' ) )
-                .map( s -> Strings.split( s, "=" ) )
-                .map( pair -> __( pair._1, decode( pair._2 ) ) )
-                .collect( toListMultimap() );
+        var map = ArrayListMultimap.<String, String>create();
+        if( StringUtils.isEmpty( params ) ) return map;
+
+        var pairs = StringUtils.split( params, '&' );
+        for( var pair : pairs ) {
+            var idx = pair.indexOf( "=" );
+            var key = idx > 0 ? pair.substring( 0, idx ) : pair;
+            var value = idx > 0 && pair.length() > idx + 1 ? decode( pair.substring( idx + 1 ) ) : "";
+            map.put( key, value );
+        }
+
+        return map;
     }
 
     public static String encode( String value ) {

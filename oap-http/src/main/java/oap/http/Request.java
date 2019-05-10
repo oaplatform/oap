@@ -50,39 +50,77 @@ import static oap.util.Pair.__;
 
 public class Request {
     private static final Splitter SPLITTER = Splitter.on( ";" ).trimResults().omitEmptyStrings();
-    public final String requestLine;
-    public final HttpMethod httpMethod;
-    public final String baseUrl;
+    public final HttpRequest req;
     public final Context context;
     public final Optional<InputStream> body;
     public final String uri;
-    public final ListMultimap<String, String> headers;
     public final ListMultimap<String, String> params;
     public final String ua;
     public final String referrer;
     public final String ip;
-    public final Map<String, String> cookies;
+    private ListMultimap<String, String> _headers;
+    private Map<String, String> _cookies;
+    private String _requestLine;
 
     public Request( HttpRequest req, Context context ) {
-        this.headers = Stream.of( req.getAllHeaders() )
-            .map( h -> __( h.getName().toLowerCase(), h.getValue() ) )
-            .collect( Maps.Collectors.toListMultimap() );
-        this.baseUrl = context.protocol.toLowerCase() + "://" + header( "Host" ).orElse( "localhost" );
-        this.uri = req.getRequestLine().getUri();
-        this.requestLine = Strings.substringBefore( req.getRequestLine().getUri(), "?" ).substring(
-            context.location.length() );
-        this.httpMethod = HttpMethod.valueOf( req.getRequestLine().getMethod().toUpperCase() );
+        this.req = req;
         this.context = context;
+        this.uri = req.getRequestLine().getUri();
         this.body = content( req ); // Headers have to be constructed at this point
         this.params = params( req );
         this.ua = header( "User-Agent" ).orElse( null );
         this.referrer = header( "Referrer" ).orElse( null );
         this.ip = header( "X-Forwarded-For" ).orElse( context.remoteAddress.getHostAddress() );
-        this.cookies = header( "Cookie" )
-            .map( cookie -> Stream.of( SPLITTER.split( cookie ).iterator() )
-                .map( s -> Strings.split( s, "=" ) )
-                .collect( Maps.Collectors.<String, String>toMap() ) )
-            .orElse( Maps.empty() );
+    }
+
+    private static ListMultimap<String, String> params( HttpRequest req ) {
+        ListMultimap<String, String> query = Url.parseQuery(
+            Strings.substringAfter( req.getRequestLine().getUri(), "?" ) );
+        var contentType = req.getFirstHeader( "Content-Type" );
+        if( contentType != null && contentType.getValue().startsWith( "application/x-www-form-urlencoded" )
+            && req instanceof HttpEntityEnclosingRequest )
+            try {
+                return Maps.add( query, Url.parseQuery(
+                    EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) req ).getEntity() ) ) );
+            } catch( IOException e ) {
+                throw new UncheckedIOException( e );
+            }
+        else return query;
+    }
+
+    public ListMultimap<String, String> getHeaders() {
+        if( _headers == null ) {
+            _headers = Stream.of( req.getAllHeaders() )
+                .map( h -> __( h.getName().toLowerCase(), h.getValue() ) )
+                .collect( Maps.Collectors.toListMultimap() );
+        }
+        return _headers;
+    }
+
+    public Map<String, String> getCookies() {
+        if( _cookies == null ) {
+            _cookies = header( "Cookie" )
+                .map( cookie -> Stream.of( SPLITTER.split( cookie ).iterator() )
+                    .map( s -> Strings.split( s, "=" ) )
+                    .collect( Maps.Collectors.<String, String>toMap() ) )
+                .orElse( Map.of() );
+        }
+        return _cookies;
+    }
+
+    public HttpMethod getHttpMethod() {
+        return HttpMethod.valueOf( req.getRequestLine().getMethod().toUpperCase() );
+    }
+
+    public String getRequestLine() {
+        if( _requestLine == null ) {
+            _requestLine = Strings.substringBefore( req.getRequestLine().getUri(), "?" ).substring( context.location.length() );
+        }
+        return _requestLine;
+    }
+
+    public String getBaseUrl() {
+        return context.protocol.name().toLowerCase() + "://" + header( "Host" ).orElse( "localhost" );
     }
 
     public boolean isRequestGzipped() {
@@ -129,21 +167,6 @@ public class Request {
         }
     }
 
-    private static ListMultimap<String, String> params( HttpRequest req ) {
-        ListMultimap<String, String> query = Url.parseQuery(
-            Strings.substringAfter( req.getRequestLine().getUri(), "?" ) );
-        if( req.getFirstHeader( "Content-Type" ) != null
-            && req.getFirstHeader( "Content-Type" ).getValue().startsWith( "application/x-www-form-urlencoded" )
-            && req instanceof HttpEntityEnclosingRequest )
-            try {
-                return Maps.add( query, Url.parseQuery(
-                    EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) req ).getEntity() ) ) );
-            } catch( IOException e ) {
-                throw new UncheckedIOException( e );
-            }
-        else return query;
-    }
-
     public Optional<String> parameter( String name ) {
         return parameters( name ).stream().findFirst();
     }
@@ -158,32 +181,24 @@ public class Request {
     }
 
     public Optional<String> header( String name ) {
-        return headers.containsKey( name.toLowerCase() ) ? Lists.headOpt( headers.get( name.toLowerCase() ) )
+        return getHeaders().containsKey( name.toLowerCase() ) ? Lists.headOpt( getHeaders().get( name.toLowerCase() ) )
             : Optional.empty();
     }
 
     public List<String> headers( String name ) {
-        return headers.containsKey( name.toLowerCase() ) ? headers.get( name.toLowerCase() ) : Lists.empty();
+        return getHeaders().containsKey( name.toLowerCase() ) ? getHeaders().get( name.toLowerCase() ) : Lists.empty();
     }
 
     public Optional<String> cookie( String name ) {
-        return Optional.ofNullable( cookies.get( name ) );
-    }
-
-    @Deprecated
-    /**
-     * @see #cookie(String)
-     * */
-    public Map<String, String> cookies() {
-        return cookies;
+        return Optional.ofNullable( getCookies().get( name ) );
     }
 
     @Override
     public String toString() {
         return MoreObjects.toStringHelper( this )
-            .add( "baseUrl", baseUrl )
-            .add( "requestLine", requestLine )
-            .add( "method", httpMethod )
+            .add( "baseUrl", getBaseUrl() )
+            .add( "requestLine", getRequestLine() )
+            .add( "method", getHttpMethod() )
             .add( "params", params )
             .omitNullValues()
             .toString();
@@ -191,14 +206,14 @@ public class Request {
 
     public String toDetailedString() {
         return MoreObjects.toStringHelper( this )
-            .add( "baseUrl", this.baseUrl )
-            .add( "method", this.httpMethod )
+            .add( "baseUrl", this.getBaseUrl() )
+            .add( "method", this.getHttpMethod() )
             .add( "ip", this.ip )
             .add( "ua", this.ua )
             .add( "uri", this.uri )
             .add( "params", this.params )
-            .add( "headers", this.headers )
-            .add( "cookies", this.cookies )
+            .add( "headers", this.getHeaders() )
+            .add( "cookies", getCookies() )
             .omitNullValues()
             .toString();
     }

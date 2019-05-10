@@ -26,7 +26,10 @@ package oap.http.cors;
 
 import com.google.common.collect.ImmutableList;
 import oap.http.Context;
+import oap.http.Protocol;
 import oap.http.Request;
+import oap.http.ServerHttpContext;
+import oap.http.testng.MockHttpContext;
 import org.apache.http.message.BasicHttpRequest;
 import org.testng.annotations.Test;
 
@@ -40,6 +43,17 @@ public class PatternCorsPolicyTest {
 
     private PatternCorsPolicy cors = new PatternCorsPolicy( "^(http)s?(://)[^/]*[\\.]?oaplatform\\.org/?",
         "Autorization", true, ImmutableList.of( "HEAD", "POST", "GET", "PUT", "DELETE", "OPTIONS" ) );
+
+    private static Request getRequest( final String origin, final String url ) throws UnknownHostException {
+        var basicHttpRequest = new BasicHttpRequest( "GET", url );
+        basicHttpRequest.addHeader( "Origin", origin );
+        basicHttpRequest.addHeader( "Host", "some-host" );
+
+        var context = new Context( "not important", InetAddress.getLocalHost(),
+            new ServerHttpContext( new MockHttpContext(), Protocol.HTTP, null ) );
+
+        return new Request( basicHttpRequest, context );
+    }
 
     @Test
     public void testSameDomainOrigin() throws UnknownHostException {
@@ -61,16 +75,6 @@ public class PatternCorsPolicyTest {
         final Request request = getRequest( "http://example.com/", "http://example.com/path/to/api" );
 
         assertEquals( cors.getCors( request ).allowOrigin, RequestCors.NO_ORIGIN );
-    }
-
-    private static Request getRequest( final String origin, final String url ) throws UnknownHostException {
-        final BasicHttpRequest basicHttpRequest = new BasicHttpRequest( "GET", url );
-        basicHttpRequest.addHeader( "Origin", origin );
-        basicHttpRequest.addHeader( "Host", "some-host" );
-
-        final Context context = new Context( "not important", InetAddress.getLocalHost(), "not important" );
-
-        return new Request( basicHttpRequest, context );
     }
 
 

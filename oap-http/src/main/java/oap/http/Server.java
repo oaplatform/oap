@@ -37,23 +37,20 @@ import oap.io.Closeables;
 import oap.metrics.Metrics;
 import oap.net.Inet;
 import org.apache.http.ConnectionClosedException;
-import org.apache.http.HttpConnection;
+import org.apache.http.impl.DefaultBHttpServerConnection;
 import org.apache.http.impl.DefaultBHttpServerConnectionFactory;
 import org.apache.http.impl.DefaultConnectionReuseStrategy;
 import org.apache.http.impl.DefaultHttpResponseFactory;
-import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpCoreContext;
 import org.apache.http.protocol.HttpProcessorBuilder;
 import org.apache.http.protocol.HttpService;
 import org.apache.http.protocol.ResponseContent;
 import org.apache.http.protocol.ResponseServer;
 import org.apache.http.protocol.UriHttpRequestHandlerMapper;
-import org.joda.time.DateTimeUtils;
 import org.joda.time.Duration;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
@@ -80,7 +77,7 @@ public class Server implements HttpServer {
     private static final Histogram histogramRequestsPerConnection = Metrics.histogram( "http.connection_requests" );
     private static final Timer timeOfLive = Metrics.timer( "http.connection_timeoflive" );
 
-    private final ConcurrentHashMap<String, ConnectionInfo> connections = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ServerHttpContext> connections = new ConcurrentHashMap<>();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
     private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
 //        .add( new ResponseDate() )
@@ -108,16 +105,12 @@ public class Server implements HttpServer {
     }
 
     //TODO Fix resolution of local through headers instead of socket inet address
-    private static HttpContext createHttpContext( Socket socket ) {
-        var httpContext = HttpCoreContext.create();
-
+    private static ServerHttpContext createHttpContext( Socket socket, DefaultBHttpServerConnection connection ) {
         final Protocol protocol;
         if( !Inet.isLocalAddress( socket.getInetAddress() ) ) protocol = Protocol.LOCAL;
         else protocol = socket instanceof SSLSocket ? Protocol.HTTPS : Protocol.HTTP;
 
-        httpContext.setAttribute( "protocol", protocol );
-
-        return httpContext;
+        return new ServerHttpContext( HttpCoreContext.create(), protocol, connection );
     }
 
     private void stats() {
@@ -152,19 +145,18 @@ public class Server implements HttpServer {
             executor.submit( () -> {
                 try {
                     handled.inc();
-                    var info = new ConnectionInfo( connection );
-                    connections.put( connectionId, info );
 
                     log.debug( "connection accepted: {}", connection );
 
-                    var httpContext = createHttpContext( socket );
+                    var httpContext = createHttpContext( socket, connection );
+                    connections.put( connectionId, httpContext );
 
                     Thread.currentThread().setName( connection.toString() );
 
                     if( log.isTraceEnabled() )
                         log.trace( "start handling {}", connection );
                     while( !Thread.interrupted() && connection.isOpen() ) {
-                        info.requests++;
+                        httpContext.requests++;
                         httpService.handleRequest( connection, httpContext );
                     }
                 } catch( SocketTimeoutException e ) {
@@ -180,11 +172,11 @@ public class Server implements HttpServer {
                 } finally {
                     var info = connections.remove( connectionId );
                     histogramRequestsPerConnection.update( info.requests );
-                    var duration = DateTimeUtils.currentTimeMillis() - info.start;
-                    timeOfLive.update( duration, TimeUnit.MILLISECONDS );
+                    var duration = System.nanoTime() - info.start;
+                    timeOfLive.update( duration, TimeUnit.NANOSECONDS );
                     if( log.isTraceEnabled() )
                         log.trace( "connection: {}, requests: {}, duration: {}",
-                            info.httpConnection, info.requests, new Duration( duration ) );
+                            info.connection, info.requests, new Duration( duration * 1000000L ) );
                     try {
                         connection.close();
                     } catch( IOException e ) {
@@ -211,21 +203,6 @@ public class Server implements HttpServer {
         thread.stop();
 
         log.info( "server gone down" );
-    }
-
-    private static class ConnectionInfo implements Closeable {
-        final HttpConnection httpConnection;
-        long requests = 0;
-        long start = DateTimeUtils.currentTimeMillis();
-
-        ConnectionInfo( HttpConnection httpConnection ) {
-            this.httpConnection = httpConnection;
-        }
-
-        @Override
-        public void close() throws IOException {
-            httpConnection.close();
-        }
     }
 }
 

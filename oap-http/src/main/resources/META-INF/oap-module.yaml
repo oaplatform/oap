@@ -10,13 +10,3 @@ services:
       keepAliveTimeout: 5s
     supervision:
       supervise: true
-
-  oap-http-nio-server:
-    implementation: oap.http.nio.NioServer
-    profile: http-nio
-    name: oap-http-server
-    parameters:
-      workers: 500
-      registerStatic: false
-    supervision:
-      supervise: true

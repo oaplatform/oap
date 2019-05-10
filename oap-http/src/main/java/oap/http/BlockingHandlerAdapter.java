@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.http.cors.CorsPolicy;
 import oap.metrics.Metrics;
 import oap.net.Inet;
-import org.apache.http.HttpInetConnection;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.protocol.HttpContext;
@@ -36,7 +35,6 @@ import org.apache.http.protocol.HttpRequestHandler;
 
 import static oap.http.HttpResponse.HTTP_FORBIDDEN;
 import static oap.http.HttpResponse.NO_CONTENT;
-import static org.apache.http.protocol.HttpCoreContext.HTTP_CONNECTION;
 
 @Slf4j
 class BlockingHandlerAdapter implements HttpRequestHandler {
@@ -63,18 +61,19 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
         if( log.isTraceEnabled() )
             log.trace( "Handling [{}]", httpRequest );
 
-        var connection = ( HttpInetConnection ) httpContext.getAttribute( HTTP_CONNECTION );
+        var serverHttpContext = ( ServerHttpContext ) httpContext;
+
+        var connection = serverHttpContext.connection;
         var remoteAddress = connection.getRemoteAddress();
 
-        var httpContextProtocol = String.valueOf( httpContext.getAttribute( "protocol" ) );
-        var request = new Request( httpRequest, new Context( location, remoteAddress, httpContextProtocol ) );
+        var request = new Request( httpRequest, new Context( location, remoteAddress, serverHttpContext ) );
 
         var cors = corsPolicy.getCors( request );
         var response = new Response( request, httpResponse, cors );
 
         if( Protocol.LOCAL.equals( this.protocol ) && !Inet.isLocalAddress( remoteAddress ) ) {
             response.respond( HTTP_FORBIDDEN );
-        } else if( cors.autoOptions && request.httpMethod == Request.HttpMethod.OPTIONS ) {
+        } else if( cors.autoOptions && request.getHttpMethod() == Request.HttpMethod.OPTIONS ) {
             response.respond( NO_CONTENT );
         } else {
             handler.handle( request, response );

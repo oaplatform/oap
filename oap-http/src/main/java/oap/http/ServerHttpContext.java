@@ -25,20 +25,46 @@
 package oap.http;
 
 import lombok.ToString;
+import org.apache.http.impl.DefaultBHttpServerConnection;
+import org.apache.http.protocol.HttpContext;
 
-import java.net.InetAddress;
+import java.io.Closeable;
+import java.io.IOException;
 
+/**
+ * Created by igor.petrenko on 10.05.2019.
+ */
 @ToString
-public final class Context {
-    public final String location;
-    public final InetAddress remoteAddress;
+public class ServerHttpContext implements HttpContext, Closeable {
     public final Protocol protocol;
-    public final ServerHttpContext httpContext;
+    public final DefaultBHttpServerConnection connection;
+    private final HttpContext httpContext;
+    public long requests = 0;
+    public long start = System.nanoTime();
 
-    public Context( String location, InetAddress remoteAddress, ServerHttpContext httpContext ) {
-        this.location = location;
-        this.remoteAddress = remoteAddress;
-        this.protocol = httpContext.protocol;
+    public ServerHttpContext( HttpContext httpContext, Protocol protocol, DefaultBHttpServerConnection connection ) {
         this.httpContext = httpContext;
+        this.protocol = protocol;
+        this.connection = connection;
+    }
+
+    @Override
+    public Object getAttribute( String id ) {
+        return httpContext.getAttribute( id );
+    }
+
+    @Override
+    public void setAttribute( String id, Object obj ) {
+        httpContext.setAttribute( id, obj );
+    }
+
+    @Override
+    public Object removeAttribute( String id ) {
+        return httpContext.removeAttribute( id );
+    }
+
+    @Override
+    public void close() throws IOException {
+        connection.close();
     }
 }

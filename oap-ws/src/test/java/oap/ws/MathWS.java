@@ -80,7 +80,7 @@ class MathWS {
     }
 
     public String req( @WsParam( from = REQUEST ) Request req ) {
-        return req.baseUrl + req.context.location;
+        return req.getBaseUrl() + req.context.location;
     }
 
     public Bean bean( int i, String s ) {

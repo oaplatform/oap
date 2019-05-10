@@ -29,7 +29,6 @@ import oap.http.PlainHttpListener;
 import oap.http.Protocol;
 import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
-import oap.http.nio.NioServer;
 import oap.http.testng.HttpAsserts;
 import oap.testng.Env;
 import oap.util.Lists;
@@ -68,32 +67,6 @@ public class WebServicesPerformance {
             HttpAsserts.reset();
         } finally {
             listener.stop();
-            server.stop();
-        }
-    }
-
-    @Test
-    public void nioThreads() throws Exception {
-        NioServer server = new NioServer( Env.port(), 500, false );
-        try {
-            WebServices ws = new WebServices( new Kernel( Lists.empty() ), server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
-            ws.bind( "x/v/math", GenericCorsPolicy.DEFAULT, new MathWS(), false, SESSION_MANAGER,
-                Collections.emptyList(), Protocol.HTTP );
-            server.start();
-            Thread.sleep( 3000 ); // ??? TODO: fix me
-
-            HttpAsserts.reset();
-            benchmark( "NioServer.invocations", samples, () -> {
-                try {
-                    HttpAsserts.assertGet( HttpAsserts.httpUrl( "/x/v/math/id?a=aaa" ) )
-                        .responded( 200, "OK", ContentType.APPLICATION_JSON, "\"aaa\"" );
-                } catch( Throwable e ) {
-                    e.printStackTrace();
-                }
-            } ).inThreads( 5000 ).run();
-
-            HttpAsserts.reset();
-        } finally {
             server.stop();
         }
     }
