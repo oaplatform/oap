@@ -36,25 +36,26 @@ import static oap.metrics.Metrics.name;
 
 public class Metrics2 {
     static ConcurrentHashMap<String, Timer> hdrTimers = new ConcurrentHashMap<>();
-    static ConcurrentHashMap<String, Histogram> hdrHistgrams = new ConcurrentHashMap<>();
+    static ConcurrentHashMap<String, Histogram> hdrHistogram = new ConcurrentHashMap<>();
 
     public static Timer timer( Name name ) {
         return timer( name.line );
     }
 
     public static Timer timer( String name ) {
-        var builder = new HdrBuilder();
-        var timer = builder.resetReservoirOnSnapshot().buildAndRegisterTimer( Metrics.registry, name );
-        hdrTimers.put( name, timer );
-        return timer;
+        return getOrCreateTimer( name );
+    }
+
+    private static Timer newTimer( String name ) {
+        return new HdrBuilder().resetReservoirOnSnapshot().buildAndRegisterTimer( Metrics.registry, name );
     }
 
     private static Timer getOrCreateTimer( String metric ) {
-        return hdrTimers.computeIfAbsent( metric, ( name ) -> timer( metric ) );
+        return hdrTimers.computeIfAbsent( metric, ( name ) -> newTimer( metric ) );
     }
 
     private static Histogram getOrCreateHistogram( String metric ) {
-        return hdrHistgrams.computeIfAbsent( metric, ( name ) -> histogram( metric ) );
+        return hdrHistogram.computeIfAbsent( metric, ( name ) -> newHistogram( metric ) );
     }
 
     public static void measureTimer( Name metric, Runnable code ) {
@@ -87,9 +88,10 @@ public class Metrics2 {
     }
 
     public static Histogram histogram( String name ) {
-        var builder = new HdrBuilder();
-        var histogram = builder.resetReservoirOnSnapshot().buildAndRegisterHistogram( Metrics.registry, name );
-        hdrHistgrams.put( name, histogram );
-        return histogram;
+        return getOrCreateHistogram( name );
+    }
+
+    private static Histogram newHistogram( String name ) {
+        return new HdrBuilder().resetReservoirOnSnapshot().buildAndRegisterHistogram( Metrics.registry, name );
     }
 }
