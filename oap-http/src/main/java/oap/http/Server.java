@@ -128,7 +128,7 @@ public class Server implements HttpServer {
         mapper.register( location1, new BlockingHandlerAdapter( "/" + context, handler, corsPolicy, protocol ) );
         mapper.register( location2, new BlockingHandlerAdapter( "/" + context, handler, corsPolicy, protocol ) );
 
-        log.debug( "{} bound to [{}, {}]", handler, location1, location2 );
+        log.info( "{} bound to [{}, {}]", handler, location1, location2 );
     }
 
     @Override
@@ -154,12 +154,14 @@ public class Server implements HttpServer {
 
                     Thread.currentThread().setName( connection.toString() );
 
-                    log.trace( "start handling {}", connection );
+                    if( log.isTraceEnabled() )
+                        log.trace( "start handling {}", connection );
                     while( !Thread.interrupted() && connection.isOpen() )
                         httpService.handleRequest( connection, httpContext );
                 } catch( SocketTimeoutException e ) {
                     keepaliveTimeout.inc();
-                    log.trace( "{}: timeout", connection );
+                    if( log.isTraceEnabled() )
+                        log.trace( "{}: timeout", connection );
                 } catch( SocketException | SSLException e ) {
                     log.debug( "{}: {}", connection, e.getMessage() );
                 } catch( ConnectionClosedException e ) {
@@ -168,7 +170,11 @@ public class Server implements HttpServer {
                     log.error( e.getMessage(), e );
                 } finally {
                     connections.remove( connectionId );
-                    Closeables.close( connection );
+                    try {
+                        connection.close();
+                    } catch( SocketException e ) {
+                        log.trace( e.getMessage(), e );
+                    }
                 }
             } );
         } catch( final IOException e ) {

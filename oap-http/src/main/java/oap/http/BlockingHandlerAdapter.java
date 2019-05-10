@@ -60,7 +60,8 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
                         HttpContext httpContext ) {
         requests.inc();
 
-        log.trace( "Handling [{}]", httpRequest );
+        if( log.isTraceEnabled() )
+            log.trace( "Handling [{}]", httpRequest );
 
         var connection = ( HttpInetConnection ) httpContext.getAttribute( HTTP_CONNECTION );
         var remoteAddress = connection.getRemoteAddress();
