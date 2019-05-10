@@ -202,33 +202,42 @@ class InfluxDBReporter extends ScheduledReporter {
 
     private void reportMeters( SortedMap<String, Meter> meters, SortedMap<String, Point.Builder> builders ) {
         report( meters, builders,
-            ( b, e ) -> b.addField( e.getKey(), convertRate( e.getValue().getOneMinuteRate() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_oneMinuteRate", convertRate( e.getValue().getOneMinuteRate() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_fiveMinuteRate", convertRate( e.getValue().getFiveMinuteRate() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_fifteenMinuteRate", convertRate( e.getValue().getFifteenMinuteRate() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_count", convertRate( e.getValue().getCount() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_meanRate", convertRate( e.getValue().getMeanRate() ) )
+            ( b, e ) -> {
+                var key = e.getKey();
+                var m = e.getValue();
+                b.addField( key, convertRate( m.getOneMinuteRate() ) );
+                b.addField( key + "_oneMinuteRate", convertRate( m.getOneMinuteRate() ) );
+                b.addField( key + "_fiveMinuteRate", convertRate( m.getFiveMinuteRate() ) );
+                b.addField( key + "_fifteenMinuteRate", convertRate( m.getFifteenMinuteRate() ) );
+                b.addField( key + "_count", convertRate( m.getCount() ) );
+                b.addField( key + "_meanRate", convertRate( m.getMeanRate() ) );
+            }
         );
     }
 
     private void reportTimers( SortedMap<String, Timer> timers, SortedMap<String, Point.Builder> builders ) {
         report( timers, builders,
-            ( b, e ) -> b.addField( e.getKey(), convertDuration( e.getValue().getSnapshot().getMean() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_mean", convertDuration( e.getValue().getSnapshot().getMean() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_75th", convertDuration( e.getValue().getSnapshot().get75thPercentile() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_95th", convertDuration( e.getValue().getSnapshot().get95thPercentile() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_98th", convertDuration( e.getValue().getSnapshot().get98thPercentile() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_99th", convertDuration( e.getValue().getSnapshot().get99thPercentile() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_999th", convertDuration( e.getValue().getSnapshot().get999thPercentile() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_max", convertDuration( e.getValue().getSnapshot().getMax() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_min", convertDuration( e.getValue().getSnapshot().getMin() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_median", convertDuration( e.getValue().getSnapshot().getMedian() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_stddev", convertDuration( e.getValue().getSnapshot().getStdDev() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_count", e.getValue().getCount() ),
-            ( b, e ) -> b.addField( e.getKey() + "_oneMinuteRate", convertRate( e.getValue().getOneMinuteRate() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_fiveMinuteRate", convertRate( e.getValue().getFiveMinuteRate() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_fifteenMinuteRate", convertRate( e.getValue().getFifteenMinuteRate() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_meanRate", convertRate( e.getValue().getMeanRate() ) )
+            ( b, e ) -> {
+                var key = e.getKey();
+                var t = e.getValue();
+                var snapshot = t.getSnapshot();
+                b.addField( key, convertDuration( snapshot.getMean() ) );
+                b.addField( key + "_mean", convertDuration( snapshot.getMean() ) );
+                b.addField( key + "_75th", convertDuration( snapshot.get75thPercentile() ) );
+                b.addField( key + "_95th", convertDuration( snapshot.get95thPercentile() ) );
+                b.addField( key + "_98th", convertDuration( snapshot.get98thPercentile() ) );
+                b.addField( key + "_99th", convertDuration( snapshot.get99thPercentile() ) );
+                b.addField( key + "_999th", convertDuration( snapshot.get999thPercentile() ) );
+                b.addField( key + "_max", convertDuration( snapshot.getMax() ) );
+                b.addField( key + "_min", convertDuration( snapshot.getMin() ) );
+                b.addField( key + "_median", convertDuration( snapshot.getMedian() ) );
+                b.addField( key + "_stddev", convertDuration( snapshot.getStdDev() ) );
+                b.addField( key + "_count", t.getCount() );
+                b.addField( key + "_oneMinuteRate", convertRate( t.getOneMinuteRate() ) );
+                b.addField( key + "_fiveMinuteRate", convertRate( t.getFiveMinuteRate() ) );
+                b.addField( key + "_fifteenMinuteRate", convertRate( t.getFifteenMinuteRate() ) );
+                b.addField( key + "_meanRate", convertRate( t.getMeanRate() ) );
+            }
         );
 
         if( resetTimersAfterReport ) {
@@ -252,18 +261,23 @@ class InfluxDBReporter extends ScheduledReporter {
 
     private void reportHistograms( SortedMap<String, Histogram> histograms, SortedMap<String, Point.Builder> builders ) {
         report( histograms, builders,
-            ( b, e ) -> b.addField( e.getKey(), e.getValue().getSnapshot().getMean() ),
-            ( b, e ) -> b.addField( e.getKey() + "_mean", e.getValue().getSnapshot().getMean() ),
-            ( b, e ) -> b.addField( e.getKey() + "_75th", e.getValue().getSnapshot().get75thPercentile() ),
-            ( b, e ) -> b.addField( e.getKey() + "_95th", e.getValue().getSnapshot().get95thPercentile() ),
-            ( b, e ) -> b.addField( e.getKey() + "_98th", e.getValue().getSnapshot().get98thPercentile() ),
-            ( b, e ) -> b.addField( e.getKey() + "_99th", e.getValue().getSnapshot().get99thPercentile() ),
-            ( b, e ) -> b.addField( e.getKey() + "_999th", e.getValue().getSnapshot().get999thPercentile() ),
-            ( b, e ) -> b.addField( e.getKey() + "_max", convertDuration( e.getValue().getSnapshot().getMax() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_min", convertDuration( e.getValue().getSnapshot().getMin() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_median", convertDuration( e.getValue().getSnapshot().getMedian() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_stddev", convertDuration( e.getValue().getSnapshot().getStdDev() ) ),
-            ( b, e ) -> b.addField( e.getKey() + "_count", e.getValue().getCount() )
+            ( b, e ) -> {
+                var key = e.getKey();
+                var h = e.getValue();
+                var snapshot = h.getSnapshot();
+                b.addField( key, snapshot.getMean() );
+                b.addField( key + "_mean", snapshot.getMean() );
+                b.addField( key + "_75th", snapshot.get75thPercentile() );
+                b.addField( key + "_95th", snapshot.get95thPercentile() );
+                b.addField( key + "_98th", snapshot.get98thPercentile() );
+                b.addField( key + "_99th", snapshot.get99thPercentile() );
+                b.addField( key + "_999th", snapshot.get999thPercentile() );
+                b.addField( key + "_max", snapshot.getMax() );
+                b.addField( key + "_min", snapshot.getMin() );
+                b.addField( key + "_median", snapshot.getMedian() );
+                b.addField( key + "_stddev", snapshot.getStdDev() );
+                b.addField( key + "_count", h.getCount() );
+            }
         );
     }
 
