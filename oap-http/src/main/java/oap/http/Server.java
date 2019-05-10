@@ -75,6 +75,7 @@ public class Server implements HttpServer {
     private static final Counter keepaliveTimeout = Metrics.counter( "http.keepalive_timeout" );
     private static final Histogram histogramConnections = Metrics.histogram( "http.connections" );
     private static final Histogram histogramRequestsPerConnection = Metrics.histogram( "http.connection_requests" );
+    private static final Counter histogramRequestsZeroPerConnection = Metrics.counter( "http.connection_requests_zero" );
     private static final Timer timeOfLive = Metrics.timer( "http.connection_timeoflive" );
 
     private final ConcurrentHashMap<String, ServerHttpContext> connections = new ConcurrentHashMap<>();
@@ -158,8 +159,8 @@ public class Server implements HttpServer {
                     if( log.isTraceEnabled() )
                         log.trace( "start handling {}", connection );
                     while( !Thread.interrupted() && connection.isOpen() ) {
-                        if( count > 1000 ) {
-                            report( httpContext );
+                        if( count > 100 ) {
+                            reportAndGetDuration( httpContext );
                             count = 0;
                         } else {
                             count++;
@@ -179,7 +180,10 @@ public class Server implements HttpServer {
                     log.error( e.getMessage(), e );
                 } finally {
                     var info = connections.remove( connectionId );
-                    long duration = report( info );
+                    long duration = reportAndGetDuration( info );
+                    if( info.requests == 0 )
+                        histogramRequestsZeroPerConnection.inc();
+
                     if( log.isTraceEnabled() )
                         log.trace( "connection: {}, requests: {}, duration: {}",
                             info.connection, info.requests, new Duration( duration * 1000000L ) );
@@ -200,8 +204,10 @@ public class Server implements HttpServer {
         }
     }
 
-    public long report( ServerHttpContext info ) {
-        histogramRequestsPerConnection.update( info.requests );
+    public long reportAndGetDuration( ServerHttpContext info ) {
+        if( info.requests > 0 )
+            histogramRequestsPerConnection.update( info.requests );
+
         var duration = System.nanoTime() - info.start;
         timeOfLive.update( duration, TimeUnit.NANOSECONDS );
         return duration;
