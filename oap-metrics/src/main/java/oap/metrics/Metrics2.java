@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static java.lang.Math.max;
 import static oap.metrics.Metrics.name;
 
 public class Metrics2 {
