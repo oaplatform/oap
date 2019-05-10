@@ -172,7 +172,7 @@ public class Server implements HttpServer {
                     connections.remove( connectionId );
                     try {
                         connection.close();
-                    } catch( SocketException e ) {
+                    } catch( IOException e ) {
                         log.trace( e.getMessage(), e );
                     }
                 }
