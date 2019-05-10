@@ -68,3 +68,6 @@ services:
       - oap-http-server
     supervision:
       thread: true
+
+  ws-log:
+    implementation: oap.ws.LogWS
