@@ -80,11 +80,11 @@ public class Metrics2 {
     }
 
     public static void measureHistogram( String metric, long value ) {
-        measureHistogram( name( metric ), value );
+        measureHistogram( name( metric ), max( value, 0 ) );
     }
 
     public static void measureHistogram( Name metric, long value ) {
-        getOrCreateHistogram( metric.line ).update( value );
+        getOrCreateHistogram( metric.line ).update( max( value, 0 ) );
     }
 
     public static Histogram histogram( String name ) {
