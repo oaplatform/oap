@@ -27,7 +27,9 @@ package oap.security.ws;
 import oap.http.Context;
 import oap.http.Protocol;
 import oap.http.Request;
+import oap.http.ServerHttpContext;
 import oap.http.Session;
+import oap.http.testng.MockHttpContext;
 import oap.http.testng.MockRequest;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
@@ -80,7 +82,7 @@ public class SecurityInterceptor2Test {
         when( mockAclService.checkOne( "obj", userId, "parent.read" ) ).thenReturn( true );
 
         final MockRequest request = new MockRequest();
-        request.headers.put( "authorization", "token1" );
+        request.getHeaders().put( "authorization", "token1" );
         var httpResponse = securityInterceptor.intercept( request,
             session, methodWithAnnotation, p -> "obj" );
 
@@ -91,7 +93,7 @@ public class SecurityInterceptor2Test {
     public void testShouldVerifyAndSetUserInSessionIfAuthorizationHeaderIsPresent() throws UnknownHostException {
         var methodWithAnnotation = REFLECTION.method( method -> method.name().equals( "methodWithAnnotation" ) ).get();
 
-        var context = new Context( "/", InetAddress.getLocalHost(), Protocol.HTTP.name(), httpContext );
+        var context = new Context( "/", InetAddress.getLocalHost(), new ServerHttpContext( new MockHttpContext(), Protocol.HTTP, null) );
         var tokenId = UUID.randomUUID().toString();
 
         var httpRequest = new HttpGet();

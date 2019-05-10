@@ -171,6 +171,13 @@ public class Request {
         return parameters( name ).stream().findFirst();
     }
 
+    public String parameter2( String name ) {
+        var p = params.get( name );
+        if( p != null && !p.isEmpty() ) return p.get( 0 );
+
+        return null;
+    }
+
     public List<String> parameters( String name ) {
         return params.containsKey( name ) ? params.get( name ) : Collections.emptyList();
 

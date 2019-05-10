@@ -146,6 +146,8 @@ public class Server implements HttpServer {
                 try {
                     handled.inc();
 
+                    var count = 0;
+
                     log.debug( "connection accepted: {}", connection );
 
                     var httpContext = createHttpContext( socket, connection );
@@ -156,6 +158,12 @@ public class Server implements HttpServer {
                     if( log.isTraceEnabled() )
                         log.trace( "start handling {}", connection );
                     while( !Thread.interrupted() && connection.isOpen() ) {
+                        if( count > 1000 ) {
+                            report( httpContext );
+                            count = 0;
+                        } else {
+                            count++;
+                        }
                         httpContext.requests++;
                         httpService.handleRequest( connection, httpContext );
                     }
@@ -171,9 +179,7 @@ public class Server implements HttpServer {
                     log.error( e.getMessage(), e );
                 } finally {
                     var info = connections.remove( connectionId );
-                    histogramRequestsPerConnection.update( info.requests );
-                    var duration = System.nanoTime() - info.start;
-                    timeOfLive.update( duration, TimeUnit.NANOSECONDS );
+                    long duration = report( info );
                     if( log.isTraceEnabled() )
                         log.trace( "connection: {}, requests: {}, duration: {}",
                             info.connection, info.requests, new Duration( duration * 1000000L ) );
@@ -192,6 +198,13 @@ public class Server implements HttpServer {
 
             throw e;
         }
+    }
+
+    public long report( ServerHttpContext info ) {
+        histogramRequestsPerConnection.update( info.requests );
+        var duration = System.nanoTime() - info.start;
+        timeOfLive.update( duration, TimeUnit.NANOSECONDS );
+        return duration;
     }
 
     public void stop() {

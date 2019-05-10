@@ -28,7 +28,9 @@ import oap.http.Context;
 import oap.http.HttpResponse;
 import oap.http.Protocol;
 import oap.http.Request;
+import oap.http.ServerHttpContext;
 import oap.http.Session;
+import oap.http.testng.MockHttpContext;
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
 import oap.sso.DefaultUser;
@@ -89,29 +91,29 @@ public class SecurityInterceptorTest {
 
     @Test
     public void testShouldVerifyAndSetUserInSessionIfAuthorizationHeaderIsPresent() throws UnknownHostException {
-        final Reflection.Method methodWithAnnotation = REFLECTION.method(
+        var methodWithAnnotation = REFLECTION.method(
             method -> method.name().equals( "methodWithAnnotation" ) ).get();
 
-        final Context context = new Context( "/", InetAddress.getLocalHost(), Protocol.HTTP.name(), httpContext );
-        final String tokenId = UUID.randomUUID().toString();
+        var context = new Context( "/", InetAddress.getLocalHost(), new ServerHttpContext( new MockHttpContext(), Protocol.HTTP, null ) );
+        var tokenId = UUID.randomUUID().toString();
 
-        final HttpRequest httpRequest = new HttpGet();
+        var httpRequest = new HttpGet();
         httpRequest.setHeader( "Authorization", tokenId );
         httpRequest.setHeader( "Host", "localhost" );
 
-        final Request request = new Request( httpRequest, context );
+        var request = new Request( httpRequest, context );
 
-        final User user = new DefaultUser( "ADMIN", "testOrg", "test@example.com" );
+        var user = new DefaultUser( "ADMIN", "testOrg", "test@example.com" );
 
-        final Token token = new Token();
+        var token = new Token();
         token.user = new DefaultUser( user );
         token.id = tokenId;
         token.created = LocalDateTime.now();
 
         when( mockTokenService.getToken( tokenId ) ).thenReturn( Optional.of( token ) );
 
-        final Session session = new Session();
-        final Optional<HttpResponse> httpResponse = securityInterceptor.intercept( request,
+        var session = new Session();
+        var httpResponse = securityInterceptor.intercept( request,
             session, methodWithAnnotation, p -> null );
 
         assertFalse( httpResponse.isPresent() );
