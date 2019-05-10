@@ -24,6 +24,7 @@
 
 package oap.logstream.net;
 
+import com.codahale.metrics.Counter;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.scheduler.Scheduled;
@@ -34,6 +35,7 @@ import oap.logstream.LogId;
 import oap.logstream.LoggerBackend;
 import oap.logstream.LoggerException;
 import oap.metrics.Metrics;
+import oap.metrics.Metrics2;
 
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +58,7 @@ public class SocketLoggerBackend extends LoggerBackend {
     private Buffers buffers;
     private boolean loggingAvailable = true;
     private boolean closed = false;
+    private Counter socketCounter;
 
     public SocketLoggerBackend( byte clientId, String host, int port, Path location, int bufferSize, long flushIntervar ) {
         this( clientId, host, port, location, BufferConfigurationMap.DEFAULT( bufferSize ), flushIntervar );
@@ -74,6 +77,7 @@ public class SocketLoggerBackend extends LoggerBackend {
                 .tag( "configuration", name ),
             () -> buffers.cache.size( conf.bufferSize )
         ) );
+        socketCounter = Metrics.counter( Metrics.name( "logging.socket" ).tag( "from_host", host ).measurement );
     }
 
     public SocketLoggerBackend( byte clientId, String host, int port, Path location, int bufferSize ) {
@@ -126,9 +130,10 @@ public class SocketLoggerBackend extends LoggerBackend {
     }
 
     private Boolean sendBuffer( Buffer buffer ) {
-        return Metrics.measureTimer( Metrics.name( "logging.buffer_send_time" ).tag( "from_host", host ), () -> {
+        return Metrics2.measureTimer( Metrics.name( "logging.buffer_send_time" ).tag( "from_host", host ), () -> {
             try {
-                log.trace( "sending {}", buffer );
+                if( log.isTraceEnabled() )
+                    log.trace( "sending {}", buffer );
                 connection.write( buffer.data(), 0, buffer.length() );
                 int size = connection.read();
                 if( size <= 0 ) {
@@ -138,7 +143,7 @@ public class SocketLoggerBackend extends LoggerBackend {
                     log.error( msg );
                     return false;
                 }
-                Metrics.measureCounterIncrement( Metrics.name( "logging.socket" ).tag( "from_host", host ), buffer.length() );
+                socketCounter.inc( buffer.length() );
                 loggingAvailable = true;
                 return true;
             } catch( Exception e ) {

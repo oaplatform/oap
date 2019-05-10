@@ -35,6 +35,7 @@ import oap.concurrent.Threads;
 import oap.http.cors.CorsPolicy;
 import oap.io.Closeables;
 import oap.metrics.Metrics;
+import oap.metrics.Metrics2;
 import oap.net.Inet;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.impl.DefaultBHttpServerConnection;
@@ -73,10 +74,10 @@ public class Server implements HttpServer {
 
     private static final Counter handled = Metrics.counter( "http.handled" );
     private static final Counter keepaliveTimeout = Metrics.counter( "http.keepalive_timeout" );
-    private static final Histogram histogramConnections = Metrics.histogram( "http.connections" );
-    private static final Histogram histogramRequestsPerConnection = Metrics.histogram( "http.connection_requests" );
+    private static final Histogram histogramConnections = Metrics2.histogram( "http.connections" );
+    private static final Histogram histogramRequestsPerConnection = Metrics2.histogram( "http.connection_requests" );
     private static final Counter histogramRequestsZeroPerConnection = Metrics.counter( "http.connection_requests_zero" );
-    private static final Timer timeOfLive = Metrics.timer( "http.connection_timeoflive" );
+    private static final Timer timeOfLive = Metrics2.timer( "http.connection_timeoflive" );
 
     private final ConcurrentHashMap<String, ServerHttpContext> connections = new ConcurrentHashMap<>();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();

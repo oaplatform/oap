@@ -32,6 +32,7 @@ import oap.http.Session;
 import oap.json.Binder;
 import oap.json.JsonException;
 import oap.metrics.Metrics;
+import oap.metrics.Metrics2;
 import oap.metrics.Name;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
@@ -220,7 +221,7 @@ public class WebService implements Handler {
             : null;
 
         if( interceptorResponse != null ) response.respond( interceptorResponse );
-        else Metrics.measureTimer( name, () -> {
+        else Metrics2.measureTimer( name, () -> {
             var parameters = method.parameters;
             var originalValues = getOriginalValues( session, parameters, request, wsMethod );
 

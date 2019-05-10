@@ -60,16 +60,28 @@ public final class Metrics {
         return snapshot;
     }
 
+    /**
+     * @see Metrics2#measureTimer(Name, Runnable)
+     */
+    @Deprecated( forRemoval = true )
     public static void measureTimer( Name metric, Runnable code ) {
         try( Timer.Context ignored = registry.timer( metric.line ).time() ) {
             code.run();
         }
     }
 
+    /**
+     * @see Metrics2#measureTimer(Name, long, TimeUnit)
+     */
+    @Deprecated( forRemoval = true )
     public static void measureTimer( Name metric, long duration, TimeUnit unit ) {
         registry.timer( metric.line ).update( duration, unit );
     }
 
+    /**
+     * @see Metrics2#timer(String)
+     */
+    @Deprecated( forRemoval = true )
     public static Timer timer( String name ) {
         return registry.timer( name );
     }
@@ -103,19 +115,22 @@ public final class Metrics {
         return metric;
     }
 
+    /**
+     * @see Metrics2#measureTimer(String, Supplier)
+     */
+    @Deprecated( forRemoval = true )
     public static <T> T measureTimer( String metric, Supplier<T> code ) {
         return measureTimer( name( metric ), code );
     }
 
+    /**
+     * @see Metrics2#measureTimer(Name, Supplier)
+     */
+    @Deprecated( forRemoval = true )
     public static <T> T measureTimer( Name metric, Supplier<T> code ) {
         try( Timer.Context ignored = registry.timer( metric.line ).time() ) {
             return code.get();
         }
-    }
-
-    @Deprecated
-    public static Timer.Context measureTimerCodehale( String metric ) {
-        return registry.timer( name( metric ).line ).time();
     }
 
     public static void measureMeter( Name metric ) {
@@ -130,14 +145,26 @@ public final class Metrics {
         return registry.meter( metric );
     }
 
+    /**
+     * @see Metrics2#measureHistogram(String, long)
+     */
+    @Deprecated( forRemoval = true )
     public static void measureHistogram( String metric, long value ) {
         measureHistogram( name( metric ), value );
     }
 
+    /**
+     * @see Metrics2#measureHistogram(Name, long)
+     */
+    @Deprecated( forRemoval = true )
     public static void measureHistogram( Name metric, long value ) {
         registry.histogram( metric.line ).update( value );
     }
 
+    /**
+     * @see Metrics2#histogram(String)
+     */
+    @Deprecated( forRemoval = true )
     public static Histogram histogram( String name ) {
         return registry.histogram( name );
     }

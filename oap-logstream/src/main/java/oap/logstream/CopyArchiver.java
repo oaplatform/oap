@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.metrics.Metrics;
+import oap.metrics.Metrics2;
 
 import java.nio.file.Path;
 
@@ -55,12 +56,12 @@ public class CopyArchiver extends Archiver {
 
     @Override
     protected void archive( Path path ) {
-        IoStreams.Encoding from = IoStreams.Encoding.from( path );
+        var from = IoStreams.Encoding.from( path );
 
-        Path destination = destinationDirectory.resolve(
+        var destination = destinationDirectory.resolve(
             encoding.resolve( sourceDirectory.relativize( path ) ) );
 
-        Metrics.measureTimer( Metrics.name( "archive" ), () -> {
+        Metrics2.measureTimer( Metrics.name( "archive" ), () -> {
             if( !Files.isFileEncodingValid( path ) ) {
                 Files.rename( path, corruptedDirectory.resolve( sourceDirectory.relativize( path ) ) );
                 log.debug( "corrupted {}", path );

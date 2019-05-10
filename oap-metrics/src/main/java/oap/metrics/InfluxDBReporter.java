@@ -221,27 +221,29 @@ class InfluxDBReporter extends ScheduledReporter {
                 var key = e.getKey();
                 var t = e.getValue();
                 var snapshot = t.getSnapshot();
-                b.addField( key, convertDuration( snapshot.getMean() ) );
-                b.addField( key + "_mean", convertDuration( snapshot.getMean() ) );
-                b.addField( key + "_75th", convertDuration( snapshot.get75thPercentile() ) );
-                b.addField( key + "_95th", convertDuration( snapshot.get95thPercentile() ) );
-                b.addField( key + "_98th", convertDuration( snapshot.get98thPercentile() ) );
-                b.addField( key + "_99th", convertDuration( snapshot.get99thPercentile() ) );
-                b.addField( key + "_999th", convertDuration( snapshot.get999thPercentile() ) );
-                b.addField( key + "_max", convertDuration( snapshot.getMax() ) );
-                b.addField( key + "_min", convertDuration( snapshot.getMin() ) );
-                b.addField( key + "_median", convertDuration( snapshot.getMedian() ) );
-                b.addField( key + "_stddev", convertDuration( snapshot.getStdDev() ) );
-                b.addField( key + "_count", t.getCount() );
-                b.addField( key + "_oneMinuteRate", convertRate( t.getOneMinuteRate() ) );
-                b.addField( key + "_fiveMinuteRate", convertRate( t.getFiveMinuteRate() ) );
-                b.addField( key + "_fifteenMinuteRate", convertRate( t.getFifteenMinuteRate() ) );
-                b.addField( key + "_meanRate", convertRate( t.getMeanRate() ) );
+                b.addField( key, convertDuration( snapshot.getMean() ) )
+                    .addField( key + "_mean", convertDuration( snapshot.getMean() ) )
+                    .addField( key + "_75th", convertDuration( snapshot.get75thPercentile() ) )
+                    .addField( key + "_95th", convertDuration( snapshot.get95thPercentile() ) )
+                    .addField( key + "_98th", convertDuration( snapshot.get98thPercentile() ) )
+                    .addField( key + "_99th", convertDuration( snapshot.get99thPercentile() ) )
+                    .addField( key + "_999th", convertDuration( snapshot.get999thPercentile() ) )
+                    .addField( key + "_max", convertDuration( snapshot.getMax() ) )
+                    .addField( key + "_min", convertDuration( snapshot.getMin() ) )
+                    .addField( key + "_median", convertDuration( snapshot.getMedian() ) )
+                    .addField( key + "_stddev", convertDuration( snapshot.getStdDev() ) )
+                    .addField( key + "_count", t.getCount() )
+                    .addField( key + "_oneMinuteRate", convertRate( t.getOneMinuteRate() ) )
+                    .addField( key + "_fiveMinuteRate", convertRate( t.getFiveMinuteRate() ) )
+                    .addField( key + "_fifteenMinuteRate", convertRate( t.getFifteenMinuteRate() ) )
+                    .addField( key + "_meanRate", convertRate( t.getMeanRate() ) );
             }
         );
 
         if( resetTimersAfterReport ) {
             for( var timerName : timers.keySet() ) {
+                if( Metrics2.hdrTimers.containsKey( timerName ) ) continue;
+
                 Metrics.registry.remove( timerName );
             }
         }

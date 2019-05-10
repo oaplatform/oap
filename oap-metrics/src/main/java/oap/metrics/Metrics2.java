@@ -24,20 +24,72 @@
 
 package oap.metrics;
 
-import java.util.HashMap;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Timer;
+import com.github.rollingmetrics.histogram.HdrBuilder;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+
+import static oap.metrics.Metrics.name;
 
 public class Metrics2 {
-    public static final HashMap<Measurement, Counter> count = new HashMap<>();
+    static ConcurrentHashMap<String, Timer> hdrTimers = new ConcurrentHashMap<>();
+    static ConcurrentHashMap<String, Histogram> hdrHistgrams = new ConcurrentHashMap<>();
 
-    public static void measureCounterIncrement( Measurement metric ) {
-        count.computeIfAbsent( metric, ( s ) -> new Counter() ).count.increment();
+    public static Timer timer( Name name ) {
+        return timer( name.line );
     }
 
-    public static void measureCounterDecrement( Measurement metric ) {
-        count.computeIfAbsent( metric, ( s ) -> new Counter() ).count.decrement();
+    public static Timer timer( String name ) {
+        var builder = new HdrBuilder();
+        var timer = builder.resetReservoirOnSnapshot().buildAndRegisterTimer( Metrics.registry, name );
+        hdrTimers.put( name, timer );
+        return timer;
     }
 
-    public static void measureCounterAdd( Measurement metric, long count ) {
-        Metrics2.count.computeIfAbsent( metric, ( s ) -> new Counter() ).count.add( count );
+    private static Timer getOrCreateTimer( String metric ) {
+        return hdrTimers.computeIfAbsent( metric, ( name ) -> timer( metric ) );
+    }
+
+    private static Histogram getOrCreateHistogram( String metric ) {
+        return hdrHistgrams.computeIfAbsent( metric, ( name ) -> histogram( metric ) );
+    }
+
+    public static void measureTimer( Name metric, Runnable code ) {
+        try( Timer.Context ignored = getOrCreateTimer( metric.line ).time() ) {
+            code.run();
+        }
+    }
+
+    public static void measureTimer( Name metric, long duration, TimeUnit unit ) {
+        getOrCreateTimer( metric.line ).update( duration, unit );
+    }
+
+
+    public static <T> T measureTimer( String metric, Supplier<T> code ) {
+        return measureTimer( name( metric ), code );
+    }
+
+    public static <T> T measureTimer( Name metric, Supplier<T> code ) {
+        try( Timer.Context ignored = getOrCreateTimer( metric.line ).time() ) {
+            return code.get();
+        }
+    }
+
+    public static void measureHistogram( String metric, long value ) {
+        measureHistogram( name( metric ), value );
+    }
+
+    public static void measureHistogram( Name metric, long value ) {
+        getOrCreateHistogram( metric.line ).update( value );
+    }
+
+    public static Histogram histogram( String name ) {
+        var builder = new HdrBuilder();
+        var histogram = builder.resetReservoirOnSnapshot().buildAndRegisterHistogram( Metrics.registry, name );
+        hdrHistgrams.put( name, histogram );
+        return histogram;
     }
 }

@@ -30,6 +30,7 @@ import oap.io.Files;
 import oap.logstream.LogId;
 import oap.logstream.net.BufferConfigurationMap.BufferConfiguration;
 import oap.metrics.Metrics;
+import oap.metrics.Metrics2;
 import oap.util.Cuid;
 
 import java.io.Closeable;
@@ -129,7 +130,7 @@ public class Buffers implements Closeable {
 
     public final synchronized void forEachReadyData( Predicate<Buffer> consumer ) {
         flush();
-        Metrics.measureHistogram( Metrics.name( "logging.buffers_count" ), readyBuffers.size() );
+        Metrics2.measureHistogram( Metrics.name( "logging.buffers_count" ), readyBuffers.size() );
         log.debug( "buffers to go " + readyBuffers.size() );
         Iterator<Buffer> iterator = readyBuffers.iterator();
         while( iterator.hasNext() && !closed ) {

@@ -39,6 +39,7 @@ import oap.logstream.LoggerBackend;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
 import oap.metrics.Metrics;
+import oap.metrics.Metrics2;
 import oap.metrics.Name;
 
 import java.nio.file.Path;
@@ -91,7 +92,7 @@ public class DiskLoggerBackend extends LoggerBackend {
         }
 
         Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_DISK ).tag( "from", hostName ) );
-        Metrics.measureHistogram( Metrics.name( METRICS_LOGGING_DISK_BUFFERS ).tag( "from", hostName ), length );
+        Metrics2.measureHistogram( Metrics.name( METRICS_LOGGING_DISK_BUFFERS ).tag( "from", hostName ), length );
         Writer writer = writers.get( new LogId( fileName, logType, hostName, shard, version ) );
         log.trace( "logging {} bytes to {}", length, writer );
         writer.write( buffer, offset, length, this.listeners::fireError );

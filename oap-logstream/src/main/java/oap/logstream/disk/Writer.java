@@ -38,6 +38,7 @@ import oap.logstream.LogId;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
 import oap.metrics.Metrics;
+import oap.metrics.Metrics2;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -89,8 +90,8 @@ public class Writer implements Closeable {
             log.trace( "closing output {} ({} bytes)", this, out.getCount() );
             stopwatch.measure( out::flush );
             stopwatch.measure( out::close );
-            Metrics.measureHistogram( "logging.server_bucket_size", out.getCount() );
-            Metrics.measureHistogram( "logging.server_bucket_time", stopwatch.elapsed() / 1000000L );
+            Metrics2.measureHistogram( "logging.server_bucket_size", out.getCount() );
+            Metrics2.measureHistogram( "logging.server_bucket_time", stopwatch.elapsed() / 1000000L );
             out = null;
         } catch( IOException e ) {
             throw new LoggerException( e );
