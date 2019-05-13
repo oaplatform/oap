@@ -34,9 +34,9 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.ScheduledReporter;
 import com.codahale.metrics.Timer;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import oap.util.Lists;
 import oap.util.Pair;
-import oap.util.Stream;
 import oap.util.Throwables;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
@@ -45,8 +45,6 @@ import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
 import org.joda.time.DateTimeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.InterruptedIOException;
 import java.lang.reflect.Field;
@@ -68,8 +66,8 @@ import java.util.regex.Pattern;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.util.Pair.__;
 
+@Slf4j
 class InfluxDBReporter extends ScheduledReporter {
-    private static final Logger logger = LoggerFactory.getLogger( InfluxDBReporter.class );
     private final InfluxDB influxDB;
     private final String database;
     private final Map<String, String> tags;
@@ -100,6 +98,8 @@ class InfluxDBReporter extends ScheduledReporter {
         this.aggregates = Lists.map( aggregates,
             a -> Pattern.compile( a.replace( ".", "\\." ).replace( "\\.*", "(\\.[^,\\s]+)([^\\s]*)" ) ) );
 
+        log.info( "aggregates = {}", aggregates );
+
     }
 
     public static Builder forRegistry( MetricRegistry registry ) {
@@ -109,15 +109,16 @@ class InfluxDBReporter extends ScheduledReporter {
     @Override
     public synchronized void report( SortedMap<String, Gauge> gauges, SortedMap<String, Counter> counters,
                                      SortedMap<String, Histogram> histograms, SortedMap<String, Meter> meters, SortedMap<String, Timer> timers ) {
+        log.trace( "report..." );
         try {
 
-            final long time = DateTimeUtils.currentTimeMillis();
+            var time = DateTimeUtils.currentTimeMillis();
 
-            BatchPoints.Builder pointsBuilder = BatchPoints.database( database );
+            var pointsBuilder = BatchPoints.database( database );
 
-            BatchPoints points = pointsBuilder.build();
+            var points = pointsBuilder.build();
 
-            final SortedMap<String, Point.Builder> builders = new TreeMap<>();
+            var builders = new TreeMap<String, Point.Builder>();
 
             reportCounters( counters, builders );
             reportMeters( meters, builders );
@@ -127,40 +128,47 @@ class InfluxDBReporter extends ScheduledReporter {
 
             builders.values().forEach( b -> points.point( b.time( time, MILLISECONDS ).build() ) );
 
-            logger.trace( "reporting {} counters, {} meters, {} timers, {} gauges, {} histograms",
-                counters.size(), meters.size(), timers.size(), gauges.size(), histograms
-            );
+            if( log.isTraceEnabled() )
+                log.trace( "reporting {} counters, {} meters, {} timers, {} gauges, {} histograms...",
+                    counters.size(), meters.size(), timers.size(), gauges.size(), histograms
+                );
             influxDB.write( points );
+            if( log.isTraceEnabled() )
+                log.trace( "reporting {} counters, {} meters, {} timers, {} gauges, {} histograms... Done",
+                    counters.size(), meters.size(), timers.size(), gauges.size(), histograms
+                );
         } catch( Exception e ) {
-            Throwable rootCause = Throwables.getRootCause( e );
+            var rootCause = Throwables.getRootCause( e );
             if( rootCause instanceof SocketException || rootCause instanceof InterruptedIOException ) {
-                logger.error( e.getMessage() );
+                log.error( e.getMessage() );
             } else {
-                logger.error( e.getMessage(), e );
+                log.error( e.getMessage(), e );
             }
         }
     }
 
     private void reportCounters( SortedMap<String, Counter> counters, SortedMap<String, Point.Builder> builders ) {
+        if( log.isTraceEnabled() )
+            log.trace( "counters {}", counters.keySet() );
         report( counters, builders, ( b, e ) -> b.addField( e.getKey(), e.getValue().getCount() ) );
     }
 
     private <T extends Metric> void report(
         SortedMap<String, T> counters,
         SortedMap<String, Point.Builder> builders,
-        BiConsumer<Point.Builder, Map.Entry<String, T>>... funcs ) {
+        BiConsumer<Point.Builder, Map.Entry<String, T>> func ) {
 
         final Map<String, SortedMap<String, T>> ap = aggregate( counters );
 
         ap.forEach( ( pointName, metrics ) -> {
-            Point.Builder builder = builders.computeIfAbsent( pointName, ( p ) -> {
-                final Point.Builder b = Point.measurement( pointName );
+            var builder = builders.computeIfAbsent( pointName, ( p ) -> {
+                var b = Point.measurement( pointName );
                 tags.forEach( b::tag );
                 return b;
             } );
 
             for( Map.Entry<String, T> entry : metrics.entrySet() ) {
-                Stream.of( funcs ).forEach( func -> func.accept( builder, entry ) );
+                func.accept( builder, entry );
             }
         } );
     }
@@ -184,13 +192,13 @@ class InfluxDBReporter extends ScheduledReporter {
                     );
                 }
 
-                final String field = matcher.group( 1 ).substring( 1 );
-                final String tags = matcher.group( 2 );
-                final String point = StringUtils.removeEnd( entry.getKey(), matcher.group( 1 ) + tags ) + tags;
-                final SortedMap<String, T> map = result.computeIfAbsent( point, ( p ) -> new TreeMap<>() );
+                var field = matcher.group( 1 ).substring( 1 );
+                var tags = matcher.group( 2 );
+                var point = StringUtils.removeEnd( entry.getKey(), matcher.group( 1 ) + tags ) + tags;
+                var map = result.computeIfAbsent( point, ( p ) -> new TreeMap<>() );
                 map.put( field, entry.getValue() );
             } else {
-                final SortedMap<String, T> map = new TreeMap<>();
+                var map = new TreeMap<String, T>();
                 map.put( "value", entry.getValue() );
                 result.put( entry.getKey(), map );
             }
@@ -201,21 +209,26 @@ class InfluxDBReporter extends ScheduledReporter {
     }
 
     private void reportMeters( SortedMap<String, Meter> meters, SortedMap<String, Point.Builder> builders ) {
+        if( log.isTraceEnabled() )
+            log.trace( "meters {}", meters.keySet() );
         report( meters, builders,
             ( b, e ) -> {
                 var key = e.getKey();
                 var m = e.getValue();
-                b.addField( key, convertRate( m.getOneMinuteRate() ) );
-                b.addField( key + "_oneMinuteRate", convertRate( m.getOneMinuteRate() ) );
-                b.addField( key + "_fiveMinuteRate", convertRate( m.getFiveMinuteRate() ) );
-                b.addField( key + "_fifteenMinuteRate", convertRate( m.getFifteenMinuteRate() ) );
-                b.addField( key + "_count", convertRate( m.getCount() ) );
-                b.addField( key + "_meanRate", convertRate( m.getMeanRate() ) );
+                b.addField( key, convertRate( m.getOneMinuteRate() ) )
+                    .addField( key + "_oneMinuteRate", convertRate( m.getOneMinuteRate() ) )
+                    .addField( key + "_fiveMinuteRate", convertRate( m.getFiveMinuteRate() ) )
+                    .addField( key + "_fifteenMinuteRate", convertRate( m.getFifteenMinuteRate() ) )
+                    .addField( key + "_count", convertRate( m.getCount() ) )
+                    .addField( key + "_meanRate", convertRate( m.getMeanRate() ) );
             }
         );
     }
 
     private void reportTimers( SortedMap<String, Timer> timers, SortedMap<String, Point.Builder> builders ) {
+        if( log.isTraceEnabled() )
+            log.trace( "timers {}", timers.keySet() );
+
         report( timers, builders,
             ( b, e ) -> {
                 var key = e.getKey();
@@ -250,6 +263,9 @@ class InfluxDBReporter extends ScheduledReporter {
     }
 
     private void reportGauges( SortedMap<String, Gauge> gauges, SortedMap<String, Point.Builder> builders ) {
+        if( log.isTraceEnabled() )
+            log.trace( "gauges {}", gauges.keySet() );
+
         report( gauges, builders, ( b, e ) -> field( b, e.getKey(), e.getValue().getValue() ) );
     }
 
@@ -262,23 +278,26 @@ class InfluxDBReporter extends ScheduledReporter {
     }
 
     private void reportHistograms( SortedMap<String, Histogram> histograms, SortedMap<String, Point.Builder> builders ) {
+        if( log.isTraceEnabled() )
+            log.trace( "histograms {}", histograms.keySet() );
+
         report( histograms, builders,
             ( b, e ) -> {
                 var key = e.getKey();
                 var h = e.getValue();
                 var snapshot = h.getSnapshot();
-                b.addField( key, snapshot.getMean() );
-                b.addField( key + "_mean", snapshot.getMean() );
-                b.addField( key + "_75th", snapshot.get75thPercentile() );
-                b.addField( key + "_95th", snapshot.get95thPercentile() );
-                b.addField( key + "_98th", snapshot.get98thPercentile() );
-                b.addField( key + "_99th", snapshot.get99thPercentile() );
-                b.addField( key + "_999th", snapshot.get999thPercentile() );
-                b.addField( key + "_max", snapshot.getMax() );
-                b.addField( key + "_min", snapshot.getMin() );
-                b.addField( key + "_median", snapshot.getMedian() );
-                b.addField( key + "_stddev", snapshot.getStdDev() );
-                b.addField( key + "_count", h.getCount() );
+                b.addField( key, snapshot.getMean() )
+                    .addField( key + "_mean", snapshot.getMean() )
+                    .addField( key + "_75th", snapshot.get75thPercentile() )
+                    .addField( key + "_95th", snapshot.get95thPercentile() )
+                    .addField( key + "_98th", snapshot.get98thPercentile() )
+                    .addField( key + "_99th", snapshot.get99thPercentile() )
+                    .addField( key + "_999th", snapshot.get999thPercentile() )
+                    .addField( key + "_max", snapshot.getMax() )
+                    .addField( key + "_min", snapshot.getMin() )
+                    .addField( key + "_median", snapshot.getMedian() )
+                    .addField( key + "_stddev", snapshot.getStdDev() )
+                    .addField( key + "_count", h.getCount() );
             }
         );
     }
@@ -331,14 +350,14 @@ class InfluxDBReporter extends ScheduledReporter {
         }
 
         public InfluxDBReporter build() {
-            final OkHttpClient.Builder builder = new OkHttpClient.Builder()
+            var builder = new OkHttpClient.Builder()
                 .connectTimeout( connectionTimeout, MILLISECONDS )
                 .readTimeout( readTimeout, MILLISECONDS )
                 .writeTimeout( writeTimeout, MILLISECONDS );
 
-            InfluxDB influxDB = InfluxDBFactory.connect( "http://" + host + ":" + port, login, password, builder );
+            var influxDB = InfluxDBFactory.connect( "http://" + host + ":" + port, login, password, builder );
 
-            if( logger.isTraceEnabled() )
+            if( log.isTraceEnabled() )
                 influxDB.setLogLevel( InfluxDB.LogLevel.FULL );
 
             return new InfluxDBReporter(

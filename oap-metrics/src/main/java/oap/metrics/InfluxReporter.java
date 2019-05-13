@@ -44,9 +44,9 @@ public class InfluxReporter {
     protected ArrayList<String> exclude = new ArrayList<>();
     protected ArrayList<String> aggregates = new ArrayList<>();
     protected HashMap<String, Object> tags = new HashMap<>();
-    protected long connectionTimeout = 1000;
-    protected long readTimeout = 1000;
-    protected long writeTimeout = 1000;
+    protected long connectionTimeout = 10000;
+    protected long readTimeout = 10000;
+    protected long writeTimeout = 10000;
     protected long period = 60 * 1000;
     protected boolean reset_timers_after_report = false;
 
