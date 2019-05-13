@@ -26,7 +26,8 @@ package oap.metrics;
 
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Timer;
-import com.github.rollingmetrics.histogram.HdrBuilder;
+import com.github.rollingmetrics.dropwizard.Dropwizard;
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +49,8 @@ public class Metrics2 {
     }
 
     private static Timer newTimer( String name ) {
-        return new HdrBuilder().resetReservoirOnSnapshot().buildAndRegisterTimer( Metrics.registry, name );
+        var rollingHistogram = RollingHdrHistogram.builder().resetReservoirOnSnapshot().build();
+        return Metrics.registry.register( name, Dropwizard.toTimer( rollingHistogram ) );
     }
 
     private static Timer getOrCreateTimer( String metric ) {
@@ -93,6 +95,7 @@ public class Metrics2 {
     }
 
     private static Histogram newHistogram( String name ) {
-        return new HdrBuilder().resetReservoirOnSnapshot().buildAndRegisterHistogram( Metrics.registry, name );
+        var rollingHistogram = RollingHdrHistogram.builder().resetReservoirOnSnapshot().build();
+        return Metrics.registry.register( name, Dropwizard.toHistogram( rollingHistogram ) );
     }
 }

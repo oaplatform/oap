@@ -137,7 +137,7 @@ class InfluxDBReporter extends ScheduledReporter {
                 log.trace( "reporting {} counters, {} meters, {} timers, {} gauges, {} histograms... Done",
                     counters.size(), meters.size(), timers.size(), gauges.size(), histograms
                 );
-        } catch( Exception e ) {
+        } catch( Throwable e ) {
             var rootCause = Throwables.getRootCause( e );
             if( rootCause instanceof SocketException || rootCause instanceof InterruptedIOException ) {
                 log.error( e.getMessage() );
