@@ -118,7 +118,12 @@ public class Server implements HttpServer {
     private void stats() {
         while( !Thread.interrupted() ) {
             histogramConnections.update( connections.size() );
-            Threads.sleepSafely( 400 );
+
+            for( var c : connections.values() ) {
+                reportAndGetDuration( c );
+            }
+
+            Threads.sleepSafely( 5000 );
         }
     }
 
@@ -148,8 +153,6 @@ public class Server implements HttpServer {
                 try {
                     handled.inc();
 
-                    var count = 0;
-
                     log.debug( "connection accepted: {}", connection );
 
                     var httpContext = createHttpContext( socket, connection );
@@ -160,12 +163,6 @@ public class Server implements HttpServer {
                     if( log.isTraceEnabled() )
                         log.trace( "start handling {}", connection );
                     while( !Thread.interrupted() && connection.isOpen() ) {
-                        if( count > 100 ) {
-                            reportAndGetDuration( httpContext );
-                            count = 0;
-                        } else {
-                            count++;
-                        }
                         httpContext.requests++;
                         httpService.handleRequest( connection, httpContext );
                     }
