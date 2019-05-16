@@ -24,7 +24,6 @@
 
 package oap.template;
 
-import com.google.common.collect.ImmutableMap;
 import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -193,7 +192,7 @@ public class EngineTest extends AbstractTest {
 
     @Test
     public void testNestedMap() {
-        var sample = new Test4( new Test3( ImmutableMap.of( "mapKey", "mapValue" ) ) );
+        var sample = new Test4( new Test3( Map.of( "mapKey", "mapValue" ) ) );
         assertThat( engine.getTemplate( "test", Test4.class,
             singletonList( line( "f1", "test3.map.mapKey", "unknown" ) ), " " )
             .renderString( sample ) ).isEqualTo( "mapValue" );
@@ -201,7 +200,7 @@ public class EngineTest extends AbstractTest {
 
     @Test
     public void testMutableStrategy() {
-        var sample = new Test4( new Test3( ImmutableMap.of( "mapKey", "mapValue" ) ) );
+        var sample = new Test4( new Test3( Map.of( "mapKey", "mapValue" ) ) );
         var testStrategy = new TestTemplateStrategy();
         final Template<Test4, Template.Line> template = engine.getTemplate( "test", Test4.class,
             Lists.of(
