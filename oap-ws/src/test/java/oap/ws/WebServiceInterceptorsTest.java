@@ -87,7 +87,7 @@ public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
         @Override
         public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
                                                  Function<Reflection.Parameter, Object> getParameterValueFunc ) {
-            return request.parameter( "value" ).get().equals( "error" )
+            return request.getListParams().parameterOpt( "value" ).filter( s -> s.equals( "error" ) ).isPresent()
                 ? Optional.of( new HttpResponse( 403 ).withContent( "caused by interceptor", APPLICATION_JSON ) )
                 : Optional.empty();
         }

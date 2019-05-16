@@ -26,8 +26,10 @@ package oap.http;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
+import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
+import lombok.ToString;
 import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Stream;
@@ -41,6 +43,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,10 +57,11 @@ public class Request {
     public final Context context;
     public final Optional<InputStream> body;
     public final String uri;
-    public final ListMultimap<String, String> params;
     public final String ua;
     public final String referrer;
     public final String ip;
+    private ListParams listParams;
+    private UniqueParams uniqueParams;
     private ListMultimap<String, String> _headers;
     private Map<String, String> _cookies;
     private String _requestLine;
@@ -67,25 +71,39 @@ public class Request {
         this.context = context;
         this.uri = req.getRequestLine().getUri();
         this.body = content( req ); // Headers have to be constructed at this point
-        this.params = params( req );
         this.ua = header( "User-Agent" ).orElse( null );
         this.referrer = header( "Referrer" ).orElse( null );
         this.ip = header( "X-Forwarded-For" ).orElse( context.remoteAddress.getHostAddress() );
     }
 
-    private static ListMultimap<String, String> params( HttpRequest req ) {
-        ListMultimap<String, String> query = Url.parseQuery(
-            Strings.substringAfter( req.getRequestLine().getUri(), "?" ) );
-        var contentType = req.getFirstHeader( "Content-Type" );
-        if( contentType != null && contentType.getValue().startsWith( "application/x-www-form-urlencoded" )
-            && req instanceof HttpEntityEnclosingRequest )
-            try {
-                return Maps.add( query, Url.parseQuery(
-                    EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) req ).getEntity() ) ) );
-            } catch( IOException e ) {
-                throw new UncheckedIOException( e );
-            }
-        else return query;
+    public ListParams getListParams() {
+        if( listParams == null ) {
+            listParams = new ListParams();
+
+            Url.parseQuery( Strings.substringAfter( uri, "?" ), listParams.params );
+            var contentType = req.getFirstHeader( "Content-Type" );
+            if( contentType != null && contentType.getValue().startsWith( "application/x-www-form-urlencoded" )
+                && req instanceof HttpEntityEnclosingRequest )
+                try {
+                    Url.parseQuery( EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) req ).getEntity() ), listParams.params );
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                }
+        }
+
+        return listParams;
+    }
+
+    /**
+     * @apiNote "application/x-www-form-urlencoded" not supported
+     */
+    public UniqueParams getUniqueParams() {
+        if( uniqueParams == null ) {
+            uniqueParams = new UniqueParams();
+            Url.parseQuery( Strings.substringAfter( uri, "?" ), uniqueParams.params );
+        }
+
+        return uniqueParams;
     }
 
     public ListMultimap<String, String> getHeaders() {
@@ -114,7 +132,7 @@ public class Request {
 
     public String getRequestLine() {
         if( _requestLine == null ) {
-            _requestLine = Strings.substringBefore( req.getRequestLine().getUri(), "?" ).substring( context.location.length() );
+            _requestLine = Strings.substringBefore( uri, "?" ).substring( context.location.length() );
         }
         return _requestLine;
     }
@@ -167,22 +185,6 @@ public class Request {
         }
     }
 
-    public Optional<String> parameter( String name ) {
-        return parameters( name ).stream().findFirst();
-    }
-
-    public String parameter2( String name ) {
-        var p = params.get( name );
-        if( p != null && !p.isEmpty() ) return p.get( 0 );
-
-        return null;
-    }
-
-    public List<String> parameters( String name ) {
-        return params.containsKey( name ) ? params.get( name ) : Collections.emptyList();
-
-    }
-
     public Optional<byte[]> readBody() {
         return body.map( Try.mapOrThrow( ByteStreams::toByteArray, HttpException.class ) );
     }
@@ -206,7 +208,7 @@ public class Request {
             .add( "baseUrl", getBaseUrl() )
             .add( "requestLine", getRequestLine() )
             .add( "method", getHttpMethod() )
-            .add( "params", params )
+            .add( "params", getListParams() )
             .omitNullValues()
             .toString();
     }
@@ -218,7 +220,7 @@ public class Request {
             .add( "ip", this.ip )
             .add( "ua", this.ua )
             .add( "uri", this.uri )
-            .add( "params", this.params )
+            .add( "params", this.getListParams() )
             .add( "headers", this.getHeaders() )
             .add( "cookies", getCookies() )
             .omitNullValues()
@@ -229,4 +231,37 @@ public class Request {
         GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH
     }
 
+    @ToString
+    public static class ListParams {
+        final ListMultimap<String, String> params = ArrayListMultimap.create();
+
+        public Optional<String> parameterOpt( String name ) {
+            var ret = params.get( name );
+            return parameters( name ).stream().findFirst();
+        }
+
+        public String parameter( String name ) {
+            var ret = params.get( name );
+            if( ret == null ) return null;
+
+            return ret.get( 0 );
+        }
+
+        public List<String> parameters( String name ) {
+            return params.containsKey( name ) ? params.get( name ) : Collections.emptyList();
+
+        }
+    }
+
+    public static class UniqueParams {
+        public final HashMap<String, String> params = new HashMap<>();
+
+        public Optional<String> parameterOpt( String name ) {
+            return Optional.of( params.get( name ) );
+        }
+
+        public String parameter( String name ) {
+            return params.get( name );
+        }
+    }
 }

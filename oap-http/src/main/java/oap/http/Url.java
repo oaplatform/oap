@@ -27,25 +27,22 @@ package oap.http;
 import com.google.api.client.util.escape.CharEscapers;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
-import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Collections.emptyList;
-import static oap.util.Maps.Collectors.toListMultimap;
-import static oap.util.Pair.__;
 
 public class Url {
     public static String decode( String s ) {
         return CharEscapers.decodeUri( s );
     }
 
-    public static ListMultimap<String, String> parseQuery( String params ) {
-        var map = ArrayListMultimap.<String, String>create();
-        if( StringUtils.isEmpty( params ) ) return map;
+    public static void parseQuery( String params, ListMultimap<String, String> map ) {
+        if( StringUtils.isEmpty( params ) ) return;
 
         var pairs = StringUtils.split( params, '&' );
         for( var pair : pairs ) {
@@ -54,7 +51,23 @@ public class Url {
             var value = idx > 0 && pair.length() > idx + 1 ? decode( pair.substring( idx + 1 ) ) : "";
             map.put( key, value );
         }
+    }
 
+    public static void parseQuery( String params, Map<String, String> map ) {
+        if( StringUtils.isEmpty( params ) ) return;
+
+        var pairs = StringUtils.split( params, '&' );
+        for( var pair : pairs ) {
+            var idx = pair.indexOf( "=" );
+            var key = idx > 0 ? pair.substring( 0, idx ) : pair;
+            var value = idx > 0 && pair.length() > idx + 1 ? decode( pair.substring( idx + 1 ) ) : "";
+            map.put( key, value );
+        }
+    }
+
+    public static ListMultimap<String, String> parseQuery( String params ) {
+        var map = ArrayListMultimap.<String, String>create();
+        parseQuery( params, map );
         return map;
     }
 
