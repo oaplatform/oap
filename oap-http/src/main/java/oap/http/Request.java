@@ -263,5 +263,11 @@ public class Request {
         public String parameter( String name ) {
             return params.get( name );
         }
+
+        public boolean getBoolean( String name ) {
+            var p = params.get( name );
+            if( p == null ) return false;
+            return Boolean.parseBoolean( p );
+        }
     }
 }
