@@ -26,12 +26,15 @@ package oap.io;
 import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import net.jpountz.lz4.LZ4BlockInputStream;
+import net.jpountz.lz4.LZ4BlockOutputStream;
 import oap.archive.Archiver;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -54,7 +57,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-import static oap.io.KafkaLZ4BlockOutputStream.BLOCKSIZE_4MB;
 import static oap.io.ProgressInputStream.progress;
 import static oap.util.Functions.empty.consume;
 
@@ -187,7 +189,7 @@ public class IoStreams {
                 zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
                 return zip;
             case LZ4:
-                return new KafkaLZ4BlockOutputStream( fos, BLOCKSIZE_4MB, false, false );
+                return new LZ4BlockOutputStream( fos );
             case PLAIN:
                 return fos;
             default:
@@ -250,9 +252,10 @@ public class IoStreams {
                 return stream;
             case LZ4:
                 try {
-                    return new KafkaLZ4BlockInputStream( stream );
+                    return new LZ4BlockInputStream( stream );
                 } catch( Exception e ) {
                     stream.close();
+                    throw e;
                 }
             default:
                 throw new IllegalArgumentException( "Unknown encoding " + encoding );
@@ -282,11 +285,11 @@ public class IoStreams {
         }
 
         public static Encoding from( String name ) {
-            return Stream
-                .of( values() )
-                .filter( e -> e.compressed && name.endsWith( e.extension ) )
-                .findAny()
-                .orElse( PLAIN );
+            for( var e : values() ) {
+                if( e.compressed && StringUtils.endsWithIgnoreCase( name, e.extension ) ) return e;
+            }
+
+            return PLAIN;
         }
 
         public Path resolve( Path path ) {
