@@ -24,6 +24,7 @@
 package oap.reflect;
 
 import oap.util.BiStream;
+import oap.util.BitSet;
 import oap.util.Dates;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -109,6 +110,7 @@ public final class Coercions {
         convertors.put( URL.class, new URLConvertor() );
         convertors.put( URI.class, new URIConvertor() );
         convertors.put( Pattern.class, new PatternConvertor() );
+        convertors.put( BitSet.class, new BitSetConvertor() );
         convertors.put( Class.class, Try.map( value -> Class.forName( ( String ) value ) ) );
     }
 
@@ -325,6 +327,16 @@ public final class Coercions {
                 throw new ReflectException( "cannot cast " + value + " to URI.class" );
             }
             else throw new ReflectException( "cannot cast " + value + " to URI.class" );
+        }
+    }
+
+    private static class BitSetConvertor implements Function<Object, Object> {
+        @Override
+        public Object apply( Object value ) {
+            if( value instanceof BitSet ) return value;
+            else if( value instanceof String ) {
+                return new BitSet( ( String ) value );
+            } else throw new ReflectException( "cannot cast " + value + " to BitSet.class" );
         }
     }
 

@@ -24,20 +24,37 @@
 
 package oap.util;
 
-import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class BitSetTest {
     @Test
     public void testMaxBit() {
-        BitSet bitSet = new BitSet( 10 );
+        var bitSet = new BitSet( 10 );
         bitSet.set( 4 );
-        Assert.assertEquals( bitSet.max(), 4 );
+        assertThat( bitSet.max() ).isEqualTo( 4 );
 
         bitSet.set( 6 );
-        Assert.assertEquals( bitSet.max(), 6 );
+        assertThat( bitSet.max() ).isEqualTo( 6 );
 
         bitSet.set( 6, false );
-        Assert.assertEquals( bitSet.max(), 4 );
+        assertThat( bitSet.max() ).isEqualTo( 4 );
+    }
+
+    @Test
+    public void testNewBitSetFromString() {
+        var bs = new BitSet( "1,2,  4, 6 -8" );
+
+        assertThat( bs.get( 0 ) ).isFalse();
+        assertThat( bs.get( 1 ) ).isTrue();
+        assertThat( bs.get( 2 ) ).isTrue();
+        assertThat( bs.get( 3 ) ).isFalse();
+        assertThat( bs.get( 4 ) ).isTrue();
+        assertThat( bs.get( 5 ) ).isFalse();
+        assertThat( bs.get( 6 ) ).isTrue();
+        assertThat( bs.get( 7 ) ).isTrue();
+        assertThat( bs.get( 8 ) ).isTrue();
+        assertThat( bs.get( 9 ) ).isFalse();
     }
 }

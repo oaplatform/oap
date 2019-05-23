@@ -26,6 +26,8 @@ package oap.util;
 
 import java.util.ArrayList;
 
+import static org.apache.commons.lang3.StringUtils.split;
+
 public class BitSet extends java.util.BitSet {
     public final int nbits;
 
@@ -46,6 +48,21 @@ public class BitSet extends java.util.BitSet {
     public BitSet( int nbits ) {
         super( nbits );
         this.nbits = nbits;
+    }
+
+    public BitSet( String bitset ) {
+        this();
+
+        for( var b : split( bitset, ',' ) ) {
+            var s = split( b, '-' );
+            if( s.length == 1 ) {
+                set( Integer.parseInt( b.trim() ) );
+            } else {
+                var f = Integer.parseInt( s[0].trim() );
+                var t = Integer.parseInt( s[1].trim() );
+                set( f, t + 1 );
+            }
+        }
     }
 
     public boolean getAnd( int[] bitIndex ) {

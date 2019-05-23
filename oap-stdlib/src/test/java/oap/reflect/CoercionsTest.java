@@ -25,6 +25,7 @@
 package oap.reflect;
 
 import oap.testng.AbstractTest;
+import oap.util.BitSet;
 import org.testng.annotations.Test;
 
 import java.lang.annotation.RetentionPolicy;
@@ -50,6 +51,10 @@ public class CoercionsTest extends AbstractTest {
         assertThat( coercions.cast( Reflect.reflect( Path.class ), "/a" ) ).isEqualTo( Paths.get( "/a" ) );
         assertThat( coercions.cast( Reflect.reflect( Class.class ), "java.lang.String" ) ).isEqualTo( String.class );
         assertThat( coercions.cast( Reflect.reflect( RetentionPolicy.class ), "SOURCE" ) ).isEqualTo( RetentionPolicy.SOURCE );
+
+        var expected = new BitSet();
+        expected.set( 1, 6 );
+        assertThat( coercions.cast( Reflect.reflect( BitSet.class ), "1-5" ) ).isEqualTo( expected );
     }
 
 }
