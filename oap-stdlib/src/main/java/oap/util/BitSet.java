@@ -25,10 +25,11 @@
 package oap.util;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import static org.apache.commons.lang3.StringUtils.split;
 
-public class BitSet extends java.util.BitSet {
+public class BitSet extends java.util.BitSet implements Iterable<Integer> {
     public final int nbits;
 
     public BitSet() {
@@ -113,4 +114,8 @@ public class BitSet extends java.util.BitSet {
         return previousSetBit( size() - 1 );
     }
 
+    @Override
+    public Iterator<Integer> iterator() {
+        return stream().iterator();
+    }
 }

@@ -119,4 +119,20 @@ public class Dates {
     public static void setTimeFixed( long millis ) {
         DateTimeUtils.setCurrentMillisFixed( millis );
     }
+
+    public static long s( int value ) {
+        return value * 1000;
+    }
+
+    public static long m( int value ) {
+        return s( value ) * 60;
+    }
+
+    public static long h( int value ) {
+        return m( value ) * 60;
+    }
+
+    public static long d( int value ) {
+        return h( value ) * 24;
+    }
 }
