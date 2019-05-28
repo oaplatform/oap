@@ -29,10 +29,24 @@ import java.util.Set;
 public class Once {
     private static Set<Object> done = new HashSet<>();
 
-    public static void once( Runnable runnable ) {
+    public static void executeOnce( Runnable runnable ) {
         if( !done.contains( runnable.getClass() ) ) {
             runnable.run();
             done.add( runnable.getClass() );
         }
+    }
+
+    public static Runnable once( Runnable runnable ) {
+        return new Runnable() {
+            boolean done = false;
+
+            @Override
+            public void run() {
+                if( !done ) {
+                    done = true;
+                    runnable.run();
+                }
+            }
+        };
     }
 }

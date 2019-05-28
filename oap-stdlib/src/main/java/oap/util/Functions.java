@@ -24,6 +24,7 @@
 package oap.util;
 
 import com.google.common.base.Suppliers;
+import oap.concurrent.Once;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -99,6 +100,10 @@ public class Functions {
             ? Optional.ofNullable( f.apply( ( T ) value ) )
             : Optional.empty();
 
+    }
+
+    public static Runnable once( Runnable runnable ) {
+        return Once.once( runnable );
     }
 
 }

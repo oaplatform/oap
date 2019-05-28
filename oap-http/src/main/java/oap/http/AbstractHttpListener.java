@@ -10,7 +10,7 @@ import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
-import static oap.concurrent.Once.once;
+import static oap.concurrent.Once.executeOnce;
 import static oap.io.Sockets.socketClosed;
 
 @Slf4j
@@ -31,7 +31,7 @@ public abstract class AbstractHttpListener extends SynchronizedRunnable implemen
         try {
             try {
                 while( !Thread.interrupted() && ( serverSocket = createSocket() ) == null ) {
-                    once( () -> log.warn( "Server socket cannot be opened; waiting for it ..." ) );
+                    executeOnce( () -> log.warn( "Server socket cannot be opened; waiting for it ..." ) );
                     Threads.sleepSafely( sleep );
                 }
                 log.debug( "ready to rock [{}]", serverSocket );
@@ -41,7 +41,7 @@ public abstract class AbstractHttpListener extends SynchronizedRunnable implemen
 
             while( !Thread.interrupted() && !serverSocket.isClosed() )
                 try {
-                    server.accepted( serverSocket.accept() );
+                    786server.accepted( serverSocket.accept() );
                 } catch( SocketTimeoutException ignore ) {
                 } catch( SocketException e ) {
                     if( socketClosed( e ) ) log.debug( e.getMessage() );
