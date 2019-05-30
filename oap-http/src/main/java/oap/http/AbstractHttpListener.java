@@ -41,7 +41,7 @@ public abstract class AbstractHttpListener extends SynchronizedRunnable implemen
 
             while( !Thread.interrupted() && !serverSocket.isClosed() )
                 try {
-                    786server.accepted( serverSocket.accept() );
+                    server.accepted( serverSocket.accept() );
                 } catch( SocketTimeoutException ignore ) {
                 } catch( SocketException e ) {
                     if( socketClosed( e ) ) log.debug( e.getMessage() );
