@@ -28,8 +28,6 @@ import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiFunction;
-import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
