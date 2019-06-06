@@ -60,6 +60,12 @@ public class ResourceSchemaStorageTest {
                 + "    },"
                 + "    \"b\": {"
                 + "      \"type\": \"integer\""
+                + "    },"
+                + "    \"j\": {"
+                + "      \"type\": \"integer\""
+                + "    },"
+                + "    \"y\": {"
+                + "      \"type\": \"integer\""
                 + "    }"
                 + "  }"
                 + "}" );

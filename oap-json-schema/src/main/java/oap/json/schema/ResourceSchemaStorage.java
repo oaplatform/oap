@@ -40,19 +40,23 @@ public final class ResourceSchemaStorage implements SchemaStorage {
     @Override
     public String get( String name ) {
 
+        var ext = FilenameUtils.getExtension( name );
         var prefix = FilenameUtils.removeExtension( name );
         var fileName = FilenameUtils.removeExtension( FilenameUtils.getName( name ) );
 
         var conf = Resources.readStringOrThrow( getClass(), name );
+        if( "yaml".equalsIgnoreCase( ext ) ) conf = Binder.json.marshal( Binder.yaml.unmarshal( Map.class, conf ) );
 
         var extConf = Resources.readString( getClass(), prefix + "/" + fileName + ".conf" );
         var extJson = Resources.readString( getClass(), prefix + "/" + fileName + ".json" );
+        var extYaml = Resources.readString( getClass(), prefix + "/" + fileName + ".yaml" );
 
-        if( !extConf.isPresent() && !extJson.isPresent() ) return conf;
+        if( extConf.isEmpty() && extJson.isEmpty() && extYaml.isEmpty() ) return conf;
 
         var list = new ArrayList<String>();
         extConf.ifPresent( list::add );
         extJson.ifPresent( list::add );
+        extYaml.ifPresent( y -> list.add( Binder.json.marshal( Binder.yaml.unmarshal( Map.class, y ) ) ) );
 
 
         return Binder.json.marshal( Binder.hoconWithConfig( false, list.toArray( new String[0] ) )
