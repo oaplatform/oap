@@ -37,7 +37,6 @@ import oap.io.IoStreams.Encoding;
 import oap.logstream.LogId;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
-import oap.metrics.Metrics;
 import oap.metrics.Metrics2;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -152,6 +151,7 @@ public class Writer implements Closeable {
         return logTypeDictionary
             .getValues( d -> d.getTags().contains( LOG_TAG ) )
             .stream()
+            .filter( field -> field.containsProperty( "path" ) )
             .map( Dictionary::getId )
             .collect( joining( "\t" ) ) + '\n';
     }
