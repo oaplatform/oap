@@ -1,0 +1,7 @@
+name: test-module-profile
+profiles:
+  - test1
+services:
+  module-profile:
+    profiles:
+    implementation: oap.application.KernelProfileTest$TestProfile1

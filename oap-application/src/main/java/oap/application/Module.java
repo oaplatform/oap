@@ -44,7 +44,6 @@ import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static oap.application.KernelHelper.profileEnabled;
 
 @EqualsAndHashCode
 @ToString
@@ -59,6 +58,8 @@ public class Module {
     public final ArrayList<String> extendsModules = new ArrayList<>();
     @JsonAlias( { "service", "services" } )
     public final LinkedHashMap<String, Service> services = new LinkedHashMap<>();
+    @JsonAlias( { "profile", "profiles" } )
+    public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     public String name;
 
     @JsonCreator
@@ -70,14 +71,14 @@ public class Module {
     @ToString
     public static class Service {
         public String implementation;
-        public LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
-        public Supervision supervision = new Supervision();
-        public LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
+        public final LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
+        public final Supervision supervision = new Supervision();
+        public final LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
         @JsonAlias( { "profile", "profiles" } )
-        public LinkedHashSet<String> profiles = new LinkedHashSet<>();
+        public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
         public String name;
-        public LinkedHashMap<String, String> listen = new LinkedHashMap<>();
-        public LinkedHashMap<String, Object> link = new LinkedHashMap<>(); // String | Reference
+        public final LinkedHashMap<String, String> listen = new LinkedHashMap<>();
+        public final LinkedHashMap<String, Object> link = new LinkedHashMap<>(); // String | Reference
         public RemoteLocation remote;
         public boolean enabled = true;
 
@@ -131,7 +132,7 @@ public class Module {
         @JsonAlias( { "name", "service", "module" } )
         public final String name;
         @JsonAlias( { "profile", "profiles" } )
-        public LinkedHashSet<String> profiles = new LinkedHashSet<>();
+        public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
 
         public Depends( String name, List<String> profiles ) {
             this.name = name;

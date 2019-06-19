@@ -23,6 +23,8 @@
  */
 package oap.application;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import lombok.SneakyThrows;
 import oap.io.Resources;
@@ -67,6 +69,7 @@ public class Configuration<T> {
         var binder = Binder.getBinder( url );
         var mapper = binder.getMapper();
         mapper.enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+        mapper.setDefaultSetterInfo( JsonSetter.Value.forValueNulls( Nulls.SKIP ) );
         return mapper.readValue( Strings.readString( url ), clazz );
     }
 

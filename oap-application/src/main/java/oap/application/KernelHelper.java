@@ -43,10 +43,19 @@ import static org.apache.commons.collections4.CollectionUtils.subtract;
 public class KernelHelper {
 
     static Set<Module> forEachModule( Set<Module> modules, Set<String> profiles, Set<String> initializedModules, Consumer<Module> cons ) {
+        return forEachModule( modules, false, profiles, initializedModules, cons );
+    }
+
+    static Set<Module> forEachModule( Set<Module> modules, boolean skipDisabled, Set<String> profiles, Set<String> initializedModules, Consumer<Module> cons ) {
         var deferred = new LinkedHashSet<Module>();
 
         for( Module module : modules ) {
             log.debug( "module {}", module.name );
+
+            if( skipDisabled && !isModuleEnabled( module, profiles ) ) {
+                log.debug( "skipping  module {}", module.name );
+                continue;
+            }
 
             if( initializedModules.containsAll( getDependsOn( module.dependsOn, profiles ) ) ) {
                 cons.accept( module );
@@ -61,7 +70,7 @@ public class KernelHelper {
 
         return deferred.size() == modules.size()
             ? deferred
-            : forEachModule( deferred, profiles, initializedModules, cons );
+            : forEachModule( deferred, skipDisabled, profiles, initializedModules, cons );
     }
 
     static Map<String, Module.Service> forEachService( Set<Module> modules,
@@ -148,7 +157,7 @@ public class KernelHelper {
     }
 
     static boolean isKernel( Object value ) {
-        return "@kernel" .equals( value );
+        return "@kernel".equals( value );
     }
 
     static boolean isImplementations( Object value ) {
@@ -204,5 +213,13 @@ public class KernelHelper {
         }
 
         return true;
+    }
+
+    public static boolean isModuleEnabled( Module module, Set<String> systemProfiles ) {
+        return profileEnabled( module.profiles, systemProfiles );
+    }
+
+    public static boolean isServiceEnabled( Module.Service service, Set<String> systemProfiles ) {
+        return profileEnabled( service.profiles, systemProfiles );
     }
 }
