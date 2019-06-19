@@ -25,6 +25,7 @@ package oap.json.schema;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
+import oap.json.schema.validator.AnyJsonValidator;
 import oap.json.schema.validator.BooleanJsonValidator;
 import oap.json.schema.validator.DateJsonValidator;
 import oap.json.schema.validator.array.ArrayJsonValidator;
@@ -59,6 +60,7 @@ public class JsonSchema {
         JsonSchema.add( new StringJsonValidator( "string" ) );
         JsonSchema.add( new ObjectJsonValidator() );
         JsonSchema.add( new DictionaryJsonValidator() );
+        JsonSchema.add( new AnyJsonValidator() );
     }
 
     public final SchemaAST schema;

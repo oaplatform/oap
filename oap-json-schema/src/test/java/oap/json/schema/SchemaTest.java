@@ -78,4 +78,15 @@ public class SchemaTest extends AbstractSchemaTest {
 
         assertThat( assertOk( schema, "{}", true ) ).isEqualTo( Maps.of( __( "a", true ) ) );
     }
+
+    @Test
+    public void testAnyType() {
+        String schema = "{type: any}";
+
+        assertOk( schema, "null" );
+        assertOk( schema, "1" );
+        assertOk( schema, "{}" );
+        assertOk( schema, "[]" );
+    }
+
 }
