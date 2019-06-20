@@ -32,52 +32,60 @@ import oap.http.cors.GenericCorsPolicy;
 import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
 
+import java.io.Closeable;
 import java.util.List;
+import java.util.function.BiConsumer;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static oap.http.testng.HttpAsserts.reset;
 
 public class AbstractWebServicesTest extends AbstractTest {
-    protected WebServices ws;
-    private Server server;
-    private SynchronizedThread listener;
-    private Kernel kernel;
-
-    @BeforeClass
-    public void startServer() {
-        Env.resetPorts();
-        kernel = new Kernel( emptyList() );
-        server = new Server( 100, false );
-        ws = new WebServices( kernel, server, new SessionManager( 10, null, "/" ),
-            GenericCorsPolicy.DEFAULT,
-            Lists.map( getConfig(), n -> WsConfig.CONFIGURATION.fromResource( getClass(), n ) )
-        );
-
-        kernel.start();
-        registerServices( kernel );
-        ws.start();
-        listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
-        listener.start();
+    protected TestWebServer webServer() {
+        return webServer( ( ws, k ) -> {} );
     }
 
-    protected List<String> getConfig() {
-        return asList( "ws.json", "ws.conf" );
+    protected TestWebServer webServer( BiConsumer<WebServices, Kernel> registerServices ) {
+        return webServer( registerServices, "ws.json", "ws.conf" );
     }
 
-    protected void registerServices( Kernel kernel ) {
-
+    protected TestWebServer webServer( String... configs ) {
+        return webServer( ( ws, k ) -> {}, configs );
     }
 
-    @AfterClass
-    public void stopServer() {
-        listener.stop();
-        server.stop();
-        ws.stop();
-        kernel.stop();
-        reset();
+    protected TestWebServer webServer( BiConsumer<WebServices, Kernel> registerServices, String... configs ) {
+        return new TestWebServer( List.of( configs ), registerServices );
+    }
+
+    protected class TestWebServer implements Closeable {
+        protected WebServices ws;
+        private Server server;
+        private SynchronizedThread listener;
+        private Kernel kernel;
+
+        private TestWebServer( List<String> configs, BiConsumer<WebServices, Kernel> registerServices ) {
+            Env.resetPorts();
+            kernel = new Kernel( emptyList() );
+            server = new Server( 100, false );
+            ws = new WebServices( kernel, server, new SessionManager( 10, null, "/" ),
+                GenericCorsPolicy.DEFAULT,
+                Lists.map( configs, n -> WsConfig.CONFIGURATION.fromResource( getClass(), n ) )
+            );
+
+            kernel.start();
+            registerServices.accept( ws, kernel );
+            ws.start();
+            listener = new SynchronizedThread( new PlainHttpListener( server, Env.port() ) );
+            listener.start();
+        }
+
+        @Override
+        public void close() {
+            listener.stop();
+            server.stop();
+            ws.stop();
+            kernel.stop();
+            reset();
+        }
     }
 }

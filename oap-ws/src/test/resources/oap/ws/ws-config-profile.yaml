@@ -1,0 +1,6 @@
+name: ws-profile
+profile: test-profile
+services:
+  s:
+    service: test
+    protocol: HTTP

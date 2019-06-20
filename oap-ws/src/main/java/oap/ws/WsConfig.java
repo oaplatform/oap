@@ -27,22 +27,26 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.application.Configuration;
-import oap.application.Module;
 import oap.http.Protocol;
 import oap.http.cors.CorsPolicy;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 
 @EqualsAndHashCode
 @ToString
 public class WsConfig {
     public static final Configuration<WsConfig> CONFIGURATION = new Configuration<>( WsConfig.class, "oap-ws" );
-    public LinkedHashMap<String, Service> services = new LinkedHashMap<>();
-    public LinkedHashMap<String, Service> handlers = new LinkedHashMap<>();
-    public List<String> interceptors = new ArrayList<>();
+
+    @JsonAlias( { "profile", "profiles" } )
+    public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
+
+    public final LinkedHashMap<String, Service> services = new LinkedHashMap<>();
+    public final LinkedHashMap<String, Service> handlers = new LinkedHashMap<>();
+    public final ArrayList<String> interceptors = new ArrayList<>();
+
+    public String name;
 
     @EqualsAndHashCode
     @ToString

@@ -25,30 +25,33 @@
 package oap.ws;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.application.Kernel;
+import oap.io.Closeables;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
-import static java.util.Collections.singletonList;
 import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.http.testng.HttpAsserts.httpUrl;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 @Slf4j
 public class ValidationTest extends AbstractWebServicesTest {
-    @Override
-    protected void registerServices( Kernel kernel ) {
-        ws.exceptionToHttpCode.put( IllegalAccessException.class.getName(), 400 );
-        ws.exceptionToHttpCode.put( "unknownclass", 400 );
+    private TestWebServer server;
 
-        kernel.register( "validatedWS", new TestValidatedWS() );
+    @BeforeMethod
+    public void init() {
+        server = webServer( ( ws, kernel ) -> {
+            kernel.register( "validatedWS", new TestValidatedWS() );
+            ws.exceptionToHttpCode.put( IllegalAccessException.class.getName(), 400 );
+            ws.exceptionToHttpCode.put( "unknownclass", 400 );
+        }, "validation-services.conf" );
     }
 
-    @Override
-    protected List<String> getConfig() {
-        return singletonList( "validation-services.conf" );
+    @AfterMethod
+    public void done() {
+        Closeables.close( server );
     }
 
     @Test

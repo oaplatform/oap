@@ -24,16 +24,18 @@
 package oap.ws;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.application.Kernel;
 import oap.http.Client;
 import oap.http.Handler;
 import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Response;
 import oap.http.testng.HttpAsserts;
+import oap.io.Closeables;
 import oap.metrics.Metrics;
 import oap.util.Maps;
 import oap.util.Pair;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -51,11 +53,19 @@ import static org.testng.Assert.assertEquals;
 
 @Slf4j
 public class WebServicesTest extends AbstractWebServicesTest {
+    private TestWebServer server;
 
-    @Override
-    protected void registerServices( Kernel kernel ) {
-        kernel.register( "math", new MathWS() );
-        kernel.register( "handler", new TestHandler() );
+    @BeforeMethod
+    public void init() {
+        server = webServer( ( ws, kernel ) -> {
+            kernel.register( "math", new MathWS() );
+            kernel.register( "handler", new TestHandler() );
+        } );
+    }
+
+    @AfterMethod
+    public void done() {
+        Closeables.close( server );
     }
 
     @Test

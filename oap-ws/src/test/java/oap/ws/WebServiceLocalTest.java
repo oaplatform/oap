@@ -24,12 +24,11 @@
 
 package oap.ws;
 
-import oap.application.Kernel;
 import oap.http.HttpResponse;
-import oap.util.Lists;
+import oap.io.Closeables;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.util.List;
 
 import static oap.http.Request.HttpMethod.GET;
 import static oap.http.testng.HttpAsserts.assertGet;
@@ -37,14 +36,18 @@ import static oap.http.testng.HttpAsserts.httpUrl;
 
 public class WebServiceLocalTest extends AbstractWebServicesTest {
 
-    @Override
-    protected void registerServices( Kernel kernel ) {
-        kernel.register( "test", new TestWS() );
+    private TestWebServer server;
+
+    @BeforeMethod
+    public void init() {
+        server = webServer( ( ws, kernel ) -> {
+            kernel.register( "test", new TestWS() );
+        }, "ws-local.conf" );
     }
 
-    @Override
-    protected List<String> getConfig() {
-        return Lists.of( "ws-local.conf" );
+    @AfterMethod
+    public void done() {
+        Closeables.close( server );
     }
 
     @Test

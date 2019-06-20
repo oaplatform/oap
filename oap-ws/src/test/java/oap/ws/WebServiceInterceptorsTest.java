@@ -24,15 +24,15 @@
 
 package oap.ws;
 
-import oap.application.Kernel;
 import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Session;
+import oap.io.Closeables;
 import oap.reflect.Reflection;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -42,16 +42,21 @@ import static oap.http.testng.HttpAsserts.httpUrl;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
-    @Override
-    protected void registerServices( Kernel kernel ) {
-        kernel.register( "test", new TestWS() );
-        kernel.register( "empty-interceptor", new EmptyInterceptor() );
-        kernel.register( "error-interceptor", new ErrorInterceptor() );
+    private TestWebServer server;
+
+    @BeforeMethod
+    public void init() {
+        server = webServer( ( ws, kernel ) -> {
+            kernel.register( "test", new TestWS() );
+            kernel.register( "empty-interceptor", new EmptyInterceptor() );
+            kernel.register( "error-interceptor", new ErrorInterceptor() );
+
+        }, "ws-interceptors.conf" );
     }
 
-    @Override
-    protected List<String> getConfig() {
-        return Collections.singletonList( "ws-interceptors.conf" );
+    @AfterMethod
+    public void done() {
+        Closeables.close( server );
     }
 
     @Test

@@ -24,51 +24,65 @@
 
 package oap.ws;
 
-import oap.application.Kernel;
 import oap.http.HttpResponse;
 import oap.http.testng.HttpAsserts;
-import oap.util.Lists;
 import org.testng.annotations.Test;
-
-import java.util.List;
 
 import static oap.http.Request.HttpMethod.GET;
 import static oap.http.testng.HttpAsserts.assertGet;
 
 public class WebServicesProfileTest extends AbstractWebServicesTest {
 
-    @Override
-    protected void registerServices( Kernel kernel ) {
-        kernel.register( "no-profile", new TestWS() );
-        kernel.register( "with-profile", new TestWS() );
-        kernel.register( "new-profile", new TestWS() );
-        kernel.enableProfiles( "test-profile" );
+    protected TestWebServer testServiceProfiles() {
+        return webServer( ( ws, kernel ) -> {
+            kernel.register( "no-profile", new TestWS() );
+            kernel.register( "with-profile", new TestWS() );
+            kernel.register( "new-profile", new TestWS() );
+            kernel.enableProfiles( "test-profile" );
 
-    }
-
-    @Override
-    protected List<String> getConfig() {
-        return Lists.of( "ws-profile.conf" );
+        }, "ws-profile.conf" );
     }
 
     @Test
     public void testShouldStartWebServiceIfProfileIsNotConfiguredForServiceAndWS() {
-        assertGet( HttpAsserts.httpUrl( "/test-no-profile/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
+        try( var ignored = testServiceProfiles() ) {
+            assertGet( HttpAsserts.httpUrl( "/test-no-profile/text?value=empty" ) ).isOk().hasBody( "\"ok\"" );
+        }
     }
 
     @Test
     public void testShouldStartWebServiceIfProfileIsConfiguredForServiceAndWS() {
-        assertGet( HttpAsserts.httpUrl( "/test-with-profile/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
+        try( var ignored = testServiceProfiles() ) {
+            assertGet( HttpAsserts.httpUrl( "/test-with-profile/text?value=empty" ) ).isOk().hasBody( "\"ok\"" );
+        }
     }
 
     @Test
     public void testShouldNotStartWebServiceIfProfileIsConfiguredForServiceAndNotWS() {
-        assertGet( HttpAsserts.httpUrl( "/new-profile/text?value=empty" ) ).hasCode( 501 );
+        try( var ignored = testServiceProfiles() ) {
+            assertGet( HttpAsserts.httpUrl( "/new-profile/text?value=empty" ) ).hasCode( 501 );
+        }
+    }
 
+    @Test
+    public void testConfigProfile() {
+        try( var ignored = webServer( ( ws, kernel ) -> {
+            kernel.register( "test", new TestWS() );
+            kernel.enableProfiles( "test-profile" );
+
+        }, "ws-config-profile.yaml" ) ) {
+            assertGet( HttpAsserts.httpUrl( "/s/text?value=empty" ) ).isOk().hasBody( "\"ok\"" );
+
+        }
+
+        try( var ignored = webServer( ( ws, kernel ) -> {
+            kernel.register( "test", new TestWS() );
+        }, "ws-config-profile.yaml" ) ) {
+            assertGet( HttpAsserts.httpUrl( "/s/text?value=empty" ) ).hasCode( 501 );
+        }
     }
 
     private static class TestWS {
-
         @WsMethod( path = "/text", method = GET )
         public HttpResponse text( @WsParam( from = WsParam.From.QUERY ) String value ) {
             return HttpResponse.ok( "ok" );

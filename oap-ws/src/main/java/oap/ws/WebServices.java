@@ -33,12 +33,10 @@ import oap.http.Protocol;
 import oap.http.cors.CorsPolicy;
 import oap.json.Binder;
 import oap.util.Lists;
-import oap.util.Stream;
 import org.apache.http.entity.ContentType;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 public class WebServices {
@@ -74,39 +72,42 @@ public class WebServices {
     public void start() {
         log.info( "binding web services..." );
 
-        for( WsConfig config : wsConfigs ) {
+        for( var config : wsConfigs ) {
             log.trace( "config = {}", config );
 
-            final List<Interceptor> interceptors = Stream.of( config.interceptors )
-                .map( kernel::service )
-                .map( Interceptor.class::cast )
-                .toList();
+            if( !KernelHelper.profileEnabled( config.profiles, kernel.profiles ) ) {
+                log.debug( "skipping " + config.name + " web configuration initialization with "
+                    + "service profiles " + config.profiles );
+                continue;
+            }
 
-            for( Map.Entry<String, WsConfig.Service> entry : config.services.entrySet() ) {
-                final WsConfig.Service serviceConfig = entry.getValue();
+            var interceptors = Lists.map( config.interceptors, i -> ( Interceptor ) kernel.service( i ) );
+
+            for( var entry : config.services.entrySet() ) {
+                var serviceConfig = entry.getValue();
 
                 log.trace( "service = {}", entry );
 
-                if( !serviceConfig.profiles.isEmpty() && !KernelHelper.profileEnabled( serviceConfig.profiles, kernel.profiles ) ) {
+                if( !KernelHelper.profileEnabled( serviceConfig.profiles, kernel.profiles ) ) {
                     log.debug( "skipping " + entry.getKey() + " web service initialization with "
                         + "service profiles " + serviceConfig.profiles );
                     continue;
                 }
 
-                final Object service = kernel.service( serviceConfig.service );
+                var service = kernel.service( serviceConfig.service );
 
                 Preconditions.checkState( service != null, "Unknown service " + serviceConfig.service );
 
-                CorsPolicy corsPolicy = serviceConfig.corsPolicy != null ? serviceConfig.corsPolicy : globalCorsPolicy;
+                var corsPolicy = serviceConfig.corsPolicy != null ? serviceConfig.corsPolicy : globalCorsPolicy;
                 bind( entry.getKey(), corsPolicy, service, serviceConfig.sessionAware,
                     sessionManager, interceptors, serviceConfig.protocol );
             }
 
-            for( Map.Entry<String, WsConfig.Service> entry : config.handlers.entrySet() ) {
-                final WsConfig.Service handlerConfig = entry.getValue();
+            for( var entry : config.handlers.entrySet() ) {
+                var handlerConfig = entry.getValue();
                 log.trace( "handler = {}", entry );
 
-                CorsPolicy corsPolicy = handlerConfig.corsPolicy != null ? handlerConfig.corsPolicy : globalCorsPolicy;
+                var corsPolicy = handlerConfig.corsPolicy != null ? handlerConfig.corsPolicy : globalCorsPolicy;
 
                 server.bind( entry.getKey(), corsPolicy, kernel.service( handlerConfig.service ), handlerConfig.protocol );
             }
@@ -114,7 +115,7 @@ public class WebServices {
     }
 
     public void stop() {
-        for( WsConfig config : wsConfigs ) {
+        for( var config : wsConfigs ) {
             config.handlers.keySet().forEach( server::unbind );
             config.services.keySet().forEach( server::unbind );
         }
