@@ -28,6 +28,8 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.jpountz.lz4.LZ4BlockInputStream;
 import net.jpountz.lz4.LZ4BlockOutputStream;
+import net.jpountz.lz4.LZ4FrameInputStream;
+import net.jpountz.lz4.LZ4FrameOutputStream;
 import oap.archive.Archiver;
 import oap.io.ProgressInputStream.Progress;
 import oap.util.Stream;
@@ -57,6 +59,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import static net.jpountz.lz4.LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB;
 import static oap.io.ProgressInputStream.progress;
 import static oap.util.Functions.empty.consume;
 
@@ -64,6 +67,7 @@ import static oap.util.Functions.empty.consume;
 public class IoStreams {
 
     public static final int DEFAULT_BUFFER = 8192;
+    private static LZ4FrameOutputStream.BLOCKSIZE lz4BlockSize;
 
     public static Stream<String> lines( URL url ) {
         return lines( url, Encoding.from( url ), consume() );
@@ -188,8 +192,10 @@ public class IoStreams {
                 var zip = new ZipOutputStream( fos );
                 zip.putNextEntry( new ZipEntry( path.getFileName().toString() ) );
                 return zip;
-            case LZ4:
+            case LZ4_BLOCK:
                 return new LZ4BlockOutputStream( fos );
+            case LZ4:
+                return new LZ4FrameOutputStream( fos, SIZE_64KB );
             case PLAIN:
                 return fos;
             default:
@@ -250,9 +256,16 @@ public class IoStreams {
                 }
             case PLAIN:
                 return stream;
-            case LZ4:
+            case LZ4_BLOCK:
                 try {
                     return new LZ4BlockInputStream( stream );
+                } catch( Exception e ) {
+                    stream.close();
+                    throw e;
+                }
+            case LZ4:
+                try {
+                    return new LZ4FrameInputStream( stream );
                 } catch( Exception e ) {
                     stream.close();
                     throw e;
@@ -266,7 +279,8 @@ public class IoStreams {
         PLAIN( "", false ),
         ZIP( ".zip", true ),
         GZIP( ".gz", true ),
-        LZ4( ".lz4", true );
+        LZ4( ".lz4", true ),
+        LZ4_BLOCK( ".lz4b", true );
 
         public final String extension;
         public final boolean compressed;

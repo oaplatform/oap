@@ -39,6 +39,7 @@ import java.nio.file.Paths;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
+import static oap.io.IoStreams.Encoding.LZ4_BLOCK;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
 import static org.joda.time.DateTimeZone.UTC;
@@ -49,9 +50,11 @@ public class ArchiverTest extends AbstractTest {
     public Object[][] encoding() {
         return new Object[][] {
             { PLAIN, LZ4 },
+            { PLAIN, LZ4_BLOCK },
             { PLAIN, PLAIN },
             { GZIP, PLAIN },
-            { GZIP, LZ4 }
+            { GZIP, LZ4 },
+            { GZIP, LZ4_BLOCK }
         };
     }
 
