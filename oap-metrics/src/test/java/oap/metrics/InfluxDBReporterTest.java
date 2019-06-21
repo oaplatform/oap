@@ -98,6 +98,7 @@ public class InfluxDBReporterTest extends AbstractTest {
             aggregates,
             TimeUnit.DAYS,
             TimeUnit.DAYS,
+            false,
             false
         );
     }

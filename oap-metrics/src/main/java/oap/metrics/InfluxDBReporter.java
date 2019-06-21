@@ -72,6 +72,7 @@ class InfluxDBReporter extends ScheduledReporter {
     private final String database;
     private final Map<String, String> tags;
     private final boolean resetTimersAfterReport;
+    private final boolean skipEmpty;
     private final Collection<Pattern> aggregates;
 
     @SneakyThrows
@@ -79,12 +80,14 @@ class InfluxDBReporter extends ScheduledReporter {
                                 MetricRegistry registry, String name,
                                 MetricFilter filter, Collection<String> aggregates,
                                 TimeUnit rateUnit, TimeUnit durationUnit,
-                                boolean resetTimersAfterReport ) {
+                                boolean resetTimersAfterReport,
+                                boolean skipEmpty ) {
         super( registry, name, filter, rateUnit, durationUnit );
         this.influxDB = influxDB;
         this.database = database;
         this.tags = tags;
         this.resetTimersAfterReport = resetTimersAfterReport;
+        this.skipEmpty = skipEmpty;
 
         final Field key_escaper = Point.class.getDeclaredField( "KEY_ESCAPER" );
         key_escaper.setAccessible( true );
@@ -215,6 +218,8 @@ class InfluxDBReporter extends ScheduledReporter {
             ( b, e ) -> {
                 var key = e.getKey();
                 var m = e.getValue();
+
+                if( skipEmpty && m.getCount() == 0 ) return;
                 b.addField( key, convertRate( m.getOneMinuteRate() ) )
                     .addField( key + "_oneMinuteRate", convertRate( m.getOneMinuteRate() ) )
                     .addField( key + "_fiveMinuteRate", convertRate( m.getFiveMinuteRate() ) )
@@ -233,6 +238,9 @@ class InfluxDBReporter extends ScheduledReporter {
             ( b, e ) -> {
                 var key = e.getKey();
                 var t = e.getValue();
+
+                if( skipEmpty && t.getCount() == 0 ) return;
+
                 var snapshot = t.getSnapshot();
                 b.addField( key, convertDuration( snapshot.getMean() ) )
                     .addField( key + "_mean", convertDuration( snapshot.getMean() ) )
@@ -285,6 +293,9 @@ class InfluxDBReporter extends ScheduledReporter {
             ( b, e ) -> {
                 var key = e.getKey();
                 var h = e.getValue();
+
+                if( skipEmpty && h.getCount() == 0 ) return;
+
                 var snapshot = h.getSnapshot();
                 b.addField( key, snapshot.getMean() )
                     .addField( key + "_mean", snapshot.getMean() )
@@ -318,6 +329,7 @@ class InfluxDBReporter extends ScheduledReporter {
         private long readTimeout;
         private long writeTimeout;
         private boolean resetTimersAfterReport = false;
+        private boolean skipEmpty = false;
 
         public Builder( MetricRegistry registry ) {
             this.registry = registry;
@@ -370,7 +382,8 @@ class InfluxDBReporter extends ScheduledReporter {
                 aggregates,
                 rateUnit,
                 durationUnit,
-                resetTimersAfterReport );
+                resetTimersAfterReport,
+                skipEmpty );
         }
 
         public Builder withFilter( ReporterFilter filter ) {
@@ -400,6 +413,11 @@ class InfluxDBReporter extends ScheduledReporter {
 
         public Builder withResetTimersAfterReport( boolean resetTimersAfterReport ) {
             this.resetTimersAfterReport = resetTimersAfterReport;
+            return this;
+        }
+
+        public Builder withSkipEmpty( boolean skipEmpty ) {
+            this.skipEmpty = skipEmpty;
             return this;
         }
     }
