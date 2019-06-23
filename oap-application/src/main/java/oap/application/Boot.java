@@ -66,7 +66,7 @@ public class Boot {
     private static void installSignals() {
         SignalHandler handler = signal -> {
             log.info( "cought signal: {}", signal.getName() );
-            System.out.println( "cought signal: {}" + signal.getName() );
+            System.out.println( "cought signal: " + signal.getName() );
             System.out.flush();
             exit( 0 );
         };
