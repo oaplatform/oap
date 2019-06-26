@@ -67,6 +67,7 @@ public class AbstractWebServicesTest extends AbstractTest {
             Env.resetPorts();
             kernel = new Kernel( emptyList() );
             server = new Server( 100, false );
+            server.start();
             ws = new WebServices( kernel, server, new SessionManager( 10, null, "/" ),
                 GenericCorsPolicy.DEFAULT,
                 Lists.map( configs, n -> WsConfig.CONFIGURATION.fromResource( getClass(), n ) )

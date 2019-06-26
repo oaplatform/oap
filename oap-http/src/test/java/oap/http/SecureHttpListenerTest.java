@@ -26,12 +26,14 @@ public class SecureHttpListenerTest {
 
     private static final String KEYSTORE_PASSWORD = "123456";
 
-    private final Server server = new Server( 10, false );
+    private Server server;
     private SynchronizedThread listener;
 
     @BeforeClass
     public void setUp() {
         Env.resetPorts();
+        server = new Server( 10, false );
+        server.start();
         server.bind( "test", GenericCorsPolicy.DEFAULT, ( request, response ) -> {
 
             log.debug( "Base URL {}", request.getBaseUrl() );

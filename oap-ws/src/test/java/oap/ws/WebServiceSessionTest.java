@@ -55,8 +55,8 @@ public class WebServiceSessionTest {
 
     private final SessionManager sessionManager = new SessionManager( 10, null, "/" );
 
-    private final Server server = new Server( 100, false );
-    private final WebServices ws = new WebServices( new Kernel( Lists.empty() ), server, sessionManager, GenericCorsPolicy.DEFAULT );
+    private Server server;
+    private WebServices ws;
 
     private SynchronizedThread listener;
 
@@ -64,6 +64,11 @@ public class WebServiceSessionTest {
     public void startServer() {
         Env.resetPorts();
         Metrics.resetAll();
+        server = new Server( 100, false );
+        server.start();
+
+        ws = new WebServices( new Kernel( Lists.empty() ), server, sessionManager, GenericCorsPolicy.DEFAULT );
+
         ws.bind( "test", GenericCorsPolicy.DEFAULT, new TestWS(), true, sessionManager, Collections.emptyList(), Protocol.HTTP );
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );

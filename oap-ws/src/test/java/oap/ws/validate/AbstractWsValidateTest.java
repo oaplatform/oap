@@ -46,8 +46,8 @@ import java.util.List;
 public abstract class AbstractWsValidateTest extends AbstractTest {
     private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
 
-    private final Server server = new Server( 100, false );
-    private final WebServices ws = new WebServices( new Kernel( Lists.empty() ), server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+    private Server server;
+    private WebServices ws;
     private SynchronizedThread listener;
 
 
@@ -55,6 +55,10 @@ public abstract class AbstractWsValidateTest extends AbstractTest {
     public void start() {
         Env.resetPorts();
         Metrics.resetAll();
+
+        server = new Server( 100, false );
+        ws = new WebServices( new Kernel( Lists.empty() ), server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
+
         for( var wsInstance : getWsInstances() )
             ws.bind( "test", GenericCorsPolicy.DEFAULT, wsInstance, false, SESSION_MANAGER, Collections.emptyList(), Protocol.HTTP );
 
