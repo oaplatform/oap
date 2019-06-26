@@ -57,6 +57,7 @@ public abstract class AbstractWsValidateTest extends AbstractTest {
         Metrics.resetAll();
 
         server = new Server( 100, false );
+        server.start();
         ws = new WebServices( new Kernel( Lists.empty() ), server, SESSION_MANAGER, GenericCorsPolicy.DEFAULT );
 
         for( var wsInstance : getWsInstances() )
