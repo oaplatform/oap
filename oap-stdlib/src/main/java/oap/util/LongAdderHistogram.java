@@ -83,15 +83,9 @@ public class LongAdderHistogram implements Serializable {
             int len = values.length;
             if( sc < values.length ) {
                 System.arraycopy( values, 0, values, sc, len - sc );
-                for( int i = 0; i < sc; i++ ) {
-                    values[i] = new LongAdder();
-                }
-
-                len = sc;
-            }
-
-            for( int i = 0; i < len; i++ ) {
-                values[i] = new LongAdder();
+                for( int i = 0; i < sc; i++ ) values[i] = new LongAdder();
+            } else {
+                for( int i = 0; i < len; i++ ) values[i] = new LongAdder();
             }
 
             lastTick = ct;

@@ -87,11 +87,9 @@ public abstract class ObjectHistogram<T extends Mergeable<T>> implements Seriali
         if( sc < values.length ) {
             System.arraycopy( values, 0, values, sc, len - sc );
             for( int i = 0; i < sc; i++ ) values[i] = null;
-
-            len = sc;
+        } else {
+            for( int i = 0; i < len; i++ ) values[i] = null;
         }
-
-        for( int i = 0; i < len; i++ ) values[i] = null;
 
         lastTick = ct;
     }
