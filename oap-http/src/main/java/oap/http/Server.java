@@ -45,7 +45,9 @@ import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.protocol.HttpCoreContext;
 import org.apache.http.protocol.HttpProcessorBuilder;
 import org.apache.http.protocol.HttpService;
+import org.apache.http.protocol.ResponseConnControl;
 import org.apache.http.protocol.ResponseContent;
+import org.apache.http.protocol.ResponseDate;
 import org.apache.http.protocol.ResponseServer;
 import org.apache.http.protocol.UriHttpRequestHandlerMapper;
 import org.joda.time.Duration;
@@ -81,29 +83,18 @@ public class Server implements HttpServer {
 
     private final ConcurrentHashMap<String, ServerHttpContext> connections = new ConcurrentHashMap<>();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
-    private final HttpService httpService = new HttpService( HttpProcessorBuilder.create()
-//        .add( new ResponseDate() )
-        .add( new ResponseServer( "OAP Server/1.0" ) )
-        .add( new ResponseContent() )
-//        .add( new ResponseConnControl() )
-        .build(),
-        DefaultConnectionReuseStrategy.INSTANCE,
-        DefaultHttpResponseFactory.INSTANCE,
-        mapper );
-    private final ExecutorService executor;
-    private final Thread thread;
+    private final int workers;
+    private final boolean registerStatic;
     public int keepAliveTimeout = 1000 * 20;
+    public String originalServer = "OAP Server/1.0";
+    public boolean responseDate = true;
+    private HttpService httpService;
+    private ExecutorService executor;
+    private Thread thread;
 
     public Server( int workers, boolean registerStatic ) {
-        this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, new SynchronousQueue<>(),
-            new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build() );
-
-        if( registerStatic )
-            mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
-
-        thread = new Thread( this::stats );
-        thread.setName( "HTTP-Server-stats" );
-        thread.start();
+        this.workers = workers;
+        this.registerStatic = registerStatic;
     }
 
     //TODO Fix resolution of local through headers instead of socket inet address
@@ -113,6 +104,32 @@ public class Server implements HttpServer {
         else protocol = socket instanceof SSLSocket ? Protocol.HTTPS : Protocol.HTTP;
 
         return new ServerHttpContext( HttpCoreContext.create(), protocol, connection );
+    }
+
+    public void start() {
+        var httpProcessorBuilder = HttpProcessorBuilder.create();
+        if( originalServer != null )
+            httpProcessorBuilder = httpProcessorBuilder.add( new ResponseServer( originalServer ) );
+        if( responseDate )
+            httpProcessorBuilder = httpProcessorBuilder.add( new ResponseDate() );
+
+        httpService = new HttpService( httpProcessorBuilder
+            .add( new ResponseContent() )
+            .add( new ResponseConnControl() )
+            .build(),
+            DefaultConnectionReuseStrategy.INSTANCE,
+            DefaultHttpResponseFactory.INSTANCE,
+            mapper );
+
+        this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, new SynchronousQueue<>(),
+            new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build() );
+
+        if( registerStatic )
+            mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
+
+        thread = new Thread( this::stats );
+        thread.setName( "HTTP-Server-stats" );
+        thread.start();
     }
 
     private void stats() {

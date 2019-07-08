@@ -8,5 +8,7 @@ services:
       workers: 500
       registerStatic: false
       keepAliveTimeout: 5s
+      originalServer: "OAP Server/4.0"
+      responseDate: true
     supervision:
       supervise: true

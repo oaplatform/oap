@@ -125,8 +125,9 @@ public class Client implements Closeable {
         .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
         .onTimeout( ( c ) -> log.error( "timeout" ) )
         .build();
+
     private static final long FOREVER = Long.MAX_VALUE;
-    private static final FutureCallback<org.apache.http.HttpResponse> FUTURE_CALLBACK = new FutureCallback<org.apache.http.HttpResponse>() {
+    private static final FutureCallback<org.apache.http.HttpResponse> FUTURE_CALLBACK = new FutureCallback<>() {
         @Override
         public void completed( org.apache.http.HttpResponse result ) {
         }
