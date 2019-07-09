@@ -170,7 +170,7 @@ public class Writer implements Closeable {
     }
 
     private String currentPattern() {
-        return logId.filename( filePattern, new DateTime( DateTimeZone.UTC ), timestamp );
+        return logId.fileName( filePattern, new DateTime( DateTimeZone.UTC ), timestamp );
     }
 
     @Override

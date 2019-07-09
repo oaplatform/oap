@@ -39,8 +39,13 @@ public class MemoryLoggerBackend extends LoggerBackend {
 
     @Override
     public void log( String hostName, String fileName, String logType, int shard, int version, byte[] buffer, int offset, int length ) {
+        log( hostName, fileName, logType, shard, version, LogId.DEFAULT_FORMAT, buffer, offset, length );
+    }
+
+    @Override
+    public void log( String hostName, String fileName, String logType, int shard, int version, String format, byte[] buffer, int offset, int length ) {
         outputs
-            .computeIfAbsent( new LogId( fileName, logType, hostName, shard, version ), ( fn ) -> new ByteArrayOutputStream() )
+            .computeIfAbsent( new LogId( fileName, logType, hostName, shard, version, format ), ( fn ) -> new ByteArrayOutputStream() )
             .write( buffer, offset, length );
     }
 
