@@ -52,6 +52,7 @@ import com.fasterxml.jackson.datatype.joda.deser.DateTimeDeserializer;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import com.jasonclawson.jackson.dataformat.hocon.HoconFactory;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.IoStreams;
@@ -59,6 +60,7 @@ import oap.io.Resources;
 import oap.reflect.Reflection;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
+import oap.util.Lists;
 import oap.util.Try;
 import org.joda.time.ReadableInstant;
 
@@ -72,6 +74,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static oap.io.IoStreams.DEFAULT_BUFFER;
+import static oap.io.IoStreams.Encoding.from;
 
 @Slf4j
 public class Binder {
@@ -485,6 +490,30 @@ public class Binder {
     public <T> T clone( T object ) {
         return unmarshal( object.getClass(), marshal( object ) );
     }
+
+    private static final byte[] BEGIN_ARRAY = "[".getBytes();
+    private static final byte[] END_ARRAY = "]".getBytes();
+    private static final byte[] ITEM_SEP = ",".getBytes();
+
+    @SneakyThrows
+    public void marshal( Path path, Iterable<?> iterable ) {
+        try( OutputStream out = IoStreams.out( path, from( path ), DEFAULT_BUFFER, false, true ) ) {
+            out.write( BEGIN_ARRAY );
+            var it = iterable.iterator();
+            while( it.hasNext() ) {
+                marshal( out, it.next() );
+                if( it.hasNext() ) out.write( ITEM_SEP );
+            }
+            out.write( END_ARRAY );
+        }
+    }
+
+    public <T> List<T> unmarshal( Path path, TypeRef<List<T>> ref ) {
+        return path != null && Files.exists( path )
+            ? unmarshal( ref, IoStreams.in( path ) )
+            : Lists.empty();
+    }
+
 
 }
 

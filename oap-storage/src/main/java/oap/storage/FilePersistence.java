@@ -29,28 +29,20 @@ import oap.concurrent.Threads;
 import oap.concurrent.scheduler.PeriodicScheduled;
 import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
-import oap.io.Files;
-import oap.io.IoStreams;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
-import java.io.OutputStream;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static oap.io.IoStreams.DEFAULT_BUFFER;
 import static oap.util.Collections.anyMatch;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class FilePersistence<T> implements Closeable, Storage.DataListener<T> {
-    private static final byte[] BEGIN_ARRAY = "[".getBytes();
-    private static final byte[] END_ARRAY = "]".getBytes();
-    private static final byte[] ITEM_SEP = ",".getBytes();
     private final long fsync;
     private final MemoryStorage<T> storage;
     private final Lock lock = new ReentrantLock();
@@ -74,16 +66,11 @@ public class FilePersistence<T> implements Closeable, Storage.DataListener<T> {
 
     private void load() {
         Threads.synchronously( lock, () -> {
-            Files.ensureFile( path );
-
-            if( Files.exists( path ) ) {
-                Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {
-                }, IoStreams.in( path ) )
-                    .forEach( m -> {
-                        String id = storage.identifier.get( m.object );
-                        storage.data.put( id, m );
-                    } );
-            }
+            Binder.json.unmarshal( path, new TypeRef<List<Metadata<T>>>() {} )
+                .forEach( m -> {
+                    String id = storage.identifier.get( m.object );
+                    storage.data.put( id, m );
+                } );
             log.info( storage.data.size() + " object(s) loaded." );
         } );
     }
@@ -96,17 +83,8 @@ public class FilePersistence<T> implements Closeable, Storage.DataListener<T> {
             if( anyMatch( storage.data.values(), m -> m.modified > last ) ) {
                 log.debug( "fsync storing {}...", path );
 
-                OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), DEFAULT_BUFFER, false, true );
-                out.write( BEGIN_ARRAY );
+                Binder.json.marshal( path, storage.data.values() );
 
-                Iterator<Metadata<T>> it = storage.data.values().iterator();
-                while( it.hasNext() ) {
-                    Binder.json.marshal( out, it.next() );
-                    if( it.hasNext() ) out.write( ITEM_SEP );
-                }
-                out.write( END_ARRAY );
-
-                out.close();
                 log.debug( "fsync storing {}... done", path );
             }
         } );
@@ -115,9 +93,7 @@ public class FilePersistence<T> implements Closeable, Storage.DataListener<T> {
     @Override
     public void close() {
         storage.removeDataListener( this );
-        Threads.synchronously( lock, () -> {
-            Scheduled.cancel( scheduled );
-        } );
+        Threads.synchronously( lock, () -> Scheduled.cancel( scheduled ) );
         fsync( scheduled.lastExecuted() );
     }
 
