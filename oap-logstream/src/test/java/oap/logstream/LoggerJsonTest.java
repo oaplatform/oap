@@ -57,7 +57,6 @@ public class LoggerJsonTest extends AbstractTest {
         Dates.setTimeFixed( 2015, 10, 10, 1, 0 );
 
         var content = "{\"title\":\"response\",\"status\":false,\"values\":[1,2,3]}";
-        var contentWithType = "REQUEST\n{\"title\":\"response\",\"status\":false,\"values\":[1,2,3]}";
 
         try( DiskLoggerBackend backend = new DiskLoggerBackend( tmpPath( "logs" ), BPH_12, DEFAULT_BUFFER, logConfiguration ) ) {
             Logger logger = new Logger( backend );
@@ -66,11 +65,11 @@ public class LoggerJsonTest extends AbstractTest {
             String jsonContent = Binder.json.marshal( o );
             assertString( jsonContent ).isEqualTo( content );
 
-            logger.logWithoutTime( "lfn1", "json", 1, 3, "json", jsonContent );
+            logger.logWithoutTime( "lfn1", "json", 0, 3, "json", jsonContent );
         }
 
         assertFile( tmpPath( "logs/lfn1/2015-10/10/json_v3_" + HOSTNAME + "-2015-10-10-01-00.json.gz" ) )
-            .hasContent( contentWithType, Encoding.GZIP );
+            .hasContent( content, Encoding.GZIP );
     }
 
     public static class SimpleJson {

@@ -38,6 +38,7 @@ import oap.logstream.LogId;
 import oap.logstream.LoggerException;
 import oap.logstream.Timestamp;
 import oap.metrics.Metrics2;
+import oap.util.Strings;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
@@ -148,12 +149,13 @@ public class Writer implements Closeable {
             throw new LoggerException( "Unknown log type " + logType.toUpperCase() );
         }
 
-        return logTypeDictionary
+        var header = logTypeDictionary
             .getValues( d -> d.getTags().contains( LOG_TAG ) )
             .stream()
             .filter( field -> field.containsProperty( "path" ) )
             .map( Dictionary::getId )
-            .collect( joining( "\t" ) ) + '\n';
+            .collect( joining( "\t" ) );
+        return Strings.isEmpty(header) ? header : header + '\n';
     }
 
     private Path filename() {
