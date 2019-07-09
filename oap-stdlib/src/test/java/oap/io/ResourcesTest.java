@@ -28,6 +28,8 @@ import org.testng.annotations.Test;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
 
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,5 +39,13 @@ public class ResourcesTest {
     public void urls() {
         List<URL> urls = Resources.urls( getClass().getName(), "txt" );
         assertThat( urls ).containsOnly( urlOfTestResource( getClass(), "resource.txt" ) );
+    }
+
+    @Test
+    public void readProperties() {
+        Optional<Properties> properties = Resources.readProperties( ResourcesTest.class,
+            ResourcesTest.class.getSimpleName() + "/resource.properties" );
+        assertThat( properties ).isPresent();
+        assertThat( properties.get() ).hasSize( 2 );
     }
 }

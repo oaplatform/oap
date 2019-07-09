@@ -116,9 +116,9 @@ public class Writer implements Closeable {
                 } else {
                     log.trace( "[{}] file exists", filename );
 
-                    if( Files.isFileEncodingValid( filename ) ) {
+                    if( Files.isFileEncodingValid( filename ) )
                         out = new CountingOutputStream( IoStreams.out( filename, Encoding.from( filename ), bufferSize, true ) );
-                    } else {
+                    else {
                         error.accept( "corrupted file, cannot append " + filename );
                         log.error( "corrupted file, cannot append {}", filename );
                         Files.rename( filename, logDirectory.resolve( ".corrupted" )

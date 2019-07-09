@@ -58,11 +58,8 @@ public class Timestamp {
     @Deprecated
     public static String parseTimestamp( String fileName ) {
         final Matcher matcher = FILE_NAME_WITH_TIMESTAMP.matcher( fileName );
-        if( matcher.find() ) {
-            return matcher.group( 1 );
-        } else {
-            throw new RuntimeException( "cannot template timestamp from: " + fileName );
-        }
+        if( matcher.find() ) return matcher.group( 1 );
+        else throw new RuntimeException( "cannot template timestamp from: " + fileName );
     }
 
     public static String directoryName( String timestamp ) {
@@ -87,9 +84,7 @@ public class Timestamp {
         if( matcher.find() ) {
             final String timestamp = matcher.group( 1 );
             return Optional.of( parse( timestamp ) );
-        } else {
-            return Optional.empty();
-        }
+        } else return Optional.empty();
     }
 
     public String format( DateTime date ) {
@@ -132,7 +127,7 @@ public class Timestamp {
 
     public Stream<String> timestampsBeforeNow( DateTime since ) {
         return Stream.of( since, AbstractInstant::isBeforeNow, t -> t.plusMinutes( 60 / bucketsPerHour ) )
-            .map( s -> format( s ) );
+            .map( this::format );
     }
 
     public String path( String directory, DateTime date, String filename, String ext ) {

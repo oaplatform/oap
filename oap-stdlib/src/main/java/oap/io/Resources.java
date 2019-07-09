@@ -37,6 +37,7 @@ import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -47,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
@@ -140,5 +142,17 @@ public final class Resources {
 
     public static Stream<String> lines( String name ) {
         return Stream.of( urls( name ) ).flatMap( IoStreams::lines );
+    }
+
+    public static Optional<Properties> readProperties( Class<?> contextClass, String name ) {
+        return Resources.read( contextClass, name ).map( bytes -> {
+            try {
+                Properties properties = new Properties();
+                properties.load( new ByteArrayInputStream( bytes ) );
+                return properties;
+            } catch( IOException ignore ) {
+                return null;
+            }
+        } );
     }
 }
