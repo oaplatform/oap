@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 
 import java.io.Closeable;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -80,12 +81,13 @@ public class FilePersistence<T> implements Closeable, Storage.DataListener<T> {
         Threads.synchronously( lock, () -> {
             log.trace( "fsync: last: {}, storage length: {}", last, storage.data.size() );
 
-            if( anyMatch( storage.data.values(), m -> m.modified > last ) ) {
-                log.debug( "fsync storing {}...", path );
+            Collection<Metadata<T>> values = storage.data.values();
+            if( anyMatch( values, m -> m.modified > last ) ) {
+                log.debug( "fsync storing {} to {}...", values.size(), path );
 
-                Binder.json.marshal( path, storage.data.values() );
+                Binder.json.marshal( path, values );
 
-                log.debug( "fsync storing {}... done", path );
+                log.debug( "fsync storing to {}... done", path );
             }
         } );
     }
