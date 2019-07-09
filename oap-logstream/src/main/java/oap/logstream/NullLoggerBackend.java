@@ -10,6 +10,11 @@ public class NullLoggerBackend extends LoggerBackend {
     }
 
     @Override
+    public void log( String hostName, String fileName, String logType, int shard, int version, String format,  byte[] buffer, int offset, int length ) {
+
+    }
+
+    @Override
     public void close() {
 
     }
