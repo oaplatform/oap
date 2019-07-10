@@ -54,7 +54,7 @@ public class DiskLoggerBackend extends LoggerBackend {
     public static final String METRICS_LOGGING_DISK = "logging.disk";
     public static final String METRICS_LOGGING_DISK_BUFFERS = "logging.disk.buffers";
     public static final long DEFAULT_FREE_SPACE_REQUIRED = 2000000000L;
-    public String filePattern = "${LOG_NAME}/${YEAR}-${MONTH}/${DAY}/${LOG_TYPE}_v${LOG_VERSION}_${CLIENT_HOST}-${YEAR}-${MONTH}-${DAY}-${HOUR}-${INTERVAL}.${FORMAT}.gz";
+    public String filePattern = "${LOG_NAME}/${YEAR}-${MONTH}/${DAY}/${LOG_TYPE}_v${LOG_VERSION}_${CLIENT_HOST}-${YEAR}-${MONTH}-${DAY}-${HOUR}-${INTERVAL}.tsv.gz";
     private final Path logDirectory;
     private final Timestamp timestamp;
     private final int bufferSize;
@@ -85,12 +85,6 @@ public class DiskLoggerBackend extends LoggerBackend {
     @Override
     @SneakyThrows
     public void log( String hostName, String fileName, String logType, int shard, int version, byte[] buffer, int offset, int length ) {
-        log( hostName, fileName, logType, shard, version, LogId.DEFAULT_FORMAT, buffer, offset, length );
-    }
-
-    @Override
-    @SneakyThrows
-    public void log( String hostName, String fileName, String logType, int shard, int version, String format, byte[] buffer, int offset, int length ) {
         if( closed ) {
             var exception = new LoggerException( "already closed!" );
             listeners.fireError( exception );
@@ -99,7 +93,7 @@ public class DiskLoggerBackend extends LoggerBackend {
 
         Metrics.measureCounterIncrement( Metrics.name( METRICS_LOGGING_DISK ).tag( "from", hostName ) );
         Metrics2.measureHistogram( Metrics.name( METRICS_LOGGING_DISK_BUFFERS ).tag( "from", hostName ), length );
-        Writer writer = writers.get( new LogId( fileName, logType, hostName, shard, version, format ) );
+        Writer writer = writers.get( new LogId( fileName, logType, hostName, shard, version ) );
         log.trace( "logging {} bytes to {}", length, writer );
         writer.write( buffer, offset, length, this.listeners::fireError );
     }

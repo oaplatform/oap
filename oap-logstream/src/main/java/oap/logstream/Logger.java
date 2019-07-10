@@ -38,10 +38,6 @@ public class Logger {
         logWithoutTime( logFileName, logType, shard, version, Dates.formatDateWithMillis( DateTimeUtils.currentTimeMillis() ) + "\t" + line );
     }
 
-    public void logWithoutTime( String logFileName, String logType, int shard, int version, String format, String content ) {
-        backend.log( Inet.HOSTNAME, logFileName, logType, shard, version, format, content );
-    }
-
     public void logWithoutTime( String logFileName, String logType, int shard, int version, String line ) {
         backend.log( Inet.HOSTNAME, logFileName, logType, shard, version, line );
     }
