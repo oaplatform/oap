@@ -24,7 +24,7 @@
 package oap.logstream;
 
 
-import org.apache.commons.lang3.NotImplementedException;
+import oap.util.Strings;
 
 import java.io.Closeable;
 
@@ -32,24 +32,15 @@ public abstract class LoggerBackend implements Closeable {
     public final LoggerListeners listeners = new LoggerListeners();
 
     public void log( String hostName, String fileName, String logType, int shard, int version, String line ) {
-        log( hostName, fileName, logType, shard, version, ( line + "\n" ).getBytes() );
-    }
-
-    public void log( String hostName, String fileName, String logType, int shard, int version, String format, String content ) {
-        log( hostName, fileName, logType, shard, version, format, content.getBytes() );
+        var string = Strings.isEmpty( line ) ? "" : line + "\n";
+        log( hostName, fileName, logType, shard, version, string.getBytes() );
     }
 
     public void log( String hostName, String fileName, String logType, int shard, int version, byte[] buffer ) {
         log( hostName, fileName, logType, shard, version, buffer, 0, buffer.length );
     }
 
-    public void log( String hostName, String fileName, String logType, int shard, int version, String format, byte[] buffer ) {
-        log( hostName, fileName, logType, shard, version, format, buffer, 0, buffer.length );
-    }
-
     public abstract void log( String hostName, String fileName, String logType, int shard, int version, byte[] buffer, int offset, int length );
-
-    public abstract void log( String hostName, String fileName, String logType, int shard, int version, String format, byte[] buffer, int offset, int length );
 
     public abstract void close();
 

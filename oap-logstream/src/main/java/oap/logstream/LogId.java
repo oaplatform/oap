@@ -39,26 +39,18 @@ import java.io.Serializable;
 @EqualsAndHashCode( of = { "logName", "logType", "shard", "version" } )
 public class LogId implements Serializable {
     private static final long serialVersionUID = -6026646143366760882L;
-
-    public static String DEFAULT_FORMAT = "tsv";
     public final String logName;
     public final String logType;
     public final String clientHostname;
     public final int shard;
     public final int version;
-    public final String format;
 
     public LogId( String logName, String logType, String clientHostname, int shard, int version ) {
-        this( logName, logType, clientHostname, shard, version, DEFAULT_FORMAT );
-    }
-
-    public LogId( String logName, String logType, String clientHostname, int shard, int version, String format ) {
         this.logName = logName;
         this.logType = logType;
         this.clientHostname = clientHostname;
         this.shard = shard;
         this.version = version;
-        this.format = format;
     }
 
     public final String fileName( String filePattern, DateTime time, Timestamp timestamp ) {
@@ -88,8 +80,6 @@ public class LogId implements Serializable {
                     return print2Chars( timestamp.currentBucket( time ) );
                 case "REGION":
                     return System.getenv( "REGION" );
-                case "FORMAT":
-                    return format;
                 default:
                     throw new IllegalArgumentException( "Unknown variable '" + v + "'" );
             }

@@ -65,10 +65,10 @@ public class LoggerJsonTest extends AbstractTest {
             String jsonContent = Binder.json.marshal( o );
             assertString( jsonContent ).isEqualTo( content );
 
-            logger.logWithoutTime( "lfn1", "json", 0, 3, "json", jsonContent );
+            logger.logWithoutTime( "open_rtb_json", "request_response", 0, 3, jsonContent );
         }
 
-        assertFile( tmpPath( "logs/lfn1/2015-10/10/json_v3_" + HOSTNAME + "-2015-10-10-01-00.json.gz" ) )
+        assertFile( tmpPath( "logs/open_rtb_json/2015-10/10/request_response_v3_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
             .hasContent( content, Encoding.GZIP );
     }
 
