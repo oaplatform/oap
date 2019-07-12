@@ -508,12 +508,5 @@ public class Binder {
         }
     }
 
-    public <T> List<T> unmarshal( Path path, TypeRef<List<T>> ref ) {
-        return path != null && Files.exists( path )
-            ? unmarshal( ref, IoStreams.in( path ) )
-            : Lists.empty();
-    }
-
-
 }
 
