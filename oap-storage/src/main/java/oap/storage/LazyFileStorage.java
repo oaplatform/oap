@@ -30,6 +30,7 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
+import oap.util.Lists;
 import oap.util.Stream;
 
 import java.io.OutputStream;
@@ -107,13 +108,11 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         }
         Files.ensureFile( path );
 
-        if( java.nio.file.Files.exists( path ) ) {
-            Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {}, path )
-                .forEach( m -> {
-                    var id = identifier.get( m.object );
-                    data.put( id, m );
-                } );
-        }
+        Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {}, path ).orElse( Lists.empty() )
+            .forEach( m -> {
+                var id = identifier.get( m.object );
+                data.put( id, m );
+            } );
         closed = false;
         log.info( data.size() + " object(s) loaded." );
     }

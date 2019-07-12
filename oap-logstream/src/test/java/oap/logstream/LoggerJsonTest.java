@@ -69,7 +69,7 @@ public class LoggerJsonTest extends AbstractTest {
         }
 
         assertFile( tmpPath( "logs/open_rtb_json/2015-10/10/request_response_v3_" + HOSTNAME + "-2015-10-10-01-00.tsv.gz" ) )
-            .hasContent( content, Encoding.GZIP );
+            .hasContent( content + "\n", Encoding.GZIP );
     }
 
     public static class SimpleJson {

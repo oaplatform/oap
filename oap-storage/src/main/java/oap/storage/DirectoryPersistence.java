@@ -46,6 +46,7 @@ import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
@@ -108,7 +109,7 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
 
             for( long version = persisted.version; version < this.version; version++ ) file = migration( file );
 
-            Metadata<T> metadata = Binder.json.unmarshal( new TypeRef<>() {}, file );
+            var metadata = Binder.json.unmarshal( new TypeRef<Metadata<T>>() {}, file ).orElseThrow();
 
             Path newPath = pathFor( metadata.object );
             if( !newPath.equals( file ) ) {
@@ -129,8 +130,8 @@ public class DirectoryPersistence<T> implements Closeable, Storage.DataListener<
     private Path migration( Path path ) {
 
         return Threads.synchronously( lock, () -> {
-            JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeRef<>() {
-            }, path ) );
+            JsonMetadata oldV = new JsonMetadata( Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, path )
+                .orElseThrow() );
 
             Persisted fn = Persisted.valueOf( path );
 
