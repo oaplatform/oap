@@ -60,7 +60,6 @@ import oap.io.Resources;
 import oap.reflect.Reflection;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
-import oap.util.Lists;
 import oap.util.Try;
 import org.joda.time.ReadableInstant;
 
@@ -73,6 +72,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static oap.io.IoStreams.DEFAULT_BUFFER;
@@ -342,13 +342,12 @@ public class Binder {
         return mapper.writerFor( ref );
     }
 
-    public <T> T unmarshal( TypeRef<T> ref, Path path ) {
-        try( var in = IoStreams.in( path ) ) {
-            return unmarshal( ref, in );
-        } catch( IOException e ) {
-            throw new JsonException( e );
-
+    public <T> Optional<T> unmarshal( TypeRef<T> ref, Path path ) {
+        if ( path != null && Files.exists( path ) ) {
+            return Optional.of( unmarshal( ref, IoStreams.in( path ) ) );
         }
+        log.warn( "File \"{}\" doesn't exist ", path );
+        return Optional.empty();
     }
 
     @Deprecated
@@ -507,13 +506,6 @@ public class Binder {
             out.write( END_ARRAY );
         }
     }
-
-    public <T> List<T> unmarshal( Path path, TypeRef<List<T>> ref ) {
-        return path != null && Files.exists( path )
-            ? unmarshal( ref, IoStreams.in( path ) )
-            : Lists.empty();
-    }
-
 
 }
 

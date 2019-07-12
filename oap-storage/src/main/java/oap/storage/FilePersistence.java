@@ -31,6 +31,7 @@ import oap.concurrent.scheduler.Scheduled;
 import oap.concurrent.scheduler.Scheduler;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
+import oap.util.Lists;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
@@ -67,8 +68,8 @@ public class FilePersistence<T> implements Closeable, Storage.DataListener<T> {
 
     private void load() {
         Threads.synchronously( lock, () -> {
-            Binder.json.unmarshal( path, new TypeRef<List<Metadata<T>>>() {} )
-                .forEach( m -> {
+            var metadata = Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {}, path ).orElse( Lists.empty() );
+            metadata.forEach( m -> {
                     String id = storage.identifier.get( m.object );
                     storage.data.put( id, m );
                 } );
