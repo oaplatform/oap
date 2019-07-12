@@ -343,12 +343,11 @@ public class Binder {
     }
 
     public <T> T unmarshal( TypeRef<T> ref, Path path ) {
-        try( var in = IoStreams.in( path ) ) {
-            return unmarshal( ref, in );
-        } catch( IOException e ) {
-            throw new JsonException( e );
-
+        if ( path != null && Files.exists( path ) ) {
+            return unmarshal( ref, IoStreams.in( path ) );
         }
+        log.warn( "File \"{}\" doesn't exist ", path );
+        return null;
     }
 
     @Deprecated
