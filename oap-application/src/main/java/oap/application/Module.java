@@ -35,12 +35,10 @@ import oap.reflect.Coercions;
 import oap.util.PrioritySet;
 import oap.util.Strings;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -50,12 +48,9 @@ import static java.util.Collections.emptyList;
 public class Module {
     public static final String DEFAULT = Strings.DEFAULT;
     public static final ModuleConfiguration CONFIGURATION = new ModuleConfiguration();
-    @SuppressWarnings( "unchecked" )
     static final Coercions coersions = Coercions.basic().withIdentity();
     @JsonDeserialize( contentUsing = ModuleDependsDeserializer.class )
     public final LinkedHashSet<Depends> dependsOn = new LinkedHashSet<>();
-    @Deprecated
-    public final ArrayList<String> extendsModules = new ArrayList<>();
     @JsonAlias( { "service", "services" } )
     public final LinkedHashMap<String, Service> services = new LinkedHashMap<>();
     @JsonAlias( { "profile", "profiles" } )
