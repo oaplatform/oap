@@ -82,17 +82,17 @@ public class MongoPersistence<T> implements Closeable, Runnable, Storage.DataLis
             .withCodecRegistry( codecRegistry );
     }
 
+    @Override
+    public void run() {
+        fsync();
+    }
+
     public void start() {
         Threads.synchronously( lock, () -> {
             this.load();
             this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), delay, this::fsync );
             this.storage.addDataListener( this );
         } );
-    }
-
-    @Override
-    public void run() {
-        fsync();
     }
 
     /**
