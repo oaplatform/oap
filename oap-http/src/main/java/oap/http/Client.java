@@ -114,6 +114,7 @@ import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.ProgressInputStream.progress;
+import static oap.util.Dates.m;
 import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 import static org.apache.commons.lang3.StringUtils.split;
@@ -126,7 +127,6 @@ public class Client implements Closeable {
         .onTimeout( ( c ) -> log.error( "timeout" ) )
         .build();
 
-    private static final long FOREVER = Long.MAX_VALUE;
     private static final FutureCallback<org.apache.http.HttpResponse> FUTURE_CALLBACK = new FutureCallback<>() {
         @Override
         public void completed( org.apache.http.HttpResponse result ) {
@@ -158,7 +158,7 @@ public class Client implements Closeable {
     }
 
     public static ClientBuilder custom() {
-        return new ClientBuilder( null, null, 0, 0 );
+        return new ClientBuilder( null, null, m(1), m(5) );
     }
 
     private static Map<String, String> headers( org.apache.http.HttpResponse response ) {
@@ -201,12 +201,12 @@ public class Client implements Closeable {
     }
 
     public Response get( String uri, Map<String, Object> params, Map<String, Object> headers ) {
-        return get( uri, params, headers, FOREVER )
+        return get( uri, params, headers, builder.timeout )
             .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) );
     }
 
     public Response get( URI uri, Map<String, Object> headers ) {
-        return get( uri, headers, FOREVER )
+        return get( uri, headers, builder.timeout )
             .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) );
     }
 
@@ -227,7 +227,7 @@ public class Client implements Closeable {
     }
 
     public Response post( String uri, Map<String, Object> params, Map<String, Object> headers ) {
-        return post( uri, params, headers, FOREVER )
+        return post( uri, params, headers, builder.timeout )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
@@ -254,7 +254,7 @@ public class Client implements Closeable {
     }
 
     public Response post( String uri, String content, ContentType contentType, Map<String, Object> headers ) {
-        return post( uri, content, contentType, headers, FOREVER )
+        return post( uri, content, contentType, headers, builder.timeout )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
@@ -294,7 +294,7 @@ public class Client implements Closeable {
             var pis = new PipedInputStream( pos );
             request.setEntity( new InputStreamEntity( pis, contentType ) );
 
-            return execute( request, Maps.empty(), FOREVER, () -> {
+            return execute( request, Maps.empty(), builder.timeout, () -> {
                 outputStream.accept( pos );
                 pos.close();
             } )
@@ -308,33 +308,33 @@ public class Client implements Closeable {
     public Response post( String uri, InputStream content, ContentType contentType ) {
         HttpPost request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, contentType ) );
-        return execute( request, Maps.empty(), FOREVER )
+        return execute( request, Maps.empty(), builder.timeout )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response post( String uri, InputStream content, ContentType contentType, Map<String, Object> headers ) {
         HttpPost request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, contentType ) );
-        return execute( request, headers, FOREVER )
+        return execute( request, headers, builder.timeout )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response post( String uri, byte[] content, ContentType contentType, Map<String, Object> headers ) {
         HttpPost request = new HttpPost( uri );
         request.setEntity( new ByteArrayEntity( content, contentType ) );
-        return execute( request, headers, FOREVER )
+        return execute( request, headers, builder.timeout )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response put( String uri, String content, ContentType contentType ) {
         HttpPut request = new HttpPut( uri );
         request.setEntity( new StringEntity( content, contentType ) );
-        return execute( request, Maps.empty(), FOREVER )
+        return execute( request, Maps.empty(), builder.timeout )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response delete( String uri ) {
-        return delete( uri, FOREVER );
+        return delete( uri, builder.timeout );
     }
 
     public Response delete( String uri, long timeout ) {
@@ -342,7 +342,7 @@ public class Client implements Closeable {
     }
 
     public Response delete( String uri, Map<String, Object> headers ) {
-        return delete( uri, headers, FOREVER );
+        return delete( uri, headers, builder.timeout );
     }
 
     public Response delete( String uri, Map<String, Object> headers, long timeout ) {
@@ -370,7 +370,7 @@ public class Client implements Closeable {
 
             Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
             asyncRunnable.run();
-            HttpResponse response = timeout == FOREVER ? future.get()
+            HttpResponse response = timeout == 0 ? future.get()
                 : future.get( timeout, MILLISECONDS );
 
             Map<String, String> responsHeaders = headers( response );
@@ -597,28 +597,28 @@ public class Client implements Closeable {
         private final BasicCookieStore basicCookieStore;
         private Path certificateLocation;
         private String certificatePassword;
-        private int connectTimeout;
-        private int readTimeout;
+        private long connectTimeout;
+        private long timeout;
         private int maxConnTotal = 10000;
         private int maxConnPerRoute = 1000;
         private boolean redirectsEnabled = false;
         private String cookieSpec = CookieSpecs.STANDARD;
 
-        public ClientBuilder( Path certificateLocation, String certificatePassword, int connectTimeout, int readTimeout ) {
+        public ClientBuilder( Path certificateLocation, String certificatePassword, long connectTimeout, long timeout ) {
             basicCookieStore = new BasicCookieStore();
 
             this.certificateLocation = certificateLocation;
             this.certificatePassword = certificatePassword;
             this.connectTimeout = connectTimeout;
-            this.readTimeout = readTimeout;
+            this.timeout = timeout;
         }
 
         private HttpAsyncClientBuilder initialize() {
             try {
                 final PoolingNHttpClientConnectionManager connManager = new PoolingNHttpClientConnectionManager(
                     new DefaultConnectingIOReactor( IOReactorConfig.custom()
-                        .setConnectTimeout( connectTimeout )
-                        .setSoTimeout( readTimeout )
+                        .setConnectTimeout( ( int ) connectTimeout )
+                        .setSoTimeout( ( int ) timeout )
                         .build() ),
                     RegistryBuilder.<SchemeIOSessionStrategy>create()
                         .register( "http", NoopIOSessionStrategy.INSTANCE )
