@@ -34,6 +34,7 @@ public final class Countries {
     public static final String[] iso3Countries;
     private static final HashMap<String, Integer> bitMap = new HashMap<>();
     private static final HashMap<String, String> twoChTo3Ch = new HashMap<>();
+    private static final HashMap<String, String> threeChTo2Ch = new HashMap<>();
 
     public static final int count;
 
@@ -50,6 +51,7 @@ public final class Countries {
 
 
         locales.forEach( l -> twoChTo3Ch.put( l.getCountry().intern(), l.getISO3Country().intern() ) );
+        locales.forEach( l -> threeChTo2Ch.put( l.getISO3Country().intern(), l.getCountry().intern() ) );
 
 
         bitMap.put( Strings.UNKNOWN, 0 );
@@ -63,6 +65,9 @@ public final class Countries {
 
     public static String toIso3( String iso2 ) {
         return twoChTo3Ch.getOrDefault( iso2, iso2 );
+    }
+    public static String toIso2( String iso3 ) {
+        return twoChTo3Ch.getOrDefault( iso3, iso3 );
     }
 
     public static String normalize( String country ) {
