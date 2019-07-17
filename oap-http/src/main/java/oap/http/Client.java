@@ -134,6 +134,7 @@ public class Client implements Closeable {
 
         @Override
         public void failed( Exception e ) {
+            log.warn( e.getMessage() );
         }
 
         @Override
@@ -158,7 +159,7 @@ public class Client implements Closeable {
     }
 
     public static ClientBuilder custom() {
-        return new ClientBuilder( null, null, m(1), m(5) );
+        return new ClientBuilder( null, null, m( 1 ), m( 5 ) );
     }
 
     private static Map<String, String> headers( org.apache.http.HttpResponse response ) {
