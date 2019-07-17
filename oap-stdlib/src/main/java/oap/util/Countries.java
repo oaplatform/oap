@@ -67,7 +67,7 @@ public final class Countries {
         return twoChTo3Ch.getOrDefault( iso2, iso2 );
     }
     public static String toIso2( String iso3 ) {
-        return twoChTo3Ch.getOrDefault( iso3, iso3 );
+        return threeChTo2Ch.getOrDefault( iso3, iso3 );
     }
 
     public static String normalize( String country ) {
