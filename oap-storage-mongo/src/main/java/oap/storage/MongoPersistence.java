@@ -54,7 +54,7 @@ import static com.mongodb.client.model.Filters.eq;
  * @param <T> Type of Metadata
  */
 @Slf4j
-public class MongoPersistence<T> implements Closeable, Storage.DataListener<T> {
+public class MongoPersistence<T> implements Closeable, Runnable, Storage.DataListener<T> {
 
     public static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
     public final MongoCollection<Metadata<T>> collection;
@@ -88,6 +88,11 @@ public class MongoPersistence<T> implements Closeable, Storage.DataListener<T> {
             this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), delay, this::fsync );
             this.storage.addDataListener( this );
         } );
+    }
+
+    @Override
+    public void run() {
+        fsync();
     }
 
     /**
