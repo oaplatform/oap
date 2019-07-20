@@ -34,26 +34,26 @@ import static org.assertj.core.api.Assertions.entry;
 
 public class CollectionsTest {
     @Test
-    public void testCount() {
+    public void count() {
         assertThat( Collections.count( asList( "a", "b", "ab" ), ( str ) -> str.startsWith( "a" ) ) ).isEqualTo( 2 );
     }
 
     @Test
-    public void testFind() {
+    public void find() {
         var list = asList( "a", "b", "ab" );
         assertThat( Collections.find( list, ( str ) -> str.startsWith( "a" ) ) ).contains( "a" );
         assertThat( Collections.find( list, ( str ) -> str.startsWith( "z" ) ) ).isEmpty();
     }
 
     @Test
-    public void testFind2() {
+    public void find2() {
         var list = asList( "a", "b", "ab" );
         assertThat( Collections.find2( list, ( str ) -> str.startsWith( "a" ) ) ).isEqualTo( "a" );
         assertThat( Collections.find2( list, ( str ) -> str.startsWith( "z" ) ) ).isNull();
     }
 
     @Test
-    public void testAllMatch() {
+    public void allMatch() {
         var list = asList( 1, 2, 4, 5 );
 
         assertThat( Collections.allMatch( list, i -> i <= 5 ) ).isTrue();
@@ -61,7 +61,7 @@ public class CollectionsTest {
     }
 
     @Test
-    public void testAnyMatch() {
+    public void anyMatch() {
         var list = asList( 1, 2, 4, 5 );
 
         assertThat( Collections.anyMatch( list, i -> i == 1 ) ).isTrue();
@@ -69,7 +69,7 @@ public class CollectionsTest {
     }
 
     @Test
-    public void testGroupBy() {
+    public void groupBy() {
         var list = asList( 1, 2, 1, 4 );
 
         assertThat( Collections.groupBy( list, ( i ) -> i + 1 ) )
@@ -78,14 +78,14 @@ public class CollectionsTest {
     }
 
     @Test
-    public void testMax() {
+    public void max() {
         var list = asList( 1, 2, 1, 4 );
 
         assertThat( Collections.max( list ) ).isEqualTo( 4 );
     }
 
     @Test
-    public void testHead2() {
+    public void head2() {
         assertThat( Collections.head2( new LinkedHashSet<>( asList( 3, 6, 8 ) ) ) ).isEqualTo( 3 );
         assertThat( Collections.head2( new LinkedHashSet<Integer>() ) ).isNull();
     }

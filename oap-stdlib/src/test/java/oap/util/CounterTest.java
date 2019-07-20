@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class CounterTest {
     @Test
-    public void testHourly() throws Exception {
+    public void hourly() throws Exception {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
         var counter = new Counter.HourlyCounter();
@@ -45,7 +45,7 @@ public class CounterTest {
     }
 
     @Test
-    public void testDaily() throws Exception {
+    public void daily() throws Exception {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
         var counter = new Counter.DailyCounter();
@@ -60,7 +60,7 @@ public class CounterTest {
     }
 
     @Test
-    public void testMonthly() throws Exception {
+    public void monthly() throws Exception {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
         var counter = new Counter.MonthlyCounter();
@@ -75,7 +75,7 @@ public class CounterTest {
     }
 
     @Test
-    public void testMerge() throws Exception {
+    public void merge() throws Exception {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
         var counter1 = new Counter.HourlyCounter();
         counter1.inc();

@@ -48,30 +48,17 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Env {
     public static final String LOCALHOST;
     static final Path tmp = Paths.get( "/tmp/test" );
-    public static final Path tmpRoot = tmp.resolve( "temp" + teamcityBuildPrefix() + "_" + System.currentTimeMillis() );
+    public static final Path tmpRoot = tmp.resolve( "temp" + Teamcity.buildPrefix() + "_" + System.currentTimeMillis() );
     private static final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
 
     static {
         System.setProperty( "oap.test.tmpdir", Env.tmpRoot.toString() );
+        System.out.println( "initializing test directory " + tmpRoot );
         try {
             LOCALHOST = InetAddress.getByName( "127.0.0.1" ).getCanonicalHostName();
         } catch( UnknownHostException e ) {
             throw Throwables.propagate( e );
         }
-    }
-
-    public static String teamcityBuildPrefix() {
-        String prefix = "";
-
-        var teamcityBuildconfName = System.getenv( "TEAMCITY_BUILDCONF_NAME" );
-        prefix += "_";
-        if( teamcityBuildconfName != null ) prefix += teamcityBuildconfName;
-
-        var buildNumber = System.getenv( "BUILD_NUMBER" );
-        prefix += "_";
-        if( buildNumber != null ) prefix += buildNumber;
-
-        return prefix;
     }
 
     public static String tmp( String name ) {

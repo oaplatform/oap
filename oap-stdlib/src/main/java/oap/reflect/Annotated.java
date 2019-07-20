@@ -65,8 +65,8 @@ abstract class Annotated<T extends java.lang.reflect.AnnotatedElement> {
         if( this == o ) return true;
         if( o == null || getClass() != o.getClass() ) return false;
         Annotated<?> annotated = ( Annotated<?> ) o;
-        System.out.println(underlying + " and " + annotated.underlying + " are: ");
-        System.out.println(Objects.equals( underlying, annotated.underlying ));
+        System.out.println( underlying + " and " + annotated.underlying + " are: " );
+        System.out.println( Objects.equals( underlying, annotated.underlying ) );
         // TODO: make equals similar to java.lang.reflect equals methods
         return Objects.equals( underlying.toString(), annotated.underlying.toString() );
     }

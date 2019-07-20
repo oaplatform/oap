@@ -24,11 +24,9 @@
 package oap.cli;
 
 
-import oap.testng.AbstractTest;
 import oap.util.Pair;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.RecognitionException;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -36,9 +34,9 @@ import java.util.List;
 import static oap.cli.Option.__;
 import static org.testng.Assert.assertEquals;
 
-public class CliParserTest extends AbstractTest {
+public class CliParserTest {
     @Test
-    public void parse() throws Exception {
+    public void parse() {
         CliParser parser = new CliParser( new CommonTokenStream( new CliLexer( new ANTLRInputStream( "--help --about=th:'is --about=that\n" ) ) ) );
         List<Pair<String, String>> parameters = parser.parameters().list;
         assertEquals( parameters.get( 0 ), __( "help" ) );
@@ -47,7 +45,7 @@ public class CliParserTest extends AbstractTest {
     }
 
     @Test
-    public void parseString() throws RecognitionException {
+    public void parseString() {
         CliParser parser = new CliParser( new CommonTokenStream( new CliLexer( new ANTLRInputStream( "--help --about=\"th  is\" --about=that\n" ) ) ) );
         List<Pair<String, String>> parameters = parser.parameters().list;
         assertEquals( parameters.get( 0 ), __( "help" ) );
@@ -56,7 +54,7 @@ public class CliParserTest extends AbstractTest {
     }
 
     @Test
-    public void parseStringEscaped() throws Exception {
+    public void parseStringEscaped() {
         CliParser parser = new CliParser( new CommonTokenStream( new CliLexer( new ANTLRInputStream( "--help=\"\" --about=\"th\\\"is\" --about=\"th\\\\at\"\n" ) ) ) );
         List<Pair<String, String>> parameters = parser.parameters().list;
         assertEquals( parameters.get( 0 ), __( "help", "" ) );

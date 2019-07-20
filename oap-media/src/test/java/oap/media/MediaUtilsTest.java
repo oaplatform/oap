@@ -24,8 +24,9 @@
 
 package oap.media;
 
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -36,7 +37,11 @@ import java.util.Optional;
 import static oap.testng.Asserts.pathOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MediaUtilsTest extends AbstractTest {
+public class MediaUtilsTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @Test
     public void getContentType() throws IOException {
         Path file = pathOfTestResource( WsFileUploaderTest.class, "video.mp4" );

@@ -25,8 +25,9 @@
 package oap.dictionary;
 
 import oap.io.Resources;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import oap.util.Maps;
 import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
@@ -38,13 +39,17 @@ import java.util.Optional;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DictionaryParserTest extends AbstractTest {
+public class DictionaryParserTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @Test
-    public void testSerialize() {
-        final Path path = Env.tmpPath( "test/test.json" );
+    public void serialize() {
+        Path path = Env.tmpPath( "test/test.json" );
         DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path );
 
-        final DictionaryRoot dictionary = DictionaryParser.parse( path );
+        DictionaryRoot dictionary = DictionaryParser.parse( path );
 
         Assertions.<Dictionary>assertThat( dictionary.getValues() ).contains( new DictionaryLeaf( "id2", true, '2',
             Maps.of( __( "title", "title2" ) ) )
@@ -61,8 +66,8 @@ public class DictionaryParserTest extends AbstractTest {
         expectedExceptions = { DictionaryError.class },
         expectedExceptionsMessageRegExp = "duplicate eid: path: /id1; eid: 11; one: id11; two: id12, path: /id1/id12; eid: 50; one: id2; two: id3"
     )
-    public void testInvalidEid() {
-        final Optional<URL> url = Resources.url( getClass(), getClass().getSimpleName() + "/" + "invalid-eid-dictionary.conf" );
+    public void invalidEid() {
+        Optional<URL> url = Resources.url( getClass(), getClass().getSimpleName() + "/" + "invalid-eid-dictionary.conf" );
 
         assertThat( url ).isPresent();
 
@@ -70,8 +75,8 @@ public class DictionaryParserTest extends AbstractTest {
     }
 
     @Test
-    public void testZeroStringEid() {
-        final DictionaryRoot dictionary = Dictionaries.getDictionary( "test-dictionary2" );
+    public void zeroStringEid() {
+        DictionaryRoot dictionary = Dictionaries.getDictionary( "test-dictionary2" );
         assertThat( dictionary.getOrDefault( 0, "not found" ) ).isEqualTo( "-" );
         assertThat( dictionary.getOrDefault( 'I', "not found" ) ).isEqualTo( "IMAGE" );
 

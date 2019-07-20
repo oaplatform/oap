@@ -56,14 +56,14 @@ public class PatternCorsPolicyTest {
     }
 
     @Test
-    public void testSameDomainOrigin() throws UnknownHostException {
+    public void sameDomainOrigin() throws UnknownHostException {
         final Request request = getRequest( "http://oaplatform.org/", "http://oaplatform.org/api" );
 
         assertEquals( cors.getCors( request ).allowOrigin, "http://oaplatform.org/" );
     }
 
     @Test
-    public void testSubDomainOrigin() throws UnknownHostException {
+    public void subDomainOrigin() throws UnknownHostException {
         final String origin = "https://oap.oaplatform.org/";
         final Request request = getRequest( origin, "https://oap.oaplatform.org/cors" );
 
@@ -71,7 +71,7 @@ public class PatternCorsPolicyTest {
     }
 
     @Test
-    public void testAnotherDomainOrigin() throws UnknownHostException {
+    public void anotherDomainOrigin() throws UnknownHostException {
         final Request request = getRequest( "http://example.com/", "http://example.com/path/to/api" );
 
         assertEquals( cors.getCors( request ).allowOrigin, RequestCors.NO_ORIGIN );

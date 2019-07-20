@@ -107,10 +107,9 @@ public class MongoStorage<T> extends MemoryStorage<T> implements Runnable, Oplog
         super.close();
     }
 
-    @Override
-    @Deprecated(forRemoval=true)
+    @Deprecated( forRemoval = true )
     public void fsync() {
-        super.fsync();
+        for( DataListener<T> dataListener : this.dataListeners ) dataListener.fsync();
 
         var count = new MutableInt();
 

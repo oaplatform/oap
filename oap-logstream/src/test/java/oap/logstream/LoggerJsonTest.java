@@ -29,12 +29,12 @@ import oap.io.IoStreams.Encoding;
 import oap.json.Binder;
 import oap.logstream.disk.DiskLoggerBackend;
 import oap.template.Engine;
-import oap.testng.AbstractTest;
+import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import oap.util.Dates;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.nio.file.Paths;
 
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
@@ -43,12 +43,16 @@ import static oap.testng.Asserts.assertFile;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Env.tmpPath;
 
-public class LoggerJsonTest extends AbstractTest {
+public class LoggerJsonTest extends Fixtures {
     private LogConfiguration logConfiguration;
+
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
 
     @BeforeMethod
     public void beforeMethod() {
-        var engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
+        var engine = new Engine( Env.tmpPath( "file-cache" ), 1000 * 60 * 60 * 24 );
         logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
     }
 

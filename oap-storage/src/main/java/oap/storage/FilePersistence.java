@@ -70,9 +70,9 @@ public class FilePersistence<T> implements Closeable, Storage.DataListener<T> {
         Threads.synchronously( lock, () -> {
             var metadata = Binder.json.unmarshal( new TypeRef<List<Metadata<T>>>() {}, path ).orElse( Lists.empty() );
             metadata.forEach( m -> {
-                    String id = storage.identifier.get( m.object );
-                    storage.data.put( id, m );
-                } );
+                String id = storage.identifier.get( m.object );
+                storage.data.put( id, m );
+            } );
             log.info( storage.data.size() + " object(s) loaded." );
         } );
     }

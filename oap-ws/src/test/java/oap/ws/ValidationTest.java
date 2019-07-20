@@ -55,28 +55,28 @@ public class ValidationTest extends AbstractWebServicesTest {
     }
 
     @Test
-    public void testBrokenValidator() {
+    public void brokenValidator() {
         assertGet( httpUrl( "/vaildation/service/methodWithBrokenValidator?requiredParameter=10" ) )
             .responded( 500, "CausedByException", TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ),
                 "CausedByException" );
     }
 
     @Test
-    public void testWrongValidatorName() {
+    public void wrongValidatorName() {
         String errorMessage = "No such method wrongValidatorName with the following parameters: [int requiredParameter]";
         assertGet( httpUrl( "/vaildation/service/methodWithWrongValidatorName?requiredParameter=10" ) )
             .responded( 500, errorMessage, TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), errorMessage );
     }
 
     @Test
-    public void testValidatorWithWrongParameters() {
+    public void validatorWithWrongParameters() {
         String errorMessage = "missedParam required by validator wrongArgsValidator is not supplied by web method";
         assertGet( httpUrl( "/vaildation/service/methodWithWrongValidatorArgs?requiredParameter=10" ) )
             .responded( 500, errorMessage, TEXT_PLAIN.withCharset( StandardCharsets.UTF_8 ), errorMessage );
     }
 
     @Test
-    public void testException() {
+    public void exception() {
         assertGet( httpUrl( "/vaildation/service/exceptionRuntimeException" ) )
             .hasCode( 500 );
         assertGet( httpUrl( "/vaildation/service/exceptionIllegalAccessException" ) )

@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class BitSetTest {
     @Test
-    public void testMaxBit() {
+    public void maxBit() {
         var bitSet = new BitSet( 10 );
         bitSet.set( 4 );
         assertThat( bitSet.max() ).isEqualTo( 4 );
@@ -43,7 +43,7 @@ public class BitSetTest {
     }
 
     @Test
-    public void testNewBitSetFromString() {
+    public void newBitSetFromString() {
         var bs = new BitSet( "1,2,  4, 6 -8" );
 
         assertThat( bs.get( 0 ) ).isFalse();

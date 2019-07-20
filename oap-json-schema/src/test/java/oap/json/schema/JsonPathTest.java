@@ -24,7 +24,6 @@
 
 package oap.json.schema;
 
-import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.Test;
@@ -35,9 +34,9 @@ import java.util.Optional;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class JsonPathTest extends AbstractTest {
+public class JsonPathTest {
     @Test
-    public void testTraverse() throws Exception {
+    public void traverse() {
         final List<Object> traverse = new JsonPath( "flights.items.rules.items.region.items", Optional.of( "flights/0/rules/0/country/0" ) )
             .traverse( Maps.of( __( "flights", Lists.of( Maps.of( __( "rules", Lists.of( Maps.of( __( "region", Lists.of( "reg" ) ) ) ) ) ) ) ) ) );
 
@@ -45,7 +44,7 @@ public class JsonPathTest extends AbstractTest {
     }
 
     @Test
-    public void testTraverseNotFound() throws Exception {
+    public void traverseNotFound() {
         final List<Object> traverse = new JsonPath( "a.items.field", Optional.of( "a/0/unknown" ) )
             .traverse( Maps.of( __( "a", Lists.of( Maps.of( __( "unknown", 10 ) ) ) ) ) );
 

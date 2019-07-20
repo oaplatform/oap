@@ -24,7 +24,6 @@
 
 package oap.dictionary;
 
-import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.assertj.core.api.Assertions;
@@ -38,9 +37,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.testng.Assert.assertTrue;
 
-public class DictionaryTest extends AbstractTest {
+public class DictionaryTest {
+
     @Test
-    public void testParse() {
+    public void parse() {
         assertThat( Dictionaries.getDictionary( "test-dictionary" ).name ).isEqualTo( "test-dictionary" );
         List<? extends Dictionary> dictValues = Dictionaries.getDictionary( "test-dictionary" ).getValues();
         Assertions.<Dictionary>assertThat( dictValues ).contains( new DictionaryValue( "id1", true, '1',
@@ -48,15 +48,15 @@ public class DictionaryTest extends AbstractTest {
                     new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) ),
                     new DictionaryLeaf( "id12", true, 12, Maps.of( __( "title", "title12" ) ) )
                 ),
-                Maps.of( __( "title", "title1" ) ) )
-            , new DictionaryLeaf( "id2", true, 50, Maps.of( __( "title", "title2" ) ) )
+                Maps.of( __( "title", "title1" ) ) ),
+            new DictionaryLeaf( "id2", true, 50, Maps.of( __( "title", "title2" ) ) )
         );
         assertTrue( dictValues.get( 2 ).getTags().contains( "tag1" ) );
         assertTrue( dictValues.get( 2 ).getTags().contains( "tag2" ) );
     }
 
     @Test
-    public void testExtends() {
+    public void extend() {
         var values = Dictionaries
             .getDictionary( "test-dictionary-extends" )
             .getValue( "id2" )
@@ -73,7 +73,7 @@ public class DictionaryTest extends AbstractTest {
     }
 
     @Test
-    public void testExtendsDuplicate() {
+    public void extendDuplicate() {
         assertThatThrownBy( () ->
             Dictionaries
                 .getDictionary( "test-dictionary-extends-duplicate" )
@@ -82,7 +82,7 @@ public class DictionaryTest extends AbstractTest {
     }
 
     @Test
-    public void testExtendsIgnoreDuplicate() {
+    public void extendIgnoreDuplicate() {
         var values = Dictionaries
             .getDictionary( "test-dictionary-extends-ignore-duplicate", INCREMENTAL_ID_STRATEGY )
             .getValue( "id2" )
@@ -95,7 +95,7 @@ public class DictionaryTest extends AbstractTest {
     }
 
     @Test
-    public void testExtendsFilter() {
+    public void extendFilter() {
         var values = Dictionaries
             .getDictionary( "test-dictionary-extends-filter" )
             .getValue( "id2" )

@@ -36,187 +36,187 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class JsonDiffTest extends AbstractSchemaTest {
     @Test
-    public void testNewString() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"string\"" +
-            "}" +
-            "}}";
+    public void newString() throws Exception {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"string\""
+            + "}"
+            + "}}";
 
         assertThat( __diff( schema, "{}", "{\"test\":\"new value\"}" ) ).containsOnly( __newF( "test", "\"new value\"" ) );
     }
 
     @Test
-    public void testDelString() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"string\"" +
-            "}" +
-            "}}";
+    public void delString() throws Exception {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"string\""
+            + "}"
+            + "}}";
 
         assertThat( __diff( schema, "{\"test\":\"old value\"}", "{}" ) ).containsOnly( __delF( "test", "\"old value\"" ) );
     }
 
     @Test
-    public void testUpdString() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"string\"" +
-            "}" +
-            "}}";
+    public void updString() throws Exception {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"string\""
+            + "}"
+            + "}}";
 
         assertThat( __diff( schema, "{\"test\":\"old value\"}", "{\"test\":\"new value\"}" ) )
             .containsOnly( __updF( "test", "\"old value\"", "\"new value\"" ) );
     }
 
     @Test
-    public void testUpdStringNested() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"object\"," +
-            "    \"properties\":{" +
-            "      \"testin\":{" +
-            "        \"type\":\"string\"" +
-            "      }" +
-            "    }" +
-            "  }" +
-            "}}";
+    public void updStringNested() throws Exception {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"object\","
+            + "    \"properties\":{"
+            + "      \"testin\":{"
+            + "        \"type\":\"string\""
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
 
         assertThat( __diff( schema, "{\"test\":{\"testin\":\"old value\"}}", "{\"test\":{\"testin\":\"new value\"}}" ) )
             .containsOnly( __updF( "test.testin", "\"old value\"", "\"new value\"" ) );
     }
 
     @Test
-    public void testNewNested() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"object\"," +
-            "    \"properties\":{" +
-            "      \"testin\":{" +
-            "        \"type\":\"string\"" +
-            "      }" +
-            "    }" +
-            "  }" +
-            "}}";
+    public void newNested() throws Exception {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"object\","
+            + "    \"properties\":{"
+            + "      \"testin\":{"
+            + "        \"type\":\"string\""
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
 
         assertThat( __diff( schema, "{}", "{\"test\":{\"testin\":\"new value\"}}" ) )
             .containsOnly( __newO( "test", "{\"testin\":\"new value\"}" ) );
     }
 
     @Test
-    public void testDelNested() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"object\"," +
-            "    \"properties\":{" +
-            "      \"testin\":{" +
-            "        \"type\":\"string\"" +
-            "      }" +
-            "    }" +
-            "  }" +
-            "}}";
+    public void delNested() throws Exception {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"object\","
+            + "    \"properties\":{"
+            + "      \"testin\":{"
+            + "        \"type\":\"string\""
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}}";
 
         assertThat( __diff( schema, "{\"test\":{\"testin\":\"new value\"}}", "{}" ) )
             .containsOnly( __delO( "test", "{\"testin\":\"new value\"}" ) );
     }
 
     @Test
-    public void testNewArray() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"array\"," +
-            "    \"items\":{" +
-            "      \"type\":\"string\"" +
-            "    }" +
-            "  }" +
-            "}}";
+    public void newArray() throws Exception {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"items\":{"
+            + "      \"type\":\"string\""
+            + "    }"
+            + "  }"
+            + "}}";
 
         assertThat( __diff( schema, "{}", "{\"test\":[\"new value\"]}" ) ).containsOnly( __newA( "test", "[\"new value\"]" ) );
     }
 
     @Test
-    public void testNewArrayItem() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"array\"," +
-            "    \"items\":{" +
-            "      \"type\":\"string\"" +
-            "    }" +
-            "  }" +
-            "}}";
+    public void newArrayItem() throws Exception {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"items\":{"
+            + "      \"type\":\"string\""
+            + "    }"
+            + "  }"
+            + "}}";
 
         assertThat( __diff( schema, "{\"test\":[\"old value\"]}", "{\"test\":[\"old value\",\"new value\"]}" ) )
             .containsOnly( __newA( "test", "[\"new value\"]" ) );
     }
 
     @Test
-    public void testEmptyArrays() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"array\"," +
-            "    \"items\":{" +
-            "      \"type\":\"string\"" +
-            "    }" +
-            "  }" +
-            "}}";
+    public void emptyArrays() throws Exception {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"items\":{"
+            + "      \"type\":\"string\""
+            + "    }"
+            + "  }"
+            + "}}";
 
         assertThat( __diff( schema, "{}", "{}" ) ).isEmpty();
     }
 
     @Test
-    public void testDelArrayItem() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"array\"," +
-            "    \"items\":{" +
-            "      \"type\":\"string\"" +
-            "    }" +
-            "  }" +
-            "}}";
+    public void delArrayItem() throws Exception {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"items\":{"
+            + "      \"type\":\"string\""
+            + "    }"
+            + "  }"
+            + "}}";
 
         assertThat( __diff( schema, "{\"test\":[\"old value\", \"old value 2\"]}", "{\"test\":[\"old value 2\"]}" ) )
             .containsOnly( __delA( "test", "[\"old value\"]" ) );
     }
 
     @Test
-    public void testUpdateArrayItem() throws Exception {
-        final String schema = "{" +
-            "\"type\":\"object\"," +
-            "\"properties\":{" +
-            "  \"test\": {" +
-            "    \"type\":\"array\"," +
-            "    \"items\":{" +
-            "      \"type\":\"string\"" +
-            "    }" +
-            "  }" +
-            "}}";
+    public void updateArrayItem() throws Exception {
+        final String schema = "{"
+            + "\"type\":\"object\","
+            + "\"properties\":{"
+            + "  \"test\": {"
+            + "    \"type\":\"array\","
+            + "    \"items\":{"
+            + "      \"type\":\"string\""
+            + "    }"
+            + "  }"
+            + "}}";
 
         assertThat( __diff( schema, "{\"test\":[\"old value\", \"old value 2\"]}", "{\"test\":[\"old value 2\", \"new value\"]}" ) )
             .containsOnly( __updA( "test", "[\"old value\"]", "[\"new value\"]" ) );
     }
 
     @Test
-    public void testUpdStringIntoArrayObject() {
+    public void updStringIntoArrayObject() {
         var schema = "{"
             + "\"type\":\"object\","
             + "\"properties\":{"
@@ -243,7 +243,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testAddArrayObject() {
+    public void addArrayObject() {
         var schema = "{"
             + "\"type\":\"object\","
             + "\"properties\":{"
@@ -270,7 +270,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testRemoveArrayObject() {
+    public void removeArrayObject() {
         var schema = "{"
             + "\"type\":\"object\","
             + "\"properties\":{"
@@ -297,7 +297,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testUpdateArrayObjectWithoutId() {
+    public void updateArrayObjectWithoutId() {
         var schema = "{"
             + "\"type\":\"object\","
             + "\"properties\":{"
@@ -324,7 +324,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testAddArrayObjectWithoutId() {
+    public void addArrayObjectWithoutId() {
         var schema = "{"
             + "\"type\":\"object\","
             + "\"properties\":{"
@@ -351,7 +351,7 @@ public class JsonDiffTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testRemoveArrayObjectWithoutId() {
+    public void removeArrayObjectWithoutId() {
         var schema = "{"
             + "\"type\":\"object\","
             + "\"properties\":{"

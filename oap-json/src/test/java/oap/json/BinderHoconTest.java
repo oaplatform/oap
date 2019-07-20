@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class BinderHoconTest {
     @Test
-    public void testPattern() {
+    public void pattern() {
         var pattern = "{test = \"[^a]+\"}";
         var obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, pattern );
 
@@ -43,7 +43,7 @@ public class BinderHoconTest {
     }
 
     @Test
-    public void testEnvList() {
+    public void envList() {
         var json = "{list = [${?LIST_ENV}]}";
         System.setProperty( "LIST_ENV", "1a,2a" );
 

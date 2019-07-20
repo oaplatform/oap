@@ -62,10 +62,6 @@
         <module>oap-media</module>
         <module>oap-zabbix</module>
         <module>maven</module>
-        <module>oap-security/oap-security-api</module>
-        <module>oap-security/oap-security-backend</module>
-        <module>oap-security/oap-security-mongo</module>
-        <module>oap-security/oap-security-ws</module>
     </modules>
 
     <repositories>
@@ -83,7 +79,7 @@
     </distributionManagement>
 
     <properties>
-        <revision>4.13.11</revision>
+        <revision>4.14.0</revision>
 
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>

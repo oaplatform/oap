@@ -30,7 +30,8 @@ import oap.template.StringTemplateTest.Tst.Test1;
 import oap.template.StringTemplateTest.Tst.Test2;
 import oap.template.StringTemplateTest.Tst.Test3;
 import oap.template.StringTemplateTest.Tst.Test4;
-import oap.testng.AbstractTest;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.Test;
@@ -46,10 +47,13 @@ import static oap.io.Files.ensureDirectory;
 import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class StringTemplateTest extends AbstractTest {
+public class StringTemplateTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
 
     @Test
-    public void testTtl() {
+    public void ttl() {
         Path test = ensureDirectory( tmpPath( "test" ) );
         Engine engine = new Engine( test );
         String clazz = Engine.getName( "test" );
@@ -71,7 +75,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testLoadFromDisk() {
+    public void loadFromDisk() {
         Path test = ensureDirectory( tmpPath( "test" ) );
         Engine engine = new Engine( test );
         String clazz = Engine.getName( "test" );
@@ -86,7 +90,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testProcessWithoutVariables() throws Exception {
+    public void processWithoutVariables() throws Exception {
         Path test = ensureDirectory( tmpPath( "test" ) );
         Engine engine = new Engine( test );
         assertThat( engine.getTemplate( "test", Container.class, "d" ) )
@@ -96,7 +100,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testDepth() {
+    public void depth() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
         Tst test = new Tst();
@@ -116,7 +120,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testOtherJoinStrategy() {
+    public void otherJoinStrategy() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
         Tst test = new Tst();
@@ -135,7 +139,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testAlternatives() {
+    public void alternatives() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
         Tst test = new Tst();
@@ -151,7 +155,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testAlternatives2() {
+    public void alternatives2() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
         Tst test = new Tst();
@@ -162,7 +166,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testOverride() {
+    public void override() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
         Tst test = new Tst();
@@ -178,7 +182,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testMapper() {
+    public void mapper() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
         Tst test = new Tst();
@@ -193,7 +197,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testMapperWithUrlEncode() {
+    public void mapperWithUrlEncode() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
         Tst test = new Tst();
@@ -208,7 +212,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testDoubleValue() {
+    public void doubleValue() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
         Tst test = new Tst();
@@ -222,7 +226,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testEscape() {
+    public void escape() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
         Tst test = new Tst();
@@ -236,7 +240,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testInvalidPath() {
+    public void invalidPath() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
         Tst test = new Tst();
@@ -254,7 +258,7 @@ public class StringTemplateTest extends AbstractTest {
     }
 
     @Test
-    public void testMap() {
+    public void map() {
         Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
 
         var map = Maps.of2( "a", 1, "b", "test", "c (1)", 0.0 );

@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class UriTest {
     @Test
-    public void testUri() {
+    public void uri() {
         var uri = Uri.uri( "http://test", Maps.of2( "id", asList( 1, 2 ) ) );
         assertThat( uri ).hasQuery( "id=1&id=2" );
     }

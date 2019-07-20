@@ -33,21 +33,21 @@ import static org.testng.Assert.assertTrue;
 public class ResultTest {
 
     @Test( expectedExceptions = InterruptedException.class )
-    public void testBlockingTryingInterrupted() throws Exception {
+    public void blockingTryingInterrupted() throws Exception {
         Result.tryingInterruptible( () -> {
             throw new InterruptedException( "Somebody interrupted me" );
         } );
     }
 
     @Test()
-    public void testBlockingTryingSuccess() throws Exception {
+    public void blockingTryingSuccess() throws Exception {
         Result<String, Throwable> result = Result.tryingInterruptible( () -> "im ok" );
         assertTrue( result.isSuccess() );
         assertEquals( result.successValue, "im ok" );
     }
 
     @Test()
-    public void testBlockingTryingNormalException() throws Exception {
+    public void blockingTryingNormalException() throws Exception {
         Result<String, Throwable> result = Result.tryingInterruptible( () -> {
             throw new IllegalArgumentException( "some reason" );
         } );

@@ -199,11 +199,9 @@ public class Reflection extends Annotated<Class<?>> {
     /**
      * @param name Method name
      * @return {@link Method} - method wrapper of {@link java.lang.reflect.Method}
-     *
-     * @deprecated JVM is responsible to pick random method if there are several overloaded methods.
+     * Random is fine in most cases where oveerloading is not expected
      * Use {@link #method(String, List)} or {@link #method(java.lang.reflect.Method)} instead
      */
-    @Deprecated
     public Optional<Method> method( String name ) {
         return method( m -> Objects.equals( m.name(), name ) );
     }

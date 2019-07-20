@@ -26,7 +26,9 @@ package oap.metrics;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
-import oap.testng.AbstractTest;
+import oap.testng.Fixtures;
+import oap.testng.ResetSystemTimer;
+import oap.util.Lists;
 import org.influxdb.dto.Point;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.BeforeMethod;
@@ -35,20 +37,22 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.joining;
 import static oap.testng.Asserts.assertString;
 
-public class InfluxDBReporterTest extends AbstractTest {
+public class InfluxDBReporterTest extends Fixtures {
 
     private MockInfluxDB influxDB;
 
+    {
+        fixture( ResetSystemTimer.FIXTURE );
+    }
+
     @BeforeMethod
     public void init() {
-        super.initMocksAndResetClock();
 
         influxDB = new MockInfluxDB();
 
@@ -57,7 +61,7 @@ public class InfluxDBReporterTest extends AbstractTest {
 
     @Test
     public void reportAggregates() {
-        var reporter = createReporter( influxDB, Metrics.registry, asList( "test.*", "test2.test2.*" ) );
+        var reporter = createReporter( influxDB, Metrics.registry, Lists.of( "test.*", "test2.test2.*" ) );
 
         Metrics.registry.counter( "test.name1" ).inc();
         Metrics.registry.counter( "test.name2" ).inc( 2 );

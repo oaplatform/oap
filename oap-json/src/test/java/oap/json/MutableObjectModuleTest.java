@@ -24,15 +24,14 @@
 
 package oap.json;
 
-import oap.testng.AbstractTest;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MutableObjectModuleTest extends AbstractTest {
+public class MutableObjectModuleTest {
     @Test
-    public void testSerializeDeserialize() {
+    public void serializeDeserialize() {
         final TestMutableObjectBean b = new TestMutableObjectBean();
         b.i.setValue( 101 );
 
@@ -44,11 +43,11 @@ public class MutableObjectModuleTest extends AbstractTest {
     }
 
     @Test
-    public void testUpdate() {
+    public void update() {
         final TestMutableObjectBean b = new TestMutableObjectBean();
         b.i.setValue( 101 );
 
-        Binder.json.update( b, "{i = 102}" );
+        Binder.update( b, "{i = 102}" );
         assertThat( b.i.getValue() ).isEqualTo( 102 );
     }
 

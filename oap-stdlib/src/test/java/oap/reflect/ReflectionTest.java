@@ -184,7 +184,7 @@ public class ReflectionTest {
             .isEqualTo( new DeepBean(
                 new Bean( 42, "new string", Optional.of( "optional present" ) ),
                 Optional.empty(),
-                Lists.of( new Bean( 10, "aaa" ), new Bean( 11, "bbb" ) , new Bean( 12, "ccc" ) ),
+                Lists.of( new Bean( 10, "aaa" ), new Bean( 11, "bbb" ), new Bean( 12, "ccc" ) ),
                 Maps.of( __( "x", Maps.of( __( "1", 1 ) ) ) )
             ) );
     }

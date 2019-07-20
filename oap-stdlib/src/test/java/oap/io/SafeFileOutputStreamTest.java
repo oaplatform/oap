@@ -24,8 +24,9 @@
 
 package oap.io;
 
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -34,7 +35,11 @@ import java.nio.file.Path;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
 
-public class SafeFileOutputStreamTest extends AbstractTest {
+public class SafeFileOutputStreamTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @Test
     public void rename() throws IOException {
         Path path = Env.tmpPath( "1" );
@@ -57,7 +62,7 @@ public class SafeFileOutputStreamTest extends AbstractTest {
     }
 
     @Test
-    public void testAppend() throws IOException {
+    public void append() throws IOException {
         Path path = Env.tmpPath( "1" );
         Files.writeString( path, "test" );
         try( SafeFileOutputStream stream = new SafeFileOutputStream( path, true, PLAIN ) ) {

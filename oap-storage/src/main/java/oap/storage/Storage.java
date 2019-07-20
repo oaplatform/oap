@@ -28,7 +28,6 @@ import oap.util.Stream;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -90,15 +89,6 @@ public interface Storage<T> extends Iterable<T>, AutoCloseable {
 
     void deleteAll();
 
-    Map<String, T> snapshot( boolean clean );
-
-    /**
-     * TODO:
-     * remove it. There must be no need to sync storage explicitly!
-     */
-    @Deprecated
-    void fsync();
-
     void addConstraint( Constraint<T> constraint );
 
     void addDataListener( DataListener<T> dataListener );
@@ -132,6 +122,7 @@ public interface Storage<T> extends Iterable<T>, AutoCloseable {
             objects.forEach( this::deleted );
         }
 
+        @Deprecated
         default void fsync() {}
     }
 

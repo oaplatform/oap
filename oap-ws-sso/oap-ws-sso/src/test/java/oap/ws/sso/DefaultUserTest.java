@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultUserTest {
     @Test
-    public void testJson() {
+    public void json() {
         var user = new DefaultUser( "ADMIN", "orgid", "my@enai.com" );
         user.password = "test1";
         user.organizationName = "irg name";

@@ -41,7 +41,7 @@ public class ObjectHistogramTest {
     }
 
     @Test
-    public void testHour() {
+    public void hour() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
         var histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
         histogram.update( PERIOD_HOUR, new TestObject( 1 ) );
@@ -52,7 +52,7 @@ public class ObjectHistogramTest {
     }
 
     @Test
-    public void testUpdateForTime() {
+    public void updateForTime() {
         DateTimeUtils.setCurrentMillisFixed( 10000000 );
         var histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
         histogram.update( PERIOD_HOUR, new TestObject( 1 ) );
@@ -64,7 +64,7 @@ public class ObjectHistogramTest {
     }
 
     @Test
-    public void testHourShiftOne() {
+    public void hourShiftOne() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
         var histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
         histogram.update( PERIOD_HOUR, new TestObject( 3 ) );
@@ -80,7 +80,7 @@ public class ObjectHistogramTest {
     }
 
     @Test
-    public void testHistogramShiftAll() {
+    public void histogramShiftAll() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
         var histogram = new TestObjectHistogram( 5, PERIOD_HOUR );
         histogram.update( PERIOD_HOUR, new TestObject( 3 ) );
@@ -90,7 +90,7 @@ public class ObjectHistogramTest {
     }
 
     @Test
-    public void testMerge() {
+    public void merge() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
         var master = new TestObjectHistogram( new TestObject[] { new TestObject( 1 ), new TestObject( 4 ), null }, 0 );
         var update = new TestObjectHistogram( new TestObject[] { new TestObject( 2 ), null, null }, 0 );
@@ -101,7 +101,7 @@ public class ObjectHistogramTest {
     }
 
     @Test
-    public void testMergeShift() {
+    public void mergeShift() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
         var master = new TestObjectHistogram( new TestObject[] { new TestObject( 1 ), new TestObject( 4 ), null }, 0 );
 

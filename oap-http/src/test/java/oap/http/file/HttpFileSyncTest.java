@@ -25,8 +25,9 @@
 package oap.http.file;
 
 import oap.io.FileSync;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.apache.http.client.utils.DateUtils;
 import org.joda.time.DateTimeUtils;
 import org.mockserver.integration.ClientAndServer;
@@ -45,10 +46,14 @@ import static org.mockserver.matchers.Times.once;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
-public class HttpFileSyncTest extends AbstractTest {
+public class HttpFileSyncTest extends Fixtures {
     private static final int PORT = Env.port( HttpFileSyncTest.class.toString() );
 
     private ClientAndServer mockServer;
+
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
 
     @BeforeMethod
     public void start() {
@@ -61,7 +66,7 @@ public class HttpFileSyncTest extends AbstractTest {
     }
 
     @Test
-    public void testSync() throws Exception {
+    public void sync() throws Exception {
         var b = new StringBuilder();
         DateTimeUtils.setCurrentMillisFixed( 10 * 1000 );
 

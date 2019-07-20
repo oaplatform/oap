@@ -40,7 +40,7 @@ import static org.testng.Assert.assertTrue;
 
 public class RemotingTest {
     @Test
-    public void testInvoke() {
+    public void invoke() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( RemotingTest.class, "module.conf" ) );
 

@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class GenericCorsPolicyTest {
 
     @Test
-    public void testShouldVerifyDefaultAllowMethods() throws UnknownHostException {
+    public void shouldVerifyDefaultAllowMethods() throws UnknownHostException {
         var basicHttpRequest = new BasicHttpRequest( "GET", "http://test.com" );
         basicHttpRequest.addHeader( "Origin", "*" );
         basicHttpRequest.addHeader( "Host", "some-host" );

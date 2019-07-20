@@ -28,15 +28,15 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.storage.Identifier;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Teamcity;
 import oap.util.Id;
 import org.bson.types.ObjectId;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
 @Slf4j
-public abstract class AbstractMongoTest extends AbstractTest {
+public abstract class AbstractMongoTest {
     protected String dbName;
     protected MongoClient mongoClient;
     protected Identifier<Bean> beanIdentifier =
@@ -53,7 +53,7 @@ public abstract class AbstractMongoTest extends AbstractTest {
 
     @BeforeMethod
     public void init() {
-        dbName = "db" + Env.teamcityBuildPrefix().replace( ".", "_" );
+        dbName = "db" + Teamcity.buildPrefix().replace( ".", "_" );
 
         mongoClient = new MongoClient( Env.getEnvOrDefault( "MONGO_HOST", "localhost" ), 27017, dbName, Migration.NONE );
         mongoClient.database.drop();
@@ -75,7 +75,7 @@ public abstract class AbstractMongoTest extends AbstractTest {
         public int c;
 
         Bean( String id, String name ) {
-            this(name);
+            this( name );
             this.id = id;
         }
 

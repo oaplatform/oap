@@ -24,48 +24,47 @@
 
 package oap.util;
 
-import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
 import java.util.BitSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class StringBitsTest extends AbstractTest {
+public class StringBitsTest {
     @Test
-    public void testValueOfInt() throws Exception {
-        final StringBits stringBits = new StringBits();
-        final long test = stringBits.computeIfAbsent( "test" );
+    public void valueOfInt() {
+        StringBits stringBits = new StringBits();
+        long test = stringBits.computeIfAbsent( "test" );
 
         assertThat( stringBits.valueOf( test ) ).isEqualTo( "test" );
         assertThat( stringBits.valueOf( test + 1 ) ).isEqualTo( Strings.UNKNOWN );
     }
 
     @Test
-    public void testValueOfInts() throws Exception {
-        final StringBits stringBits = new StringBits();
-        final long test1 = stringBits.computeIfAbsent( "test" );
-        final long test2 = stringBits.computeIfAbsent( "test2" );
+    public void valueOfInts() {
+        StringBits stringBits = new StringBits();
+        long test1 = stringBits.computeIfAbsent( "test" );
+        long test2 = stringBits.computeIfAbsent( "test2" );
 
         assertThat( stringBits.valueOf( new int[] { ( int ) test2, ( int ) test1 } ) ).containsExactly( "test2", "test" );
         assertThat( stringBits.valueOf( new int[] { ( int ) test1, ( int ) test2 + 1 } ) ).containsExactly( "test", Strings.UNKNOWN );
     }
 
     @Test
-    public void testValueOfLongs() throws Exception {
-        final StringBits stringBits = new StringBits();
-        final long[] test = stringBits.computeIfAbsent( java.util.Arrays.asList( "test", "test2" ) );
+    public void valueOfLongs() {
+        StringBits stringBits = new StringBits();
+        long[] test = stringBits.computeIfAbsent( java.util.Arrays.asList( "test", "test2" ) );
 
         assertThat( stringBits.valueOf( new long[] { test[1], test[0] } ) ).containsExactly( "test2", "test" );
         assertThat( stringBits.valueOf( new long[] { test[0], test[1] + 1 } ) ).containsExactly( "test", Strings.UNKNOWN );
     }
 
     @Test
-    public void testValueOfBits() throws Exception {
-        final StringBits stringBits = new StringBits();
-        final long test1 = stringBits.computeIfAbsent( "test" );
+    public void valueOfBits() {
+        StringBits stringBits = new StringBits();
+        long test1 = stringBits.computeIfAbsent( "test" );
 
-        final BitSet bitSet = new BitSet();
+        BitSet bitSet = new BitSet();
         bitSet.set( ( int ) test1 );
         bitSet.set( ( int ) ( test1 + 10 ) );
 

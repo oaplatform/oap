@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class SchemaPathTest extends AbstractSchemaTest {
     @Test
-    public void testTraverse() throws Exception {
+    public void traverse() throws Exception {
         String schema = "{additionalProperties = true, type: object, properties: {a: {type: boolean, required: true}}}";
 
         var schemaAST = schema( schema );
@@ -43,7 +43,7 @@ public class SchemaPathTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testTraverseArray() throws Exception {
+    public void traverseArray() throws Exception {
         String schema = "{type: array, items { type = object, properties: {a: {type: array, items {type = boolean, required: true}}}}}";
 
         var schemaAST = schema( schema );

@@ -126,10 +126,9 @@ public class LazyFileStorage<T> extends MemoryStorage<T> {
         closed = true;
     }
 
-    @Override
     @SneakyThrows
     public void fsync() {
-        super.fsync();
+        for( DataListener<T> dataListener : this.dataListeners ) dataListener.fsync();
 
         if( size() > 0 ) {
             try( OutputStream out = IoStreams.out( path, IoStreams.Encoding.from( path ), IoStreams.DEFAULT_BUFFER, false, true ) ) {

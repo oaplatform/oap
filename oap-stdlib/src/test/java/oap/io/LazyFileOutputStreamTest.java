@@ -24,18 +24,23 @@
 
 package oap.io;
 
-import oap.testng.AbstractTest;
+import lombok.SneakyThrows;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.Test;
-
-import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LazyFileOutputStreamTest extends AbstractTest {
+public class LazyFileOutputStreamTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @Test
-    public void testWrite() throws IOException {
-        var path = Env.tmpRoot.resolve( "test/file1.txt" );
+    @SneakyThrows
+    public void write() {
+        var path = Env.tmpPath( "file1.txt" );
 
         new LazyFileOutputStream( path ).close();
 

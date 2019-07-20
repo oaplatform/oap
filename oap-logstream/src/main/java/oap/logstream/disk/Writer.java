@@ -155,7 +155,7 @@ public class Writer implements Closeable {
             .filter( field -> field.containsProperty( "path" ) )
             .map( Dictionary::getId )
             .collect( joining( "\t" ) );
-        return Strings.isEmpty(header) ? header : header + '\n';
+        return Strings.isEmpty( header ) ? header : header + '\n';
     }
 
     private Path filename() {

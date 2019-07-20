@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ToString
-@EqualsAndHashCode(exclude = "one2")
+@EqualsAndHashCode( exclude = "one2" )
 public class ServiceTwo implements Hello, ActionListener {
     public ServiceOne one2;
     int j;

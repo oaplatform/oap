@@ -26,7 +26,8 @@ package oap.storage;
 
 import lombok.extern.slf4j.Slf4j;
 import oap.json.TypeIdFactory;
-import oap.testng.AbstractTest;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
@@ -40,7 +41,11 @@ import static oap.util.Lists.empty;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
-public class DirectoryPersistenceTest extends AbstractTest {
+public class DirectoryPersistenceTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     static {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
     }

@@ -30,7 +30,7 @@ import org.testng.annotations.Test;
 
 public class DictionarySchemaTest extends AbstractSchemaTest {
     @Test
-    public void testDictionary() {
+    public void dictionary() {
         String schema = "{type: dictionary, name: dict}";
 
         assertOk( schema, "null" );
@@ -41,14 +41,14 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testUnknownDictionary() {
+    public void unknownDictionary() {
         String schema = "{type: dictionary, name: unknown}";
 
         assertFailure( schema, "'test4'", "dictionary unknown not found" );
     }
 
     @Test
-    public void testHierarchical() {
+    public void hierarchical() {
         String schema = "{type: object, properties: {"
             + "parent: {type: dictionary, name: dict-h}, "
             + "child: {type: dictionary, parent: {json-path: parent}}"
@@ -64,11 +64,11 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testParentArray() {
-        String schema = "{type: object, properties: {" +
-            "parent: {type:array, items:{type: dictionary, name: dict-h}}, " +
-            "child: {type:array, items:{type: dictionary, parent: {json-path: parent.items}}}" +
-            "}}";
+    public void parentArray() {
+        String schema = "{type: object, properties: {"
+            + "parent: {type:array, items:{type: dictionary, name: dict-h}}, "
+            + "child: {type:array, items:{type: dictionary, parent: {json-path: parent.items}}}"
+            + "}}";
 
         assertOk( schema, "{'parent': ['p1','p2']}" );
         assertOk( schema, "{'parent': ['p1'], 'child':['c11']}" );
@@ -76,19 +76,19 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testHierarchicalArray() {
-        String schema = "{type: object, properties: {" +
-            "a:{" +
-            "  type: array," +
-            "  items: {" +
-            "    type: object," +
-            "    properties: {" +
-            "      parent: {type: dictionary, name: dict-h}, " +
-            "      child: {type: dictionary, parent: {json-path: a.items.parent}}" +
-            "    }" +
-            "  }" +
-            "}" +
-            "}}";
+    public void hierarchicalArray() {
+        String schema = "{type: object, properties: {"
+            + "a:{"
+            + "  type: array,"
+            + "  items: {"
+            + "    type: object,"
+            + "    properties: {"
+            + "      parent: {type: dictionary, name: dict-h}, "
+            + "      child: {type: dictionary, parent: {json-path: a.items.parent}}"
+            + "    }"
+            + "  }"
+            + "}"
+            + "}}";
 
         assertOk( schema, "{'a':[{'parent': 'p1'}]}" );
         assertOk( schema, "{'a':[{'parent': 'p2'}]}" );
@@ -98,22 +98,22 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testHierarchicalArray2() {
-        String schema = "{type: object, properties: {" +
-            "a:{" +
-            "  type: object," +
-            "  properties: {" +
-            "    parent: {" +
-            "      type: array," +
-            "      items: {type: dictionary, name: dict-h}" +
-            "    }," +
-            "    child: {" +
-            "      type: array," +
-            "      items: {type: dictionary, parent: {json-path: a.parent.items}}" +
-            "    }" +
-            "  }" +
-            "}" +
-            "}}";
+    public void hierarchicalArray2() {
+        String schema = "{type: object, properties: {"
+            + "a:{"
+            + "  type: object,"
+            + "  properties: {"
+            + "    parent: {"
+            + "      type: array,"
+            + "      items: {type: dictionary, name: dict-h}"
+            + "    },"
+            + "    child: {"
+            + "      type: array,"
+            + "      items: {type: dictionary, parent: {json-path: a.parent.items}}"
+            + "    }"
+            + "  }"
+            + "}"
+            + "}}";
 
         assertOk( schema, "{'a':{'parent': ['p1']}}" );
         assertOk( schema, "{'a':{'parent': ['p2']}}" );
@@ -121,64 +121,64 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testHierarchicalArray3() {
-        String schema = "{type: object, properties: {" +
-            "a:{" +
-            "  type: array," +
-            "  items: {" +
-            "    type: object," +
-            "    properties: {" +
-            "      parent: {type: dictionary, name: dict-h}, " +
-            "      child: {type: dictionary, parent: {json-path: a.items.parent}}," +
-            "      child2: {type: dictionary, parent: {json-path: a.items.child}}" +
-            "    }" +
-            "  }" +
-            "}" +
-            "}}";
+    public void hierarchicalArray3() {
+        String schema = "{type: object, properties: {"
+            + "a:{"
+            + "  type: array,"
+            + "  items: {"
+            + "    type: object,"
+            + "    properties: {"
+            + "      parent: {type: dictionary, name: dict-h}, "
+            + "      child: {type: dictionary, parent: {json-path: a.items.parent}},"
+            + "      child2: {type: dictionary, parent: {json-path: a.items.child}}"
+            + "    }"
+            + "  }"
+            + "}"
+            + "}}";
 
         assertOk( schema, "{'a':[{'parent': 'p1', 'child':'c11', 'child2':'c111'}]}" );
     }
 
     @Test
-    public void testHierarchicalArrayRequiredFalse() {
-        String schema = "{type: object, properties: {" +
-            "a:{" +
-            "  type: array," +
-            "  items: {" +
-            "    type: object," +
-            "    properties: {" +
-            "      parent: {type: dictionary, name: dict-h}, " +
-            "      child: {type: dictionary, parent: {json-path: a.items.parent}}," +
-            "      child2: {type: dictionary, parent: {json-path: a.items.child}}" +
-            "    }" +
-            "  }" +
-            "}" +
-            "}}";
+    public void hierarchicalArrayRequiredFalse() {
+        String schema = "{type: object, properties: {"
+            + "a:{"
+            + "  type: array,"
+            + "  items: {"
+            + "    type: object,"
+            + "    properties: {"
+            + "      parent: {type: dictionary, name: dict-h}, "
+            + "      child: {type: dictionary, parent: {json-path: a.items.parent}},"
+            + "      child2: {type: dictionary, parent: {json-path: a.items.child}}"
+            + "    }"
+            + "  }"
+            + "}"
+            + "}}";
 
         assertOk( schema, "{'a':[{'child2':'c111'}]}" );
     }
 
     @Test
-    public void testHierarchicalArrayRequiredTrue() {
-        String schema = "{type: object, properties: {" +
-            "a:{" +
-            "  type: array," +
-            "  items: {" +
-            "    type: object," +
-            "    properties: {" +
-            "      parent: {type: dictionary, name: dict-h}, " +
-            "      child: {type: dictionary, parent: {json-path: a.items.parent}, required: true}," +
-            "      child2: {type: dictionary, parent: {json-path: a.items.child}}" +
-            "    }" +
-            "  }" +
-            "}" +
-            "}}";
+    public void hierarchicalArrayRequiredTrue() {
+        String schema = "{type: object, properties: {"
+            + "a:{"
+            + "  type: array,"
+            + "  items: {"
+            + "    type: object,"
+            + "    properties: {"
+            + "      parent: {type: dictionary, name: dict-h}, "
+            + "      child: {type: dictionary, parent: {json-path: a.items.parent}, required: true},"
+            + "      child2: {type: dictionary, parent: {json-path: a.items.child}}"
+            + "    }"
+            + "  }"
+            + "}"
+            + "}}";
 
         assertFailure( schema, "{'a':[{'child2':'c111'}]}", "/a/0/child: required property is missing" );
     }
 
     @Test
-    public void testExtendsHierarchicalArray() {
+    public void extendsHierarchicalArray() {
         String schema = "{"
             + "type: object,"
             + "properties: {"
@@ -213,7 +213,7 @@ public class DictionarySchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testExtendsHierarchicalArray2() {
+    public void extendsHierarchicalArray2() {
         String schema = "{"
             + "type: object,"
             + "properties: {"

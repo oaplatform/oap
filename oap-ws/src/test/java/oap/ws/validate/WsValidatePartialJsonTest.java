@@ -42,7 +42,7 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
     //todo refactor this static madness
-    private static TestBean testBean;
+    private static TestBean bean;
 
     @Override
     protected List<Object> getWsInstances() {
@@ -51,7 +51,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
 
     @Test
     public void validation1() {
-        testBean = new TestBean( "id1" );
+        bean = new TestBean( "id1" );
         assertPost( httpUrl( "/test/run/validation/1/id1" ), "{\"id\":1}", APPLICATION_JSON )
             .respondedJson( 200, "OK", "{\"a\":[{\"id\":1}],\"id\":\"id1\"}" );
         assertPost( httpUrl( "/test/run/validation/1/id1" ), "{\"b\":[{\"element\":\"test\"}],\"id\":1}", APPLICATION_JSON )
@@ -62,7 +62,7 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
 
     @Test
     public void validation2() {
-        testBean = new TestBean( "id1" );
+        bean = new TestBean( "id1" );
         assertPost( httpUrl( "/test/run/validation/2/id1" ), "{\"id\":1}", APPLICATION_JSON )
             .respondedJson( 200, "OK", "{\"a\":[{\"id\":1}],\"id\":\"id1\"}" );
         assertPost( httpUrl( "/test/run/validation/2/id1" ), "{}", APPLICATION_JSON )
@@ -73,15 +73,15 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
 
     @Test
     public void validation3() {
-        testBean = new TestBean( "id1" );
+        bean = new TestBean( "id1" );
         final TestBean.TestItem itemA = new TestBean.TestItem();
         itemA.id = 1;
 
         final TestBean.TestItem itemB = new TestBean.TestItem();
         itemB.id = 2;
 
-        testBean.a.add( itemA );
-        testBean.a.add( itemB );
+        bean.a.add( itemA );
+        bean.a.add( itemB );
         assertPost( httpUrl( "/test/run/validation/3/id1/2" ), "{\"element\":\"some text\"}", APPLICATION_JSON )
             .respondedJson( 200, "OK", "{\"a\":[{\"id\":1},{\"id\":2,\"b\":[{\"element\":\"some text\"}]}],\"id\":\"id1\"}" );
     }
@@ -98,9 +98,9 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
                 schema = "/oap/ws/validate/WsValidateJsonTest/partial-schema.conf" )
             @WsParam( from = BODY ) TestBean.TestItem body
         ) {
-            testBean.a.clear();
-            testBean.a.add( body );
-            return testBean;
+            bean.a.clear();
+            bean.a.add( body );
+            return bean;
         }
 
         @WsMethod( path = "/run/validation/2/{id}", method = POST )
@@ -114,9 +114,9 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
                 ignoreRequired = true )
             @WsParam( from = BODY ) TestBean.TestItem body
         ) {
-            testBean.a.clear();
-            testBean.a.add( body );
-            return testBean;
+            bean.a.clear();
+            bean.a.add( body );
+            return bean;
         }
 
         @WsMethod( path = "/run/validation/3/{id}/{bId}", method = POST )
@@ -131,15 +131,15 @@ public class WsValidatePartialJsonTest extends AbstractWsValidateTest {
                 ignoreRequired = true )
             @WsParam( from = BODY ) TestBean.TestItem.SubTestItem body
         ) {
-            for( TestBean.TestItem t : testBean.a )
+            for( TestBean.TestItem t : bean.a )
                 if( t.id.equals( bId ) ) t.b.add( body );
 
-            return testBean;
+            return bean;
         }
 
         @SuppressWarnings( "unused" )
         public TestBean findBean( String id ) {
-            return testBean.id.equals( id ) ? testBean : null;
+            return bean.id.equals( id ) ? bean : null;
         }
     }
 

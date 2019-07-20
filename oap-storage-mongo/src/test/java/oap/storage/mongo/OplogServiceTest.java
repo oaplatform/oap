@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Deploy a Replica Set in order this test passes
  *
  * @see <a href=https://docs.mongodb.com/manual/tutorial/deploy-replica-set/>Deploy a Replica Set for
- *      Testing and Development</a>
+ * Testing and Development</a>
  */
 public class OplogServiceTest extends AbstractMongoTest {
     @Test

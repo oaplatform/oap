@@ -30,13 +30,12 @@ import oap.logstream.disk.DiskLoggerBackend;
 import oap.logstream.net.SocketLoggerBackend;
 import oap.logstream.net.SocketLoggerServer;
 import oap.template.Engine;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import oap.util.Dates;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.nio.file.Paths;
 
 import static oap.logstream.Timestamp.BPH_12;
 import static oap.logstream.disk.DiskLoggerBackend.DEFAULT_BUFFER;
@@ -49,12 +48,16 @@ import static org.joda.time.DateTimeUtils.currentTimeMillis;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class LoggerTest extends AbstractTest {
+public class LoggerTest extends Fixtures {
     private LogConfiguration logConfiguration;
+
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
 
     @BeforeMethod
     public void beforeMethod() {
-        var engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
+        var engine = new Engine( Env.tmpPath( "file-cache" ), 1000 * 60 * 60 * 24 );
         logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
     }
 

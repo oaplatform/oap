@@ -24,14 +24,13 @@
 
 package oap.concurrent;
 
-import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class OnceTest extends AbstractTest {
+public class OnceTest {
     @Test
     public void executeOnce() {
         AtomicInteger count0 = new AtomicInteger();

@@ -46,12 +46,12 @@ public class JsonPatchTest {
             + "\t\"unknown\": 0.0\n"
             + "}";
 
-        TestObj testObj = new TestObj( "i1", 0L, "descr" );
-        Map<String, Object> immutableMap = JsonPatch.patch( testObj, test );
-        testObj = Binder.json.unmarshal( TestObj.class, immutableMap );
-        assertThat( testObj.count ).isEqualTo( 10L );
-        assertThat( testObj.id ).isEqualTo( "i1" );
-        assertThat( testObj.description ).isEqualTo( "descr" );
+        TestObj obj = new TestObj( "i1", 0L, "descr" );
+        Map<String, Object> immutableMap = JsonPatch.patch( obj, test );
+        obj = Binder.json.unmarshal( TestObj.class, immutableMap );
+        assertThat( obj.count ).isEqualTo( 10L );
+        assertThat( obj.id ).isEqualTo( "i1" );
+        assertThat( obj.description ).isEqualTo( "descr" );
     }
 
     @Test( expectedExceptions = JsonException.class )

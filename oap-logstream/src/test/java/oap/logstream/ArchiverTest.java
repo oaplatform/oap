@@ -26,8 +26,9 @@ package oap.logstream;
 
 import oap.io.Files;
 import oap.io.IoStreams;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.DataProvider;
@@ -44,7 +45,10 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
 import static org.joda.time.DateTimeZone.UTC;
 
-public class ArchiverTest extends AbstractTest {
+public class ArchiverTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
 
     @DataProvider
     public Object[][] encoding() {

@@ -31,9 +31,11 @@ import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.Files;
 import oap.media.postprocessing.VastMediaProcessing;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import oap.util.Cuid;
+import oap.util.Lists;
 import oap.util.Pair;
 import oap.ws.SessionManager;
 import oap.ws.WebServices;
@@ -45,7 +47,6 @@ import org.testng.annotations.Test;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static oap.http.testng.HttpAsserts.assertUploadFile;
 import static oap.http.testng.HttpAsserts.httpUrl;
@@ -55,20 +56,24 @@ import static oap.testng.Asserts.pathOfTestResource;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class WsFileUploaderTest extends AbstractTest {
+public class WsFileUploaderTest extends Fixtures {
     private ArrayList<Pair<Media, MediaInfo>> medias = new ArrayList<>();
     private Server server;
     private WebServices ws;
     private SynchronizedThread listener;
     private Kernel kernel;
 
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @BeforeMethod
     public void init() {
         Env.resetPorts();
 
-        kernel = new Kernel( emptyList() );
+        kernel = new Kernel( Lists.empty() );
         kernel.start();
-        Path path = Env.tmpPath( "/tmp" );
+        Path path = Env.tmpPath( "tmp" );
 
         Files.ensureDirectory( path );
 

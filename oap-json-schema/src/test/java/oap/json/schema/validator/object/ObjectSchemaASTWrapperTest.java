@@ -25,9 +25,7 @@
 package oap.json.schema.validator.object;
 
 import oap.json.schema.DefaultSchemaASTWrapper;
-import oap.json.schema.SchemaASTWrapper;
 import oap.json.schema.SchemaId;
-import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
 import java.util.LinkedHashMap;
@@ -35,19 +33,19 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ObjectSchemaASTWrapperTest extends AbstractTest {
+public class ObjectSchemaASTWrapperTest {
     @Test
-    public void testGetChildren() throws Exception {
+    public void getChildren() {
         final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "", "", "id" ) ) {{
             extendsSchema = Optional.of(
                 new ObjectSchemaASTWrapper( new SchemaId( "", "", "id" ) ) {{
                     extendsSchema = Optional.empty();
-                    declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
+                    declaredProperties = new LinkedHashMap<>() {{
                         put( "b", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.b" ) ) );
                     }};
                 }}
             );
-            declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
+            declaredProperties = new LinkedHashMap<>() {{
                 put( "a", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.a" ) ) );
                 put( "b", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.b" ) ) );
             }};
@@ -58,10 +56,10 @@ public class ObjectSchemaASTWrapperTest extends AbstractTest {
     }
 
     @Test
-    public void testGetChildrenWithoutParent() throws Exception {
+    public void getChildrenWithoutParent() {
         final ObjectSchemaASTWrapper ow = new ObjectSchemaASTWrapper( new SchemaId( "", "", "id" ) ) {{
             extendsSchema = Optional.empty();
-            declaredProperties = new LinkedHashMap<String, SchemaASTWrapper<?>>() {{
+            declaredProperties = new LinkedHashMap<>() {{
                 put( "a", new DefaultSchemaASTWrapper( new SchemaId( "", "", "id.a" ) ) );
             }};
         }};

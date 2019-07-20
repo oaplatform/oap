@@ -23,95 +23,16 @@
  */
 package oap.testng;
 
-import lombok.extern.slf4j.Slf4j;
-import oap.io.Files;
-import org.joda.time.DateTimeUtils;
-import org.mockito.MockitoAnnotations;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterSuite;
-import org.testng.annotations.BeforeMethod;
+/**
+ * @see Fixtures
+ */
+@Deprecated
+public abstract class AbstractTest extends Fixtures {
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
-import java.util.Iterator;
-
-import static org.apache.commons.io.FileUtils.iterateFiles;
-import static org.apache.commons.io.filefilter.FileFilterUtils.trueFileFilter;
-
-@Slf4j
-public abstract class AbstractTest {
-    private static final long TEN_HOURS = 1000 * 60 * 60 * 10;
-
-    protected boolean cleanupTemp = true;
-
-    static {
-        System.out.println( "initializing env " + Env.tmpRoot );
+    {
+        fixture( TestDirectory.FIXTURE );
+        fixture( new Mockito( this ) );
+        fixture( ResetSystemTimer.FIXTURE );
     }
 
-    @AfterSuite
-    public final void tryGeneralCleanup() {
-        if( cleanupTemp ) {
-            final long now = System.currentTimeMillis();
-            boolean empty = true;
-            if( !java.nio.file.Files.exists( Env.tmp ) ) return;
-
-            try( var stream = java.nio.file.Files.newDirectoryStream( Env.tmp ) ) {
-                for( Path build : stream ) {
-                    final boolean self = Env.tmpRoot.equals( build );
-                    final long lastModified = java.nio.file.Files.getLastModifiedTime( build ).toMillis();
-                    final long diff = now - lastModified;
-                    if( self || diff > TEN_HOURS ) {
-                        log.info( "delete {}", build );
-                        deleteDirectory( build );
-                    } else {
-                        log.info( "skip {}, self = {}, diff = {}", build, self, diff );
-                        log.trace( "build={}, env={}", build );
-                        log.trace( "now={}, lastModified={}", now, lastModified );
-                        empty = false;
-                    }
-                }
-            } catch( IOException e ) {
-                throw new UncheckedIOException( e );
-            }
-
-            if( empty ) deleteDirectory( Env.tmp );
-        }
-    }
-
-    @AfterClass
-    public final void cleanTempDirectory() {
-        if( cleanupTemp ) deleteDirectory( Env.tmpRoot );
-    }
-
-    @BeforeMethod
-    public final void initMocksAndResetClock() {
-        MockitoAnnotations.initMocks( this );
-        DateTimeUtils.setCurrentMillisSystem();
-    }
-
-    @AfterMethod
-    public final void cleanTempAndResetClock() {
-        if( cleanupTemp ) deleteDirectory( Env.tmpRoot );
-        DateTimeUtils.setCurrentMillisSystem();
-    }
-
-    private void deleteDirectory( Path path ) {
-        log.debug( "cleaning {}...", path );
-        try {
-            Files.delete( path );
-        } catch( UncheckedIOException e ) {
-            final Iterator<File> fileIterator = iterateFiles( Env.tmp.toFile(), trueFileFilter(), trueFileFilter() );
-            while( fileIterator.hasNext() ) {
-                final File next = fileIterator.next();
-                if( next.isDirectory() ) continue;
-
-                System.err.println( "FILE " + next );
-            }
-
-            throw e;
-        }
-    }
 }

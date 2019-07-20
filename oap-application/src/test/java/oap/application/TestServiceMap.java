@@ -31,7 +31,7 @@ import java.util.Map;
 
 @ToString
 public class TestServiceMap {
-    private  TestEntry map;
+    private TestEntry map;
     public Map<String, TestEntry> map1;
 
     public TestServiceMap( Map<String, TestEntry> map ) {

@@ -28,10 +28,10 @@ import org.testng.annotations.Test;
 
 public class DynamicBooleanSchemaTest extends AbstractSchemaTest {
     @Test
-    public void testEq() {
-        var schema = "{additionalProperties: false, type: object, properties: {" +
-            "a.type=string,b:{type = string, enabled: {json-path:a, eq=b}}" +
-            "}}";
+    public void eq() {
+        var schema = "{additionalProperties: false, type: object, properties: {"
+            + "a.type=string,b:{type = string, enabled: {json-path:a, eq=b}}"
+            + "}}";
 
         assertOk( schema, "{'a':'1'}" );
         assertOk( schema, "{'a':'b'}" );
@@ -41,10 +41,10 @@ public class DynamicBooleanSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testNe() {
-        var schema = "{additionalProperties: false, type: object, properties: {" +
-            "a.type=string,b:{type = string, enabled: {json-path:a, ne=b}}" +
-            "}}";
+    public void ne() {
+        var schema = "{additionalProperties: false, type: object, properties: {"
+            + "a.type=string,b:{type = string, enabled: {json-path:a, ne=b}}"
+            + "}}";
 
         assertOk( schema, "{'a':'1'}" );
         assertOk( schema, "{'a':'b'}" );
@@ -54,10 +54,10 @@ public class DynamicBooleanSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testIn() {
-        var schema = "{additionalProperties: false, type: object, properties: {" +
-            "a.type=string,b:{type = string, enabled: {json-path:a, in=[a,b]}}" +
-            "}}";
+    public void in() {
+        var schema = "{additionalProperties: false, type: object, properties: {"
+            + "a.type=string,b:{type = string, enabled: {json-path:a, in=[a,b]}}"
+            + "}}";
 
         assertOk( schema, "{'a':'1'}" );
         assertOk( schema, "{'a':'b'}" );

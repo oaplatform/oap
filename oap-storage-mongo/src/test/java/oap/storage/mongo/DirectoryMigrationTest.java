@@ -39,7 +39,7 @@ public class DirectoryMigrationTest extends AbstractMongoTest {
     }
 
     @Test
-    public void testMigration() {
+    public void migration() {
         var migration = new DirectoryMigration( Env.deployTestData( getClass() ) );
         migration.variables.put( "testB", "true" );
         migration.variables.put( "testS", "\"true\"" );
@@ -50,15 +50,15 @@ public class DirectoryMigrationTest extends AbstractMongoTest {
         assertThat( version ).isNotNull();
         assertThat( version.get( "value" ) ).isEqualTo( 10 );
 
-        testValue( "test", "test", "c", 17 );
-        testValue( "test", "test3", "v", 1 );
+        value( "test", "test", "c", 17 );
+        value( "test", "test3", "v", 1 );
 
         migration.run( mongoClient.database );
-        testValue( "test", "test", "c", 17 );
-        testValue( "test", "test3", "v", 1 );
+        value( "test", "test", "c", 17 );
+        value( "test", "test3", "v", 1 );
     }
 
-    public void testValue( String collection, String id, String actual, int expected ) {
+    public void value( String collection, String id, String actual, int expected ) {
         assertThat( mongoClient.database.getCollection( collection ).find( eq( "_id", id ) ).first().getInteger( actual ) )
             .isEqualTo( expected );
     }

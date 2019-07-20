@@ -33,7 +33,7 @@ import static oap.http.testng.HttpAsserts.assertGet;
 
 public class WebServicesProfileTest extends AbstractWebServicesTest {
 
-    protected TestWebServer testServiceProfiles() {
+    protected TestWebServer serviceProfiles() {
         return webServer( ( ws, kernel ) -> {
             kernel.register( "no-profile", new TestWS() );
             kernel.register( "with-profile", new TestWS() );
@@ -44,28 +44,28 @@ public class WebServicesProfileTest extends AbstractWebServicesTest {
     }
 
     @Test
-    public void testShouldStartWebServiceIfProfileIsNotConfiguredForServiceAndWS() {
-        try( var ignored = testServiceProfiles() ) {
+    public void shouldStartWebServiceIfProfileIsNotConfiguredForServiceAndWS() {
+        try( var ignored = serviceProfiles() ) {
             assertGet( HttpAsserts.httpUrl( "/test-no-profile/text?value=empty" ) ).isOk().hasBody( "\"ok\"" );
         }
     }
 
     @Test
-    public void testShouldStartWebServiceIfProfileIsConfiguredForServiceAndWS() {
-        try( var ignored = testServiceProfiles() ) {
+    public void shouldStartWebServiceIfProfileIsConfiguredForServiceAndWS() {
+        try( var ignored = serviceProfiles() ) {
             assertGet( HttpAsserts.httpUrl( "/test-with-profile/text?value=empty" ) ).isOk().hasBody( "\"ok\"" );
         }
     }
 
     @Test
-    public void testShouldNotStartWebServiceIfProfileIsConfiguredForServiceAndNotWS() {
-        try( var ignored = testServiceProfiles() ) {
+    public void shouldNotStartWebServiceIfProfileIsConfiguredForServiceAndNotWS() {
+        try( var ignored = serviceProfiles() ) {
             assertGet( HttpAsserts.httpUrl( "/new-profile/text?value=empty" ) ).hasCode( 501 );
         }
     }
 
     @Test
-    public void testConfigProfile() {
+    public void configProfile() {
         try( var ignored = webServer( ( ws, kernel ) -> {
             kernel.register( "test", new TestWS() );
             kernel.enableProfiles( "test-profile" );

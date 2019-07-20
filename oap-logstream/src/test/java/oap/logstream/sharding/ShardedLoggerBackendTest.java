@@ -50,7 +50,7 @@ public class ShardedLoggerBackendTest {
     ShardMapper mapper = mock( ShardMapper.class );
 
     @Test
-    public void testRouting() {
+    public void routing() {
         LoggerBackend log1 = mock( LoggerBackend.class );
         LoggerBackend log2 = mock( LoggerBackend.class );
 
@@ -70,7 +70,7 @@ public class ShardedLoggerBackendTest {
     }
 
     @Test( expectedExceptions = NoLoggerConfiguredForShardsException.class )
-    public void testUnconfiguredShards() {
+    public void unconfiguredShards() {
         LoggerBackend log1 = mock( LoggerBackend.class );
 
         LoggerShardRange shard0To100 = new LoggerShardRange( log1, 0, 100 );
@@ -81,7 +81,7 @@ public class ShardedLoggerBackendTest {
     }
 
     @Test
-    public void testAvailability() {
+    public void availability() {
         LoggerBackend log1 = mock( LoggerBackend.class );
         LoggerBackend log2 = mock( LoggerBackend.class );
 

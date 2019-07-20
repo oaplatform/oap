@@ -24,7 +24,6 @@
 
 package oap.reflect;
 
-import oap.testng.AbstractTest;
 import oap.util.BitSet;
 import org.testng.annotations.Test;
 
@@ -34,7 +33,7 @@ import java.nio.file.Paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CoercionsTest extends AbstractTest {
+public class CoercionsTest {
     @Test
     public void cast() {
         Coercions coercions = Coercions.basic().withIdentity();

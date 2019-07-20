@@ -25,18 +25,16 @@
 package oap.ws.cat;
 
 import oap.http.HttpResponse;
-import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Strings;
 import org.testng.annotations.Test;
 
 import static oap.testng.Asserts.assertString;
-import static oap.ws.cat.CatApi.table;
 
-public class CatApiTest extends AbstractTest {
+public class CatApiTest {
     @Test
-    public void testTable() throws Exception {
-        final HttpResponse table = table( Lists.of( "1", "test23" ), Lists.of( "bbbb", "2" ) );
+    public void table() throws Exception {
+        final HttpResponse table = CatApi.table( Lists.of( "1", "test23" ), Lists.of( "bbbb", "2" ) );
 
         assertString( Strings.readString( table.contentEntity.getContent() ) ).isEqualTo( "1    test23\n"
             + "bbbb 2     \n" );

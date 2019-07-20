@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @see <a href="https://docs.mongodb.com/manual/administration/install-community/">Install MongoDB Community Edition</a>
  * @see <a href="https://docs.mongodb.com/manual/tutorial/deploy-replica-set-for-testing/">Deploy a Replica Set for
- *      Testing and Development</a>
+ * Testing and Development</a>
  */
 @Slf4j
 public class MongoStorageTest extends AbstractMongoTest {

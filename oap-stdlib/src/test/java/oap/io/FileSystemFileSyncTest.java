@@ -24,17 +24,24 @@
 
 package oap.io;
 
-import oap.testng.AbstractTest;
+import lombok.SneakyThrows;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.Test;
 
 import java.nio.file.Paths;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class FileSystemFileSyncTest extends AbstractTest {
+public class FileSystemFileSyncTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @Test
-    public void testSync() throws Exception {
+    @SneakyThrows
+    public void sync() {
         StringBuilder b = new StringBuilder();
 
         var remoteFile = Env.tmpPath( "rtest.file" ).toUri();

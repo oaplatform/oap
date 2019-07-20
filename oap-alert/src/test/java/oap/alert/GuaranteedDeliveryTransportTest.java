@@ -38,7 +38,7 @@ import static org.mockito.Mockito.verify;
 public class GuaranteedDeliveryTransportTest {
 
     @Test
-    public void testRetryOnFailure() throws InterruptedException {
+    public void retryOnFailure() throws InterruptedException {
         GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport( 10 );
         MessageTransport<String> backend = mock( MessageTransport.class );
         doThrow( IOException.class ).doNothing().when( backend ).send( anyString() );
@@ -48,7 +48,7 @@ public class GuaranteedDeliveryTransportTest {
     }
 
     @Test
-    public void testStopsAfterMaxAttempts() throws InterruptedException {
+    public void stopsAfterMaxAttempts() throws InterruptedException {
         final int maxAttempts = 3;
         GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport( 10, maxAttempts );
         MessageTransport<String> backend = mock( MessageTransport.class );
@@ -59,7 +59,7 @@ public class GuaranteedDeliveryTransportTest {
     }
 
     @Test( expectedExceptions = InterruptedException.class )
-    public void testStopWhenInterrupted() throws InterruptedException {
+    public void stopWhenInterrupted() throws InterruptedException {
         GuaranteedDeliveryTransport tr = new GuaranteedDeliveryTransport( 10 );
         MessageTransport<String> backend = mock( MessageTransport.class );
         doThrow( InterruptedException.class ).doNothing().when( backend ).send( anyString() );

@@ -29,7 +29,7 @@ import org.testng.annotations.Test;
 
 public class ObjectSchemaTest extends AbstractSchemaTest {
     @Test
-    public void testObject() {
+    public void object() {
         String schema = "{type: object, properties: {}}";
 
         assertOk( schema, "{}" );
@@ -39,7 +39,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testObjectWithField() {
+    public void objectWithField() {
         String schema = "{type: object, properties: {a: {type: string}}}";
 
         assertOk( schema, "{}" );
@@ -49,20 +49,20 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testObjectObjectWithField() {
-        String schema = "{" +
-            "type: object, " +
-            "properties: {" +
-            "  a: {" +
-            "    type: object, " +
-            "    properties: {" +
-            "      a: {" +
-            "        type: string" +
-            "      }" +
-            "    }" +
-            "  }" +
-            "}" +
-            "}";
+    public void objectObjectWithField() {
+        String schema = "{"
+            + "type: object, "
+            + "properties: {"
+            + "  a: {"
+            + "    type: object, "
+            + "    properties: {"
+            + "      a: {"
+            + "        type: string"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}"
+            + "}";
 
         assertOk( schema, "{}" );
         assertOk( schema, "{'a': {'a': 'test'}}" );
@@ -71,7 +71,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testAdditionalPropertiesTrue() {
+    public void additionalPropertiesTrue() {
         String schema = "{type: object, properties: {a: {type: string}}}";
 
         assertOk( schema, "{}" );
@@ -79,7 +79,7 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testAdditionalPropertiesFalse() {
+    public void additionalPropertiesFalse() {
         String schema = "{additionalProperties: false, type: object, properties: {a: {type: string}}}";
 
         assertOk( schema, "{}" );
@@ -87,21 +87,21 @@ public class ObjectSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testAdditionalPropertiesFalseInheritance() {
-        String schema = "{" +
-            "additionalProperties: false, " +
-            "type: object, " +
-            "properties: {" +
-            " a: {" +
-            "  type: object," +
-            "  properties: {" +
-            "   b: {" +
-            "    type: string" +
-            "   }" +
-            "  }" +
-            " }" +
-            "}" +
-            "}";
+    public void additionalPropertiesFalseInheritance() {
+        String schema = "{"
+            + "additionalProperties: false, "
+            + "type: object, "
+            + "properties: {"
+            + " a: {"
+            + "  type: object,"
+            + "  properties: {"
+            + "   b: {"
+            + "    type: string"
+            + "   }"
+            + "  }"
+            + " }"
+            + "}"
+            + "}";
 
         assertOk( schema, "{}" );
         assertFailure( schema, "{'a': {'b': 'test', 'c': 10}}", "/a: additional properties are not permitted [c]" );

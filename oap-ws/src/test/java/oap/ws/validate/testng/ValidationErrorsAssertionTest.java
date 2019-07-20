@@ -40,14 +40,12 @@ public class ValidationErrorsAssertionTest {
         assertThat(
             validating( new CWS() )
                 .isError( 404, "not found" )
-                .build()
-                .m( "a" ) )
+                .instance.m( "a" ) )
             .isNull();
         assertThat(
             validating( new CWS() )
                 .isError( 404, "not found" )
-                .build()
-                .m2( "a" ) )
+                .instance.m2( "a" ) )
             .isNull();
 
         assertThat(
@@ -55,27 +53,23 @@ public class ValidationErrorsAssertionTest {
                 .isFailed()
                 .hasCode( 404 )
                 .containsErrors( "not found" )
-                .build()
-                .m( "b" ) )
+                .instance.m( "b" ) )
             .isNull();
         assertThat(
             validating( new CWS() )
                 .isFailed()
                 .hasCode( 404 )
                 .containsErrors( "not found" )
-                .build()
-                .m2( "b" ) )
+                .instance.m2( "b" ) )
             .isNull();
 
         assertThat( validating( new CWS() )
             .isNotFailed()
-            .build()
-            .m( "c" ) )
+            .instance.m( "c" ) )
             .isEqualTo( "c" );
         assertThat( validating( new CWS() )
             .isNotFailed()
-            .build()
-            .m2( "c" ) )
+            .instance.m2( "c" ) )
             .isEqualTo( "c" );
     }
 
@@ -85,8 +79,7 @@ public class ValidationErrorsAssertionTest {
             .isFailed()
             .hasCode( 400 )
             .containsErrors( "/b: required property is missing", "additional properties are not permitted [a]" )
-            .build()
-            .b( new B() );
+            .instance.b( new B() );
     }
 
 }

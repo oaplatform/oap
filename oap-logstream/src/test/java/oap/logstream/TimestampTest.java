@@ -24,7 +24,6 @@
 
 package oap.logstream;
 
-import oap.testng.AbstractTest;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
@@ -34,7 +33,7 @@ import java.nio.file.Paths;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
 
-public class TimestampTest extends AbstractTest {
+public class TimestampTest {
 
     @Test
     public void format() {
@@ -45,7 +44,7 @@ public class TimestampTest extends AbstractTest {
     }
 
     @Test
-    public void directoryName() throws Exception {
+    public void directoryName() {
         assertThat( Timestamp.directoryName( "2015-12-03-11-05" ) ).isEqualTo( "2015-12/03" );
     }
 

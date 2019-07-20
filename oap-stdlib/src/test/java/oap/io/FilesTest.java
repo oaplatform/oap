@@ -23,8 +23,9 @@
  */
 package oap.io;
 
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import oap.util.Lists;
 import oap.util.Sets;
 import org.testng.annotations.DataProvider;
@@ -49,7 +50,11 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 
-public class FilesTest extends AbstractTest {
+public class FilesTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @Test
     public void wildcard() {
         Files.writeString( Env.tmp( "/wildcard/1.txt" ), "1" );
@@ -164,7 +169,7 @@ public class FilesTest extends AbstractTest {
     }
 
     @Test
-    public void testMove() {
+    public void move() {
         final Path path = tmpPath( "file.txt" );
         final Path newPath = tmpPath( "test/newFile.txt" );
         Files.writeString( path, "test" );
@@ -177,7 +182,7 @@ public class FilesTest extends AbstractTest {
     }
 
     @Test
-    public void testDeleteEmptyDirectories() throws IOException {
+    public void deleteEmptyDirectories() throws IOException {
         Files.writeString( Env.tmp( "/dir1/1.txt" ), "1" );
         Files.writeString( Env.tmp( "/dir1/dir2/1.txt" ), "1" );
 

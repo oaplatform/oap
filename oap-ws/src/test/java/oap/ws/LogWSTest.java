@@ -34,7 +34,7 @@ import org.testng.annotations.Test;
 @Slf4j
 public class LogWSTest {
     @Test( enabled = false )
-    public void testLogs() {
+    public void logs() {
         var logWS = new LogWS();
 
         log.trace( "test trace" );

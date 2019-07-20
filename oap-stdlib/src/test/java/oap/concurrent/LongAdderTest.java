@@ -36,7 +36,7 @@ import static org.assertj.core.api.Java6Assertions.assertThat;
 
 public class LongAdderTest {
     @Test
-    public void testSerializarion() throws IOException, ClassNotFoundException {
+    public void serializarion() throws IOException, ClassNotFoundException {
         var bot = new ByteArrayOutputStream();
         try( var oos = new ObjectOutputStream( bot ) ) {
             var la = new LongAdder();

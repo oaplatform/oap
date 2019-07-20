@@ -16,9 +16,9 @@ public class GZIPCompressingInputStreamTest {
 
     @Test
     public void test() throws IOException {
-        testCompressor( "test1 test2 test3" );
-        testCompressor( "1MB binary data", createTestPattern( 1024 * 1024 ) );
-        for( int i = 0; i < 4096; i++ ) testCompressor( i + " bytes of binary data", createTestPattern( i ) );
+        compressor( "test1 test2 test3" );
+        compressor( "1MB binary data", createTestPattern( 1024 * 1024 ) );
+        for( int i = 0; i < 4096; i++ ) compressor( i + " bytes of binary data", createTestPattern( i ) );
     }
 
     protected byte[] createTestPattern( int size ) {
@@ -28,11 +28,11 @@ public class GZIPCompressingInputStreamTest {
         return data;
     }
 
-    protected void testCompressor( String data ) throws IOException {
-        testCompressor( "String: " + data, data.getBytes() );
+    protected void compressor( String data ) throws IOException {
+        compressor( "String: " + data, data.getBytes() );
     }
 
-    protected void testCompressor( String dataInfo, byte[] data ) throws IOException {
+    protected void compressor( String dataInfo, byte[] data ) throws IOException {
         InputStream uncompressedIn = new ByteArrayInputStream( data );
         InputStream compressedIn = new GZIPCompressingInputStream( uncompressedIn );
         InputStream uncompressedOut = new GZIPInputStream( compressedIn );

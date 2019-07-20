@@ -169,7 +169,7 @@ public class MongoPersistence<T> implements Closeable, Runnable, Storage.DataLis
      * It persists the objects modified earlier than {@code last} to MongoDB
      *
      * @param last executed sync
-     * TODO: avoid explicit usage of fsync
+     *             TODO: avoid explicit usage of fsync
      */
     private void fsync( long last ) {
         Threads.synchronously( lock, () -> {

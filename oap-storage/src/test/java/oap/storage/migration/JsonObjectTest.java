@@ -25,49 +25,49 @@
 package oap.storage.migration;
 
 import oap.json.Binder;
-import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
+import javax.script.ScriptException;
 import java.util.Map;
 
 import static java.util.Optional.empty;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class JsonObjectTest extends AbstractTest {
+public class JsonObjectTest {
 
     private static Map<String, Object> map( String map ) {
         return Binder.hoconWithoutSystemProperties.unmarshal( Map.class, map );
     }
 
     @Test
-    public void rename() throws Exception {
+    public void rename() {
         final JsonObject obj = new JsonObject( empty(), empty(), map( "{field1 = v1}" ) );
         assertThat( obj.rename( "field1", "field2" ).underlying ).isEqualTo( map( "{field2 = v1}" ) );
     }
 
     @Test
-    public void renameInner() throws Exception {
+    public void renameInner() {
         final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj.field1 = v1}" ) );
         assertThat( obj.rename( "obj.field1", "obj.field2" ).underlying )
             .isEqualTo( map( "{obj.field2 = v1}" ) );
     }
 
     @Test
-    public void renameIntoArray() throws Exception {
+    public void renameIntoArray() {
         final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1}, {field1 = v2}]}" ) );
         assertThat( obj.rename( "obj.field1", "obj.field2" ).underlying )
             .isEqualTo( map( "{obj = [{field2 = v1}, {field2 = v2}]}" ) );
     }
 
     @Test
-    public void renameIntoArray2() throws Exception {
+    public void renameIntoArray2() {
         final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1}, {field1 = v2}]}" ) );
         assertThat( obj.rename( "obj.field1", "obj.newObj.field2" ).underlying )
             .isEqualTo( map( "{obj = [{newObj.field2 = v1}, {newObj.field2 = v2}]}" ) );
     }
 
     @Test
-    public void multipleRenameIntoArray() throws Exception {
+    public void multipleRenameIntoArray() {
         final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1, field2 = v1}, {field1 = v2, field2 = v2}]}" ) );
         assertThat( obj
             .rename( "obj.field1", "obj.newObj.newfield1" )
@@ -77,17 +77,17 @@ public class JsonObjectTest extends AbstractTest {
     }
 
     @Test
-    public void mapScript() throws Exception {
+    public void mapScript() throws ScriptException {
         final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
 
-        assertThat( obj.mapScript( "" +
-            "for each (var el in obj.obj) {" +
-            "  if(el.field2 == 'v1') el.field1 = 'new';" +
-            "}" ).underlying ).isEqualTo( map( "{obj = [{field1 = new, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
+        assertThat( obj.mapScript( ""
+            + "for each (var el in obj.obj) {"
+            + "  if(el.field2 == 'v1') el.field1 = 'new';"
+            + "}" ).underlying ).isEqualTo( map( "{obj = [{field1 = new, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
     }
 
     @Test
-    public void mapScriptFromResource() throws Exception {
+    public void mapScriptFromResource() {
         final JsonObject obj = new JsonObject( empty(), empty(), map( "{obj = [{field1 = v1, field2 = v1}, {field1 = v2, field3 = v2}]}" ) );
 
         assertThat( obj.mapScriptFromResource( "test/jsonobj.js" ).underlying )

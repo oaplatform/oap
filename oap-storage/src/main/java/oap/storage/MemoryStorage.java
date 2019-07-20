@@ -29,11 +29,11 @@ import oap.util.Maps;
 import oap.util.Optionals;
 import oap.util.Stream;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -41,15 +41,14 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
     public final Identifier<T> identifier;
     protected final Lock lock;
-    private final List<DataListener<T>> dataListeners = new ArrayList<>();
-    private final ArrayList<Constraint<T>> constraints = new ArrayList<>();
-    protected volatile ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
+    protected final List<DataListener<T>> dataListeners = new ArrayList<>();
+    protected final ArrayList<Constraint<T>> constraints = new ArrayList<>();
+    protected final ConcurrentMap<String, Metadata<T>> data = new ConcurrentHashMap<>();
 
     public MemoryStorage( Identifier<T> identifier, Lock lock ) {
         this.identifier = identifier;
@@ -218,25 +217,6 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
         return data.size();
     }
 
-    /**
-     * remove this method. This is statsdb specific logic. Should be handled with another type of storage.
-     */
-    @Override
-    public synchronized Map<String, T> snapshot( boolean clean ) {
-        Map<String, T> data = this.data.entrySet().stream().collect( Collectors.toMap( Map.Entry::getKey, entry -> entry.getValue().object ) );
-        if( clean ) this.data = new ConcurrentHashMap<>();
-        return data;
-    }
-
-    /**
-     * @see Storage#fsync()
-     */
-    @Override
-    @Deprecated(forRemoval=true)
-    public void fsync() {
-        for( DataListener<T> dataListener : this.dataListeners ) dataListener.fsync();
-    }
-
     public void fireUpdated( T object, boolean isNew ) {
         for( DataListener<T> dataListener : this.dataListeners ) dataListener.updated( object, isNew );
     }
@@ -280,11 +260,12 @@ public class MemoryStorage<T> implements Storage<T>, ReplicationMaster<T> {
 
     @Override
     public void close() {
-        data = null; // to make it accessible for GC
+        data.clear();
     }
 
 
     @Override
+    @Nonnull
     public Iterator<T> iterator() {
         return select().iterator();
     }

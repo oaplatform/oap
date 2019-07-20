@@ -27,8 +27,9 @@ package oap.storage;
 import oap.json.TypeIdFactory;
 import oap.storage.migration.JsonMetadata;
 import oap.storage.migration.Migration;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import oap.util.Lists;
 import org.testng.annotations.Test;
 
@@ -37,7 +38,11 @@ import java.nio.file.Path;
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DirectoryPersistenceMigrationTest extends AbstractTest {
+public class DirectoryPersistenceMigrationTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     static {
         TypeIdFactory.register( Bean.class, Bean.class.getName() );
     }

@@ -25,8 +25,9 @@
 package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.apache.http.entity.ContentType;
 import org.mockserver.integration.ClientAndServer;
 import org.testng.annotations.AfterMethod;
@@ -46,10 +47,14 @@ import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.HttpResponse.response;
 
 @Slf4j
-public class ClientTest extends AbstractTest {
+public class ClientTest extends Fixtures {
     private static final int PORT = Env.port( ClientTest.class.toString() );
     private ClientAndServer mockServer;
     private Client.Response response;
+
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
 
     @BeforeMethod
     public void start() {
@@ -113,7 +118,7 @@ public class ClientTest extends AbstractTest {
     }
 
     @Test
-    public void testPostOutputStream() {
+    public void postOutputStream() {
         mockServer.when( request()
                 .withMethod( "POST" )
                 .withPath( "/test" )

@@ -28,27 +28,27 @@ import org.testng.annotations.Test;
 
 public class PartialSchemaTest extends AbstractSchemaTest {
     @Test
-    public void testObjectPropertiesEnabledDynamic() {
-        String schema = "{" +
-            "  additionalProperties: false, " +
-            "  type: object, " +
-            "  properties {" +
-            "    v1.type = string," +
-            "    v2 {" +
-            "      type = array," +
-            "      items {" +
-            "        type = object," +
-            "        properties {" +
-            "          o2 {type = string}," +
-            "          v2 {" +
-            "            type = string," +
-            "            enabled = {json-path: v1,eq: test}" +
-            "          }" +
-            "        }" +
-            "      }" +
-            "    }" +
-            "  }" +
-            "}";
+    public void objectPropertiesEnabledDynamic() {
+        String schema = "{"
+            + "  additionalProperties: false, "
+            + "  type: object, "
+            + "  properties {"
+            + "    v1.type = string,"
+            + "    v2 {"
+            + "      type = array,"
+            + "      items {"
+            + "        type = object,"
+            + "        properties {"
+            + "          o2 {type = string},"
+            + "          v2 {"
+            + "            type = string,"
+            + "            enabled = {json-path: v1,eq: test}"
+            + "          }"
+            + "        }"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}";
 
         assertPartialOk( schema, "{'v2':[]}", "{}", "v2.items" );
         assertPartialOk( schema, "{'v1':'10', 'v2':[]}", "{'o2':'10'}", "v2.items" );
@@ -58,27 +58,27 @@ public class PartialSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testInnerObjectPath() {
-        String schema = "{" +
-            "  additionalProperties: false, " +
-            "  type: object, " +
-            "  properties {" +
-            "    v1.type = string," +
-            "    v2 {" +
-            "      type = array," +
-            "      items {" +
-            "        type = object," +
-            "        properties {" +
-            "          o2 {type = string}," +
-            "          v2 {" +
-            "            type = string," +
-            "            enabled = {json-path: v2.items.o2,eq: test}" +
-            "          }" +
-            "        }" +
-            "      }" +
-            "    }" +
-            "  }" +
-            "}";
+    public void innerObjectPath() {
+        String schema = "{"
+            + "  additionalProperties: false, "
+            + "  type: object, "
+            + "  properties {"
+            + "    v1.type = string,"
+            + "    v2 {"
+            + "      type = array,"
+            + "      items {"
+            + "        type = object,"
+            + "        properties {"
+            + "          o2 {type = string},"
+            + "          v2 {"
+            + "            type = string,"
+            + "            enabled = {json-path: v2.items.o2,eq: test}"
+            + "          }"
+            + "        }"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}";
 
         assertPartialOk( schema, "{'v2':[]}", "{}", "v2.items" );
         assertPartialOk( schema, "{'v1':'10', 'v2':[]}", "{'o2':'10'}", "v2.items" );

@@ -90,7 +90,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
     }
 
     public static class ValidatedInvocation<I> {
-        private final I proxy;
+        public final I instance;
         private List<Function<ValidationErrorsAssertion, ValidationErrorsAssertion>> assertions = new ArrayList<>();
 
         @SuppressWarnings( "unchecked" )
@@ -156,7 +156,7 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
                     }
                 };
 
-                proxy = ( I ) factory.create( new Class<?>[0], new Object[0], handler );
+                this.instance = ( I ) factory.create( new Class<?>[0], new Object[0], handler );
             } catch( NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e ) {
                 throw Throwables.propagate( e );
             }
@@ -191,8 +191,10 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
             assertions.forEach( f -> f.apply( assertion ) );
         }
 
+        @Deprecated
         public I build() {
-            return proxy;
+            return instance;
         }
+
     }
 }

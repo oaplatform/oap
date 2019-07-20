@@ -41,7 +41,7 @@ public class LongAdderHistogramTest {
     }
 
     @Test
-    public void testHour() {
+    public void hour() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
         var histogram = new LongAdderHistogram( 5, PERIOD_HOUR );
         histogram.inc( PERIOD_HOUR, 1 );
@@ -52,7 +52,7 @@ public class LongAdderHistogramTest {
     }
 
     @Test
-    public void testHourShiftOne() {
+    public void hourShiftOne() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
         var histogram = new LongAdderHistogram( 5, PERIOD_HOUR );
         histogram.inc( PERIOD_HOUR, 3 );
@@ -66,7 +66,7 @@ public class LongAdderHistogramTest {
     }
 
     @Test
-    public void testHistogramShiftAll() {
+    public void histogramShiftAll() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
         var histogram = new LongAdderHistogram( 5, PERIOD_HOUR );
         histogram.inc( PERIOD_HOUR, 3 );
@@ -76,7 +76,7 @@ public class LongAdderHistogramTest {
     }
 
     @Test
-    public void testMerge() {
+    public void merge() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
         var master = new LongAdderHistogram( new LongAdder[] { new LongAdder( 1 ), new LongAdder( 4 ), new LongAdder( 0 ) }, 0 );
         var update = new LongAdderHistogram( new LongAdder[] { new LongAdder( 2 ), new LongAdder( 0 ), new LongAdder( 0 ) }, 0 );
@@ -87,7 +87,7 @@ public class LongAdderHistogramTest {
     }
 
     @Test
-    public void testMergeShift() {
+    public void mergeShift() {
         DateTimeUtils.setCurrentMillisFixed( 0 );
         var master = new LongAdderHistogram( new LongAdder[] { new LongAdder( 1 ), new LongAdder( 4 ), new LongAdder( 0 ) }, 0 );
 

@@ -68,7 +68,7 @@ public class ListsTest {
 
 
     @Test
-    public void testMapToIntArray() {
+    public void mapToIntArray() {
         assertThat( Lists.mapToIntArray( asList( "1", "2", "3" ), Integer::parseInt ) ).containsExactly( 1, 2, 3 );
     }
 }

@@ -33,8 +33,9 @@ import lombok.ToString;
 import oap.concurrent.LongAdder;
 import oap.json.testng.JsonAsserts;
 import oap.reflect.TypeRef;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import oap.util.Dates;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -56,7 +57,10 @@ import static oap.testng.Asserts.assertString;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class BinderTest extends AbstractTest {
+public class BinderTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
 
     //todo generic map-list binding
     private static <T> void assertBind( Class<T> clazz, T source ) {
@@ -105,7 +109,7 @@ public class BinderTest extends AbstractTest {
     }
 
     @Test
-    public void testDeserializeTimeToNumber() {
+    public void deserializeTimeToNumber() {
         assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 1s}" ).l ).isEqualTo( 1000L );
         assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 1ms}" ).l ).isEqualTo( 1L );
         assertThat( Binder.hocon.<Bean>unmarshal( Bean.class, "{l = 2m}" ).l ).isEqualTo( 1000L * 60 * 2 );
@@ -283,7 +287,7 @@ public class BinderTest extends AbstractTest {
     }
 
     @Test
-    public void testUpdate() {
+    public void update() {
         var obj = new Bean( "1", 1, null );
         Binder.update( obj, singletonMap( "str", "test" ) );
         assertThat( obj.str ).isEqualTo( "test" );

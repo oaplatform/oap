@@ -32,37 +32,37 @@ import static oap.testng.Asserts.assertString;
 
 public class ElasticSearchSchemaTest extends AbstractSchemaTest {
     @Test
-    public void testConvert_string() throws Exception {
+    public void convertString() {
         assertString( convert( schema( "{type:object,properties:{a: {type:string}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"keyword\"}}}" );
     }
 
     @Test
-    public void testConvert__id() throws Exception {
+    public void convert_id() throws Exception {
         assertString( convert( schema( "{type:object,properties:{_id: {type:string}}}" ) ) )
             .isEqualTo( "{\"properties\":{}}" );
     }
 
     @Test
-    public void testConvert_dictionary() throws Exception {
+    public void convertDictionary() {
         assertString( convert( schema( "{type:object,properties:{a: {type: dictionary, name: dict}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"keyword\"}}}" );
     }
 
     @Test
-    public void testConvert_date() throws Exception {
+    public void convertDate() {
         assertString( convert( schema( "{type:object,properties:{a: {type:date}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"date\"}}}" );
     }
 
     @Test
-    public void testConvert_text() throws Exception {
+    public void convertText() {
         assertString( convert( schema( "{type:object,properties:{a: {type:text}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"text\"}}}" );
     }
 
     @Test
-    public void testConvert_string_include_in_all() throws Exception {
+    public void convertString_include_in_all() throws Exception {
         assertString( convert( schema( "{type:object,properties:{a: {type:string,include_in_all:false}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"keyword\",\"include_in_all\":false}}}" );
         assertString( convert( schema( "{type:object,properties:{a: {type:string,include_in_all:true}}}" ) ) )
@@ -70,7 +70,7 @@ public class ElasticSearchSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testConvert_string_index() throws Exception {
+    public void convertStringIndex() {
         assertString( convert( schema( "{type:object,properties:{a: {type:string,index:false}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"keyword\",\"index\":false}}}" );
         assertString( convert( schema( "{type:object,properties:{a: {type:string,index:true}}}" ) ) )
@@ -78,55 +78,55 @@ public class ElasticSearchSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testConvert_string_analyzer() throws Exception {
+    public void convertStringAnalyzer() {
         assertString( convert( schema( "{type:object,properties:{a: {type:string,analyzer:english}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"keyword\",\"analyzer\":\"english\"}}}" );
     }
 
     @Test
-    public void testConvert_boolean() throws Exception {
+    public void convertBoolean() {
         assertString( convert( schema( "{type:object,properties:{a: {type:boolean}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"boolean\"}}}" );
     }
 
     @Test
-    public void testConvert_integer() throws Exception {
+    public void convertInteger() {
         assertString( convert( schema( "{type:object,properties:{a: {type:integer}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"long\"}}}" );
     }
 
     @Test
-    public void testConvert_long() throws Exception {
+    public void convertLong() {
         assertString( convert( schema( "{type:object,properties:{a: {type:long}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"long\"}}}" );
     }
 
     @Test
-    public void testConvert_double() throws Exception {
+    public void convertDouble() {
         assertString( convert( schema( "{type:object,properties:{a: {type:double}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"double\"}}}" );
     }
 
     @Test
-    public void testConvert_object() throws Exception {
+    public void convertObject() {
         assertString( convert( schema( "{type:object,properties:{a: {type:object,properties:{a:{type:date}}}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"date\"}}}}}" );
     }
 
     @Test
-    public void testConvert_object_nested() throws Exception {
+    public void convertObjectNested() {
         assertString( convert( schema( "{type:object,properties:{a: {type:object,nested:true,properties:{a:{type:date}}}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"nested\",\"properties\":{\"a\":{\"type\":\"date\"}}}}}" );
     }
 
     @Test
-    public void testConvert_array() throws Exception {
+    public void convertArray() {
         assertString( convert( schema( "{type:object,properties:{a: {type:array,items:{type:date}}}}" ) ) )
             .isEqualTo( "{\"properties\":{\"a\":{\"type\":\"date\"}}}" );
     }
 
     @Test
-    public void testConvert_dynamic() throws Exception {
+    public void convertDynamic() {
         assertString( convert( schema( "{type:object,dynamic:true,properties:{a: {type:object,properties:{a:{type:date}}}}}" ) ) )
             .isEqualTo( "{\"dynamic\":\"true\",\"properties\":{\"a\":{\"type\":\"object\",\"properties\":{\"a\":{\"type\":\"date\"}}}}}" );
         assertString( convert( schema( "{type:object,dynamic:false,properties:{a: {type:object,properties:{a:{type:date}}}}}" ) ) )

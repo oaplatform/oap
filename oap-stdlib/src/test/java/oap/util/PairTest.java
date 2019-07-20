@@ -32,7 +32,7 @@ import static org.testng.Assert.assertEquals;
 public class PairTest {
 
     @Test
-    public void testEquals() throws Exception {
+    public void equals() throws Exception {
         assertEquals( __( 1, "1" ), __( 1, "1" ) );
         assertEquals( __( 1, new byte[] { 1, 2, 3 } ), __( 1, new byte[] { 1, 2, 3 } ) );
         assertEquals( __( new String[] { "1" }, new byte[] { 1, 2, 3 } ),

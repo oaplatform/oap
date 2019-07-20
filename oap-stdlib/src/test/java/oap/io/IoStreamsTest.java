@@ -23,8 +23,10 @@
  */
 package oap.io;
 
+import lombok.SneakyThrows;
 import oap.io.IoStreams.Encoding;
-import oap.testng.AbstractTest;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -41,9 +43,14 @@ import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class IoStreamsTest extends AbstractTest {
+public class IoStreamsTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @Test
-    public void emptyGz() throws IOException {
+    @SneakyThrows
+    public void emptyGz() {
         Path path = tmpPath( "test.gz" );
         try( OutputStream out = IoStreams.out( path, GZIP ) ) {
             out.flush();

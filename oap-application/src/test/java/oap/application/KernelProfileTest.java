@@ -24,7 +24,6 @@
 
 package oap.application;
 
-import oap.testng.AbstractTest;
 import oap.util.Lists;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -33,14 +32,14 @@ import static java.util.Arrays.asList;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class KernelProfileTest extends AbstractTest {
+public class KernelProfileTest {
     @BeforeMethod
     public void unregister() {
         Application.unregisterServices();
     }
 
     @Test
-    public void testProfileName() {
+    public void profileName() {
         try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module.yaml" ) ) ) ) {
             startWithProfile( kernel, "profile-name" );
 
@@ -51,7 +50,7 @@ public class KernelProfileTest extends AbstractTest {
     }
 
     @Test
-    public void testServiceProfiles() {
+    public void serviceProfiles() {
         var modules = Lists.of( urlOfTestResource( getClass(), "module-profiles.yaml" ) );
 
         try( var kernel = new Kernel( modules ) ) {
@@ -79,7 +78,7 @@ public class KernelProfileTest extends AbstractTest {
     }
 
     @Test
-    public void testProfileName2() {
+    public void profileName2() {
         try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module.yaml" ) ) ) ) {
             startWithProfile( kernel, "profile-name-2" );
 
@@ -90,7 +89,7 @@ public class KernelProfileTest extends AbstractTest {
     }
 
     @Test
-    public void testProfile3() {
+    public void profile3() {
         try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module3.yaml" ) ) ) ) {
             startWithProfile( kernel, "profile-name" );
             assertThat( kernel.<TestContainer>service( "container" ) ).isNotNull();
@@ -98,7 +97,7 @@ public class KernelProfileTest extends AbstractTest {
     }
 
     @Test
-    public void testProfile4() {
+    public void profile4() {
         try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module4.yaml" ) ) ) ) {
             startWithProfile( kernel, "run" );
             assertThat( kernel.<Object>service( "container" ) ).isInstanceOf( TestContainer2.class );
@@ -106,7 +105,7 @@ public class KernelProfileTest extends AbstractTest {
     }
 
     @Test
-    public void testModuleProfiles() {
+    public void moduleProfiles() {
         try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module-profile.yaml" ) ) ) ) {
             startWithProfile( kernel, "test1" );
             assertThat( kernel.<Object>service( "module-profile" ) ).isInstanceOf( TestProfile1.class );

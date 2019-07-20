@@ -46,7 +46,7 @@ public class WsValidateJsonTest extends AbstractWsValidateTest {
     }
 
     @Test
-    public void testValidation1() {
+    public void validation1() {
         assertPost( HttpAsserts.httpUrl( "/test/run/validation/1" ), "{\"a\":1}", APPLICATION_JSON )
             .responded( 200, "OK", APPLICATION_JSON, "{\"a\":1}" );
         assertPost( HttpAsserts.httpUrl( "/test/run/validation/1" ), "{}", APPLICATION_JSON )
@@ -54,7 +54,7 @@ public class WsValidateJsonTest extends AbstractWsValidateTest {
     }
 
     @Test
-    public void testValidation2() {
+    public void validation2() {
         assertPost( HttpAsserts.httpUrl( "/test/run/validation/2" ), "{\"a\":1}", APPLICATION_JSON )
             .responded( 200, "OK", APPLICATION_JSON, "{\"a\":1}" );
         assertPost( HttpAsserts.httpUrl( "/test/run/validation/2" ), "{}", APPLICATION_JSON )
@@ -64,7 +64,7 @@ public class WsValidateJsonTest extends AbstractWsValidateTest {
     }
 
     @Test
-    public void testValidation3() {
+    public void validation3() {
         assertPost( HttpAsserts.httpUrl( "/test/run/validation/3?type=type1" ), "{\"a\":1}", APPLICATION_JSON )
             .responded( 200, "OK", APPLICATION_JSON, "{\"a\":1}" );
         assertPost( HttpAsserts.httpUrl( "/test/run/validation/3?type=type2" ), "{\"b\":1}", APPLICATION_JSON )

@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class HashMapMetricsTest {
     @Test
-    public void testMeter() {
+    public void meter() {
         var map = new HashMap<String, Integer>();
 
         map.put( "zero", 0 );

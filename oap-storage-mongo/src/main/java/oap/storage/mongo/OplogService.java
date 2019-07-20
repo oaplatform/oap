@@ -110,7 +110,7 @@ public class OplogService implements Runnable, Closeable {
     @Override
     public void run() {
         try {
-            while( cursor.hasNext() && running) {
+            while( cursor.hasNext() && running ) {
                 var document = cursor.next();
                 log.trace( "oplog {}", document );
 

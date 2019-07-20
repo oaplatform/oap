@@ -38,7 +38,6 @@ import oap.sso.PrecedenceRoleService;
 import oap.sso.Token;
 import oap.sso.TokenService;
 import oap.sso.User;
-import org.apache.http.HttpRequest;
 import org.apache.http.client.methods.HttpGet;
 import org.testng.annotations.Test;
 
@@ -64,7 +63,7 @@ public class SecurityInterceptorTest {
     private final SecurityInterceptor securityInterceptor = new SecurityInterceptor( mockTokenService, precedenceRoleService );
 
     @Test
-    public void testShouldNotCheckMethodWithoutAnnotation() {
+    public void shouldNotCheckMethodWithoutAnnotation() {
         final Reflection.Method methodWithAnnotation = REFLECTION.method(
             method -> method.name().equals( "methodWithoutAnnotation" ) ).get();
 
@@ -74,7 +73,7 @@ public class SecurityInterceptorTest {
     }
 
     @Test
-    public void testShouldVerifyUserIfPresentInSession() {
+    public void shouldVerifyUserIfPresentInSession() {
         final Reflection.Method methodWithAnnotation = REFLECTION.method(
             method -> method.name().equals( "methodWithAnnotation" ) ).get();
 
@@ -90,7 +89,7 @@ public class SecurityInterceptorTest {
     }
 
     @Test
-    public void testShouldVerifyAndSetUserInSessionIfAuthorizationHeaderIsPresent() throws UnknownHostException {
+    public void shouldVerifyAndSetUserInSessionIfAuthorizationHeaderIsPresent() throws UnknownHostException {
         var methodWithAnnotation = REFLECTION.method(
             method -> method.name().equals( "methodWithAnnotation" ) ).get();
 

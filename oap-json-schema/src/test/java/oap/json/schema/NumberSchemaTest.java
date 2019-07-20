@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
 
 public class NumberSchemaTest extends AbstractSchemaTest {
     @Test
-    public void testInt() {
+    public void intValue() {
         String schema = "{\"type\": \"integer\"}";
         assertOk( schema, "10" );
         assertOk( schema, "-10" );
@@ -39,7 +39,7 @@ public class NumberSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testLong() {
+    public void longValue() {
         String schema = "{\"type\": \"long\"}";
         assertOk( schema, "10" );
         assertOk( schema, "-10" );
@@ -51,7 +51,7 @@ public class NumberSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testDouble() {
+    public void doubleValue() {
         String schema = "{\"type\": \"double\"}";
         assertOk( schema, "-10.0" );
         assertOk( schema, "324.23" );
@@ -66,7 +66,7 @@ public class NumberSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void test_minimum() {
+    public void minimum() {
         String schema = "{\"type\": \"integer\", \"minimum\": 2}";
 
         assertOk( schema, "2" );
@@ -77,7 +77,7 @@ public class NumberSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void test_exclusiveMinimum() {
+    public void exclusiveMinimum() {
         String schema = "{\"type\": \"integer\", \"minimum\": 2, \"exclusiveMinimum\": true}";
 
         assertOk( schema, "3" );
@@ -86,7 +86,7 @@ public class NumberSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void test_maximum() {
+    public void maximum() {
         String schema = "{\"type\": \"integer\", \"maximum\": 3}";
 
         assertOk( schema, "2" );
@@ -96,7 +96,7 @@ public class NumberSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void test_exclusiveMaximum() {
+    public void exclusiveMaximum() {
         String schema = "{\"type\": \"integer\", \"maximum\": 3, \"exclusiveMaximum\": true}";
 
         assertOk( schema, "2" );

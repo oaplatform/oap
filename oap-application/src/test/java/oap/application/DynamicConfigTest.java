@@ -28,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.io.Files;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
 import org.testng.annotations.Test;
 
@@ -39,7 +38,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class DynamicConfigTest extends AbstractTest {
+public class DynamicConfigTest {
+
     @Test
     public void defaultConfig() throws MalformedURLException {
         Path update = Env.tmpPath( "update.conf" );

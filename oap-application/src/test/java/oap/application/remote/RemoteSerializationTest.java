@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class RemoteSerializationTest {
     @Test
-    public void testProxy() {
+    public void proxy() {
         var proxy = RemoteSerialization.Proxy( ITest.class, new CTest() );
 
         assertThat( proxy.test( 10 ) ).isEqualTo( "10" );

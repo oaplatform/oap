@@ -31,11 +31,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ResponseTest {
     @Test
-    public void testResponse() {
-        final Response response = Binder.json.unmarshal( Response.class, "{                                                                                                                                                                                \n" +
-            "        \"response\":\"success\",     \n" +
-            "        \"info\":\"Processed 3 Failed 2 Total 5 Seconds spent 0.000253\"\n" +
-            "}" );
+    public void response() {
+        final Response response = Binder.json.unmarshal( Response.class, "{                                                                                                                                                                                \n"
+            + "        \"response\":\"success\",     \n"
+            + "        \"info\":\"Processed 3 Failed 2 Total 5 Seconds spent 0.000253\"\n"
+            + "}" );
 
         assertThat( response.getFailed() ).isEqualTo( 2 );
         assertThat( response.getProcessed() ).isEqualTo( 3 );

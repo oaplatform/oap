@@ -53,7 +53,7 @@ public class JsonPartialValidatorPeer implements ValidatorPeer {
         this.instance = instance;
         this.method = Reflect.reflect( instance.getClass() )
             .method( validate.methodName() ) // TODO: replace it with method( method, targetMethod.parameters ),
-                                             //  once the issue with @WsValidate is fixed
+            //  once the issue with @WsValidate is fixed
             .orElseThrow( () -> new WsException( "No such method " + validate.methodName() ) );
     }
 

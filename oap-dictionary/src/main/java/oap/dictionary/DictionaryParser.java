@@ -120,8 +120,8 @@ public class DictionaryParser {
                 new DictionaryValue( id, enabled, externalId, values, p );
         } else {
             throw new DictionaryFormatError(
-                "value " + path + " type " +
-                    ( value == null ? "<NULL>" : value.getClass().toString() ) + " != " + Map.class
+                "value " + path + " type "
+                    + ( value == null ? "<NULL>" : value.getClass().toString() ) + " != " + Map.class
             );
         }
     }

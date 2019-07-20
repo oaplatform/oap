@@ -31,14 +31,14 @@ import static org.testng.Assert.assertEquals;
 public class FilenameShardMapperTest {
 
     @Test
-    public void testShardParsing() {
+    public void shardParsing() {
         FilenameShardMapper mapper = new FilenameShardMapper( "(^\\d+)" );
         assertEquals( 100, mapper.getShardNumber( "myhost", "100/traffic/some/log/3/2016" ) );
         assertEquals( 24, mapper.getShardNumber( "myhost", "24/100/traffic/some/log/3/2016" ) );
     }
 
     @Test( expectedExceptions = IllegalArgumentException.class )
-    public void testNoShardInPath() {
+    public void noShardInPath() {
         FilenameShardMapper mapper = new FilenameShardMapper( "(^\\d+)" );
         assertEquals( 100, mapper.getShardNumber( "myhost", "blah/traffic/some/log/3/2016" ) );
     }

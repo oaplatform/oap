@@ -50,7 +50,7 @@ public class SecureHttpListenerTest {
     }
 
     @Test
-    public void testShouldVerifySSLCommunication() throws Exception {
+    public void shouldVerifySSLCommunication() throws Exception {
 
         try( var inputStream = IoStreams.in( pathOfTestResource( getClass(), "client_truststore.jks" ), PLAIN ) ) {
             KeyStore keyStore = KeyStore.getInstance( "JKS" );

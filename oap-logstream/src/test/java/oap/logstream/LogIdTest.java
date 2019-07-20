@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class LogIdTest {
     @Test
-    public void testHashAndEquals() {
+    public void hashAndEquals() {
         var lid1 = new LogId( "ln", "lt", "chn", 1, 1 );
         var lid2 = new LogId( "ln", "lt", "chn", 1, 1 );
         var lid3 = new LogId( "ln1", "lt", "chn", 1, 1 );

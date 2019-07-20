@@ -68,7 +68,7 @@ public class Configuration<T> {
     public T fromUrl( URL url ) {
         var binder = Binder.getBinder( url );
         var mapper = binder.getMapper();
-        mapper.enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
+        mapper.enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY );
         mapper.setDefaultSetterInfo( JsonSetter.Value.forValueNulls( Nulls.SKIP ) );
         return mapper.readValue( Strings.readString( url ), clazz );
     }

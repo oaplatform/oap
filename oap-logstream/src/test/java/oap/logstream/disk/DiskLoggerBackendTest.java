@@ -27,19 +27,22 @@ package oap.logstream.disk;
 import oap.dictionary.LogConfiguration;
 import oap.logstream.Timestamp;
 import oap.template.Engine;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.Test;
-
-import java.nio.file.Paths;
 
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class DiskLoggerBackendTest extends AbstractTest {
+public class DiskLoggerBackendTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @Test
     public void spaceAvailable() {
-        var engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
+        var engine = new Engine( Env.tmpPath( "file-cache" ), 1000 * 60 * 60 * 24 );
         var logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
         try( DiskLoggerBackend backend = new DiskLoggerBackend( Env.tmpPath( "logs" ), Timestamp.BPH_12, 4000, logConfiguration ) ) {
             assertTrue( backend.isLoggingAvailable() );

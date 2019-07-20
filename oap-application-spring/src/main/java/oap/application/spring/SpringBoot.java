@@ -30,8 +30,6 @@ import org.springframework.boot.context.event.ApplicationFailedEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import javax.annotation.PreDestroy;
-
 @SpringBootApplication
 @Slf4j
 public class SpringBoot {

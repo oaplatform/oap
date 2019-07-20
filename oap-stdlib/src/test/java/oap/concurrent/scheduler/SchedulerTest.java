@@ -25,7 +25,6 @@
 package oap.concurrent.scheduler;
 
 import oap.concurrent.Threads;
-import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-public class SchedulerTest extends AbstractTest {
+public class SchedulerTest {
 
     static Runnable getLambda( AtomicInteger counter ) {
         return () -> {

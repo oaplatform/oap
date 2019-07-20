@@ -24,16 +24,15 @@
 
 package oap.application.remote;
 
-import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
 import java.util.Optional;
 
 import static org.testng.Assert.assertEquals;
 
-public class FSTTest extends AbstractTest {
+public class FSTTest {
     @Test
-    public void testOptional() {
+    public void optional() {
         final FST fst = new FST( FST.SerializationMethod.DEFAULT );
 
         assertEquals( fst.conf.asObject( fst.conf.asByteArray( Optional.empty() ) ), Optional.empty() );

@@ -90,4 +90,18 @@ public class Teamcity {
     public static void performance( String name, double rate ) {
         statistics( name + ".actions/s", rate );
     }
+
+    public static String buildPrefix() {
+        String prefix = "";
+
+        var teamcityBuildconfName = System.getenv( "TEAMCITY_BUILDCONF_NAME" );
+        prefix += "_";
+        if( teamcityBuildconfName != null ) prefix += teamcityBuildconfName;
+
+        var buildNumber = System.getenv( "BUILD_NUMBER" );
+        prefix += "_";
+        if( buildNumber != null ) prefix += buildNumber;
+
+        return prefix;
+    }
 }

@@ -343,7 +343,7 @@ public class Binder {
     }
 
     public <T> Optional<T> unmarshal( TypeRef<T> ref, Path path ) {
-        if ( path != null && Files.exists( path ) ) {
+        if( path != null && Files.exists( path ) ) {
             return Optional.of( unmarshal( ref, IoStreams.in( path ) ) );
         }
         log.warn( "File \"{}\" doesn't exist ", path );

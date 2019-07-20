@@ -24,17 +24,22 @@
 
 package oap.io;
 
-import oap.testng.AbstractTest;
+import lombok.SneakyThrows;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.Test;
-
-import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LazyGZIPOutputStreamTest extends AbstractTest {
+public class LazyGZIPOutputStreamTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @Test
-    public void testGzip() throws IOException {
+    @SneakyThrows
+    public void gzip() {
         var path = Env.tmpPath( "test.gz" );
         new LazyGZIPOutputStream( new LazyFileOutputStream( path ) ).close();
 

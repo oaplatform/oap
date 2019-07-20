@@ -29,7 +29,7 @@ import org.testng.annotations.Test;
 
 public class ArraySchemaTest extends AbstractSchemaTest {
     @Test
-    public void testArrayOfPrimitives() {
+    public void arrayOfPrimitives() {
         String schema = "{\"type\": \"array\", \"items\": {\"type\": \"boolean\"}}";
 
         assertOk( schema, "[true, false]" );
@@ -41,7 +41,7 @@ public class ArraySchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testArrayItemRequired() {
+    public void arrayItemRequired() {
         String schema = "{\"type\": \"array\", \"items\": {\"type\": \"string\", \"required\": true}}";
 
         assertOk( schema, "[\"1\"]" );
@@ -51,17 +51,17 @@ public class ArraySchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testArrayMinItems() {
-        String schema = "{" +
-            "type:object," +
-            "properties:{" +
-            "  a:{" +
-            "    type: array, " +
-            "    minItems: 2, " +
-            "    items: {type: boolean}" +
-            "  }" +
-            "}" +
-            "}";
+    public void arrayMinItems() {
+        String schema = "{"
+            + "type:object,"
+            + "properties:{"
+            + "  a:{"
+            + "    type: array, "
+            + "    minItems: 2, "
+            + "    items: {type: boolean}"
+            + "  }"
+            + "}"
+            + "}";
 
         assertOk( schema, "{'a':[true, false, false]}" );
         assertOk( schema, "{'a':[true, false]}" );
@@ -70,17 +70,17 @@ public class ArraySchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testArrayMaxItems() {
-        String schema = "{" +
-            "type:object," +
-            "properties:{" +
-            "  a:{" +
-            "    type: array, " +
-            "    maxItems: 2, " +
-            "    items: {type: boolean}" +
-            "  }" +
-            "}" +
-            "}";
+    public void arrayMaxItems() {
+        String schema = "{"
+            + "type:object,"
+            + "properties:{"
+            + "  a:{"
+            + "    type: array, "
+            + "    maxItems: 2, "
+            + "    items: {type: boolean}"
+            + "  }"
+            + "}"
+            + "}";
 
         assertOk( schema, "{'a':[]}" );
         assertOk( schema, "{'a':[true, false]}" );
@@ -88,24 +88,24 @@ public class ArraySchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testInnerArrayMessagePath() {
-        String schema = "{" +
-            "type: array, " +
-            "items: {" +
-            "  type: object," +
-            "  properties:{" +
-            "    test: {" +
-            "      type:array," +
-            "      items: {" +
-            "        type:object," +
-            "        properties: {" +
-            "          a: {type:string}" +
-            "        }" +
-            "      }" +
-            "    }" +
-            "  }" +
-            "}" +
-            "}";
+    public void innerArrayMessagePath() {
+        String schema = "{"
+            + "type: array, "
+            + "items: {"
+            + "  type: object,"
+            + "  properties:{"
+            + "    test: {"
+            + "      type:array,"
+            + "      items: {"
+            + "        type:object,"
+            + "        properties: {"
+            + "          a: {type:string}"
+            + "        }"
+            + "      }"
+            + "    }"
+            + "  }"
+            + "}"
+            + "}";
 
         assertFailure( schema, "[{'test':[{'a':1}]}]", "/0/test/0/a: instance type is number, but allowed type is string" );
     }

@@ -29,7 +29,6 @@ import oap.concurrent.SynchronizedThread;
 import oap.http.PlainHttpListener;
 import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
 
@@ -40,7 +39,7 @@ import java.util.function.BiConsumer;
 import static java.util.Collections.emptyList;
 import static oap.http.testng.HttpAsserts.reset;
 
-public class AbstractWebServicesTest extends AbstractTest {
+public class AbstractWebServicesTest {
     protected TestWebServer webServer() {
         return webServer( ( ws, k ) -> {} );
     }

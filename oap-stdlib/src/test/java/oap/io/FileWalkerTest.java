@@ -1,7 +1,8 @@
 package oap.io;
 
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -17,7 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertEqualsNoOrder;
 
-public class FileWalkerTest extends AbstractTest {
+public class FileWalkerTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
 
     @BeforeMethod
     public void init() {

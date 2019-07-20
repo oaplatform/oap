@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class KernelHelperTest {
     @Test
-    public void testFixLinksForConstructorValueExists() {
+    public void fixLinksForConstructorValueExists() {
         var parameters = new LinkedHashMap<String, Object>( Maps.of2( "service", "@service:test-service" ) );
 
         var si = new ServiceInitialization( "test-service", this, new Module( "n1" ), new Module.Service(), Reflect.reflect( getClass() ) );
@@ -51,7 +51,7 @@ public class KernelHelperTest {
     }
 
     @Test
-    public void testFixLinksForConstructorValue() {
+    public void fixLinksForConstructorValue() {
         var parameters = new LinkedHashMap<String, Object>( Maps.of2( "service", "@service:test-service" ) );
 
         var newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
@@ -62,7 +62,7 @@ public class KernelHelperTest {
     }
 
     @Test
-    public void testFixLinksForConstructorList() {
+    public void fixLinksForConstructorList() {
         var parameters = new LinkedHashMap<String, Object>( Maps.of2( "services", singletonList( "@service:test-service" ) ) );
 
         var newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
@@ -74,7 +74,7 @@ public class KernelHelperTest {
     }
 
     @Test
-    public void testFixLinksForConstructorMap() {
+    public void fixLinksForConstructorMap() {
         var parameters = new LinkedHashMap<String, Object>(
             Maps.of2( "services", Lists.of( Maps.of2( "link", "@service:test-service" ) ) )
         );

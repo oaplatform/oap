@@ -24,7 +24,6 @@
 package oap.cli;
 
 
-import oap.testng.AbstractTest;
 import oap.util.Maps;
 import oap.util.Result;
 import org.testng.annotations.Test;
@@ -36,7 +35,7 @@ import static oap.util.Pair.__;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-public class CliTest extends AbstractTest {
+public class CliTest {
     @Test
     public void complex() {
         Map<String, Object> result = new HashMap<>();

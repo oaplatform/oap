@@ -26,7 +26,8 @@ package oap.alert;
 
 import oap.concurrent.SynchronizedThread;
 import oap.concurrent.Threads;
-import oap.testng.AbstractTest;
+import oap.testng.Fixtures;
+import oap.testng.Mockito;
 import org.mockito.Mock;
 import org.testng.annotations.Test;
 
@@ -34,7 +35,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class BackgroundMessageStreamTest extends AbstractTest {
+public class BackgroundMessageStreamTest extends Fixtures {
+    {
+        fixture( new Mockito( this ) );
+    }
 
     @Mock
     MessageTransport<String> transport;
@@ -43,7 +47,7 @@ public class BackgroundMessageStreamTest extends AbstractTest {
     GuaranteedDeliveryTransport guaranteedDeliveryTransport;
 
     @Test
-    public void testSendDoesntBlock() {
+    public void sendDoesntBlock() {
 
         BackgroundMessageStream<String> backgroundStream = new BackgroundMessageStream<>( transport,
             guaranteedDeliveryTransport );
@@ -54,7 +58,7 @@ public class BackgroundMessageStreamTest extends AbstractTest {
     }
 
     @Test
-    public void testSendIsExecutedInSeparateThread() throws InterruptedException {
+    public void sendIsExecutedInSeparateThread() throws InterruptedException {
 
         BackgroundMessageStream<String> backgroundStream = new BackgroundMessageStream<>( transport,
             guaranteedDeliveryTransport );

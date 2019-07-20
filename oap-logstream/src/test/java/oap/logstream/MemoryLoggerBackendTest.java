@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class MemoryLoggerBackendTest {
     @Test
-    public void testGetLines() {
+    public void getLines() {
         final MemoryLoggerBackend lb = new MemoryLoggerBackend();
         lb.log( "test1", "file1", "type1", 1, 1, "line1" );
         lb.log( "test1", "file1", "type1", 1, 1, "line2" );

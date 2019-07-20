@@ -28,13 +28,14 @@ import oap.dictionary.LogConfiguration;
 import oap.io.Files;
 import oap.logstream.LogId;
 import oap.template.Engine;
-import oap.testng.AbstractTest;
+import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import oap.util.Dates;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.PLAIN;
@@ -42,14 +43,18 @@ import static oap.logstream.Timestamp.BPH_12;
 import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
 
-public class WriterTest extends AbstractTest {
+public class WriterTest extends Fixtures {
     private static final String FILE_PATTERN = "test/2015-10/10/v${LOG_VERSION}_file-2015-10-10-01-${INTERVAL}.log.gz";
 
     private LogConfiguration logConfiguration;
 
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @BeforeMethod
     public void beforeMethod() {
-        var engine = new Engine( Paths.get( "/tmp/file-cache" ), 1000 * 60 * 60 * 24 );
+        var engine = new Engine( Env.tmpPath( "file-cache" ), 1000 * 60 * 60 * 24 );
         logConfiguration = new LogConfiguration( engine, null, "test-logconfig" );
     }
 

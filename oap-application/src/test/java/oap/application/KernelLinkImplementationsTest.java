@@ -24,7 +24,6 @@
 
 package oap.application;
 
-import oap.testng.AbstractTest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -36,7 +35,7 @@ import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class KernelLinkImplementationsTest extends AbstractTest {
+public class KernelLinkImplementationsTest {
     @BeforeMethod
     public void unregister() {
         Application.unregisterServices();

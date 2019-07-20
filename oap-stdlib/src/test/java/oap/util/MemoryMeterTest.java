@@ -28,7 +28,7 @@ import org.testng.annotations.Test;
 
 public class MemoryMeterTest {
     @Test
-    public void testGet() throws Exception {
+    public void get() throws Exception {
         MemoryMeter.get().measure( "sdfsdf" );
         MemoryMeter.get().measure( "sdfsdf" );
     }

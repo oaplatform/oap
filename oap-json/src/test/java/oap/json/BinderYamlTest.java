@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class BinderYamlTest {
     @Test
-    public void testYaml() {
+    public void yaml() {
         var pattern = "test:\n  b: 10";
         var obj = Binder.yaml.<BeanPattern>unmarshal( BeanPattern.class, pattern );
 

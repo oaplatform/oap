@@ -57,7 +57,7 @@ public class PublicSuffixDataTest {
     }
 
     @Test
-    public void testEmpty() {
+    public void empty() {
         assertThat( PublicSuffixData.baseDomainOf( null ) ).isNull();
         assertThat( PublicSuffixData.baseDomainOf( "" ) ).isEmpty();
     }

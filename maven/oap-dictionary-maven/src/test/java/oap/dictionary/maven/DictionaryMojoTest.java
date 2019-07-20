@@ -24,21 +24,31 @@
 
 package oap.dictionary.maven;
 
-import oap.testng.AbstractTest;
 import oap.testng.Env;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.Test;
 
-public class DictionaryMojoTest extends AbstractTest {
+import static oap.testng.Asserts.assertFile;
+import static oap.testng.Asserts.pathOfTestResource;
+
+public class DictionaryMojoTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @Test
-    public void testExecute() throws Exception {
-        final DictionaryMojo dictionaryMojo = new DictionaryMojo();
-        dictionaryMojo.sourceDirectory = "src/test/resources/dictionary";
-        dictionaryMojo.dictionaryPackage = "test";
-        dictionaryMojo.outputDirectory = Env.tmp( "dictionary" );
-        dictionaryMojo.exclude = new String[] { "**/test-dictionary.json" };
+    public void execute() throws Exception {
+        DictionaryMojo mojo = new DictionaryMojo();
+        mojo.sourceDirectory = "src/test/resources/dictionary";
+        mojo.dictionaryPackage = "test";
+        mojo.outputDirectory = Env.tmp( "dictionary" );
+        mojo.exclude = new String[] { "**/test-dictionary.json" };
 
-        dictionaryMojo.execute();
+        mojo.execute();
 
+        assertFile( Env.tmpPath( "dictionary/test/TestDictionaryExternalIdAsCharacter.java" ) )
+            .hasSameContentAs( pathOfTestResource( getClass(), "TestDictionaryExternalIdAsCharacter.j" ) );
     }
 
 }

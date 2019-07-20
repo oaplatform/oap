@@ -32,7 +32,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.testng.AbstractTest;
 import oap.util.Id;
 import oap.util.Maps;
 import org.testng.annotations.Test;
@@ -42,9 +41,9 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TypeIdAccessorFactoryTest extends AbstractTest {
+public class TypeIdAccessorFactoryTest {
     @Test
-    public void testClassMapping() {
+    public void classMapping() {
         var b = new TestBean( "1" );
         var marshal = Binder.json.marshal( new TestContainer( b ) );
         assertThat( marshal ).isEqualTo( "{\"ref\":{\"@object:type\":\"b\",\"id\":\"1\"}}" );
@@ -54,7 +53,7 @@ public class TypeIdAccessorFactoryTest extends AbstractTest {
     }
 
     @Test
-    public void testAnySetterWithCustomValueWithTypeId() {
+    public void anySetterWithCustomValueWithTypeId() {
         var json = "{\"b\":{\"id\":\"val\"}}";
 
         var vm = Binder.json.<TestCustomValueMap>unmarshal( TestCustomValueMap.class, json );
@@ -65,7 +64,7 @@ public class TypeIdAccessorFactoryTest extends AbstractTest {
     }
 
     @Test
-    public void testAnySetterWithCustomValueWithoutTypeId() {
+    public void anySetterWithCustomValueWithoutTypeId() {
         var json = "{\"unknown-typeid1\":\"10\", \"unknown-typeid2\":{\"a\":\"10\"}}";
 
         var vm = Binder.json.<TestCustomValueMap>unmarshal( TestCustomValueMap.class, json );
@@ -79,7 +78,7 @@ public class TypeIdAccessorFactoryTest extends AbstractTest {
     @EqualsAndHashCode
     public static class TestContainer {
         @JsonTypeIdResolver( TypeIdFactory.class )
-        @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, include = JsonTypeInfo.As.PROPERTY, property = "@object:type" )
+        @JsonTypeInfo( use = JsonTypeInfo.Id.CUSTOM, property = "@object:type" )
         public final Object ref;
 
         public TestContainer( @JsonProperty( "ref" ) Object ref ) {

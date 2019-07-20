@@ -28,7 +28,7 @@ import org.testng.annotations.Test;
 
 public class EnumSchemaTest extends AbstractSchemaTest {
     @Test
-    public void testStaticEnum() {
+    public void staticEnum() {
         String schema = "{type: string, enum: [test, test1]}";
 
         assertOk( schema, "null" );
@@ -39,19 +39,19 @@ public class EnumSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testDynamicEnumPathSingleton() {
-        String schema = "{" +
-            "type:object," +
-            "properties:{" +
-            "  a:{" +
-            "    type:string," +
-            "  }," +
-            "  b:{" +
-            "    type: string, " +
-            "    enum: {json-path:a}" +
-            "  }" +
-            "}" +
-            "}";
+    public void dynamicEnumPathSingleton() {
+        String schema = "{"
+            + "type:object,"
+            + "properties:{"
+            + "  a:{"
+            + "    type:string,"
+            + "  },"
+            + "  b:{"
+            + "    type: string, "
+            + "    enum: {json-path:a}"
+            + "  }"
+            + "}"
+            + "}";
 
         assertOk( schema, "{'b':null}" );
         assertOk( schema, "{'a':'test', 'b':'test'}" );
@@ -60,19 +60,19 @@ public class EnumSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testDynamicEnumFilteredNE() {
-        String schema = "{" +
-            "type:object," +
-            "properties {" +
-            "  a {" +
-            "    type = string," +
-            "  }," +
-            "  b {" +
-            "    type =  string, " +
-            "    enum {json-path = a, ne = test}" +
-            "  }" +
-            "}" +
-            "}";
+    public void dynamicEnumFilteredNE() {
+        String schema = "{"
+            + "type:object,"
+            + "properties {"
+            + "  a {"
+            + "    type = string,"
+            + "  },"
+            + "  b {"
+            + "    type =  string, "
+            + "    enum {json-path = a, ne = test}"
+            + "  }"
+            + "}"
+            + "}";
 
         assertOk( schema, "{'b':null}" );
         assertOk( schema, "{'a':'test1', 'b':'test1'}" );
@@ -81,19 +81,19 @@ public class EnumSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testDynamicEnumFilteredIN() {
-        String schema = "{" +
-            "type:object," +
-            "properties {" +
-            "  a {" +
-            "    type = string" +
-            "  }," +
-            "  b {" +
-            "    type =  string, " +
-            "    enum {json-path = a, in = [test1, test2]}" +
-            "  }" +
-            "}" +
-            "}";
+    public void dynamicEnumFilteredIN() {
+        String schema = "{"
+            + "type:object,"
+            + "properties {"
+            + "  a {"
+            + "    type = string"
+            + "  },"
+            + "  b {"
+            + "    type =  string, "
+            + "    enum {json-path = a, in = [test1, test2]}"
+            + "  }"
+            + "}"
+            + "}";
 
         assertOk( schema, "{'b':null}" );
         assertOk( schema, "{'a':'test1', 'b':'test1'}" );
@@ -103,19 +103,19 @@ public class EnumSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testDynamicEnumFilteredSource() {
-        String schema = "{" +
-            "type:object," +
-            "properties {" +
-            "  a.type = string," +
-            "  type1.type = string," +
-            "  type2.type = string," +
-            "  b {" +
-            "    type = string, " +
-            "    enum {json-path = a, filter {source {json-path = test1}, eq {json-path = test2}}}" +
-            "  }" +
-            "}" +
-            "}";
+    public void dynamicEnumFilteredSource() {
+        String schema = "{"
+            + "type:object,"
+            + "properties {"
+            + "  a.type = string,"
+            + "  type1.type = string,"
+            + "  type2.type = string,"
+            + "  b {"
+            + "    type = string, "
+            + "    enum {json-path = a, filter {source {json-path = test1}, eq {json-path = test2}}}"
+            + "  }"
+            + "}"
+            + "}";
 
         assertOk( schema, "{'b':null}" );
         assertOk( schema, "{'a':'test1', 'test1': 'fv', 'test2': 'fv', 'b':'test1'}" );
@@ -124,25 +124,25 @@ public class EnumSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testDynamicEnumPathListObjects() {
-        String schema = "{" +
-            "type:object," +
-            "properties:{" +
-            "  a:{" +
-            "    type:array," +
-            "    items: {" +
-            "      type:object," +
-            "      properties:{" +
-            "        c: {type:string}" +
-            "      }" +
-            "    }" +
-            "  }," +
-            "  b:{" +
-            "    type: string, " +
-            "    enum: {json-path:a.c}" +
-            "  }" +
-            "}" +
-            "}";
+    public void dynamicEnumPathListObjects() {
+        String schema = "{"
+            + "type:object,"
+            + "properties:{"
+            + "  a:{"
+            + "    type:array,"
+            + "    items: {"
+            + "      type:object,"
+            + "      properties:{"
+            + "        c: {type:string}"
+            + "      }"
+            + "    }"
+            + "  },"
+            + "  b:{"
+            + "    type: string, "
+            + "    enum: {json-path:a.c}"
+            + "  }"
+            + "}"
+            + "}";
 
         assertOk( schema, "{'b':null}" );
         assertOk( schema, "{'a':[{'c':'test'}], 'b':'test'}" );
@@ -151,22 +151,22 @@ public class EnumSchemaTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testDynamicEnumPathList() {
-        String schema = "{" +
-            "type:object," +
-            "properties:{" +
-            "  a:{" +
-            "    type:array," +
-            "    items: {" +
-            "      type:string" +
-            "    }" +
-            "  }," +
-            "  b:{" +
-            "    type: string, " +
-            "    enum: {json-path:a}" +
-            "  }" +
-            "}" +
-            "}";
+    public void dynamicEnumPathList() {
+        String schema = "{"
+            + "type:object,"
+            + "properties:{"
+            + "  a:{"
+            + "    type:array,"
+            + "    items: {"
+            + "      type:string"
+            + "    }"
+            + "  },"
+            + "  b:{"
+            + "    type: string, "
+            + "    enum: {json-path:a}"
+            + "  }"
+            + "}"
+            + "}";
 
         assertOk( schema, "{'b':null}" );
         assertOk( schema, "{'a':['test'], 'b':'test'}" );

@@ -28,7 +28,7 @@ import org.testng.annotations.Test;
 
 public class ExtendsTest extends AbstractSchemaTest {
     @Test
-    public void testExtends() {
+    public void extendsSchema() {
         String schema = "{"
             + "type: object,"
             + "extends: \"schema/test2.json\","
@@ -52,7 +52,7 @@ public class ExtendsTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testMergeInnerObject() {
+    public void mergeInnerObject() {
         String schema = "{"
             + "type: object,"
             + "additionalProperties: false,"
@@ -84,7 +84,7 @@ public class ExtendsTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testMergeInnerArray() {
+    public void mergeInnerArray() {
         String schema = "{"
             + "type: object,"
             + "additionalProperties: false,"
@@ -122,7 +122,7 @@ public class ExtendsTest extends AbstractSchemaTest {
     }
 
     @Test
-    public void testMergeInnerSchema() {
+    public void mergeInnerSchema() {
         String schema = "{"
             + "type: object,"
             + "additionalProperties: false,"

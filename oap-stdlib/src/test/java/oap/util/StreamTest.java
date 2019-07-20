@@ -24,7 +24,6 @@
 
 package oap.util;
 
-import oap.testng.AbstractTest;
 import org.testng.annotations.Test;
 
 import java.util.AbstractCollection;
@@ -39,7 +38,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class StreamTest extends AbstractTest {
+public class StreamTest {
     @Test
     public void traverse() {
         assertEquals(
@@ -62,14 +61,14 @@ public class StreamTest extends AbstractTest {
     }
 
     @Test
-    public void testFlatMapOptional() {
+    public void flatMapOptional() {
         Stream<Integer> integerStream = Stream.of( 1, null, 2, null, null, 3 );
         List<Integer> flatten = integerStream.flatMapOptional( Optional::ofNullable ).toList();
         assertEquals( flatten, Lists.of( 1, 2, 3 ) );
     }
 
     @Test
-    public void testDistinctByProperty() {
+    public void distinctByProperty() {
         LinkedHashMap<String, String> kievUA = Maps.of( __( "name", "kiev" ), __( "localized", "Kyiv" ) );
         LinkedHashMap<String, String> kievRU = Maps.of( __( "name", "kiev" ), __( "localized", "Kiev" ) );
         LinkedHashMap<String, String> odessa = Maps.of( __( "name", "odessa" ), __( "localized", "Odessa" ) );

@@ -25,7 +25,8 @@
 package oap.storage;
 
 import oap.json.TypeIdFactory;
-import oap.testng.AbstractTest;
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.Test;
 
 import java.util.Collection;
@@ -35,7 +36,10 @@ import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ReplicatorTest extends AbstractTest {
+public class ReplicatorTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
 
     @Test
     public void masterSlave() {

@@ -24,7 +24,6 @@
 package oap.testng;
 
 
-
 import com.google.common.base.Throwables;
 import oap.testng.casesuite.CaseContext;
 import oap.util.Stream;

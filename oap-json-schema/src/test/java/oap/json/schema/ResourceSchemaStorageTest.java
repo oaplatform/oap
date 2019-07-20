@@ -33,7 +33,7 @@ import static oap.json.testng.JsonAsserts.assertJson;
 
 public class ResourceSchemaStorageTest {
     @Test
-    public void testGet() {
+    public void get() {
         var schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema.conf" );
 
         assertJson( Binder.json.marshal( Binder.hoconWithoutSystemProperties.unmarshal( Map.class, schema ) ) )
@@ -48,7 +48,7 @@ public class ResourceSchemaStorageTest {
     }
 
     @Test
-    public void testGetWithExtends() {
+    public void getWithExtends() {
         var schema = ResourceSchemaStorage.INSTANCE.get( "/schema/test-schema-1.conf" );
 
         assertJson( Binder.json.marshal( Binder.hoconWithoutSystemProperties.unmarshal( Map.class, schema ) ) )

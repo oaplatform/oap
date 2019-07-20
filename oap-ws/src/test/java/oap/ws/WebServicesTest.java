@@ -69,13 +69,13 @@ public class WebServicesTest extends AbstractWebServicesTest {
     }
 
     @Test
-    public void testPath() {
+    public void path() {
         assertGet( HttpAsserts.httpUrl( "/x/v/math" ) )
             .responded( 200, "OK", APPLICATION_JSON, "2" );
     }
 
     @Test
-    public void testSort() {
+    public void sort() {
         assertGet( HttpAsserts.httpUrl( "/x/v/math/test/sort/default" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"__default__\"" );
         assertGet( HttpAsserts.httpUrl( "/x/v/math/test/sort/45" ) )
@@ -83,7 +83,7 @@ public class WebServicesTest extends AbstractWebServicesTest {
     }
 
     @Test
-    public void testEqual() {
+    public void equal() {
         assertGet( HttpAsserts.httpUrl( "/x/v/math/test/sort=3/test" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"3\"" );
     }
@@ -121,49 +121,49 @@ public class WebServicesTest extends AbstractWebServicesTest {
     }
 
     @Test
-    public void testEnum() {
+    public void enumValue() {
         assertGet( HttpAsserts.httpUrl( "/x/v/math/en?a=CLASS" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"CLASS\"" );
     }
 
     @Test
-    public void testOptional() {
+    public void optional() {
         assertGet( HttpAsserts.httpUrl( "/x/v/math/sumabopt?a=1&b=2" ) )
             .responded( 200, "OK", APPLICATION_JSON, "3" );
     }
 
     @Test
-    public void testParameterList() {
+    public void parameterList() {
         assertGet( HttpAsserts.httpUrl( "/x/v/math/sum?a=1&b=2&b=3" ) )
             .responded( 200, "OK", APPLICATION_JSON, "6" );
     }
 
     @Test
-    public void testString() {
+    public void string() {
         assertGet( HttpAsserts.httpUrl( "/x/v/math/id?a=aaa" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"aaa\"" );
     }
 
     @Test
-    public void testRequest() {
+    public void request() {
         assertGet( HttpAsserts.httpUrl( "/x/v/math/req" ) )
             .responded( 200, "OK", APPLICATION_JSON, "\"" + HttpAsserts.httpUrl( "/x/v/math\"" ) );
     }
 
     @Test
-    public void testBean() {
+    public void bean() {
         assertPost( HttpAsserts.httpUrl( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}", APPLICATION_JSON )
             .responded( 200, "OK", APPLICATION_JSON, "{\"i\":1,\"s\":\"sss\"}" );
     }
 
     @Test
-    public void testList() {
+    public void list() {
         assertPost( HttpAsserts.httpUrl( "/x/v/math/list" ), "[\"1str\", \"2str\"]", APPLICATION_JSON )
             .responded( 200, "OK", APPLICATION_JSON, "[\"1str\",\"2str\"]" );
     }
 
     @Test
-    public void testDefaultHeaders() {
+    public void defaultHeaders() {
         assertGet( HttpAsserts.httpUrl( "/x/h/" ) )
             .containsHeader( "Access-Control-Allow-Origin", "*" );
         assertPost( HttpAsserts.httpUrl( "/x/v/math/json" ), "{\"i\":1,\"s\":\"sss\"}",
@@ -171,10 +171,10 @@ public class WebServicesTest extends AbstractWebServicesTest {
     }
 
     @Test
-    public void testShouldVerifyGZIPRequestProcessing() throws Exception {
+    public void shouldVerifyGZIPRequestProcessing() throws Exception {
         final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         final GZIPOutputStream gzip = new GZIPOutputStream( byteArrayOutputStream );
-        gzip.write( "{\"i\":1,\"s\":\"sss\"}".getBytes( "UTF-8" ) );
+        gzip.write( "{\"i\":1,\"s\":\"sss\"}".getBytes( StandardCharsets.UTF_8 ) );
         gzip.close();
 
         final Client.Response response = Client

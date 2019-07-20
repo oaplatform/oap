@@ -29,7 +29,6 @@ import lombok.ToString;
 import oap.application.ServiceOne.Complex;
 import oap.application.linked.ServiceContainee;
 import oap.application.linked.ServiceContainer;
-import oap.testng.AbstractTest;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.BeforeMethod;
@@ -48,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-public class KernelTest extends AbstractTest {
+public class KernelTest {
     @BeforeMethod
     public void unregister() {
         Application.unregisterServices();
@@ -175,7 +174,7 @@ public class KernelTest extends AbstractTest {
     }
 
     @Test
-    public void testMapWithEntries() {
+    public void mapWithEntries() {
         List<URL> modules = Lists.of( urlOfTestResource( getClass(), "modules/map.conf" ) );
 
         Kernel kernel = new Kernel( modules );

@@ -25,7 +25,6 @@
 package oap.testng.casesuite;
 
 import lombok.extern.slf4j.Slf4j;
-import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 

@@ -32,7 +32,6 @@ import oap.http.Server;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.testng.HttpAsserts;
 import oap.metrics.Metrics;
-import oap.testng.AbstractTest;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.ws.SessionManager;
@@ -43,7 +42,7 @@ import org.testng.annotations.BeforeClass;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class AbstractWsValidateTest extends AbstractTest {
+public abstract class AbstractWsValidateTest {
     private static final SessionManager SESSION_MANAGER = new SessionManager( 10, null, "/" );
 
     private Server server;

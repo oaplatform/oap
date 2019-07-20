@@ -60,7 +60,7 @@ public class ServiceOne {
     }
 
     public void addSomeListener( ActionListener listener ) {
-        log.debug( "called addSomeListener with {}", listener  );
+        log.debug( "called addSomeListener with {}", listener );
         this.listener = listener;
     }
 

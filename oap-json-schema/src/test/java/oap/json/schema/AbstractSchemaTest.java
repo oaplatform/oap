@@ -24,7 +24,6 @@
 package oap.json.schema;
 
 import oap.json.Binder;
-import oap.testng.AbstractTest;
 import org.testng.Assert;
 
 import java.util.List;
@@ -32,7 +31,7 @@ import java.util.List;
 import static oap.json.schema.ResourceSchemaStorage.INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public abstract class AbstractSchemaTest extends AbstractTest {
+public abstract class AbstractSchemaTest {
     protected static SchemaAST schema( String schema ) {
         return JsonSchema.schemaFromString( schema ).schema;
     }
@@ -47,9 +46,8 @@ public abstract class AbstractSchemaTest extends AbstractTest {
 
     protected static Object assertOk( String schema, String json, SchemaStorage storage, boolean ignoreRequiredDefault ) {
         final Object obj = Binder.json.unmarshal( Object.class, json );
-        List<String> result =
-            JsonSchema.schemaFromString( schema, storage )
-                .validate( obj, ignoreRequiredDefault );
+        List<String> result = JsonSchema.schemaFromString( schema, storage )
+            .validate( obj, ignoreRequiredDefault );
         if( !result.isEmpty() ) throw new AssertionError( String.join( "\n", result ) );
 
         return obj;
@@ -58,9 +56,8 @@ public abstract class AbstractSchemaTest extends AbstractTest {
     protected static void assertPartialOk( String schema, String json, String partialJson, String path ) {
         final Object obj = Binder.json.unmarshal( Object.class, json );
         final Object partial = Binder.json.unmarshal( Object.class, partialJson );
-        List<String> result =
-            JsonSchema.schemaFromString( schema )
-                .partialValidate( obj, partial, path, false );
+        List<String> result = JsonSchema.schemaFromString( schema )
+            .partialValidate( obj, partial, path, false );
         if( !result.isEmpty() ) throw new AssertionError( String.join( "\n", result ) );
     }
 
@@ -69,9 +66,8 @@ public abstract class AbstractSchemaTest extends AbstractTest {
     }
 
     protected static void assertFailure( String schema, String json, String error, SchemaStorage storage ) {
-        List<String> result =
-            JsonSchema.schemaFromString( schema, storage )
-                .validate( Binder.json.unmarshal( Object.class, json ), false );
+        List<String> result = JsonSchema.schemaFromString( schema, storage )
+            .validate( Binder.json.unmarshal( Object.class, json ), false );
         if( result.isEmpty() ) Assert.fail( json + " -> " + error );
         assertThat( result ).containsOnly( error );
     }
@@ -80,9 +76,8 @@ public abstract class AbstractSchemaTest extends AbstractTest {
                                                 String path, String error ) {
         final Object root = Binder.json.unmarshal( Object.class, json );
         final Object partial = Binder.json.unmarshal( Object.class, partialJson );
-        List<String> result =
-            JsonSchema.schemaFromString( schema )
-                .partialValidate( root, partial, path, false );
+        List<String> result = JsonSchema.schemaFromString( schema )
+            .partialValidate( root, partial, path, false );
         if( result.isEmpty() ) Assert.fail( json + " -> " + error );
         assertThat( result ).containsOnly( error );
     }
