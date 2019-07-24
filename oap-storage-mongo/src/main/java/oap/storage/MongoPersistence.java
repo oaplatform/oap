@@ -37,6 +37,7 @@ import oap.concurrent.scheduler.Scheduler;
 import oap.reflect.TypeRef;
 import oap.storage.mongo.JsonCodec;
 import oap.storage.mongo.MongoClient;
+import oap.storage.mongo.OplogService;
 import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 
@@ -54,12 +55,13 @@ import static com.mongodb.client.model.Filters.eq;
  * @param <T> Type of Metadata
  */
 @Slf4j
-public class MongoPersistence<T> implements Closeable, Runnable, Storage.DataListener<T> {
+public class MongoPersistence<T> implements Closeable, Runnable, Storage.DataListener<T>, OplogService.OplogListener {
 
     public static final ReplaceOptions REPLACE_OPTIONS_UPSERT = new ReplaceOptions().upsert( true );
     public final MongoCollection<Metadata<T>> collection;
-    private long delay;
     private final Lock lock = new ReentrantLock();
+    public OplogService oplogService;
+    private long delay;
     private MemoryStorage<T> storage;
     private PeriodicScheduled scheduled;
 
@@ -92,6 +94,8 @@ public class MongoPersistence<T> implements Closeable, Runnable, Storage.DataLis
             this.load();
             this.scheduled = Scheduler.scheduleWithFixedDelay( getClass(), delay, this::fsync );
             this.storage.addDataListener( this );
+
+            if( oplogService != null ) oplogService.addListener( collection.getNamespace().getCollectionName(), this );
         } );
     }
 
@@ -205,6 +209,37 @@ public class MongoPersistence<T> implements Closeable, Runnable, Storage.DataLis
             } );
         } else {
             log.debug( "This {} was't started or already closed", this );
+        }
+    }
+
+    @Override
+    public void updated( String table, String id ) {
+        refresh( id );
+    }
+
+    @Override
+    public void deleted( String table, String id ) {
+        storage.delete( id );
+    }
+
+    @Override
+    public void inserted( String table, String id ) {
+        refresh( id );
+    }
+
+    public void refresh( String id ) {
+        var m = collection.find( eq( "_id", id ) ).first();
+        if( m != null ) {
+            storage.lock.synchronizedOn( id, () -> {
+                var oldM = storage.data.get( id );
+                if( oldM == null || m.modified > oldM.modified ) {
+                    log.debug( "refresh from mongo {}", id );
+                    storage.data.put( id, m );
+                    storage.fireUpdated( m.object, false );
+                } else {
+                    log.debug( "[{}] m.modified <= oldM.modified", id );
+                }
+            } );
         }
     }
 }
