@@ -26,9 +26,9 @@ package oap.storage;
 
 import com.mongodb.MongoNamespace;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.BulkWriteOptions;
+import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
-import com.mongodb.client.result.UpdateResult;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 import oap.concurrent.scheduler.PeriodicScheduled;
@@ -42,6 +42,7 @@ import org.bson.codecs.configuration.CodecRegistries;
 import org.bson.codecs.configuration.CodecRegistry;
 
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -61,6 +62,7 @@ public class MongoPersistence<T> implements Closeable, Runnable, Storage.DataLis
     public final MongoCollection<Metadata<T>> collection;
     private final Lock lock = new ReentrantLock();
     public OplogService oplogService;
+    public int batchSize = 100;
     private long delay;
     private MemoryStorage<T> storage;
     private PeriodicScheduled scheduled;
@@ -178,23 +180,23 @@ public class MongoPersistence<T> implements Closeable, Runnable, Storage.DataLis
     private void fsync( long last ) {
         Threads.synchronously( lock, () -> {
             log.trace( "fsyncing, last: {}, storage length: {}", last, storage.data.size() );
+            var list = new ArrayList<ReplaceOneModel<Metadata<T>>>( batchSize );
+
             for( var value : storage.data.values() ) {
-                if( value.modified >= last ) persist( value );
+                var id = storage.identifier.get( value.object );
+                if( value.modified >= last ) {
+                    list.add( new ReplaceOneModel<>( eq( "_id", id ), value, REPLACE_OPTIONS_UPSERT ) );
+                    if( list.size() >= batchSize ) persist( list );
+                }
             }
+
+            if( !list.isEmpty() ) persist( list );
         } );
     }
 
-    /**
-     * Upsert (replace or insert) metadata objects in MongoDB
-     *
-     * @param metadata
-     */
-    @SneakyThrows
-    private void persist( Metadata<T> metadata ) {
-        var id = storage.identifier.get( metadata.object );
-        log.debug( "Replacing {} with modification time {}", id, metadata.modified );
-        UpdateResult result = collection.replaceOne( eq( "_id", id ), metadata, REPLACE_OPTIONS_UPSERT );
-        log.trace( "Replacing done. {}", result );
+    private void persist( ArrayList<ReplaceOneModel<Metadata<T>>> list ) {
+        collection.bulkWrite( list, new BulkWriteOptions().ordered( false ) );
+        list.clear();
     }
 
     @Override
