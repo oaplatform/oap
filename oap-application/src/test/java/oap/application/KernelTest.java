@@ -32,6 +32,7 @@ import oap.application.linked.ServiceContainer;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Maps;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -52,6 +53,11 @@ public class KernelTest {
     @BeforeMethod
     public void unregister() {
         Application.unregisterServices();
+    }
+
+    @AfterMethod
+    public void afterMethod() {
+        new ArrayList<>( System.getenv().keySet() ).stream().filter( k -> k.startsWith( "CONFIG." ) ).forEach( Env::removeEnv );
     }
 
     @Test
