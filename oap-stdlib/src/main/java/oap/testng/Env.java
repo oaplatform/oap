@@ -145,7 +145,6 @@ public class Env {
                     field.setAccessible( true );
                     Object obj = field.get( env );
                     Map<String, String> map = ( Map<String, String> ) obj;
-                    map.clear();
                     map.putAll( newenv );
                 }
             }
@@ -173,7 +172,7 @@ public class Env {
                     field.setAccessible( true );
                     Object obj = field.get( env );
                     Map<String, String> map = ( Map<String, String> ) obj;
-                    map.clear();
+                    map.remove( name );
                 }
             }
         }
