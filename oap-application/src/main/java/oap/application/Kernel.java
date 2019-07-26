@@ -165,7 +165,7 @@ public class Kernel implements Closeable {
     }
 
     public void start() {
-        start( new ApplicationConfiguration() );
+        start( ApplicationConfiguration.load() );
     }
 
     @SneakyThrows
@@ -196,7 +196,7 @@ public class Kernel implements Closeable {
         map.putAll( System.getProperties() );
         map.putAll( properties );
 
-        start( ApplicationConfiguration.load( appConfigPath, new String[] { Binder.json.marshal( map ) } ) );
+        start( ApplicationConfiguration.load( appConfigPath, List.of( Binder.json.marshal( map ) ) ) );
     }
 
     void start( ApplicationConfiguration config ) {

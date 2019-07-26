@@ -30,6 +30,7 @@ import oap.io.Files;
 import oap.json.Binder;
 import oap.util.Lists;
 import oap.util.Maps;
+import oap.util.Stream;
 
 import java.net.URL;
 import java.nio.file.Path;
@@ -38,23 +39,32 @@ import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
 
 @Slf4j
 @ToString
 public class ApplicationConfiguration {
+    public static final String PREFIX = "CONFIG.";
     List<String> profiles = Lists.empty();
     Map<String, Map<String, Object>> services = Maps.empty();
 
+    private ApplicationConfiguration() {
+    }
+
+    public static ApplicationConfiguration load() {
+        return Binder.hocon.unmarshal( ApplicationConfiguration.class, getEnvConfig() );
+    }
+
     public static ApplicationConfiguration load( Path appConfigPath ) {
-        return load( appConfigPath, new String[0] );
+        return load( appConfigPath, emptyList() );
     }
 
     @SneakyThrows
-    public static ApplicationConfiguration load( Path appConfigPath, String[] configs ) {
+    public static ApplicationConfiguration load( Path appConfigPath, List<String> configs ) {
         return load( appConfigPath.toUri().toURL(), configs );
     }
 
-    public static ApplicationConfiguration load( URL appConfigPath, String[] configs ) {
+    public static ApplicationConfiguration load( URL appConfigPath, List<String> configs ) {
         log.trace( "application configurations: {}, configs = {}", appConfigPath, asList( configs ) );
 
         return Binder.hoconWithConfig( configs )
@@ -70,8 +80,24 @@ public class ApplicationConfiguration {
         List<Path> paths = confd != null ? Files.wildcard( confd, "*.conf" ) : emptyList();
         log.info( "global configurations: {}", paths );
 
-        var confs = paths.stream().map( Files::readString ).toArray( String[]::new );
+        var confs = Stream.of( paths ).map( Files::readString ).concat( getEnvConfig() ).collect( toList() );
 
         return load( appConfigPath, confs );
+    }
+
+    private static String getEnvConfig() {
+        var res = new StringBuilder( "{\n" );
+
+        System.getenv().forEach( ( key, value ) -> {
+            if( key.startsWith( PREFIX ) ) {
+                res.append( key.substring( PREFIX.length() ) ).append( " = " ).append( value ).append( '\n' );
+            }
+        } );
+
+        res.append( "}" );
+
+        log.trace( "env config = {}", res );
+
+        return res.toString();
     }
 }

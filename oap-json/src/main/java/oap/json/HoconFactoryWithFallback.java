@@ -35,6 +35,7 @@ import oap.util.Stream;
 import org.slf4j.Logger;
 
 import java.io.Reader;
+import java.util.List;
 import java.util.Map;
 
 public class HoconFactoryWithFallback extends HoconFactory {
@@ -46,7 +47,7 @@ public class HoconFactoryWithFallback extends HoconFactory {
         this( withSystemProperties, log, ConfigFactory.parseMap( config ) );
     }
 
-    public HoconFactoryWithFallback( boolean withSystemProperties, Logger log, String... config ) {
+    public HoconFactoryWithFallback( boolean withSystemProperties, Logger log, List<String> config ) {
         this( withSystemProperties, log, init( config ) );
     }
 
@@ -58,7 +59,7 @@ public class HoconFactoryWithFallback extends HoconFactory {
 //        if( log.isTraceEnabled() ) System.setProperty( "config.trace", "loads" );
     }
 
-    private static Config init( String[] configs ) {
+    private static Config init( List<String> configs ) {
         return Stream.of( configs )
             .foldLeft( ConfigFactory.empty(),
                 ( config, value ) -> config.withFallback( ConfigFactory.parseString( value ) ) );

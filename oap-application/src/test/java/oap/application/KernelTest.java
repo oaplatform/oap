@@ -29,6 +29,7 @@ import lombok.ToString;
 import oap.application.ServiceOne.Complex;
 import oap.application.linked.ServiceContainee;
 import oap.application.linked.ServiceContainer;
+import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.BeforeMethod;
@@ -188,6 +189,25 @@ public class KernelTest {
             kernel.stop();
         }
 
+    }
+
+    @Test
+    public void mapEnvToConfig() {
+        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "env/env.conf" ) );
+
+        Env.putEnv( "CONFIG.services.s1.enabled", "false" );
+        Env.putEnv( "CONFIG.services.s2.parameters.val", "\"test$value\"" );
+
+        Kernel kernel = new Kernel( modules );
+        try {
+            kernel.start();
+
+            assertThat( kernel.<Service1>service( "s1" ) ).isNull();
+            assertThat( kernel.<Service2>service( "s2" ) ).isNotNull();
+            assertThat( kernel.<Service2>service( "s2" ).val ).isEqualTo( "test$value" );
+        } finally {
+            kernel.stop();
+        }
     }
 
     public static class TestCloseable implements Closeable {

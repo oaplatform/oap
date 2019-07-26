@@ -72,7 +72,7 @@ public class KernelProfileTest {
     }
 
     private void startWithProfile( Kernel kernel, String... profiles ) {
-        var applicationConfiguration = new ApplicationConfiguration();
+        var applicationConfiguration = ApplicationConfiguration.load();
         applicationConfiguration.profiles.addAll( asList( profiles ) );
         kernel.start( applicationConfiguration );
     }

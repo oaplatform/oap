@@ -88,6 +88,9 @@ public class Binder {
     public static final Binder xmlWithTyping;
     public static final Binder yaml;
     private static final JacksonJodaDateFormat JACKSON_DATE_FORMAT = new JacksonJodaDateFormat( Dates.PARSER_FULL );
+    private static final byte[] BEGIN_ARRAY = "[".getBytes();
+    private static final byte[] END_ARRAY = "]".getBytes();
+    private static final byte[] ITEM_SEP = ",".getBytes();
     private static Set<Module> modules;
 
     static {
@@ -123,11 +126,11 @@ public class Binder {
         else return Binder.hocon;
     }
 
-    public static Binder hoconWithConfig( String... config ) {
+    public static Binder hoconWithConfig( List<String> config ) {
         return hoconWithConfig( true, config );
     }
 
-    public static Binder hoconWithConfig( boolean withSystemProperties, String... config ) {
+    public static Binder hoconWithConfig( boolean withSystemProperties, List<String> config ) {
         return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( withSystemProperties, log, config ) ), false, false ) );
     }
 
@@ -139,7 +142,7 @@ public class Binder {
         return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, true ) );
     }
 
-    private static Binder hoconWithConfigWithNullInclusion( String... config ) {
+    private static Binder hoconWithConfigWithNullInclusion( List<String> config ) {
         return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, true ) );
     }
 
@@ -201,7 +204,7 @@ public class Binder {
     public static void update( Object obj, String json ) {
         try {
             String marshal = Binder.json.marshal( obj );
-            hoconWithConfigWithNullInclusion( json ).mapper.readerForUpdating( obj ).readValue( marshal );
+            hoconWithConfigWithNullInclusion( List.of( json ) ).mapper.readerForUpdating( obj ).readValue( marshal );
         } catch( IOException e ) {
             throw new JsonException( e );
         }
@@ -489,10 +492,6 @@ public class Binder {
     public <T> T clone( T object ) {
         return unmarshal( object.getClass(), marshal( object ) );
     }
-
-    private static final byte[] BEGIN_ARRAY = "[".getBytes();
-    private static final byte[] END_ARRAY = "]".getBytes();
-    private static final byte[] ITEM_SEP = ",".getBytes();
 
     @SneakyThrows
     public void marshal( Path path, Iterable<?> iterable ) {
