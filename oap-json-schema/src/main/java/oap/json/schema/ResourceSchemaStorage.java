@@ -59,7 +59,7 @@ public final class ResourceSchemaStorage implements SchemaStorage {
         extYaml.ifPresent( y -> list.add( Binder.json.marshal( Binder.yaml.unmarshal( Map.class, y ) ) ) );
 
 
-        return Binder.json.marshal( Binder.hoconWithConfig( false, list.toArray( new String[0] ) )
+        return Binder.json.marshal( Binder.hoconWithConfig( false, list )
             .unmarshal( Map.class, conf ) );
     }
 }
