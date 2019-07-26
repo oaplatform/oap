@@ -57,7 +57,7 @@ public class KernelTest {
 
     @AfterMethod
     public void afterMethod() {
-        new ArrayList<>( System.getenv().keySet() ).stream().filter( k -> k.startsWith( "CONFIG." ) ).forEach( Env::removeEnv );
+        new ArrayList<>( System.getenv().keySet() ).stream().filter( k -> k.startsWith( "CONFIG." ) ).forEach( k -> Env.putEnv( k, null ) );
     }
 
     @Test

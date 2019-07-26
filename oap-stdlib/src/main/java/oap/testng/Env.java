@@ -27,8 +27,8 @@ import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import oap.io.Files;
 import oap.io.Resources;
-import oap.util.Maps;
 import oap.util.Throwables;
+import org.apache.commons.lang3.SystemUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -124,45 +124,43 @@ public class Env {
 
     @SneakyThrows
     public static void putEnv( String name, String value ) {
-        var newenv = Maps.of2( name, value );
-
         try {
             Class<?> processEnvironmentClass = Class.forName( "java.lang.ProcessEnvironment" );
             Field theEnvironmentField = processEnvironmentClass.getDeclaredField( "theEnvironment" );
             theEnvironmentField.setAccessible( true );
-            Map<String, String> env = ( Map<String, String> ) theEnvironmentField.get( null );
-            env.putAll( newenv );
-            Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField( "theCaseInsensitiveEnvironment" );
-            theCaseInsensitiveEnvironmentField.setAccessible( true );
-            Map<String, String> cienv = ( Map<String, String> ) theCaseInsensitiveEnvironmentField.get( null );
-            cienv.putAll( newenv );
-        } catch( NoSuchFieldException e ) {
-            Class[] classes = Collections.class.getDeclaredClasses();
-            Map<String, String> env = System.getenv();
-            for( Class cl : classes ) {
-                if( "java.util.Collections$UnmodifiableMap".equals( cl.getName() ) ) {
-                    Field field = cl.getDeclaredField( "m" );
-                    field.setAccessible( true );
-                    Object obj = field.get( env );
-                    Map<String, String> map = ( Map<String, String> ) obj;
-                    map.putAll( newenv );
+            var env = ( Map<Object, Object> ) theEnvironmentField.get( null );
+
+            if( SystemUtils.IS_OS_WINDOWS ) {
+                if( value == null ) {
+                    env.remove( name );
+                } else {
+                    env.put( name, value );
+                }
+            } else {
+                var variableClass = Class.forName( "java.lang.ProcessEnvironment$Variable" );
+                var convertToVariable = variableClass.getMethod( "valueOf", String.class );
+                convertToVariable.setAccessible( true );
+
+                var valueClass = Class.forName( "java.lang.ProcessEnvironment$Value" );
+                var convertToValue = valueClass.getMethod( "valueOf", String.class );
+                convertToValue.setAccessible( true );
+
+                if( value == null ) {
+                    env.remove( convertToVariable.invoke( null, name ) );
+                } else {
+                    env.put( convertToVariable.invoke( null, name ), convertToValue.invoke( null, value ) );
                 }
             }
-        }
-    }
 
-    @SneakyThrows
-    public static void removeEnv( String name ) {
-        try {
-            Class<?> processEnvironmentClass = Class.forName( "java.lang.ProcessEnvironment" );
-            Field theEnvironmentField = processEnvironmentClass.getDeclaredField( "theEnvironment" );
-            theEnvironmentField.setAccessible( true );
-            Map<String, String> env = ( Map<String, String> ) theEnvironmentField.get( null );
-            env.remove( name );
             Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField( "theCaseInsensitiveEnvironment" );
             theCaseInsensitiveEnvironmentField.setAccessible( true );
             Map<String, String> cienv = ( Map<String, String> ) theCaseInsensitiveEnvironmentField.get( null );
-            cienv.remove( name );
+
+            if( value == null ) {
+                cienv.remove( name );
+            } else {
+                cienv.put( name, value );
+            }
         } catch( NoSuchFieldException e ) {
             Class[] classes = Collections.class.getDeclaredClasses();
             Map<String, String> env = System.getenv();
@@ -172,7 +170,13 @@ public class Env {
                     field.setAccessible( true );
                     Object obj = field.get( env );
                     Map<String, String> map = ( Map<String, String> ) obj;
-                    map.remove( name );
+
+                    if( value == null ) {
+                        // remove if null
+                        map.remove( name );
+                    } else {
+                        map.put( name, value );
+                    }
                 }
             }
         }
