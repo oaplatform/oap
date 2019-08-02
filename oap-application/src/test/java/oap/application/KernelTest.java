@@ -214,9 +214,10 @@ public class KernelTest {
         try {
             kernel.start();
 
-            assertThat( kernel.<Service1>service( "s1" ) ).isNull();
-            assertThat( kernel.<Service2>service( "s2" ) ).isNotNull();
-            assertThat( kernel.<Service2>service( "s2" ).val ).isEqualTo( "test$value" );
+            assertThat( kernel.<Service1>service( "s1" ) ).isNotPresent();
+            assertThat( kernel.<Service2>service( "s2" ) ).isPresent();
+            assertThat( kernel.<Service2>service( "s2" ) ).isPresent().get()
+                .satisfies( s2 -> assertThat( s2.val ).isEqualTo( "test$value" ) );
         } finally {
             kernel.stop();
         }
