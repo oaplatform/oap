@@ -26,9 +26,11 @@ package oap.ws;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import lombok.SneakyThrows;
 import oap.http.Session;
+import oap.util.Cuid;
 
-import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public class SessionManager {
@@ -38,6 +40,7 @@ public class SessionManager {
     public final String cookiePath;
     public final int cookieExpiration;
     private final Cache<String, Session> sessions;
+    public Cuid cuid = Cuid.UNIQUE;
 
     public SessionManager( int expirationTime, String cookieDomain, String cookiePath ) {
         this.sessions = CacheBuilder.newBuilder()
@@ -48,33 +51,21 @@ public class SessionManager {
         this.cookieExpiration = expirationTime;
     }
 
-    public Session getSessionById( String id ) {
-        return id == null ? null : sessions.getIfPresent( id );
+    public Optional<Session> get( String id ) {
+        return Optional.ofNullable( sessions.getIfPresent( id ) );
     }
 
-    public void put( String sessionId, Session session ) {
-        sessions.put( sessionId, session );
-    }
-
-    public void putSessionData( String sessionId, String key, Object value ) {
-        final Session session = sessions.getIfPresent( sessionId );
-
-        if( session != null ) {
-            session.set( key, value );
-        } else throw new NoSuchElementException( "Element does not exist: " + sessionId );
-    }
-
-    public Object getSessionData( String sessionId, String key ) {
-        final Session session = sessionId == null ? null : sessions.getIfPresent( sessionId );
-
-        return session == null ? null : session.get( key );
+    @SneakyThrows
+    public Session getOrInit( String id ) {
+        String sessionId = id == null ? cuid.next() : id;
+        return sessions.get( sessionId, () -> new Session( sessionId ) );
     }
 
     public void clear() {
         sessions.invalidateAll();
     }
 
-    public void removeSessionById( String sessionId ) {
-        sessions.invalidate( sessionId );
+    public void remove( String id ) {
+        sessions.invalidate( id );
     }
 }

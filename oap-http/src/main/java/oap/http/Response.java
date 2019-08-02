@@ -44,45 +44,33 @@ public class Response {
 
     public void respond( HttpResponse response ) {
 
-        log.trace( "responding {} {}", response.code, response.reasonPhrase );
+        log.trace( "responding {} {}", response.code, response.reason );
 
-        cors.setHeaders( resp );
+        cors.applyTo( resp );
 
         var isGzip = request.isGzipSupport();
 
         resp.setStatusCode( response.code );
 
-        if( response.reasonPhrase != null ) {
-            resp.setReasonPhrase( response.reasonPhrase );
-        }
+        if( response.reason != null ) resp.setReasonPhrase( response.reason );
 
-        if( !response.headers.isEmpty() ) {
-            for( Pair<String, String> header : response.headers ) {
-                resp.setHeader( header._1, header._2 );
-            }
-        }
-        if( isGzip )
-            resp.setHeader( "Content-encoding", "gzip" );
+        if( !response.headers.isEmpty() ) for( Pair<String, String> header : response.headers )
+            resp.setHeader( header._1, header._2 );
 
-        if( !response.cookies.isEmpty() ) {
-            for( Pair<String, String> cookie : response.cookies ) {
-                resp.addHeader( cookie._1, cookie._2 );
-            }
-        }
+        if( isGzip ) resp.setHeader( "Content-encoding", "gzip" );
 
-        if( response.contentEntity != null ) {
-            if( isGzip ) {
-                resp.setEntity( new HttpGzipOutputStreamEntity( out -> {
-                    try {
-                        response.contentEntity.writeTo( out );
-                    } catch( IOException e ) {
-                        throw new UncheckedIOException( e );
-                    }
-                }, null ) );
-            } else {
-                resp.setEntity( response.contentEntity );
+        if( !response.cookies.isEmpty() )
+            for( Pair<String, String> cookie : response.cookies ) resp.addHeader( cookie._1, cookie._2 );
+
+        if( response.contentEntity != null )
+            if( isGzip ) resp.setEntity( new HttpGzipOutputStreamEntity( out -> {
+            try {
+                response.contentEntity.writeTo( out );
+            } catch( IOException e ) {
+                throw new UncheckedIOException( e );
             }
-        }
+        }, null ) );
+        else resp.setEntity( response.contentEntity );
     }
 
 }

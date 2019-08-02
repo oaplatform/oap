@@ -33,7 +33,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 
-import static oap.http.HttpResponse.HTTP_FORBIDDEN;
+import static oap.http.HttpResponse.FORBIDDEN;
 import static oap.http.HttpResponse.NO_CONTENT;
 
 @Slf4j
@@ -71,12 +71,10 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
         var cors = corsPolicy.getCors( request );
         var response = new Response( request, httpResponse, cors );
 
-        if( Protocol.LOCAL.equals( this.protocol ) && !Inet.isLocalAddress( remoteAddress ) ) {
-            response.respond( HTTP_FORBIDDEN );
-        } else if( cors.autoOptions && request.getHttpMethod() == Request.HttpMethod.OPTIONS ) {
+        if( Protocol.LOCAL.equals( this.protocol ) && !Inet.isLocalAddress( remoteAddress ) )
+            response.respond( FORBIDDEN );
+        else if( cors.autoOptions && request.getHttpMethod() == Request.HttpMethod.OPTIONS )
             response.respond( NO_CONTENT );
-        } else {
-            handler.handle( request, response );
-        }
+        else handler.handle( request, response );
     }
 }

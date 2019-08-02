@@ -53,9 +53,9 @@ final class WsServices {
             .findFirst()
             .flatMap( group -> {
                 Matcher matcher1 = compile( mapping ).matcher( path );
-                return matcher1.matches() && group <= matcher1.groupCount() ?
-                    Optional.of( matcher1.group( group + 1 ) ) :
-                    Optional.<String>empty();
+                return matcher1.matches() && group <= matcher1.groupCount()
+                    ? Optional.of( matcher1.group( group + 1 ) )
+                    : Optional.<String>empty();
             } );
     }
 }

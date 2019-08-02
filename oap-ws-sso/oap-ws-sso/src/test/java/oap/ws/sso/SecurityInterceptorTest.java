@@ -47,6 +47,8 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertFalse;
@@ -63,35 +65,29 @@ public class SecurityInterceptorTest {
     private final SecurityInterceptor securityInterceptor = new SecurityInterceptor( mockTokenService, precedenceRoleService );
 
     @Test
-    public void shouldNotCheckMethodWithoutAnnotation() {
-        final Reflection.Method methodWithAnnotation = REFLECTION.method(
-            method -> method.name().equals( "methodWithoutAnnotation" ) ).get();
-
-        final Optional<HttpResponse> httpResponse = securityInterceptor.intercept( null, null, methodWithAnnotation, p -> null );
-
-        assertFalse( httpResponse.isPresent() );
+    public void noSecurityAnnotation() {
+        assertThat( securityInterceptor.before( null, new Session( "1" ),
+            REFLECTION.method( "unsecure" ).get() ) ).isNotPresent();
     }
 
     @Test
     public void shouldVerifyUserIfPresentInSession() {
-        final Reflection.Method methodWithAnnotation = REFLECTION.method(
-            method -> method.name().equals( "methodWithAnnotation" ) ).get();
+        Reflection.Method methodWithAnnotation = REFLECTION.method( "secure" ).get();
 
-        final User user = new DefaultUser( "ADMIN", "org", "test@test.com" );
+        User user = new DefaultUser( "ADMIN", "org", "test@test.com" );
 
-        final Session session = new Session();
+        Session session = new Session( "id" );
         session.set( "user", user );
 
-        final Optional<HttpResponse> httpResponse = securityInterceptor.intercept( null,
-            session, methodWithAnnotation, ( p ) -> null );
+        Optional<HttpResponse> httpResponse = securityInterceptor.before( null,
+            session, methodWithAnnotation );
 
         assertFalse( httpResponse.isPresent() );
     }
 
     @Test
     public void shouldVerifyAndSetUserInSessionIfAuthorizationHeaderIsPresent() throws UnknownHostException {
-        var methodWithAnnotation = REFLECTION.method(
-            method -> method.name().equals( "methodWithAnnotation" ) ).get();
+        var methodWithAnnotation = REFLECTION.method( "secure" ).get();
 
         var context = new Context( "/", InetAddress.getLocalHost(), new ServerHttpContext( new MockHttpContext(), Protocol.HTTP, null ) );
         var tokenId = UUID.randomUUID().toString();
@@ -111,19 +107,27 @@ public class SecurityInterceptorTest {
 
         when( mockTokenService.getToken( tokenId ) ).thenReturn( Optional.of( token ) );
 
-        var session = new Session();
-        var httpResponse = securityInterceptor.intercept( request,
-            session, methodWithAnnotation, p -> null );
+        var session = new Session( "id" );
+        var httpResponse = securityInterceptor.before( request,
+            session, methodWithAnnotation );
 
         assertFalse( httpResponse.isPresent() );
         assertNotNull( session.get( "user" ) );
     }
 
+    @Test
+    public void noSession() {
+        Optional<HttpResponse> response = securityInterceptor.before( null, null, REFLECTION.method( "secure" ).get() );
+        assertThat( response ).isPresent().get();
+        assertThat( response.get().code ).isEqualTo( HTTP_INTERNAL_ERROR );
+        assertThat( response.get().reason ).isEqualTo( "no session provided for security interceptor" );
+    }
+
     private static class TestAPI {
 
         @WsSecurity( role = "USER" )
-        public void methodWithAnnotation() {}
+        public void secure() {}
 
-        public void methodWithoutAnnotation() {}
+        public void unsecure() {}
     }
 }

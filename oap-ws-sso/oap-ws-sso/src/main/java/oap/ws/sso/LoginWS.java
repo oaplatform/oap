@@ -53,26 +53,20 @@ public class LoginWS {
 
     @WsMethod( method = GET, path = "/" )
     public HttpResponse login( @WsParam( from = QUERY ) String email, @WsParam( from = QUERY ) String password ) {
-        final Optional<Token> optionalToken = authService.generateToken( email, password );
+        Optional<Token> optionalToken = authService.generateToken( email, password );
 
         if( optionalToken.isPresent() ) {
-            final Token token = optionalToken.get();
-            final HttpResponse ok = HttpResponse.ok( token );
-            return withAuthorization( ok, token );
-        } else {
-            return HttpResponse.status( HTTP_UNAUTHORIZED, "Username or password is invalid" );
-        }
-    }
-
-    public HttpResponse withAuthorization( HttpResponse response, Token token ) {
-        return response.withHeader( "Authorization", token.id )
-            .withCookie( new HttpResponse.CookieBuilder()
-                .withCustomValue( "Authorization", token.id )
-                .withDomain( cookieDomain )
-                .withPath( "/" )
-                .withExpires( DateTime.now().plusMinutes( cookieExpiration ) )
-                .build()
-            );
+            Token token = optionalToken.get();
+            return HttpResponse.ok( token )
+                .withHeader( "Authorization", token.id )
+                .withCookie( new HttpResponse.CookieBuilder()
+                    .withValue( "Authorization", token.id )
+                    .withDomain( cookieDomain )
+                    .withPath( "/" )
+                    .withExpires( DateTime.now().plusMinutes( cookieExpiration ) )
+                    .build()
+                ).response();
+        } else return HttpResponse.status( HTTP_UNAUTHORIZED, "Username or password is invalid" ).response();
     }
 
 }

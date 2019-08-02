@@ -22,8 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.sso;
+package oap.ws.sso;
 
-public enum OAuthProvider {
-    LinkedIn
+public class SecureWSTest  {
 }

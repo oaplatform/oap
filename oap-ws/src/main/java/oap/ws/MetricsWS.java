@@ -33,7 +33,7 @@ import static oap.http.Request.HttpMethod.GET;
 
 public class MetricsWS {
     @WsMethod( path = "/", method = GET )
-    public List<Metrics.Snapshot> metrics() throws IOException {
+    public List<Metrics.Snapshot> metrics() {
         return Metrics.snapshots();
     }
 

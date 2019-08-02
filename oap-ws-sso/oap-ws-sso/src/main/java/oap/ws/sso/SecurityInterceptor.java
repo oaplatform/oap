@@ -33,16 +33,18 @@ import oap.sso.PrecedenceRoleService;
 import oap.sso.Token;
 import oap.sso.TokenService;
 import oap.sso.User;
-import oap.ws.Interceptor;
+import oap.ws.interceptor.Interceptor;
 
 import java.util.Optional;
-import java.util.function.Function;
 
 import static java.lang.String.format;
+import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 
 @Slf4j
 public class SecurityInterceptor implements Interceptor {
 
+    public static final String USER_ID = "userid";
+    public static final String AUTHORIZATION = "Authorization";
     TokenService tokenService;
     PrecedenceRoleService precedenceRoleService;
 
@@ -51,48 +53,47 @@ public class SecurityInterceptor implements Interceptor {
         this.precedenceRoleService = precedenceRoleService;
     }
 
+    public static String getSessionToken( Request request ) {
+        return request.header( AUTHORIZATION ).orElse( request.cookie( AUTHORIZATION ).orElse( null ) );
+    }
+
     @Override
-    public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
-                                             Function<Reflection.Parameter, Object> getParameterValueFunc ) {
-        final Optional<WsSecurity> annotation = method.findAnnotation( WsSecurity.class );
+    public Optional<HttpResponse> before( Request request, Session session, Reflection.Method method ) {
+        Optional<WsSecurity> annotation = method.findAnnotation( WsSecurity.class );
         if( annotation.isPresent() ) {
-            if( session == null ) {
-                final HttpResponse httpResponse = HttpResponse.status( 500, "Session doesn't exist; check if service is session aware" );
-
-                log.error( httpResponse.toString() );
-
-                return Optional.of( httpResponse );
-            }
+            if( session == null ) return Optional.of( HttpResponse
+                .status( HTTP_INTERNAL_ERROR, "no session provided for security interceptor" )
+                .response() );
 
             User user = ( User ) session.get( "user" ).orElse( null );
             if( user != null ) {
                 log.trace( "User [{}] found in session", user.getEmail() );
 
-                final int methodRolePrecedence = precedenceRoleService.getPrecedence( annotation.get().role() );
+                int methodRolePrecedence = precedenceRoleService.getPrecedence( annotation.get().role() );
 
                 if( precedenceRoleService.getPrecedence( user.getRole() ) > methodRolePrecedence ) {
-                    final HttpResponse httpResponse = HttpResponse.status( 403, format( "User [%s] has no access to method [%s]", user.getEmail(), method.name() ) );
+                    HttpResponse httpResponse = HttpResponse.status( 403, format( "User [%s] has no access to method [%s]", user.getEmail(), method.name() ) ).response();
 
                     log.debug( httpResponse.toString() );
 
                     return Optional.of( httpResponse );
                 }
             } else {
-                final String sessionToken = request.header( "Authorization" ).orElse( request.cookie( "Authorization" ).orElse( null ) );
+                String sessionToken = request.header( "Authorization" ).orElse( request.cookie( "Authorization" ).orElse( null ) );
 
                 if( sessionToken == null ) {
-                    final HttpResponse httpResponse = HttpResponse.status( 401, "Session token is missing in header or cookie" );
+                    HttpResponse httpResponse = HttpResponse.status( 401, "Session token is missing in header or cookie" ).response();
 
                     log.debug( httpResponse.toString() );
 
                     return Optional.of( httpResponse );
                 }
 
-                final Token token = tokenService.getToken( sessionToken ).orElse( null );
+                Token token = tokenService.getToken( sessionToken ).orElse( null );
 
                 if( token == null ) {
-                    final HttpResponse httpResponse = HttpResponse.status( 401, format( "Token id [%s] expired or was "
-                        + "not created", sessionToken ) );
+                    HttpResponse httpResponse = HttpResponse.status( 401, format( "Token id [%s] expired or was "
+                        + "not created", sessionToken ) ).response();
 
                     log.debug( httpResponse.toString() );
 
@@ -104,10 +105,10 @@ public class SecurityInterceptor implements Interceptor {
                 session.set( "user", user );
                 session.set( USER_ID, user.getEmail() );
 
-                final int methodRolePrecedence = precedenceRoleService.getPrecedence( annotation.get().role() );
+                int methodRolePrecedence = precedenceRoleService.getPrecedence( annotation.get().role() );
 
                 if( precedenceRoleService.getPrecedence( user.getRole() ) > methodRolePrecedence ) {
-                    final HttpResponse httpResponse = HttpResponse.status( 403, format( "User [%s] has no access to method [%s]", user.getEmail(), method.name() ) );
+                    HttpResponse httpResponse = HttpResponse.status( 403, format( "User [%s] has no access to method [%s]", user.getEmail(), method.name() ) ).response();
 
                     log.debug( httpResponse.toString() );
 
@@ -118,4 +119,5 @@ public class SecurityInterceptor implements Interceptor {
 
         return Optional.empty();
     }
+
 }

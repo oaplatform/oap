@@ -22,38 +22,49 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.ws.testng;
 
 import oap.application.Kernel;
 import oap.concurrent.SynchronizedThread;
 import oap.http.PlainHttpListener;
 import oap.http.Server;
-import oap.http.cors.GenericCorsPolicy;
+import oap.io.Closeables;
 import oap.testng.Env;
+import oap.testng.Fixture;
 import oap.util.Lists;
+import oap.ws.SessionManager;
+import oap.ws.WebServices;
+import oap.ws.WsConfig;
 
 import java.io.Closeable;
 import java.util.List;
 import java.util.function.BiConsumer;
 
 import static java.util.Collections.emptyList;
+import static oap.http.cors.GenericCorsPolicy.DEFAULT;
 import static oap.http.testng.HttpAsserts.reset;
 
-public class AbstractWebServicesTest {
-    protected TestWebServer webServer() {
-        return webServer( ( ws, k ) -> {} );
+public class WsFixture implements Fixture {
+
+    private Class<?> contextClass;
+    private final BiConsumer<WebServices, Kernel> registerServices;
+    private final String[] configs;
+    private TestWebServer server;
+
+    public WsFixture( Class<?> contextClass, BiConsumer<WebServices, Kernel> registerServices, String... configs ) {
+        this.contextClass = contextClass;
+        this.registerServices = registerServices;
+        this.configs = configs;
     }
 
-    protected TestWebServer webServer( BiConsumer<WebServices, Kernel> registerServices ) {
-        return webServer( registerServices, "ws.json", "ws.conf" );
+    @Override
+    public void beforeMethod() {
+        server = new TestWebServer( Lists.of( configs ), registerServices );
     }
 
-    protected TestWebServer webServer( String... configs ) {
-        return webServer( ( ws, k ) -> {}, configs );
-    }
-
-    protected TestWebServer webServer( BiConsumer<WebServices, Kernel> registerServices, String... configs ) {
-        return new TestWebServer( List.of( configs ), registerServices );
+    @Override
+    public void afterMethod() {
+        Closeables.close( server );
     }
 
     protected class TestWebServer implements Closeable {
@@ -68,8 +79,8 @@ public class AbstractWebServicesTest {
             server = new Server( 100, false );
             server.start();
             ws = new WebServices( kernel, server, new SessionManager( 10, null, "/" ),
-                GenericCorsPolicy.DEFAULT,
-                Lists.map( configs, n -> WsConfig.CONFIGURATION.fromResource( getClass(), n ) )
+                DEFAULT,
+                Lists.map( configs, n -> WsConfig.CONFIGURATION.fromResource( contextClass, n ) )
             );
 
             kernel.start();

@@ -22,46 +22,43 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.ws.interceptor;
 
 import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Session;
-import oap.io.Closeables;
 import oap.reflect.Reflection;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import oap.testng.Fixtures;
+import oap.ws.WsMethod;
+import oap.ws.WsParam;
+import oap.ws.testng.WsFixture;
 import org.testng.annotations.Test;
 
 import java.util.Optional;
-import java.util.function.Function;
 
 import static oap.http.Request.HttpMethod.GET;
 import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.http.testng.HttpAsserts.httpUrl;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
-public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
-    private TestWebServer server;
+public class InterceptorTest extends Fixtures {
+//    private TestWebServer server;
 
-    @BeforeMethod
-    public void init() {
-        server = webServer( ( ws, kernel ) -> {
+    {
+        fixture( new WsFixture( getClass(), ( ws, kernel ) -> {
             kernel.register( "test", new TestWS() );
-            kernel.register( "empty-interceptor", new EmptyInterceptor() );
+            kernel.register( "pass-interceptor", new PassInterceptor() );
             kernel.register( "error-interceptor", new ErrorInterceptor() );
 
-        }, "ws-interceptors.conf" );
-    }
-
-    @AfterMethod
-    public void done() {
-        Closeables.close( server );
+        }, "ws-interceptors.conf" ) );
     }
 
     @Test
     public void shouldAllowRequestWhenEmptyInterceptor() {
-        assertGet( httpUrl( "/test/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
+        assertGet( httpUrl( "/test/text?value=empty" ) )
+            .isOk()
+            .hasReason( "modified by interceptor" )
+            .hasBody( "ok" );
     }
 
     @Test
@@ -74,27 +71,33 @@ public class WebServiceInterceptorsTest extends AbstractWebServicesTest {
     @SuppressWarnings( "unused" )
     private static class TestWS {
 
-        @WsMethod( path = "/text", method = GET )
-        public HttpResponse text( @WsParam( from = WsParam.From.QUERY ) String value ) {
-            return HttpResponse.ok( "ok" );
+        @WsMethod( path = "/text", method = GET, produces = "plain/text" )
+        public String text( @WsParam( from = WsParam.From.QUERY ) String value ) {
+            return "ok";
         }
     }
 
-    private static class EmptyInterceptor implements Interceptor {
+    private static class PassInterceptor implements Interceptor {
         @Override
-        public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
-                                                 Function<Reflection.Parameter, Object> getParameterValueFunc ) {
+        public Optional<HttpResponse> before( Request request, Session session, Reflection.Method method ) {
             return Optional.empty();
+        }
+
+        @Override
+        public HttpResponse after( HttpResponse response, Session session ) {
+            return response.modify().withReason( "modified by interceptor" ).response();
         }
     }
 
     private static class ErrorInterceptor implements Interceptor {
         @Override
-        public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
-                                                 Function<Reflection.Parameter, Object> getParameterValueFunc ) {
+        public Optional<HttpResponse> before( Request request, Session session, Reflection.Method method ) {
             return request.getListParams().parameterOpt( "value" ).filter( s -> s.equals( "error" ) ).isPresent()
-                ? Optional.of( new HttpResponse( 403 ).withContent( "caused by interceptor", APPLICATION_JSON ) )
-                : Optional.empty();
+                ? Optional.of(
+                HttpResponse.status( 403 )
+                    .withContent( "caused by interceptor", APPLICATION_JSON )
+                    .response()
+            ) : Optional.empty();
         }
     }
 }

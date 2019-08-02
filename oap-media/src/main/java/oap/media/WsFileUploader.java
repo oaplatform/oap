@@ -84,13 +84,13 @@ public class WsFileUploader extends FileUploader implements Handler {
 
             if( items.stream().filter( i -> !i.isFormField() ).count() != 1 ) {
                 log.trace( "Only one file allowed" );
-                response.respond( HttpResponse.status( HTTP_BAD_REQUEST, "Only one file allowed" ) );
+                response.respond( HttpResponse.status( HTTP_BAD_REQUEST, "Only one file allowed" ).response() );
                 return;
             }
 
             if( items.stream().filter( i -> i.isFormField() && "prefix".equals( i.getFieldName() ) ).count() != 1 ) {
                 log.trace( "'prefix' field is required" );
-                response.respond( HttpResponse.status( HTTP_BAD_REQUEST, "'prefix' field is required" ) );
+                response.respond( HttpResponse.status( HTTP_BAD_REQUEST, "'prefix' field is required" ).response() );
                 return;
             }
 
@@ -129,7 +129,7 @@ public class WsFileUploader extends FileUploader implements Handler {
 
                 fireUploaded( media, mediaInfo, mediaContext );
 
-                response.respond( HttpResponse.ok( new MediaResponse( media.id, mediaInfo ) ) );
+                response.respond( HttpResponse.ok( new MediaResponse( media.id, mediaInfo ) ).response() );
             } finally {
                 Files.deleteIfExists( ( ( DiskFileItem ) fileItem ).getStoreLocation().toPath() );
             }

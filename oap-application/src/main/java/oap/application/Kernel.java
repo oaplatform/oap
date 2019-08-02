@@ -56,6 +56,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -70,7 +71,6 @@ import static oap.application.KernelHelper.isModuleEnabled;
 import static oap.application.KernelHelper.isServiceEnabled;
 import static oap.application.KernelHelper.isServiceLink;
 import static oap.application.KernelHelper.referenceName;
-import static oap.application.KernelHelper.serviceEnabled;
 
 @Slf4j
 @ToString( of = "name" )
@@ -301,10 +301,9 @@ public class Kernel implements Closeable {
             var linkName = referenceName( parameterValue );
             var linkService = service( linkName );
 
-            if( failIfNotFound && linkService == null )
+            if( failIfNotFound && linkService.isEmpty() )
                 throw new ApplicationException( "for " + si.implementationName + " linked object " + linkName + " is not found" );
-
-            lRef.set( linkService );
+            linkService.ifPresent( lRef::set );
         } else if( isImplementations( parameterValue ) ) {
             var interfaceName = referenceName( parameterValue );
             try {
@@ -419,8 +418,15 @@ public class Kernel implements Closeable {
     }
 
     @SuppressWarnings( "unchecked" )
-    public <T> T service( String name ) {
-        return ( T ) services.get( name );
+    public <T> Optional<T> service( String name ) {
+        return Optional.ofNullable( ( T ) services.get( name ) );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <T> T serviceOrThrow( String name ) {
+        T service = ( T ) services.get( name );
+        if( service == null ) throw new ApplicationException( "service " + name + " is not found" );
+        return service;
     }
 
     @SuppressWarnings( "unchecked" )
@@ -431,14 +437,14 @@ public class Kernel implements Closeable {
             .toList();
     }
 
-    protected Object resolve( String serviceName, String field, String reference, boolean required ) {
-        var linkName = Module.Reference.of( reference ).name;
-        var linkedService = service( linkName );
-        log.debug( "for {} linking {} -> {} with {}", serviceName, field, reference, linkedService );
-        if( linkedService == null && required && serviceEnabled( modules, linkName ) )
-            throw new ApplicationException( "for " + serviceName + " service link " + reference + " is not found" );
-        return linkedService;
-    }
+//    protected Object resolve( String serviceName, String field, String reference, boolean required ) {
+//        var linkName = Module.Reference.of( reference ).name;
+//        var linkedService = service( linkName );
+//        log.debug( "for {} linking {} -> {} with {}", serviceName, field, reference, linkedService );
+//        if( linkedService.isEmpty() && required && serviceEnabled( modules, linkName ) )
+//            throw new ApplicationException( "for " + serviceName + " service link " + reference + " is not found" );
+//        return linkedService.get();
+//    }
 
     public void unregister( String name ) {
         services.remove( name );

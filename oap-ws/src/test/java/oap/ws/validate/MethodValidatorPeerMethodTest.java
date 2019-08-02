@@ -81,8 +81,8 @@ public class MethodValidatorPeerMethodTest extends AbstractWsValidateTest {
     public static class TestWS {
 
         @WsMethod( path = "/run/validation/default", method = POST )
-        public Object validationDefault( @WsParam( from = BODY ) String request ) {
-            return HttpResponse.ok( request, true, TEXT_PLAIN );
+        public HttpResponse validationDefault( @WsParam( from = BODY ) String request ) {
+            return HttpResponse.ok( request, true, TEXT_PLAIN ).response();
         }
 
         @WsMethod( path = "/run/validation/ok", method = POST, produces = "text/plain" )

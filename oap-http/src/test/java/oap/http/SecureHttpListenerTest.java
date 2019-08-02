@@ -41,7 +41,7 @@ public class SecureHttpListenerTest {
 
             log.debug( "{}", request.getHeaders() );
 
-            response.respond( new HttpResponse( 200 ) );
+            response.respond( HttpResponse.status( 200 ).response() );
         }, Protocol.HTTPS );
 
         SecureHttpListener http = new SecureHttpListener( server, pathOfTestResource( getClass(), "server_keystore.jks" ), KEYSTORE_PASSWORD, Env.port(), false );

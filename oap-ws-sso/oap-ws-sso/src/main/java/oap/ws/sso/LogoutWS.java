@@ -35,7 +35,7 @@ public class LogoutWS {
     }
 
     @SuppressWarnings( "unused" )
-    public ValidationErrors validateUserAccess( final String email, final User user ) {
+    public ValidationErrors validateUserAccess( String email, User user ) {
         return Objects.equals( user.getEmail(), email )
             ? ValidationErrors.empty()
             : ValidationErrors.error( HTTP_FORBIDDEN, format( "User [%s] doesn't have enough permissions", user.getEmail() ) );

@@ -24,43 +24,32 @@
 
 package oap.ws;
 
-import oap.http.HttpResponse;
-import oap.io.Closeables;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import oap.testng.Fixtures;
+import oap.ws.testng.WsFixture;
 import org.testng.annotations.Test;
 
 import static oap.http.Request.HttpMethod.GET;
 import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.http.testng.HttpAsserts.httpUrl;
 
-public class WebServiceLocalTest extends AbstractWebServicesTest {
-
-    private TestWebServer server;
-
-    @BeforeMethod
-    public void init() {
-        server = webServer( ( ws, kernel ) -> {
-            kernel.register( "test", new TestWS() );
-        }, "ws-local.conf" );
-    }
-
-    @AfterMethod
-    public void done() {
-        Closeables.close( server );
+public class WebServiceLocalTest extends Fixtures {
+    {
+        fixture( new WsFixture( getClass(),
+            ( ws, kernel ) -> kernel.register( "test", new TestWS() ),
+            "ws-local.conf" ) );
     }
 
     @Test
     public void shouldAllowRequestWhenEmptyInterceptor() {
-        assertGet( httpUrl( "/test/text?value=empty" ) ).isOk().hasBody( "\"" + "ok" + "\"" );
+        assertGet( httpUrl( "/test/text?value=empty" ) ).isOk().hasBody( "ok" );
     }
 
     @SuppressWarnings( "unused" )
     private static class TestWS {
 
-        @WsMethod( path = "/text", method = GET )
-        public HttpResponse text( @WsParam( from = WsParam.From.QUERY ) String value ) {
-            return HttpResponse.ok( "ok" );
+        @WsMethod( path = "/text", method = GET, produces = "text/plain" )
+        public String text( @WsParam( from = WsParam.From.QUERY ) String value ) {
+            return "ok";
         }
     }
 }

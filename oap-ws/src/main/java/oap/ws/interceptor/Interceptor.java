@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package oap.ws;
+package oap.ws.interceptor;
 
 import oap.http.HttpResponse;
 import oap.http.Request;
@@ -30,21 +30,11 @@ import oap.http.Session;
 import oap.reflect.Reflection;
 
 import java.util.Optional;
-import java.util.function.Function;
 
 public interface Interceptor {
-    String USER_ID = "userid";
-    String AUTHORIZATION = "Authorization";
+    Optional<HttpResponse> before( Request request, Session session, Reflection.Method method );
 
-    static String getSessionToken( Request request ) {
-        return request.header( AUTHORIZATION ).orElse( request.cookie( AUTHORIZATION ).orElse( null ) );
-    }
-
-    Optional<HttpResponse> intercept( Request request, Session session,
-                                      Reflection.Method method,
-                                      Function<Reflection.Parameter, Object> getParameterValueFunc );
-
-    default Object postProcessing( Object value, Session session, Reflection.Method method ) {
-        return value;
+    default HttpResponse after( HttpResponse response, Session session ) {
+        return response;
     }
 }

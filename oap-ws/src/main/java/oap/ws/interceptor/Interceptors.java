@@ -22,18 +22,29 @@
  * SOFTWARE.
  */
 
-package oap.ws.sso;
+package oap.ws.interceptor;
 
-import oap.sso.TokenService;
+import oap.http.HttpResponse;
+import oap.http.Request;
+import oap.http.Session;
+import oap.reflect.Reflection;
+import oap.util.Stream;
+import org.apache.commons.collections4.iterators.ReverseListIterator;
 
-public class LocalSecurityInterceptor {
-    public final SecurityInterceptor securityInterceptor;
-    public final TokenService defaultTokenService;
+import java.util.List;
+import java.util.Optional;
 
-    public LocalSecurityInterceptor( SecurityInterceptor securityInterceptor, TokenService defaultTokenService ) {
-        this.securityInterceptor = securityInterceptor;
-        this.defaultTokenService = defaultTokenService;
+public class Interceptors {
+    public static Optional<HttpResponse> before( List<Interceptor> interceptors, Request request, Session session, Reflection.Method method ) {
+        for( var interceptor : interceptors ) {
+            var response = interceptor.before( request, session, method );
+            if( response.isPresent() ) return response;
+        }
+        return Optional.empty();
+    }
 
-        securityInterceptor.tokenService = defaultTokenService;
+    public static HttpResponse after( List<Interceptor> interceptors, HttpResponse response, Session session ) {
+        return Stream.of( new ReverseListIterator<>( interceptors ) )
+            .foldLeft( response, ( r, i ) -> i.after( r, session ) );
     }
 }

@@ -26,6 +26,7 @@ package oap.sso;
 
 import java.util.Objects;
 
+@Deprecated
 public interface OrganizationAware {
     String getOrganization();
 

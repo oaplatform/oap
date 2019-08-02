@@ -150,23 +150,29 @@ public final class Strings {
         } ).replace( s );
     }
 
-    public static String join( Collection<?> list ) {
-        return join( ",", list );
+    public static String join( Collection<?> items ) {
+        return join( ",", false, items, "", "", "" );
     }
 
     public static String join( String delimiter, Collection<?> items ) {
-        return join( delimiter, items, "", "" );
+        return join( delimiter, false, items, "", "", "" );
+    }
+
+    public static String join( String delimiter, boolean skipNulls, Collection<?> items ) {
+        return join( delimiter, skipNulls, items, "", "", "" );
     }
 
     public static String join( String delimiter, Collection<?> items, String prefix, String suffix ) {
-        StringJoiner joiner = new StringJoiner( delimiter, prefix, suffix );
-        items.forEach( e -> joiner.add( String.valueOf( e ) ) );
-        return joiner.toString();
+        return join( delimiter, false, items, prefix, suffix, "" );
     }
 
     public static String join( String delimiter, Collection<?> items, String prefix, String suffix, String quotes ) {
+        return join( delimiter, false, items, prefix, suffix, quotes );
+    }
+
+    public static String join( String delimiter, boolean skipNulls, Collection<?> items, String prefix, String suffix, String quotes ) {
         StringJoiner joiner = new StringJoiner( delimiter, prefix, suffix );
-        items.forEach( e -> joiner.add( quotes + e + quotes ) );
+        items.stream().filter( item -> !Objects.isNull( item ) ).forEach( e -> joiner.add( quotes + e + quotes ) );
         return joiner.toString();
     }
 

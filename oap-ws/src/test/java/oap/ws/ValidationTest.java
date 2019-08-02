@@ -25,9 +25,8 @@
 package oap.ws;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.io.Closeables;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import oap.testng.Fixtures;
+import oap.ws.testng.WsFixture;
 import org.testng.annotations.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -37,21 +36,13 @@ import static oap.http.testng.HttpAsserts.httpUrl;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 @Slf4j
-public class ValidationTest extends AbstractWebServicesTest {
-    private TestWebServer server;
-
-    @BeforeMethod
-    public void init() {
-        server = webServer( ( ws, kernel ) -> {
+public class ValidationTest extends Fixtures {
+    {
+        fixture( new WsFixture( getClass(), ( ws, kernel ) -> {
             kernel.register( "validatedWS", new TestValidatedWS() );
             ws.exceptionToHttpCode.put( IllegalAccessException.class.getName(), 400 );
             ws.exceptionToHttpCode.put( "unknownclass", 400 );
-        }, "validation-services.conf" );
-    }
-
-    @AfterMethod
-    public void done() {
-        Closeables.close( server );
+        }, "validation-services.conf" ) );
     }
 
     @Test

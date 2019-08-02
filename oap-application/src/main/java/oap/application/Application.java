@@ -40,7 +40,7 @@ public class Application {
     private static final ConcurrentMap<String, Kernel> kernels = new ConcurrentHashMap<>();
 
     public static synchronized <T> T service( String name ) {
-        return kernel( DEFAULT ).service( name );
+        return kernel( DEFAULT ).<T>service( name ).orElse( null );
     }
 
     public static synchronized <T> Stream<T> instancesOf( Class<T> clazz ) {

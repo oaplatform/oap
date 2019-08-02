@@ -35,6 +35,10 @@ import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static oap.ws.validate.ValidationErrors.empty;
 import static oap.ws.validate.ValidationErrors.error;
 
+/**
+ *
+ */
+@Deprecated
 public interface OrganizationAwareWS {
     static ValidationErrors validateObjectAccess( Optional<? extends OrganizationAware> object, String organizationId ) {
         return object.filter( oa -> !Objects.equals( oa.getOrganization(), organizationId ) )

@@ -23,7 +23,7 @@
  */
 package oap.http;
 
-import com.google.common.base.Joiner;
+import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
@@ -41,115 +41,124 @@ import org.joda.time.format.DateTimeFormatter;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
+import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.util.Pair.__;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class HttpResponse {
-    public static final HttpResponse NOT_FOUND = status( HttpURLConnection.HTTP_NOT_FOUND );
-    public static final HttpResponse HTTP_FORBIDDEN = status( HttpURLConnection.HTTP_FORBIDDEN );
-    public static final HttpResponse NO_CONTENT = status( HttpURLConnection.HTTP_NO_CONTENT );
-    public static final HttpResponse NOT_MODIFIED = status( HttpURLConnection.HTTP_NOT_MODIFIED );
+    public static final HttpResponse NOT_FOUND = status( HTTP_NOT_FOUND ).response();
+    public static final HttpResponse FORBIDDEN = status( HTTP_FORBIDDEN ).response();
+    public static final HttpResponse NO_CONTENT = status( HTTP_NO_CONTENT ).response();
+    public static final HttpResponse NOT_MODIFIED = status( HTTP_NOT_MODIFIED ).response();
     private static Map<String, Function<Object, String>> producers = Maps.of(
         __( ContentType.TEXT_PLAIN.getMimeType(), String::valueOf )
     );
-    public String reasonPhrase;
-    public List<Pair<String, String>> headers = new ArrayList<>();
-    public List<Pair<String, String>> cookies = new ArrayList<>();
-    public int code;
-    public HttpEntity contentEntity;
+    public final int code;
+    public final String reason;
+    public final List<Pair<String, String>> headers;
+    public final List<Pair<String, String>> cookies;
+    public final Map<String, Object> session;
+    public final HttpEntity contentEntity;
 
-    public HttpResponse( int code ) {
+    private HttpResponse( int code, String reason, List<Pair<String, String>> cookies, List<Pair<String, String>> headers, Map<String, Object> session, HttpEntity contentEntity ) {
         this.code = code;
+        this.reason = reason;
+        this.cookies = cookies;
+        this.headers = headers;
+        this.session = session;
+        this.contentEntity = contentEntity;
     }
 
-    public static HttpResponse redirect( String location ) {
-        return new HttpResponse( HTTP_MOVED_TEMP ).withHeader( "Location", location );
+    public static Builder redirect( String location ) {
+        return status( HTTP_MOVED_TEMP )
+            .withHeader( "Location", location );
     }
 
-    public static HttpResponse redirect( URI location ) {
+    public static Builder redirect( URI location ) {
         return redirect( location.toString() );
     }
 
-    public static HttpResponse ok( Object content, boolean raw, ContentType contentType ) {
-        HttpResponse response = ok( content );
-        response.contentEntity = new StringEntity( content( raw, content, contentType ), contentType );
-        return response;
+    public static Builder ok( Object content, boolean raw, ContentType contentType ) {
+        return ok( content )
+            .withEntity( new StringEntity( content( raw, content, contentType ), contentType ) );
     }
 
-    public static HttpResponse ok( Object content ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON );
-        return response;
+    public static Builder ok( Object content ) {
+        return status( HTTP_OK )
+            .withEntity( new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON ) );
     }
 
-    public static HttpResponse stream( InputStream stream, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new InputStreamEntity( stream, contentType );
-        return response;
+    public static Builder stream( InputStream stream, ContentType contentType ) {
+        return status( HTTP_OK )
+            .withEntity( new InputStreamEntity( stream, contentType ) );
     }
 
-    public static HttpResponse stream( Stream<String> stream, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new HttpStreamEntity( stream, contentType );
-        return response;
+    public static Builder stream( Stream<String> stream, ContentType contentType ) {
+        return status( HTTP_OK )
+            .withEntity( new HttpStreamEntity( stream, contentType ) );
     }
 
-    public static HttpResponse stream( Stream<?> stream, boolean raw, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new HttpStreamEntity( stream.map( v -> content( raw, v, contentType ) ), contentType );
-        return response;
+    public static Builder stream( Stream<?> stream, boolean raw, ContentType contentType ) {
+        return status( HTTP_OK )
+            .withEntity( new HttpStreamEntity( stream.map( v -> content( raw, v, contentType ) ), contentType ) );
     }
 
-    public static HttpResponse outputStream( Consumer<OutputStream> cons, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new HttpOutputStreamEntity( cons, contentType );
-        return response;
+    public static Builder outputStream( Consumer<OutputStream> consumer, ContentType contentType ) {
+        return status( HTTP_OK )
+            .withEntity( new HttpOutputStreamEntity( consumer, contentType ) );
     }
 
-    public static HttpResponse gzipOutputStream( Consumer<OutputStream> cons, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new HttpGzipOutputStreamEntity( cons, contentType );
-        return response;
+    public static Builder gzipOutputStream( Consumer<OutputStream> consumer, ContentType contentType ) {
+        return status( HTTP_OK )
+            .withEntity( new HttpGzipOutputStreamEntity( consumer, contentType ) );
     }
 
-    public static HttpResponse file( Path file, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new FileEntity( file.toFile(), contentType );
-        return response;
+    public static Builder file( Path file, ContentType contentType ) {
+        return status( HTTP_OK )
+            .withEntity( new FileEntity( file.toFile(), contentType ) );
     }
 
-    public static HttpResponse bytes( byte[] bytes, ContentType contentType ) {
-        HttpResponse response = new HttpResponse( HTTP_OK );
-        response.contentEntity = new ByteArrayEntity( bytes, contentType );
-        return response;
+    public static Builder bytes( byte[] bytes, ContentType contentType ) {
+        return status( HTTP_OK )
+            .withEntity( new ByteArrayEntity( bytes, contentType ) );
     }
 
-    public static HttpResponse status( int code, String reason ) {
-        HttpResponse response = status( code );
-        response.reasonPhrase = Strings.removeControl( reason );
-        return response;
+    public static Builder status( int code, String reason ) {
+        return status( code )
+            .withReason( Strings.removeControl( reason ) );
     }
 
-    public static HttpResponse status( int code, String reason, Object content ) {
-        HttpResponse response = status( code );
-        response.reasonPhrase = Strings.removeControl( reason );
-        response.contentEntity = new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON );
-        return response;
+    public static Builder status( int code, String reason, Object content ) {
+        return status( code, reason )
+            .withEntity( new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON ) );
     }
 
-    public static HttpResponse status( int code ) {
-        return new HttpResponse( code );
+    public static Builder status( int code ) {
+        return new Builder( code );
+    }
+
+    public Builder modify() {
+        Builder builder = status( code, reason )
+            .withEntity( contentEntity );
+        builder.session.putAll( session );
+        builder.cookies.addAll( cookies );
+        builder.headers.addAll( headers );
+        return builder;
+
     }
 
     public static void registerProducer( String mimeType, Function<Object, String> producer ) {
@@ -161,46 +170,74 @@ public class HttpResponse {
             : HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
     }
 
-    public HttpResponse withHeader( String name, String value ) {
-        headers.add( __( name, value ) );
-        return this;
-    }
-
-    public HttpResponse withCookie( String cookie ) {
-        if( StringUtils.isNotBlank( cookie ) ) {
-            cookies.add( __( "Set-Cookie", cookie ) );
-        }
-        return this;
-    }
-
-    public HttpResponse withContent( String content, ContentType contentType ) {
-        this.contentEntity = new StringEntity( content( true, content, contentType ), contentType );
-        return this;
-    }
-
+    /**
+     * @todo what is it for?
+     */
     public String getFirstHeader( String name ) {
         return headers.stream().filter( p -> p._1.equals( name ) ).findFirst().map( p -> p._2 ).orElse( null );
     }
 
     @Override
     public String toString() {
-        return "HttpResponse{" + "reasonPhrase='" + reasonPhrase + '\'' + ", headers=" + headers + ", code=" + code + '}';
+        return "HttpResponse{" + "reason='" + reason + '\'' + ", headers=" + headers + ", code=" + code + '}';
+    }
+
+    public static class Builder {
+        public String reason;
+        public List<Pair<String, String>> headers = new ArrayList<>();
+        public List<Pair<String, String>> cookies = new ArrayList<>();
+        public Map<String, Object> session = new HashMap<>();
+        public int code;
+        public HttpEntity contentEntity;
+
+        private Builder( int code ) {
+            this.code = code;
+        }
+
+        public Builder withHeader( String name, String value ) {
+            headers.add( __( name, value ) );
+            return this;
+        }
+
+        public Builder withCookie( String cookie ) {
+            if( StringUtils.isNotBlank( cookie ) ) cookies.add( __( "Set-Cookie", cookie ) );
+            return this;
+        }
+
+        public Builder withContent( String content, ContentType contentType ) {
+            this.contentEntity = new StringEntity( content( true, content, contentType ), contentType );
+            return this;
+        }
+
+        public Builder withSessionValue( String key, Object value ) {
+            session.put( key, value );
+            return this;
+        }
+
+        /**
+         * this method is package private not to expose apache http entity outside the framework.
+         */
+        Builder withEntity( HttpEntity entity ) {
+            this.contentEntity = entity;
+            return this;
+        }
+
+        public Builder withReason( String reason ) {
+            this.reason = reason;
+            return this;
+        }
+
+        public HttpResponse response() {
+            return new HttpResponse( this.code, this.reason, this.cookies, this.headers, this.session, this.contentEntity );
+        }
     }
 
     public static class CookieBuilder {
-        private static final Joiner JOINER = Joiner.on( "; " ).skipNulls();
-        private static final DateTimeFormatter FORMATTER =
-            DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss zzz" );
-        private String SID;
+        private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss zzz" );
         private String domain;
         private String expires;
         private String path;
-        private List<String> customs = new ArrayList<>();
-
-        public CookieBuilder withSID( String SID ) {
-            this.SID = StringUtils.isNotBlank( SID ) ? "SID=" + SID : null;
-            return this;
-        }
+        private List<String> values = new ArrayList<>();
 
         public CookieBuilder withDomain( String domain ) {
             this.domain = StringUtils.isNotBlank( domain ) ? "domain=" + domain : null;
@@ -217,16 +254,13 @@ public class HttpResponse {
             return this;
         }
 
-        public CookieBuilder withCustomValue( String name, String value ) {
-            if( StringUtils.isNoneBlank( name, value ) ) {
-                this.customs.add( name + "=" + value );
-            }
+        public CookieBuilder withValue( String name, String value ) {
+            if( StringUtils.isNoneBlank( name, value ) ) this.values.add( name + "=" + value );
             return this;
         }
 
         public String build() {
-            return StringUtils.removeEnd( JOINER.join( SID, customs.isEmpty() ? null : Strings.join( "; ", customs ),
-                domain, expires, path ), "; " );
+            return Strings.join( "; ", Lists.of( Strings.join( "; ", values ), domain, expires, path ) );
         }
     }
 }

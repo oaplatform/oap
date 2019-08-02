@@ -23,7 +23,6 @@
  */
 package oap.ws;
 
-import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
 import oap.application.KernelHelper;
@@ -33,6 +32,7 @@ import oap.http.Protocol;
 import oap.http.cors.CorsPolicy;
 import oap.json.Binder;
 import oap.util.Lists;
+import oap.ws.interceptor.Interceptor;
 import org.apache.http.entity.ContentType;
 
 import java.util.HashMap;
@@ -81,7 +81,7 @@ public class WebServices {
                 continue;
             }
 
-            var interceptors = Lists.map( config.interceptors, i -> ( Interceptor ) kernel.service( i ) );
+            var interceptors = Lists.map( config.interceptors, kernel::<Interceptor>serviceOrThrow );
 
             for( var entry : config.services.entrySet() ) {
                 var serviceConfig = entry.getValue();
@@ -94,13 +94,9 @@ public class WebServices {
                     continue;
                 }
 
-                var service = kernel.service( serviceConfig.service );
-
-                Preconditions.checkState( service != null, "Unknown service " + serviceConfig.service );
-
                 var corsPolicy = serviceConfig.corsPolicy != null ? serviceConfig.corsPolicy : globalCorsPolicy;
-                bind( entry.getKey(), corsPolicy, service, serviceConfig.sessionAware,
-                    sessionManager, interceptors, serviceConfig.protocol );
+                bind( entry.getKey(), corsPolicy, kernel.serviceOrThrow( serviceConfig.service ),
+                    serviceConfig.sessionAware, sessionManager, interceptors, serviceConfig.protocol );
             }
 
             for( var entry : config.handlers.entrySet() ) {
@@ -109,7 +105,8 @@ public class WebServices {
 
                 var corsPolicy = handlerConfig.corsPolicy != null ? handlerConfig.corsPolicy : globalCorsPolicy;
 
-                server.bind( entry.getKey(), corsPolicy, kernel.service( handlerConfig.service ), handlerConfig.protocol );
+                server.bind( entry.getKey(), corsPolicy, kernel.serviceOrThrow( handlerConfig.service ),
+                    handlerConfig.protocol );
             }
         }
     }

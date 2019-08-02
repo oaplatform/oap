@@ -30,12 +30,11 @@ import oap.http.HttpResponse;
 import oap.http.Request;
 import oap.http.Response;
 import oap.http.testng.HttpAsserts;
-import oap.io.Closeables;
 import oap.metrics.Metrics;
+import oap.testng.Fixtures;
 import oap.util.Maps;
 import oap.util.Pair;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import oap.ws.testng.WsFixture;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayInputStream;
@@ -52,20 +51,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
 
 @Slf4j
-public class WebServicesTest extends AbstractWebServicesTest {
-    private TestWebServer server;
-
-    @BeforeMethod
-    public void init() {
-        server = webServer( ( ws, kernel ) -> {
+public class WebServicesTest extends Fixtures {
+    {
+        fixture( new WsFixture( getClass(), ( ws, kernel ) -> {
             kernel.register( "math", new MathWS() );
             kernel.register( "handler", new TestHandler() );
-        } );
-    }
-
-    @AfterMethod
-    public void done() {
-        Closeables.close( server );
+        }, "ws.json", "ws.conf" ) );
     }
 
     @Test
@@ -111,7 +102,7 @@ public class WebServicesTest extends AbstractWebServicesTest {
             .hasCode( 204 );
         assertEquals(
             Metrics.snapshot( Metrics.name( "rest_timer" )
-                .tag( "service", MathWS.class.getSimpleName() )
+                .tag( "service", MathWS.class.getName() )
                 .tag( "method", "bean" ) ).count,
             1 );
         assertGet( HttpAsserts.httpUrl( "/x/h/" ) ).hasCode( 204 );

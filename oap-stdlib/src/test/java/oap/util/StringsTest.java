@@ -182,4 +182,12 @@ public class StringsTest {
             "SMTXT12"
         );
     }
+
+    @Test
+    public void join() {
+        assertThat( Strings.join( ";", Lists.of( 1, 2, 3 ), "[", "]" ) ).isEqualTo( "[1;2;3]" );
+        assertThat( Strings.join( ";", Lists.of( 1, 2, 3 ), "[", "]", "'" ) ).isEqualTo( "['1';'2';'3']" );
+        assertThat( Strings.join( ";", Lists.of( 1, 2, 3 ) ) ).isEqualTo( "1;2;3" );
+        assertThat( Strings.join( ";", true, Lists.of( 1, null, 3 ) ) ).isEqualTo( "1;3" );
+    }
 }

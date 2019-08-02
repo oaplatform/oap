@@ -37,6 +37,7 @@ import oap.util.Result;
 import oap.util.Try;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
@@ -77,25 +78,25 @@ public class Remote implements Handler {
 
         log.trace( "invoke {}", invocation );
 
-        Object service = kernel.service( invocation.service );
+        Optional<Object> service = kernel.service( invocation.service );
 
-        if( service == null )
-            response.respond( HttpResponse.status( HTTP_NOT_FOUND, invocation.service + " not found" ) );
-        else {
-            Result<Object, Throwable> result;
-            try {
-                result = Result.success( service.getClass()
-                    .getMethod( invocation.method, invocation.types() )
-                    .invoke( service, invocation.values() ) );
-            } catch( NoSuchMethodException | IllegalAccessException e ) {
-                result = Result.failure( e );
-                log.trace( "Method [{}] doesn't exist or access isn't allowed", invocation.method );
-            } catch( InvocationTargetException e ) {
-                result = Result.failure( e.getCause() );
-                log.trace( "Exception occurred on call to method [{}]", invocation.method );
-            }
-            response.respond( HttpResponse.bytes( fst.conf.asByteArray( result ), APPLICATION_OCTET_STREAM ) );
-        }
+        service.ifPresentOrElse( s -> {
+                Result<Object, Throwable> result;
+                try {
+                    result = Result.success( s.getClass()
+                        .getMethod( invocation.method, invocation.types() )
+                        .invoke( s, invocation.values() ) );
+                } catch( NoSuchMethodException | IllegalAccessException e ) {
+                    result = Result.failure( e );
+                    log.trace( "Method [{}] doesn't exist or access isn't allowed", invocation.method );
+                } catch( InvocationTargetException e ) {
+                    result = Result.failure( e.getCause() );
+                    log.trace( "Exception occurred on call to method [{}]", invocation.method );
+                }
+                response.respond( HttpResponse.bytes( fst.conf.asByteArray( result ), APPLICATION_OCTET_STREAM ).response() );
+            },
+            () -> response.respond( HttpResponse.status( HTTP_NOT_FOUND, invocation.service + " not found" ).response() )
+        );
     }
 
 

@@ -37,11 +37,12 @@ import oap.metrics.Name;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
-import oap.util.Pair;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Throwables;
+import oap.ws.interceptor.Interceptor;
+import oap.ws.interceptor.Interceptors;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.apache.http.entity.ContentType;
@@ -56,17 +57,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
+import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.http.HttpResponse.NOT_FOUND;
-import static oap.http.HttpResponse.NO_CONTENT;
 import static oap.util.Collectors.toLinkedHashMap;
-import static oap.util.Pair.__;
 import static oap.ws.WsResponse.TEXT;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
@@ -110,31 +109,24 @@ public class WebService implements Handler {
             wsError( response, ( ( InvocationTargetException ) e ).getTargetException() );
         else if( e instanceof WsClientException ) {
             var clientException = ( WsClientException ) e;
-            log.debug( service() + ": " + e.toString(), e );
-            var wsResponse = HttpResponse.status( clientException.code, e.getMessage() );
-            if( !clientException.errors.isEmpty() ) {
-                if( defaultResponse == TEXT ) {
-                    wsResponse.withContent( String.join( "\n", clientException.errors ), TEXT_PLAIN );
-                } else {
-                    String json = Binder.json.marshal( new JsonErrorResponse( clientException.errors ) );
-                    wsResponse.withContent( json, APPLICATION_JSON );
-                }
-            }
-            response.respond( wsResponse );
+            log.debug( this + ": " + e.toString(), e );
+            var builder = HttpResponse.status( clientException.code, e.getMessage() );
+            if( !clientException.errors.isEmpty() )
+                if( defaultResponse == TEXT )
+                    builder.withContent( String.join( "\n", clientException.errors ), TEXT_PLAIN );
+                else
+                    builder.withContent( Binder.json.marshal( new JsonErrorResponse( clientException.errors ) ), APPLICATION_JSON );
+            response.respond( builder.response() );
         } else {
-            log.error( service() + ": " + e.toString(), e );
+            log.error( this + ": " + e.toString(), e );
 
             var code = exceptionToHttpCode.getOrDefault( e.getClass(), HTTP_INTERNAL_ERROR );
 
-            var wsResponse = HttpResponse.status( code, e.getMessage() );
-            if( defaultResponse == TEXT ) {
-                wsResponse.withContent( Throwables.getRootCause( e ).getMessage(), TEXT_PLAIN );
-            } else {
-                var json = Binder.json.marshal( new JsonStackTraceResponse( e ) );
-                wsResponse.withContent( json, APPLICATION_JSON );
-            }
+            var builder = HttpResponse.status( code, e.getMessage() );
+            if( defaultResponse == TEXT ) builder.withContent( Throwables.getRootCause( e ).getMessage(), TEXT_PLAIN );
+            else builder.withContent( Binder.json.marshal( new JsonStackTraceResponse( e ) ), APPLICATION_JSON );
 
-            response.respond( wsResponse );
+            response.respond( builder.response() );
         }
     }
 
@@ -165,47 +157,52 @@ public class WebService implements Handler {
             } else {
                 var name = Metrics
                     .name( "rest_timer" )
-                    .tag( "service", service() )
+                    .tag( "service", toString() )
                     .tag( "method", method.name() );
 
-                if( !sessionAware ) {
-                    handleInternal( request, response, method, name, null );
-                } else {
-                    var cookieId = request.cookie( SessionManager.COOKIE_ID ).orElse( null );
-                    var authToken = Interceptor.getSessionToken( request );
-                    Session session;
-                    if( cookieId != null
-                        && ( session = sessionManager.getSessionById( cookieId ) ) != null
-                        && Objects.equals( authToken, session.get( Interceptor.AUTHORIZATION ).orElse( null ) )
-                    ) {
-                        log.debug( "{}: Valid SID [{}] found in cookie", service(), cookieId );
-
-                        handleInternal( request, response, method, name, __( cookieId, session ) );
-                    } else {
-                        cookieId = UUID.randomUUID().toString();
-
-                        log.debug( "{}: Creating new session with SID [{}]", service(), cookieId );
-
-                        session = new Session();
-                        if( authToken != null ) session.set( Interceptor.AUTHORIZATION, authToken );
-                        sessionManager.put( cookieId, session );
-
-                        handleInternal( request, response, method, name, __( cookieId, session ) );
-                    }
+                Session session = null;
+                if( sessionAware ) {
+                    session = sessionManager.getOrInit( request.cookie( SessionManager.COOKIE_ID ).orElse( null ) );
+                    log.trace( "session for {} is {}", this, session );
                 }
+
+                handleInternal( request, response, method, name, session );
+
+//                if( !sessionAware ) handleInternal( request, response, method, name, null );
+//                else {
+//
+//                    var cookieId = request.cookie( SessionManager.COOKIE_ID ).orElse( null );
+
+//                    var authToken = SecurityInterceptor.getSessionToken( request );
+//                    Session session;
+//                    if( cookieId != null
+//                        && ( session = sessionManager.get( cookieId ) ) != null
+//                        && Objects.equals( authToken, session.get( SecurityInterceptor.AUTHORIZATION ).orElse( null ) )
+//                    ) {
+//                        log.debug( "{}: Valid SID [{}] found in cookie", service(), cookieId );
+//
+//                        handleInternal( request, response, method, name, __( cookieId, session ) );
+//                    } else {
+//                        cookieId = UUID.randomUUID().toString();
+//
+//                        log.debug( "{}: Creating new session with SID [{}]", service(), cookieId );
+//
+//                        session = new Session();
+//                        if( authToken != null ) session.set( SecurityInterceptor.AUTHORIZATION, authToken );
+//                        sessionManager.put( cookieId, session );
+//
+//                        handleInternal( request, response, method, name, __( cookieId, session ) );
+//                    }
+//                }
             }
         } catch( Throwable e ) {
             wsError( response, e );
         }
     }
 
-    public String service() {
-        return instance.getClass().getSimpleName();
-    }
-
     private void handleInternal( Request request, Response response, Reflection.Method method,
-                                 Name name, Pair<String, Session> session ) {
-        log.trace( "{}: Internal session status: [{}]", service(), session );
+                                 Name name, Session session ) {
+        log.trace( "{}: session: [{}]", this, session );
 
         var wsMethod = method.findAnnotation( WsMethod.class );
 
@@ -216,91 +213,71 @@ public class WebService implements Handler {
             return ret;
         };
 
-        var interceptorResponse = session != null
-            ? runInterceptors( request, session._2, method, func )
-            : null;
+        Interceptors.before( interceptors, request, session, method )
+            .ifPresentOrElse( response::respond, () -> Metrics2.measureTimer( name, () -> {
+                var parameters = method.parameters;
+                var originalValues = getOriginalValues( session, parameters, request, wsMethod );
 
-        if( interceptorResponse != null ) response.respond( interceptorResponse );
-        else Metrics2.measureTimer( name, () -> {
-            var parameters = method.parameters;
-            var originalValues = getOriginalValues( session, parameters, request, wsMethod );
+                var paramValidation = ValidationErrors.empty()
+                    .validateParameters( originalValues, method, instance, true )
+                    .throwIfInvalid();
 
-            var paramValidation = ValidationErrors.empty()
-                .validateParameters( originalValues, method, instance, true )
-                .throwIfInvalid();
+                Validators.forMethod( method, instance, true )
+                    .validate( originalValues.values().toArray( new Object[0] ), originalValues )
+                    .throwIfInvalid();
 
-            Validators.forMethod( method, instance, true )
-                .validate( originalValues.values().toArray( new Object[0] ), originalValues )
-                .throwIfInvalid();
+                var values = getValues( originalValues );
 
-            var values = getValues( originalValues );
+                paramValidation
+                    .validateParameters( values, method, instance, false )
+                    .throwIfInvalid();
 
-            paramValidation
-                .validateParameters( values, method, instance, false )
-                .throwIfInvalid();
+                var paramValues = values.values().toArray( new Object[0] );
 
-            var paramValues = values.values().toArray( new Object[0] );
+                Validators.forMethod( method, instance, false )
+                    .validate( paramValues, values )
+                    .throwIfInvalid();
 
-            Validators.forMethod( method, instance, false )
-                .validate( paramValues, values )
-                .throwIfInvalid();
+                var result = method.invoke( instance, paramValues );
 
-            var result = method.invoke( instance, paramValues );
+                var isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
+                var produces =
+                    wsMethod.map( wsm -> ContentType.create( wsm.produces() )
+                        .withCharset( UTF_8 ) )
+                        .orElse( APPLICATION_JSON );
 
-            var isRaw = wsMethod.map( WsMethod::raw ).orElse( false );
-            var produces =
-                wsMethod.map( wsm -> ContentType.create( wsm.produces() )
-                    .withCharset( UTF_8 ) )
-                    .orElse( APPLICATION_JSON );
+                var cookie = session != null
+                    ? new HttpResponse.CookieBuilder()
+                    .withValue( SessionManager.COOKIE_ID, session.id )
+                    .withPath( sessionManager.cookiePath )
+                    .withExpires( DateTime.now().plusMinutes( sessionManager.cookieExpiration ) )
+                    .withDomain( sessionManager.cookieDomain )
+                    .build()
+                    : null;
 
-            var cookie = session != null
-                ? new HttpResponse.CookieBuilder()
-                .withSID( session._1 )
-                .withPath( sessionManager.cookiePath )
-                .withExpires( DateTime.now().plusMinutes( sessionManager.cookieExpiration ) )
-                .withDomain( sessionManager.cookieDomain )
-                .build()
-                : null;
 
-            if( method.isVoid() ) response.respond( NO_CONTENT );
-            else if( result instanceof HttpResponse )
-                response.respond( ( ( HttpResponse ) result ).withCookie( cookie ) );
-            else if( result instanceof Optional<?> ) {
-                response.respond(
-                    ( ( Optional<?> ) result )
-                        .map( r -> HttpResponse.ok( runPostInterceptors( r, session, method ), isRaw, produces )
-                            .withCookie( cookie ) )
-                        .orElse( NOT_FOUND )
-                );
-            } else if( result instanceof Result<?, ?> ) {
-                var resp = ( ( Result<?, ?> ) result )
-                    .mapSuccess( r -> HttpResponse.ok( r, isRaw, produces ).withCookie( cookie ) )
-                    .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r )
-                        .withCookie( cookie ) );
+                HttpResponse.Builder responseBuilder;
+                if( method.isVoid() )
+                    responseBuilder = HttpResponse.status( HTTP_NO_CONTENT );
+                else if( result instanceof HttpResponse ) {
+                    HttpResponse r = ( HttpResponse ) result;
+                    if( session != null && !r.session.isEmpty() )
+                        session.setAll( r.session );
+                    responseBuilder = r.modify();
+                } else if( result instanceof Optional<?> )
+                    responseBuilder = ( ( Optional<?> ) result )
+                        .map( r -> HttpResponse.ok( r, isRaw, produces ) )
+                        .orElse( NOT_FOUND.modify() );
+                else if( result instanceof Result<?, ?> )
+                    responseBuilder = ( ( Result<?, ?> ) result ).isSuccess()
+                        ? ( ( Result<?, ?> ) result ).mapSuccess( r -> HttpResponse.ok( r, isRaw, produces ) ).successValue
+                        : ( ( Result<?, ?> ) result ).mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r ) ).failureValue;
+                else if( result instanceof Stream<?> )
+                    responseBuilder = HttpResponse.stream( ( ( Stream<?> ) result ), isRaw, produces );
+                else responseBuilder = HttpResponse.ok( result, isRaw, produces );
 
-                response.respond( resp.isSuccess() ? ( ( Result<?, ?> ) result )
-                    .mapSuccess( r -> HttpResponse.ok( runPostInterceptors( r, session, method ), isRaw, produces )
-                        .withCookie( cookie ) ).successValue
-                    : ( ( Result<?, ?> ) result )
-                        .mapFailure( r -> HttpResponse.status( HTTP_INTERNAL_ERROR, "", r ).withCookie( cookie ) )
-                        .failureValue );
-
-            } else if( result instanceof Stream<?> ) {
-                response.respond(
-                    HttpResponse.stream( ( ( Stream<?> ) result ).map( v -> runPostInterceptors( v, session, method ) ), isRaw, produces )
-                        .withCookie( cookie ) );
-            } else
-                response.respond( HttpResponse.ok( runPostInterceptors( result, session, method ), isRaw, produces )
-                    .withCookie( cookie ) );
-        } );
-    }
-
-    private Object runPostInterceptors( Object value, Pair<String, Session> session, Reflection.Method method ) {
-        if( session == null ) return value;
-        var result = value;
-        for( Interceptor interceptor : interceptors ) result = interceptor.postProcessing( value, session._2, method );
-
-        return result;
+                response.respond( Interceptors.after( interceptors, responseBuilder.withCookie( cookie ).response(), session ) );
+            } ) );
     }
 
     private LinkedHashMap<Reflection.Parameter, Object> getValues( LinkedHashMap<Reflection.Parameter, Object> values ) {
@@ -320,11 +297,12 @@ public class WebService implements Handler {
 
     @SuppressWarnings( "unchecked" )
     private Object map( Reflection reflection, Object value ) {
-        if( reflection.isOptional() ) {
-            if( !( ( Optional ) value ).isPresent() ) return Optional.empty();
-            else
-                return Optional.ofNullable( map( reflection.typeParameters.get( 0 ), ( ( Optional ) value ).get() ) );
-        } else {
+        if( reflection.isOptional() )
+            if( ( ( Optional ) value ).isEmpty() ) return Optional.empty();
+            else return Optional.ofNullable(
+                map( reflection.typeParameters.get( 0 ), ( ( Optional ) value ).get() )
+            );
+        else {
             if( value instanceof Optional ) return map( reflection, ( ( Optional ) value ).get() );
             if( reflection.isEnum() ) return Enum.valueOf( ( Class<Enum> ) reflection.underlying, ( String ) value );
 
@@ -337,15 +315,13 @@ public class WebService implements Handler {
         }
     }
 
-    private HttpResponse runInterceptors( Request request, Session session, Reflection.Method method,
-                                          Function<Reflection.Parameter, Object> getParameterValueFunc ) {
-
+    private Optional<HttpResponse> runInterceptors( Request request, Session session, Reflection.Method method ) {
         for( var interceptor : interceptors ) {
-            var interceptorResponse = interceptor.intercept( request, session, method, getParameterValueFunc );
-            if( interceptorResponse.isPresent() ) return interceptorResponse.get();
+            var response = interceptor.before( request, session, method );
+            if( response.isPresent() ) return response;
         }
 
-        return null;
+        return Optional.empty();
     }
 
     @Override
@@ -359,7 +335,7 @@ public class WebService implements Handler {
         return opt.orElseThrow( () -> new WsClientException( parameter.name() + " is required" ) );
     }
 
-    public LinkedHashMap<Reflection.Parameter, Object> getOriginalValues( Pair<String, Session> session,
+    public LinkedHashMap<Reflection.Parameter, Object> getOriginalValues( Session session,
                                                                           List<Reflection.Parameter> parameters,
                                                                           Request request,
                                                                           Optional<WsMethod> wsMethod ) {
@@ -376,42 +352,46 @@ public class WebService implements Handler {
     }
 
     public Optional<Object> getValue(
-        Pair<String, Session> session,
+        Session session,
         Request request,
         Optional<WsMethod> wsMethod,
         Reflection.Parameter parameter ) {
-        return parameter.findAnnotation( WsParam.class )
-            .map( wsParam -> {
-                switch( wsParam.from() ) {
-                    case REQUEST:
-                        return request;
-                    case SESSION:
-                        if( session == null ) return null;
-                        return parameter.type().isOptional()
-                            ? session._2.get( parameter.name() )
-                            : session._2.get( parameter.name() ).orElse( null );
-                    case HEADER:
-                        return unwrap( parameter, request.header( parameter.name() ) );
-                    case PATH:
-                        return wsMethod.map( wsm -> WsServices.pathParam( wsm.path(), request.getRequestLine(),
-                            parameter.name() ) )
-                            .orElseThrow( () -> new WsException(
-                                "path parameter " + parameter.name() + " without "
-                                    + WsMethod.class.getName() + " annotation" ) );
-                    case BODY:
-                        return parameter.type().assignableFrom( byte[].class )
-                            ? ( parameter.type().isOptional() ? request.readBody()
-                            : request.readBody()
-                                .orElseThrow( () -> new WsClientException(
-                                    "no body for " + parameter.name() ) )
-                        ) : unwrap( parameter, request.readBody().map( String::new ) );
-                    default:
-                        return parameter.type().assignableTo( List.class )
-                            ? request.getListParams().parameters( parameter.name() )
-                            : unwrap( parameter, request.getListParams().parameterOpt( parameter.name() ) );
 
-                }
-            } );
+        return
+            parameter.type().assignableFrom( Request.class )
+                ? Optional.of( request )
+                : parameter.type().assignableFrom( Session.class )
+                    ? Optional.of( session )
+                    : parameter.findAnnotation( WsParam.class )
+                        .map( wsParam -> {
+                            switch( wsParam.from() ) {
+                                case SESSION:
+                                    if( session == null ) return null;
+                                    return parameter.type().isOptional()
+                                        ? session.get( parameter.name() )
+                                        : session.get( parameter.name() ).orElse( null );
+                                case HEADER:
+                                    return unwrap( parameter, request.header( parameter.name() ) );
+                                case PATH:
+                                    return wsMethod.map( wsm -> WsServices.pathParam( wsm.path(), request.getRequestLine(),
+                                        parameter.name() ) )
+                                        .orElseThrow( () -> new WsException(
+                                            "path parameter " + parameter.name() + " without "
+                                                + WsMethod.class.getName() + " annotation" ) );
+                                case BODY:
+                                    return parameter.type().assignableFrom( byte[].class )
+                                        ? ( parameter.type().isOptional() ? request.readBody()
+                                        : request.readBody()
+                                            .orElseThrow( () -> new WsClientException(
+                                                "no body for " + parameter.name() ) )
+                                    ) : unwrap( parameter, request.readBody().map( String::new ) );
+                                default:
+                                    return parameter.type().assignableTo( List.class )
+                                        ? request.getListParams().parameters( parameter.name() )
+                                        : unwrap( parameter, request.getListParams().parameterOpt( parameter.name() ) );
+
+                            }
+                        } );
     }
 
 

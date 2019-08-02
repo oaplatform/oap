@@ -33,7 +33,6 @@ import java.util.Optional;
 import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.BODY;
 import static oap.ws.WsParam.From.PATH;
-import static oap.ws.WsParam.From.REQUEST;
 
 class MathWS {
 
@@ -79,7 +78,7 @@ class MathWS {
         return a;
     }
 
-    public String req( @WsParam( from = REQUEST ) Request req ) {
+    public String req( Request req ) {
         return req.getBaseUrl() + req.context.location;
     }
 
@@ -99,8 +98,8 @@ class MathWS {
         throw new RuntimeException( "failed" );
     }
 
-    public Object code( int code ) {
-        return HttpResponse.status( code );
+    public HttpResponse code( int code ) {
+        return HttpResponse.status( code ).response();
     }
 
     public String bytes( @WsParam( from = BODY ) byte[] bytes ) {

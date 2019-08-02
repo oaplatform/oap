@@ -23,12 +23,22 @@
  */
 package oap.http;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+@ToString
+@EqualsAndHashCode( of = "id" )
 public class Session {
+    public String id;
     public final Map<String, Object> params = new ConcurrentHashMap<>();
+
+    public Session( String id ) {
+        this.id = id;
+    }
 
     @SuppressWarnings( "unchecked" )
     public <A> Optional<A> get( String name ) {
@@ -43,8 +53,7 @@ public class Session {
         params.clear();
     }
 
-    @Override
-    public String toString() {
-        return "Session{" + "params=" + params + '}';
+    public void setAll( Map<String, Object> values ) {
+        params.putAll( values );
     }
 }

@@ -31,19 +31,18 @@ import oap.http.Session;
 import oap.reflect.Reflection;
 import oap.sso.DefaultUser;
 import oap.sso.User;
-import oap.ws.Interceptor;
+import oap.ws.interceptor.Interceptor;
 
 import java.util.Optional;
-import java.util.function.Function;
 
 @Slf4j
+@Deprecated
 public class MockSecurityInterceptor implements Interceptor {
     public static User USER = new DefaultUser( "ADMIN", "orgId", "admin@admin.com" );
 
     @Override
-    public Optional<HttpResponse> intercept( Request request, Session session, Reflection.Method method,
-                                             Function<Reflection.Parameter, Object> getParameterValueFunc ) {
-        session.set( Interceptor.USER_ID, USER.getEmail() );
+    public Optional<HttpResponse> before( Request request, Session session, Reflection.Method method ) {
+        session.set( SecurityInterceptor.USER_ID, USER.getEmail() );
 
         return Optional.empty();
     }

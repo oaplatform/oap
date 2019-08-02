@@ -47,7 +47,7 @@ public class CatApi {
     }
 
     public static HttpResponse table( List<List<Object>> rows ) {
-        if( rows.isEmpty() ) return HttpResponse.ok( "", true, CONTENT_TYPE );
+        if( rows.isEmpty() ) return HttpResponse.ok( "", true, CONTENT_TYPE ).response();
 
         final int cols = rows.iterator().next().size();
         final int[] size = new int[cols];
@@ -77,6 +77,6 @@ public class CatApi {
             body.append( rowBody.toString() ).append( '\n' );
         }
 
-        return HttpResponse.ok( body.toString(), true, CONTENT_TYPE );
+        return HttpResponse.ok( body.toString(), true, CONTENT_TYPE ).response();
     }
 }

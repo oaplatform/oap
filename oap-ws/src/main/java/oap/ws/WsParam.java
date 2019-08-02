@@ -36,11 +36,10 @@ import java.lang.annotation.Target;
 @Target( ElementType.PARAMETER )
 @Retention( RetentionPolicy.RUNTIME )
 public @interface WsParam {
-    String typeHint() default "application/java-class";
 
     From from() default From.QUERY;
 
     enum From {
-        QUERY, PATH, BODY, HEADER, REQUEST, SESSION
+        QUERY, PATH, BODY, HEADER, SESSION
     }
 }

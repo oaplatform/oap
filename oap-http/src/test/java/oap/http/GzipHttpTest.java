@@ -67,7 +67,7 @@ public class GzipHttpTest {
     @Test
     public void gzipOutput() {
         server.bind( "test", GenericCorsPolicy.DEFAULT,
-            ( request, response ) -> response.respond( HttpResponse.ok( "test", true, ContentTypes.TEXT_PLAIN ) ), Protocol.HTTP );
+            ( request, response ) -> response.respond( HttpResponse.ok( "test", true, ContentTypes.TEXT_PLAIN ).response() ), Protocol.HTTP );
 
         thread.start();
 

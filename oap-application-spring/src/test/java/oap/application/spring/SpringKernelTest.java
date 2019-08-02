@@ -28,6 +28,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.batch.JobExecutionExitCodeGenerator;
 import org.testng.annotations.Test;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class SpringKernelTest {
@@ -38,10 +40,9 @@ public class SpringKernelTest {
 
         SpringKernel springKernel = SpringBoot.applicationContext.getBean( SpringKernel.class );
         assertThat( springKernel ).isNotNull();
-        var service = springKernel.kernel.service( "test" );
-        assertThat( service ).isNotNull();
-
-        assertThat( SpringBoot.applicationContext.getBean( "test" ) ).isSameAs( service );
+        Optional<TestService> service = springKernel.kernel.service( "test" );
+        assertThat( service ).isPresent().get()
+            .satisfies( s -> assertThat( SpringBoot.applicationContext.getBean( "test" ) ).isSameAs( s ) );
 
         SpringApplication.exit( SpringBoot.applicationContext, new JobExecutionExitCodeGenerator() );
     }

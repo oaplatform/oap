@@ -26,34 +26,37 @@ package oap.ws;
 
 import oap.application.Kernel;
 import oap.concurrent.SynchronizedThread;
+import oap.http.HttpResponse;
 import oap.http.PlainHttpListener;
 import oap.http.Protocol;
 import oap.http.Server;
 import oap.http.Session;
 import oap.http.cors.GenericCorsPolicy;
 import oap.http.testng.HttpAsserts;
-import oap.json.Binder;
 import oap.metrics.Metrics;
 import oap.testng.Env;
+import oap.util.Cuid;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
-
+import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static oap.http.Request.HttpMethod.GET;
 import static oap.http.testng.HttpAsserts.assertGet;
 import static oap.http.testng.HttpAsserts.httpUrl;
 import static oap.util.Pair.__;
 import static oap.ws.WsParam.From.SESSION;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class WebServiceSessionTest {
 
-    private final SessionManager sessionManager = new SessionManager( 10, null, "/" );
+    public static final Cuid.IncrementalCuid INCREMENTAL = Cuid.incremental( 0 );
+    private final SessionManager sessionManager = new SessionManager( 10, null, "/" ) {{
+        this.cuid = INCREMENTAL;
+    }};
 
     private Server server;
     private WebServices ws;
@@ -69,7 +72,7 @@ public class WebServiceSessionTest {
 
         ws = new WebServices( new Kernel( Lists.empty() ), server, sessionManager, GenericCorsPolicy.DEFAULT );
 
-        ws.bind( "test", GenericCorsPolicy.DEFAULT, new TestWS(), true, sessionManager, Collections.emptyList(), Protocol.HTTP );
+        ws.bind( "test", GenericCorsPolicy.DEFAULT, new TestWS(), true, sessionManager, Lists.empty(), Protocol.HTTP );
 
         PlainHttpListener http = new PlainHttpListener( server, Env.port() );
         listener = new SynchronizedThread( http );
@@ -86,46 +89,52 @@ public class WebServiceSessionTest {
         Metrics.resetAll();
     }
 
-    @Test
-    public void sessionPropagation() {
 
-        final Session session = new Session();
-        LinkedHashMap<Integer, Integer> map = Maps.of( __( 1, 2 ) );
-        session.set( "map", map );
-        session.set( Interceptor.AUTHORIZATION, "987654321" );
-
-        sessionManager.put( "123456", session );
-
-        assertGet( httpUrl( "/test/" ), Maps.empty(), Maps.of( __( "Cookie", "Authorization=987654321; SID=123456" ) ) )
-            .hasCode( 200 )
-            .hasBody( Binder.json.marshal( map ) );
+    @BeforeMethod
+    public void restSessionId() {
+        INCREMENTAL.reset( 0 );
     }
 
     @Test
-    public void userId() {
-
-        final Session session = new Session();
-        session.set( Interceptor.USER_ID, "user_id" );
-        session.set( Interceptor.AUTHORIZATION, "987654321" );
-
-        sessionManager.put( "123456", session );
-
-        assertGet( httpUrl( "/test/2" ), Maps.empty(), Maps.of( __( "Cookie", "Authorization=987654321; SID=123456" ) ) )
+    public void sessionViaResponse() {
+        assertGet( httpUrl( "/test/put" ), Maps.of( __( "value", "vvv" ) ), Maps.empty() )
+            .hasCode( 204 );
+        assertThat( sessionManager.get( "1" ) ).isNotNull();
+        assertGet( httpUrl( "/test/get" ), Maps.empty(), Maps.of( __( "Cookie", "SID=1" ) ) )
             .hasCode( 200 )
-            .hasBody( Binder.json.marshal( "user_id" ) );
+            .hasBody( "vvv" );
+
     }
 
+    @Test
+    public void sessionDirectly() {
+        assertGet( httpUrl( "/test/putDirectly" ), Maps.of( __( "value", "vvv" ) ), Maps.empty() )
+            .hasCode( 204 );
+        assertThat( sessionManager.get( "1" ) ).isNotNull();
+        assertGet( httpUrl( "/test/get" ), Maps.empty(), Maps.of( __( "Cookie", "SID=1" ) ) )
+            .hasCode( 200 )
+            .hasBody( "vvv" );
 
+    }
+
+    @SuppressWarnings( "unused" )
     private class TestWS {
 
-        @WsMethod( path = "/", method = GET )
-        public Map<Integer, Integer> test( @WsParam( from = SESSION ) Map<Integer, Integer> map ) {
-            return map;
+        public static final String IN_SESSION = "inSession";
+
+        public HttpResponse put( String value ) {
+            return HttpResponse.status( HTTP_NO_CONTENT )
+                .withSessionValue( IN_SESSION, value )
+                .response();
         }
 
-        @WsMethod( path = "/2", method = GET )
-        public String test2( @WsParam( from = SESSION ) String userid ) {
-            return userid;
+        public void putDirectly( String value, Session session ) {
+            session.set( IN_SESSION, value );
+        }
+
+        @WsMethod( path = "/get", method = GET, produces = "text/plain" )
+        public String get( @WsParam( from = SESSION ) String inSession ) {
+            return inSession;
         }
     }
 }
