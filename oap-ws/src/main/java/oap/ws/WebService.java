@@ -361,7 +361,7 @@ public class WebService implements Handler {
             parameter.type().assignableFrom( Request.class )
                 ? Optional.of( request )
                 : parameter.type().assignableFrom( Session.class )
-                    ? Optional.of( session )
+                    ? Optional.ofNullable( session )
                     : parameter.findAnnotation( WsParam.class )
                         .map( wsParam -> {
                             switch( wsParam.from() ) {
