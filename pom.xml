@@ -47,7 +47,7 @@
         <module>oap-http</module>
         <module>oap-http-useragent</module>
         <module>oap-ws</module>
-        <module>oap-ws-sso/oap-sso</module>
+        <module>oap-ws-sso/oap-ws-sso-api</module>
         <module>oap-ws-sso/oap-ws-sso</module>
         <module>oap-remoting-server</module>
         <module>oap-application</module>
@@ -79,7 +79,7 @@
     </distributionManagement>
 
     <properties>
-        <revision>4.16.2</revision>
+        <revision>4.17.0</revision>
 
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>

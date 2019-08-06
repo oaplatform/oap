@@ -22,8 +22,12 @@
  * SOFTWARE.
  */
 
-package oap.sso;
+package oap.ws.sso;
 
-public interface PrecedenceRoleService {
-    int getPrecedence( String role );
+import java.util.Optional;
+
+public interface UserStorage {
+    Optional<User> getUser( String email );
+
+    Optional<User> getAuthenticated( String email, String password );
 }

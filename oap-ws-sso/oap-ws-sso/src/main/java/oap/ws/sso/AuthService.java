@@ -22,55 +22,51 @@
  * SOFTWARE.
  */
 
-package oap.sso;
+package oap.ws.sso;
 
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Cuid;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class AuthService {
 
-    private final PasswordHasher passwordHasher;
     private final Cache<String, Token> tokenStorage;
-    private final UserStorage<? extends User> userStorage;
+    private final UserStorage userStorage;
+    private Cuid cuid = Cuid.UNIQUE;
 
-    public AuthService( UserStorage<? extends User> userStorage, PasswordHasher passwordHasher, int expirationTime ) {
-        this.passwordHasher = passwordHasher;
+    public AuthService( UserStorage userStorage, int expirationTime ) {
         this.tokenStorage = CacheBuilder.newBuilder()
             .expireAfterAccess( expirationTime, TimeUnit.MINUTES )
             .build();
         this.userStorage = userStorage;
     }
 
-    public synchronized Optional<Token> generateToken( String email, String password ) {
-        final User user = userStorage.getByEmail( email.toLowerCase() ).orElse( null );
-        if( user == null ) return Optional.empty();
-
-        var inputPassword = passwordHasher.hashPassword( password );
-        if( !user.getPassword().equals( inputPassword ) ) return Optional.empty();
-
-        return Optional.of( generateToken( user ) );
+    public Optional<Token> authenticate( String email, String password ) {
+        return userStorage.getAuthenticated( email, password ).map( this::getToken );
     }
 
-    public synchronized Token generateToken( User user ) {
+    public Optional<Token> authenticate( String email ) {
+        return userStorage.getUser( email ).map( this::getToken );
+    }
+
+    private synchronized Token getToken( User user ) {
         Token token = null;
 
-        for( Token t : tokenStorage.asMap().values() ) {
+        for( Token t : tokenStorage.asMap().values() )
             if( t.user.getEmail().equals( user.getEmail() ) ) {
                 token = t;
                 break;
             }
-        }
 
         if( token != null ) {
             log.debug( "Updating existing token for user [{}]...", user.getEmail() );
@@ -81,9 +77,9 @@ public class AuthService {
 
         log.debug( "Generating new token for user [{}]...", user.getEmail() );
         token = new Token();
-        token.user = new DefaultUser( user );
+        token.user = user;
         token.created = LocalDateTime.now();
-        token.id = UUID.randomUUID().toString();
+        token.id = cuid.next();
 
         tokenStorage.put( token.id, token );
 

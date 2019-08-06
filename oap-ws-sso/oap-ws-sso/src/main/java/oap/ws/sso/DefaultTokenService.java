@@ -22,11 +22,20 @@
  * SOFTWARE.
  */
 
-package oap.sso;
+package oap.ws.sso;
 
-public class DefaultPrecedenceRoleService implements PrecedenceRoleService {
+import java.util.Optional;
+
+public class DefaultTokenService implements TokenService {
+
+    private final AuthService authService;
+
+    public DefaultTokenService( AuthService authService ) {
+        this.authService = authService;
+    }
+
     @Override
-    public int getPrecedence( String role ) {
-        return 0;//todo: discuss
+    public Optional<Token> getToken( String tokenId ) {
+        return authService.getToken( tokenId );
     }
 }

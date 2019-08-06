@@ -22,14 +22,10 @@
  * SOFTWARE.
  */
 
-package oap.sso;
+package oap.ws.sso;
 
-import java.io.Serializable;
+import java.util.Optional;
 
-public interface User extends OrganizationAware, Serializable {
-    String getEmail();
-
-    String getPassword();
-
-    String getRole();
+public interface TokenService {
+    Optional<Token> getToken( String tokenId );
 }

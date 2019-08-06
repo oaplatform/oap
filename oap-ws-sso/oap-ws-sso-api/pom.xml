@@ -36,12 +36,17 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>oap-sso</artifactId>
+    <artifactId>oap-ws-sso-api</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>${project.parent.groupId}</groupId>
             <artifactId>oap-stdlib</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>${project.parent.groupId}</groupId>
+            <artifactId>oap-ws</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>

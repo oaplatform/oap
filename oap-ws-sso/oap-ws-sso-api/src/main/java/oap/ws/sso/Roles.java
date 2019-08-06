@@ -24,28 +24,23 @@
 
 package oap.ws.sso;
 
-import oap.json.Binder;
-import oap.sso.DefaultUser;
-import org.testng.annotations.Test;
+import java.util.List;
+import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class Roles {
+    public final Map<String, List<String>> roles;
 
-public class DefaultUserTest {
-    @Test
-    public void json() {
-        var user = new DefaultUser( "ADMIN", "orgid", "my@enai.com" );
-        user.password = "test1";
-        user.organizationName = "irg name";
-
-        var json = Binder.json.marshal( user );
-        assertThat( json ).isEqualTo( "{\"email\":\"my@enai.com\",\"password\":\"test1\",\"role\":\"ADMIN\",\"organizationId\":\"orgid\",\"organizationName\":\"irg name\"}" );
-        var clone = Binder.json.<DefaultUser>unmarshal( DefaultUser.class, json );
-
-        assertThat( clone.organizationId ).isEqualTo( "orgid" );
-        assertThat( clone.organizationName ).isEqualTo( "irg name" );
-        assertThat( clone.password ).isEqualTo( "test1" );
-        assertThat( clone.role ).isEqualTo( "ADMIN" );
-        assertThat( clone.email ).isEqualTo( "my@enai.com" );
+    public Roles( Map<String, List<String>> roles ) {
+        this.roles = roles;
     }
 
+    public List<String> permissionsOf( String role ) {
+        return roles.getOrDefault( role, List.of() );
+    }
+
+    public boolean granted( String role, String[] permissions ) {
+        List<String> granted = permissionsOf( role );
+        for( String permission : permissions ) if( !granted.contains( permission ) ) return false;
+        return true;
+    }
 }

@@ -41,7 +41,6 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import static java.util.Collections.emptyList;
 import static oap.http.cors.GenericCorsPolicy.DEFAULT;
 import static oap.http.testng.HttpAsserts.reset;
 
@@ -50,7 +49,7 @@ public class WsFixture implements Fixture {
     private Class<?> contextClass;
     private final BiConsumer<WebServices, Kernel> registerServices;
     private final String[] configs;
-    private TestWebServer server;
+    public TestWebServer server;
 
     public WsFixture( Class<?> contextClass, BiConsumer<WebServices, Kernel> registerServices, String... configs ) {
         this.contextClass = contextClass;
@@ -68,15 +67,15 @@ public class WsFixture implements Fixture {
         Closeables.close( server );
     }
 
-    protected class TestWebServer implements Closeable {
+    public class TestWebServer implements Closeable {
         protected WebServices ws;
         private Server server;
         private SynchronizedThread listener;
-        private Kernel kernel;
+        public Kernel kernel;
 
         private TestWebServer( List<String> configs, BiConsumer<WebServices, Kernel> registerServices ) {
             Env.resetPorts();
-            kernel = new Kernel( emptyList() );
+            kernel = new Kernel( List.of() );
             server = new Server( 100, false );
             server.start();
             ws = new WebServices( kernel, server, new SessionManager( 10, null, "/" ) {{

@@ -33,27 +33,31 @@ import java.util.concurrent.ConcurrentHashMap;
 @ToString
 @EqualsAndHashCode( of = "id" )
 public class Session {
-    public String id;
-    public final Map<String, Object> params = new ConcurrentHashMap<>();
+    public final String id;
+    private final Map<String, Object> values = new ConcurrentHashMap<>();
 
     public Session( String id ) {
         this.id = id;
     }
 
     @SuppressWarnings( "unchecked" )
-    public <A> Optional<A> get( String name ) {
-        return Optional.ofNullable( ( A ) params.get( name ) );
+    public <A> Optional<A> get( String key ) {
+        return Optional.ofNullable( ( A ) values.get( key ) );
     }
 
-    public void set( String name, Object value ) {
-        params.put( name, value );
+    public void set( String key, Object value ) {
+        values.put( key, value );
     }
 
     public void invalidate() {
-        params.clear();
+        values.clear();
     }
 
     public void setAll( Map<String, Object> values ) {
-        params.putAll( values );
+        this.values.putAll( values );
+    }
+
+    public boolean containsKey( String key ) {
+        return values.containsKey( key );
     }
 }

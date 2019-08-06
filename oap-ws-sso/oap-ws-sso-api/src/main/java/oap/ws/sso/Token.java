@@ -22,10 +22,19 @@
  * SOFTWARE.
  */
 
-package oap.sso;
+package oap.ws.sso;
 
-import java.util.Optional;
+import lombok.ToString;
 
-public interface UserStorage<T extends User> {
-    Optional<T> getByEmail( String email );
+import java.io.Serializable;
+import java.time.LocalDateTime;
+
+@ToString
+public class Token implements Serializable {
+
+    private static final long serialVersionUID = -2221117654361445000L;
+
+    public String id;
+    public User user;
+    public LocalDateTime created;
 }

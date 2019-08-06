@@ -24,32 +24,13 @@
 
 package oap.ws.sso;
 
-import oap.sso.OrganizationAware;
-import oap.sso.User;
-import oap.ws.validate.ValidationErrors;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import java.util.Objects;
-import java.util.Optional;
-
-import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
-import static oap.ws.validate.ValidationErrors.empty;
-import static oap.ws.validate.ValidationErrors.error;
-
-/**
- *
- */
-@Deprecated
-public interface OrganizationAwareWS {
-    static ValidationErrors validateObjectAccess( Optional<? extends OrganizationAware> object, String organizationId ) {
-        return object.filter( oa -> !Objects.equals( oa.getOrganization(), organizationId ) )
-            .map( oa -> error( HTTP_FORBIDDEN, "Forbidden" ) )
-            .orElse( empty() );
-    }
-
-    @SuppressWarnings( "unused" )
-    default ValidationErrors validateOrganizationAccess( User user, String organizationId ) {
-        return user.getRole().equals( "ADMIN" ) || Objects.equals( user.getOrganization(), organizationId )
-            ? empty()
-            : error( HTTP_FORBIDDEN, "Forbidden" );
-    }
+@Target( ElementType.METHOD )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface WsSecurity {
+    String[] permissions();
 }

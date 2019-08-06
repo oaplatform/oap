@@ -32,12 +32,10 @@ public class IncrementalUniqueValueGenerator {
 
     public long next() {
         long ct = System.currentTimeMillis();
-        if( ct > lastTime ) {
-            synchronized( IncrementalUniqueValueGenerator.class ) {
-                if( ct > lastTime ) {
-                    value.set( ct << 16 );
-                    lastTime = ct;
-                }
+        if( ct > lastTime ) synchronized( IncrementalUniqueValueGenerator.class ) {
+            if( ct > lastTime ) {
+                value.set( ct << 16 );
+                lastTime = ct;
             }
         }
         return value.incrementAndGet();

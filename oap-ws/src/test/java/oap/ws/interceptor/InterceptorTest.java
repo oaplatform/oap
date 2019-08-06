@@ -42,8 +42,6 @@ import static oap.http.testng.HttpAsserts.httpUrl;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 
 public class InterceptorTest extends Fixtures {
-//    private TestWebServer server;
-
     {
         fixture( new WsFixture( getClass(), ( ws, kernel ) -> {
             kernel.register( "test", new TestWS() );

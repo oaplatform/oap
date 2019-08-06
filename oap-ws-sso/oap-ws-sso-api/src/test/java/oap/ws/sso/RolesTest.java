@@ -22,15 +22,37 @@
  * SOFTWARE.
  */
 
-package oap.sso;
+package oap.ws.sso;
 
-import java.util.Objects;
+import oap.application.Module;
+import oap.util.Arrays;
+import org.testng.annotations.Test;
 
-@Deprecated
-public interface OrganizationAware {
-    String getOrganization();
+import java.util.List;
+import java.util.Map;
 
-    default boolean belongsToOrganization( String organizationId ) {
-        return Objects.equals( getOrganization(), organizationId );
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class RolesTest {
+    @Test
+    public void config() {
+        Module module = Module.CONFIGURATION.fromResource( getClass(), "roles.yaml" );
+
+        assertThat( module.services.get( "oap-ws-sso-roles" ).parameters.get( "roles" ) )
+            .isEqualTo(
+                Map.of(
+                    "ADMIN", List.of( "PERM1", "PERM2" ),
+                    "USER", List.of( "PERM1" )
+                ) );
+    }
+
+    @Test
+    public void granted() {
+        Roles roles = new Roles( Map.of( "USER", List.of( "A", "B" ) ) );
+        assertThat( roles.granted( "VISITOR", Arrays.of( "A" ) ) ).isFalse();
+        assertThat( roles.granted( "USER", Arrays.of( "A" ) ) ).isTrue();
+        assertThat( roles.granted( "USER", Arrays.of( "C" ) ) ).isFalse();
+        assertThat( roles.granted( "USER", Arrays.of( "A", "C" ) ) ).isFalse();
+        assertThat( roles.granted( "USER", Arrays.of( "A", "B" ) ) ).isTrue();
     }
 }

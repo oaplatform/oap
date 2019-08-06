@@ -22,18 +22,32 @@
  * SOFTWARE.
  */
 
-package oap.sso;
+package oap.ws.sso;
 
-import oap.util.Hash;
+import oap.http.HttpResponse;
+import oap.http.Request;
+import org.joda.time.DateTime;
 
-public class PasswordHasher {
-    private final String salt;
+import java.util.Optional;
 
-    public PasswordHasher( String salt ) {
-        this.salt = salt;
+public class SSO {
+    public static final String AUTHENTICATION_KEY = "Auth";
+    public static final String USER_KEY = "user";
+    public static final String EMAIL_KEY = "email";
+
+    public static Optional<String> getToken( Request request ) {
+        return request.header( AUTHENTICATION_KEY ).or( () -> request.cookie( AUTHENTICATION_KEY ) );
     }
 
-    public String hashPassword( String password ) {
-        return Hash.sha256( salt, password );
+    public static HttpResponse authenticatedResponse( Token token, String cookieDomain, int cookieExpiration ) {
+        return HttpResponse.ok( token )
+            .withHeader( SSO.AUTHENTICATION_KEY, token.id )
+            .withCookie( new HttpResponse.CookieBuilder()
+                .withValue( SSO.AUTHENTICATION_KEY, token.id )
+                .withDomain( cookieDomain )
+                .withPath( "/" )
+                .withExpires( DateTime.now().plusMinutes( cookieExpiration ) )
+                .build()
+            ).response();
     }
 }

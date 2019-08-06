@@ -22,20 +22,14 @@
  * SOFTWARE.
  */
 
-package oap.sso;
+package oap.ws.sso;
 
-import java.util.Optional;
+import java.io.Serializable;
 
-public class DefaultTokenService implements TokenService {
+public interface User extends Serializable {
+    String getEmail();
 
-    private final AuthService authService;
+    String getPassword();
 
-    public DefaultTokenService( AuthService authService ) {
-        this.authService = authService;
-    }
-
-    @Override
-    public Optional<Token> getToken( String tokenId ) {
-        return authService.getToken( tokenId );
-    }
+    String getRole();
 }
