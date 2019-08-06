@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @Slf4j
-public class ExtDeserealizer<T> extends StdDeserializer<T> {
+public class ExtDeserializer<T> extends StdDeserializer<T> {
     private static Map<Class<?>, Class<?>> extmap = new HashMap<>();
 
     static {
@@ -57,7 +57,7 @@ public class ExtDeserealizer<T> extends StdDeserializer<T> {
 
     private Class<T> clazz;
 
-    public ExtDeserealizer( Class<T> clazz ) {
+    public ExtDeserializer( Class<T> clazz ) {
         super( clazz );
         this.clazz = clazz;
     }

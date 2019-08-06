@@ -58,7 +58,7 @@ public class ExtDeserializerTest {
 
         interface BeanExt {}
 
-        public static class Deserializer extends ExtDeserealizer<BeanExt> {
+        public static class Deserializer extends ExtDeserializer<BeanExt> {
             public Deserializer() {
                 super( BeanExt.class );
             }
