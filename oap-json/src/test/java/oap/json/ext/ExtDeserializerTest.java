@@ -46,8 +46,11 @@ public class ExtDeserializerTest {
     @EqualsAndHashCode
     @ToString
     public static class Bean {
-        @JsonDeserialize( using = Deserializer.class )
+        @JsonDeserialize( using = BeanExtDeserializer.class )
         BeanExt ext;
+
+        @JsonDeserialize( using = BeanNoExtDeserializer.class )
+        BeanExt noext;
 
         public Bean() {
         }
@@ -58,9 +61,17 @@ public class ExtDeserializerTest {
 
         interface BeanExt {}
 
-        public static class Deserializer extends ExtDeserializer<BeanExt> {
-            public Deserializer() {
+        interface BeanNoExt {}
+
+        public static class BeanExtDeserializer extends ExtDeserializer<BeanExt> {
+            public BeanExtDeserializer() {
                 super( BeanExt.class );
+            }
+        }
+
+        public static class BeanNoExtDeserializer extends ExtDeserializer<BeanNoExt> {
+            public BeanNoExtDeserializer() {
+                super( BeanNoExt.class );
             }
         }
     }
