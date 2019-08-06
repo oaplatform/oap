@@ -25,13 +25,13 @@
 package oap.ws.sso;
 
 import oap.application.Kernel;
-import oap.testng.Asserts;
 import oap.util.Arrays;
 import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.Map;
 
+import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RolesTest {
@@ -41,7 +41,7 @@ public class RolesTest {
             "ADMIN", List.of( "PERM1", "PERM2" ),
             "USER", List.of( "PERM1" )
         );
-        try( Kernel kernel = new Kernel( List.of( Asserts.urlOfTestResource( getClass(), "roles.yaml" ) ) ) ) {
+        try( Kernel kernel = new Kernel( List.of( urlOfTestResource( getClass(), "roles.yaml" ) ) ) ) {
             kernel.start();
             assertThat( kernel.<Roles>service( "roles-map" ) ).isPresent().get()
                 .satisfies( r -> assertThat( r.roles ).isEqualTo( roles ) );

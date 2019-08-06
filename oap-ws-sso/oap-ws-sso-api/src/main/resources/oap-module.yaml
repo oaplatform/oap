@@ -2,7 +2,7 @@ name: oap-ws-sso
 services:
   oap-ws-sso-roles:
     implementation: oap.ws.sso.Roles
-    profile: oap-ws-sso
+    profile: ws-security
 #    parameters:
 #      roles:
 #        ADMIN: ["PERM1", "PERM2"]
