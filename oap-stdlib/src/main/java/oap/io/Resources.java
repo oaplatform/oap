@@ -108,6 +108,12 @@ public final class Resources {
         return Lists.map( urls( name ), Try.map( Strings::readString ) );
     }
 
+    public static List<String> readLines( String name ) {
+        List<String> result = new ArrayList<>();
+        for( URL url : urls( name ) ) result.addAll( Strings.readLines( url ) );
+        return result;
+    }
+
     public static List<URL> urls( String name ) {
         try {
             return Collections.list( Thread.currentThread().getContextClassLoader().getResources( name ) );

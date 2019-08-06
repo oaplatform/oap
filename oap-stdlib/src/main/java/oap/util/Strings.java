@@ -41,6 +41,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -107,6 +108,14 @@ public final class Strings {
     public static String readString( URL url ) {
         try( InputStream is = url.openStream() ) {
             return Strings.readString( is );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static List<String> readLines( URL url ) {
+        try( InputStream is = url.openStream() ) {
+            return Strings.readString( is ).lines().collect( Collectors.toList() );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
