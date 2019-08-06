@@ -72,10 +72,12 @@ public class SecurityInterceptor implements Interceptor {
 
             return session.<User>get( USER_KEY )
                 .filter( u -> !roles.granted( u.getRole(), annotation.get().permissions() ) )
-                .map( u -> HttpResponse.status( 403, format( "User [%s] has no access to method [%s]", u.getEmail(), method.name() ) ).response() );
+                .map( u -> {
+                    log.debug( "denied access to method {}: role: {}, required: {}", method.name(), roles.permissionsOf( u.getRole() ), annotation.get().permissions() );
+                    return HttpResponse.status( 403, format( "User [%s] has no access to method [%s]", u.getEmail(), method.name() ) ).response();
+                } );
         }
-
         return Optional.empty();
     }
-
 }
+
