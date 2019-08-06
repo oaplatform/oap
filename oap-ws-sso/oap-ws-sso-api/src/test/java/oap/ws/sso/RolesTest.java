@@ -37,15 +37,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RolesTest {
     @Test
     public void mapAndPathSupport() {
+        Map<String, List<String>> roles = Map.of(
+            "ADMIN", List.of( "PERM1", "PERM2" ),
+            "USER", List.of( "PERM1" )
+        );
         try( Kernel kernel = new Kernel( List.of( Asserts.urlOfTestResource( getClass(), "roles.yaml" ) ) ) ) {
             kernel.start();
-            assertThat( kernel.service( "roles-map" ) ).isPresent();
-            assertThat( kernel.service( "roles-path" ) ).isPresent();
-
-            Map<String, List<String>> roles = Map.of(
-                "ADMIN", List.of( "PERM1", "PERM2" ),
-                "USER", List.of( "PERM1" )
-            );
+            assertThat( kernel.<Roles>service( "roles-map" ) ).isPresent().get()
+                .satisfies( r -> assertThat( r.roles ).isEqualTo( roles ) );
+            assertThat( kernel.<Roles>service( "roles-path" ) ).isPresent().get()
+                .satisfies( r -> assertThat( r.roles ).isEqualTo( roles ) );
         }
     }
 
