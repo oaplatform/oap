@@ -41,6 +41,7 @@ import static oap.http.Request.HttpMethod.GET;
 import static oap.ws.WsParam.From.PATH;
 import static oap.ws.WsParam.From.QUERY;
 import static oap.ws.WsParam.From.SESSION;
+import static oap.ws.sso.Permissions.MANAGE_SELF;
 import static oap.ws.sso.SSO.authenticatedResponse;
 
 @Slf4j
@@ -64,7 +65,7 @@ public class AuthWS {
     }
 
     @WsMethod( method = GET, path = "/logout" )
-    @WsSecurity( permissions = "MANAGE_SELF" )
+    @WsSecurity( permissions = MANAGE_SELF )
     @WsValidate( { "validateUserAccess" } )
     public void logout( @WsParam( from = QUERY ) String email, @WsParam( from = SESSION ) User user ) {
         log.debug( "Invalidating token for user [{}]", email );
