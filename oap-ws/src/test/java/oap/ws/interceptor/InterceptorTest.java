@@ -90,7 +90,7 @@ public class InterceptorTest extends Fixtures {
     private static class ErrorInterceptor implements Interceptor {
         @Override
         public Optional<HttpResponse> before( Request request, Session session, Reflection.Method method ) {
-            return request.getListParams().parameterOpt( "value" ).filter( s -> s.equals( "error" ) ).isPresent()
+            return request.parameter( "value" ).filter( s -> s.equals( "error" ) ).isPresent()
                 ? Optional.of(
                 HttpResponse.status( 403 )
                     .withContent( "caused by interceptor", APPLICATION_JSON )

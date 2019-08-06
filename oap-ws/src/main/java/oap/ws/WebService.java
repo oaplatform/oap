@@ -340,14 +340,13 @@ public class WebService implements Handler {
                                                                           Request request,
                                                                           Optional<WsMethod> wsMethod ) {
 
-        var params = request.getListParams();
 
         return parameters.stream().collect( toLinkedHashMap(
             parameter -> parameter,
             parameter -> getValue( session, request, wsMethod, parameter )
                 .orElseGet( () -> parameter.type().assignableTo( List.class )
-                    ? params.parameters( parameter.name() )
-                    : unwrap( parameter, params.parameterOpt( parameter.name() ) )
+                    ? request.parameters( parameter.name() )
+                    : unwrap( parameter, request.parameter( parameter.name() ) )
                 ) ) );
     }
 
@@ -387,8 +386,8 @@ public class WebService implements Handler {
                                     ) : unwrap( parameter, request.readBody().map( String::new ) );
                                 default:
                                     return parameter.type().assignableTo( List.class )
-                                        ? request.getListParams().parameters( parameter.name() )
-                                        : unwrap( parameter, request.getListParams().parameterOpt( parameter.name() ) );
+                                        ? request.parameters( parameter.name() )
+                                        : unwrap( parameter, request.parameter( parameter.name() ) );
 
                             }
                         } );
