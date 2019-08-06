@@ -46,9 +46,6 @@
         <module>oap-cli</module>
         <module>oap-http</module>
         <module>oap-http-useragent</module>
-        <module>oap-ws</module>
-        <module>oap-ws-sso/oap-ws-sso-api</module>
-        <module>oap-ws-sso/oap-ws-sso</module>
         <module>oap-remoting-server</module>
         <module>oap-application</module>
         <module>oap-application-spring</module>
@@ -56,10 +53,8 @@
         <module>oap-storage</module>
         <module>oap-storage-mongo</module>
         <module>oap-logstream</module>
-        <module>oap-ws-cat</module>
         <module>oap-alert</module>
         <module>oap-alert-slack</module>
-        <module>oap-media</module>
         <module>oap-zabbix</module>
         <module>maven</module>
     </modules>
@@ -79,7 +74,7 @@
     </distributionManagement>
 
     <properties>
-        <revision>4.17.10</revision>
+        <revision>4.18.0</revision>
 
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
