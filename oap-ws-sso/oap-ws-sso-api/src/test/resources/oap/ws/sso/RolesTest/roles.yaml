@@ -1,10 +1,12 @@
 name: oap-ws-sso
 services:
-  oap-ws-sso-roles:
+  roles-map:
     implementation: oap.ws.sso.Roles
-    profile: oap-ws
     parameters:
       roles:
         ADMIN: ["PERM1", "PERM2"]
         USER: ["PERM1"]
-
+  roles-path:
+    implementation: oap.ws.sso.Roles
+    parameters:
+      path: "/oap/ws/sso/RolesTest/test-roles.yaml"

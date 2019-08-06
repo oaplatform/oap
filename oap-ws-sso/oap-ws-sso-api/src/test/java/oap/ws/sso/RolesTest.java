@@ -24,7 +24,8 @@
 
 package oap.ws.sso;
 
-import oap.application.Module;
+import oap.application.Kernel;
+import oap.testng.Asserts;
 import oap.util.Arrays;
 import org.testng.annotations.Test;
 
@@ -35,15 +36,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class RolesTest {
     @Test
-    public void config() {
-        Module module = Module.CONFIGURATION.fromResource( getClass(), "roles.yaml" );
+    public void mapAndPathSupport() {
+        try( Kernel kernel = new Kernel( List.of( Asserts.urlOfTestResource( getClass(), "roles.yaml" ) ) ) ) {
+            kernel.start();
+            assertThat( kernel.service( "roles-map" ) ).isPresent();
+            assertThat( kernel.service( "roles-path" ) ).isPresent();
 
-        assertThat( module.services.get( "oap-ws-sso-roles" ).parameters.get( "roles" ) )
-            .isEqualTo(
-                Map.of(
-                    "ADMIN", List.of( "PERM1", "PERM2" ),
-                    "USER", List.of( "PERM1" )
-                ) );
+            Map<String, List<String>> roles = Map.of(
+                "ADMIN", List.of( "PERM1", "PERM2" ),
+                "USER", List.of( "PERM1" )
+            );
+        }
     }
 
     @Test

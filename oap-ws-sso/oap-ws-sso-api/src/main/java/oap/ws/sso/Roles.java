@@ -24,14 +24,27 @@
 
 package oap.ws.sso;
 
+import oap.io.Resources;
+import oap.json.Binder;
+import oap.reflect.TypeRef;
+
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class Roles {
     public final Map<String, List<String>> roles;
 
     public Roles( Map<String, List<String>> roles ) {
         this.roles = roles;
+    }
+
+    public Roles( String path ) {
+        Optional<URL> url = Resources.url( Roles.class, path );
+        if( url.isPresent() )
+            this.roles = Binder.getBinder( url.get() ).unmarshal( new TypeRef<>() {}, url.get() );
+        else throw new IllegalArgumentException( path );
     }
 
     public List<String> permissionsOf( String role ) {
