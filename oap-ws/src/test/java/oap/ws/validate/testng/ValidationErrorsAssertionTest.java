@@ -38,36 +38,36 @@ public class ValidationErrorsAssertionTest {
     @Test
     public void validatedCall() {
         assertThat(
-            validating( new CWS() )
+            validating( new CWS( "1" ) )
                 .isError( 404, "not found" )
                 .instance.m( "a" ) )
             .isNull();
         assertThat(
-            validating( new CWS() )
+            validating( new CWS( "2" ) )
                 .isError( 404, "not found" )
                 .instance.m2( "a" ) )
             .isNull();
 
         assertThat(
-            validating( new CWS() )
+            validating( new CWS( "3" ) )
                 .isFailed()
                 .hasCode( 404 )
                 .containsErrors( "not found" )
                 .instance.m( "b" ) )
             .isNull();
         assertThat(
-            validating( new CWS() )
+            validating( new CWS( "4" ) )
                 .isFailed()
                 .hasCode( 404 )
                 .containsErrors( "not found" )
                 .instance.m2( "b" ) )
             .isNull();
 
-        assertThat( validating( new CWS() )
+        assertThat( validating( new CWS( "5" ) )
             .isNotFailed()
             .instance.m( "c" ) )
             .isEqualTo( "c" );
-        assertThat( validating( new CWS() )
+        assertThat( validating( new CWS( "6" ) )
             .isNotFailed()
             .instance.m2( "c" ) )
             .isEqualTo( "c" );
@@ -75,7 +75,7 @@ public class ValidationErrorsAssertionTest {
 
     @Test
     public void validateSchemaPreUnmarshalValidation() {
-        validating( new CWS() )
+        validating( new CWS( "v" ) )
             .isFailed()
             .hasCode( 400 )
             .containsErrors( "/b: required property is missing", "additional properties are not permitted [a]" )
@@ -91,6 +91,12 @@ class B {
 
 @SuppressWarnings( "unused" )
 class CWS {
+    private final String a;
+
+    public CWS( String a ) {
+        this.a = a;
+    }
+
     @WsValidate( "validateM" )
     public String m( @WsValidate( "validateP" ) String a ) {
         return a;

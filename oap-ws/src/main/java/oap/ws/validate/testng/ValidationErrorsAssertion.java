@@ -25,6 +25,7 @@ package oap.ws.validate.testng;
 
 import javassist.util.proxy.MethodHandler;
 import javassist.util.proxy.ProxyFactory;
+import javassist.util.proxy.ProxyObject;
 import oap.json.Binder;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
@@ -35,6 +36,7 @@ import oap.ws.WsClientException;
 import oap.ws.validate.ValidationErrors;
 import oap.ws.validate.Validators;
 import org.assertj.core.api.AbstractAssert;
+import org.objenesis.ObjenesisStd;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -47,6 +49,8 @@ import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAssertion, ValidationErrors> {
+
+    private static final ObjenesisStd objenesis = new ObjenesisStd();
 
     protected ValidationErrorsAssertion( ValidationErrors actual ) {
         super( actual, ValidationErrorsAssertion.class );
@@ -95,71 +99,72 @@ public class ValidationErrorsAssertion extends AbstractAssert<ValidationErrorsAs
 
         @SuppressWarnings( "unchecked" )
         public ValidatedInvocation( I instance ) {
-            try {
-                var factory = new ProxyFactory();
-                factory.setSuperclass( instance.getClass() );
+            var factory = new ProxyFactory();
+            factory.setSuperclass( instance.getClass() );
 
-                MethodHandler handler = ( self, jmethod, proceed, args ) -> {
-                    var method = Reflect.reflect( instance.getClass() )
-                        .method( jmethod )
-                        .orElse( null );
-                    if( method == null ) throw new NoSuchMethodError( jmethod.toString() );
-                    var paramErrors = ValidationErrors.empty();
+            MethodHandler handler = ( self, jmethod, proceed, args ) -> {
+                var method = Reflect.reflect( instance.getClass() )
+                    .method( jmethod )
+                    .orElse( null );
+                if( method == null ) throw new NoSuchMethodError( jmethod.toString() );
+                var paramErrors = ValidationErrors.empty();
 
-                    var parameters = method.parameters;
+                var parameters = method.parameters;
 
-                    Map<Reflection.Parameter, Object> originalValues = Stream.of( parameters )
-                        .zipWithIndex()
-                        .<Reflection.Parameter, Object>map( ( parameter, i ) -> __( parameter, Binder.json.marshal( args[i] ) ) )
-                        .toMap();
+                Map<Reflection.Parameter, Object> originalValues = Stream.of( parameters )
+                    .zipWithIndex()
+                    .<Reflection.Parameter, Object>map( ( parameter, i ) -> __( parameter, Binder.json.marshal( args[i] ) ) )
+                    .toMap();
 
-                    paramErrors = paramErrors.validateParameters( originalValues, method, instance, true );
+                paramErrors = paramErrors.validateParameters( originalValues, method, instance, true );
 
-                    if( paramErrors.failed() ) {
-                        runAsserts( paramErrors );
+                if( paramErrors.failed() ) {
+                    runAsserts( paramErrors );
+                    return null;
+                }
+
+                var values = new LinkedHashMap<Reflection.Parameter, Object>();
+
+                for( int i = 0; i < parameters.size(); i++ ) values.put( parameters.get( i ), args[i] );
+
+                paramErrors = paramErrors.validateParameters( values, method, instance, false );
+
+                if( paramErrors.failed() ) {
+                    runAsserts( paramErrors );
+                    return null;
+                }
+
+                var methodErrors = Validators
+                    .forMethod( method, instance, false )
+                    .validate( args, values );
+                if( methodErrors.failed() )
+                    runAsserts( methodErrors );
+                if( methodErrors.failed() ) return null;
+
+                try {
+                    return method.invoke( instance, args );
+                } catch( ReflectException e ) {
+                    var cause = e.getCause();
+                    if( cause instanceof InvocationTargetException && ( cause = cause.getCause() ) instanceof WsClientException ) {
+                        var wsClientException = ( WsClientException ) cause;
+                        var code = wsClientException.code;
+                        var errors = wsClientException.errors;
+
+                        var validationErrors = ValidationErrors.errors( code, errors );
+                        runAsserts( validationErrors );
                         return null;
+                    } else {
+                        throw Throwables.propagate( e );
                     }
+                }
+            };
 
-                    var values = new LinkedHashMap<Reflection.Parameter, Object>();
+            var klass = factory.createClass();
 
-                    for( int i = 0; i < parameters.size(); i++ ) values.put( parameters.get( i ), args[i] );
+            this.instance = ( I ) objenesis.getInstantiatorOf( klass ).newInstance();
 
-                    paramErrors = paramErrors.validateParameters( values, method, instance, false );
+            ( ( ProxyObject ) this.instance ).setHandler( handler );
 
-                    if( paramErrors.failed() ) {
-                        runAsserts( paramErrors );
-                        return null;
-                    }
-
-                    var methodErrors = Validators
-                        .forMethod( method, instance, false )
-                        .validate( args, values );
-                    if( methodErrors.failed() )
-                        runAsserts( methodErrors );
-                    if( methodErrors.failed() ) return null;
-
-                    try {
-                        return method.invoke( instance, args );
-                    } catch( ReflectException e ) {
-                        var cause = e.getCause();
-                        if( cause instanceof InvocationTargetException && ( cause = cause.getCause() ) instanceof WsClientException ) {
-                            var wsClientException = ( WsClientException ) cause;
-                            var code = wsClientException.code;
-                            var errors = wsClientException.errors;
-
-                            var validationErrors = ValidationErrors.errors( code, errors );
-                            runAsserts( validationErrors );
-                            return null;
-                        } else {
-                            throw Throwables.propagate( e );
-                        }
-                    }
-                };
-
-                this.instance = ( I ) factory.create( new Class<?>[0], new Object[0], handler );
-            } catch( NoSuchMethodException | InvocationTargetException | IllegalAccessException | InstantiationException e ) {
-                throw Throwables.propagate( e );
-            }
         }
 
         public ValidatedInvocation<I> hasCode( int code ) {
