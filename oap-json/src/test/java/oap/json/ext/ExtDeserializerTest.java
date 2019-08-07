@@ -32,6 +32,9 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+/**
+ * @apiNote json-ext.properties
+ */
 @SuppressWarnings( "unused" )
 public class ExtDeserializerTest {
     @Test
