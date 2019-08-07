@@ -57,6 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
+import oap.json.ext.ExtModule;
 import oap.reflect.Reflection;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
@@ -157,6 +158,7 @@ public class Binder {
         mapper.registerModule( new AfterburnerModule() );
         mapper.registerModule( new Jdk8Module().configureAbsentsAsNulls( true ) );
         mapper.registerModule( new JodaModule() );
+        mapper.registerModule( new ExtModule() );
         mapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
         mapper.enable( DeserializationFeature.USE_LONG_FOR_INTS );
         mapper.enable( JsonParser.Feature.ALLOW_SINGLE_QUOTES );
