@@ -48,7 +48,7 @@ public class ExtDeserializer<T> extends StdDeserializer<T> {
                 if( p.startsWith( "#" ) || StringUtils.isBlank( p ) ) continue;
                 log.trace( "mapping ext {}", p );
                 Pair<String, String> split = Strings.split( p, "=" );
-                extmap.put( Class.forName( split._1 ), Class.forName( split._2 ) );
+                extmap.put( Class.forName( split._1.trim() ), Class.forName( split._2.trim() ) );
             } catch( ClassNotFoundException e ) {
                 throw new ExceptionInInitializerError( e );
             }
