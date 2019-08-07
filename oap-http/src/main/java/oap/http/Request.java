@@ -60,11 +60,14 @@ public class Request {
     public final String ua;
     public final String referrer;
     public final String ip;
+    @Deprecated
     private ListParams listParams;
+    @Deprecated
     private UniqueParams uniqueParams;
     private ListMultimap<String, String> _headers;
     private Map<String, String> _cookies;
     private String _requestLine;
+    private ListMultimap<String, String> params;
 
     public Request( HttpRequest req, Context context ) {
         this.req = req;
@@ -76,6 +79,42 @@ public class Request {
         this.ip = header( "X-Forwarded-For" ).orElse( context.remoteAddress.getHostAddress() );
     }
 
+    public Optional<String> parameter( String name ) {
+        ensureParametersParsed();
+        List<String> values = params.get( name );
+        if( values.isEmpty() ) return Optional.empty();
+        return Optional.ofNullable( values.get( 0 ) );
+    }
+
+    public String parameterOrDefault( String name, String def ) {
+        ensureParametersParsed();
+        List<String> values = params.get( name );
+        if( values.isEmpty() ) return def;
+        return values.get( 0 );
+    }
+
+    public List<String> parameters( String name ) {
+        ensureParametersParsed();
+        return params.get( name );
+    }
+
+    private void ensureParametersParsed() {
+        if( this.params != null ) return;
+        this.params = ArrayListMultimap.create();
+        Url.parseQuery( Strings.substringAfter( uri, "?" ), this.params );
+        var contentType = req.getFirstHeader( "Content-Type" );
+        if( contentType != null && contentType.getValue().startsWith( "application/x-www-form-urlencoded" )
+            && req instanceof HttpEntityEnclosingRequest ) try {
+            Url.parseQuery( EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) req ).getEntity() ), this.params );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    /**
+     * @see #parameters(String)
+     */
+    @Deprecated
     public ListParams getListParams() {
         if( listParams == null ) {
             listParams = new ListParams();
@@ -96,7 +135,10 @@ public class Request {
 
     /**
      * @apiNote "application/x-www-form-urlencoded" not supported
+     * @see #parameter(String)
+     * @see #parameterOrDefault(String, String)
      */
+    @Deprecated
     public UniqueParams getUniqueParams() {
         if( uniqueParams == null ) {
             uniqueParams = new UniqueParams();
@@ -208,7 +250,7 @@ public class Request {
             .add( "baseUrl", getBaseUrl() )
             .add( "requestLine", getRequestLine() )
             .add( "method", getHttpMethod() )
-            .add( "params", getListParams() )
+            .add( "params", this.params )
             .omitNullValues()
             .toString();
     }
@@ -220,7 +262,7 @@ public class Request {
             .add( "ip", this.ip )
             .add( "ua", this.ua )
             .add( "uri", this.uri )
-            .add( "params", this.getListParams() )
+            .add( "params", this.params )
             .add( "headers", this.getHeaders() )
             .add( "cookies", getCookies() )
             .omitNullValues()
@@ -232,6 +274,7 @@ public class Request {
     }
 
     @ToString
+    @Deprecated
     public static class ListParams {
         final ListMultimap<String, String> params = ArrayListMultimap.create();
 
@@ -253,6 +296,7 @@ public class Request {
         }
     }
 
+    @Deprecated
     public static class UniqueParams {
         public final HashMap<String, String> params = new HashMap<>();
 

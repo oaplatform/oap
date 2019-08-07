@@ -34,8 +34,8 @@ import java.util.List;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.testng.Assert.assertTrue;
 
 
 public class RemotingTest {
@@ -48,14 +48,17 @@ public class RemotingTest {
         try {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ) );
 
-            RemoteClient remote1 = kernel.service( "remote-client1" );
-            assertTrue( remote1.accessible() );
-            assertString( remote1.toString() ).isEqualTo( "remote:remote-service-impl1@https://localhost:8980/remote/" );
+            assertThat( kernel.<RemoteClient>service( "remote-client1" ) ).isPresent().get()
+                .satisfies( remote1 -> {
+                    assertThat( remote1.accessible() ).isTrue();
+                    assertString( remote1.toString() ).isEqualTo( "remote:remote-service-impl1@https://localhost:8980/remote/" );
+                } );
 
-            assertTrue( kernel.<RemoteClient>service( "remote-client2" ).accessible() );
+            assertThat( kernel.<RemoteClient>service( "remote-client2" ) ).isPresent().get()
+                .satisfies( s -> assertThat( s.accessible() ).isTrue() );
 
-            assertThatThrownBy( () -> kernel.<RemoteClient>service( "remote-client3" ).accessible() )
-                .isInstanceOf( IllegalStateException.class );
+            assertThat( kernel.<RemoteClient>service( "remote-client3" ) ).isPresent().get()
+                .satisfies( s -> assertThatThrownBy( s::accessible ).isInstanceOf( IllegalStateException.class ) );
 
         } finally {
             kernel.stop();

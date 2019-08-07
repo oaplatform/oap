@@ -50,7 +50,7 @@ public class KernelLinkImplementationsTest {
 
         try {
             kernel.start();
-            FieldReference service = kernel.service( "m" );
+            FieldReference service = kernel.<FieldReference>service( "m" ).get();
 
             assertThat( service.ti ).isNotNull();
             assertThat( service.ti.toString() ).isEqualTo( "TestInterfaceImpl1" );
@@ -67,7 +67,7 @@ public class KernelLinkImplementationsTest {
 
         try {
             kernel.start();
-            FieldReferences service = kernel.service( "m" );
+            FieldReferences service = kernel.<FieldReferences>service( "m" ).get();
 
             assertThat( service.tis ).isNotNull();
             assertThat( service.tis.stream().map( Object::toString ).collect( toList() ) )
@@ -98,7 +98,7 @@ public class KernelLinkImplementationsTest {
 
         try {
             kernel.start();
-            FieldReferences service = kernel.service( "m" );
+            FieldReferences service = kernel.<FieldReferences>service( "m" ).get();
 
             assertThat( service.tis ).isEmpty();
         } finally {

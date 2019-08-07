@@ -25,18 +25,17 @@ package oap.util;
 
 import com.google.common.base.Preconditions;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 
-public abstract class AssocList<K, V> extends ArrayList<V> {
+public abstract class AssocList<K, V> extends LinkedHashSet<V> {
     private final ConcurrentHashMap<K, V> map = new ConcurrentHashMap<>();
 
     public AssocList() {
@@ -59,35 +58,11 @@ public abstract class AssocList<K, V> extends ArrayList<V> {
     protected abstract K keyOf( V v );
 
     @Override
-    public synchronized V set( int index, V v ) {
-        V old = super.set( index, v );
-        map.remove( keyOf( old ) );
-        map.put( keyOf( v ), v );
-        return old;
-
-    }
-
-    @Override
     public synchronized boolean add( V v ) {
-        if( map.put( keyOf( v ), v ) != null ) {
-            removeIf( lv -> keyOf( lv ).equals( keyOf( v ) ) );
-        }
+        if( map.put( keyOf( v ), v ) != null ) removeKey( keyOf( v ) );
         super.add( v );
 
         return true;
-    }
-
-    @Override
-    public synchronized void add( int index, V v ) {
-        map.put( keyOf( v ), v );
-        super.add( index, v );
-    }
-
-    @Override
-    public synchronized V remove( int index ) {
-        V old = super.remove( index );
-        map.values().remove( old );
-        return old;
     }
 
     @Override
@@ -100,18 +75,6 @@ public abstract class AssocList<K, V> extends ArrayList<V> {
     public synchronized boolean addAll( Collection<? extends V> c ) {
         for( V v : c ) map.put( keyOf( v ), v );
         return super.addAll( c );
-    }
-
-    @Override
-    public synchronized boolean addAll( int index, Collection<? extends V> c ) {
-        for( V v : c ) map.put( keyOf( v ), v );
-        return super.addAll( index, c );
-    }
-
-    @Override
-    protected synchronized void removeRange( int fromIndex, int toIndex ) {
-        map.values().removeAll( subList( fromIndex, toIndex ) );
-        super.removeRange( fromIndex, toIndex );
     }
 
     @Override
@@ -132,24 +95,29 @@ public abstract class AssocList<K, V> extends ArrayList<V> {
         return super.removeIf( filter );
     }
 
-    @Override
-    public synchronized void replaceAll( UnaryOperator<V> operator ) {
-        super.replaceAll( operator );
-        map.clear();
-        for( V v : this ) map.put( keyOf( v ), v );
-    }
-
     public Optional<V> get( K key ) {
         return Optional.ofNullable( map.get( key ) );
     }
 
+    public V getOrDefault( K key, V def ) {
+        return map.getOrDefault( key, def );
+    }
+
+    public boolean removeKey( K key ) {
+        return removeIf( o -> Objects.equals( keyOf( o ), key ) );
+    }
+
+    /**
+     * @see #getOrDefault(Object, Object)
+     */
+    @Deprecated
     public V unsafeGet( K key ) {
         return map.get( key );
     }
 
-    public List<V> getAll( Collection<K> keys ) {
+    public Set<V> getAll( Collection<K> keys ) {
         return Stream.of( keys )
-            .foldLeft( new ArrayList<>(), ( result, key ) -> {
+            .foldLeft( new LinkedHashSet<>(), ( result, key ) -> {
                 V v = map.get( key );
                 if( v != null ) result.add( v );
                 return result;

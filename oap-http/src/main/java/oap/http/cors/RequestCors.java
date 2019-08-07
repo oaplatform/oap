@@ -46,7 +46,7 @@ public class RequestCors {
         this.allowMethods = allowMethods.stream().collect( Collectors.joining( ", " ) );
     }
 
-    public void setHeaders( final org.apache.http.HttpResponse response ) {
+    public void applyTo( final org.apache.http.HttpResponse response ) {
         response.setHeader( "Access-Control-Allow-Origin", allowOrigin );
         response.setHeader( "Access-Control-Allow-Headers", allowHeaders );
         response.setHeader( "Access-Control-Allow-Credentials", allowCredentials );

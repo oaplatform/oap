@@ -41,6 +41,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -112,6 +113,14 @@ public final class Strings {
         }
     }
 
+    public static List<String> readLines( URL url ) {
+        try( InputStream is = url.openStream() ) {
+            return Strings.readString( is ).lines().collect( Collectors.toList() );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
     public static boolean isUndefined( String s ) {
         return UNDEFINED.equals( s );
     }
@@ -150,23 +159,29 @@ public final class Strings {
         } ).replace( s );
     }
 
-    public static String join( Collection<?> list ) {
-        return join( ",", list );
+    public static String join( Collection<?> items ) {
+        return join( ",", false, items, "", "", "" );
     }
 
     public static String join( String delimiter, Collection<?> items ) {
-        return join( delimiter, items, "", "" );
+        return join( delimiter, false, items, "", "", "" );
+    }
+
+    public static String join( String delimiter, boolean skipNulls, Collection<?> items ) {
+        return join( delimiter, skipNulls, items, "", "", "" );
     }
 
     public static String join( String delimiter, Collection<?> items, String prefix, String suffix ) {
-        StringJoiner joiner = new StringJoiner( delimiter, prefix, suffix );
-        items.forEach( e -> joiner.add( String.valueOf( e ) ) );
-        return joiner.toString();
+        return join( delimiter, false, items, prefix, suffix, "" );
     }
 
     public static String join( String delimiter, Collection<?> items, String prefix, String suffix, String quotes ) {
+        return join( delimiter, false, items, prefix, suffix, quotes );
+    }
+
+    public static String join( String delimiter, boolean skipNulls, Collection<?> items, String prefix, String suffix, String quotes ) {
         StringJoiner joiner = new StringJoiner( delimiter, prefix, suffix );
-        items.forEach( e -> joiner.add( quotes + e + quotes ) );
+        items.stream().filter( item -> !Objects.isNull( item ) ).forEach( e -> joiner.add( quotes + e + quotes ) );
         return joiner.toString();
     }
 

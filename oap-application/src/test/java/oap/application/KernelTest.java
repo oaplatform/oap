@@ -40,13 +40,13 @@ import java.io.Closeable;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static oap.testng.Asserts.assertEventually;
 import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class KernelTest {
@@ -67,8 +67,8 @@ public class KernelTest {
 
         Kernel kernel = new Kernel( modules );
         kernel.start();
-        TestCloseable tc = kernel.service( "c1" );
-        TestCloseable2 tc2 = kernel.service( "c2" );
+        TestCloseable tc = kernel.<TestCloseable>service( "c1" ).get();
+        TestCloseable2 tc2 = kernel.<TestCloseable2>service( "c2" ).get();
         kernel.stop();
 
         assertThat( tc.closed ).isTrue();
@@ -90,30 +90,33 @@ public class KernelTest {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ),
                 pathOfTestResource( getClass(), "conf.d" ) );
             assertEventually( 50, 1, () -> {
-                ServiceOne one = kernel.service( "ServiceOne" );
-                ServiceTwo two = kernel.service( "ServiceTwo" );
+                Optional<ServiceOne> serviceOne = kernel.service( "ServiceOne" );
+                Optional<ServiceTwo> serviceTwo = kernel.service( "ServiceTwo" );
 
-                assertNotNull( one );
-                assertThat( one.kernel ).isSameAs( kernel );
-                assertThat( one.i ).isEqualTo( 2 );
-                assertThat( one.i2 ).isEqualTo( 100 );
-                Complex expected = new Complex( 2 );
-                expected.map = Maps.of( __( "a", new Complex( 1 ) ) );
-                assertThat( one.complex ).isEqualTo( expected );
-                assertThat( one.complexes ).contains( new Complex( 2 ) );
-                assertNotNull( two );
-                assertThat( two.j ).isEqualTo( 3000 );
-                assertThat( two.one2 ).isSameAs( one );
-                assertTrue( two.started );
-                ServiceScheduled scheduled = kernel.service( "ServiceScheduled" );
-                assertNotNull( scheduled );
-                assertTrue( scheduled.executed );
+                assertThat( serviceOne ).isPresent().get().satisfies( one -> {
+                    assertThat( one.kernel ).isSameAs( kernel );
+                    assertThat( one.i ).isEqualTo( 2 );
+                    assertThat( one.i2 ).isEqualTo( 100 );
+                    Complex expected = new Complex( 2 );
+                    expected.map = Maps.of( __( "a", new Complex( 1 ) ) );
+                    assertThat( one.complex ).isEqualTo( expected );
+                    assertThat( one.complexes ).contains( new Complex( 2 ) );
+                } );
+                assertThat( serviceTwo ).isPresent().get().satisfies( two -> {
+                    assertThat( two.j ).isEqualTo( 3000 );
+                    assertThat( two.one2 ).isSameAs( serviceOne.get() );
+                    assertTrue( two.started );
+                } );
+                Optional<ServiceScheduled> serviceScheduled = kernel.service( "ServiceScheduled" );
+                assertThat( serviceScheduled ).isPresent().get().satisfies( scheduled ->
+                    assertThat( scheduled.executed ).isTrue()
+                );
 
-                ServiceDepsList depsList = kernel.service( "ServiceDepsList" );
-                assertNotNull( depsList );
-                assertThat( depsList.deps ).contains( one, two );
+                Optional<ServiceDepsList> serviceDepsList = kernel.service( "ServiceDepsList" );
+                assertThat( serviceDepsList ).isPresent().get()
+                    .satisfies( depsList -> assertThat( depsList.deps ).contains( serviceOne.get(), serviceTwo.get() ) );
 
-                assertThat( one.listener ).isSameAs( two );
+                assertThat( serviceOne.get().listener ).isSameAs( serviceTwo.get() );
 
 //                dont do this kind of things now.
 //                ServiceOne.ComplexMap complexMap = Application.service2( ServiceOne.ComplexMap.class );
@@ -132,9 +135,9 @@ public class KernelTest {
         try {
             kernel.start();
 
-            assertThat( kernel.<ServiceOne>service( "s1" ) ).isNotNull();
-            assertThat( kernel.<ServiceOne>service( "s1" ).list ).isEmpty();
-            assertThat( kernel.<ServiceOne>service( "s2" ) ).isNull();
+            assertThat( kernel.<ServiceOne>service( "s1" ) ).isPresent().get()
+                .satisfies( s1 -> assertThat( s1.list ).isEmpty() );
+            assertThat( kernel.<ServiceOne>service( "s2" ) ).isNotPresent();
         } finally {
             kernel.stop();
         }
@@ -150,15 +153,12 @@ public class KernelTest {
         Kernel kernel = new Kernel( modules );
         try {
             kernel.start();
-
-            ServiceContainer container = kernel.service( "container" );
-            ServiceContainee containee1 = kernel.service( "containee1" );
-            ServiceContainee containee2 = kernel.service( "containee2" );
-            assertThat( container ).isNotNull();
-            assertThat( containee1 ).isNotNull();
-            assertThat( containee2 ).isNotNull();
-            assertThat( container.containees ).contains( containee1, containee2 );
-            assertThat( container.priorities ).containsExactly( containee2, containee1 );
+            assertThat( kernel.<ServiceContainer>service( "container" ) ).isPresent().get().satisfies( container ->
+                assertThat( kernel.<ServiceContainee>service( "containee1" ) ).isPresent().get().satisfies( containee1 ->
+                    assertThat( kernel.<ServiceContainee>service( "containee2" ) ).isPresent().get().satisfies( containee2 -> {
+                        assertThat( container.containees ).contains( containee1, containee2 );
+                        assertThat( container.priorities ).containsExactly( containee2, containee1 );
+                    } ) ) );
         } finally {
             kernel.stop();
         }
@@ -172,9 +172,12 @@ public class KernelTest {
         try {
             kernel.start();
 
-            assertThat( kernel.<ServiceOne>service( "s1" ).map ).hasSize( 2 );
-            assertThat( kernel.<ServiceOne>service( "s1" ).map.get( "test1" ) ).isInstanceOf( ServiceOne.class );
-            assertThat( kernel.<ServiceOne>service( "s1" ).map.get( "test2" ) ).isInstanceOf( ServiceOne.class );
+            assertThat( kernel.<ServiceOne>service( "s1" ) ).isPresent().get()
+                .satisfies( s1 -> {
+                    assertThat( s1.map ).hasSize( 2 );
+                    assertThat( s1.map.get( "test1" ) ).isInstanceOf( ServiceOne.class );
+                    assertThat( s1.map.get( "test2" ) ).isInstanceOf( ServiceOne.class );
+                } );
         } finally {
             kernel.stop();
         }
@@ -188,9 +191,12 @@ public class KernelTest {
         try {
             kernel.start();
 
-            assertThat( kernel.<TestServiceMap>service( "ServiceMap" ).map1 ).hasSize( 1 );
-            assertThat( kernel.<TestServiceMap>service( "ServiceMap" ).map1.get( "ok" ) ).isInstanceOf( TestServiceMap.TestEntry.class );
-            assertThat( kernel.<TestServiceMap>service( "ServiceMap" ).map1.get( "ok" ).i ).isEqualTo( 10 );
+            assertThat( kernel.<TestServiceMap>service( "ServiceMap" ) ).isPresent().get()
+                .satisfies( sm -> {
+                    assertThat( sm.map1 ).hasSize( 1 );
+                    assertThat( sm.map1.get( "ok" ) ).isInstanceOf( TestServiceMap.TestEntry.class );
+                    assertThat( sm.map1.get( "ok" ).i ).isEqualTo( 10 );
+                } );
         } finally {
             kernel.stop();
         }
@@ -208,9 +214,10 @@ public class KernelTest {
         try {
             kernel.start();
 
-            assertThat( kernel.<Service1>service( "s1" ) ).isNull();
-            assertThat( kernel.<Service2>service( "s2" ) ).isNotNull();
-            assertThat( kernel.<Service2>service( "s2" ).val ).isEqualTo( "test$value" );
+            assertThat( kernel.<Service1>service( "s1" ) ).isNotPresent();
+            assertThat( kernel.<Service2>service( "s2" ) ).isPresent();
+            assertThat( kernel.<Service2>service( "s2" ) ).isPresent().get()
+                .satisfies( s2 -> assertThat( s2.val ).isEqualTo( "test$value" ) );
         } finally {
             kernel.stop();
         }
