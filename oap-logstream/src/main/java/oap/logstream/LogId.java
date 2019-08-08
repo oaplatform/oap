@@ -54,35 +54,20 @@ public class LogId implements Serializable {
     }
 
     public final String fileName( String filePattern, DateTime time, Timestamp timestamp ) {
-        return Strings.substitute( filePattern, v -> {
-            switch( v ) {
-                case "LOG_NAME":
-                    return logName;
-                case "LOG_TYPE":
-                    return logType;
-                case "LOG_VERSION":
-                    return version;
-                case "SERVER_HOST":
-                    return Inet.HOSTNAME;
-                case "CLIENT_HOST":
-                    return clientHostname;
-                case "SHARD":
-                    return shard;
-                case "YEAR":
-                    return time.getYear();
-                case "MONTH":
-                    return print2Chars( time.getMonthOfYear() );
-                case "DAY":
-                    return print2Chars( time.getDayOfMonth() );
-                case "HOUR":
-                    return print2Chars( time.getHourOfDay() );
-                case "INTERVAL":
-                    return print2Chars( timestamp.currentBucket( time ) );
-                case "REGION":
-                    return System.getenv( "REGION" );
-                default:
-                    throw new IllegalArgumentException( "Unknown variable '" + v + "'" );
-            }
+        return Strings.substitute( filePattern, v -> switch( v ) {
+            case "LOG_NAME" -> logName;
+            case "LOG_TYPE" -> logType;
+            case "LOG_VERSION" -> version;
+            case "SERVER_HOST" -> Inet.HOSTNAME;
+            case "CLIENT_HOST" -> clientHostname;
+            case "SHARD" -> shard;
+            case "YEAR" -> time.getYear();
+            case "MONTH" -> print2Chars( time.getMonthOfYear() );
+            case "DAY" -> print2Chars( time.getDayOfMonth() );
+            case "HOUR" -> print2Chars( time.getHourOfDay() );
+            case "INTERVAL" -> print2Chars( timestamp.currentBucket( time ) );
+            case "REGION" -> System.getenv( "REGION" );
+            default -> throw new IllegalArgumentException( "Unknown variable '" + v + "'" );
         } );
     }
 
