@@ -24,21 +24,27 @@
 
 package oap.json.ext;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.AnnotationIntrospector;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.google.common.base.Preconditions;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
-import org.apache.commons.lang3.StringUtils;
+import oap.util.Throwables;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.regex.Pattern;
 
 /**
  * Created by igor.petrenko on 07.08.2019.
@@ -46,26 +52,31 @@ import java.util.regex.Pattern;
 @Slf4j
 public class ExtDeserializer2 extends StdDeserializer<Ext> {
     private static final HashMap<ClassFieldKey, Class<?>> extmap = new HashMap<>();
-    private static final Pattern LINE = Pattern.compile( "\\s*([^#]+)#([^\\s=]+)\\s*=\\s*([^\\s]+)" );
 
     static {
-        for( var p : Resources.readLines( "META-INF/json-ext2.properties" ) )
-            try {
-                if( p.startsWith( "#" ) || StringUtils.isBlank( p ) ) continue;
+        try {
+            for( var p : Resources.readStrings( "META-INF/json-ext.yaml" ) ) {
                 log.trace( "mapping ext {}", p );
 
-                var matcher = LINE.matcher( p );
-                Preconditions.checkArgument( matcher.find(), "invalid rule: " + p );
+                var mapper = new ObjectMapper( new YAMLFactory() );
+                mapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
+                mapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
+                var conf = mapper.readValue( p, JsonExtConfiguration.class );
 
-                var key = new ClassFieldKey( Class.forName( matcher.group( 1 ) ), matcher.group( 2 ) );
-                var impl = Class.forName( matcher.group( 3 ).trim() );
-                extmap.put( key, impl );
+                for( var cc : conf.jackson.ext ) {
+                    var key = new ClassFieldKey( cc.klass, cc.field );
+                    var impl = cc.implementation;
+                    extmap.put( key, impl );
 
-                log.debug( "add ext rule: {} = {}", key, impl );
-            } catch( ClassNotFoundException e ) {
-                throw new ExceptionInInitializerError( e );
+                    log.debug( "add ext rule: {} = {}", key, impl );
+                }
+
             }
-        log.trace( "mapped extensions: {}", extmap );
+            log.trace( "mapped extensions: {}", extmap );
+        } catch( IOException e ) {
+            log.error( e.getMessage(), e );
+            throw Throwables.propagate( e );
+        }
     }
 
     protected ExtDeserializer2() {
@@ -95,5 +106,35 @@ public class ExtDeserializer2 extends StdDeserializer<Ext> {
     private static class ClassFieldKey {
         public final Class<?> klass;
         public final String field;
+    }
+
+    @ToString
+    public static class JsonExtConfiguration {
+        public final JacksonConfiguration jackson;
+
+        @JsonCreator
+        public JsonExtConfiguration( JacksonConfiguration jackson ) {
+            this.jackson = jackson;
+        }
+
+        @ToString
+        public static class JacksonConfiguration {
+            public final ArrayList<ClassConfiguration> ext = new ArrayList<>();
+        }
+
+        @ToString
+        public static class ClassConfiguration {
+            @JsonProperty( "class" )
+            public final Class<?> klass;
+            public final String field;
+            public final Class<?> implementation;
+
+            @JsonCreator
+            public ClassConfiguration( Class<?> klass, String field, Class<?> implementation ) {
+                this.klass = klass;
+                this.field = field;
+                this.implementation = implementation;
+            }
+        }
     }
 }
