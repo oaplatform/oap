@@ -47,8 +47,6 @@ import org.influxdb.dto.Point;
 import org.joda.time.DateTimeUtils;
 
 import java.io.InterruptedIOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,7 +57,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -89,15 +86,6 @@ class InfluxDBReporter extends ScheduledReporter {
         this.resetTimersAfterReport = resetTimersAfterReport;
         this.skipEmpty = skipEmpty;
 
-        final Field key_escaper = Point.class.getDeclaredField( "KEY_ESCAPER" );
-        key_escaper.setAccessible( true );
-
-        Field modifiersField = Field.class.getDeclaredField( "modifiers" );
-        modifiersField.setAccessible( true );
-        modifiersField.setInt( key_escaper, key_escaper.getModifiers() & ~Modifier.FINAL );
-
-        key_escaper.set( null, ( Function<String, String> ) s -> s.replace( " ", "\\ " ) );
-
         this.aggregates = Lists.map( aggregates,
             a -> Pattern.compile( a.replace( ".", "\\." ).replace( "\\.*", "(\\.[^,\\s]+)([^\\s]*)" ) ) );
 
@@ -107,6 +95,19 @@ class InfluxDBReporter extends ScheduledReporter {
 
     public static Builder forRegistry( MetricRegistry registry ) {
         return new Builder( registry );
+    }
+
+    private static Point.Builder toPointBuilder( String pointName ) {
+        var a = StringUtils.split( pointName, ',' );
+        var point = Point.measurement( a[0] );
+
+        for( var i = 1; i < a.length; i++ ) {
+            var t = a[i];
+            var idx = t.indexOf( '=' );
+            point.tag( t.substring( 0, idx ), t.substring( idx + 1 ) );
+        }
+
+        return point;
     }
 
     @Override
@@ -165,7 +166,7 @@ class InfluxDBReporter extends ScheduledReporter {
 
         ap.forEach( ( pointName, metrics ) -> {
             var builder = builders.computeIfAbsent( pointName, ( p ) -> {
-                var b = Point.measurement( pointName );
+                var b = toPointBuilder( pointName );
                 tags.forEach( b::tag );
                 return b;
             } );

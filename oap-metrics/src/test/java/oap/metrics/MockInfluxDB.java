@@ -24,6 +24,7 @@
 
 package oap.metrics;
 
+import org.influxdb.BatchOptions;
 import org.influxdb.InfluxDB;
 import org.influxdb.dto.BatchPoints;
 import org.influxdb.dto.Point;
@@ -64,12 +65,27 @@ public class MockInfluxDB implements InfluxDB {
     }
 
     @Override
+    public InfluxDB enableBatch() {
+        return this;
+    }
+
+    @Override
+    public InfluxDB enableBatch( BatchOptions batchOptions ) {
+        return this;
+    }
+
+    @Override
     public InfluxDB enableBatch( int actions, int flushDuration, TimeUnit flushDurationTimeUnit ) {
         return this;
     }
 
     @Override
     public InfluxDB enableBatch( int i, int i1, TimeUnit timeUnit, ThreadFactory threadFactory ) {
+        return this;
+    }
+
+    @Override
+    public InfluxDB enableBatch( int actions, int flushDuration, TimeUnit flushDurationTimeUnit, ThreadFactory threadFactory, BiConsumer<Iterable<Point>, Throwable> exceptionHandler, ConsistencyLevel consistency ) {
         return this;
     }
 
@@ -130,12 +146,27 @@ public class MockInfluxDB implements InfluxDB {
     }
 
     @Override
+    public void writeWithRetry( BatchPoints batchPoints ) {
+
+    }
+
+    @Override
     public void write( String database, String retentionPolicy, ConsistencyLevel consistency, String records ) {
 
     }
 
     @Override
+    public void write( String database, String retentionPolicy, ConsistencyLevel consistency, TimeUnit precision, String records ) {
+
+    }
+
+    @Override
     public void write( String database, String retentionPolicy, ConsistencyLevel consistency, List<String> records ) {
+
+    }
+
+    @Override
+    public void write( String database, String retentionPolicy, ConsistencyLevel consistency, TimeUnit precision, List<String> records ) {
 
     }
 
@@ -155,7 +186,32 @@ public class MockInfluxDB implements InfluxDB {
     }
 
     @Override
+    public void query( Query query, Consumer<QueryResult> onSuccess, Consumer<Throwable> onFailure ) {
+
+    }
+
+    @Override
     public void query( Query query, int i, Consumer<QueryResult> consumer ) {
+
+    }
+
+    @Override
+    public void query( Query query, int chunkSize, BiConsumer<Cancellable, QueryResult> onNext ) {
+
+    }
+
+    @Override
+    public void query( Query query, int chunkSize, Consumer<QueryResult> onNext, Runnable onComplete ) {
+
+    }
+
+    @Override
+    public void query( Query query, int chunkSize, BiConsumer<Cancellable, QueryResult> onNext, Runnable onComplete ) {
+
+    }
+
+    @Override
+    public void query( Query query, int chunkSize, BiConsumer<Cancellable, QueryResult> onNext, Runnable onComplete, Consumer<Throwable> onFailure ) {
 
     }
 
@@ -207,5 +263,25 @@ public class MockInfluxDB implements InfluxDB {
     @Override
     public InfluxDB setRetentionPolicy( String s ) {
         return this;
+    }
+
+    @Override
+    public void createRetentionPolicy( String rpName, String database, String duration, String shardDuration, int replicationFactor, boolean isDefault ) {
+
+    }
+
+    @Override
+    public void createRetentionPolicy( String rpName, String database, String duration, int replicationFactor, boolean isDefault ) {
+
+    }
+
+    @Override
+    public void createRetentionPolicy( String rpName, String database, String duration, String shardDuration, int replicationFactor ) {
+
+    }
+
+    @Override
+    public void dropRetentionPolicy( String rpName, String database ) {
+
     }
 }
