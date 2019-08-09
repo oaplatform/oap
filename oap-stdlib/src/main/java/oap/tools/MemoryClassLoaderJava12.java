@@ -46,19 +46,20 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
-public class MemoryClassLoader extends ClassLoader {
+public class MemoryClassLoaderJava12 extends ClassLoader {
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     private final MemoryFileManager manager = new MemoryFileManager( compiler );
 
-    public MemoryClassLoader( String classname, String filecontent, Path diskCache ) {
+    public MemoryClassLoaderJava12( String classname, String filecontent, Path diskCache ) {
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         List<Source> list = new ArrayList<>();
 
         if( diskCache != null ) {
-            final Path sourceFile = diskCache.resolve( classname + ".java" );
-            final Path classFile = diskCache.resolve( classname + ".class" );
+            var sourceFile = diskCache.resolve( classname + ".java" );
+            var classFile = diskCache.resolve( classname + ".class" );
             if(
                 Files.exists( sourceFile )
                     && filecontent.equals( oap.io.Files.readString( sourceFile ) )
@@ -66,7 +67,7 @@ public class MemoryClassLoader extends ClassLoader {
 
                 log.trace( "found: {}", classname );
 
-                final byte[] bytes = oap.io.Files.read( classFile );
+                var bytes = oap.io.Files.read( classFile );
                 manager.map.put( classname, new Output( classname, JavaFileObject.Kind.CLASS, bytes ) );
                 var currentTimeMillis = DateTimeUtils.currentTimeMillis();
                 oap.io.Files.setLastModifiedTime( sourceFile, currentTimeMillis );
@@ -81,12 +82,12 @@ public class MemoryClassLoader extends ClassLoader {
 
         if( !list.isEmpty() ) {
             var out = new StringWriter();
-            var task = compiler.getTask( out, manager, diagnostics, null, null, list );
+            var task = compiler.getTask( out, manager, diagnostics, List.of( "--enable-preview", "--release", "12" ), null, list );
             if( task.call() ) {
                 if( diskCache != null ) {
-                    for( Source source : list ) {
+                    for( var source : list ) {
                         oap.io.Files.writeString( diskCache.resolve( source.originalName + ".java" ), source.content );
-                        final byte[] bytes = manager.map.get( source.originalName ).toByteArray();
+                        var bytes = manager.map.get( source.originalName ).toByteArray();
                         oap.io.Files.write( diskCache.resolve( source.originalName + ".class" ), bytes );
                     }
                 }
@@ -94,6 +95,7 @@ public class MemoryClassLoader extends ClassLoader {
             } else {
                 diagnostics.getDiagnostics().forEach( a -> {
                     if( a.getKind() == Diagnostic.Kind.ERROR ) {
+                        System.err.println( a );
                         log.error( "{}", a );
                     }
                 } );
@@ -105,9 +107,9 @@ public class MemoryClassLoader extends ClassLoader {
     @Override
     protected Class<?> findClass( String name ) throws ClassNotFoundException {
         synchronized( manager ) {
-            Output mc = manager.map.remove( name );
+            var mc = manager.map.remove( name );
             if( mc != null ) {
-                byte[] array = mc.toByteArray();
+                var array = mc.toByteArray();
                 return defineClass( name, array, 0, array.length );
             }
         }
@@ -163,7 +165,7 @@ public class MemoryClassLoader extends ClassLoader {
 
         @Override
         public JavaFileObject getJavaFileForOutput( Location location, String name, JavaFileObject.Kind kind, FileObject source ) {
-            Output mc = new Output( name, kind );
+            var mc = new Output( name, kind );
             this.map.put( name, mc );
             return mc;
         }
