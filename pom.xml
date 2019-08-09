@@ -93,7 +93,7 @@
         <joda.version>2.10.1</joda.version>
         <metrics.version>4.1.0</metrics.version>
         <jackson.version>2.9.8</jackson.version>
-        <lombok.version>1.18.6</lombok.version>
+        <lombok.version>1.18.8</lombok.version>
         <reflections.version>0.9.11</reflections.version>
         <jamm.version>0.2.5</jamm.version>
         <springframework.version>2.1.3.RELEASE</springframework.version>

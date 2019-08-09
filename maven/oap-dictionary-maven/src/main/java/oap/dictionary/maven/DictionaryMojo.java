@@ -77,11 +77,9 @@ public class DictionaryMojo extends AbstractMojo {
             Files.fastWildcard( Paths.get( sourceDirectory ), "*.json" )
                 .stream()
                 .filter( p -> {
-                    final boolean b = !Arrays
+                    final boolean b = Arrays
                         .stream( exclude )
-                        .filter( e -> FilenameUtils.wildcardMatchOnSystem( separatorsToUnix( p.toString() ), e ) )
-                        .findAny()
-                        .isPresent();
+                        .noneMatch( e -> FilenameUtils.wildcardMatchOnSystem( separatorsToUnix( p.toString() ), e ) );
                     if( !b ) getLog().debug( "exclude " + p );
                     return b;
                 } )
