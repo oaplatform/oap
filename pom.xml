@@ -122,6 +122,7 @@
                 <configuration>
                     <argLine>
                         -ea
+                        --enable-preview
                         -Dlogback.configurationFile=${session.executionRootDirectory}/oap-stdlib/src/test/resources/logback-test.xml
                     </argLine>
                     <trimStackTrace>false</trimStackTrace>
@@ -197,6 +198,7 @@
                         <configuration>
                             <argLine>
                                 -Dlogback.configurationFile=${session.executionRootDirectory}/oap-stdlib/src/test/resources/logback-perf.xml
+                                --enable-preview
                             </argLine>
                             <trimStackTrace>false</trimStackTrace>
                             <testFailureIgnore>true</testFailureIgnore>
