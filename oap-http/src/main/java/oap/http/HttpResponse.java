@@ -102,6 +102,11 @@ public class HttpResponse {
             .withEntity( new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON ) );
     }
 
+    public static Builder ok( byte[] content, ContentType contentType ) {
+        return status( HTTP_OK )
+            .withEntity( new ByteArrayEntity( content, contentType ) );
+    }
+
     public static Builder stream( InputStream stream, ContentType contentType ) {
         return status( HTTP_OK )
             .withEntity( new InputStreamEntity( stream, contentType ) );
