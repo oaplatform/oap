@@ -110,6 +110,7 @@
                     <compilerArgs>
                         <arg>-parameters</arg>
                         <arg>-Xlint:unchecked</arg>
+                        <arg>-Xlint:preview</arg>
                         <arg>--enable-preview</arg>
                     </compilerArgs>
                 </configuration>
