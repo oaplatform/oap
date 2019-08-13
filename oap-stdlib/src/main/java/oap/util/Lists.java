@@ -143,14 +143,7 @@ public class Lists extends oap.util.Collections {
         return new ArrayList<>( new HashSet<>( list ) );
     }
 
-    /**
-     * @param array
-     * @param <E>
-     * @return
-     * @see List#of(Object[])
-     */
     @SafeVarargs
-    @Deprecated
     public static <E> ArrayList<E> of( E... array ) {
         ArrayList<E> list = new ArrayList<>( array.length );
         Collections.addAll( list, array );
