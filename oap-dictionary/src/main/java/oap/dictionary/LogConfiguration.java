@@ -67,15 +67,15 @@ public class LogConfiguration extends Configuration {
         return LogConfiguration.STANDARD_DELIMITER;
     }
 
-    public <F> Template<F, Template.Line> forType( Class<F> clazz, String type ) {
+    public <F> DictionaryTemplate<F, Template.Line> forType( Class<F> clazz, String type ) {
         return forType( clazz, type, dictionary -> true );
     }
 
-    public <F> Template<F, Template.Line> forType( Class<F> clazz, String type, Predicate<Dictionary> predicate ) {
+    public <F> DictionaryTemplate<F, Template.Line> forType( Class<F> clazz, String type, Predicate<Dictionary> predicate ) {
         return forType( clazz, type, predicate, TemplateStrategy.DEFAULT );
     }
 
-    public <F> Template<F, Template.Line> forType( Class<F> clazz, String type, Predicate<Dictionary> predicate, TemplateStrategy<Template.Line> strategy ) {
+    public <F> DictionaryTemplate<F, Template.Line> forType( Class<F> clazz, String type, Predicate<Dictionary> predicate, TemplateStrategy<Template.Line> strategy ) {
         final Dictionary value = getLatestDictionary().getValue( type );
 
         if( value == null ) throw new IllegalArgumentException( "Unknown type " + type );
@@ -93,7 +93,7 @@ public class LogConfiguration extends Configuration {
             lines.add( new Template.Line( id, path, defaultValue ) );
         }
 
-        return engine.getTemplate( "Log" + StringUtils.capitalize( type ), clazz, lines,
-            getStandardDelimiter(), strategy );
+        return new DictionaryTemplate<>( engine.getTemplate( "Log" + StringUtils.capitalize( type ), clazz, lines,
+            getStandardDelimiter(), strategy ), lines );
     }
 }
