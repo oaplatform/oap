@@ -1,5 +1,4 @@
-jackson:
-  ext:
-    - class: oap.json.ext.ExtDeserializer2Test$Bean
-      field: ext
-      implementation: oap.json.ext.ExtDeserializer2Test$TestExt
+ext:
+  - class: oap.json.ext.ExtDeserializerTest$Bean
+    field: ext
+    implementation: oap.json.ext.ExtDeserializerTest$TestExt

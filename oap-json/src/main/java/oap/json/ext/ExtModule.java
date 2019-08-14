@@ -26,11 +26,8 @@ package oap.json.ext;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
-/**
- * Created by igor.petrenko on 07.08.2019.
- */
 public class ExtModule extends SimpleModule {
     public ExtModule() {
-        this.addDeserializer( Ext.class, new ExtDeserializer2() );
+        this.addDeserializer( Ext.class, new ExtDeserializer() );
     }
 }

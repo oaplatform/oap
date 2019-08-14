@@ -24,8 +24,5 @@
 
 package oap.json.ext;
 
-/**
- * Created by igor.petrenko on 07.08.2019.
- */
 public interface Ext {
 }

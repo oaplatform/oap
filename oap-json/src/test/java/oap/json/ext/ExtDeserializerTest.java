@@ -24,7 +24,6 @@
 
 package oap.json.ext;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.json.Binder;
@@ -32,9 +31,6 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * @apiNote json-ext.properties
- */
 @SuppressWarnings( "unused" )
 public class ExtDeserializerTest {
     @Test
@@ -49,39 +45,21 @@ public class ExtDeserializerTest {
     @EqualsAndHashCode
     @ToString
     public static class Bean {
-        @JsonDeserialize( using = BeanExtDeserializer.class )
-        BeanExt ext;
+        Ext ext;
 
-        @JsonDeserialize( using = BeanNoExtDeserializer.class )
-        BeanExt noext;
+        Ext noext;
 
         public Bean() {
         }
 
-        public Bean( BeanExt ext ) {
+        public Bean( Ext ext ) {
             this.ext = ext;
-        }
-
-        interface BeanExt {}
-
-        interface BeanNoExt {}
-
-        public static class BeanExtDeserializer extends ExtDeserializer<BeanExt> {
-            public BeanExtDeserializer() {
-                super( BeanExt.class );
-            }
-        }
-
-        public static class BeanNoExtDeserializer extends ExtDeserializer<BeanNoExt> {
-            public BeanNoExtDeserializer() {
-                super( BeanNoExt.class );
-            }
         }
     }
 
     @EqualsAndHashCode
     @ToString
-    public static class TestExt implements Bean.BeanExt {
+    public static class TestExt implements Ext {
         String value;
 
         public TestExt() {

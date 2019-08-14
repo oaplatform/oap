@@ -24,47 +24,102 @@
 
 package oap.json.ext;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
-import oap.util.Pair;
-import oap.util.Strings;
-import org.apache.commons.lang3.StringUtils;
+import oap.util.Throwables;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 @Slf4j
-public class ExtDeserializer<T> extends StdDeserializer<T> {
-    private static Map<Class<?>, Class<?>> extmap = new HashMap<>();
+public class ExtDeserializer extends StdDeserializer<Ext> {
+    private static final HashMap<ClassFieldKey, Class<?>> extmap = new HashMap<>();
 
     static {
-        for( var p : Resources.readLines( "META-INF/json-ext.properties" ) )
-            try {
-                if( p.startsWith( "#" ) || StringUtils.isBlank( p ) ) continue;
+        try {
+            for( var p : Resources.readStrings( "META-INF/json-ext.yaml" ) ) {
                 log.trace( "mapping ext {}", p );
-                Pair<String, String> split = Strings.split( p, "=" );
-                extmap.put( Class.forName( split._1.trim() ), Class.forName( split._2.trim() ) );
-            } catch( ClassNotFoundException e ) {
-                throw new ExceptionInInitializerError( e );
+
+                var mapper = new ObjectMapper( new YAMLFactory() );
+                mapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
+                mapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
+                var conf = mapper.readValue( p, JsonExtConfiguration.class );
+
+                for( var cc : conf.ext ) {
+                    var key = new ClassFieldKey( cc.clazz, cc.field );
+                    extmap.put( key, cc.implementation );
+
+                    log.debug( "add ext rule: {} = {}", key, cc.implementation );
+                }
+
             }
-        log.trace( "mapped extensions: {}", extmap );
+            log.trace( "mapped extensions: {}", extmap );
+        } catch( IOException e ) {
+            log.error( e.getMessage(), e );
+            throw Throwables.propagate( e );
+        }
     }
 
-    private Class<T> clazz;
-
-    public ExtDeserializer( Class<T> clazz ) {
-        super( clazz );
-        this.clazz = clazz;
+    protected ExtDeserializer() {
+        super( Ext.class );
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
-    public T deserialize( JsonParser jsonParser, DeserializationContext deserializationContext ) throws IOException {
-        return ( T ) jsonParser.readValueAs( Objects.requireNonNull( extmap.get( clazz ), "extension class lookup failed for " + clazz ) );
+    public Ext deserialize( JsonParser jsonParser, DeserializationContext ctxt ) throws IOException {
+        var parsingContext = jsonParser.getParsingContext();
+        var contextParent = parsingContext.getParent();
+        var fieldName = contextParent.getCurrentName();
+        var clazz = contextParent.getCurrentValue().getClass();
+        var key = new ClassFieldKey( clazz, fieldName );
+
+        var implementation = extmap.get( key );
+        if( implementation == null ) {
+            log.trace( "extension class lookup failed for {}", key );
+            return null;
+        }
+
+        return ( Ext ) jsonParser.readValueAs( implementation );
+    }
+
+    @ToString
+    @EqualsAndHashCode
+    @AllArgsConstructor
+    private static class ClassFieldKey {
+        public final Class<?> clazz;
+        public final String field;
+    }
+
+    @ToString
+    public static class JsonExtConfiguration {
+
+        public final ArrayList<ClassConfiguration> ext = new ArrayList<>();
+
+        @ToString
+        public static class ClassConfiguration {
+            @JsonProperty( "class" )
+            public final Class<?> clazz;
+            public final String field;
+            public final Class<?> implementation;
+
+            @JsonCreator
+            public ClassConfiguration( Class<?> clazz, String field, Class<?> implementation ) {
+                this.clazz = clazz;
+                this.field = field;
+                this.implementation = implementation;
+            }
+        }
     }
 }
