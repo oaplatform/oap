@@ -35,7 +35,6 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-import static oap.util.Strings.FriendlyIdOption.FILL;
 import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
 
 public final class IdentifierBuilder<T> {
@@ -44,7 +43,7 @@ public final class IdentifierBuilder<T> {
 
     private final Function<T, String> getter;
     private final BiConsumer<T, String> setter;
-    private Strings.FriendlyIdOption[] options = new Strings.FriendlyIdOption[] { NO_VOWELS, FILL };
+    private Strings.FriendlyIdOption[] options = new Strings.FriendlyIdOption[] { NO_VOWELS };
 
     private Function<T, String> suggestion = obj -> Cuid.UNIQUE.next();
 
@@ -89,8 +88,6 @@ public final class IdentifierBuilder<T> {
     }
 
     /**
-     * @param <T>
-     * @return
      * @see #forAnnotation()
      */
     @Deprecated
@@ -103,7 +100,7 @@ public final class IdentifierBuilder<T> {
      * see {@link #forPath(String)}
      *
      * @param getter - existing identifier
-     * @param <T>      - object type
+     * @param <T>    - object type
      * @return instance of the current builder
      */
     public static <T> IdentifierBuilder<T> forId( Function<T, String> getter ) {
