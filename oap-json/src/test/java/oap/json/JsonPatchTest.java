@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static oap.json.testng.JsonAsserts.assertJson;
-import static oap.json.testng.JsonAsserts.unmarshalTestResource;
+import static oap.json.testng.JsonAsserts.objectOfTestJsonResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class JsonPatchTest {
@@ -62,14 +62,14 @@ public class JsonPatchTest {
             + "\t\"unknown\": 0.0\n"
             + "}";
 
-        TestObj obj = unmarshalTestResource( getClass(), TestObj.class, "source.json" );
+        TestObj obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
 
         JsonPatch.patch( obj, test );
     }
 
     @Test
     public void patchUpdateInner() {
-        TestObj obj = unmarshalTestResource( getClass(), TestObj.class, "source.json" );
+        TestObj obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
 
         String patch = "{\"id\": \"i2\", \"description\":\"newdesc\"}";
 
@@ -80,7 +80,7 @@ public class JsonPatchTest {
 
     @Test
     public void patchAddInnerToExistingList() {
-        TestObj obj = unmarshalTestResource( getClass(), TestObj.class, "source.json" );
+        TestObj obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
 
         String patch = "{\"id\": \"i3\", \"description\":\"newdesc\", \"count\": 1 }";
 
@@ -91,7 +91,7 @@ public class JsonPatchTest {
 
     @Test
     public void patchAddInner() {
-        TestObj obj = unmarshalTestResource( getClass(), TestObj.class, "source_no_list.json" );
+        TestObj obj = objectOfTestJsonResource( getClass(), TestObj.class, "source_no_list.json" );
 
         String patch = "{\"id\": \"i2\", \"description\":\"newdesc\", \"count\": 0 }";
 

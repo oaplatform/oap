@@ -31,10 +31,12 @@ import oap.util.Strings;
 import org.assertj.core.api.AbstractAssert;
 import org.testng.Assert;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
 import static oap.testng.Asserts.assertString;
+import static oap.testng.Asserts.contentOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class JsonAsserts {
@@ -66,7 +68,7 @@ public class JsonAsserts {
     }
 
     /**
-     * @see #unmarshalTestResource(Class, Class, String)
+     * @see #objectOfTestJsonResource(Class, Class, String)
      */
     @Deprecated
     public static <T> T readObject( Class<?> context, Class<T> clazz, String resourcePath ) {
@@ -74,8 +76,8 @@ public class JsonAsserts {
 
     }
 
-    public static <T> T unmarshalTestResource( Class<?> context, Class<T> clazz, String resourcePath ) {
-        return Binder.json.unmarshalResource( context, clazz, context.getSimpleName() + "/" + resourcePath );
+    public static <T> T objectOfTestJsonResource( Class<?> context, Class<T> clazz, String resourcePath ) {
+        return Binder.json.unmarshal( clazz, contentOfTestResource( context, resourcePath ) );
     }
 
     public static JsonAssertion assertJson( String json ) {
@@ -103,18 +105,21 @@ public class JsonAsserts {
 
         public JsonAssertion isStructurallyEqualTo( String expected ) {
             isNotNull();
-            assertThat( Binder.json.<Map<String, Object>>unmarshal( Map.class, actual ) )
-                .isEqualTo( Binder.json.<Map<String, Object>>unmarshal( Map.class, expected ) );
+            assertThat( unmarshal( actual ) )
+                .isEqualTo( unmarshal( expected ) );
             return this;
 
         }
 
         public JsonAssertion isStructurallyEqualToResource( Class<?> contextClass, String resource ) {
             isNotNull();
-            assertThat( Binder.json.<Map<String, Object>>unmarshal( Map.class, actual ) )
-                .isEqualTo( unmarshalTestResource( contextClass, Map.class, resource ) );
-            return this;
+            return isStructurallyEqualTo( contentOfTestResource( contextClass, resource ) );
 
+        }
+
+        private static Object unmarshal( String content ) {
+            if( content.trim().startsWith( "[" ) ) return Binder.json.unmarshal( List.class, content );
+            else return Binder.json.unmarshal( Map.class, content );
         }
 
         @Override
