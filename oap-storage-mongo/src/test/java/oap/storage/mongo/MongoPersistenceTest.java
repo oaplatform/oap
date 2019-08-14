@@ -57,8 +57,8 @@ public class MongoPersistenceTest extends AbstractMongoTest {
                 log.debug( "bean1 = {}", bean1 );
                 log.debug( "bean2 = {}", bean2 );
 
-                assertThat( bean1.id ).isEqualTo( "TST1XXXXXX" );
-                assertThat( bean2.id ).isEqualTo( "TST2XXXXXX" );
+                assertThat( bean1.id ).isEqualTo( "TST1" );
+                assertThat( bean2.id ).isEqualTo( "TST2" );
             }
 
             // Make sure that for a new connection the objects still present in MongoDB
@@ -66,8 +66,8 @@ public class MongoPersistenceTest extends AbstractMongoTest {
                  MongoPersistence<Bean> persistence = new MongoPersistence<>( mongoClient, "test", 6000, storage ) ) {
                 persistence.start();
                 assertThat( storage.select() ).containsOnly(
-                    new Bean( "TST1XXXXXX", "test1" ),
-                    new Bean( "TST2XXXXXX", "test3" )
+                    new Bean( "TST1", "test1" ),
+                    new Bean( "TST2", "test3" )
                 );
                 assertThat( persistence.collection.countDocuments() ).isEqualTo( 2 );
             }

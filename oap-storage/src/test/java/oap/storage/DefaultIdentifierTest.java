@@ -29,6 +29,8 @@ import org.testng.annotations.Test;
 import static oap.storage.Storage.Lock.CONCURRENT;
 import static oap.storage.Storage.Lock.SERIALIZED;
 import static oap.testng.Asserts.assertString;
+import static oap.util.Strings.FriendlyIdOption.FILL;
+import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultIdentifierTest {
@@ -51,6 +53,7 @@ public class DefaultIdentifierTest {
         Identifier<Bean> identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
             .length( 7 )
+            .options( NO_VOWELS, FILL )
             .build();
         MemoryStorage<Bean> storage = new MemoryStorage<>( identifier, SERIALIZED );
         Bean a = new Bean( null, "some text" );
@@ -69,6 +72,7 @@ public class DefaultIdentifierTest {
         Identifier<Bean> identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
             .length( 7 )
+            .options( NO_VOWELS, FILL )
             .build();
         MemoryStorage<Bean> storage = new MemoryStorage<>( identifier, CONCURRENT );
         Bean a = new Bean( null, "some text" );
