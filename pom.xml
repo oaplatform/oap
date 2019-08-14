@@ -73,7 +73,7 @@
     </distributionManagement>
 
     <properties>
-        <revision>4.22.1</revision>
+        <revision>4.23.0</revision>
 
         <maven.compiler.source>12</maven.compiler.source>
         <maven.compiler.target>12</maven.compiler.target>
