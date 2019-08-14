@@ -57,14 +57,14 @@ public class MongoStorageTest extends AbstractMongoTest {
             log.debug( "bean1 = {}", bean1 );
             log.debug( "bean2 = {}", bean2 );
 
-            assertThat( bean1.id ).isEqualTo( "TST1XXXXXX" );
-            assertThat( bean2.id ).isEqualTo( "TST2XXXXXX" );
+            assertThat( bean1.id ).isEqualTo( "TST1" );
+            assertThat( bean2.id ).isEqualTo( "TST2" );
         }
         try( MongoStorage<Bean> storage = new MongoStorage<>( mongoClient, "test", SERIALIZED ) ) {
             storage.start();
             assertThat( storage.select() ).containsOnly(
-                new Bean( "TST1XXXXXX", "test1" ),
-                new Bean( "TST2XXXXXX", "test3" )
+                new Bean( "TST1", "test1" ),
+                new Bean( "TST2", "test3" )
             );
             assertThat( storage.collection.count() ).isEqualTo( 2 );
 
