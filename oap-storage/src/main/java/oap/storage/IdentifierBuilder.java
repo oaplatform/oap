@@ -102,18 +102,18 @@ public final class IdentifierBuilder<T> {
      * Specifies the existing identifier, which should be retrieved from object (assumes, its not null, otherwise
      * see {@link #forPath(String)}
      *
-     * @param identity - existing identifier
+     * @param getter - existing identifier
      * @param <T>      - object type
      * @return instance of the current builder
      */
-    public static <T> IdentifierBuilder<T> identify( Function<T, String> identity ) {
+    public static <T> IdentifierBuilder<T> forId( Function<T, String> getter ) {
         return new IdentifierBuilder<>( Objects.requireNonNull(
-            identity, "identity must not be null" ), null );
+            getter, "getter must not be null" ), null );
     }
 
-    public static <T> IdentifierBuilder<T> identify( Function<T, String> identity, BiConsumer<T, String> setter ) {
+    public static <T> IdentifierBuilder<T> forId( Function<T, String> getter, BiConsumer<T, String> setter ) {
         return new IdentifierBuilder<>( Objects.requireNonNull(
-            identity, "identity must not be null" ), setter );
+            getter, "getter must not be null" ), setter );
     }
 
     /**

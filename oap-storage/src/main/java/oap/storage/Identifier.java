@@ -25,6 +25,7 @@
 package oap.storage;
 
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 public interface Identifier<T> {
@@ -46,7 +47,11 @@ public interface Identifier<T> {
         return IdentifierBuilder.<T>forAnnotation().build();
     }
 
-    static <T> IdentifierBuilder<T> identify( final Function<T, String> identity ) {
-        return IdentifierBuilder.identify( identity );
+    static <T> IdentifierBuilder<T> forId( final Function<T, String> getter ) {
+        return IdentifierBuilder.forId( getter );
+    }
+
+    static <T> IdentifierBuilder<T> forId( final Function<T, String> getter, BiConsumer<T, String> setter ) {
+        return IdentifierBuilder.forId( getter, setter );
     }
 }
