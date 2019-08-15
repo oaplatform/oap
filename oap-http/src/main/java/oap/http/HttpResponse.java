@@ -23,8 +23,8 @@
  */
 package oap.http;
 
+import oap.json.Binder;
 import oap.util.Lists;
-import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Strings;
@@ -58,14 +58,16 @@ import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.util.Pair.__;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 public class HttpResponse {
     public static final HttpResponse NOT_FOUND = status( HTTP_NOT_FOUND ).response();
     public static final HttpResponse FORBIDDEN = status( HTTP_FORBIDDEN ).response();
     public static final HttpResponse NO_CONTENT = status( HTTP_NO_CONTENT ).response();
     public static final HttpResponse NOT_MODIFIED = status( HTTP_NOT_MODIFIED ).response();
-    private static Map<String, Function<Object, String>> producers = Maps.of(
-        __( ContentType.TEXT_PLAIN.getMimeType(), String::valueOf )
+    private static Map<String, Function<Object, String>> producers = Map.of(
+        TEXT_PLAIN.getMimeType(), String::valueOf,
+        APPLICATION_JSON.getMimeType(), Binder.json::marshal
     );
     public final int code;
     public final String reason;
