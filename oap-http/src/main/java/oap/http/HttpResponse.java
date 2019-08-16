@@ -25,6 +25,7 @@ package oap.http;
 
 import oap.json.Binder;
 import oap.util.Lists;
+import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Strings;
@@ -65,9 +66,9 @@ public class HttpResponse {
     public static final HttpResponse FORBIDDEN = status( HTTP_FORBIDDEN ).response();
     public static final HttpResponse NO_CONTENT = status( HTTP_NO_CONTENT ).response();
     public static final HttpResponse NOT_MODIFIED = status( HTTP_NOT_MODIFIED ).response();
-    private static Map<String, Function<Object, String>> producers = Map.of(
-        TEXT_PLAIN.getMimeType(), String::valueOf,
-        APPLICATION_JSON.getMimeType(), Binder.json::marshal
+    private static Map<String, Function<Object, String>> producers = Maps.of(
+        __( TEXT_PLAIN.getMimeType(), String::valueOf ),
+        __( APPLICATION_JSON.getMimeType(), Binder.json::marshal )
     );
     public final int code;
     public final String reason;
