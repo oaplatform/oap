@@ -53,6 +53,7 @@ import static java.util.stream.Collectors.joining;
 import static oap.util.Pair.__;
 
 public class Reflection extends Annotated<Class<?>> {
+    //todo why map?
     public final LinkedHashMap<String, Field> fields = new LinkedHashMap<>();
     private final Coercions coercions;
     private final TypeToken<?> typeToken;
