@@ -267,6 +267,11 @@ public class HttpResponse {
             return this;
         }
 
+        public CookieBuilder httpOnly() {
+            this.values.add( "HttpOnly" );
+            return this;
+        }
+
         public String build() {
             return Strings.join( "; ", Lists.of( Strings.join( "; ", values ), domain, expires, path ) );
         }
