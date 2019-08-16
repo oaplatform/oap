@@ -33,8 +33,6 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Resources;
@@ -46,7 +44,7 @@ import java.util.HashMap;
 
 @Slf4j
 public class ExtDeserializer extends StdDeserializer<Ext> {
-    private static final HashMap<ClassFieldKey, Class<?>> extmap = new HashMap<>();
+    private static final HashMap<String, Class<?>> extmap = new HashMap<>();
 
     static {
         try {
@@ -56,21 +54,23 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
                 var mapper = new ObjectMapper( new YAMLFactory() );
                 mapper.getDeserializationConfig().with( new JacksonAnnotationIntrospector() );
                 mapper.registerModule( new ParameterNamesModule( JsonCreator.Mode.DEFAULT ) );
-                var conf = mapper.readValue( p, JsonExtConfiguration.class );
-
+                var conf = mapper.readValue( p, Configuration.class );
                 for( var cc : conf.ext ) {
-                    var key = new ClassFieldKey( cc.clazz, cc.field );
+                    String key = extensionKey( cc.clazz, cc.field );
                     extmap.put( key, cc.implementation );
 
                     log.debug( "add ext rule: {} = {}", key, cc.implementation );
                 }
-
             }
             log.trace( "mapped extensions: {}", extmap );
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
             throw Throwables.propagate( e );
         }
+    }
+
+    private static String extensionKey( Class<?> clazz, String field ) {
+        return clazz.getName() + "#" + field;
     }
 
     protected ExtDeserializer() {
@@ -81,29 +81,23 @@ public class ExtDeserializer extends StdDeserializer<Ext> {
     public Ext deserialize( JsonParser jsonParser, DeserializationContext ctxt ) throws IOException {
         var parsingContext = jsonParser.getParsingContext();
         var contextParent = parsingContext.getParent();
-        var fieldName = contextParent.getCurrentName();
+        var field = contextParent.getCurrentName();
         var clazz = contextParent.getCurrentValue().getClass();
-        var key = new ClassFieldKey( clazz, fieldName );
-
-        var implementation = extmap.get( key );
+        var implementation = extensionOf( clazz, field );
         if( implementation == null ) {
-            log.trace( "extension class lookup failed for {}", key );
+            log.trace( "extension class lookup failed for {}#{}", clazz, field );
             return null;
         }
 
         return ( Ext ) jsonParser.readValueAs( implementation );
     }
 
-    @ToString
-    @EqualsAndHashCode
-    @AllArgsConstructor
-    private static class ClassFieldKey {
-        public final Class<?> clazz;
-        public final String field;
+    public static Class<?> extensionOf( Class<?> clazz, String field ) {
+        return extmap.get( extensionKey( clazz, field ) );
     }
 
     @ToString
-    public static class JsonExtConfiguration {
+    public static class Configuration {
 
         public final ArrayList<ClassConfiguration> ext = new ArrayList<>();
 
