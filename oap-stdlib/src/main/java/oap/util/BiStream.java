@@ -70,6 +70,9 @@ public class BiStream<A, B> extends Stream<Pair<A, B>> {
         return new BiStream<>( super.map( p -> mapper.apply( p._1, p._2 ) ) );
     }
 
+    public BiStream<A, B> peek( BiConsumer<A, B> action ) {
+        return BiStream.of( super.peek( c -> action.accept( c._1, c._2 ) ) );
+    }
 
     @Override
     public BiStream<A, B> filter( Predicate<? super Pair<A, B>> predicate ) {
