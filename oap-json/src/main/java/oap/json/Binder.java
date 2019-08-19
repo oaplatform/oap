@@ -119,12 +119,17 @@ public class Binder {
     }
 
     public static Binder getBinder( URL url ) {
+        return getBinder( url, true );
+    }
+
+    public static Binder getBinder( URL url, boolean withSystemProperties ) {
         var strUrl = url.toString().toLowerCase();
         if( strUrl.endsWith( "json" ) ) return Binder.json;
-        else if( strUrl.endsWith( "conf" ) ) return Binder.hocon;
+        else if( strUrl.endsWith( "conf" ) )
+            return withSystemProperties ? Binder.hocon : Binder.hoconWithoutSystemProperties;
         else if( strUrl.endsWith( "yaml" ) ) return Binder.yaml;
         else if( strUrl.endsWith( "yml" ) ) return Binder.yaml;
-        else return Binder.hocon;
+        else return withSystemProperties ? Binder.hocon : Binder.hoconWithoutSystemProperties;
     }
 
     public static Binder hoconWithConfig( List<String> config ) {

@@ -25,6 +25,8 @@
 package oap.dictionary;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import oap.json.Binder;
 import oap.util.Lists;
 import oap.util.Try;
@@ -136,7 +138,7 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( URL resource, IdStrategy idStrategy ) {
-        final Map map = Binder.getBinder( resource ).unmarshal( Map.class, resource );
+        final Map map = Binder.getBinder( resource, false ).unmarshal( Map.class, resource );
         return parse( map, idStrategy );
     }
 
@@ -306,10 +308,11 @@ public class DictionaryParser {
         serialize( dictionary, path, false );
     }
 
-    private static void serialize( DictionaryRoot dictionary, Path path, boolean format ) {
-        try( JsonGenerator jsonGenerator = format ?
-            Binder.json.getJsonGenerator( path ).useDefaultPrettyPrinter() :
-            Binder.json.getJsonGenerator( path ) ) {
+    public static void serialize( DictionaryRoot dictionary, Path path, boolean format ) {
+        try( JsonGenerator jsonGenerator = format
+            ? Binder.json.getJsonGenerator( path )
+            .setPrettyPrinter( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) )
+            : Binder.json.getJsonGenerator( path ) ) {
 
             jsonGenerator.writeStartObject();
 
