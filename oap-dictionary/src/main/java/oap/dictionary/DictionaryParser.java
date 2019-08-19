@@ -308,24 +308,46 @@ public class DictionaryParser {
         serialize( dictionary, path, false );
     }
 
+    public static void serialize( DictionaryRoot dictionary, JsonGenerator jsonGenerator, boolean format ) throws IOException {
+        jsonGenerator.writeStartObject();
+
+        jsonGenerator.writeStringField( NAME, dictionary.name );
+
+        writeProperties( jsonGenerator, dictionary );
+
+        writeValues( jsonGenerator, dictionary.getValues() );
+
+        jsonGenerator.writeEndObject();
+    }
+
     public static void serialize( DictionaryRoot dictionary, Path path, boolean format ) {
-        try( JsonGenerator jsonGenerator = format
-            ? Binder.json.getJsonGenerator( path )
-            .setPrettyPrinter( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) )
-            : Binder.json.getJsonGenerator( path ) ) {
-
-            jsonGenerator.writeStartObject();
-
-            jsonGenerator.writeStringField( NAME, dictionary.name );
-
-            writeProperties( jsonGenerator, dictionary );
-
-            writeValues( jsonGenerator, dictionary.getValues() );
-
-            jsonGenerator.writeEndObject();
+        try( JsonGenerator jsonGenerator = getJsonGenerator( path, format ) ) {
+            serialize( dictionary, jsonGenerator, format );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
+    }
+
+    public static void serialize( DictionaryRoot dictionary, StringBuilder sb, boolean format ) {
+        try( JsonGenerator jsonGenerator = getJsonGenerator( sb, format ) ) {
+            serialize( dictionary, jsonGenerator, format );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static JsonGenerator getJsonGenerator( Path path, boolean format ) {
+        var jsonGenerator = Binder.json.getJsonGenerator( path );
+        if( format ) jsonGenerator = jsonGenerator
+            .setPrettyPrinter( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) );
+        return jsonGenerator;
+    }
+
+    public static JsonGenerator getJsonGenerator( StringBuilder sb, boolean format ) {
+        var jsonGenerator = Binder.json.getJsonGenerator( sb );
+        if( format ) jsonGenerator = jsonGenerator
+            .setPrettyPrinter( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) );
+        return jsonGenerator;
     }
 
     private static void writeValues( JsonGenerator jsonGenerator, List<? extends Dictionary> values ) throws IOException {

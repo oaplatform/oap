@@ -57,6 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
+import oap.io.StringBuilderWriter;
 import oap.json.ext.ExtModule;
 import oap.reflect.Reflection;
 import oap.reflect.TypeRef;
@@ -224,6 +225,14 @@ public class Binder {
     public final JsonGenerator getJsonGenerator( Path path ) {
         try {
             return mapper.getFactory().createGenerator( path.toFile(), JsonEncoding.UTF8 );
+        } catch( IOException e ) {
+            throw new JsonException( e );
+        }
+    }
+
+    public final JsonGenerator getJsonGenerator( StringBuilder sb ) {
+        try {
+            return mapper.getFactory().createGenerator( new StringBuilderWriter( sb ) );
         } catch( IOException e ) {
             throw new JsonException( e );
         }
