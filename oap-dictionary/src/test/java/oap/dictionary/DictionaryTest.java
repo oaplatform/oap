@@ -30,6 +30,7 @@ import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static oap.dictionary.DictionaryParser.INCREMENTAL_ID_STRATEGY;
 import static oap.util.Pair.__;
@@ -45,11 +46,11 @@ public class DictionaryTest {
         List<? extends Dictionary> dictValues = Dictionaries.getDictionary( "test-dictionary" ).getValues();
         Assertions.<Dictionary>assertThat( dictValues ).contains( new DictionaryValue( "id1", true, '1',
                 Lists.of(
-                    new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) ),
-                    new DictionaryLeaf( "id12", true, 12, Maps.of( __( "title", "title12" ) ) )
+                    new DictionaryLeaf( "id11", true, 11, Map.of( "title", "title11" ) ),
+                    new DictionaryLeaf( "id12", true, 12, Map.of( "title", "title12" ) )
                 ),
                 Maps.of( __( "title", "title1" ) ) ),
-            new DictionaryLeaf( "id2", true, 50, Maps.of( __( "title", "title2" ) ) )
+            new DictionaryLeaf( "id2", true, 50, Map.of( "title", "title2", "property1", "val1" ) )
         );
         assertTrue( dictValues.get( 2 ).getTags().contains( "tag1" ) );
         assertTrue( dictValues.get( 2 ).getTags().contains( "tag2" ) );
