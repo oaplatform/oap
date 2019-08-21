@@ -126,4 +126,9 @@ public class StringBits {
             )
             .collect( toList() );
     }
+
+    public void reset() {
+        bits.clear();
+        bit.set( 1L );
+    }
 }
