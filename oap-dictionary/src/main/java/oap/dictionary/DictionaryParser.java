@@ -25,6 +25,8 @@
 package oap.dictionary;
 
 import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import oap.json.Binder;
 import oap.util.Lists;
 import oap.util.Try;
@@ -136,7 +138,7 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( URL resource, IdStrategy idStrategy ) {
-        final Map map = Binder.getBinder( resource ).unmarshal( Map.class, resource );
+        final Map map = Binder.getBinder( resource, false ).unmarshal( Map.class, resource );
         return parse( map, idStrategy );
     }
 
@@ -306,23 +308,46 @@ public class DictionaryParser {
         serialize( dictionary, path, false );
     }
 
-    private static void serialize( DictionaryRoot dictionary, Path path, boolean format ) {
-        try( JsonGenerator jsonGenerator = format ?
-            Binder.json.getJsonGenerator( path ).useDefaultPrettyPrinter() :
-            Binder.json.getJsonGenerator( path ) ) {
+    public static void serialize( DictionaryRoot dictionary, JsonGenerator jsonGenerator, boolean format ) throws IOException {
+        jsonGenerator.writeStartObject();
 
-            jsonGenerator.writeStartObject();
+        jsonGenerator.writeStringField( NAME, dictionary.name );
 
-            jsonGenerator.writeStringField( NAME, dictionary.name );
+        writeProperties( jsonGenerator, dictionary );
 
-            writeProperties( jsonGenerator, dictionary );
+        writeValues( jsonGenerator, dictionary.getValues() );
 
-            writeValues( jsonGenerator, dictionary.getValues() );
+        jsonGenerator.writeEndObject();
+    }
 
-            jsonGenerator.writeEndObject();
+    public static void serialize( DictionaryRoot dictionary, Path path, boolean format ) {
+        try( JsonGenerator jsonGenerator = getJsonGenerator( path, format ) ) {
+            serialize( dictionary, jsonGenerator, format );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
+    }
+
+    public static void serialize( DictionaryRoot dictionary, StringBuilder sb, boolean format ) {
+        try( JsonGenerator jsonGenerator = getJsonGenerator( sb, format ) ) {
+            serialize( dictionary, jsonGenerator, format );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static JsonGenerator getJsonGenerator( Path path, boolean format ) {
+        var jsonGenerator = Binder.json.getJsonGenerator( path );
+        if( format ) jsonGenerator = jsonGenerator
+            .setPrettyPrinter( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) );
+        return jsonGenerator;
+    }
+
+    public static JsonGenerator getJsonGenerator( StringBuilder sb, boolean format ) {
+        var jsonGenerator = Binder.json.getJsonGenerator( sb );
+        if( format ) jsonGenerator = jsonGenerator
+            .setPrettyPrinter( new DefaultPrettyPrinter().withObjectIndenter( new DefaultIndenter().withLinefeed( "\n" ) ) );
+        return jsonGenerator;
     }
 
     private static void writeValues( JsonGenerator jsonGenerator, List<? extends Dictionary> values ) throws IOException {

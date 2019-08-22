@@ -24,19 +24,18 @@
 
 package oap.dictionary;
 
+import oap.io.Files;
 import oap.io.Resources;
 import oap.testng.Env;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectory;
-import oap.util.Maps;
-import org.assertj.core.api.Assertions;
 import org.testng.annotations.Test;
 
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import static oap.util.Pair.__;
+import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class DictionaryParserTest extends Fixtures {
@@ -47,19 +46,35 @@ public class DictionaryParserTest extends Fixtures {
     @Test
     public void serialize() {
         Path path = Env.tmpPath( "test/test.json" );
-        DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path );
+        DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path, true );
 
-        DictionaryRoot dictionary = DictionaryParser.parse( path );
-
-        Assertions.<Dictionary>assertThat( dictionary.getValues() ).contains( new DictionaryLeaf( "id2", true, '2',
-            Maps.of( __( "title", "title2" ) ) )
-        );
-
-        Assertions.<Dictionary>assertThat( dictionary.getValues().get( 0 ).getValues() ).contains(
-            new DictionaryLeaf( "id11", true, 11, Maps.of( __( "title", "title11" ) ) )
-        );
-
-        assertThat( dictionary.getProperty( "version" ) ).contains( 1L );
+        assertString( Files.readString( path ) ).isEqualTo( "{\n"
+            + "  \"name\" : \"test-dictionary\",\n"
+            + "  \"version\" : 1,\n"
+            + "  \"values\" : [ {\n"
+            + "    \"id\" : \"id1\",\n"
+            + "    \"eid\" : 49,\n"
+            + "    \"values\" : [ {\n"
+            + "      \"id\" : \"id11\",\n"
+            + "      \"eid\" : 11,\n"
+            + "      \"title\" : \"title11\"\n"
+            + "    }, {\n"
+            + "      \"id\" : \"id12\",\n"
+            + "      \"eid\" : 12,\n"
+            + "      \"title\" : \"title12\"\n"
+            + "    } ],\n"
+            + "    \"title\" : \"title1\"\n"
+            + "  }, {\n"
+            + "    \"id\" : \"id2\",\n"
+            + "    \"eid\" : 50,\n"
+            + "    \"property1\" : \"val1\",\n"
+            + "    \"title\" : \"title2\"\n"
+            + "  }, {\n"
+            + "    \"id\" : \"id3\",\n"
+            + "    \"eid\" : 51,\n"
+            + "    \"tags\" : [ \"tag1\", \"tag2\" ]\n"
+            + "  } ]\n"
+            + "}" );
     }
 
     @Test(
