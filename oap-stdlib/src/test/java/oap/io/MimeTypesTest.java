@@ -26,6 +26,8 @@ package oap.io;
 
 import org.testng.annotations.Test;
 
+import java.nio.file.Paths;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MimeTypesTest {
@@ -41,5 +43,6 @@ public class MimeTypesTest {
         assertThat( MimeTypes.mimetypeOf( "txt" ) ).get().isEqualTo( "text/plain" );
         assertThat( MimeTypes.mimetypeOf( "jpeg" ) ).get().isEqualTo( "image/jpeg" );
         assertThat( MimeTypes.mimetypeOf( "png" ) ).get().isEqualTo( "image/png" );
+        assertThat( MimeTypes.mimetypeOf( Paths.get( "/a/a/aaa.png" ) ) ).get().isEqualTo( "image/png" );
     }
 }

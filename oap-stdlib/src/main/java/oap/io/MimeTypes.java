@@ -24,6 +24,9 @@
 
 package oap.io;
 
+import org.apache.commons.io.FilenameUtils;
+
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -310,5 +313,10 @@ public class MimeTypes {
 
     public static Optional<String> mimetypeOf( String ext ) {
         return Optional.ofNullable( mimetypes.get( ext ) );
+    }
+
+    public static Optional<String> mimetypeOf( Path path ) {
+
+        return Optional.ofNullable( mimetypes.get( FilenameUtils.getExtension( path.toString() ) ) );
     }
 }
