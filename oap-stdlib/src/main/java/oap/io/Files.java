@@ -191,6 +191,7 @@ public final class Files {
 
     @SneakyThrows
     public static void write( Path path, byte[] value ) {
+        ensureFile( path );
         java.nio.file.Files.write( path, value );
     }
 
