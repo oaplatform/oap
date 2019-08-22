@@ -217,6 +217,11 @@ public class HttpResponse {
             return this;
         }
 
+        public Builder withContent( byte[] content, ContentType contentType ) {
+            this.contentEntity = new ByteArrayEntity( content, contentType );
+            return this;
+        }
+
         public Builder withSessionValue( String key, Object value ) {
             session.put( key, value );
             return this;
