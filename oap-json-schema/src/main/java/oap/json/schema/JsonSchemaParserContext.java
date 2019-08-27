@@ -39,6 +39,7 @@ public class JsonSchemaParserContext {
     public final String path;
     public final HashMap<SchemaId, SchemaASTWrapper> astW;
     public final HashMap<SchemaId, SchemaAST> ast;
+    public final SchemaStorage storage;
     private final String schemaName;
 
     public JsonSchemaParserContext(
@@ -49,8 +50,8 @@ public class JsonSchemaParserContext {
         BiFunction<String, String, SchemaASTWrapper> urlParser,
         String rootPath, String path,
         HashMap<SchemaId, SchemaASTWrapper> astW,
-        HashMap<SchemaId, SchemaAST> ast
-    ) {
+        HashMap<SchemaId, SchemaAST> ast,
+        SchemaStorage storage ) {
         this.schemaName = schemaName;
         this.node = node;
         this.schemaType = schemaType;
@@ -60,6 +61,7 @@ public class JsonSchemaParserContext {
         this.path = path;
         this.astW = astW;
         this.ast = ast;
+        this.storage = storage;
     }
 
     public final JsonSchemaParserContext withNode( String field, Object mapObject ) {
@@ -73,7 +75,7 @@ public class JsonSchemaParserContext {
             return new JsonSchemaParserContext( schemaName, map, ( String ) schemaType, mapParser, urlParser,
                 rootPath,
                 SchemaPath.resolve( path, field ),
-                astW, ast );
+                astW, ast, storage );
         } else {
             throw new UnknownTypeValidationSyntaxException(
                 "Unknown type " + ( schemaType == null ? "nothing" : schemaType.getClass() )

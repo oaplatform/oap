@@ -62,10 +62,10 @@ public abstract class AbstractSchemaTest {
     }
 
     protected static void assertFailure( String schema, String json, String error ) {
-        assertFailure( schema, json, error, INSTANCE );
+        assertFailure( schema, json, INSTANCE, error );
     }
 
-    protected static void assertFailure( String schema, String json, String error, SchemaStorage storage ) {
+    protected static void assertFailure( String schema, String json, SchemaStorage storage, String... error ) {
         List<String> result = JsonSchema.schemaFromString( schema, storage )
             .validate( Binder.json.unmarshal( Object.class, json ), false );
         if( result.isEmpty() ) Assert.fail( json + " -> " + error );

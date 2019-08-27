@@ -23,6 +23,7 @@
  */
 package oap.json.schema;
 
+import com.google.common.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import oap.json.Binder;
 import oap.json.schema.validator.AnyJsonValidator;
@@ -75,7 +76,7 @@ public class JsonSchema {
             "", null, "",
             this::parse,
             ( rp, schemaPath ) -> parse( schemaPath, storage.get( schemaPath ), rp, storage ),
-            "", "", new HashMap<>(), new HashMap<>() );
+            "", "", new HashMap<>(), new HashMap<>(), storage );
 
         this.schema = parse( schemaJson, context ).unwrap( context );
     }
@@ -97,7 +98,54 @@ public class JsonSchema {
     }
 
     private SchemaASTWrapper parse( String schema, JsonSchemaParserContext context ) {
-        return parse( context.withNode( "", Binder.hocon.unmarshal( Object.class, schema ) ) );
+        return parse( context.withNode( "", parseWithTemplate( schema, context.storage ) ) );
+    }
+
+    private Object parseWithTemplate( String schema, SchemaStorage storage ) {
+        var obj = Binder.hoconWithoutSystemProperties.unmarshal( Object.class, schema );
+        resolveTemplates( obj, storage );
+        log.trace( "schema = {}", Binder.json.marshal( obj ) );
+        return obj;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private void resolveTemplates( Object obj, SchemaStorage storage ) {
+        if( obj instanceof Map<?, ?> ) {
+            var map = ( Map<Object, Object> ) obj;
+            var templatePath = map.get( "template" );
+            if( templatePath != null ) {
+                Preconditions.checkArgument( templatePath instanceof String );
+
+                var templateStr = storage.get( ( String ) templatePath );
+                var templateMap = Binder.hoconWithoutSystemProperties.unmarshal( Object.class, templateStr );
+                log.trace( "template path = {}, template = {}", templatePath, templateStr );
+
+                map.remove( "template" );
+                addTemplate( map, templateMap );
+            }
+
+            map.values().forEach( obj1 -> resolveTemplates( obj1, storage ) );
+        } else if( obj instanceof List<?> ) {
+            var list = ( List<?> ) obj;
+            list.forEach( obj1 -> resolveTemplates( obj1, storage ) );
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private void addTemplate( Object sl, Object sr ) {
+        if( sl instanceof Map<?, ?> ) {
+            Preconditions.checkArgument( sr instanceof Map<?, ?> );
+
+            var mapl = ( Map<Object, Object> ) sl;
+            var mapr = ( Map<Object, Object> ) sr;
+            mapr.forEach( ( key, vr ) -> {
+                var vl = mapl.get( key );
+                if( vl != null ) {
+                    addTemplate( vl, vr );
+                } else
+                    mapl.put( key, vr );
+            } );
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -128,17 +176,17 @@ public class JsonSchema {
     }
 
     SchemaASTWrapper parse( String schemaName, String schema, String rootPath, SchemaStorage storage ) {
-        final JsonSchemaParserContext context = new JsonSchemaParserContext(
+        var context = new JsonSchemaParserContext(
             schemaName,
             null, "",
             this::parse,
             ( rp, schemaPath ) -> parse( schemaPath, storage.get( schemaPath ), rp, storage ),
-            rootPath, "", new HashMap<>(), new HashMap<>() );
+            rootPath, "", new HashMap<>(), new HashMap<>(), storage );
         return parse( schema, context );
     }
 
     private SchemaASTWrapper parse( JsonSchemaParserContext context ) {
-        JsonSchemaValidator<?> schemaParser = validators.get( context.schemaType );
+        var schemaParser = validators.get( context.schemaType );
         if( schemaParser != null ) {
             return schemaParser.parse( context );
         } else {
@@ -149,7 +197,7 @@ public class JsonSchema {
     }
 
     public List<String> partialValidate( Object root, Object json, String path, boolean ignoreRequiredDefault ) {
-        final SchemaPath.Result traverseResult = SchemaPath.traverse( this.schema, path );
+        var traverseResult = SchemaPath.traverse( this.schema, path );
         final SchemaAST partialSchema = traverseResult.schema
             .orElseThrow( () -> new ValidationSyntaxException( "path " + path + " not found" ) );
 
