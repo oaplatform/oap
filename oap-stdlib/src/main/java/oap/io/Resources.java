@@ -84,7 +84,18 @@ public final class Resources {
 
     @SneakyThrows
     public static List<URL> urls( Class<?> contextClass, String name ) {
+        if( name.startsWith( "/" ) ) name = name.substring( 1 );
+        else name = resolveName( contextClass ) + "/" + name;
         return Collections.list( contextClass.getClassLoader().getResources( name ) );
+    }
+
+    private static String resolveName( Class<?> contextClass ) {
+        Class<?> c = contextClass;
+        while( c.isArray() ) {
+            c = c.getComponentType();
+        }
+        var baseName = c.getPackageName();
+        return baseName.replace( '.', '/' );
     }
 
     public static Optional<String> readString( Class<?> contextClass, String name ) {

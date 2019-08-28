@@ -24,6 +24,8 @@
 
 package oap.io;
 
+import oap.testng.Fixtures;
+import oap.testng.TestDirectory;
 import org.testng.annotations.Test;
 
 import java.net.URL;
@@ -34,7 +36,11 @@ import java.util.Properties;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ResourcesTest {
+public class ResourcesTest extends Fixtures {
+    {
+        fixture( TestDirectory.FIXTURE );
+    }
+
     @Test
     public void urls() {
         List<URL> urls = Resources.urls( getClass().getName(), "txt" );
@@ -47,5 +53,12 @@ public class ResourcesTest {
             ResourcesTest.class.getSimpleName() + "/resource.properties" );
         assertThat( properties ).isPresent();
         assertThat( properties.get() ).hasSize( 2 );
+    }
+
+    @Test
+    public void testFilePaths() {
+        var paths = Resources.filePaths( getClass(), "/file-paths" );
+        assertThat( paths ).hasSize( 1 );
+        assertThat( paths.get( 0 ) ).isDirectory();
     }
 }
