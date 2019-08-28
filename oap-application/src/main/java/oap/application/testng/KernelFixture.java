@@ -26,6 +26,7 @@ package oap.application.testng;
 
 import oap.application.Kernel;
 import oap.application.Module;
+import oap.io.Resources;
 import oap.testng.Env;
 import oap.testng.Fixture;
 
@@ -36,9 +37,14 @@ import static oap.http.testng.HttpAsserts.httpPrefix;
 public class KernelFixture implements Fixture {
     public Kernel kernel;
     private Path conf;
+    private String confCatalog;
     private static int kernelN = 0;
 
     public KernelFixture( Path conf ) {
+        this.conf = conf;
+    }
+    public KernelFixture( Path conf, String confCatalog ) {
+        this.confCatalog = confCatalog;
         this.conf = conf;
     }
 
@@ -50,8 +56,12 @@ public class KernelFixture implements Fixture {
         System.setProperty( "TMP_PATH", Env.tmp( "/" ) );
         System.setProperty( "HTTP_PREFIX", httpPrefix() );
 
+        var toConfD = Env.tmpPath( confCatalog );
+        Resources.filePath( getClass(), confCatalog )
+            .ifPresent( ( path ) -> oap.io.Files.copyDirectory( path, toConfD ) );
+
         this.kernel = new Kernel( "FixtureKernel#" + kernelN++, Module.CONFIGURATION.urlsFromClassPath() );
-        this.kernel.start( conf );
+        this.kernel.start( conf, toConfD );
     }
 
     @Override
