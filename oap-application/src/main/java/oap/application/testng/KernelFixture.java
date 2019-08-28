@@ -43,6 +43,7 @@ public class KernelFixture implements Fixture {
     public KernelFixture( Path conf ) {
         this.conf = conf;
     }
+
     public KernelFixture( Path conf, String confCatalog ) {
         this.confCatalog = confCatalog;
         this.conf = conf;
@@ -55,13 +56,16 @@ public class KernelFixture implements Fixture {
         System.setProperty( "HTTP_PORT", String.valueOf( Env.port() ) );
         System.setProperty( "TMP_PATH", Env.tmp( "/" ) );
         System.setProperty( "HTTP_PREFIX", httpPrefix() );
-
-        var toConfD = Env.tmpPath( confCatalog );
-        Resources.filePath( getClass(), confCatalog )
-            .ifPresent( ( path ) -> oap.io.Files.copyDirectory( path, toConfD ) );
-
         this.kernel = new Kernel( "FixtureKernel#" + kernelN++, Module.CONFIGURATION.urlsFromClassPath() );
-        this.kernel.start( conf, toConfD );
+
+        if( confCatalog != null ) {
+            var toConfD = Env.tmpPath( confCatalog );
+            Resources.filePath( getClass(), confCatalog )
+                .ifPresent( ( path ) -> oap.io.Files.copyDirectory( path, toConfD ) );
+            this.kernel.start( conf, toConfD );
+        } else {
+            this.kernel.start( conf );
+        }
     }
 
     @Override
