@@ -35,10 +35,10 @@ import java.nio.file.Path;
 import static oap.http.testng.HttpAsserts.httpPrefix;
 
 public class KernelFixture implements Fixture {
+    private static int kernelN = 0;
     public Kernel kernel;
     private Path conf;
     private String confCatalog;
-    private static int kernelN = 0;
 
     public KernelFixture( Path conf ) {
         this.conf = conf;
@@ -60,8 +60,8 @@ public class KernelFixture implements Fixture {
 
         if( confCatalog != null ) {
             var toConfD = Env.tmpPath( confCatalog );
-            Resources.filePath( getClass(), confCatalog )
-                .ifPresent( ( path ) -> oap.io.Files.copyDirectory( path, toConfD ) );
+            Resources.filePaths( getClass(), confCatalog )
+                .forEach( ( path ) -> oap.io.Files.copyDirectory( path, toConfD ) );
             this.kernel.start( conf, toConfD );
         } else {
             this.kernel.start( conf );

@@ -91,9 +91,18 @@ public class Env {
 
     public static Path deployTestData( Class<?> contextClass, String name ) {
         Path to = tmpPath( name );
-        Resources.filePath( contextClass, contextClass.getSimpleName() + "/" + name )
-            .ifPresent( path -> Files.copyDirectory( path, to ) );
+        Resources.filePaths( contextClass, resolveName( contextClass ) )
+            .forEach( path -> Files.copyDirectory( path, to ) );
         return to;
+    }
+
+    private static String resolveName( Class<?> contextClass ) {
+        Class<?> c = contextClass;
+        while( c.isArray() ) {
+            c = c.getComponentType();
+        }
+        var baseName = c.getPackageName();
+        return baseName.replace( '.', '/' ) + "/" + contextClass.getSimpleName();
     }
 
     public static int port() {

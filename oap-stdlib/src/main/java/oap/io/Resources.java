@@ -25,6 +25,7 @@ package oap.io;
 
 import com.google.common.io.ByteStreams;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import lombok.SneakyThrows;
 import oap.concurrent.Executors;
 import oap.util.Lists;
 import oap.util.Sets;
@@ -73,8 +74,17 @@ public final class Resources {
         return url( contextClass, name ).map( u -> Paths.get( path( u ) ) );
     }
 
+    public static List<Path> filePaths( Class<?> contextClass, String name ) {
+        return Lists.map( urls( contextClass, name ), u -> Paths.get( path( u ) ) );
+    }
+
     public static Optional<URL> url( Class<?> contextClass, String name ) {
         return Optional.ofNullable( contextClass.getResource( name ) );
+    }
+
+    @SneakyThrows
+    public static List<URL> urls( Class<?> contextClass, String name ) {
+        return Collections.list( contextClass.getClassLoader().getResources( name ) );
     }
 
     public static Optional<String> readString( Class<?> contextClass, String name ) {
