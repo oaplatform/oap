@@ -26,6 +26,7 @@ package oap.application.testng;
 
 import oap.application.Kernel;
 import oap.application.Module;
+import oap.io.Files;
 import oap.io.Resources;
 import oap.testng.Env;
 import oap.testng.Fixture;
@@ -61,11 +62,9 @@ public class KernelFixture implements Fixture {
         if( confCatalog != null ) {
             var toConfD = Env.tmpPath( confCatalog );
             Resources.filePaths( getClass(), confCatalog )
-                .forEach( ( path ) -> oap.io.Files.copyDirectory( path, toConfD ) );
+                .forEach( path -> Files.copyDirectory( path, toConfD ) );
             this.kernel.start( conf, toConfD );
-        } else {
-            this.kernel.start( conf );
-        }
+        } else this.kernel.start( conf );
     }
 
     @Override
