@@ -30,20 +30,15 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public abstract class AssocList<K, V> extends LinkedHashSet<V> {
-    private final ConcurrentHashMap<K, V> map = new ConcurrentHashMap<>();
-
     public AssocList() {
     }
 
     public AssocList( Collection<? extends V> c ) {
-        super( c );
-        for( V v : c ) map.put( keyOf( v ), v );
+        addAll( c );
     }
 
     public static <K, V> AssocList<K, V> forKey( Function<? super V, ? extends K> keyOf ) {
@@ -57,54 +52,20 @@ public abstract class AssocList<K, V> extends LinkedHashSet<V> {
 
     protected abstract K keyOf( V v );
 
-    @Override
-    public synchronized boolean add( V v ) {
-        if( map.put( keyOf( v ), v ) != null ) removeKey( keyOf( v ) );
-        super.add( v );
-
-        return true;
-    }
-
-    @Override
-    public synchronized boolean remove( Object o ) {
-        map.values().remove( o );
-        return super.remove( o );
-    }
-
-    @Override
-    public synchronized boolean addAll( Collection<? extends V> c ) {
-        for( V v : c ) map.put( keyOf( v ), v );
-        return super.addAll( c );
-    }
-
-    @Override
-    public synchronized boolean removeAll( Collection<?> c ) {
-        map.values().removeAll( c );
-        return super.removeAll( c );
-    }
-
-    @Override
-    public synchronized boolean retainAll( Collection<?> c ) {
-        map.values().retainAll( c );
-        return super.retainAll( c );
-    }
-
-    @Override
-    public synchronized boolean removeIf( Predicate<? super V> filter ) {
-        map.values().removeIf( filter );
-        return super.removeIf( filter );
-    }
-
     public Optional<V> get( K key ) {
-        return Optional.ofNullable( map.get( key ) );
+        return this.stream().filter( v -> Objects.equals( key, keyOf( v ) ) ).findAny();
     }
 
     public V getOrDefault( K key, V def ) {
-        return map.getOrDefault( key, def );
+        return get( key ).orElse( def );
     }
 
     public boolean removeKey( K key ) {
-        return removeIf( o -> Objects.equals( keyOf( o ), key ) );
+        return removeIf( o -> hasKey( o, key ) );
+    }
+
+    protected boolean hasKey( V o, K key ) {
+        return Objects.equals( keyOf( o ), key );
     }
 
     /**
@@ -112,28 +73,37 @@ public abstract class AssocList<K, V> extends LinkedHashSet<V> {
      */
     @Deprecated
     public V unsafeGet( K key ) {
-        return map.get( key );
+        return getOrDefault( key, null );
     }
 
     public Set<V> getAll( Collection<K> keys ) {
-        return Stream.of( keys )
-            .foldLeft( new LinkedHashSet<>(), ( result, key ) -> {
-                V v = map.get( key );
-                if( v != null ) result.add( v );
-                return result;
-            } );
+        LinkedHashSet<V> result = new LinkedHashSet<>();
+        for( K key : keys ) get( key ).ifPresent( result::add );
+        return result;
     }
 
-    public synchronized V computeIfAbsent( K key, Supplier<V> supplier ) {
-        if( !containsKey( key ) ) {
+    public V computeIfAbsent( K key, Supplier<V> supplier ) {
+        return get( key ).orElseGet( () -> {
             V v = supplier.get();
             Preconditions.checkArgument( Objects.equals( key, keyOf( v ) ) );
             add( v );
-        }
-        return map.get( key );
+            return v;
+        } );
     }
 
-    public synchronized boolean containsKey( K key ) {
-        return map.containsKey( key );
+    public boolean containsKey( K key ) {
+        return this.stream().anyMatch( o -> hasKey( o, key ) );
+    }
+
+    @Override
+    public boolean add( V v ) {
+        removeKey( keyOf( v ) );
+        return super.add( v );
+    }
+
+    @Override
+    public boolean addAll( Collection<? extends V> c ) {
+        for( V v : c ) add( v );
+        return !c.isEmpty();
     }
 }
