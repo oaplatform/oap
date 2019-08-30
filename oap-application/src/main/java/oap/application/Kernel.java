@@ -60,6 +60,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -422,11 +423,14 @@ public class Kernel implements Closeable {
         return Optional.ofNullable( ( T ) services.get( name ) );
     }
 
-    @SuppressWarnings( "unchecked" )
+    /**
+     * @see Optional#orElseThrow()
+     * @see Optional#orElseThrow(Supplier)
+     * @deprecated
+     */
+    @Deprecated( forRemoval = true )
     public <T> T serviceOrThrow( String name ) {
-        T service = ( T ) services.get( name );
-        if( service == null ) throw new ApplicationException( "service " + name + " is not found" );
-        return service;
+        return this.<T>service( name ).orElseThrow( () -> new ApplicationException( "service " + name + " is not found" ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -437,14 +441,9 @@ public class Kernel implements Closeable {
             .toList();
     }
 
-//    protected Object resolve( String serviceName, String field, String reference, boolean required ) {
-//        var linkName = Module.Reference.of( reference ).name;
-//        var linkedService = service( linkName );
-//        log.debug( "for {} linking {} -> {} with {}", serviceName, field, reference, linkedService );
-//        if( linkedService.isEmpty() && required && serviceEnabled( modules, linkName ) )
-//            throw new ApplicationException( "for " + serviceName + " service link " + reference + " is not found" );
-//        return linkedService.get();
-//    }
+    public <T> Optional<T> serviceOfClass( Class<T> clazz ) {
+        return this.ofClass( clazz ).stream().findAny();
+    }
 
     public void unregister( String name ) {
         services.remove( name );
