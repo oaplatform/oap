@@ -33,12 +33,12 @@ import java.io.UncheckedIOException;
 @Slf4j
 public class Response {
     private final Request request;
-    private org.apache.http.HttpResponse resp;
+    private org.apache.http.HttpResponse underlying;
     private RequestCors cors;
 
-    public Response( Request request, org.apache.http.HttpResponse resp, RequestCors cors ) {
+    public Response( Request request, org.apache.http.HttpResponse underlying, RequestCors cors ) {
         this.request = request;
-        this.resp = resp;
+        this.underlying = underlying;
         this.cors = cors;
     }
 
@@ -46,31 +46,31 @@ public class Response {
 
         log.trace( "responding {} {}", response.code, response.reason );
 
-        cors.applyTo( resp );
+        cors.applyTo( underlying );
 
-        var isGzip = request.isGzipSupport();
+        var isGzip = request.gzipSupported();
 
-        resp.setStatusCode( response.code );
+        underlying.setStatusCode( response.code );
 
-        if( response.reason != null ) resp.setReasonPhrase( response.reason );
+        if( response.reason != null ) underlying.setReasonPhrase( response.reason );
 
         if( !response.headers.isEmpty() ) for( Pair<String, String> header : response.headers )
-            resp.setHeader( header._1, header._2 );
+            underlying.setHeader( header._1, header._2 );
 
-        if( isGzip ) resp.setHeader( "Content-encoding", "gzip" );
+        if( isGzip ) underlying.setHeader( "Content-encoding", "gzip" );
 
         if( !response.cookies.isEmpty() )
-            for( Pair<String, String> cookie : response.cookies ) resp.addHeader( cookie._1, cookie._2 );
+            for( Pair<String, String> cookie : response.cookies ) underlying.addHeader( cookie._1, cookie._2 );
 
         if( response.contentEntity != null )
-            if( isGzip ) resp.setEntity( new HttpGzipOutputStreamEntity( out -> {
+            if( isGzip ) underlying.setEntity( new HttpGzipOutputStreamEntity( out -> {
             try {
                 response.contentEntity.writeTo( out );
             } catch( IOException e ) {
                 throw new UncheckedIOException( e );
             }
         }, null ) );
-        else resp.setEntity( response.contentEntity );
+        else underlying.setEntity( response.contentEntity );
     }
 
 }

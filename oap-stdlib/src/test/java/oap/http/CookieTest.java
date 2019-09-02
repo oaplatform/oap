@@ -22,32 +22,28 @@
  * SOFTWARE.
  */
 
-package oap.http.testng;
+package oap.http;
 
-import lombok.SneakyThrows;
-import oap.http.Context;
-import oap.http.Protocol;
-import oap.http.Request;
-import oap.http.ServerHttpContext;
-import org.apache.http.HttpRequest;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.protocol.BasicHttpContext;
+import oap.util.Dates;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
+import org.testng.annotations.Test;
 
-import java.net.InetAddress;
+import java.util.Locale;
 
-@Deprecated
-public class MockRequest extends Request {
-    public MockRequest( HttpRequest req ) {
-        super( req, new Context( "", getLocalHost(), new ServerHttpContext( new BasicHttpContext(), Protocol.HTTP, null ) ) );
-    }
+import static oap.testng.Asserts.assertString;
 
-    public MockRequest() {
-        this( new HttpGet() );
-    }
-
-    @SneakyThrows
-    private static InetAddress getLocalHost() {
-        return InetAddress.getLocalHost();
+public class CookieTest {
+    @Test
+    public void expires() {
+        Dates.setTimeFixed( 2019, 11, 11, 11, 11, 11, 11 );
+        Locale.setDefault( Locale.CHINA );
+        Cookie cookie = new Cookie( "test", "test" )
+            .withExpires( DateTime.now()
+                .plus( new Period( 2, 30, 10, 0 ) )
+                .toDateTime( DateTimeZone.UTC ) );
+        assertString( cookie.toString() ).isEqualTo( "test=test; expires=Mon, 11-Nov-2019 13:41:21 UTC" );
     }
 
 }

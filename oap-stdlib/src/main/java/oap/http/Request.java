@@ -29,6 +29,7 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.io.ByteStreams;
+import lombok.SneakyThrows;
 import lombok.ToString;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -39,9 +40,7 @@ import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.util.EntityUtils;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -53,7 +52,7 @@ import static oap.util.Pair.__;
 
 public class Request {
     private static final Splitter SPLITTER = Splitter.on( ";" ).trimResults().omitEmptyStrings();
-    public final HttpRequest req;
+    public final HttpRequest underlying;
     public final Context context;
     public final Optional<InputStream> body;
     public final String uri;
@@ -64,16 +63,16 @@ public class Request {
     private ListParams listParams;
     @Deprecated
     private UniqueParams uniqueParams;
-    private ListMultimap<String, String> _headers;
-    private Map<String, String> _cookies;
-    private String _requestLine;
+    private ListMultimap<String, String> headers;
+    private Map<String, String> cookies;
+    private String requestLine;
     private ListMultimap<String, String> params;
 
-    public Request( HttpRequest req, Context context ) {
-        this.req = req;
+    public Request( HttpRequest underlying, Context context ) {
+        this.underlying = underlying;
         this.context = context;
-        this.uri = req.getRequestLine().getUri();
-        this.body = content( req ); // Headers have to be constructed at this point
+        this.uri = underlying.getRequestLine().getUri();
+        this.body = content( underlying ); // Headers have to be constructed at this point
         this.ua = header( "User-Agent" ).orElse( null );
         this.referrer = header( "Referrer" ).orElse( null );
         this.ip = header( "X-Forwarded-For" ).orElse( context.remoteAddress.getHostAddress() );
@@ -98,36 +97,32 @@ public class Request {
         return params.get( name );
     }
 
+    @SneakyThrows
     private void ensureParametersParsed() {
         if( this.params != null ) return;
         this.params = ArrayListMultimap.create();
         Url.parseQuery( Strings.substringAfter( uri, "?" ), this.params );
-        var contentType = req.getFirstHeader( "Content-Type" );
+        var contentType = underlying.getFirstHeader( "Content-Type" );
         if( contentType != null && contentType.getValue().startsWith( "application/x-www-form-urlencoded" )
-            && req instanceof HttpEntityEnclosingRequest ) try {
-            Url.parseQuery( EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) req ).getEntity() ), this.params );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+            && underlying instanceof HttpEntityEnclosingRequest )
+            Url.parseQuery( EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) underlying ).getEntity() ), this.params );
+
     }
 
     /**
      * @see #parameters(String)
      */
     @Deprecated
+    @SneakyThrows
     public ListParams getListParams() {
         if( listParams == null ) {
             listParams = new ListParams();
 
             Url.parseQuery( Strings.substringAfter( uri, "?" ), listParams.params );
-            var contentType = req.getFirstHeader( "Content-Type" );
+            var contentType = underlying.getFirstHeader( "Content-Type" );
             if( contentType != null && contentType.getValue().startsWith( "application/x-www-form-urlencoded" )
-                && req instanceof HttpEntityEnclosingRequest )
-                try {
-                    Url.parseQuery( EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) req ).getEntity() ), listParams.params );
-                } catch( IOException e ) {
-                    throw new UncheckedIOException( e );
-                }
+                && underlying instanceof HttpEntityEnclosingRequest )
+                Url.parseQuery( EntityUtils.toString( ( ( HttpEntityEnclosingRequest ) underlying ).getEntity() ), listParams.params );
         }
 
         return listParams;
@@ -149,34 +144,33 @@ public class Request {
     }
 
     public ListMultimap<String, String> getHeaders() {
-        if( _headers == null ) {
-            _headers = Stream.of( req.getAllHeaders() )
+        if( headers == null ) {
+            headers = Stream.of( underlying.getAllHeaders() )
                 .map( h -> __( h.getName().toLowerCase(), h.getValue() ) )
                 .collect( Maps.Collectors.toListMultimap() );
         }
-        return _headers;
+        return headers;
     }
 
     public Map<String, String> getCookies() {
-        if( _cookies == null ) {
-            _cookies = header( "Cookie" )
+        if( cookies == null ) {
+            cookies = header( "Cookie" )
                 .map( cookie -> Stream.of( SPLITTER.split( cookie ).iterator() )
                     .map( s -> Strings.split( s, "=" ) )
                     .collect( Maps.Collectors.<String, String>toMap() ) )
                 .orElse( Map.of() );
         }
-        return _cookies;
+        return cookies;
     }
 
     public HttpMethod getHttpMethod() {
-        return HttpMethod.valueOf( req.getRequestLine().getMethod().toUpperCase() );
+        return HttpMethod.valueOf( underlying.getRequestLine().getMethod().toUpperCase() );
     }
 
     public String getRequestLine() {
-        if( _requestLine == null ) {
-            _requestLine = Strings.substringBefore( uri, "?" ).substring( context.location.length() );
-        }
-        return _requestLine;
+        if( requestLine == null )
+            requestLine = Strings.substringBefore( uri, "?" ).substring( context.location.length() );
+        return requestLine;
     }
 
     public String getBaseUrl() {
@@ -184,47 +178,32 @@ public class Request {
     }
 
     public boolean isRequestGzipped() {
-        final List<String> headers = headers( "Content-Encoding" );
-        if( headers != null ) {
-            for( final String header : headers ) {
-                if( header.contains( "gzip" ) ) {
-                    return true;
-                }
-            }
-        }
+        List<String> headers = headers( "Content-Encoding" );
+        for( String header : headers ) if( header.contains( "gzip" ) ) return true;
 
         return false;
     }
 
+    @Deprecated
     public boolean isGzipSupport() {
-        final List<String> headers = headers( "Accept-encoding" );
-        if( headers != null ) {
-            for( final String header : headers ) {
-                if( header.contains( "gzip" ) ) {
-                    return true;
-                }
-            }
-        }
+        return gzipSupported();
+    }
+
+    public boolean gzipSupported() {
+        List<String> headers = headers( "Accept-encoding" );
+        for( String header : headers ) if( header.contains( "gzip" ) ) return true;
 
         return false;
     }
 
-    private Optional<InputStream> content( HttpRequest req ) {
-        try {
-            if( req instanceof HttpEntityEnclosingRequest ) {
-                final HttpEntityEnclosingRequest enclosingRequest = ( HttpEntityEnclosingRequest ) req;
-
-                final InputStream content = enclosingRequest.getEntity().getContent();
-
-                return isRequestGzipped()
-                    ? Optional.of( new GZIPInputStream( content ) )
-                    : Optional.of( content );
-            } else {
-                return Optional.empty();
-            }
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+    @SneakyThrows
+    private Optional<InputStream> content( HttpRequest underlying ) {
+        if( underlying instanceof HttpEntityEnclosingRequest ) {
+            InputStream content = ( ( HttpEntityEnclosingRequest ) underlying ).getEntity().getContent();
+            return isRequestGzipped()
+                ? Optional.of( new GZIPInputStream( content ) )
+                : Optional.of( content );
+        } else return Optional.empty();
     }
 
     public Optional<byte[]> readBody() {

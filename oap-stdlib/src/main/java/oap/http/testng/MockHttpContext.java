@@ -30,7 +30,9 @@ import java.util.HashMap;
 
 /**
  * Created by igor.petrenko on 10.05.2019.
+ * @see org.apache.http.protocol.BasicHttpContext
  */
+@Deprecated
 public class MockHttpContext implements HttpContext {
 
     public final HashMap<String, Object> map = new HashMap<>();

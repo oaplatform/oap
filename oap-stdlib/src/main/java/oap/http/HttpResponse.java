@@ -24,7 +24,6 @@
 package oap.http;
 
 import oap.json.Binder;
-import oap.util.Lists;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
@@ -36,9 +35,6 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -242,43 +238,6 @@ public class HttpResponse {
 
         public HttpResponse response() {
             return new HttpResponse( this.code, this.reason, this.cookies, this.headers, this.session, this.contentEntity );
-        }
-    }
-
-    public static class CookieBuilder {
-        private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss zzz" );
-        private String domain;
-        private String expires;
-        private String path;
-        private List<String> values = new ArrayList<>();
-
-        public CookieBuilder withDomain( String domain ) {
-            this.domain = StringUtils.isNotBlank( domain ) ? "domain=" + domain : null;
-            return this;
-        }
-
-        public CookieBuilder withExpires( DateTime expires ) {
-            this.expires = expires != null ? "expires=" + FORMATTER.print( expires ) : null;
-            return this;
-        }
-
-        public CookieBuilder withPath( String path ) {
-            this.path = StringUtils.isNotBlank( path ) ? "path=" + path : null;
-            return this;
-        }
-
-        public CookieBuilder withValue( String name, String value ) {
-            if( StringUtils.isNoneBlank( name, value ) ) this.values.add( name + "=" + value );
-            return this;
-        }
-
-        public CookieBuilder httpOnly() {
-            this.values.add( "HttpOnly" );
-            return this;
-        }
-
-        public String build() {
-            return Strings.join( "; ", Lists.of( Strings.join( "; ", values ), domain, expires, path ) );
         }
     }
 }

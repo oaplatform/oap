@@ -22,32 +22,37 @@
  * SOFTWARE.
  */
 
-package oap.http.testng;
+package oap.util;
 
-import lombok.SneakyThrows;
-import oap.http.Context;
-import oap.http.Protocol;
-import oap.http.Request;
-import oap.http.ServerHttpContext;
-import org.apache.http.HttpRequest;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.protocol.BasicHttpContext;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import org.testng.annotations.Test;
 
-import java.net.InetAddress;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@Deprecated
-public class MockRequest extends Request {
-    public MockRequest( HttpRequest req ) {
-        super( req, new Context( "", getLocalHost(), new ServerHttpContext( new BasicHttpContext(), Protocol.HTTP, null ) ) );
+public class AssocListTest {
+    @Test
+    public void add() {
+        AssocList<String, Bean> beans = AssocList.forKey( b -> b.id );
+        Bean b1 = new Bean( "a", "v1" );
+        beans.add( b1 );
+        assertThat( beans ).hasSize( 1 );
+        assertThat( beans.get( "a" ) ).get().isEqualTo( b1 );
+        Bean b2 = new Bean( "a", "v2" );
+        beans.add( b2 );
+        assertThat( beans ).hasSize( 1 );
+        assertThat( beans.get( "a" ) ).get().isEqualTo( b2 );
     }
 
-    public MockRequest() {
-        this( new HttpGet() );
-    }
+    @ToString
+    @EqualsAndHashCode
+    static class Bean {
+        String id;
+        String value;
 
-    @SneakyThrows
-    private static InetAddress getLocalHost() {
-        return InetAddress.getLocalHost();
+        public Bean( String id, String value ) {
+            this.id = id;
+            this.value = value;
+        }
     }
-
 }
