@@ -39,18 +39,7 @@
 
     <modules>
         <module>oap-stdlib</module>
-        <module>oap-metrics</module>
-        <module>oap-json</module>
-        <module>oap-dictionary</module>
-        <module>oap-json-schema</module>
-        <module>oap-cli</module>
-        <module>oap-http</module>
-        <module>oap-http-useragent</module>
-        <module>oap-remoting-server</module>
-        <module>oap-application</module>
         <module>oap-application-spring</module>
-        <module>oap-template</module>
-        <module>oap-alert</module>
         <module>oap-alert-slack</module>
         <module>oap-zabbix</module>
         <module>maven</module>
@@ -71,7 +60,7 @@
     </distributionManagement>
 
     <properties>
-        <revision>4.24.19</revision>
+        <revision>4.25.0</revision>
 
         <maven.compiler.source>12</maven.compiler.source>
         <maven.compiler.target>12</maven.compiler.target>

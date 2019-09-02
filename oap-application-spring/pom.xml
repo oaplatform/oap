@@ -45,7 +45,7 @@
 
         <dependency>
             <groupId>${project.parent.groupId}</groupId>
-            <artifactId>oap-application</artifactId>
+            <artifactId>oap-stdlib</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
