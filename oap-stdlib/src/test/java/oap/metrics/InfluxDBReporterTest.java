@@ -54,6 +54,7 @@ public class InfluxDBReporterTest extends Fixtures {
     @BeforeMethod
     public void init() {
 
+        Metrics.resetAll();
         influxDB = new MockInfluxDB();
 
         DateTimeUtils.setCurrentMillisFixed( 1454055727921L );
