@@ -24,6 +24,7 @@
 
 package oap.application.testng;
 
+import lombok.SneakyThrows;
 import oap.application.Kernel;
 import oap.application.Module;
 import oap.io.Files;
@@ -31,6 +32,7 @@ import oap.io.Resources;
 import oap.testng.Env;
 import oap.testng.Fixture;
 
+import java.io.FileNotFoundException;
 import java.nio.file.Path;
 
 import static oap.http.testng.HttpAsserts.httpPrefix;
@@ -45,6 +47,12 @@ public class KernelFixture implements Fixture {
         this.conf = conf;
     }
 
+    @SneakyThrows
+    public KernelFixture( String conf ) {
+        this.conf = Resources.filePath( getClass(),
+            conf.startsWith( "/" ) ? conf : "/" + conf ).orElseThrow( () -> new FileNotFoundException( conf ) );
+    }
+
     public KernelFixture( Path conf, String confCatalog ) {
         this.confCatalog = confCatalog;
         this.conf = conf;
@@ -56,6 +64,7 @@ public class KernelFixture implements Fixture {
         System.setProperty( "TMP_REMOTE_PORT", String.valueOf( Env.port( "TMP_REMOTE_PORT" ) ) );
         System.setProperty( "HTTP_PORT", String.valueOf( Env.port() ) );
         System.setProperty( "TMP_PATH", Env.tmp( "/" ) );
+        System.setProperty( "RESOURCE_PATH", Resources.path( getClass(), "/" ).get() );
         System.setProperty( "HTTP_PREFIX", httpPrefix() );
         this.kernel = new Kernel( "FixtureKernel#" + kernelN++, Module.CONFIGURATION.urlsFromClassPath() );
 
