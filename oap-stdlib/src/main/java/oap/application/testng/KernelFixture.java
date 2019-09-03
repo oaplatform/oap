@@ -36,6 +36,7 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 
 import static oap.http.testng.HttpAsserts.httpPrefix;
+import static org.testng.Assert.assertNotNull;
 
 public class KernelFixture implements Fixture {
     private static int kernelN = 0;
@@ -58,9 +59,14 @@ public class KernelFixture implements Fixture {
         this.conf = conf;
     }
 
+    @SneakyThrows
+    public <T> T service( Class<T> klass ) {
+        assertNotNull( klass );
+        return kernel.serviceOfClass( klass ).orElseThrow( () -> new IllegalAccessException( "Unknown service " + klass ) );
+    }
+
     @Override
     public void beforeMethod() {
-
         System.setProperty( "TMP_REMOTE_PORT", String.valueOf( Env.port( "TMP_REMOTE_PORT" ) ) );
         System.setProperty( "HTTP_PORT", String.valueOf( Env.port() ) );
         System.setProperty( "TMP_PATH", Env.tmp( "/" ) );
