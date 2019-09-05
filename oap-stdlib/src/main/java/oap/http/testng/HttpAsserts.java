@@ -29,6 +29,7 @@ import oap.http.Client;
 import oap.json.testng.JsonAsserts;
 import oap.testng.Env;
 import oap.util.Pair;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.entity.ContentType;
 
 import java.io.InputStream;
@@ -42,6 +43,11 @@ import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class HttpAsserts {
+    private static RequestConfig requestConfig = RequestConfig.custom()
+        .setSocketTimeout( Integer.parseInt( Env.getEnvOrDefault( "TEST_HTTP_SOCKET_TIMEOUT", "30000" ) ) )
+        .setConnectTimeout( Integer.parseInt( Env.getEnvOrDefault( "TEST_HTTP_CONNECTION_TIMEOUT", "30000" ) ) )
+        .setConnectionRequestTimeout( Integer.parseInt( Env.getEnvOrDefault( "TEST_HTTP_CONNECTION_REQUEST_TIMEOUT", "30000" ) ) )
+        .build();
 
     private static Client client = Client.custom()
         .onError( ( c, e ) -> System.err.println( e.getMessage() ) )
