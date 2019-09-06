@@ -24,6 +24,7 @@
 
 package oap.util;
 
+import oap.testng.Asserts;
 import oap.testng.Fixtures;
 import oap.testng.ResetSystemTimer;
 import org.joda.time.DateTime;
@@ -55,4 +56,11 @@ public class DatesTest extends Fixtures {
         assertThat( Dates.currentTimeDay() ).isEqualTo( 40 );
     }
 
+    @Test
+    public void testDurationToString() {
+        Asserts.assertString( Dates.durationToString( 1 ) ).isEqualTo( "0.001S" );
+        Asserts.assertString( Dates.durationToString( 1000 ) ).isEqualTo( "1S" );
+        Asserts.assertString( Dates.durationToString( 1001 ) ).isEqualTo( "1.001S" );
+        Asserts.assertString( Dates.durationToString( 1000 * 60 * 2 + 4567 ) ).isEqualTo( "2M 4.567S" );
+    }
 }

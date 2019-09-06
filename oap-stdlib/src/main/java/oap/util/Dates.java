@@ -26,11 +26,14 @@ package oap.util;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.DateTimeParser;
 import org.joda.time.format.ISODateTimeFormat;
+import org.joda.time.format.ISOPeriodFormat;
+import org.joda.time.format.PeriodFormatterBuilder;
 
 public class Dates {
     public static final DateTimeFormatter FORMAT_MILLIS = DateTimeFormat
@@ -134,5 +137,14 @@ public class Dates {
 
     public static long d( int value ) {
         return h( value ) * 24;
+    }
+
+    public static String durationToString( long duration ) {
+        var period = new Period( duration );
+        var formatter = new PeriodFormatterBuilder()
+            .appendHours().appendSuffix( "H" ).appendSeparator( " " )
+            .appendMinutes().appendSuffix( "M" ).appendSeparator( " " )
+            .appendSecondsWithOptionalMillis().appendSuffix( "S" ).toFormatter();
+        return formatter.print( period );
     }
 }
