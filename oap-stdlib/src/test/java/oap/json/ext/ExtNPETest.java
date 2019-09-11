@@ -37,8 +37,7 @@ public class ExtNPETest {
     public Object[][] cases() {
         return new Object[][] {
             { "ok.json" },
-            { "nodesc.json" },
-            { "descafterext.json" }
+            { "nameafterext.json" }
         };
     }
 
@@ -56,13 +55,13 @@ class Npe {
     public String description;
     public Ext ext;
 
-//    This is fix for NPE
+    //    This is fix for NPE
     public Npe() {
     }
 
-    public Npe( String name, String description ) {
+//    @JsonCreator
+    public Npe( String name ) {
         this.name = name;
-        this.description = description;
     }
 
 }
