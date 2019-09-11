@@ -71,6 +71,7 @@ class InfluxDBReporter extends ScheduledReporter {
     private final boolean resetTimersAfterReport;
     private final boolean skipEmpty;
     private final Collection<Pattern> aggregates;
+    private final InfluxMetricsConfiguration imc;
 
     @SneakyThrows
     protected InfluxDBReporter( InfluxDB influxDB, String database, Map<String, String> tags,
@@ -78,7 +79,8 @@ class InfluxDBReporter extends ScheduledReporter {
                                 MetricFilter filter, Collection<String> aggregates,
                                 TimeUnit rateUnit, TimeUnit durationUnit,
                                 boolean resetTimersAfterReport,
-                                boolean skipEmpty ) {
+                                boolean skipEmpty,
+                                InfluxMetricsConfiguration imc ) {
         super( registry, name, filter, rateUnit, durationUnit );
         this.influxDB = influxDB;
         this.database = database;
@@ -88,6 +90,7 @@ class InfluxDBReporter extends ScheduledReporter {
 
         this.aggregates = Lists.map( aggregates,
             a -> Pattern.compile( a.replace( ".", "\\." ).replace( "\\.*", "(\\.[^,\\s]+)([^\\s]*)" ) ) );
+        this.imc = imc;
 
         log.info( "aggregates = {}", aggregates );
 
@@ -215,18 +218,21 @@ class InfluxDBReporter extends ScheduledReporter {
     private void reportMeters( SortedMap<String, Meter> meters, SortedMap<String, Point.Builder> builders ) {
         if( log.isTraceEnabled() )
             log.trace( "meters {}", meters.keySet() );
+
+        var mc = imc.meter;
+
         report( meters, builders,
             ( b, e ) -> {
                 var key = e.getKey();
                 var m = e.getValue();
 
                 if( skipEmpty && m.getCount() == 0 ) return;
-                b.addField( key, convertRate( m.getOneMinuteRate() ) )
-                    .addField( key + "_oneMinuteRate", convertRate( m.getOneMinuteRate() ) )
-                    .addField( key + "_fiveMinuteRate", convertRate( m.getFiveMinuteRate() ) )
-                    .addField( key + "_fifteenMinuteRate", convertRate( m.getFifteenMinuteRate() ) )
-                    .addField( key + "_count", convertRate( m.getCount() ) )
-                    .addField( key + "_meanRate", convertRate( m.getMeanRate() ) );
+                b.addField( key, convertRate( m.getOneMinuteRate() ) );
+                if( mc.oneMinuteRate ) b.addField( key + "_oneMinuteRate", convertRate( m.getOneMinuteRate() ) );
+                if( mc.fiveMinuteRate ) b.addField( key + "_fiveMinuteRate", convertRate( m.getFiveMinuteRate() ) );
+                if( mc.fifteenMinuteRate ) b.addField( key + "_fifteenMinuteRate", convertRate( m.getFifteenMinuteRate() ) );
+                if( mc.count ) b.addField( key + "_count", convertRate( m.getCount() ) );
+                if( mc.meanRate ) b.addField( key + "_meanRate", convertRate( m.getMeanRate() ) );
             }
         );
     }
@@ -234,6 +240,8 @@ class InfluxDBReporter extends ScheduledReporter {
     private void reportTimers( SortedMap<String, Timer> timers, SortedMap<String, Point.Builder> builders ) {
         if( log.isTraceEnabled() )
             log.trace( "timers {}", timers.keySet() );
+
+        var tc = imc.timer;
 
         report( timers, builders,
             ( b, e ) -> {
@@ -243,22 +251,22 @@ class InfluxDBReporter extends ScheduledReporter {
                 if( skipEmpty && t.getCount() == 0 ) return;
 
                 var snapshot = t.getSnapshot();
-                b.addField( key, convertDuration( snapshot.getMean() ) )
-                    .addField( key + "_mean", convertDuration( snapshot.getMean() ) )
-                    .addField( key + "_75th", convertDuration( snapshot.get75thPercentile() ) )
-                    .addField( key + "_95th", convertDuration( snapshot.get95thPercentile() ) )
-                    .addField( key + "_98th", convertDuration( snapshot.get98thPercentile() ) )
-                    .addField( key + "_99th", convertDuration( snapshot.get99thPercentile() ) )
-                    .addField( key + "_999th", convertDuration( snapshot.get999thPercentile() ) )
-                    .addField( key + "_max", convertDuration( snapshot.getMax() ) )
-                    .addField( key + "_min", convertDuration( snapshot.getMin() ) )
-                    .addField( key + "_median", convertDuration( snapshot.getMedian() ) )
-                    .addField( key + "_stddev", convertDuration( snapshot.getStdDev() ) )
-                    .addField( key + "_count", t.getCount() )
-                    .addField( key + "_oneMinuteRate", convertRate( t.getOneMinuteRate() ) )
-                    .addField( key + "_fiveMinuteRate", convertRate( t.getFiveMinuteRate() ) )
-                    .addField( key + "_fifteenMinuteRate", convertRate( t.getFifteenMinuteRate() ) )
-                    .addField( key + "_meanRate", convertRate( t.getMeanRate() ) );
+                b.addField( key, convertDuration( snapshot.getMean() ) );
+                if( tc.mean ) b.addField( key + "_mean", convertDuration( snapshot.getMean() ) );
+                if( tc.p75th ) b.addField( key + "_75th", convertDuration( snapshot.get75thPercentile() ) );
+                if( tc.p95th ) b.addField( key + "_95th", convertDuration( snapshot.get95thPercentile() ) );
+                if( tc.p98th ) b.addField( key + "_98th", convertDuration( snapshot.get98thPercentile() ) );
+                if( tc.p99th ) b.addField( key + "_99th", convertDuration( snapshot.get99thPercentile() ) );
+                if( tc.p999th ) b.addField( key + "_999th", convertDuration( snapshot.get999thPercentile() ) );
+                if( tc.max ) b.addField( key + "_max", convertDuration( snapshot.getMax() ) );
+                if( tc.min ) b.addField( key + "_min", convertDuration( snapshot.getMin() ) );
+                if( tc.median ) b.addField( key + "_median", convertDuration( snapshot.getMedian() ) );
+                if( tc.stddev ) b.addField( key + "_stddev", convertDuration( snapshot.getStdDev() ) );
+                if( tc.count ) b.addField( key + "_count", t.getCount() );
+                if( tc.oneMinuteRate ) b.addField( key + "_oneMinuteRate", convertRate( t.getOneMinuteRate() ) );
+                if( tc.fiveMinuteRate ) b.addField( key + "_fiveMinuteRate", convertRate( t.getFiveMinuteRate() ) );
+                if( tc.fifteenMinuteRate ) b.addField( key + "_fifteenMinuteRate", convertRate( t.getFifteenMinuteRate() ) );
+                if( tc.meanRate ) b.addField( key + "_meanRate", convertRate( t.getMeanRate() ) );
             }
         );
 
@@ -290,6 +298,8 @@ class InfluxDBReporter extends ScheduledReporter {
         if( log.isTraceEnabled() )
             log.trace( "histograms {}", histograms.keySet() );
 
+        var hc = imc.histogram;
+
         report( histograms, builders,
             ( b, e ) -> {
                 var key = e.getKey();
@@ -298,18 +308,18 @@ class InfluxDBReporter extends ScheduledReporter {
                 if( skipEmpty && h.getCount() == 0 ) return;
 
                 var snapshot = h.getSnapshot();
-                b.addField( key, snapshot.getMean() )
-                    .addField( key + "_mean", snapshot.getMean() )
-                    .addField( key + "_75th", snapshot.get75thPercentile() )
-                    .addField( key + "_95th", snapshot.get95thPercentile() )
-                    .addField( key + "_98th", snapshot.get98thPercentile() )
-                    .addField( key + "_99th", snapshot.get99thPercentile() )
-                    .addField( key + "_999th", snapshot.get999thPercentile() )
-                    .addField( key + "_max", snapshot.getMax() )
-                    .addField( key + "_min", snapshot.getMin() )
-                    .addField( key + "_median", snapshot.getMedian() )
-                    .addField( key + "_stddev", snapshot.getStdDev() )
-                    .addField( key + "_count", h.getCount() );
+                b.addField( key, snapshot.getMean() );
+                if( hc.mean ) b.addField( key + "_mean", snapshot.getMean() );
+                if( hc.p75th ) b.addField( key + "_75th", snapshot.get75thPercentile() );
+                if( hc.p95th ) b.addField( key + "_95th", snapshot.get95thPercentile() );
+                if( hc.p98th ) b.addField( key + "_98th", snapshot.get98thPercentile() );
+                if( hc.p99th ) b.addField( key + "_99th", snapshot.get99thPercentile() );
+                if( hc.p999th ) b.addField( key + "_999th", snapshot.get999thPercentile() );
+                if( hc.max ) b.addField( key + "_max", snapshot.getMax() );
+                if( hc.min ) b.addField( key + "_min", snapshot.getMin() );
+                if( hc.median ) b.addField( key + "_median", snapshot.getMedian() );
+                if( hc.stddev ) b.addField( key + "_stddev", snapshot.getStdDev() );
+                if( hc.count ) b.addField( key + "_count", h.getCount() );
             }
         );
     }
@@ -331,6 +341,7 @@ class InfluxDBReporter extends ScheduledReporter {
         private long writeTimeout;
         private boolean resetTimersAfterReport = false;
         private boolean skipEmpty = false;
+        private InfluxMetricsConfiguration imc = new InfluxMetricsConfiguration();
 
         public Builder( MetricRegistry registry ) {
             this.registry = registry;
@@ -354,6 +365,11 @@ class InfluxDBReporter extends ScheduledReporter {
 
         public Builder convertRatesTo( TimeUnit rateUnit ) {
             this.rateUnit = rateUnit;
+            return this;
+        }
+
+        public Builder withImc( InfluxMetricsConfiguration imc ) {
+            this.imc = imc;
             return this;
         }
 
@@ -384,7 +400,8 @@ class InfluxDBReporter extends ScheduledReporter {
                 rateUnit,
                 durationUnit,
                 resetTimersAfterReport,
-                skipEmpty );
+                skipEmpty,
+                imc );
         }
 
         public Builder withFilter( ReporterFilter filter ) {

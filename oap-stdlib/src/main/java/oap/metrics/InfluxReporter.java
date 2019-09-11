@@ -50,6 +50,7 @@ public class InfluxReporter {
     protected long period = 60 * 1000;
     protected boolean reset_timers_after_report = false;
     protected boolean skip_empty = false;
+    protected InfluxMetricsConfiguration imc = new InfluxMetricsConfiguration();
 
     private InfluxDBReporter reporter;
 
@@ -71,7 +72,8 @@ public class InfluxReporter {
             .withReadTimeout( readTimeout )
             .withWriteTimeout( writeTimeout )
             .withResetTimersAfterReport( reset_timers_after_report )
-            .withSkipEmpty( skip_empty );
+            .withSkipEmpty( skip_empty )
+            .withImc( imc );
         tags.forEach( ( name, value ) -> builder.withTag( name, String.valueOf( value ) ) );
         reporter = builder.build();
         reporter.start( period, TimeUnit.MILLISECONDS );
