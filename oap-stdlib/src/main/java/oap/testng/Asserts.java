@@ -41,6 +41,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -117,7 +118,12 @@ public final class Asserts {
     }
 
     public static String contentOfTestResource( Class<?> contextClass, String resource ) {
+        return contentOfTestResource( contextClass, resource, Map.of() );
+    }
+
+    public static String contentOfTestResource( Class<?> contextClass, String resource, Map<String, Object> substitutions ) {
         return Resources.readString( contextClass, contextClass.getSimpleName() + "/" + resource )
+            .map( content -> Strings.substitute( content, substitutions ) )
             .orElseThrow( () -> new AssertionError( "resource " + resource + " not found" ) );
     }
 

@@ -35,6 +35,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Function;
@@ -149,7 +150,11 @@ public final class Strings {
 
     @SafeVarargs
     public static String substitute( String s, Pair<String, Object>... map ) {
-        return new StringSubstitutor( Maps.ofStrings( map ) ).replace( s );
+        return substitute( s, Maps.ofStrings( map ) );
+    }
+
+    public static String substitute( String s, Map<String, Object> map ) {
+        return new StringSubstitutor( map ).replace( s );
     }
 
     public static String substitute( String s, Function<String, Object> mapper ) {

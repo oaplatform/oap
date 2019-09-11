@@ -27,20 +27,25 @@ package oap.testng;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
+import java.util.Map;
 
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
-import static oap.testng.Asserts.contentOfTestResource;
-import static oap.testng.Asserts.pathOfTestResource;
+import static oap.testng.Asserts.assertString;
 
 public class AssertsTest {
 
     @Test
     public void sortedContentOfFileResource() {
-        Path unsorted = pathOfTestResource( getClass(), "random-flow-of-mind.txt" );
-        String expected = contentOfTestResource( getClass(), "sorted-flow-of-mind.txt" );
+        Path unsorted = Asserts.pathOfTestResource( getClass(), "random-flow-of-mind.txt" );
+        String expected = Asserts.contentOfTestResource( getClass(), "sorted-flow-of-mind.txt" );
         assertFile( unsorted ).hasContentLineSorting( expected, PLAIN );
     }
 
+    @Test
+    public void contentOfTestResource() {
+        assertString( Asserts.contentOfTestResource( getClass(), "substitutions.txt", Map.of( "a", 1 ) ) )
+            .isEqualTo( "1 = b" );
+    }
 
 }
