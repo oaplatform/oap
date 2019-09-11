@@ -28,16 +28,24 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.json.Binder;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import static oap.testng.Asserts.contentOfTestResource;
 
 public class ExtNPETest {
-    @Test
-    public void npe() {
-        Binder.json.unmarshal( Npe.class, contentOfTestResource( getClass(), "1.json" ) );
-        //no description
-        Binder.json.unmarshal( Npe.class, contentOfTestResource( getClass(), "2.json" ) );
+    @DataProvider
+    public Object[][] cases() {
+        return new Object[][] {
+            { "ok.json" },
+            { "nodesc.json" },
+            { "descafterext.json" }
+        };
+    }
+
+    @Test( dataProvider = "cases" )
+    public void npe( String file ) {
+        Binder.json.unmarshal( Npe.class, contentOfTestResource( getClass(), file ) );
     }
 }
 
