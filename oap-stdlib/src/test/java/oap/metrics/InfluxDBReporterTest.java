@@ -88,8 +88,8 @@ public class InfluxDBReporterTest extends Fixtures {
         );
 
         assertString( getPoints() ).contains(
-            "test", "t1=10.0", "g1=10i", "h1=10.0", "h1_75th=10.0", "name1=1i,name2=2i",
-            "t1=10.0", "t2=0.4151801719466667", "h2_stddev=0.0", "m2=0.0" );
+            "test", "t1=10.0", "g1=10i", "h1=10.0", "h1_mean=10.0", "name1=1i,name2=2i",
+            "t1=10.0", "t2=0.4151801719466667", "mean=20.0", "m2=0.0" );
     }
 
     public InfluxDBReporter createReporter( MockInfluxDB influxDB, MetricRegistry registry, List<String> aggregates ) {
@@ -104,7 +104,8 @@ public class InfluxDBReporterTest extends Fixtures {
             TimeUnit.DAYS,
             TimeUnit.DAYS,
             false,
-            false
+            false,
+            new InfluxMetricsConfiguration()
         );
     }
 
