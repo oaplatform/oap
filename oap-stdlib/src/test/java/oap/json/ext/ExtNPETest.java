@@ -24,7 +24,6 @@
 
 package oap.json.ext;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.json.Binder;
@@ -57,15 +56,15 @@ class Npe {
     public String description;
     public Ext ext;
 
-    @JsonCreator
+//    This is fix for NPE
+    public Npe() {
+    }
+
     public Npe( String name, String description ) {
         this.name = name;
         this.description = description;
     }
 
-    public Npe( String name ) {
-        this( name, null );
-    }
 }
 
 
