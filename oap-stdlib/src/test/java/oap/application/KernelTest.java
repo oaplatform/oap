@@ -26,6 +26,7 @@ package oap.application;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceOne.Complex;
 import oap.application.linked.ServiceContainee;
 import oap.application.linked.ServiceContainer;
@@ -223,31 +224,37 @@ public class KernelTest {
         }
     }
 
+    @Slf4j
     public static class TestCloseable implements Closeable {
 
         public boolean closed;
 
         @Override
         public void close() {
+            log.info( "log_close" );
             this.closed = true;
         }
     }
 
+    @Slf4j
     public static class TestCloseable2 implements Closeable {
         public boolean stopped;
         public boolean closed;
 
         public void stop() {
+            log.info( "log_stop" );
             this.stopped = true;
 
         }
 
         @Override
         public void close() {
+            log.info( "log_close" );
             this.closed = true;
         }
     }
 
+    @Slf4j
     public static class Service1 {
         public final List<Object> list = new ArrayList<>();
         public Object ref = null;

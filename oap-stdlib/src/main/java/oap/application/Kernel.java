@@ -45,6 +45,7 @@ import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.io.Closeable;
 import java.io.File;
@@ -261,6 +262,7 @@ public class Kernel implements Closeable {
                 if( !service.isRemoteService() ) try {
                     var parametersWithoutLinks = fixLinksForConstructor( this, ret, service.parameters );
                     instance = reflect.newInstance( parametersWithoutLinks );
+                    updateLoggerIfExists( instance, implName );
                 } catch( ReflectException e ) {
                     log.info( "service name = {}, remote = {}, profiles = {}", implName, service.remote, service.profiles );
                     throw e;
@@ -274,6 +276,24 @@ public class Kernel implements Closeable {
         } );
 
         return ret;
+    }
+
+    @SneakyThrows
+    private void updateLoggerIfExists( Object instance, String name ) {
+        try {
+            var clazz = instance.getClass();
+            var logField = clazz.getDeclaredField( "log" );
+            logField.setAccessible( true );
+            if( org.slf4j.Logger.class.isAssignableFrom( logField.getType() ) ) {
+                var logger = ( org.slf4j.Logger ) logField.get( null );
+                if( logger instanceof ch.qos.logback.classic.Logger ) {
+                    FieldUtils.writeDeclaredField( logger, "name", logger.getName() + "." + name, true );
+                }
+            }
+        } catch( NoSuchFieldException ignored ) {
+        } catch( Exception e ) {
+            log.warn( e.getMessage(), e );
+        }
     }
 
     private void registerServices( Map<String, ServiceInitialization> services ) {
