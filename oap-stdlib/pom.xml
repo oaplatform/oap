@@ -200,7 +200,7 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.github.stephenc</groupId>
+            <groupId>com.github.jbellis</groupId>
             <artifactId>jamm</artifactId>
             <version>${jamm.version}</version>
         </dependency>
