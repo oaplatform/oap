@@ -103,11 +103,7 @@ public class DictionaryParser {
             if( valueAsRoot ) {
                 final String name = getString( valueMap, NAME );
 
-                final ExternalIdType externalIdAs = getStringOpt( valueMap, "externalIdAs" )
-                    .map( ExternalIdType::valueOf )
-                    .orElse( ExternalIdType.integer );
-
-                return new DictionaryRoot( name, externalIdAs, values, p );
+                return new DictionaryRoot( name, values, p );
             }
 
             var anExtends = getExtendsOpt( valueMap ).orElse( null );

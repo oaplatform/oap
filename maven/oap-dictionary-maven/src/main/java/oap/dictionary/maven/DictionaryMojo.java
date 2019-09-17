@@ -24,23 +24,25 @@
 
 package oap.dictionary.maven;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import oap.dictionary.Dictionary;
 import oap.dictionary.DictionaryParser;
 import oap.dictionary.DictionaryRoot;
 import oap.dictionary.ExternalIdType;
 import oap.io.Files;
 import oap.io.IoStreams;
+import oap.json.Binder;
+import oap.util.Lists;
 import oap.util.Stream;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,229 +73,228 @@ public class DictionaryMojo extends AbstractMojo {
     public String[] exclude = new String[0];
 
     @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-
-        final List<Path> paths =
-            Files.fastWildcard( Paths.get( sourceDirectory ), "*.json" )
-                .stream()
-                .filter( p -> {
-                    final boolean b = Arrays
-                        .stream( exclude )
-                        .noneMatch( e -> FilenameUtils.wildcardMatchOnSystem( separatorsToUnix( p.toString() ), e ) );
-                    if( !b ) getLog().debug( "exclude " + p );
-                    return b;
-                } )
-                .collect( toList() );
+    public void execute() {
+        var paths =
+            Lists.filter( Files.fastWildcard( Paths.get( sourceDirectory ), "*.json" ), p -> {
+                var b = Arrays
+                    .stream( exclude )
+                    .noneMatch( e -> FilenameUtils.wildcardMatchOnSystem( separatorsToUnix( p.toString() ), e ) );
+                if( !b ) getLog().debug( "exclude " + p );
+                return b;
+            } );
 
         getLog().debug( "found " + paths );
 
-        paths.forEach( path -> {
+        for( var path : paths ) {
             getLog().info( "dictionary " + path + "..." );
 
-            final DictionaryRoot dictionary = DictionaryParser.parse( path );
+            var dictionary = DictionaryParser.parse( path );
 
-            final StringBuilder out = new StringBuilder();
-            final String enumClass = toEnumName( dictionary.name );
-            out
-                .append( "package " + dictionaryPackage + ";\n\n" )
-                .append( "import oap.dictionary.Dictionary;\n\n" )
-                .append( "import java.util.Map;\n" )
-                .append( "import java.util.Optional;\n" )
-                .append( "import java.util.List;\n\n" )
-                .append( "import static java.util.Collections.emptyList;\n" )
-                .append( "import static java.util.Collections.emptyMap;\n" )
-                .append( "import static java.util.Arrays.asList;\n\n" )
-                .append( "public enum " + enumClass + " implements Dictionary {\n" );
+            var gc = dictionary.getProperty( "$generator" )
+                .map( p -> Binder.json.<Generator>unmarshal( Generator.class, Binder.json.marshal( p ) ) )
+                .orElse( new Generator() );
 
-            final Set<String> properties = dictionary
-                .getValues()
-                .stream()
-                .flatMap( v -> v.getProperties().keySet().stream() )
-                .collect( toSet() );
+            for( var dict : gc.getDictionaries( dictionary ) ) {
 
-            final Map<String, Boolean> optional = properties
-                .stream()
-                .collect( toMap(
-                    k -> k,
-                    k -> dictionary.getValues().stream().anyMatch( v -> !v.containsProperty( k ) )
-                ) );
+                var out = new StringBuilder();
+                out
+                    .append( "package " + dictionaryPackage + ";\n\n" )
+                    .append( "import oap.dictionary.Dictionary;\n\n" )
+                    .append( "import java.util.Map;\n" )
+                    .append( "import java.util.Optional;\n" )
+                    .append( "import java.util.List;\n\n" )
+                    .append( "import static java.util.Collections.emptyList;\n" )
+                    .append( "import static java.util.Collections.emptyMap;\n" )
+                    .append( "import static java.util.Arrays.asList;\n\n" )
+                    .append( "public enum " + dict.name + " implements Dictionary {\n" );
 
-            final Map<String, Class<?>> types = properties
-                .stream()
-                .collect( toMap(
-                    k -> k,
-                    k -> dictionary
-                        .getValues()
-                        .stream()
-                        .filter( v -> v.containsProperty( k ) )
-                        .findAny()
-                        .get().getProperty( k ).get().getClass()
-                ) );
-
-            out.append(
-                dictionary
-                    .getValues()
+                var properties = dict.values
                     .stream()
-                    .map( d ->
-                        "  " + d.getId() + "(" + convert( d.getExternalId(), dictionary.externalIdAs ) + ", "
-                            + d.isEnabled() + properties( d.getProperties(), properties, optional, types ) + ")"
-                    )
-                    .collect( joining( ",\n" ) )
-            );
+                    .flatMap( v -> v.getProperties().keySet().stream() )
+                    .collect( toSet() );
 
-            final String externalIdType = dictionary.externalIdAs.javaType.getSimpleName();
-            out
-                .append( ";\n\n" )
-                .append( "  private final " + externalIdType + " externalId;\n" )
-                .append( "  private final boolean enabled;\n\n" );
+                var optional = properties
+                    .stream()
+                    .collect( toMap(
+                        k -> k,
+                        k -> dictionary.getValues().stream().anyMatch( v -> !v.containsProperty( k ) )
+                    ) );
 
-            for( String property : properties ) {
+                final Map<String, Class<?>> types = properties
+                    .stream()
+                    .collect( toMap(
+                        k -> k,
+                        k -> dictionary
+                            .getValues()
+                            .stream()
+                            .filter( v -> v.containsProperty( k ) )
+                            .findAny()
+                            .get().getProperty( k ).get().getClass()
+                    ) );
+
+                out.append(
+                    dict.values
+                        .stream()
+                        .map( d ->
+                            "  " + d.getId() + "(" + convert( d.getExternalId(), dict.externalIdAs ) + ", "
+                                + d.isEnabled() + properties( d.getProperties(), properties, optional, types ) + ")"
+                        )
+                        .collect( joining( ",\n" ) )
+                );
+
+                var externalIdType = dict.externalIdAs.javaType.getSimpleName();
                 out
-                    .append( "  private final " + propertyType( property, optional, types ) + " " + property + ";\n" );
-            }
+                    .append( ";\n\n" )
+                    .append( "  private final " + externalIdType + " externalId;\n" )
+                    .append( "  private final boolean enabled;\n\n" );
 
-            out.append( "\n" );
+                for( var property : properties ) {
+                    out
+                        .append( "  private final " + propertyType( property, optional, types ) + " " + property + ";\n" );
+                }
 
-            for( String property : properties ) {
+                out.append( "\n" );
+
+                for( var property : properties ) {
+                    out
+                        .append( "  public final " + propertyType( property, optional, types ) + " " + property + "(){return " + property + ";}\n" );
+                }
+
                 out
-                    .append( "  public final " + propertyType( property, optional, types ) + " " + property + "(){return " + property + ";}\n" );
+                    .append( "\n  " + dict.name + "( " + externalIdType + " externalId, boolean enabled" );
+
+                var cParameters = properties.stream().map( p -> propertyType( p, optional, types ) + " " + p ).collect( joining( ", " ) );
+
+                out.append( cParameters.length() > 0 ? ", " : "" )
+                    .append( cParameters + " ) {\n" )
+                    .append( "    this.externalId = externalId;\n" )
+                    .append( "    this.enabled = enabled;\n" );
+
+                for( var property : properties ) {
+                    out.append( "    this." + property + " = " + property + ";\n" );
+                }
+
+                out
+                    .append( "  }\n"
+                        + "\n"
+                        + "  public static " + dict.name + " valueOf( int externalId ) {\n"
+                        + "    switch( externalId ) {\n" );
+
+                dictionary.getValues().forEach( d -> {
+                    out.append( "      case " ).append( d.getExternalId() ).append( ": return " ).append( d.getId() ).append( ";\n" );
+                } );
+
+                out.append( "      default: " );
+
+                if( dict.containsValueWithId( "UNKNOWN" ) ) {
+                    out.append( "return UNKNOWN" );
+                } else {
+                    out.append( "throw new java.lang.IllegalArgumentException( \"Unknown id \" + externalId )" );
+                }
+
+                out.append(
+                    ";\n"
+                        + "    }\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public int getOrDefault( String id, int defaultValue ) {\n"
+                        + "    return defaultValue;\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public Integer get( String id ) {\n"
+                        + "    return null;\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public String getOrDefault( int externlId, String defaultValue ) {\n"
+                        + "    return defaultValue;\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public boolean containsValueWithId( String id ) {\n"
+                        + "    return false;\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public List<String> ids() {\n"
+                        + "    return emptyList();\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public int[] externalIds() {\n"
+                        + "    return new int[0];\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public Map<String, Object> getProperties() {\n"
+                        + "    return emptyMap();\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public Optional<? extends Dictionary> getValueOpt( String name ) {\n"
+                        + "    return Optional.empty();\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public Dictionary getValue( String name ) {\n"
+                        + "    return null;\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public Dictionary getValue( int externalId ) {\n"
+                        + "    return null;\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public List<? extends Dictionary> getValues() {\n"
+                        + "    return emptyList();\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public String getId() {\n"
+                        + "    return name();\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public Optional<Object> getProperty( String name ) {\n"
+                        + "    return Optional.empty();\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public boolean isEnabled() {\n"
+                        + "    return enabled;\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public int getExternalId() {\n"
+                        + "    return externalId;\n"
+                        + "  }\n"
+                        + "  @Override\n"
+                        + "  public " + dict.name + " cloneDictionary() {\n"
+                        + "    return this;\n"
+                        + "  }\n"
+                        + "  public " + externalIdType + " externalId() {\n"
+                        + "    return externalId;\n"
+                        + "  }\n"
+                        + "\n"
+                        + "  @Override\n"
+                        + "  public boolean containsProperty( String name ) {\n"
+                        + "    return false;\n"
+                        + "  }\n" )
+                    .append( "}\n" );
+
+
+                var outPath = Paths.get( outputDirectory, dictionaryPackage.replace( ".", "/" ), dict.name + ".java" );
+
+                if( !java.nio.file.Files.exists( outPath ) || !Files.readString( outPath ).equals( out.toString() ) ) {
+                    Files.writeString( outPath, IoStreams.Encoding.PLAIN, out.toString() );
+                } else {
+                    getLog().debug( outPath + " is not modified." );
+                }
             }
-
-            out
-                .append( "\n  " + enumClass + "( " + externalIdType + " externalId, boolean enabled" );
-
-            final String cParameters = properties.stream().map( p -> propertyType( p, optional, types ) + " " + p ).collect( joining( ", " ) );
-
-            out.append( cParameters.length() > 0 ? ", " : "" )
-                .append( cParameters + " ) {\n" )
-                .append( "    this.externalId = externalId;\n" )
-                .append( "    this.enabled = enabled;\n" );
-
-            for( String property : properties ) {
-                out.append( "    this." + property + " = " + property + ";\n" );
-            }
-
-            out
-                .append( "  }\n"
-                    + "\n"
-                    + "  public static " + enumClass + " valueOf( int externalId ) {\n"
-                    + "    switch( externalId ) {\n" );
-
-            dictionary.getValues().forEach( d -> {
-                out.append( "      case " ).append( d.getExternalId() ).append( ": return " ).append( d.getId() ).append( ";\n" );
-            } );
-
-            out.append( "      default: " );
-
-            if( dictionary.containsValueWithId( "UNKNOWN" ) ) {
-                out.append( "return UNKNOWN" );
-            } else {
-                out.append( "throw new java.lang.IllegalArgumentException( \"Unknown id \" + externalId )" );
-            }
-
-            out.append(
-                ";\n"
-                    + "    }\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public int getOrDefault( String id, int defaultValue ) {\n"
-                    + "    return defaultValue;\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public Integer get( String id ) {\n"
-                    + "    return null;\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public String getOrDefault( int externlId, String defaultValue ) {\n"
-                    + "    return defaultValue;\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public boolean containsValueWithId( String id ) {\n"
-                    + "    return false;\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public List<String> ids() {\n"
-                    + "    return emptyList();\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public int[] externalIds() {\n"
-                    + "    return new int[0];\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public Map<String, Object> getProperties() {\n"
-                    + "    return emptyMap();\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public Optional<? extends Dictionary> getValueOpt( String name ) {\n"
-                    + "    return Optional.empty();\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public Dictionary getValue( String name ) {\n"
-                    + "    return null;\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public Dictionary getValue( int externalId ) {\n"
-                    + "    return null;\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public List<? extends Dictionary> getValues() {\n"
-                    + "    return emptyList();\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public String getId() {\n"
-                    + "    return name();\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public Optional<Object> getProperty( String name ) {\n"
-                    + "    return Optional.empty();\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public boolean isEnabled() {\n"
-                    + "    return enabled;\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public int getExternalId() {\n"
-                    + "    return externalId;\n"
-                    + "  }\n"
-                    + "  @Override\n"
-                    + "  public " + enumClass + " cloneDictionary() {\n"
-                    + "    return this;\n"
-                    + "  }\n"
-                    + "  public " + externalIdType + " externalId() {\n"
-                    + "    return externalId;\n"
-                    + "  }\n"
-                    + "\n"
-                    + "  @Override\n"
-                    + "  public boolean containsProperty( String name ) {\n"
-                    + "    return false;\n"
-                    + "  }\n" )
-                .append( "}\n" );
-
-
-            final Path outPath = Paths.get( outputDirectory, dictionaryPackage.replace( ".", "/" ), enumClass + ".java" );
-
-            if( !java.nio.file.Files.exists( outPath ) || !Files.readString( outPath ).equals( out.toString() ) ) {
-                Files.writeString( outPath, IoStreams.Encoding.PLAIN, out.toString() );
-            } else {
-                getLog().debug( outPath + " is not modified." );
-            }
-
-        } );
+        }
     }
 
     private String properties( Map<String, Object> properties, Set<String> names, Map<String, Boolean> optional, Map<String, Class<?>> types ) {
@@ -331,12 +332,6 @@ public class DictionaryMojo extends AbstractMojo {
         }
     }
 
-    private String toEnumName( String name ) {
-        return Stream.of( split( name, '-' ) )
-            .map( StringUtils::capitalize )
-            .collect( joining() );
-    }
-
     private Object convert( int value, ExternalIdType externalIdType ) {
         switch( externalIdType ) {
             case character:
@@ -345,6 +340,90 @@ public class DictionaryMojo extends AbstractMojo {
                 return value;
             default:
                 throw new IllegalArgumentException( "Unknown ExternalIdType " + externalIdType );
+        }
+    }
+
+    public static class Generator {
+        @JsonProperty( "$children" )
+        public final ArrayList<Child> children = new ArrayList<>();
+        @JsonProperty( "$externalIdAs" )
+        public ExternalIdType externalIdAs = ExternalIdType.integer;
+        @JsonProperty( "$name" )
+        private String name;
+
+        public Generator() {
+        }
+
+        private static String toEnumName( String name ) {
+            return Stream.of( split( name, '-' ) )
+                .map( StringUtils::capitalize )
+                .collect( joining() );
+        }
+
+        private static java.util.stream.Stream<? extends Dictionary> getValues( java.util.stream.Stream<? extends Dictionary> values, int level ) {
+            if( level == 0 ) return values;
+
+            return getValues( values.flatMap( v -> v.getValues().stream() ), level - 1 );
+        }
+
+        private static List<? extends Dictionary> getValues( List<? extends Dictionary> values, int level ) {
+            if( level == 0 ) return values;
+
+            return getValues( values.stream().flatMap( v -> v.getValues().stream() ), level - 1 ).collect( toList() );
+
+        }
+
+        public String getName( String name ) {
+            return toEnumName( this.name != null ? this.name : name );
+        }
+
+        public List<DictionaryConf> getDictionaries( DictionaryRoot dictionary ) {
+            var ret = new ArrayList<DictionaryConf>();
+            ret.add( new DictionaryConf( toEnumName( this.name != null ? this.name : dictionary.name ), 0,
+                externalIdAs,
+                getValues( dictionary.getValues(), 0 ) ) );
+            for( var child : children ) {
+                ret.add( new DictionaryConf( toEnumName( child.name ), child.level,
+                    child.externalIdAs,
+                    getValues( dictionary.getValues(), child.level ) ) );
+            }
+
+            return ret;
+        }
+
+        public static class Child {
+            @JsonProperty( "$level" )
+            public final int level;
+            @JsonProperty( "$name" )
+            public final String name;
+
+            @JsonProperty( "$externalIdAs" )
+            public final ExternalIdType externalIdAs;
+
+            @JsonCreator
+            public Child( int level, String name, ExternalIdType externalIdAs ) {
+                this.level = level;
+                this.name = name;
+                this.externalIdAs = externalIdAs != null ? externalIdAs : ExternalIdType.integer;
+            }
+        }
+
+        public static class DictionaryConf {
+            public final String name;
+            public final int level;
+            public final ExternalIdType externalIdAs;
+            public final List<? extends Dictionary> values;
+
+            public DictionaryConf( String name, int level, ExternalIdType externalIdAs, List<? extends Dictionary> values ) {
+                this.name = name;
+                this.level = level;
+                this.externalIdAs = externalIdAs;
+                this.values = values;
+            }
+
+            public boolean containsValueWithId( String id ) {
+                return Lists.find2( values, v -> v.getId().equals( id ) ) != null;
+            }
         }
     }
 }

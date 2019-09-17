@@ -40,7 +40,6 @@ import static java.util.stream.Collectors.toList;
 @ToString
 public final class DictionaryRoot implements Dictionary {
     public final String name;
-    public final ExternalIdType externalIdAs;
     private final List<? extends Dictionary> values;
     @JsonIgnore
     private final HashMap<Integer, String> indexByExternalId = new HashMap<>();
@@ -49,16 +48,11 @@ public final class DictionaryRoot implements Dictionary {
     private final Map<String, Object> properties;
 
     public DictionaryRoot( String name, List<? extends Dictionary> values ) {
-        this( name, ExternalIdType.integer, values, emptyMap() );
+        this( name, values, emptyMap() );
     }
 
     public DictionaryRoot( String name, List<? extends Dictionary> values, Map<String, Object> properties ) {
-        this( name, ExternalIdType.integer, values, properties );
-    }
-
-    public DictionaryRoot( String name, ExternalIdType externalIdAs, List<? extends Dictionary> values, Map<String, Object> properties ) {
         this.name = name;
-        this.externalIdAs = externalIdAs;
         this.values = values;
         this.properties = properties;
 
@@ -161,7 +155,6 @@ public final class DictionaryRoot implements Dictionary {
     public DictionaryRoot cloneDictionary() {
         return new DictionaryRoot(
             name,
-            externalIdAs,
             values.stream().map( Dictionary::cloneDictionary ).collect( toList() ),
             new HashMap<>( properties )
         );

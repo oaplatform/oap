@@ -1,6 +1,18 @@
 {
   "name": "test-dictionary-externalIdAsCharacter",
-  "externalIdAs": "character",
+  "$generator": {
+    "$externalIdAs": "character",
+    "$children": [
+      {
+        "$level": 1,
+        "$name": "child1"
+      },
+      {
+        "$level": 2,
+        "$name": "child2"
+      }
+    ]
+  },
   "values": [
     {
       "id": "id1",
@@ -17,6 +29,32 @@
       "p5": [
         "test1",
         "test2"
+      ],
+      "values": [
+        {
+          "id": "sid11",
+          "eid": 10,
+          "values": [
+            {
+              "id": "sid111",
+              "eid": 101
+            },
+            {
+              "id": "sid112",
+              "eid": 102
+            }
+          ]
+        },
+        {
+          "id": "sid12",
+          "eid": 11,
+          "values": [
+            {
+              "id": "sid121",
+              "eid": 111
+            }
+          ]
+        }
       ]
     },
     {

@@ -48,7 +48,11 @@ public class DictionaryMojoTest extends Fixtures {
         mojo.execute();
 
         assertFile( Env.tmpPath( "dictionary/test/TestDictionaryExternalIdAsCharacter.java" ) )
-            .hasSameContentAs( pathOfTestResource( getClass(), "TestDictionaryExternalIdAsCharacter.j" ) );
+            .hasSameContentAs( pathOfTestResource( getClass(), "TestDictionaryExternalIdAsCharacter.java" ) );
+        assertFile( Env.tmpPath( "dictionary/test/Child1.java" ) )
+            .hasSameContentAs( pathOfTestResource( getClass(), "Child1.java" ) );
+        assertFile( Env.tmpPath( "dictionary/test/Child2.java" ) )
+            .hasSameContentAs( pathOfTestResource( getClass(), "Child2.java" ) );
     }
 
 }
