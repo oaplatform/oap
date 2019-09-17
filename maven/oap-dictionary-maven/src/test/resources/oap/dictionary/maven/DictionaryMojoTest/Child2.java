@@ -13,6 +13,7 @@ import static java.util.Arrays.asList;
 public enum Child2 implements Dictionary {
   sid111(101, true, "t1"),
   sid112(102, true, null),
+  default(1000, true, null),
   sid121(111, true, null);
 
   private final int externalId;
@@ -30,8 +31,10 @@ public enum Child2 implements Dictionary {
 
   public static Child2 valueOf( int externalId ) {
     switch( externalId ) {
-      case 65: return id1;
-      case 122: return id2;
+      case 101: return sid111;
+      case 102: return sid112;
+      case 1000: return default;
+      case 111: return sid121;
       default: throw new java.lang.IllegalArgumentException( "Unknown id " + externalId );
     }
   }

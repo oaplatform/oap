@@ -54,6 +54,7 @@ import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
+import static oap.util.Pair.__;
 import static org.apache.commons.io.FilenameUtils.separatorsToUnix;
 import static org.apache.commons.lang3.StringUtils.split;
 
@@ -180,7 +181,7 @@ public class DictionaryMojo extends AbstractMojo {
                         + "  public static " + dict.name + " valueOf( int externalId ) {\n"
                         + "    switch( externalId ) {\n" );
 
-                dictionary.getValues().forEach( d -> {
+                dict.values.forEach( d -> {
                     out.append( "      case " ).append( d.getExternalId() ).append( ": return " ).append( d.getId() ).append( ";\n" );
                 } );
 
@@ -370,7 +371,9 @@ public class DictionaryMojo extends AbstractMojo {
         private static List<? extends Dictionary> getValues( List<? extends Dictionary> values, int level ) {
             if( level == 0 ) return values;
 
-            return getValues( values.stream().flatMap( v -> v.getValues().stream() ), level - 1 ).collect( toList() );
+            return Stream.of( getValues( values.stream().flatMap( v -> v.getValues().stream() ), level - 1 ) )
+                .distinctByProperty( d -> __( d.getId(), d.getExternalId() ) )
+                .collect( toList() );
 
         }
 

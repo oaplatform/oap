@@ -26,8 +26,8 @@ public enum Child1 implements Dictionary {
 
   public static Child1 valueOf( int externalId ) {
     switch( externalId ) {
-      case 65: return id1;
-      case 122: return id2;
+      case 10: return sid11;
+      case 11: return sid12;
       default: throw new java.lang.IllegalArgumentException( "Unknown id " + externalId );
     }
   }
