@@ -11,18 +11,21 @@ import static java.util.Collections.emptyMap;
 import static java.util.Arrays.asList;
 
 public enum Child2 implements Dictionary {
-  sid111(101, true),
-  sid112(102, true),
-  sid121(111, true);
+  sid111(101, true, "t1"),
+  sid112(102, true, null),
+  sid121(111, true, null);
 
   private final int externalId;
   private final boolean enabled;
 
+  private final String title;
 
+  public final String title(){return title;}
 
-  Child2( int externalId, boolean enabled ) {
+  Child2( int externalId, boolean enabled, String title ) {
     this.externalId = externalId;
     this.enabled = enabled;
+    this.title = title;
   }
 
   public static Child2 valueOf( int externalId ) {

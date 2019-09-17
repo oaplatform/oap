@@ -312,6 +312,7 @@ public class DictionaryMojo extends AbstractMojo {
 
     @SuppressWarnings( "unchecked" )
     private String print( Object value ) {
+        if( value == null ) return "null";
         if( String.class.isAssignableFrom( value.getClass() ) ) return "\"" + value + "\"";
         if( Long.class.isAssignableFrom( value.getClass() ) ) return value + "L";
         if( List.class.isAssignableFrom( value.getClass() ) ) {
