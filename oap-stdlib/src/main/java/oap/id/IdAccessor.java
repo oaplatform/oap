@@ -22,21 +22,22 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.id;
 
 import oap.reflect.Reflect;
 import oap.reflect.Reflection;
+import oap.util.Lists;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class IdAccessorFactory {
+public class IdAccessor {
     private static final ConcurrentHashMap<Class, Accessor> ids = new ConcurrentHashMap<>();
 
     public static String getter( Object value ) {
-        return get( value.getClass() ).get( value );
+        return accessor( value.getClass() ).get( value );
     }
 
-    private static Accessor get( Class<?> clazz ) {
+    private static Accessor accessor( Class<?> clazz ) {
         return ids.computeIfAbsent( clazz, c -> {
             Reflection reflect = Reflect.reflect( c );
 
@@ -49,19 +50,18 @@ public class IdAccessorFactory {
             Reflection.Method getter = null;
 
 
-            for( Reflection.Method m : idMethods ) {
+            for( Reflection.Method m : idMethods )
                 if( m.returnType().assignableTo( String.class ) ) getter = m;
                 else setter = m;
-            }
 
-            if( setter == null || getter == null ) throw new RuntimeException( "no @Id annotation" );
+            if( setter == null || getter == null ) throw new IllegalArgumentException( "no @Id annotation" );
 
             return new MethodAccessor( setter, getter );
         } );
     }
 
     public static void setter( Object value, String id ) {
-        get( value.getClass() ).set( value, id );
+        accessor( value.getClass() ).set( value, id );
     }
 
     public interface Accessor {

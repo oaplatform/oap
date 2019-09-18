@@ -22,19 +22,41 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.id;
 
-import oap.net.Inet;
+import java.util.Optional;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-/**
- * Created by anton on 7/27/17
- *
- * @see Inet#toLong(String) .
- */
-@Deprecated
-public class IpAddressUtils {
+public interface Identifier<T> {
+    void set( T object, String id );
 
-    public static long ipAsLong( final String ipAddress ) {
-        return Inet.toLong( ipAddress );
+    String getOrInit( T object, Predicate<String> conflict );
+
+    String get( T object );
+
+    static <T> Builder<T> forPath( String path ) {
+        return Builder.forPath( path );
+    }
+
+    static <T> Builder<T> forAnnotation() {
+        return Builder.forAnnotation();
+    }
+
+    static <T> Identifier<T> forAnnotationFixed() {
+        return Builder.<T>forAnnotation().build();
+    }
+
+    static <T> Builder<T> forId( final Function<T, String> getter ) {
+        return Builder.forId( getter );
+    }
+
+    static <T> Builder<T> forId( final Function<T, String> getter, BiConsumer<T, String> setter ) {
+        return Builder.forId( getter, setter );
+    }
+
+    static <T> Predicate<String> toConflict( Function<String, Optional<T>> f ) {
+        return id -> f.apply( id ).isPresent();
     }
 }

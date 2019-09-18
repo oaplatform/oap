@@ -32,7 +32,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import oap.util.Id;
+import oap.id.Id;
 import oap.util.Maps;
 import org.testng.annotations.Test;
 

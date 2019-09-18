@@ -22,46 +22,14 @@
  * SOFTWARE.
  */
 
-package oap.util;
+package oap.id;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import java.io.Serializable;
-
-/**
- * Created by igor.petrenko on 10.01.2018.
- * use annotation
- *
- * @see Id
- */
-@ToString
-@EqualsAndHashCode
-@Deprecated
-public class IdBean implements Serializable {
-    @Id
-    public String id;
-
-    public IdBean( String id ) {
-        this.id = id;
-    }
-
-    public IdBean() {
-        this( null );
-    }
-
-    /**
-     * use direct access
-     */
-    @Deprecated
-    @Id
-    public String getId() {
-        return id;
-    }
-
-    @Deprecated
-    @Id
-    public void setId( String id ) {
-        this.id = id;
-    }
+@Target( { ElementType.FIELD, ElementType.METHOD } )
+@Retention( RetentionPolicy.RUNTIME )
+public @interface Id {
 }
