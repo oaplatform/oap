@@ -24,5 +24,7 @@
 
 package oap.json.ext;
 
-public interface Ext {
+import java.io.Serializable;
+
+public interface Ext extends Serializable {
 }
