@@ -350,6 +350,18 @@ public class DictionaryParser {
         if( values.isEmpty() ) return;
 
         jsonGenerator.writeFieldName( VALUES );
+        serializeValues( jsonGenerator, values );
+    }
+
+    public static void serializeValues( List<? extends Dictionary> values, StringBuilder sb, boolean format ) {
+        try( JsonGenerator jsonGenerator = getJsonGenerator( sb, format ) ) {
+            writeValues( jsonGenerator, values );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private static void serializeValues( JsonGenerator jsonGenerator, List<? extends Dictionary> values ) throws IOException {
         jsonGenerator.writeStartArray();
 
         for( var value : values ) {
