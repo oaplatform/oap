@@ -355,7 +355,7 @@ public class DictionaryParser {
 
     public static void serializeValues( List<? extends Dictionary> values, StringBuilder sb, boolean format ) {
         try( JsonGenerator jsonGenerator = getJsonGenerator( sb, format ) ) {
-            writeValues( jsonGenerator, values );
+            serializeValues( jsonGenerator, values );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
