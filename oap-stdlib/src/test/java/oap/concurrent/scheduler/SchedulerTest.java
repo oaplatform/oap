@@ -79,19 +79,19 @@ public class SchedulerTest {
     @Test
     public void triggerNow() {
         AtomicInteger counter = new AtomicInteger( 0 );
-        var scheduled = Scheduler.scheduleWithFixedDelay( 500, SECONDS, () -> {
+        var scheduled = Scheduler.scheduleWithFixedDelay( 50, SECONDS, () -> {
             Threads.sleepSafely( 100 );
             System.out.println( "executed..." );
             counter.incrementAndGet();
         } );
         scheduled.triggerNow();
+        assertThat( counter.get() ).isEqualTo( 1 );
+        scheduled.triggerNow();
         assertThat( counter.get() ).isEqualTo( 2 );
         scheduled.triggerNow();
-        assertThat( counter.get() ).isEqualTo( 3 );
         scheduled.triggerNow();
         scheduled.triggerNow();
-        scheduled.triggerNow();
-        assertThat( counter.get() ).isEqualTo( 6 );
+        assertThat( counter.get() ).isEqualTo( 5 );
 
 //        unreliable test
 //        var threads = Executors.newFixedThreadPool( 10 );

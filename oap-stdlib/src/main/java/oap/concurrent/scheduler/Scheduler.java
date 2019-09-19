@@ -28,6 +28,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Throwables;
 import oap.util.Try;
+import org.joda.time.DateTimeUtils;
 import org.quartz.CronScheduleBuilder;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
@@ -37,6 +38,7 @@ import org.quartz.Trigger;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
 
+import java.util.Date;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -44,6 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.quartz.JobBuilder.newJob;
 import static org.quartz.TriggerBuilder.newTrigger;
 
@@ -78,7 +81,7 @@ public final class Scheduler {
     }
 
     public static Scheduled scheduleWithFixedDelay( long delay, TimeUnit unit, Runnable runnable ) {
-        return schedule( Try.catching( runnable )
+        return schedule( delay, unit, Try.catching( runnable )
                 .logOnException( log )
                 .propagate(),
             SimpleScheduleBuilder.simpleSchedule()
@@ -88,7 +91,7 @@ public final class Scheduler {
     }
 
     @SneakyThrows
-    private static Scheduled schedule( Runnable runnable, ScheduleBuilder<?> scheduleBuilder ) {
+    private static Scheduled schedule( long delay, TimeUnit unit, Runnable runnable, ScheduleBuilder<?> scheduleBuilder ) {
         String identity = identity( runnable );
 
 
@@ -99,6 +102,7 @@ public final class Scheduler {
 
         Trigger trigger = newTrigger()
             .withIdentity( identity + "/trigger" )
+            .startAt( new Date( DateTimeUtils.currentTimeMillis() + unit.toMillis( delay ) ) )
             .withSchedule( scheduleBuilder )
             .build();
 
@@ -110,7 +114,7 @@ public final class Scheduler {
     }
 
     public static Scheduled scheduleCron( String cron, Runnable runnable ) {
-        return schedule( Try.catching( runnable )
+        return schedule( 0, SECONDS, Try.catching( runnable )
                 .logOnException( log )
                 .propagate(),
             CronScheduleBuilder.cronSchedule( cron ) );
