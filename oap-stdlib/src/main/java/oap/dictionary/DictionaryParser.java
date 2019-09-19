@@ -365,20 +365,32 @@ public class DictionaryParser {
         jsonGenerator.writeStartArray();
 
         for( var value : values ) {
-            jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField( ID, value.getId() );
-            if( !value.isEnabled() ) jsonGenerator.writeBooleanField( ENABLED, false );
-            jsonGenerator.writeNumberField( EXTERNAL_ID, value.getExternalId() );
-            if( value instanceof DictionaryValue ) {
-                writeValues( jsonGenerator, value.getValues() );
-            }
-
-            writeProperties( jsonGenerator, value );
-
-            jsonGenerator.writeEndObject();
+            serializeChild( jsonGenerator, value );
         }
 
         jsonGenerator.writeEndArray();
+    }
+
+    public static void serializeChild( Dictionary value, StringBuilder sb, boolean format ) {
+        try( JsonGenerator jsonGenerator = getJsonGenerator( sb, format ) ) {
+            serializeChild( jsonGenerator, value );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private static void serializeChild( JsonGenerator jsonGenerator, Dictionary value ) throws IOException {
+        jsonGenerator.writeStartObject();
+        jsonGenerator.writeStringField( ID, value.getId() );
+        if( !value.isEnabled() ) jsonGenerator.writeBooleanField( ENABLED, false );
+        jsonGenerator.writeNumberField( EXTERNAL_ID, value.getExternalId() );
+        if( value instanceof DictionaryValue ) {
+            writeValues( jsonGenerator, value.getValues() );
+        }
+
+        writeProperties( jsonGenerator, value );
+
+        jsonGenerator.writeEndObject();
     }
 
     private static void writeProperties( JsonGenerator jsonGenerator, Dictionary value ) {
