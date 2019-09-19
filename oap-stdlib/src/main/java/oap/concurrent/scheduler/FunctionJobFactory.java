@@ -44,8 +44,10 @@ public class FunctionJobFactory extends SimpleJobFactory {
         return job != null ? job : super.newJob( bundle, scheduler );
     }
 
-    public void register( JobDetail jobDetail, Runnable runnable ) {
-        jobs.put( jobDetail.getKey(), new RunnableJob( runnable ) );
+    public RunnableJob register( JobDetail jobDetail, Runnable runnable ) {
+        var job = new RunnableJob( jobDetail, runnable );
+        jobs.put( jobDetail.getKey(), job );
+        return job;
     }
 
     public void unregister( JobKey key ) {

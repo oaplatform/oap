@@ -28,34 +28,30 @@ import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
 import oap.util.Lists;
 import oap.util.Try;
-import org.quartz.JobDetail;
-import org.quartz.SchedulerException;
 
 @Slf4j
 public class QuartzScheduled extends Scheduled {
-    private final JobDetail job;
-    private ScheduledRunnable runnable;
+    private final RunnableJob job;
 
-    QuartzScheduled( JobDetail job, ScheduledRunnable runnable ) {
+    QuartzScheduled( RunnableJob job ) {
         this.job = job;
-        this.runnable = runnable;
     }
 
     @Override
     @SneakyThrows
     public void cancel() {
         log.trace( "cancelling {}", job );
-        Scheduler.scheduler.deleteJob( job.getKey() );
-        Scheduler.jobFactory.unregister( job.getKey() );
+        Scheduler.scheduler.deleteJob( job.jobDetail.getKey() );
+        Scheduler.jobFactory.unregister( job.jobDetail.getKey() );
 
         int i = 10;
 
         while( --i >= 0 && Lists.contains( Scheduler.scheduler.getCurrentlyExecutingJobs(),
-            j -> j.getJobDetail().getKey().equals( job.getKey() ) ) ) {
+            j -> j.getJobDetail().getKey().equals( job.jobDetail.getKey() ) ) ) {
 
             try {
                 Lists.find( Scheduler.scheduler.getCurrentlyExecutingJobs(),
-                    j -> j.getJobDetail().getKey().equals( job.getKey() ) )
+                    j -> j.getJobDetail().getKey().equals( job.jobDetail.getKey() ) )
                     .ifPresent( Try.consume( j -> {
                         log.debug( "running job [{}]...", j.getJobDetail().getKey() );
                         Scheduler.scheduler.interrupt( j.getJobDetail().getKey() );
@@ -71,13 +67,7 @@ public class QuartzScheduled extends Scheduled {
 
     @Override
     public void triggerNow() {
-        runnable.waitFor( () -> {
-            try {
-                Scheduler.scheduler.triggerJob( job.getKey() );
-            } catch( SchedulerException e ) {
-                log.warn( e.getMessage(), e );
-            }
-        } );
+        job.triggerNow();
     }
 
     @Override

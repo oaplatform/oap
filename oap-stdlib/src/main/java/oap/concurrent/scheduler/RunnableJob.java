@@ -24,28 +24,34 @@
 
 package oap.concurrent.scheduler;
 
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.quartz.DisallowConcurrentExecution;
 import org.quartz.InterruptableJob;
 import org.quartz.Job;
+import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
-import org.quartz.UnableToInterruptJobException;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 @DisallowConcurrentExecution
+@Slf4j
 public class RunnableJob implements Job, InterruptableJob {
+    final JobDetail jobDetail;
     private final Runnable runnable;
     private final AtomicReference<Thread> runningThread = new AtomicReference<>();
 
 
-    public RunnableJob( Runnable runnable ) {
+    public RunnableJob( JobDetail jobDetail, Runnable runnable ) {
+        this.jobDetail = jobDetail;
         this.runnable = runnable;
     }
 
     @Override
-    public void execute( JobExecutionContext context ) throws JobExecutionException {
+    public synchronized void execute( JobExecutionContext context ) throws JobExecutionException {
         try {
+            log.trace( "executing {}", jobDetail );
             runningThread.set( Thread.currentThread() );
             if( !Thread.interrupted() ) {
                 runnable.run();
@@ -54,12 +60,22 @@ public class RunnableJob implements Job, InterruptableJob {
             throw new JobExecutionException( e );
         } finally {
             runningThread.set( null );
+            this.notifyAll();
         }
     }
 
     @Override
-    public void interrupt() throws UnableToInterruptJobException {
+    public void interrupt() {
         Thread thread = runningThread.getAndSet( null );
         if( thread != null ) thread.interrupt();
+    }
+
+    @SneakyThrows
+    public void triggerNow() {
+        synchronized( this ) {
+            log.trace( "forcefully triggering job {}", jobDetail );
+            Scheduler.scheduler.triggerJob( jobDetail.getKey() );
+            this.wait();
+        }
     }
 }
