@@ -21,21 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+
 package oap.concurrent.scheduler;
 
-import java.io.Closeable;
+class ScheduledRunnable implements Runnable {
+    private Runnable child;
 
-public abstract class Scheduled implements Closeable {
-    public static void cancel( Scheduled scheduled ) {
-        if( scheduled != null ) scheduled.cancel();
+    public ScheduledRunnable( Runnable child ) {
+        this.child = child;
     }
 
-    public abstract void cancel();
-
-    public abstract void triggerNow();
-
     @Override
-    public void close() {
-        cancel();
+    public void run() {
+        child.run();
+        synchronized( this ) {
+            this.notifyAll();
+        }
+    }
+
+    public void waitFor( Runnable runnable ) {
+        try {
+            synchronized( this ) {
+                runnable.run();
+                this.wait();
+            }
+        } catch( InterruptedException ignored ) {
+
+        }
     }
 }

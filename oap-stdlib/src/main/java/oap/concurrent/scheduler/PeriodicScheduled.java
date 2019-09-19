@@ -61,6 +61,11 @@ public class PeriodicScheduled extends Scheduled implements Runnable {
         Scheduled.cancel( scheduled );
     }
 
+    @Override
+    public void triggerNow() {
+        this.scheduled.triggerNow();
+    }
+
     public long lastExecuted() {
         return lastTimeExecuted.get();
     }

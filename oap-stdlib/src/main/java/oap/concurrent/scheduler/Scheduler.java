@@ -91,6 +91,8 @@ public final class Scheduler {
     private static Scheduled schedule( Runnable runnable, ScheduleBuilder<?> scheduleBuilder ) {
         String identity = identity( runnable );
 
+        var actual = new ScheduledRunnable( runnable );
+
         JobDetail job = newJob( RunnableJob.class )
             .withIdentity( identity + "/job" )
             .storeDurably()
@@ -101,11 +103,11 @@ public final class Scheduler {
             .withSchedule( scheduleBuilder )
             .build();
 
-        jobFactory.register( job, runnable );
+        jobFactory.register( job, actual );
 
         scheduler.scheduleJob( job, trigger );
         log.trace( "scheduling job {} with trigger {}", job, trigger );
-        return new QuartzScheduled( job );
+        return new QuartzScheduled( job, actual );
     }
 
     public static Scheduled scheduleCron( String cron, Runnable runnable ) {

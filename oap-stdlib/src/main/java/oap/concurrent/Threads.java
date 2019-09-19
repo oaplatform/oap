@@ -80,7 +80,6 @@ public class Threads {
     @SneakyThrows
     public static <T> T synchronously( Lock lock, Try.ThrowingSupplier<T> func ) {
         lock.lockInterruptibly();
-
         try {
             return func.get();
         } finally {

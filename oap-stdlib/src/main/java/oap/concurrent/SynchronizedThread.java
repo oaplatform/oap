@@ -59,7 +59,7 @@ public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyLi
 
     /**
      * {@link SynchronizedRunnable} has its own {@link SynchronizedRunnableReadyListener} notification scheme,
-     * henche 2 permits are needed to be released: the 1st is {@link SynchronizedThread}'s internal and
+     * hence 2 permits are needed to be released: the 1st is {@link SynchronizedThread}'s internal and
      * the 2nd is released by {@link #notifyReady()} from {@link SynchronizedRunnable}
      */
     public synchronized void start() {

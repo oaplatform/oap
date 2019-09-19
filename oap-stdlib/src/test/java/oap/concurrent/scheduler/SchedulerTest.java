@@ -24,15 +24,19 @@
 
 package oap.concurrent.scheduler;
 
+import oap.concurrent.Executors;
 import oap.concurrent.Threads;
+import oap.util.Try;
 import org.testng.annotations.Test;
 
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class SchedulerTest {
@@ -50,7 +54,7 @@ public class SchedulerTest {
         AtomicInteger c2 = new AtomicInteger();
         Runnable lambda1 = getLambda( c1 );
         Runnable lambda2 = getLambda( c2 );
-        assertEquals( lambda1.getClass(), lambda2.getClass() );
+        assertThat( lambda1.getClass() ).isEqualTo( lambda2.getClass() );
         try( Scheduled ignored = Scheduler.scheduleWithFixedDelay( 10, MILLISECONDS, lambda1 );
              Scheduled ignored2 = Scheduler.scheduleWithFixedDelay( 10, MILLISECONDS, lambda2 ) ) {
             assertEventually( 50, 30, () -> {
@@ -74,6 +78,33 @@ public class SchedulerTest {
         assertThat( value ).isGreaterThan( 0 );
         Threads.sleepSafely( 500 );
         assertThat( counter.get() ).isEqualTo( value );
+    }
+
+    @Test
+    public void triggerNow() throws ExecutionException, InterruptedException {
+        AtomicInteger counter = new AtomicInteger( 0 );
+        var scheduled = Scheduler.scheduleWithFixedDelay( 50, SECONDS, () -> {
+            Threads.sleepSafely( 100 );
+            counter.incrementAndGet();
+        } );
+        assertThat( counter.get() ).isEqualTo( 0 );
+        scheduled.triggerNow();
+        assertThat( counter.get() ).isEqualTo( 1 );
+        scheduled.triggerNow();
+        assertThat( counter.get() ).isEqualTo( 2 );
+        var threads = Executors.newFixedThreadPool( 10 );
+        var tasks = List.of(
+            threads.submit( scheduled::triggerNow ),
+            threads.submit( scheduled::triggerNow ),
+            threads.submit( scheduled::triggerNow ),
+            threads.submit( scheduled::triggerNow ),
+            threads.submit( scheduled::triggerNow ),
+            threads.submit( scheduled::triggerNow )
+        );
+        tasks.forEach( t -> Try.supply( t::get ).get() );
+        assertThat( counter.get() ).isEqualTo( 3 );
+        threads.shutdown();
+        scheduled.cancel();
     }
 
 }

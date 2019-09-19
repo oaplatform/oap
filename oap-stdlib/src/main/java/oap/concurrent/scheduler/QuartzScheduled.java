@@ -29,13 +29,16 @@ import oap.concurrent.Threads;
 import oap.util.Lists;
 import oap.util.Try;
 import org.quartz.JobDetail;
+import org.quartz.SchedulerException;
 
 @Slf4j
 public class QuartzScheduled extends Scheduled {
     private final JobDetail job;
+    private ScheduledRunnable runnable;
 
-    QuartzScheduled( JobDetail job ) {
+    QuartzScheduled( JobDetail job, ScheduledRunnable runnable ) {
         this.job = job;
+        this.runnable = runnable;
     }
 
     @Override
@@ -64,6 +67,17 @@ public class QuartzScheduled extends Scheduled {
             Threads.sleepSafely( 1000 );
         }
         log.trace( "cancelled {}", job );
+    }
+
+    @Override
+    public void triggerNow() {
+        runnable.waitFor( () -> {
+            try {
+                Scheduler.scheduler.triggerJob( job.getKey() );
+            } catch( SchedulerException e ) {
+                log.warn( e.getMessage(), e );
+            }
+        } );
     }
 
     @Override
