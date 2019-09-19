@@ -24,13 +24,13 @@
 
 package oap.util;
 
-import oap.testng.Asserts;
 import oap.testng.Fixtures;
 import oap.testng.ResetSystemTimer;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
+import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
 
@@ -58,9 +58,9 @@ public class DatesTest extends Fixtures {
 
     @Test
     public void testDurationToString() {
-        Asserts.assertString( Dates.durationToString( 1 ) ).isEqualTo( "0.001S" );
-        Asserts.assertString( Dates.durationToString( 1000 ) ).isEqualTo( "1S" );
-        Asserts.assertString( Dates.durationToString( 1001 ) ).isEqualTo( "1.001S" );
-        Asserts.assertString( Dates.durationToString( 1000 * 60 * 2 + 4567 ) ).isEqualTo( "2M 4.567S" );
+        assertString( Dates.durationToString( 1 ) ).isEqualTo( "0.001S" );
+        assertString( Dates.durationToString( 1000 ) ).isEqualTo( "1S" );
+        assertString( Dates.durationToString( 1001 ) ).isEqualTo( "1.001S" );
+        assertString( Dates.durationToString( 1000 * 60 * 2 + 4567 ) ).isEqualTo( "2M 4.567S" );
     }
 }

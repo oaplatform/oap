@@ -24,6 +24,8 @@
 
 package oap.http;
 
+import oap.testng.Fixtures;
+import oap.testng.ResetSystemTimer;
 import oap.util.Dates;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -34,7 +36,10 @@ import java.util.Locale;
 
 import static oap.testng.Asserts.assertString;
 
-public class CookieTest {
+public class CookieTest extends Fixtures {
+    {
+        fixture( ResetSystemTimer.FIXTURE );
+    }
     @Test
     public void expires() {
         Dates.setTimeFixed( 2019, 11, 11, 11, 11, 11, 11 );

@@ -24,13 +24,19 @@
 
 package oap.util;
 
+import oap.testng.Fixtures;
+import oap.testng.ResetSystemTimer;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class CounterTest {
+public class CounterTest extends Fixtures {
+    {
+        fixture( ResetSystemTimer.FIXTURE );
+    }
+
     @Test
-    public void hourly() throws Exception {
+    public void hourly() {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
         var counter = new Counter.HourlyCounter();
@@ -45,7 +51,7 @@ public class CounterTest {
     }
 
     @Test
-    public void daily() throws Exception {
+    public void daily() {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
         var counter = new Counter.DailyCounter();
@@ -60,7 +66,7 @@ public class CounterTest {
     }
 
     @Test
-    public void monthly() throws Exception {
+    public void monthly() {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
 
         var counter = new Counter.MonthlyCounter();
@@ -75,7 +81,7 @@ public class CounterTest {
     }
 
     @Test
-    public void merge() throws Exception {
+    public void merge() {
         Dates.setTimeFixed( 2017, 6, 2, 14, 16, 10 );
         var counter1 = new Counter.HourlyCounter();
         counter1.inc();

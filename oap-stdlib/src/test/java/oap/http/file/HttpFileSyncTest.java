@@ -27,6 +27,7 @@ package oap.http.file;
 import oap.io.FileSync;
 import oap.testng.Env;
 import oap.testng.Fixtures;
+import oap.testng.ResetSystemTimer;
 import oap.testng.TestDirectory;
 import org.apache.http.client.utils.DateUtils;
 import org.joda.time.DateTimeUtils;
@@ -51,6 +52,7 @@ public class HttpFileSyncTest extends Fixtures {
     private ClientAndServer mockServer;
 
     {
+        fixture( ResetSystemTimer.FIXTURE );
         fixture( TestDirectory.FIXTURE );
     }
 
