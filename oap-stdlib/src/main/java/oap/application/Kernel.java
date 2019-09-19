@@ -392,11 +392,14 @@ public class Kernel implements Closeable {
                                                      Set<String> startedServices ) {
 
         return forEachService( modules, services, startedServices, ( implName, service ) -> {
-            log.debug( "starting {} as {}", implName, service.name );
+            log.debug( "starting {} as {}...", implName, service.name );
 
             var si = sis.get( service.name );
             if( si != null ) {
                 startService( si );
+                log.debug( "starting {} as {}... Done", implName, service.name );
+            } else {
+                log.debug( "starting {} as {}... Skip", implName, service.name );
             }
             startedServices.add( service.name );
         } );
