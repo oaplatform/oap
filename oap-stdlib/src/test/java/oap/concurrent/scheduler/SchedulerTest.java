@@ -84,14 +84,15 @@ public class SchedulerTest {
             System.out.println( "executed..." );
             counter.incrementAndGet();
         } );
+        var init = counter.get();
         scheduled.triggerNow();
-        assertThat( counter.get() ).isEqualTo( 1 );
+        assertThat( counter.get() ).isEqualTo( init + 1 );
         scheduled.triggerNow();
-        assertThat( counter.get() ).isEqualTo( 2 );
+        assertThat( counter.get() ).isEqualTo( init + 2 );
         scheduled.triggerNow();
         scheduled.triggerNow();
         scheduled.triggerNow();
-        assertThat( counter.get() ).isEqualTo( 5 );
+        assertThat( counter.get() ).isEqualTo( init + 5 );
 
 //        unreliable test
 //        var threads = Executors.newFixedThreadPool( 10 );
