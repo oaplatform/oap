@@ -37,7 +37,6 @@ public class Tsv {
         assert line != null;
 
         var len = line.length();
-        assert len > 0;
 
         int start = 0, i = 0;
         boolean escape = false;
@@ -54,6 +53,6 @@ public class Tsv {
             }
             i++;
         }
-        if( i > start ) list.add( line.substring( start, i ) );
+        list.add( line.substring( start, i ) );
     }
 }

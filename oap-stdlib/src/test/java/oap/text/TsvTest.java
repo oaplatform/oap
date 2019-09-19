@@ -49,6 +49,12 @@ public class TsvTest {
     }
 
     @Test
+    public void testEmptyLine() {
+        Tsv.split( "", split );
+        assertThat( split ).containsExactly( "" );
+    }
+
+    @Test
     public void testSplitTab() {
         Tsv.split( "1\t5\tttt", split );
         assertThat( split ).containsExactly( "1", "5", "ttt" );
@@ -58,5 +64,17 @@ public class TsvTest {
     public void testSplitTabEscape() {
         Tsv.split( "1\\\\t5\tttt", split );
         assertThat( split ).containsExactly( "1\\\\t5", "ttt" );
+    }
+
+    @Test
+    public void testEmptyCell() {
+        Tsv.split( "start\t\tend", split );
+        assertThat( split ).containsExactly( "start", "", "end" );
+    }
+
+    @Test
+    public void testEmptyCellEnd() {
+        Tsv.split( "start\t\t", split );
+        assertThat( split ).containsExactly( "start", "", "" );
     }
 }
