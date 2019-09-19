@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 
+import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -76,5 +77,10 @@ public class TsvTest {
     public void testEmptyCellEnd() {
         Tsv.split( "start\t\t", split );
         assertThat( split ).containsExactly( "start", "", "" );
+    }
+    
+    @Test
+    public void testEscape() {
+        assertString( Tsv.escape( "1\n2\r3\t4\\5\\" ) ).isEqualTo( "1\\\n2\\\r3\\\t4\\\\5\\\\" );
     }
 }
