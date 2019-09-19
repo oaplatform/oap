@@ -142,6 +142,7 @@ public class Dates {
     public static String durationToString( long duration ) {
         var period = new Period( duration );
         var formatter = new PeriodFormatterBuilder()
+            .appendDays().appendSuffix( "D" ).appendSeparator( "` " )
             .appendHours().appendSuffix( "H" ).appendSeparator( " " )
             .appendMinutes().appendSuffix( "M" ).appendSeparator( " " )
             .appendSecondsWithOptionalMillis().appendSuffix( "S" ).toFormatter();
