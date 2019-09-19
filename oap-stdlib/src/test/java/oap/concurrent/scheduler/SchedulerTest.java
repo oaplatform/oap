@@ -24,7 +24,9 @@
 
 package oap.concurrent.scheduler;
 
+import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.Threads;
+import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +37,7 @@ import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertTrue;
 
+@Slf4j
 public class SchedulerTest {
 
     static Runnable getLambda( AtomicInteger counter ) {
@@ -78,6 +81,8 @@ public class SchedulerTest {
 
     @Test
     public void triggerNow() {
+
+        log.info( "current time {}", DateTime.now() );
         AtomicInteger counter = new AtomicInteger( 0 );
         var scheduled = Scheduler.scheduleWithFixedDelay( 50, SECONDS, () -> {
             Threads.sleepSafely( 100 );
