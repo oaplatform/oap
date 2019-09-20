@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.ServiceOne.Complex;
 import oap.application.linked.ServiceContainee;
 import oap.application.linked.ServiceContainer;
+import oap.concurrent.Threads;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -108,6 +109,8 @@ public class KernelTest {
                     assertThat( two.one2 ).isSameAs( serviceOne.get() );
                     assertTrue( two.started );
                 } );
+                //wait for scheduled service to be executed
+                Threads.sleepSafely( 2000 );
                 Optional<ServiceScheduled> serviceScheduled = kernel.service( "ServiceScheduled" );
                 assertThat( serviceScheduled ).isPresent().get().satisfies( scheduled ->
                     assertThat( scheduled.executed ).isTrue()
