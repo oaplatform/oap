@@ -78,4 +78,9 @@ public class RunnableJob implements Job, InterruptableJob {
             this.wait();
         }
     }
+
+    @Override
+    public String toString() {
+        return jobDetail.toString();
+    }
 }
