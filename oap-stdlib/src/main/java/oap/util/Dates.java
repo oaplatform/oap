@@ -26,13 +26,12 @@ package oap.util;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.joda.time.DateTimeZone;
-import org.joda.time.Period;
+import org.joda.time.Duration;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.DateTimeParser;
 import org.joda.time.format.ISODateTimeFormat;
-import org.joda.time.format.ISOPeriodFormat;
 import org.joda.time.format.PeriodFormatterBuilder;
 
 public class Dates {
@@ -139,13 +138,19 @@ public class Dates {
         return h( value ) * 24;
     }
 
+    public static long w( int value ) {
+        return d( value ) * 7;
+    }
+
     public static String durationToString( long duration ) {
-        var period = new Period( duration );
+        var d = Duration.standardSeconds( duration / 1000 ).plus( duration % 1000 );
         var formatter = new PeriodFormatterBuilder()
-            .appendDays().appendSuffix( "D" ).appendSeparator( "` " )
-            .appendHours().appendSuffix( "H" ).appendSeparator( " " )
-            .appendMinutes().appendSuffix( "M" ).appendSeparator( " " )
-            .appendSecondsWithOptionalMillis().appendSuffix( "S" ).toFormatter();
-        return formatter.print( period );
+            .appendWeeks().appendSuffix( "w" ).appendSeparator( " " )
+            .appendDays().appendSuffix( "d" ).appendSeparator( " " )
+            .appendHours().appendSuffix( "h" ).appendSeparator( " " )
+            .appendMinutes().appendSuffix( "m" ).appendSeparator( " " )
+            .appendSecondsWithOptionalMillis().appendSuffix( "s" )
+            .toFormatter();
+        return formatter.print( d.toPeriod().normalizedStandard() );
     }
 }

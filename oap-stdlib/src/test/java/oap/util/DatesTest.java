@@ -31,6 +31,11 @@ import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
 import static oap.testng.Asserts.assertString;
+import static oap.util.Dates.d;
+import static oap.util.Dates.h;
+import static oap.util.Dates.m;
+import static oap.util.Dates.s;
+import static oap.util.Dates.w;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.joda.time.DateTimeZone.UTC;
 
@@ -58,9 +63,15 @@ public class DatesTest extends Fixtures {
 
     @Test
     public void testDurationToString() {
-        assertString( Dates.durationToString( 1 ) ).isEqualTo( "0.001S" );
-        assertString( Dates.durationToString( 1000 ) ).isEqualTo( "1S" );
-        assertString( Dates.durationToString( 1001 ) ).isEqualTo( "1.001S" );
-        assertString( Dates.durationToString( 1000 * 60 * 2 + 4567 ) ).isEqualTo( "2M 4.567S" );
+        assertString( Dates.durationToString( 1 ) ).isEqualTo( "0.001s" );
+        assertString( Dates.durationToString( 1000 ) ).isEqualTo( "1s" );
+        assertString( Dates.durationToString( 1001 ) ).isEqualTo( "1.001s" );
+        assertString( Dates.durationToString( m( 2 ) + s( 4 ) + 567 ) ).isEqualTo( "2m 4.567s" );
+        assertString( Dates.durationToString( h( 4 ) + m( 2 ) + s( 4 ) + 567 ) ).isEqualTo( "4h 2m 4.567s" );
+        assertString( Dates.durationToString( d( 6 ) + h( 4 ) + m( 2 ) + s( 4 ) + 567 ) ).isEqualTo( "6d 4h 2m 4.567s" );
+        assertString( Dates.durationToString( w( 4 ) + d( 6 ) + h( 4 ) + m( 2 ) + s( 4 ) + 567 ) )
+            .isEqualTo( "4w 6d 4h 2m 4.567s" );
+
+        assertString( Dates.durationToString( w( 1 ) + m( 5 ) ) ).isEqualTo( "1w 5m" );
     }
 }
