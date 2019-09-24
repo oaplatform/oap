@@ -133,6 +133,7 @@ class InfluxDBReporter extends ScheduledReporter {
             reportGauges( gauges, builders );
             reportHistograms( histograms, builders );
 
+            builders.entrySet().removeIf( entry -> !entry.getValue().hasFields() );
             builders.values().forEach( b -> points.point( b.time( time, MILLISECONDS ).build() ) );
 
             if( log.isTraceEnabled() )
@@ -165,7 +166,7 @@ class InfluxDBReporter extends ScheduledReporter {
         SortedMap<String, Point.Builder> builders,
         BiConsumer<Point.Builder, Map.Entry<String, T>> func ) {
 
-        final Map<String, SortedMap<String, T>> ap = aggregate( counters );
+        var ap = aggregate( counters );
 
         ap.forEach( ( pointName, metrics ) -> {
             var builder = builders.computeIfAbsent( pointName, ( p ) -> {
@@ -174,7 +175,7 @@ class InfluxDBReporter extends ScheduledReporter {
                 return b;
             } );
 
-            for( Map.Entry<String, T> entry : metrics.entrySet() ) {
+            for( var entry : metrics.entrySet() ) {
                 func.accept( builder, entry );
             }
         } );
