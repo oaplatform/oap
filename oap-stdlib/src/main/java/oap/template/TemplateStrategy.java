@@ -25,30 +25,26 @@
 package oap.template;
 
 
-import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Optional;
-
-import static oap.reflect.Types.isInstance;
-import static oap.reflect.Types.isPrimitive;
 
 public interface TemplateStrategy<TLine extends JavaCTemplate.Line> {
     TemplateStrategy<JavaCTemplate.Line> DEFAULT = new TemplateStrategy<JavaCTemplate.Line>() {};
 
-    default void map( StringBuilder c, Type cc, TLine line, String field, String delimiter, Optional<Join> join ) {
+    default void map( StringBuilder c, FieldInfo cc, TLine line, String field, String delimiter, Optional<Join> join ) {
         if( join.map( Join::isFirst ).orElse( false ) ) {
             mapFirstJoin( c, line );
         }
 
         if( join.isPresent() && field.startsWith( "\"" ) ) {
             mapInterJoin( c, cc, line, field );
-        } else if( isInstance( Boolean.class, cc ) || isInstance( boolean.class, cc ) ) {
+        } else if( cc.isInstance( Boolean.class ) || cc.isInstance( boolean.class ) ) {
             mapBoolean( c, cc, line, field, join.isPresent() );
-        } else if( isPrimitive( cc ) ) {
+        } else if( cc.isPrimitive() ) {
             mapPrimitive( c, cc, line, field, join.isPresent() );
-        } else if( isInstance( Enum.class, cc ) )
+        } else if( cc.isInstance( Enum.class ) )
             mapEnum( c, cc, line, field, join.isPresent() );
-        else if( isInstance( Collection.class, cc ) ) {
+        else if( cc.isInstance( Collection.class ) ) {
             mapCollection( c, cc, line, field );
         } else if( !cc.equals( String.class ) ) {
             mapObject( c, cc, line, field, join.isPresent() );
@@ -66,37 +62,37 @@ public interface TemplateStrategy<TLine extends JavaCTemplate.Line> {
 
     default void mapLastJoin( StringBuilder c, TLine line ) {}
 
-    default void mapObject( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
+    default void mapObject( StringBuilder c, FieldInfo cc, TLine line, String field, boolean isJoin ) {
         c.append( "acc.accept( " );
         function( c, line.function, () -> escape( c, () -> c.append( " String.valueOf( " ).append( field ).append( " )" ) ) );
         c.append( " );" );
     }
 
-    default void mapInterJoin( StringBuilder c, Type cc, TLine line, String field ) {
+    default void mapInterJoin( StringBuilder c, FieldInfo cc, TLine line, String field ) {
         c.append( "acc.accept( " );
         function( c, line.function, () -> c.append( field ) );
         c.append( " );\n" );
     }
 
-    default void mapPrimitive( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
+    default void mapPrimitive( StringBuilder c, FieldInfo cc, TLine line, String field, boolean isJoin ) {
         c.append( "acc.accept( " );
         function( c, line.function, () -> c.append( field ) );
         c.append( " );" );
     }
 
-    default void mapString( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
+    default void mapString( StringBuilder c, FieldInfo cc, TLine line, String field, boolean isJoin ) {
         c.append( "acc.accept( " );
         function( c, line.function, () -> escape( c, () -> c.append( field ) ) );
         c.append( " );" );
     }
 
-    default void mapCollection( StringBuilder c, Type cc, TLine line, String field ) {
+    default void mapCollection( StringBuilder c, FieldInfo cc, TLine line, String field ) {
         c.append( "{acc.accept( '[' ).accept( " );
         function( c, line.function, () -> escape( c, () -> c.append( " Strings.join( " ).append( field ).append( " )" ) ) );
         c.append( ").accept( ']' );}" );
     }
 
-    default void mapEnum( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
+    default void mapEnum( StringBuilder c, FieldInfo cc, TLine line, String field, boolean isJoin ) {
         c.append( "acc.accept( " );
         function( c, line.function, () -> c.append( field ) );
         c.append( " );" );
@@ -126,7 +122,7 @@ public interface TemplateStrategy<TLine extends JavaCTemplate.Line> {
         c.append( " )" );
     }
 
-    default StringBuilder mapBoolean( StringBuilder c, Type cc, TLine line, String field, boolean isJoin ) {
+    default StringBuilder mapBoolean( StringBuilder c, FieldInfo cc, TLine line, String field, boolean isJoin ) {
         c.append( "acc.accept( " );
         function( c, line.function, () -> c.append( field ) );
         c.append( " );" );

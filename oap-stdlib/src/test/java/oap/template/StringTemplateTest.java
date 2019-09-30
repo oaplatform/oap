@@ -125,7 +125,7 @@ public class StringTemplateTest extends Fixtures {
 
         Tst test = new Tst();
         Test4 test4 = new Test4( 320, 50 );
-        test.test4 = Optional.of( test4 );
+        test.test4 = test4;
 
         var template = engine.getTemplate( "tmp", Container.class,
             Lists.of( new JavaCTemplate.Line( "WaH", "tst.test4.{a,\"xx\",b}", "" ) ), "œ", new JoinAsSingleTemplateStrategy() );
@@ -300,7 +300,8 @@ public class StringTemplateTest extends Fixtures {
         public Optional<Test1> test1 = Optional.empty();
         public Optional<Test2> test2 = Optional.empty();
         public Optional<Test3> test3 = Optional.empty();
-        public Optional<Test4> test4 = Optional.empty();
+        @Template.Nullable
+        public Test4 test4 = null;
 
         @AllArgsConstructor
         public static class Test1 {

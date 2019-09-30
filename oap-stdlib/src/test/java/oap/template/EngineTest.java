@@ -174,6 +174,12 @@ public class EngineTest extends Fixtures {
     }
 
     @Test
+    public void nestedNullable() {
+        assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "opt", "nullableTest2.testStr", "d" ) ), " " )
+            .renderString( new Test1( ) ) ).isEqualTo( "d" );
+    }
+
+    @Test
     public void nestedOptionalSeparators() {
         assertThat( engine.getTemplate( "test", Test1.class, Lists.of(
             line( "opt", "optTest2.testStr", "d" ),
@@ -221,6 +227,8 @@ public class EngineTest extends Fixtures {
         public int testInt2;
         public Test2 test2;
         public Optional<Test2> optTest2 = Optional.empty();
+        @Template.Nullable
+        public Test2 nullableTest2 = null;
         public List<String> array = new ArrayList<>();
         public Set<String> set = new HashSet<>();
 

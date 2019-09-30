@@ -27,8 +27,11 @@ package oap.template;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
 public interface Template<T, TLine extends Template.Line> {
-    Template<Object, Line> EMPTY = new Template<Object, Line>() {
+    Template<Object, Line> EMPTY = new Template<>() {
         @Override
         public Object render( Object source, Accumulator accumulator ) {
             accumulator.accept( source );
@@ -88,5 +91,9 @@ public interface Template<T, TLine extends Template.Line> {
                 this.parameters = parameters;
             }
         }
+    }
+
+    @Retention( RetentionPolicy.RUNTIME)
+    @interface Nullable {
     }
 }

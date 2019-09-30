@@ -1,7 +1,5 @@
 package oap.template;
 
-import java.lang.reflect.Type;
-
 public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTemplate.Line> {
 
     @Override
@@ -17,14 +15,14 @@ public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTempl
     }
 
     @Override
-    public void mapCollection( StringBuilder c, Type cc, JavaCTemplate.Line line, String field ) {
+    public void mapCollection( StringBuilder c, FieldInfo cc, JavaCTemplate.Line line, String field ) {
         c.append( "{acc.accept( '[' + " );
         function( c, line.function, () -> escape( c, () -> c.append( " Strings.join( " ).append( field ).append( " )" ) ) );
         c.append( " + ']' );}" );
     }
 
     @Override
-    public void mapObject( StringBuilder c, Type cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
+    public void mapObject( StringBuilder c, FieldInfo cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
         if( isJoin ) {
             c.append( "jb.append( " );
         } else {
@@ -35,7 +33,7 @@ public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTempl
     }
 
     @Override
-    public void mapPrimitive( StringBuilder c, Type cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
+    public void mapPrimitive( StringBuilder c, FieldInfo cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
         if( isJoin ) {
             c.append( "jb.append( " );
         } else {
@@ -46,14 +44,14 @@ public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTempl
     }
 
     @Override
-    public void mapInterJoin( StringBuilder c, Type cc, JavaCTemplate.Line line, String field ) {
+    public void mapInterJoin( StringBuilder c, FieldInfo cc, JavaCTemplate.Line line, String field ) {
         c.append( "jb.append( " );
         function( c, line.function, () -> c.append( field ) );
         c.append( " );\n" );
     }
 
     @Override
-    public void mapString( StringBuilder c, Type cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
+    public void mapString( StringBuilder c, FieldInfo cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
         if( isJoin ) {
             c.append( "jb.append( " );
         } else {
@@ -64,7 +62,7 @@ public class JoinAsSingleTemplateStrategy implements TemplateStrategy<JavaCTempl
     }
 
     @Override
-    public void mapEnum( StringBuilder c, Type cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
+    public void mapEnum( StringBuilder c, FieldInfo cc, JavaCTemplate.Line line, String field, boolean isJoin ) {
         if( isJoin ) {
             c.append( "jb.append( " );
         } else {
