@@ -41,7 +41,7 @@ import java.util.Optional;
  */
 @ToString
 @Slf4j
-class FieldInfo {
+public class FieldInfo {
     public final String field;
     public final Type type;
     public final Annotation[] annotations;
