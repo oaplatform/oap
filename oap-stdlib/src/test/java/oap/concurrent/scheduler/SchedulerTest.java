@@ -25,10 +25,13 @@
 package oap.concurrent.scheduler;
 
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Executors;
 import oap.concurrent.Threads;
+import oap.util.Try;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -100,18 +103,18 @@ public class SchedulerTest {
         assertThat( counter.get() ).isEqualTo( init + 5 );
 
 //        unreliable test
-//        var threads = Executors.newFixedThreadPool( 10 );
-//        var tasks = List.of(
-//            threads.submit( scheduled::triggerNow ),
-//            threads.submit( scheduled::triggerNow ),
-//            threads.submit( scheduled::triggerNow ),
-//            threads.submit( scheduled::triggerNow ),
-//            threads.submit( scheduled::triggerNow ),
-//            threads.submit( scheduled::triggerNow )
-//        );
-//        tasks.forEach( t -> Try.supply( t::get ).get() );
-//        assertThat( counter.get() ).isEqualTo( 3 );
-//        threads.shutdown();
+        var threads = Executors.newFixedThreadPool( 10 );
+        var tasks = List.of(
+            threads.submit( scheduled::triggerNow ),
+            threads.submit( scheduled::triggerNow ),
+            threads.submit( scheduled::triggerNow ),
+            threads.submit( scheduled::triggerNow ),
+            threads.submit( scheduled::triggerNow ),
+            threads.submit( scheduled::triggerNow )
+        );
+        tasks.forEach( t -> Try.supply( t::get ).get() );
+        assertThat( counter.get() ).isEqualTo( 11 );
+        threads.shutdown();
         scheduled.cancel();
     }
 

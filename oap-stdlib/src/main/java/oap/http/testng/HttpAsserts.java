@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.json.testng.JsonAsserts.assertJson;
 import static oap.testng.Asserts.assertString;
+import static oap.testng.Asserts.contentOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class HttpAsserts {
@@ -79,6 +80,10 @@ public class HttpAsserts {
 
     public static HttpAssertion assertGet( String uri, Map<String, Object> params, Map<String, Object> headers ) {
         return new HttpAssertion( client.get( uri, params, headers ) );
+    }
+
+    public static HttpAssertion assertPost( String uri, String content ) {
+        return assertPost( uri, content, ContentType.APPLICATION_JSON );
     }
 
     public static HttpAssertion assertPost( String uri, String content, ContentType contentType ) {
@@ -172,6 +177,14 @@ public class HttpAsserts {
                 .hasReason( reasonPhrase )
                 .hasContentType( ContentType.APPLICATION_JSON )
                 .isJson( body );
+        }
+
+        public HttpAssertion respondedJson( String json ) {
+            return this.respondedJson( HTTP_OK, "OK", json );
+        }
+
+        public HttpAssertion respondedJson( Class<?> contextClass, String resource ) {
+            return this.respondedJson( contentOfTestResource( contextClass, resource ) );
         }
     }
 }
