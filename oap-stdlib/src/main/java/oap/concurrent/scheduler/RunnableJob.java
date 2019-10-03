@@ -53,14 +53,12 @@ public class RunnableJob implements Job, InterruptableJob {
         try {
             log.trace( "executing {}", jobDetail );
             runningThread.set( Thread.currentThread() );
-            if( !Thread.interrupted() ) {
-                runnable.run();
-            }
+            if( !Thread.interrupted() ) runnable.run();
         } catch( Exception e ) {
             throw new JobExecutionException( e );
         } finally {
             runningThread.set( null );
-            this.notifyAll();
+            this.notify();
         }
     }
 
