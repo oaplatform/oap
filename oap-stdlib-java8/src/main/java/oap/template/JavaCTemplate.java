@@ -28,7 +28,7 @@ import cn.danielw.fop.Poolable;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.StringBuilderPool;
-import oap.tools.MemoryClassLoaderJava12;
+import oap.tools.MemoryClassLoaderJava8;
 import oap.util.Pair;
 import oap.util.Try;
 import org.apache.commons.lang3.ClassUtils;
@@ -83,6 +83,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 + "\n"
                 + "import oap.util.Strings;\n"
                 + "import oap.concurrent.StringBuilderPool;\n"
+                + "import cn.danielw.fop.Poolable;\n"
                 + "\n"
                 + "import java.util.*;\n"
                 + "import java.util.function.BiFunction;\n"
@@ -92,8 +93,8 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 + "\n"
                 + "   @Override\n"
                 + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
-                + "     try(val jbPool = StringBuilderPool.borrowObject()) {\n"
-                + "     val jb = jbPool.getObject();\n"
+                + "     try(Poolable<StringBuilder> jbPool = StringBuilderPool.borrowObject()) {\n"
+                + "     StringBuilder jb = jbPool.getObject();\n"
                 + "\n" );
 
             int size = pathAndDefault.size();
@@ -116,7 +117,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
             );
 
             String fullTemplateName = getClass().getPackage().getName() + "." + name;
-            ClassLoader mcl = new MemoryClassLoaderJava12( fullTemplateName, c.toString(), cacheFile );
+            ClassLoader mcl = new MemoryClassLoaderJava8( fullTemplateName, c.toString(), cacheFile );
             func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( fullTemplateName ).getDeclaredConstructor().newInstance();
 
         } catch( Exception e ) {

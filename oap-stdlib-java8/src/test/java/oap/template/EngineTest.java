@@ -204,7 +204,7 @@ public class EngineTest extends Fixtures {
 
     @Test
     public void nestedMap() {
-        val sample = new Test4( new Test3( Map.of( "mapKey", "mapValue" ) ) );
+        val sample = new Test4( new Test3( Maps.of2( "mapKey", "mapValue" ) ) );
         assertThat( engine.getTemplate( "test", Test4.class,
             singletonList( line( "f1", "test3.map.mapKey", "unknown" ) ), " " )
             .renderString( sample ) ).isEqualTo( "mapValue" );
@@ -212,7 +212,7 @@ public class EngineTest extends Fixtures {
 
     @Test
     public void mutableStrategy() {
-        val sample = new Test4( new Test3( Map.of( "mapKey", "mapValue" ) ) );
+        val sample = new Test4( new Test3( Maps.of2( "mapKey", "mapValue" ) ) );
         val strategy = new TestTemplateStrategy();
         final Template<Test4, Template.Line> template = engine.getTemplate( "test", Test4.class,
             Lists.of(

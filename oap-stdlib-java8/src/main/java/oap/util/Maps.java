@@ -60,50 +60,30 @@ public class Maps {
         return map;
     }
 
-    /**
-     * @see Map#of(Object, Object)
-     */
-    @Deprecated
     public static <K, V> LinkedHashMap<K, V> of2( K key1, V value1 ) {
         final LinkedHashMap<K, V> map = new LinkedHashMap<>();
         map.put( key1, value1 );
         return map;
     }
 
-    /**
-     * @see Map#of(Object, Object, Object, Object)
-     */
-    @Deprecated
     public static <K, V> LinkedHashMap<K, V> of2( K key1, V value1, K key2, V value2 ) {
         final LinkedHashMap<K, V> map = of2( key1, value1 );
         map.put( key2, value2 );
         return map;
     }
 
-    /**
-     * @see Map#of(Object, Object, Object, Object, Object, Object)
-     */
-    @Deprecated
     public static <K, V> LinkedHashMap<K, V> of2( K key1, V value1, K key2, V value2, K key3, V value3 ) {
         final LinkedHashMap<K, V> map = of2( key1, value1, key2, value2 );
         map.put( key3, value3 );
         return map;
     }
 
-    /**
-     * @see Map#of(Object, Object, Object, Object, Object, Object, Object, Object)
-     */
-    @Deprecated
     public static <K, V> LinkedHashMap<K, V> of2( K key1, V value1, K key2, V value2, K key3, V value3, K key4, V value4 ) {
         final LinkedHashMap<K, V> map = of2( key1, value1, key2, value2, key3, value3 );
         map.put( key4, value4 );
         return map;
     }
 
-    /**
-     * @see Map#of(Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object, Object)
-     */
-    @Deprecated
     public static <K, V> LinkedHashMap<K, V> of2( K key1, V value1, K key2, V value2, K key3, V value3, K key4, V value4, K key5, V value5 ) {
         final LinkedHashMap<K, V> map = of2( key1, value1, key2, value2, key3, value3, key4, value4 );
         map.put( key5, value5 );

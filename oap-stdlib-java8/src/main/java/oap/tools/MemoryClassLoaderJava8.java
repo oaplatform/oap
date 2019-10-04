@@ -50,11 +50,11 @@ import java.util.Map;
 import java.util.Set;
 
 @Slf4j
-public class MemoryClassLoaderJava12 extends ClassLoader {
+public class MemoryClassLoaderJava8 extends ClassLoader {
     private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
     private final MemoryFileManager manager = new MemoryFileManager( compiler );
 
-    public MemoryClassLoaderJava12( String classname, String filecontent, Path diskCache ) {
+    public MemoryClassLoaderJava8( String classname, String filecontent, Path diskCache ) {
         DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
         List<Source> list = new ArrayList<>();
 
@@ -83,7 +83,7 @@ public class MemoryClassLoaderJava12 extends ClassLoader {
 
         if( !list.isEmpty() ) {
             StringWriter out = new StringWriter();
-            JavaCompiler.CompilationTask task = compiler.getTask( out, manager, diagnostics, Lists.of( "--enable-preview", "--release", "12" ), null, list );
+            JavaCompiler.CompilationTask task = compiler.getTask( out, manager, diagnostics, Lists.of( "--release", "8" ), null, list );
             if( task.call() ) {
                 if( diskCache != null ) {
                     for( Source source : list ) {

@@ -50,7 +50,6 @@
                     <compilerArgs>
                         <arg>-parameters</arg>
                         <arg>-Xlint:unchecked</arg>
-                        <arg>-Xlint:preview</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
