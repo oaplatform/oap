@@ -1,0 +1,482 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) Open Application Platform Authors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package oap.template;
+
+import cn.danielw.fop.Poolable;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.StringBuilderPool;
+import oap.tools.MemoryClassLoaderJava12;
+import oap.util.Pair;
+import oap.util.Try;
+import org.apache.commons.lang3.ClassUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.commons.text.StringEscapeUtils;
+
+import java.io.BufferedReader;
+import java.io.StringReader;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Stack;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import static java.util.stream.Collectors.joining;
+import static oap.util.Pair.__;
+
+@Slf4j
+public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T, TLine> {
+    private static final String math = "/*+-%";
+    private final Map<String, String> overrides;
+    private final Map<String, Supplier<String>> mapper;
+    private BiFunction<T, Accumulator, ?> func;
+    private TemplateStrategy<TLine> map;
+
+    @SneakyThrows
+    @SuppressWarnings( "unchecked" )
+    JavaCTemplate( String name, Class<T> clazz, List<TLine> pathAndDefault, String delimiter, TemplateStrategy<TLine> map,
+                   Map<String, String> overrides, Map<String, Supplier<String>> mapper,
+                   Path cacheFile ) {
+        name = name.replaceAll( "[\\s%\\-;\\\\/:*?\"<>|]", "_" );
+        this.map = map;
+        this.overrides = overrides;
+        this.mapper = mapper;
+        StringBuilder c = new StringBuilder();
+
+        try {
+            AtomicInteger num = new AtomicInteger();
+            FieldStack fields = new FieldStack();
+
+            String className = clazz.getName().replace( '$', '.' );
+
+            c.append( "package " ).append( getClass().getPackage().getName() ).append( ";\n"
+                + "\n"
+                + "import oap.util.Strings;\n"
+                + "import oap.concurrent.StringBuilderPool;\n"
+                + "\n"
+                + "import java.util.*;\n"
+                + "import java.util.function.BiFunction;\n"
+                + "import com.google.common.base.CharMatcher;\n"
+                + "\n"
+                + "public  class " ).append( name ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
+                + "\n"
+                + "   @Override\n"
+                + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
+                + "     try(val jbPool = StringBuilderPool.borrowObject()) {\n"
+                + "     val jb = jbPool.getObject();\n"
+                + "\n" );
+
+            int size = pathAndDefault.size();
+            for( int x = 0; x < size; x++ ) {
+                addPath( clazz, pathAndDefault.get( x ), delimiter, c, num, fields, x + 1 >= size );
+            }
+
+
+            c.append( "\n"
+                + "     return acc.build();\n"
+                + "     }\n"
+                + "   }\n"
+                + "}" );
+
+            AtomicInteger line = new AtomicInteger( 0 );
+            log.trace( "\n{}", new BufferedReader( new StringReader( c.toString() ) )
+                .lines()
+                .map( l -> String.format( "%3d", line.incrementAndGet() ) + " " + l )
+                .collect( joining( "\n" ) )
+            );
+
+            String fullTemplateName = getClass().getPackage().getName() + "." + name;
+            ClassLoader mcl = new MemoryClassLoaderJava12( fullTemplateName, c.toString(), cacheFile );
+            func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( fullTemplateName ).getDeclaredConstructor().newInstance();
+
+        } catch( Exception e ) {
+            log.error( c.toString() );
+            throw e;
+        }
+    }
+
+    private void addPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c,
+                          AtomicInteger num, FieldStack fields,
+                          boolean last ) throws NoSuchMethodException, NoSuchFieldException {
+        AtomicInteger tab = new AtomicInteger( 5 );
+
+        c.append( "\n" );
+        tab( c, tab ).append( "// " ).append(
+            line.path != null ? line.path
+                : "\"" + StringEscapeUtils.escapeJava( line.defaultValue.toString() ) + "\"" ).append( "\n" );
+
+        if( line.path == null ) {
+            tab( c, tab ).append( "acc.accept( \"" ).append( StringEscapeUtils.escapeJava( line.defaultValue.toString() ) ).append( "\" );\n" );
+        } else {
+            if( pathExists( clazz, line ) ) {
+                buildPath( clazz, line, delimiter, c, num, fields, last, tab, false );
+            } else {
+                log.warn( "path {} not found", line );
+                map.pathNotFound( line.path );
+            }
+        }
+    }
+
+    private void buildPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c,
+                            AtomicInteger num, FieldStack fields, boolean last, AtomicInteger tab, boolean validation ) throws NoSuchFieldException, NoSuchMethodException {
+        String[] orPath = StringUtils.split( line.path, '|' );
+        int orIndex = 0;
+
+        for( int i = 0; i < orPath.length; i++ ) {
+            String path = orPath[i].trim();
+            String newPath = overrides.get( path );
+            orPath[i] = newPath != null ? newPath : path;
+        }
+
+        if( !validation ) map.beforeLine( c, line, delimiter );
+        addPathOr( new FieldInfo( clazz ), delimiter, c, num, fields, last, tab, orPath, orIndex, line );
+        if( !validation ) map.afterLine( c, line, delimiter );
+    }
+
+    private boolean pathExists( Class<T> clazz, TLine line ) throws NoSuchFieldException, NoSuchMethodException {
+        try {
+            buildPath( clazz, line, "", new StringBuilder(), new AtomicInteger(),
+                new FieldStack(), false, new AtomicInteger(), true );
+        } catch( Throwable e ) {
+            if( pathNotFound( e ) ) return false;
+            throw e;
+        }
+
+        return true;
+    }
+
+    private boolean pathNotFound( Throwable e ) {
+        if( e instanceof NoSuchFieldException || e instanceof NoSuchMethodException ) return true;
+        if( e.getCause() != null ) return pathNotFound( e.getCause() );
+        return false;
+    }
+
+    private void printDelimiter( String delimiter, StringBuilder c, boolean last, AtomicInteger tab ) {
+        if( map.printDelimiter() && !last && StringUtils.isNotEmpty( delimiter ) )
+            tab( c, tab ).append( "acc.accept('" ).append( delimiter ).append( "');\n" );
+    }
+
+    private void addPathOr( FieldInfo clazz, String delimiter, StringBuilder c, AtomicInteger num,
+                            FieldStack fields, boolean last, AtomicInteger tab,
+                            String[] orPath, int orIndex, TLine line ) throws NoSuchFieldException, NoSuchMethodException {
+        String currentPath = orPath[orIndex].trim();
+
+        Supplier<String> m = mapper.get( currentPath );
+        if( m != null ) {
+            printDefaultValue( tab( c, tab ), m.get(), line );
+        } else {
+
+            int sp = 0;
+            StringBuilder newPath = new StringBuilder( "s." );
+            MutableObject<FieldInfo> lc = new MutableObject<>( clazz );
+            AtomicInteger psp = new AtomicInteger( 0 );
+            AtomicInteger opts = new AtomicInteger( 0 );
+            while( sp >= 0 ) {
+                sp = currentPath.indexOf( '.', sp + 1 );
+
+                if( sp > 0 ) {
+                    Pair<FieldInfo, String> pnp = fields.computeIfAbsent( currentPath.substring( 0, sp ), Try.map( ( key ) -> {
+                        String prefix = StringUtils.trim( psp.get() > 1 ? key.substring( 0, psp.get() - 1 ) : "" );
+                        String suffix = StringUtils.trim( key.substring( psp.get() ) );
+
+                        boolean optional = lc.getValue().isOptional();
+                        boolean nullable = lc.getValue().isNullable();
+                        FieldInfo declaredField = getDeclaredFieldOrFunctionType(
+                            optional ? lc.getValue().getOptionalArgumentType() : lc.getValue(), suffix );
+
+                        String classType = declaredField.toJavaType();
+
+                        String field = "field" + num.incrementAndGet();
+
+                        Optional<Pair<FieldInfo, String>> rfP = Optional.ofNullable( fields.get( prefix ) );
+                        String rf = rfP.map( p -> p._2 + ( optional ? ".get()"
+                            : "" ) + "." + suffix ).orElse( "s." + key );
+
+                        if( optional ) {
+                            tab( c, tab ).append( "if( " ).append( rfP.map( p -> p._2 ).orElse( "s" ) ).append( ".isPresent() ) {\n" );
+                            opts.incrementAndGet();
+                            tabInc( tab );
+                            fields.up();
+                        } else if( nullable ) {
+                            tab( c, tab ).append( "if( " ).append( rfP.map( p -> p._2 ).orElse( "s" ) ).append( " != null ) ) {\n" );
+                            opts.incrementAndGet();
+                            tabInc( tab );
+                            fields.up();
+                        }
+
+                        tab( c, tab ).append( " " ).append( classType ).append( " " ).append( field ).append( " = " ).append( rf ).append( ";\n" );
+
+                        lc.setValue( declaredField );
+                        return __( declaredField, field );
+                    } ) );
+                    newPath = new StringBuilder( pnp._2 + "." );
+                    lc.setValue( pnp._1 );
+                    psp.set( sp + 1 );
+                } else {
+                    newPath.append( currentPath.substring( psp.get() ) );
+                }
+            }
+
+            int in = newPath.toString().lastIndexOf( '.' );
+            String pField = in > 0 ? newPath.substring( 0, in ) : newPath.toString();
+            String cField = newPath.substring( in + 1 );
+
+            boolean isJoin = cField.startsWith( "{" );
+            String[] cFields = isJoin
+                ? StringUtils.split( cField.substring( 1, cField.length() - 1 ), ',' ) : new String[] { cField };
+
+            FieldInfo parentClass = lc.getValue();
+            boolean isOptionalParent = parentClass.isOptional() && !cField.startsWith( "isPresent" );
+            boolean isNullableParent = parentClass.isNullable();
+            String optField = null;
+            if( isOptionalParent || isNullableParent ) {
+                opts.incrementAndGet();
+                tab( c, tab ).append( "if( " ).append( pField );
+                if( isOptionalParent ) c.append( ".isPresent() ) {\n" );
+                else c.append( " != null ) {\n" );
+                fields.up();
+                tabInc( tab );
+
+                if( isOptionalParent )
+                    parentClass = parentClass.getOptionalArgumentType();
+                optField = "opt" + num.incrementAndGet();
+                tab( c, tab ).append( " " ).append( parentClass.toJavaType() ).append( " " ).append( optField ).append( " = " ).append( pField );
+                if( isOptionalParent ) c.append( ".get();\n" );
+                else c.append( ";\n" );
+            }
+
+
+            for( int i = 0; i < cFields.length; i++ ) {
+                cField = StringUtils.trim( cFields[i] );
+
+                Optional<Join> join = isJoin ? Optional.of( new Join( i, cFields.length ) ) : Optional.empty();
+                if( cField.startsWith( "\"" ) ) {
+                    tab( c.append( "\n" ), tab );
+                    map.map( c, new FieldInfo( String.class ), line, cField, delimiter, join );
+                } else {
+                    boolean isParentMap = parentClass.isMap();
+
+                    String ff = ( isParentMap ? "get( \"" + StringUtils.replace( cField, "((", "(" ) + "\" )" : cField );
+
+                    if( isOptionalParent || isNullableParent ) {
+                        newPath = new StringBuilder( in > 0 ? optField + "." + ff : cField );
+                    } else {
+                        newPath = new StringBuilder( in > 0 ? pField + "." + ff : "s." + ff );
+                    }
+
+                    FieldInfo cc = in > 0 ? getDeclaredFieldOrFunctionType( parentClass, cField ) : parentClass;
+
+                    add( c, num, newPath.toString(), cc, parentClass, true, tab, orPath, orIndex,
+                        clazz, delimiter, fields, last || ( i < cFields.length - 1 ), line, join );
+                }
+            }
+
+
+            c.append( "\n" );
+
+            for( int i = 0; i < opts.get(); i++ ) {
+                fields.down();
+                tabDec( tab );
+                tab( c, tab ).append( "} else {\n" );
+                fields.up();
+                tabInc( tab );
+
+                if( orIndex + 1 < orPath.length ) {
+                    addPathOr( clazz, delimiter, c, num, fields, last, new AtomicInteger( tab.get() + 2 ), orPath, orIndex + 1, line );
+                } else {
+                    printDefaultValue( c, line.defaultValue, line );
+                    if( !map.ignoreDefaultValue() ) printDelimiter( delimiter, c, last, tab );
+                }
+                tabDec( tab );
+                fields.down();
+                tab( c, tab ).append( "}\n" );
+            }
+        }
+    }
+
+    private void tabInc( AtomicInteger tab ) {
+        tab.getAndUpdate( v -> v + 2 );
+    }
+
+    private void tabDec( AtomicInteger tab ) {
+        tab.getAndUpdate( v -> v - 2 );
+    }
+
+    private StringBuilder tab( StringBuilder sb, AtomicInteger tab ) {
+        for( int i = 0; i < tab.get(); i++ ) sb.append( ' ' );
+
+        return sb;
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private FieldInfo getDeclaredFieldOrFunctionType( FieldInfo type, String field ) throws NoSuchFieldException, NoSuchMethodException {
+        if( type.isParameterizedType() )
+            return getDeclaredFieldOrFunctionType( type.getRawType(), field );
+
+        int mi = StringUtils.indexOfAny( field, math );
+        if( mi > 0 ) return getDeclaredFieldOrFunctionType( type, field.substring( 0, mi ) );
+
+        Class type1 = ( Class ) type.type;
+        try {
+            int i = field.indexOf( '(' );
+            while( i > 0 && field.charAt( i + 1 ) == '(' ) {
+                i = field.indexOf( '(', i + 2 );
+            }
+            if( i < 0 ) {
+                if( type1.isAssignableFrom( Map.class ) ) {
+                    return new FieldInfo( field, Object.class, type.annotations );
+                }
+                Field declaredField = type1.getDeclaredField( field );
+                return new FieldInfo( field, declaredField );
+            } else {
+                String f = field.substring( 0, i );
+                Method declaredMethod = type1.getDeclaredMethod( f );
+                return new FieldInfo( f, declaredMethod.getGenericReturnType(), declaredMethod.getAnnotations() );
+            }
+        } catch( NoSuchMethodException | NoSuchFieldException e ) {
+            if( type1.getSuperclass() != null && !type1.getSuperclass().equals( Object.class ) )
+                return getDeclaredFieldOrFunctionType( new FieldInfo( field, type1.getGenericSuperclass(), type.annotations ), field );
+            else throw e;
+        }
+    }
+
+    private void add( StringBuilder c, AtomicInteger num, String newPath, FieldInfo cc, FieldInfo parentType,
+                      boolean nullable, AtomicInteger tab,
+                      String[] orPath, int orIndex, FieldInfo clazz, String delimiter,
+                      FieldStack fields, boolean last, TLine line, Optional<Join> join ) throws NoSuchFieldException, NoSuchMethodException {
+        String pfield = newPath;
+        boolean primitive = cc.isPrimitive();
+        if( !primitive ) {
+            pfield = "field" + num.incrementAndGet();
+            tab( c, tab ).append( " " ).append( cc.toJavaType() ).append( " " ).append( pfield ).append( " = " ).append( newPath ).append( ";\n" );
+        }
+        if( !primitive ) {
+            if( cc.isOptional() || cc.isNullable() ) {
+                FieldInfo cc1 = cc.getOptionalArgumentType();
+                if( cc.isOptional() ) {
+                    tab( c, tab ).append( "if( " ).append( pfield ).append( ".isPresent() ) {\n" );
+                } else {
+                    tab( c, tab ).append( "if( " ).append( pfield ).append( " != null ) {\n" );
+                }
+                fields.up();
+                add( c, num, pfield + ".get()", cc1, parentType, false, new AtomicInteger( tab.get() + 2 ),
+                    orPath, orIndex, clazz, delimiter, fields, last, line, join );
+                fields.down();
+                tab( c, tab ).append( "} else {\n" );
+
+                if( orIndex + 1 < orPath.length ) {
+                    fields.up();
+                    addPathOr( clazz, delimiter, c, num, fields, last, new AtomicInteger( tab.get() + 2 ), orPath, orIndex + 1, line );
+                    fields.down();
+                } else {
+                    printDefaultValue( tab( c, tab ), line.defaultValue, line );
+                    if( !map.ignoreDefaultValue() ) printDelimiter( delimiter, c, last, tab );
+                }
+                tab( c, tab ).append( "}\n" );
+            } else {
+                tab( c, tab );
+
+                if( nullable ) c.append( "if( " ).append( pfield ).append( " != null ) { " );
+
+                map.map( c, cc, line, pfield, delimiter, join );
+                printDelimiter( delimiter, c, last, tab );
+
+                if( nullable ) {
+                    c.append( "} else {" );
+                    printDefaultValue( c, line.defaultValue, line );
+                    if( !map.ignoreDefaultValue() ) printDelimiter( delimiter, c, last, tab );
+                    tab( c, tab ).append( "}\n" );
+                }
+            }
+        } else {
+            tab( c, tab );
+            map.map( c, cc, line, pfield, delimiter, join );
+            printDelimiter( delimiter, c, last, tab );
+        }
+    }
+
+    private void printDefaultValue( StringBuilder c, Object pfield, TLine line ) {
+        if( !map.ignoreDefaultValue() ) {
+            c.append( "acc.accept( " );
+            if( ClassUtils.isPrimitiveOrWrapper( pfield.getClass() ) ) c.append( pfield );
+            else map.function( c, line.function, () -> c.append( "\"" ).append( pfield ).append( "\"" ) );
+            c.append( " );\n" );
+        } else c.append( "{}\n" );
+    }
+
+    @Override
+    public <R> R render( T source, Accumulator<R> accumulator ) {
+        return ( R ) func.apply( source, accumulator );
+    }
+
+    @Override
+    public String renderString( T source ) {
+        try( Poolable<StringBuilder> sbPool = StringBuilderPool.borrowObject() ) {
+            return render( source, new StringAccumulator( sbPool.getObject() ) );
+        }
+    }
+
+    private static class FieldStack {
+        private Stack<HashMap<String, Pair<FieldInfo, String>>> stack = new Stack<>();
+
+        FieldStack() {
+            stack.push( new HashMap<>() );
+        }
+
+        public FieldStack up() {
+            stack.push( new HashMap<>( stack.peek() ) );
+
+            return this;
+        }
+
+        public FieldStack down() {
+            stack.pop();
+
+            return this;
+        }
+
+        public Pair<FieldInfo, String> computeIfAbsent( String key, Function<String, Pair<FieldInfo, String>> func ) {
+            Pair<FieldInfo, String> v = stack.peek().get( key );
+            if( v == null ) {
+                v = func.apply( key );
+                stack.peek().put( key, v );
+            }
+            return v;
+        }
+
+        public Pair<FieldInfo, String> get( String key ) {
+            return stack.peek().get( key );
+        }
+    }
+
+}

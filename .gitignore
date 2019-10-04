@@ -1,15 +1,18 @@
-*.versionsBackup
-workspace.xml
-target
-.surefire*
-*.iml
-modules.xml
+# Default ignored files
+libraries/
+shelf/
 compiler.xml
 encodings.xml
-scala_settings.xml
 misc.xml
+modules.xml
+*.iml
 vcs.xml
-libraries
+workspace.xml
+target/
+
+*.versionsBackup
+.surefire*
+scala_settings.xml
 inspectionProfiles
 kotlinc.xml
 .attach*

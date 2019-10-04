@@ -1,0 +1,141 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) Open Application Platform Authors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+package oap.json;
+
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.DatabindContext;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import lombok.extern.slf4j.Slf4j;
+import oap.io.Resources;
+import oap.util.Throwables;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+@Slf4j
+public class TypeIdFactory implements TypeIdResolver {
+    private static final ConcurrentHashMap<String, Class<?>> idToClass = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Class<?>, String> classToId = new ConcurrentHashMap<>();
+
+    static {
+        Resources.urls( "META-INF/json-mapping.properties" )
+            .forEach( url -> {
+                log.info( "loading {}...", url );
+                try( InputStream is = url.openStream() ) {
+                    final Properties properties = new Properties();
+                    properties.load( is );
+                    for( String key : properties.stringPropertyNames() )
+                        register( Class.forName( properties.getProperty( key ) ), key );
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                } catch( ClassNotFoundException e ) {
+                    throw Throwables.propagate( e );
+                }
+            } );
+    }
+
+    private JavaType baseType;
+
+    public static boolean containsId( String id ) {
+        return idToClass.containsKey( id );
+    }
+
+    public static boolean containsClass( Class<?> clazz ) {
+        return classToId.containsKey( clazz );
+    }
+
+    public static Class<?> get( String id ) {
+        return idToClass.get( id );
+    }
+
+    public static String get( Class clazz ) {
+        return classToId.get( clazz );
+    }
+
+    public static void register( Class<?> bean, String id ) {
+        idToClass.put( id, bean );
+        classToId.put( bean, id );
+    }
+
+    public static Set<String> keys() {
+        return idToClass.keySet();
+    }
+
+    public static Set<Class<?>> values() {
+        return classToId.keySet();
+    }
+
+    public static void clear() {
+        idToClass.clear();
+        classToId.clear();
+    }
+
+    @Override
+    public void init( JavaType baseType ) {
+        this.baseType = baseType;
+    }
+
+    @Override
+    public String idFromValue( Object value ) {
+        return idFromValueAndType( value, value.getClass() );
+    }
+
+    @Override
+    public String idFromValueAndType( Object value, Class<?> suggestedType ) {
+        return classToId.computeIfAbsent( suggestedType, ( k ) -> {
+            throw new IllegalStateException( "cannot find class '" + k + "'" );
+        } );
+    }
+
+    @Override
+    public String idFromBaseType() {
+        return idFromValueAndType( null, baseType.getRawClass() );
+    }
+
+    @Override
+    public JavaType typeFromId( DatabindContext context, String id ) {
+        final Class<?> clazz = idToClass.computeIfAbsent( id, ( k ) -> {
+            throw new IllegalStateException( "cannot find id '" + k + "'" );
+        } );
+        return TypeFactory.defaultInstance().constructSpecializedType( baseType, clazz );
+    }
+
+    @Override
+    public String getDescForKnownTypeIds() {
+        return idToClass.keySet().stream().collect( Collectors.joining( "," ) );
+    }
+
+    @Override
+    public JsonTypeInfo.Id getMechanism() {
+        return JsonTypeInfo.Id.CLASS;
+    }
+}

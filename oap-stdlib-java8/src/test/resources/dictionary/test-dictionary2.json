@@ -1,0 +1,47 @@
+{
+  "name": "test-dictionary2",
+  "values": [
+    {
+      "id": "TEXT",
+      "eid": "T",
+      "title": "Text",
+      "enabled": false
+    },
+    {
+      "id": "IMAGE",
+      "eid": "I",
+      "title": "Image Banner",
+      "enabled": true
+    },
+    {
+      "id": "RICH",
+      "eid": "R",
+      "title": "Rich Media",
+      "enabled": true
+    },
+    {
+      "id": "VIDEO",
+      "eid": "V",
+      "title": "VAST Video",
+      "enabled": true
+    },
+    {
+      "id": "NATIVE",
+      "eid": "N",
+      "title": "Native",
+      "enabled": false
+    },
+    {
+      "id": "UNKNOWN",
+      "eid": "U",
+      "title": "Unknown",
+      "enabled": false
+    },
+    {
+      "id": "-",
+      "eid": 0,
+      "title": "If LEFT JOIN is specified, any rows in the left table that don’t have matching rows in the right table will be assigned the default value - zeros",
+      "enabled": false
+    }
+  ]
+}

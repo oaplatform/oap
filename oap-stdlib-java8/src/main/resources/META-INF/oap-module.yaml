@@ -1,0 +1,35 @@
+name: oap
+services:
+  oap-http-io-server:
+    implementation: oap.http.Server
+    profile: http-io
+    name: oap-http-server
+    parameters:
+      workers: 500
+      registerStatic: false
+      keepAliveTimeout: 5s
+      originalServer: "OAP Server/4.0"
+      responseDate: true
+    supervision:
+      supervise: true
+
+  remoting:
+    profile: remoting
+    implementation: oap.application.remote.Remote
+    parameters:
+      server: "@service:oap-http-server"
+      context: remote
+      serialization: DEFAULT
+      kernel: "@kernel"
+    supervision:
+      supervise: true
+
+  remoting-listener:
+    profile: remoting
+    implementation: oap.http.SecureHttpListener
+    parameters:
+      port: 8980
+      server: "@service:oap-http-server"
+      private_network: false
+    supervision:
+      thread: true

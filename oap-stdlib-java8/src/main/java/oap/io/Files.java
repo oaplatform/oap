@@ -1,0 +1,505 @@
+/*
+ * The MIT License (MIT)
+ *
+ * Copyright (c) Open Application Platform Authors
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+package oap.io;
+
+import com.github.rholder.retry.RetryException;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.google.common.hash.Hashing;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import oap.io.IoStreams.Encoding;
+import oap.util.Lists;
+import oap.util.Sets;
+import oap.util.Stream;
+import oap.util.Strings;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.output.NullOutputStream;
+import org.apache.commons.lang3.StringUtils;
+import org.codehaus.plexus.util.DirectoryScanner;
+import org.joda.time.DateTime;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.UncheckedIOException;
+import java.net.URL;
+import java.nio.file.CopyOption;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Predicate;
+
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
+@Slf4j
+public final class Files {
+
+    public static Path deepPath( Path basePath, String name ) {
+        BiFunction<Integer, Integer, String> f = ( hash, bits ) -> String.valueOf( hash & ( ( 1 << bits ) - 1 ) );
+        int bitPerDir = 8;
+
+        int hash = Hashing.murmur3_32().hashBytes( name.getBytes() ).asInt();
+        String f1 = f.apply( hash, bitPerDir );
+        hash >>>= bitPerDir;
+        String f2 = f.apply( hash, bitPerDir );
+        hash >>>= bitPerDir;
+
+        return basePath
+            .resolve( f1 )
+            .resolve( f2 )
+            .resolve( f.apply( hash, bitPerDir ) )
+            .resolve( name );
+    }
+
+    public static ArrayList<Path> fastWildcard( String basePath, String wildcard ) {
+        return fastWildcard( Paths.get( basePath ), wildcard );
+    }
+
+    public static ArrayList<Path> fastWildcard( String basePath, String wildcard, FileWalkerCache cache ) {
+        return fastWildcard( Paths.get( basePath ), wildcard, cache );
+    }
+
+    public static ArrayList<Path> fastWildcard( Path basePath, String wildcard ) {
+        final ArrayList<Path> result = new ArrayList<>();
+        new FileWalker( basePath, wildcard ).walkFileTree( result::add );
+        return result;
+    }
+
+    public static ArrayList<Path> fastWildcard( Path basePath, String wildcard, FileWalkerCache cache ) {
+        final ArrayList<Path> result = new ArrayList<>();
+        new FileWalker( basePath, wildcard, cache ).walkFileTree( result::add );
+        return result;
+    }
+
+    public static ArrayList<Path> wildcard( String basePath, String wildcard ) {
+        return wildcard( Paths.get( basePath ), wildcard );
+    }
+
+    @SneakyThrows
+    public static ArrayList<Path> wildcard( Path basePath, String wildcard ) {
+        PathMatcher pm = FileSystems.getDefault()
+            .getPathMatcher( ( "glob:" + basePath + File.separator + wildcard ).replace( "\\", "\\\\" ) );
+        ArrayList<Path> result = new ArrayList<>();
+        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) {
+                if( pm.matches( file ) ) result.add( file );
+                return FileVisitResult.CONTINUE;
+            }
+        };
+        if( java.nio.file.Files.exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
+            java.nio.file.Files.walkFileTree( basePath, visitor );
+        Collections.sort( result );
+        return result;
+    }
+
+    @SneakyThrows
+    public static List<Path> deepCollect( Path basePath, Predicate<Path> predicate ) {
+        ArrayList<Path> result = new ArrayList<>();
+        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) {
+                if( predicate.test( file ) ) result.add( file );
+                return FileVisitResult.CONTINUE;
+            }
+        };
+        if( exists( basePath ) && java.nio.file.Files.isExecutable( basePath ) )
+            java.nio.file.Files.walkFileTree( basePath, visitor );
+        return result;
+    }
+
+    @SneakyThrows
+    @SuppressWarnings( "unchecked" )
+    public static <T> T readObject( Path path ) {
+        try( ObjectInputStream is = new ObjectInputStream( IoStreams.in( path, Encoding.PLAIN ) ) ) {
+            return ( T ) is.readObject();
+        }
+    }
+
+    public static String readString( String path ) {
+        return readString( Paths.get( path ), Encoding.from( path ) );
+    }
+
+    public static String readString( Path path ) {
+        return readString( path, Encoding.from( path ) );
+    }
+
+    @SneakyThrows
+    public static String readString( Path path, Encoding encoding ) {
+        try( InputStream in = IoStreams.in( path, encoding ) ) {
+            return Strings.readString( in );
+        }
+    }
+
+    @SneakyThrows
+    public static byte[] read( Path path ) {
+        return java.nio.file.Files.readAllBytes( path );
+    }
+
+    public static void writeString( String path, String value ) {
+        writeString( Paths.get( path ), value );
+    }
+
+    public static void writeString( Path path, String value ) {
+        writeString( path, Encoding.from( path ), value );
+    }
+
+    @SneakyThrows
+    public static void write( Path path, byte[] value ) {
+        ensureFile( path );
+        java.nio.file.Files.write( path, value );
+    }
+
+    public static void writeString( Path path, Encoding encoding, String value ) {
+        IoStreams.write( path, encoding, value );
+    }
+
+    public static void writeString( Path path, Encoding encoding, boolean append, String value ) {
+        IoStreams.write( path, encoding, value, append );
+    }
+
+    @SneakyThrows
+    public static void writeObject( Path path, Object value ) {
+        try( ObjectOutputStream os = new ObjectOutputStream( IoStreams.out( path, Encoding.PLAIN ) ) ) {
+            os.writeObject( value );
+        }
+    }
+
+    public static Stream<String> lines( Path path ) {
+        log.trace( "reading {}...", path );
+        final InputStream in = IoStreams.in( path );
+        return IoStreams.lines( in, true );
+    }
+
+    @SneakyThrows
+    public static void copyDirectory( Path from, Path to ) {
+        FileUtils.copyDirectory( from.toFile(), to.toFile() );
+    }
+
+    @SneakyThrows
+    public static void cleanDirectory( Path path ) {
+        FileUtils.cleanDirectory( path.toFile() );
+    }
+
+    @SneakyThrows
+    public static void delete( Path path ) {
+        val retryer = RetryerBuilder.<FileVisitResult>newBuilder()
+            .retryIfException()
+            .withStopStrategy( StopStrategies.stopAfterAttempt( 3 ) )
+            .build();
+
+        if( java.nio.file.Files.exists( path ) )
+            java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException {
+                    try {
+                        return retryer.call( () -> {
+                            if( java.nio.file.Files.exists( path ) )
+                                java.nio.file.Files.delete( path );
+                            return FileVisitResult.CONTINUE;
+                        } );
+                    } catch( ExecutionException e ) {
+                        throw new IOException( e.getCause() );
+                    } catch( RetryException e ) {
+                        throw new IOException( e.getLastFailedAttempt().getExceptionCause() );
+                    }
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory( Path path, IOException exc ) throws IOException {
+                    if( java.nio.file.Files.exists( path ) )
+                        java.nio.file.Files.delete( path );
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed( Path file, IOException exc ) throws IOException {
+                    log.error( file.toString(), exc );
+
+                    return FileVisitResult.CONTINUE;
+                }
+            } );
+    }
+
+    @SneakyThrows
+    public static void deleteEmptyDirectories( Path path, boolean deleteRoot ) {
+        if( java.nio.file.Files.exists( path ) )
+            java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException {
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException {
+                    return super.preVisitDirectory( dir, attrs );
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException {
+                    try {
+                        if( !path.equals( dir ) || deleteRoot ) {
+                            java.nio.file.Files.delete( dir );
+                        }
+                    } catch( DirectoryNotEmptyException ignore ) {
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+            } );
+    }
+
+    @SneakyThrows
+    private static void copyOrAppend( Path sourcePath, Encoding sourceEncoding, Path destPath,
+                                      Encoding destEncoding, int bufferSize, boolean append ) {
+        ensureFile( destPath );
+        try( InputStream is = IoStreams.in( sourcePath, sourceEncoding, bufferSize );
+             OutputStream os = IoStreams.out( destPath, destEncoding, bufferSize, append, true ) ) {
+            IOUtils.copy( is, os );
+        }
+    }
+
+    public static void copy( Path sourcePath, Encoding sourceEncoding,
+                             Path destPath, Encoding destEncoding, int bufferSize ) {
+        copyOrAppend( sourcePath, sourceEncoding, destPath, destEncoding, bufferSize, false );
+    }
+
+    public static void copy( Path sourcePath, Encoding sourceEncoding,
+                             Path destPath, Encoding destEncoding ) {
+        copy( sourcePath, sourceEncoding, destPath, destEncoding, IoStreams.DEFAULT_BUFFER );
+    }
+
+    public static void append( Path sourcePath, Encoding sourceEncoding,
+                               Path destPath, Encoding destEncoding, int bufferSize ) {
+        copyOrAppend( sourcePath, sourceEncoding, destPath, destEncoding, bufferSize, true );
+    }
+
+    public static void copyContent( Path basePath, Path destPath ) {
+        copyContent( basePath, destPath, Lists.of( "**/*" ), Lists.of() );
+    }
+
+    public static void copyContent( Path basePath, Path destPath, List<String> includes, List<String> excludes ) {
+        copyContent( basePath, destPath, includes, excludes, false, null );
+    }
+
+    public static void copyContent( Path basePath, Path destPath, List<String> includes, List<String> excludes,
+                                    boolean filtering, Function<String, Object> mapper ) {
+        DirectoryScanner scanner = new DirectoryScanner();
+        scanner.setBasedir( basePath.toFile() );
+        scanner.setIncludes( includes.toArray( new String[includes.size()] ) );
+        scanner.setExcludes( excludes.toArray( new String[excludes.size()] ) );
+        scanner.scan();
+        for( String included : scanner.getIncludedFiles() ) {
+            Path src = basePath.resolve( included );
+            Path dst = destPath.resolve( included );
+            if( filtering ) Files.writeString( dst, Strings.substitute( Files.readString( src ), mapper ) );
+            else copy( src, Encoding.PLAIN, dst, Encoding.PLAIN );
+
+            if( !Resources.IS_WINDOWS )
+                setPosixPermissions( dst, getPosixPermissions( src ) );
+        }
+    }
+
+    @SneakyThrows
+    public static void setPosixPermissions( Path path, Set<PosixFilePermission> permissions ) {
+        java.nio.file.Files.setPosixFilePermissions( path, permissions );
+    }
+
+    @SneakyThrows
+    public static void rename( Path sourcePath, Path destPath ) {
+        try {
+            ensureFile( destPath );
+            java.nio.file.Files.move( sourcePath, destPath, ATOMIC_MOVE, REPLACE_EXISTING );
+        } catch( IOException e ) {
+            throw new IOException( "cannot rename " + sourcePath + " to " + destPath, e );
+        }
+    }
+
+    public static void ensureFile( Path path ) {
+        ensureDirectory( path.getParent() );
+    }
+
+    public static Path ensureDirectory( Path path ) {
+        try {
+            java.nio.file.Files.createDirectories( path );
+            return path;
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static void move( Path source, Path target, CopyOption... options ) {
+        try {
+            Files.ensureFile( target );
+
+            java.nio.file.Files.move( source, target, options );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static void setPosixPermissions( Path path, PosixFilePermission... permissions ) {
+        setPosixPermissions( path, Sets.of( permissions ) );
+    }
+
+    @SneakyThrows
+    public static Set<PosixFilePermission> getPosixPermissions( Path path ) {
+        return java.nio.file.Files.getPosixFilePermissions( path, LinkOption.NOFOLLOW_LINKS );
+    }
+
+    @SneakyThrows
+    public static boolean isDirectoryEmpty( Path directory ) {
+        try( DirectoryStream<Path> dirStream = java.nio.file.Files.newDirectoryStream( directory ) ) {
+            return !dirStream.iterator().hasNext();
+        }
+    }
+
+    public static void setLastModifiedTime( Path path, DateTime dateTime ) {
+        setLastModifiedTime( path, dateTime.getMillis() );
+    }
+
+    @SneakyThrows
+    public static void setLastModifiedTime( Path path, long ms ) {
+        java.nio.file.Files.setLastModifiedTime( path, FileTime.fromMillis( ms ) );
+    }
+
+    public static String nameWithoutExtention( URL url ) {
+        File path = new File( url.getPath() );
+        return Strings.substringBeforeLast( path.getName(), "." );
+    }
+
+    public static long usableSpaceAtDirectory( Path path ) {
+        ensureDirectory( path );
+        return path.toFile().getUsableSpace();
+    }
+
+    public static boolean wildcardMatch( final String filename, final String wildcardMatcher ) {
+        int wmPosition = 0;
+        int fnPosition = 0;
+
+        int mp = 0;
+        int cp = 0;
+
+        final int fnLength = filename.length();
+
+        char wm;
+
+        while( fnPosition < fnLength && ( ( wm = wildcardMatcher.charAt( wmPosition ) ) != '*' ) ) {
+            if( wm != filename.charAt( fnPosition ) && wm != '?' ) {
+                return false;
+            }
+            wmPosition++;
+            fnPosition++;
+        }
+
+        final int wmLength = wildcardMatcher.length();
+
+        while( fnPosition < fnLength ) {
+            if( ( wm = wildcardMatcher.charAt( wmPosition ) ) == '*' ) {
+                if( ++wmPosition >= wmLength ) return true;
+
+                mp = wmPosition;
+                cp = fnPosition + 1;
+            } else if( wm == filename.charAt( fnPosition ) || wm == '?' ) {
+                wmPosition++;
+                fnPosition++;
+            } else {
+                wmPosition = mp;
+                fnPosition = cp++;
+            }
+        }
+
+        boolean noend;
+
+        while( ( noend = wmPosition < wmLength ) && wildcardMatcher.charAt( wmPosition ) == '*' ) {
+            wmPosition++;
+        }
+
+        return !noend;
+    }
+
+    public static void ensureFileEncodingValid( Path path ) {
+        try( InputStream is = IoStreams.in( path, Encoding.from( path ) ) ) {
+            IOUtils.copy( is, NullOutputStream.NULL_OUTPUT_STREAM );
+        } catch( Exception e ) {
+            throw new InvalidFileEncodingException( path, e );
+        }
+    }
+
+    public static boolean isFileEncodingValid( Path path ) {
+        try {
+            ensureFileEncodingValid( path );
+            return true;
+        } catch( InvalidFileEncodingException e ) {
+            log.trace( e.getMessage() );
+            return false;
+        }
+    }
+
+    @Deprecated
+    public static boolean fileNotEmpty( Path path ) {
+        return isFileNotEmpty( path );
+    }
+
+    public static boolean isFileNotEmpty( final Path path ) {
+        try( InputStream is = IoStreams.in( path );
+             InputStreamReader isr = new InputStreamReader( is );
+             BufferedReader reader = new BufferedReader( isr ) ) {
+            String line;
+            while( ( line = reader.readLine() ) != null ) if( StringUtils.isNotEmpty( line ) ) return true;
+            return false;
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static boolean exists( Path path ) {
+        return java.nio.file.Files.exists( path );
+    }
+}

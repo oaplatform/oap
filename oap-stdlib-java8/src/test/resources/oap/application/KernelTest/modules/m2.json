@@ -1,0 +1,31 @@
+{
+  "name": "m2",
+  "dependsOn": [
+    "m1"
+  ],
+  "services": {
+    "ServiceTwo": {
+      "implementation": "oap.application.ServiceTwo",
+      "parameters": {
+        "j": 1,
+        "one": "@service:ServiceOne"
+      },
+      "listen": {
+        "some": "@service:ServiceOne"
+      },
+      "supervision": {
+        "supervise": true
+      },
+      "dependsOn": [
+        "ServiceOne"
+      ]
+    },
+    "ServiceScheduled": {
+      "implementation": "oap.application.ServiceScheduled",
+      "supervision": {
+        "schedule": true,
+        "delay": "1s"
+      }
+    }
+  }
+}
