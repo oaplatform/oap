@@ -144,14 +144,19 @@ public class StringTemplateTest extends Fixtures {
 
         Tst test = new Tst();
         Test1 test1 = new Test1( "aid" );
-        test.test1 = Optional.of( test1 );
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id}" )
+        test.test1n = new Test1( null, test1 );
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2n.test2.id | tst.test1n.test1.id}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=aid" );
 
         Test2 test2 = new Test2( "sid" );
-        test.test2 = Optional.of( test2 );
-        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2.id | tst.test1.id}" )
+        test.test2n = new Test2( null, test2 );
+        assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test2n.test2.id | tst.test1n.test1.id}" )
             .renderString( new Container( test ) ) ).isEqualTo( "id=sid" );
+    }
+
+    @Test
+    public void testNullableAlternatives() {
+
     }
 
     @Test
@@ -297,20 +302,43 @@ public class StringTemplateTest extends Fixtures {
     }
 
     public static class Tst {
+        @Template.Nullable
+        public Test1 test1n = null;
+        @Template.Nullable
+        public Test2 test2n = null;
+
         public Optional<Test1> test1 = Optional.empty();
         public Optional<Test2> test2 = Optional.empty();
         public Optional<Test3> test3 = Optional.empty();
         @Template.Nullable
         public Test4 test4 = null;
 
-        @AllArgsConstructor
         public static class Test1 {
             public String id;
+            public Test1 test1;
+
+            public Test1( String id ) {
+                this.id = id;
+            }
+
+            public Test1( String id, Test1 test1 ) {
+                this.id = id;
+                this.test1 = test1;
+            }
         }
 
-        @AllArgsConstructor
         public static class Test2 {
             public String id;
+            public Test2 test2;
+
+            public Test2( String id ) {
+                this.id = id;
+            }
+
+            public Test2( String id, Test2 test2 ) {
+                this.id = id;
+                this.test2 = test2;
+            }
         }
 
         @AllArgsConstructor

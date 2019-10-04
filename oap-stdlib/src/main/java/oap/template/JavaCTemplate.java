@@ -225,7 +225,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                             tabInc( tab );
                             fields.up();
                         } else if( nullable ) {
-                            tab( c, tab ).append( "if( " ).append( rfP.map( p -> p._2 ).orElse( "s" ) ).append( " != null ) ) {\n" );
+                            tab( c, tab ).append( "if( " ).append( rfP.map( p -> p._2 ).orElse( "s" ) ).append( " != null ) {\n" );
                             opts.incrementAndGet();
                             tabInc( tab );
                             fields.up();
