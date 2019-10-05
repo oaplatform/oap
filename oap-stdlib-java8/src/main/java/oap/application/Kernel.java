@@ -199,7 +199,7 @@ public class Kernel implements Closeable {
         map.putAll( System.getProperties() );
         map.putAll( properties );
 
-        start( ApplicationConfiguration.load( appConfigPath, List.of( Binder.json.marshal( map ) ) ) );
+        start( ApplicationConfiguration.load( appConfigPath, Lists.of( Binder.json.marshal( map ) ) ) );
     }
 
     void start( ApplicationConfiguration config ) {

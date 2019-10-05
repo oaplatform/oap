@@ -36,6 +36,6 @@ public class PropertiesTest {
     @Test
     public void load() {
         java.util.Properties properties = Properties.read( urlOfTestResource( getClass(), "test.properties" ) );
-        assertThat( properties ).containsAllEntriesOf( Map.of( "a", "1", "b", "2" ) );
+        assertThat( properties ).containsAllEntriesOf( Maps.of2( "a", "1", "b", "2" ) );
     }
 }

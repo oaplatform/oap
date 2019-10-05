@@ -28,6 +28,7 @@ import oap.concurrent.Threads;
 import oap.io.Files;
 import oap.io.IoStreams;
 import oap.io.Resources;
+import oap.util.Maps;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Strings;
@@ -118,7 +119,7 @@ public final class Asserts {
     }
 
     public static String contentOfTestResource( Class<?> contextClass, String resource ) {
-        return contentOfTestResource( contextClass, resource, Map.of() );
+        return contentOfTestResource( contextClass, resource, Maps.empty() );
     }
 
     public static String contentOfTestResource( Class<?> contextClass, String resource, Map<String, Object> substitutions ) {

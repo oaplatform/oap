@@ -26,6 +26,7 @@ package oap.template;
 
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.util.Lists;
 import org.apache.commons.lang3.ClassUtils;
 
 import java.lang.annotation.Annotation;
@@ -52,7 +53,7 @@ public class FieldInfo {
 
     public FieldInfo( String field, Type type, Annotation[] annotations ) {
         if( log.isTraceEnabled() )
-            log.trace( "field = {}, type = {}, annotations = {}", field, type, List.of( annotations ) );
+            log.trace( "field = {}, type = {}, annotations = {}", field, type, Lists.of( annotations ) );
 
         this.field = field;
         this.type = type;
@@ -79,7 +80,7 @@ public class FieldInfo {
     }
 
     public boolean isNullable() {
-        return List.of( annotations ).stream().anyMatch( a -> a.annotationType().equals( Template.Nullable.class ) );
+        return Lists.of( annotations ).stream().anyMatch( a -> a.annotationType().equals( Template.Nullable.class ) );
     }
 
     public FieldInfo getOptionalArgumentType() {

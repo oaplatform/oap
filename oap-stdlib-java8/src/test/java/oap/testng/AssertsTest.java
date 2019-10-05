@@ -24,10 +24,10 @@
 
 package oap.testng;
 
+import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
-import java.util.Map;
 
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
@@ -44,7 +44,7 @@ public class AssertsTest {
 
     @Test
     public void contentOfTestResource() {
-        assertString( Asserts.contentOfTestResource( getClass(), "substitutions.txt", Map.of( "a", 1 ) ) )
+        assertString( Asserts.contentOfTestResource( getClass(), "substitutions.txt", Maps.of2( "a", 1 ) ) )
             .isEqualTo( "1 = b" );
     }
 

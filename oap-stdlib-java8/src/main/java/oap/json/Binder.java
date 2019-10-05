@@ -63,6 +63,7 @@ import oap.json.ext.ExtModule;
 import oap.reflect.Reflection;
 import oap.reflect.TypeRef;
 import oap.util.Dates;
+import oap.util.Lists;
 import oap.util.Try;
 import org.joda.time.ReadableInstant;
 
@@ -213,7 +214,7 @@ public class Binder {
     public static void update( Object obj, String json ) {
         try {
             String marshal = Binder.json.marshal( obj );
-            hoconWithConfigWithNullInclusion( List.of( json ) ).mapper.readerForUpdating( obj ).readValue( marshal );
+            hoconWithConfigWithNullInclusion( Lists.of( json ) ).mapper.readerForUpdating( obj ).readValue( marshal );
         } catch( IOException e ) {
             throw new JsonException( e );
         }
