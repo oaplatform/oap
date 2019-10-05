@@ -37,6 +37,10 @@
         <version>${revision}</version>
     </parent>
 
+    <properties>
+        <jackson.java8.version>2.9.2</jackson.java8.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -260,22 +264,22 @@
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-parameter-names</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.java8.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.java8.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.java8.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.java8.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
@@ -286,7 +290,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jdk8</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.java8.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
@@ -301,12 +305,12 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.java8.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-joda</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.java8.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>joda-time</artifactId>
@@ -325,7 +329,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-afterburner</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.java8.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
@@ -340,7 +344,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
-            <version>${jackson.version}</version>
+            <version>${jackson.java8.version}</version>
         </dependency>
 
         <dependency>
