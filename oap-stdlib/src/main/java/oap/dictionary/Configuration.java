@@ -71,8 +71,7 @@ public abstract class Configuration {
         if( logConfigs.isEmpty() && resourceLocation != null ) {
             log.info( "resourceLocation = {}", resourceLocation );
 
-            logConfigs.addAll( Resources.urls( resourceLocation, "json" ) );
-            logConfigs.addAll( Resources.urls( resourceLocation, "conf" ) );
+            logConfigs.addAll( Resources.urls( resourceLocation, "json", "conf" ) );
         }
 
         Preconditions.checkState( !logConfigs.isEmpty(), "couldn't load configs from mappingLocation "

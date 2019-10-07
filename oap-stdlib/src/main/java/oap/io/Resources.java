@@ -50,8 +50,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
 
 public final class Resources {
     public static final boolean IS_WINDOWS = System.getProperty( "os.name" ).contains( "indow" );
@@ -143,20 +141,22 @@ public final class Resources {
         }
     }
 
-    public static List<URL> urls( String atPackage, String ext ) {
-        final ExecutorService executorService = Executors.newFixedThreadPool(
+    public static List<URL> urls( String atPackage, String... ext ) {
+        var extSet = Stream.of( ext ).map( e -> "." + e ).toList();
+
+        var executorService = Executors.newFixedThreadPool(
             Runtime.getRuntime().availableProcessors(),
             new ThreadFactoryBuilder().setNameFormat( "reflections-%d" ).build()
         );
         try {
-            final ConfigurationBuilder configuration = new ConfigurationBuilder()
+            var configuration = new ConfigurationBuilder()
                 .setUrls( ClasspathHelper.forPackage( atPackage ) )
                 .setScanners( new ResourcesScanner() )
                 .filterInputsBy( new FilterBuilder().includePackage( atPackage ) )
                 .setExecutorService( executorService );
-            final Reflections reflections = new Reflections( configuration );
+            var reflections = new Reflections( configuration );
 
-            final Set<String> resources = reflections.getResources( in -> in.endsWith( "." + ext ) );
+            var resources = reflections.getResources( in -> Lists.anyMatch( extSet, in::endsWith ) );
             return new ArrayList<>( Sets.map( resources, r -> Thread.currentThread().getContextClassLoader().getResource( r ) ) );
         } finally {
             executorService.shutdown();
