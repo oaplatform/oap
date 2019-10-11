@@ -23,6 +23,7 @@
  */
 package oap.http;
 
+import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -31,12 +32,12 @@ import oap.concurrent.AsyncCallbacks;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.IoStreams;
-import oap.io.IoStreams.ThrowingIOExceptionConsumer;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
+import oap.util.Throwables;
 import oap.util.Try;
 import oap.util.Try.ThrowingRunnable;
 import okhttp3.MediaType;
@@ -44,7 +45,6 @@ import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import org.apache.http.Header;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.CookieSpecs;
@@ -54,6 +54,7 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.utils.DateUtils;
 import org.apache.http.concurrent.FutureCallback;
@@ -102,6 +103,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
@@ -118,7 +120,6 @@ import static oap.util.Dates.m;
 import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 import static org.apache.commons.lang3.StringUtils.split;
-import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class Client implements Closeable {
@@ -126,7 +127,6 @@ public class Client implements Closeable {
         .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
         .onTimeout( ( c ) -> log.error( "timeout" ) )
         .build();
-
     private static final FutureCallback<org.apache.http.HttpResponse> FUTURE_CALLBACK = new FutureCallback<>() {
         @Override
         public void completed( org.apache.http.HttpResponse result ) {
@@ -142,6 +142,8 @@ public class Client implements Closeable {
 
         }
     };
+
+    ;
     private final BasicCookieStore basicCookieStore;
     private ClientBuilder builder;
     private CloseableHttpAsyncClient client;
@@ -152,7 +154,6 @@ public class Client implements Closeable {
         this.basicCookieStore = basicCookieStore;
         this.builder = builder;
     }
-
 
     public static ClientBuilder custom( Path certificateLocation, String certificatePassword, int connectTimeout, int readTimeout ) {
         return new ClientBuilder( certificateLocation, certificatePassword, connectTimeout, readTimeout );
@@ -220,7 +221,8 @@ public class Client implements Closeable {
     }
 
     public Optional<Response> get( URI uri, Map<String, Object> headers, long timeout ) {
-        return execute( new HttpGet( uri ), headers, timeout );
+        var request = new HttpGet( uri );
+        return getResponse( request, timeout, execute( request, headers ) );
     }
 
     public Response post( String uri, Map<String, Object> params ) {
@@ -238,13 +240,13 @@ public class Client implements Closeable {
 
     public Optional<Response> post( String uri, Map<String, Object> params, Map<String, Object> headers, long timeout ) {
         try {
-            HttpPost request = new HttpPost( uri );
+            var request = new HttpPost( uri );
             request.setEntity( new UrlEncodedFormEntity( Stream.of( params.entrySet() )
                 .<NameValuePair>map( e -> new BasicNameValuePair( e.getKey(),
                     e.getValue() == null ? "" : e.getValue().toString() ) )
                 .toList()
             ) );
-            return execute( request, headers, timeout );
+            return getResponse( request, builder.timeout, execute( request, headers ) );
         } catch( UnsupportedEncodingException e ) {
             throw new UncheckedIOException( e );
         }
@@ -264,73 +266,81 @@ public class Client implements Closeable {
     }
 
     public Optional<Response> post( String uri, String content, ContentType contentType, Map<String, Object> headers, long timeout ) {
-        HttpPost request = new HttpPost( uri );
+        var request = new HttpPost( uri );
         request.setEntity( new StringEntity( content, contentType ) );
-        return execute( request, headers, timeout );
+        return getResponse( request, timeout, execute( request, headers ) );
     }
 
     public Optional<Response> post( String uri, byte[] content, long timeout ) {
-        HttpPost request = new HttpPost( uri );
+        var request = new HttpPost( uri );
         request.setEntity( new ByteArrayEntity( content, ContentType.APPLICATION_OCTET_STREAM ) );
-        return execute( request, Maps.empty(), timeout );
+        return getResponse( request, timeout, execute( request, Maps.empty() ) );
     }
 
     @SneakyThrows
-    public Response post( String uri, ThrowingIOExceptionConsumer<OutputStream> outputStream, ContentType contentType ) throws UncheckedIOException {
-        HttpPost request = new HttpPost( uri );
+    public OutputStreamWithResponse post( String uri, ContentType contentType ) throws UncheckedIOException {
+        var request = new HttpPost( uri );
 
-        return post( outputStream, contentType, request );
+        return post( contentType, request );
     }
 
     @SneakyThrows
-    public Response post( URI uri, ThrowingIOExceptionConsumer<OutputStream> outputStream, ContentType contentType ) throws UncheckedIOException {
-        HttpPost request = new HttpPost( uri );
+    public OutputStreamWithResponse post( URI uri, ContentType contentType ) throws UncheckedIOException {
+        var request = new HttpPost( uri );
 
-        return post( outputStream, contentType, request );
+        return post( contentType, request );
     }
 
-    private Response post( ThrowingIOExceptionConsumer<OutputStream> outputStream, ContentType contentType, HttpPost request ) throws UncheckedIOException {
+    private OutputStreamWithResponse post( ContentType contentType, HttpPost request ) throws UncheckedIOException {
         try {
             var pos = new PipedOutputStream();
             var pis = new PipedInputStream( pos );
             request.setEntity( new InputStreamEntity( pis, contentType ) );
 
-            return execute( request, Maps.empty(), builder.timeout, () -> {
-                outputStream.accept( pos );
-                pos.close();
-            } )
-                .orElseThrow( () -> new UncheckedIOException( new IOException( "no response" ) ) );
+            return new OutputStreamWithResponse( pos, execute( request, Maps.empty() ), request, builder.timeout );
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
     }
 
-
     public Response post( String uri, InputStream content, ContentType contentType ) {
-        HttpPost request = new HttpPost( uri );
+        var request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, contentType ) );
-        return execute( request, Maps.empty(), builder.timeout )
+        return getResponse( request, builder.timeout, execute( request, Maps.empty() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
+    private Optional<Response> getResponse( HttpRequestBase request, long timeout, CompletableFuture<Response> future ) {
+        try {
+            return Optional.of( timeout == 0 ? future.get() : future.get( timeout, MILLISECONDS ) );
+        } catch( ExecutionException e ) {
+            var newEx = new UncheckedIOException( request.getURI().toString(), new IOException( e.getCause().getMessage(), e.getCause() ) );
+            builder.onError.accept( this, newEx );
+            throw newEx;
+        } catch( InterruptedException | TimeoutException e ) {
+            this.builder.onTimeout.accept( this );
+            return Optional.empty();
+        }
+    }
+
     public Response post( String uri, InputStream content, ContentType contentType, Map<String, Object> headers ) {
-        HttpPost request = new HttpPost( uri );
+        var request = new HttpPost( uri );
         request.setEntity( new InputStreamEntity( content, contentType ) );
-        return execute( request, headers, builder.timeout )
+        return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response post( String uri, byte[] content, ContentType contentType, Map<String, Object> headers ) {
-        HttpPost request = new HttpPost( uri );
+        var request = new HttpPost( uri );
         request.setEntity( new ByteArrayEntity( content, contentType ) );
-        return execute( request, headers, builder.timeout )
+        return getResponse( request, builder.timeout, execute( request, headers ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public Response put( String uri, String content, ContentType contentType ) {
-        HttpPut request = new HttpPut( uri );
+        var request = new HttpPut( uri );
         request.setEntity( new StringEntity( content, contentType ) );
-        return execute( request, Maps.empty(), builder.timeout )
+        return getResponse( request, builder.timeout, execute( request, Maps.empty() ) )
             .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
@@ -347,8 +357,9 @@ public class Client implements Closeable {
     }
 
     public Response delete( String uri, Map<String, Object> headers, long timeout ) {
-        HttpDelete request = new HttpDelete( uri );
-        return execute( request, headers, timeout ).orElseThrow( () -> new RuntimeException( "no response" ) );
+        var request = new HttpDelete( uri );
+        return getResponse( request, builder.timeout, execute( request, headers ) )
+            .orElseThrow( () -> new RuntimeException( "no response" ) );
     }
 
     public List<Cookie> getCookies() {
@@ -359,52 +370,73 @@ public class Client implements Closeable {
         basicCookieStore.clear();
     }
 
-    private Optional<Response> execute( HttpUriRequest request, Map<String, Object> headers, long timeout ) {
-        return execute( request, headers, timeout, () -> {} );
+    private CompletableFuture<Response> execute( HttpUriRequest request, Map<String, Object> headers ) {
+        return execute( request, headers, () -> {} );
     }
 
     @SneakyThrows
-    private Optional<Response> execute( HttpUriRequest request, Map<String, Object> headers,
-                                        long timeout, ThrowingRunnable<IOException> asyncRunnable ) throws UncheckedIOException {
-        try {
-            headers.forEach( ( name, value ) -> request.setHeader( name, value == null ? "" : value.toString() ) );
+    private CompletableFuture<Response> execute( HttpUriRequest request, Map<String, Object> headers,
+                                                 ThrowingRunnable<IOException> asyncRunnable ) {
+//        try {
+        headers.forEach( ( name, value ) -> request.setHeader( name, value == null ? "" : value.toString() ) );
 
-            Future<HttpResponse> future = client.execute( request, FUTURE_CALLBACK );
-            asyncRunnable.run();
-            HttpResponse response = timeout == 0 ? future.get()
-                : future.get( timeout, MILLISECONDS );
+        var completableFuture = new CompletableFuture<Response>();
 
-            Map<String, String> responsHeaders = headers( response );
-            Response result;
-            if( response.getEntity() != null ) {
-                HttpEntity entity = response.getEntity();
-                result = new Response(
-                    response.getStatusLine().getStatusCode(),
-                    response.getStatusLine().getReasonPhrase(),
-                    responsHeaders,
-                    Optional.ofNullable( entity.getContentType() )
-                        .map( ct -> ContentType.parse( entity.getContentType().getValue() ) ),
-                    entity.getContent()
-                );
-            } else result = new Response(
-                response.getStatusLine().getStatusCode(),
-                response.getStatusLine().getReasonPhrase(),
-                responsHeaders
-            );
-            builder.onSuccess.accept( this );
-            return Optional.of( result );
-        } catch( ExecutionException e ) {
-            var newEx = new UncheckedIOException( request.getURI().toString(), new IOException( e.getCause().getMessage(), e.getCause() ) );
-            builder.onError.accept( this, newEx );
-            throw newEx;
-        } catch( IOException e ) {
-            var newEx = new UncheckedIOException( request.getURI().toString(), e );
-            builder.onError.accept( this, newEx );
-            throw newEx;
-        } catch( InterruptedException | TimeoutException e ) {
-            builder.onTimeout.accept( this );
-            return Optional.empty();
-        }
+        client.execute( request, new FutureCallback<>() {
+            @Override
+            public void completed( HttpResponse response ) {
+                try {
+                    var responsHeaders = headers( response );
+                    Response result;
+                    if( response.getEntity() != null ) {
+                        var entity = response.getEntity();
+                        result = new Response(
+                            response.getStatusLine().getStatusCode(),
+                            response.getStatusLine().getReasonPhrase(),
+                            responsHeaders,
+                            Optional.ofNullable( entity.getContentType() )
+                                .map( ct -> ContentType.parse( entity.getContentType().getValue() ) ),
+                            entity.getContent()
+                        );
+                    } else result = new Response(
+                        response.getStatusLine().getStatusCode(),
+                        response.getStatusLine().getReasonPhrase(),
+                        responsHeaders
+                    );
+                    builder.onSuccess.accept( Client.this );
+
+                    completableFuture.complete( result );
+                } catch( IOException e ) {
+                    completableFuture.completeExceptionally( e );
+                }
+            }
+
+            @Override
+            public void failed( Exception ex ) {
+                completableFuture.completeExceptionally( ex );
+            }
+
+            @Override
+            public void cancelled() {
+                completableFuture.cancel( false );
+            }
+        } );
+
+        asyncRunnable.run();
+
+        return completableFuture;
+//        } catch( ExecutionException e ) {
+//            var newEx = new UncheckedIOException( request.getURI().toString(), new IOException( e.getCause().getMessage(), e.getCause() ) );
+//            builder.onError.accept( this, newEx );
+//            throw newEx;
+//        } catch( IOException e ) {
+//            var newEx = new UncheckedIOException( request.getURI().toString(), e );
+//            builder.onError.accept( this, newEx );
+//            throw newEx;
+//        } catch( InterruptedException | TimeoutException e ) {
+//            builder.onTimeout.accept( this );
+//            return Optional.empty();
+//        }
     }
 
     @SneakyThrows
@@ -532,6 +564,8 @@ public class Client implements Closeable {
         @Nullable
         @SneakyThrows
         public byte[] content() {
+            Preconditions.checkArgument( content == null || inputStream != null, "closed" );
+
             if( content == null && inputStream != null ) {
                 synchronized( this ) {
                     if( content == null ) {
@@ -548,6 +582,8 @@ public class Client implements Closeable {
         }
 
         public String contentString() {
+            Preconditions.checkNotNull( inputStream, "closed" );
+
             var content = content();
 
             if( content == null ) return null;
@@ -686,6 +722,64 @@ public class Client implements Closeable {
 
         public Client build() {
             return new Client( basicCookieStore, this );
+        }
+    }
+
+    public class OutputStreamWithResponse extends OutputStream implements Closeable {
+        private final CompletableFuture<Response> completableFuture;
+        private final HttpRequestBase request;
+        private final long timeout;
+        private PipedOutputStream pos;
+        private Response response;
+
+        public OutputStreamWithResponse( PipedOutputStream pos, CompletableFuture<Response> completableFuture, HttpRequestBase request, long timeout ) {
+            this.pos = pos;
+            this.completableFuture = completableFuture;
+            this.request = request;
+            this.timeout = timeout;
+        }
+
+        @Override
+        public void write( int b ) throws IOException {
+            pos.write( b );
+        }
+
+        @Override
+        public void write( byte[] b ) throws IOException {
+            pos.write( b );
+        }
+
+        @Override
+        public void write( byte[] b, int off, int len ) throws IOException {
+            pos.write( b, off, len );
+        }
+
+        @Override
+        public void flush() throws IOException {
+            pos.flush();
+        }
+
+        public Response waitAndGetResponse() {
+            try {
+                pos.flush();
+                pos.close();
+                pos = null;
+
+                return ( response = getResponse( request, timeout, completableFuture )
+                    .orElseThrow( () -> new oap.concurrent.TimeoutException( "no response" ) ) );
+            } catch( IOException e ) {
+                throw Throwables.propagate( e );
+            }
+        }
+
+        @Override
+        public void close() {
+            try {
+                if( pos != null ) pos.close();
+            } catch( IOException ignored ) {
+            }
+
+            if( response != null ) response.close();
         }
     }
 }

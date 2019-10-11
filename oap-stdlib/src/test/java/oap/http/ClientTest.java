@@ -37,6 +37,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,10 +45,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.testng.Asserts.assertFile;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockserver.integration.ClientAndServer.startClientAndServer;
-import static org.mockserver.matchers.Times.once;
-import static org.mockserver.model.HttpRequest.request;
-import static org.mockserver.model.HttpResponse.response;
 
 @Slf4j
 public class ClientTest extends Fixtures {
@@ -121,7 +118,7 @@ public class ClientTest extends Fixtures {
     }
 
     @Test
-    public void postOutputStream() {
+    public void postOutputStream() throws IOException {
         mockServer.when( HttpRequest.request()
                 .withMethod( "POST" )
                 .withPath( "/test" )
@@ -129,15 +126,15 @@ public class ClientTest extends Fixtures {
             Times.once()
         ).respond( HttpResponse.response().withStatusCode( HTTP_OK ).withBody( "ok" ) );
 
-        response = Client.DEFAULT.post( "http://localhost:" + PORT + "/test", os -> {
+        try( var os = Client.DEFAULT.post( "http://localhost:" + PORT + "/test", ContentType.TEXT_PLAIN ) ) {
             os.write( "test".getBytes() );
             os.write( '\n' );
             os.write( "test1".getBytes() );
 
-        }, ContentType.TEXT_PLAIN );
+            response = os.waitAndGetResponse();
 
-        assertThat( response ).isNotNull();
-        assertThat( response.contentString() ).isEqualTo( "ok" );
-
+            assertThat( response ).isNotNull();
+            assertThat( response.contentString() ).isEqualTo( "ok" );
+        }
     }
 }
