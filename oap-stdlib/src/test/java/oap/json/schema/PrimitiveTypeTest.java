@@ -80,6 +80,12 @@ public class PrimitiveTypeTest extends AbstractSchemaTest {
     }
 
     @Test
+    public void stringDate() {
+        String schema = "{\"type\": \"string\", \"pattern\": \"([12]\\\\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\\\d|3[01]))\"}";
+        assertOk( schema, "\"2019-09-21\"" );
+    }
+
+    @Test
     public void date() {
         String schema = "{\"type\": \"date\"}";
 
