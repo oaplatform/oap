@@ -760,6 +760,7 @@ public class Client implements Closeable {
         }
 
         public Response waitAndGetResponse() {
+            Preconditions.checkState( response == null );
             try {
                 pos.flush();
                 pos.close();
@@ -774,12 +775,11 @@ public class Client implements Closeable {
 
         @Override
         public void close() {
-            try {
-                if( pos != null ) pos.close();
-            } catch( IOException ignored ) {
-            }
+            if( response == null ) {
+                waitAndGetResponse();
 
-            if( response != null ) response.close();
+                response.close();
+            }
         }
     }
 }
