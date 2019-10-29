@@ -38,7 +38,7 @@
     </parent>
 
     <properties>
-        <jackson.java8.version>2.9.2</jackson.java8.version>
+        <jackson.java8.version>2.10.0</jackson.java8.version>
     </properties>
 
     <build>
