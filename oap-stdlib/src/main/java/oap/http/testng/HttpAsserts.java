@@ -55,9 +55,12 @@ public class HttpAsserts {
         .build();
 
     @Deprecated
-    public static String HTTP_PREFIX() { return httpPrefix(); }
+    public static String HTTP_PREFIX() {
+        return httpPrefix();
+    }
 
-    public static String httpPrefix() { return "http://localhost:" + Env.port(); }
+    public static String httpPrefix() {
+        return "http://localhost:" + Env.port(); }
 
     @Deprecated
     public static String HTTP_URL( String suffix ) {
