@@ -67,7 +67,7 @@ public class ApplicationConfiguration {
     public static ApplicationConfiguration load( URL appConfigPath, List<String> configs ) {
         log.trace( "application configurations: {}, configs = {}", appConfigPath, asList( configs ) );
 
-        return Binder.hoconWithConfig( configs )
+        return Binder.hoconWithConfig( Lists.concat( configs, List.of( getEnvConfig() ) ) )
             .unmarshal( ApplicationConfiguration.class, appConfigPath );
     }
 
@@ -80,7 +80,7 @@ public class ApplicationConfiguration {
         List<Path> paths = confd != null ? Files.wildcard( confd, "*.conf" ) : emptyList();
         log.info( "global configurations: {}", paths );
 
-        var confs = Stream.of( paths ).map( Files::readString ).concat( getEnvConfig() ).collect( toList() );
+        var confs = Lists.map( paths, Files::readString );
 
         return load( appConfigPath, confs );
     }
