@@ -35,7 +35,6 @@ import org.testng.annotations.Test;
 import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.Collections.emptyMap;
 import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,7 +78,7 @@ public class GzipHttpTest {
         assertThat( response.contentString() ).isEqualTo( "test" );
 
         var responseGzip = Client.DEFAULT.get( "http://localhost:" + port + "/test",
-            emptyMap(), Map.of( "Accept-encoding", "gzip" ) );
+            Map.of(), Map.of( "Accept-encoding", "gzip" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
         assertThat( response.contentType.toString() ).isEqualTo( TEXT_PLAIN.toString() );
