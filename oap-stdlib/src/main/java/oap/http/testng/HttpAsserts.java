@@ -148,7 +148,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion hasContentType( ContentType contentType ) {
-            assertThat( response.contentType ).isEqualTo( contentType );
+            assertString( response.contentType.toString() ).isEqualTo( contentType.toString() );
             return this;
         }
 
