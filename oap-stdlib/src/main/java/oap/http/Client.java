@@ -140,7 +140,6 @@ public final class Client implements Closeable {
         }
     };
 
-    ;
     private final BasicCookieStore basicCookieStore;
     private ClientBuilder builder;
     private CloseableHttpAsyncClient client;
@@ -563,14 +562,11 @@ public final class Client implements Closeable {
         @Nullable
         @SneakyThrows
         public byte[] content() {
-            Preconditions.checkArgument( content == null || inputStream != null, "closed" );
-
-            if( content == null && inputStream != null ) {
-                synchronized( this ) {
-                    if( content == null ) {
-                        content = ByteStreams.toByteArray( inputStream );
-                        close();
-                    }
+            if( content == null && inputStream == null ) return null;
+            if( content == null ) synchronized( this ) {
+                if( content == null ) {
+                    content = ByteStreams.toByteArray( inputStream );
+                    close();
                 }
             }
             return content;
@@ -581,8 +577,6 @@ public final class Client implements Closeable {
         }
 
         public String contentString() {
-            Preconditions.checkNotNull( inputStream, "closed" );
-
             var content = content();
 
             if( content == null ) return null;
@@ -744,12 +738,12 @@ public final class Client implements Closeable {
         }
 
         @Override
-        public void write( byte[] b ) throws IOException {
+        public void write( @Nonnull byte[] b ) throws IOException {
             pos.write( b );
         }
 
         @Override
-        public void write( byte[] b, int off, int len ) throws IOException {
+        public void write( @Nonnull byte[] b, int off, int len ) throws IOException {
             pos.write( b, off, len );
         }
 
