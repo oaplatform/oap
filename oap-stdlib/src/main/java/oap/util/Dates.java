@@ -41,6 +41,9 @@ public class Dates {
     public static final DateTimeFormatter FORMAT_SIMPLE = DateTimeFormat
         .forPattern( "yyyy-MM-dd'T'HH:mm:ss" )
         .withZoneUTC();
+    public static final DateTimeFormatter FORMAT_SIMPLE_CLEAN = DateTimeFormat
+        .forPattern( "yyyy-MM-dd HH:mm:ss" )
+        .withZoneUTC();
 
     private static final DateTimeParser TIMEZONE_PARSER = DateTimeFormat.forPattern( "Z" ).getParser();
 
@@ -81,6 +84,11 @@ public class Dates {
 
     public static DateTime nowUtc() {
         return DateTime.now( DateTimeZone.UTC );
+    }
+
+    public static DateTime nowUtcClean() {
+        var now = Dates.nowUtc();
+        return new DateTime( now.getYear(), now.getMonthOfYear(), now.getDayOfMonth(), 0, 0 );
     }
 
     public static long currentTimeHour() {
