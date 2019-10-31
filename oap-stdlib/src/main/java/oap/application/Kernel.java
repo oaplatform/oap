@@ -61,7 +61,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Supplier;
 
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -446,12 +445,6 @@ public class Kernel implements Closeable {
         return Optional.ofNullable( ( T ) services.get( name ) );
     }
 
-    /**
-     * @see Optional#orElseThrow()
-     * @see Optional#orElseThrow(Supplier)
-     * @deprecated
-     */
-    @Deprecated( forRemoval = true )
     public <T> T serviceOrThrow( String name ) {
         return this.<T>service( name ).orElseThrow( () -> new ApplicationException( "service " + name + " is not found" ) );
     }
