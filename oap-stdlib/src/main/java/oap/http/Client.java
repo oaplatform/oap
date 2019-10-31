@@ -98,6 +98,7 @@ import java.security.KeyStore;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -108,6 +109,7 @@ import java.util.function.Consumer;
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
 import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
 import static java.net.HttpURLConnection.HTTP_OK;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.ProgressInputStream.progress;
@@ -535,12 +537,11 @@ public final class Client implements Closeable {
         private InputStream inputStream;
         private byte[] content = null;
 
-        @SneakyThrows
-        public Response( int code, String reasonPhrase, List<Pair<String, String>> headers, ContentType contentType, InputStream inputStream ) {
+        public Response( int code, String reasonPhrase, List<Pair<String, String>> headers, @Nonnull ContentType contentType, InputStream inputStream ) {
             this.code = code;
             this.reasonPhrase = reasonPhrase;
             this.headers = headers;
-            this.contentType = contentType;
+            this.contentType = Objects.requireNonNull( contentType );
             this.inputStream = inputStream;
         }
 
@@ -586,7 +587,7 @@ public final class Client implements Closeable {
 
             if( content == null ) return null;
 
-            return new String( content, contentType.getCharset() );
+            return new String( content, contentType.getCharset() == null ? UTF_8 : contentType.getCharset() );
         }
 
         public <T> Optional<T> unmarshal( Class<?> clazz ) {

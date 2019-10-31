@@ -74,14 +74,14 @@ public class GzipHttpTest {
         var response = Client.DEFAULT.get( "http://localhost:" + port + "/test" );
 
         assertThat( response.code ).isEqualTo( HTTP_OK );
-        assertThat( response.contentType ).isEqualTo( ContentTypes.TEXT_PLAIN );
+        assertThat( response.contentType.toString() ).isEqualTo( ContentTypes.TEXT_PLAIN.toString() );
         assertThat( response.contentString() ).isEqualTo( "test" );
 
         var responseGzip = Client.DEFAULT.get( "http://localhost:" + port + "/test",
             emptyMap(), Map.of( "Accept-encoding", "gzip" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
-        assertThat( response.contentType ).isEqualTo( ContentTypes.TEXT_PLAIN );
+        assertThat( response.contentType.toString() ).isEqualTo( ContentTypes.TEXT_PLAIN.toString() );
         assertThat( IoStreams.asString( responseGzip.getInputStream(), GZIP ) ).isEqualTo( "test" );
     }
 }

@@ -120,7 +120,7 @@ public class ClientTest extends Fixtures {
     @Test
     public void postOutputStream() throws IOException {
         mockServer.when( HttpRequest.request()
-                .withMethod( "POST" )
+                .withMethod( "POS   T" )
                 .withPath( "/test" )
                 .withBody( "test\ntest1" ),
             Times.once()
