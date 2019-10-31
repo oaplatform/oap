@@ -60,9 +60,6 @@ public class Response {
 
         if( isGzip ) underlying.setHeader( "Content-encoding", "gzip" );
 
-        if( !response.cookies.isEmpty() )
-            for( Pair<String, String> cookie : response.cookies ) underlying.addHeader( cookie._1, cookie._2 );
-
         if( response.contentEntity != null )
             if( isGzip ) underlying.setEntity( new HttpGzipOutputStreamEntity( out -> {
             try {

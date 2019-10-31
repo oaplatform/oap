@@ -25,6 +25,7 @@
 package oap.util;
 
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -40,6 +41,10 @@ public class BiStream<A, B> extends Stream<Pair<A, B>> {
 
     public static <A, B> BiStream<A, B> of( Stream<Pair<A, B>> stream ) {
         return new BiStream<>( stream );
+    }
+
+    public static <A, B> BiStream<A, B> of( List<Pair<A, B>> list ) {
+        return new BiStream<A, B>( list.stream() );
     }
 
     public static <A, B> BiStream<A, B> of( Map<A, B> map ) {

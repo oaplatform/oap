@@ -34,16 +34,13 @@ import oap.io.Files;
 import oap.io.IoStreams;
 import oap.json.Binder;
 import oap.reflect.TypeRef;
+import oap.util.BiStream;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Throwables;
 import oap.util.Try;
 import oap.util.Try.ThrowingRunnable;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.RequestBody;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -81,6 +78,7 @@ import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
 import org.apache.http.nio.reactor.IOReactorException;
 import org.apache.http.ssl.SSLContexts;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -95,10 +93,8 @@ import java.io.PipedOutputStream;
 import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.KeyStore;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +104,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static java.net.HttpURLConnection.HTTP_MOVED_TEMP;
 import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
@@ -117,12 +112,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.io.ProgressInputStream.progress;
 import static oap.util.Dates.m;
-import static oap.util.Maps.Collectors.toMap;
 import static oap.util.Pair.__;
 import static org.apache.commons.lang3.StringUtils.split;
+import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
-public class Client implements Closeable {
+public final class Client implements Closeable {
     public static final Client DEFAULT = custom()
         .onError( ( c, e ) -> log.error( e.getMessage(), e ) )
         .onTimeout( ( c ) -> log.error( "timeout" ) )
@@ -163,10 +158,10 @@ public class Client implements Closeable {
         return new ClientBuilder( null, null, m( 1 ), m( 5 ) );
     }
 
-    private static Map<String, String> headers( org.apache.http.HttpResponse response ) {
-        return Arrays.stream( response.getAllHeaders() )
+    private static List<Pair<String, String>> headers( org.apache.http.HttpResponse response ) {
+        return Stream.of( response.getAllHeaders() )
             .map( h -> __( h.getName(), h.getValue() ) )
-            .collect( toMap() );
+            .toList();
     }
 
     @SneakyThrows
@@ -273,7 +268,7 @@ public class Client implements Closeable {
 
     public Optional<Response> post( String uri, byte[] content, long timeout ) {
         var request = new HttpPost( uri );
-        request.setEntity( new ByteArrayEntity( content, ContentType.APPLICATION_OCTET_STREAM ) );
+        request.setEntity( new ByteArrayEntity( content, APPLICATION_OCTET_STREAM ) );
         return getResponse( request, timeout, execute( request, Maps.empty() ) );
     }
 
@@ -377,7 +372,6 @@ public class Client implements Closeable {
     @SneakyThrows
     private CompletableFuture<Response> execute( HttpUriRequest request, Map<String, Object> headers,
                                                  ThrowingRunnable<IOException> asyncRunnable ) {
-//        try {
         headers.forEach( ( name, value ) -> request.setHeader( name, value == null ? "" : value.toString() ) );
 
         var completableFuture = new CompletableFuture<Response>();
@@ -386,22 +380,23 @@ public class Client implements Closeable {
             @Override
             public void completed( HttpResponse response ) {
                 try {
-                    var responsHeaders = headers( response );
+                    var responseHeaders = headers( response );
                     Response result;
                     if( response.getEntity() != null ) {
                         var entity = response.getEntity();
                         result = new Response(
                             response.getStatusLine().getStatusCode(),
                             response.getStatusLine().getReasonPhrase(),
-                            responsHeaders,
-                            Optional.ofNullable( entity.getContentType() )
-                                .map( ct -> ContentType.parse( entity.getContentType().getValue() ) ),
+                            responseHeaders,
+                            entity.getContentType() != null
+                                ? ContentType.parse( entity.getContentType().getValue() )
+                                : APPLICATION_OCTET_STREAM,
                             entity.getContent()
                         );
                     } else result = new Response(
                         response.getStatusLine().getStatusCode(),
                         response.getStatusLine().getReasonPhrase(),
-                        responsHeaders
+                        responseHeaders
                     );
                     builder.onSuccess.accept( Client.this );
 
@@ -425,18 +420,6 @@ public class Client implements Closeable {
         asyncRunnable.run();
 
         return completableFuture;
-//        } catch( ExecutionException e ) {
-//            var newEx = new UncheckedIOException( request.getURI().toString(), new IOException( e.getCause().getMessage(), e.getCause() ) );
-//            builder.onError.accept( this, newEx );
-//            throw newEx;
-//        } catch( IOException e ) {
-//            var newEx = new UncheckedIOException( request.getURI().toString(), e );
-//            builder.onError.accept( this, newEx );
-//            throw newEx;
-//        } catch( InterruptedException | TimeoutException e ) {
-//            builder.onTimeout.accept( this );
-//            return Optional.empty();
-//        }
     }
 
     @SneakyThrows
@@ -510,46 +493,50 @@ public class Client implements Closeable {
         Closeables.close( client );
     }
 
-    @SneakyThrows
-    public Response uploadFile( String uri, String prefix, Path path ) {
-        final ContentType contentType = ContentType.create( java.nio.file.Files.probeContentType( path ) );
-
-        OkHttpClient client = new OkHttpClient();
-
-        final MultipartBody body = new MultipartBody.Builder()
-            .setType( MultipartBody.FORM )
-            .addFormDataPart( "upfile", path.toFile().getName(), RequestBody.create( MediaType.parse( contentType.toString() ), path.toFile() ) )
-            .addFormDataPart( "prefix", prefix )
-            .build();
-
-        okhttp3.Request request = new okhttp3.Request.Builder()
-            .url( uri )
-            .post( body )
-            .build();
-
-
-        var response = client.newCall( request ).execute();
-
-        var headers = response.headers();
-        final Stream<String> stream = Stream.of( headers.names() );
-        final Map<String, String> h = stream.collect( Collectors.toMap( n -> n, headers::get ) );
-        var responseBody = response.body();
-        return new Response( response.code(), response.message(), h,
-            Optional.ofNullable( responseBody.contentType() ).map( mt -> ContentType.create( mt.type() + "/" + mt.subtype(), mt.charset() ) ),
-            responseBody.byteStream() );
-    }
+//    @SneakyThrows
+//    public Response uploadFile( String uri, String prefix, Path path ) {
+//        ContentType contentType = ContentType.create( java.nio.file.Files.probeContentType( path ) );
+//
+//
+////        todo why OK? too much clients
+//
+//        OkHttpClient client = new OkHttpClient();
+//
+//        MultipartBody body = new MultipartBody.Builder()
+//            .setType( MultipartBody.FORM )
+//            .addFormDataPart( "upfile", path.toFile().getName(), RequestBody.create( MediaType.parse( contentType.toString() ), path.toFile() ) )
+//            .addFormDataPart( "prefix", prefix )
+//            .build();
+//
+//        okhttp3.Request request = new okhttp3.Request.Builder()
+//            .url( uri )
+//            .post( body )
+//            .build();
+//
+//
+//        var response = client.newCall( request ).execute();
+//
+//        var headers = response.headers().toMultimap();
+//
+//        Stream<String> stream = Stream.of( headers.names() );
+//        Map<String, String> h = stream.collect( Collectors.toMap( n -> n, headers::get ) );
+//        var responseBody = response.body();
+//        return new Response( response.code(), response.message(), h,
+//            Optional.ofNullable( responseBody.contentType() ).map( mt -> ContentType.create( mt.type() + "/" + mt.subtype(), mt.charset() ) ),
+//            responseBody.byteStream() );
+//    }
 
     @ToString( exclude = { "inputStream", "content" } )
     public static class Response implements Closeable {
         public final int code;
         public final String reasonPhrase;
-        public final Optional<ContentType> contentType;
-        public final Map<String, String> headers;
+        public final ContentType contentType;
+        public final List<Pair<String, String>> headers;
         private InputStream inputStream;
         private byte[] content = null;
 
         @SneakyThrows
-        public Response( int code, String reasonPhrase, Map<String, String> headers, Optional<ContentType> contentType, InputStream inputStream ) {
+        public Response( int code, String reasonPhrase, List<Pair<String, String>> headers, ContentType contentType, InputStream inputStream ) {
             this.code = code;
             this.reasonPhrase = reasonPhrase;
             this.headers = headers;
@@ -557,8 +544,19 @@ public class Client implements Closeable {
             this.inputStream = inputStream;
         }
 
-        public Response( int code, String reasonPhrase, Map<String, String> headers ) {
-            this( code, reasonPhrase, headers, Optional.empty(), null );
+        public Response( int code, String reasonPhrase, List<Pair<String, String>> headers ) {
+            this( code, reasonPhrase, headers, BiStream.of( headers )
+                .filter( ( name, value ) -> "Content-type".equalsIgnoreCase( name ) )
+                .mapToObj( ( name, value ) -> ContentType.parse( value ) )
+                .findAny()
+                .orElse( APPLICATION_OCTET_STREAM ), null );
+        }
+
+        public Optional<String> header( @Nonnull String headerName ) {
+            return BiStream.of( headers )
+                .filter( ( name, value ) -> headerName.equalsIgnoreCase( name ) )
+                .mapToObj( ( name, value ) -> value )
+                .findAny();
         }
 
         @Nullable
@@ -588,7 +586,7 @@ public class Client implements Closeable {
 
             if( content == null ) return null;
 
-            return new String( content, contentType.map( ContentType::getCharset ).orElse( StandardCharsets.UTF_8 ) );
+            return new String( content, contentType.getCharset() );
         }
 
         public <T> Optional<T> unmarshal( Class<?> clazz ) {

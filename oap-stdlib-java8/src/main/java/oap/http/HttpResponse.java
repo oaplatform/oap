@@ -28,7 +28,6 @@ import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Stream;
 import oap.util.Strings;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
@@ -54,10 +53,8 @@ import static java.net.HttpURLConnection.HTTP_NOT_MODIFIED;
 import static java.net.HttpURLConnection.HTTP_NO_CONTENT;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.util.Pair.__;
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
-import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
-public class HttpResponse {
+public final class HttpResponse {
     public static final HttpResponse NOT_FOUND = status( HTTP_NOT_FOUND ).response();
     public static final HttpResponse FORBIDDEN = status( HTTP_FORBIDDEN ).response();
     public static final HttpResponse NO_CONTENT = status( HTTP_NO_CONTENT ).response();
@@ -69,14 +66,12 @@ public class HttpResponse {
     public final int code;
     public final String reason;
     public final List<Pair<String, String>> headers;
-    public final List<Pair<String, String>> cookies;
     public final Map<String, Object> session;
     public final HttpEntity contentEntity;
 
-    private HttpResponse( int code, String reason, List<Pair<String, String>> cookies, List<Pair<String, String>> headers, Map<String, Object> session, HttpEntity contentEntity ) {
+    private HttpResponse( int code, String reason, List<Pair<String, String>> headers, Map<String, Object> session, HttpEntity contentEntity ) {
         this.code = code;
         this.reason = reason;
-        this.cookies = cookies;
         this.headers = headers;
         this.session = session;
         this.contentEntity = contentEntity;
@@ -159,7 +154,6 @@ public class HttpResponse {
         Builder builder = status( code, reason )
             .withEntity( contentEntity );
         builder.session.putAll( session );
-        builder.cookies.addAll( cookies );
         builder.headers.addAll( headers );
         return builder;
 
@@ -173,14 +167,7 @@ public class HttpResponse {
         return raw ? ( String ) content
             : HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
     }
-
-    /**
-     * @todo what is it for?
-     */
-    public String getFirstHeader( String name ) {
-        return headers.stream().filter( p -> p._1.equals( name ) ).findFirst().map( p -> p._2 ).orElse( null );
-    }
-
+    
     @Override
     public String toString() {
         return "HttpResponse{" + "reason='" + reason + '\'' + ", headers=" + headers + ", code=" + code + '}';
@@ -189,7 +176,6 @@ public class HttpResponse {
     public static class Builder {
         public String reason;
         public List<Pair<String, String>> headers = new ArrayList<>();
-        public List<Pair<String, String>> cookies = new ArrayList<>();
         public Map<String, Object> session = new HashMap<>();
         public int code;
         public HttpEntity contentEntity;
@@ -203,8 +189,12 @@ public class HttpResponse {
             return this;
         }
 
+        public Builder withCookie( Cookie cookie ) {
+            return withCookie( cookie.toString() );
+        }
+
         public Builder withCookie( String cookie ) {
-            if( StringUtils.isNotBlank( cookie ) ) cookies.add( __( "Set-Cookie", cookie ) );
+            withHeader( "Set-Cookie", cookie );
             return this;
         }
 
@@ -237,7 +227,7 @@ public class HttpResponse {
         }
 
         public HttpResponse response() {
-            return new HttpResponse( this.code, this.reason, this.cookies, this.headers, this.session, this.contentEntity );
+            return new HttpResponse( this.code, this.reason, this.headers, this.session, this.contentEntity );
         }
     }
 }

@@ -26,14 +26,15 @@ package oap.http.testng;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.http.Client;
+import oap.http.Cookie;
 import oap.json.testng.JsonAsserts;
 import oap.testng.Env;
+import oap.util.BiStream;
 import oap.util.Pair;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.entity.ContentType;
 
 import java.io.InputStream;
-import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -60,7 +61,8 @@ public class HttpAsserts {
     }
 
     public static String httpPrefix() {
-        return "http://localhost:" + Env.port(); }
+        return "http://localhost:" + Env.port();
+    }
 
     @Deprecated
     public static String HTTP_URL( String suffix ) {
@@ -97,9 +99,9 @@ public class HttpAsserts {
         return new HttpAssertion( client.post( uri, content, contentType ) );
     }
 
-    public static HttpAssertion assertUploadFile( String uri, String prefix, Path path ) {
-        return new HttpAssertion( client.uploadFile( uri, prefix, path ) );
-    }
+//    public static HttpAssertion assertUploadFile( String uri, String prefix, Path path ) {
+//        return new HttpAssertion( client.uploadFile( uri, prefix, path ) );
+//    }
 
     public static HttpAssertion assertPut( String uri, String content, ContentType contentType ) {
         return new HttpAssertion( client.put( uri, content, contentType ) );
@@ -146,10 +148,7 @@ public class HttpAsserts {
         }
 
         public HttpAssertion hasContentType( ContentType contentType ) {
-            assertString( response.contentType
-                .map( ContentType::toString )
-                .orElse( null ) )
-                .isEqualTo( contentType.toString() );
+            assertThat( response.contentType ).isEqualTo( contentType );
             return this;
         }
 
@@ -159,7 +158,20 @@ public class HttpAsserts {
         }
 
         public HttpAssertion containsHeader( String name, String value ) {
-            assertString( response.headers.getOrDefault( name, null ) ).isEqualTo( value );
+            assertString( response.header( name ).orElse( null ) ).isEqualTo( value );
+            return this;
+        }
+
+        public HttpAssertion containsCookie( Cookie cookie ) {
+            return containsCookie( cookie.toString() );
+        }
+
+        public HttpAssertion containsCookie( String cookie ) {
+            var cookies = BiStream.of( response.headers )
+                .filter( ( name, value ) -> "Set-Cookie".equalsIgnoreCase( name ) && value.equalsIgnoreCase( cookie ) )
+                .mapToObj( ( name, value ) -> value )
+                .toList();
+            assertThat( cookies ).contains( cookie );
             return this;
         }
 
