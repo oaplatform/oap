@@ -28,11 +28,11 @@ import oap.concurrent.SynchronizedThread;
 import oap.http.cors.GenericCorsPolicy;
 import oap.io.IoStreams;
 import oap.testng.Env;
-import oap.util.Maps;
-import org.apache.http.entity.ContentType;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.Collections.emptyMap;
@@ -74,14 +74,14 @@ public class GzipHttpTest {
         var response = Client.DEFAULT.get( "http://localhost:" + port + "/test" );
 
         assertThat( response.code ).isEqualTo( HTTP_OK );
-        assertThat( response.contentType.map( ContentType::toString ) ).contains( ContentTypes.TEXT_PLAIN.toString() );
+        assertThat( response.contentType ).isEqualTo( ContentTypes.TEXT_PLAIN );
         assertThat( response.contentString() ).isEqualTo( "test" );
 
         var responseGzip = Client.DEFAULT.get( "http://localhost:" + port + "/test",
-            emptyMap(), Maps.of2( "Accept-encoding", "gzip" ) );
+            emptyMap(), Map.of( "Accept-encoding", "gzip" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
-        assertThat( response.contentType.map( ContentType::toString ) ).contains( ContentTypes.TEXT_PLAIN.toString() );
+        assertThat( response.contentType ).isEqualTo( ContentTypes.TEXT_PLAIN );
         assertThat( IoStreams.asString( responseGzip.getInputStream(), GZIP ) ).isEqualTo( "test" );
     }
 }
