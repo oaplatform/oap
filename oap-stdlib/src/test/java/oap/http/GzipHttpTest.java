@@ -36,6 +36,7 @@ import java.util.Map;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.Collections.emptyMap;
+import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -67,21 +68,21 @@ public class GzipHttpTest {
     @Test
     public void gzipOutput() {
         server.bind( "test", GenericCorsPolicy.DEFAULT,
-            ( request, response ) -> response.respond( HttpResponse.ok( "test", true, ContentTypes.TEXT_PLAIN ).response() ), Protocol.HTTP );
+            ( request, response ) -> response.respond( HttpResponse.ok( "test", true, TEXT_PLAIN ).response() ), Protocol.HTTP );
 
         thread.start();
 
         var response = Client.DEFAULT.get( "http://localhost:" + port + "/test" );
 
         assertThat( response.code ).isEqualTo( HTTP_OK );
-        assertThat( response.contentType.toString() ).isEqualTo( ContentTypes.TEXT_PLAIN.toString() );
+        assertThat( response.contentType.toString() ).isEqualTo( TEXT_PLAIN.toString() );
         assertThat( response.contentString() ).isEqualTo( "test" );
 
         var responseGzip = Client.DEFAULT.get( "http://localhost:" + port + "/test",
             emptyMap(), Map.of( "Accept-encoding", "gzip" ) );
 
         assertThat( responseGzip.code ).isEqualTo( HTTP_OK );
-        assertThat( response.contentType.toString() ).isEqualTo( ContentTypes.TEXT_PLAIN.toString() );
+        assertThat( response.contentType.toString() ).isEqualTo( TEXT_PLAIN.toString() );
         assertThat( IoStreams.asString( responseGzip.getInputStream(), GZIP ) ).isEqualTo( "test" );
     }
 }
