@@ -48,7 +48,7 @@ public class PrometheusExporterTest {
 
             TEST_1.increment( 2 );
             var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
-            assertString( response ).isEqualTo( "# HELP test1_total  \n" +
+            assertString( response ).contains( "# HELP test1_total  \n" +
                 "# TYPE test1_total counter\n" +
                 "test1_total 2.0\n" );
         }
