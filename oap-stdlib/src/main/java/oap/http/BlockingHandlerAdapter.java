@@ -23,10 +23,9 @@
  */
 package oap.http;
 
-import com.codahale.metrics.Counter;
+import io.prometheus.client.Counter;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.cors.CorsPolicy;
-import oap.metrics.Metrics;
 import oap.net.Inet;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
@@ -38,7 +37,7 @@ import static oap.http.HttpResponse.NO_CONTENT;
 
 @Slf4j
 class BlockingHandlerAdapter implements HttpRequestHandler {
-    private static final Counter requests = Metrics.counter( "http.requests" );
+    private static final Counter requests = Counter.build().name( "oap_http_requests" ).register();
 
     private final Protocol protocol;
     private final String location;

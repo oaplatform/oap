@@ -36,6 +36,7 @@ import java.util.function.Supplier;
 import static java.lang.Math.max;
 import static oap.metrics.Metrics.name;
 
+@Deprecated
 public class Metrics2 {
     static ConcurrentHashMap<String, Timer> hdrTimers = new ConcurrentHashMap<>();
     static ConcurrentHashMap<String, Histogram> hdrHistogram = new ConcurrentHashMap<>();

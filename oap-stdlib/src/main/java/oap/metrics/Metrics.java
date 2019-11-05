@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+@Deprecated
 public final class Metrics {
     static final MetricRegistry registry = new MetricRegistry();
 

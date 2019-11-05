@@ -28,9 +28,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.metrics.Metrics;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
@@ -50,7 +50,7 @@ import static oap.template.TemplateStrategy.DEFAULT;
 @Slf4j
 /**
  *    metrics:
- *      - templates.*
+ *      - oap_templates_cache_size
  */
 public class Engine implements Runnable {
     private final static HashMap<String, String> builtInFunction = new HashMap<>();
@@ -76,12 +76,11 @@ public class Engine implements Runnable {
             .expireAfterAccess( ttl, TimeUnit.MILLISECONDS )
             .build();
 
-        Metrics.unregister( "templates.cache_size" );
-        Metrics.measureGauge( "templates.cache_size", templates::size );
+        Metrics.gauge( "oap_templates_cache_size", templates, Cache::size );
     }
 
     public static String getName( String template ) {
-        final HashFunction hashFunction = Hashing.murmur3_128();
+        var hashFunction = Hashing.murmur3_128();
 
         var hash = hashFunction.hashUnencodedChars( template ).asLong();
         return hashToName( hash );
@@ -92,7 +91,7 @@ public class Engine implements Runnable {
     }
 
     public static <TLine extends Template.Line> String getName( List<TLine> pathAndDefault, String delimiter ) {
-        final HashFunction hashFunction = Hashing.murmur3_32();
+        var hashFunction = Hashing.murmur3_32();
 
         var hash = hashFunction
             .newHasher();
@@ -138,13 +137,13 @@ public class Engine implements Runnable {
 
         var id = name + template;
         return ( Template<T, Template.Line> ) templates.get( id, () -> {
-            boolean variable = false;
+            var variable = false;
             StringBuilder function = null;
 
-            ArrayList<Template.Line> lines = new ArrayList<>();
-            StringBuilder text = new StringBuilder();
+            var lines = new ArrayList<Template.Line>();
+            var text = new StringBuilder();
 
-            for( int i = 0; i < template.length(); i++ ) {
+            for( var i = 0; i < template.length(); i++ ) {
                 var ch = template.charAt( i );
                 switch( ch ) {
                     case '$':
@@ -207,24 +206,21 @@ public class Engine implements Runnable {
     }
 
     private Template.Line.Function getFunction( CharSequence function ) {
-        boolean args = false;
+        var args = false;
         var name = new StringBuilder();
         var arguments = new StringBuilder();
 
         for( int i = 0; i < function.length(); i++ ) {
             var ch = function.charAt( i );
             switch( ch ) {
-                case '(':
-                    args = true;
-                    break;
-                case ')':
+                case '(' -> args = true;
+                case ')' -> {
                     String funcName = StringUtils.trim( name.toString() );
                     funcName = builtInFunction.getOrDefault( funcName, funcName );
-
                     return new Template.Line.Function( funcName,
                         StringUtils.isBlank( arguments ) ? null : arguments.toString() );
-                default:
-                    ( args ? arguments : name ).append( ch );
+                }
+                default -> ( args ? arguments : name ).append( ch );
             }
 
         }
@@ -244,7 +240,7 @@ public class Engine implements Runnable {
     @Override
     public void run() {
         try {
-            final long now = System.currentTimeMillis();
+            var now = System.currentTimeMillis();
             Files.walk( tmpPath ).forEach( path -> {
                 try {
                     if( now - Files.getLastModifiedTime( path ).toMillis() > ttl ) {

@@ -24,19 +24,16 @@
 package oap.http;
 
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Timer;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.ThreadPoolExecutor;
-import oap.concurrent.Threads;
 import oap.http.cors.CorsPolicy;
 import oap.io.Closeables;
-import oap.metrics.Metrics;
-import oap.metrics.Metrics2;
 import oap.net.Inet;
+import oap.util.Dates;
 import org.apache.http.ConnectionClosedException;
 import org.apache.http.impl.DefaultBHttpServerConnection;
 import org.apache.http.impl.DefaultBHttpServerConnectionFactory;
@@ -50,7 +47,6 @@ import org.apache.http.protocol.ResponseContent;
 import org.apache.http.protocol.ResponseDate;
 import org.apache.http.protocol.ResponseServer;
 import org.apache.http.protocol.UriHttpRequestHandlerMapper;
-import org.joda.time.Duration;
 
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSocket;
@@ -74,12 +70,9 @@ import java.util.concurrent.TimeUnit;
 public class Server implements HttpServer {
     private static final DefaultBHttpServerConnectionFactory connectionFactory = DefaultBHttpServerConnectionFactory.INSTANCE;
 
-    private static final Counter handled = Metrics.counter( "http.handled" );
-    private static final Counter keepaliveTimeout = Metrics.counter( "http.keepalive_timeout" );
-    private static final Histogram histogramConnections = Metrics2.histogram( "http.connections" );
-    private static final Histogram histogramRequestsPerConnection = Metrics2.histogram( "http.connection_requests" );
-    private static final Counter histogramRequestsZeroPerConnection = Metrics.counter( "http.connection_requests_zero" );
-    private static final Timer timeOfLive = Metrics2.timer( "http.connection_timeoflive" );
+    private static final Counter requests = Metrics.counter( "oap_http_requests" );
+    private static final Counter handled = Metrics.counter( "oap_http_handled" );
+    private static final Counter keepaliveTimeout = Metrics.counter( "oap_http_keepalive_timeout" );
 
     private final ConcurrentHashMap<String, ServerHttpContext> connections = new ConcurrentHashMap<>();
     private final UriHttpRequestHandlerMapper mapper = new UriHttpRequestHandlerMapper();
@@ -90,11 +83,12 @@ public class Server implements HttpServer {
     public boolean responseDate = true;
     private HttpService httpService;
     private ExecutorService executor;
-    private Thread thread;
 
     public Server( int workers, boolean registerStatic ) {
         this.workers = workers;
         this.registerStatic = registerStatic;
+
+        Metrics.gauge( "oap_http_connections", connections, ConcurrentHashMap::size );
     }
 
     //TODO Fix resolution of local through headers instead of socket inet address
@@ -126,22 +120,6 @@ public class Server implements HttpServer {
 
         if( registerStatic )
             mapper.register( "/static/*", new ClasspathResourceHandler( "/static", "/WEB-INF" ) );
-
-        thread = new Thread( this::stats );
-        thread.setName( "HTTP-Server-stats" );
-        thread.start();
-    }
-
-    private void stats() {
-        while( !Thread.interrupted() ) {
-            histogramConnections.update( connections.size() );
-
-            for( var c : connections.values() ) {
-                reportAndGetDuration( c );
-            }
-
-            Threads.sleepSafely( 5000 );
-        }
     }
 
     @Override
@@ -168,7 +146,7 @@ public class Server implements HttpServer {
 
             executor.submit( () -> {
                 try {
-                    handled.inc();
+                    handled.increment();
 
                     log.debug( "connection accepted: {}", connection );
 
@@ -180,11 +158,11 @@ public class Server implements HttpServer {
                     if( log.isTraceEnabled() )
                         log.trace( "start handling {}", connection );
                     while( !Thread.interrupted() && connection.isOpen() ) {
-                        httpContext.requests++;
+                        requests.increment();
                         httpService.handleRequest( connection, httpContext );
                     }
                 } catch( SocketTimeoutException e ) {
-                    keepaliveTimeout.inc();
+                    keepaliveTimeout.increment();
                     if( log.isTraceEnabled() )
                         log.trace( "{}: timeout", connection );
                 } catch( SocketException | SSLException e ) {
@@ -195,13 +173,10 @@ public class Server implements HttpServer {
                     log.error( e.getMessage(), e );
                 } finally {
                     var info = connections.remove( connectionId );
-                    long duration = reportAndGetDuration( info );
-                    if( info.requests == 0 )
-                        histogramRequestsZeroPerConnection.inc();
 
                     if( log.isTraceEnabled() )
                         log.trace( "connection: {}, requests: {}, duration: {}",
-                            info.connection, info.requests, new Duration( duration * 1000000L ) );
+                            info.connection, ( long ) requests.count(), Dates.durationToString( ( long ) ( ( System.nanoTime() - info.start ) / 1E6 ) ) );
                     try {
                         connection.close();
                     } catch( IOException e ) {
@@ -219,22 +194,10 @@ public class Server implements HttpServer {
         }
     }
 
-    public long reportAndGetDuration( ServerHttpContext info ) {
-        if( info.requests > 0 )
-            histogramRequestsPerConnection.update( info.requests );
-
-        var duration = System.nanoTime() - info.start;
-        timeOfLive.update( duration, TimeUnit.NANOSECONDS );
-        return duration;
-    }
-
     public void stop() {
         connections.forEach( ( key, connection ) -> Closeables.close( connection ) );
 
         Closeables.close( executor );
-
-
-        thread.stop();
 
         log.info( "server gone down" );
     }

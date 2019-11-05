@@ -161,4 +161,8 @@ public class Dates {
             .toFormatter();
         return formatter.print( d.toPeriod().normalizedStandard() );
     }
+
+    public static double nanosToSeconds( long ns ) {
+        return ns / 1E9;
+    }
 }

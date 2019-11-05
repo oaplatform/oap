@@ -22,48 +22,33 @@
  * SOFTWARE.
  */
 
-package oap.http;
+package oap.prometheus;
 
-import lombok.ToString;
-import org.apache.http.impl.DefaultBHttpServerConnection;
-import org.apache.http.protocol.HttpContext;
+import io.micrometer.core.instrument.Metrics;
+import oap.http.Client;
+import oap.testng.Env;
+import org.testng.annotations.Test;
 
-import java.io.Closeable;
 import java.io.IOException;
 
+import static oap.testng.Asserts.assertString;
+
 /**
- * Created by igor.petrenko on 10.05.2019.
+ * Created by igor.petrenko on 2019-11-05.
  */
-@ToString
-public class ServerHttpContext implements HttpContext, Closeable {
-    public final Protocol protocol;
-    public final DefaultBHttpServerConnection connection;
-    private final HttpContext httpContext;
-    public long start = System.nanoTime();
+public class PrometheusExporterTest {
+    @Test
+    public void testServer() throws IOException {
+        var port = Env.port( "prometheus" );
+        try( var exporter = new PrometheusExporter( port ) ) {
+            exporter.start();
 
-    public ServerHttpContext( HttpContext httpContext, Protocol protocol, DefaultBHttpServerConnection connection ) {
-        this.httpContext = httpContext;
-        this.protocol = protocol;
-        this.connection = connection;
+            Metrics.counter( "test1" ).increment( 2 );
+            var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
+            assertString( response ).isEqualTo( "# HELP test1_total  \n" +
+                "# TYPE test1_total counter\n" +
+                "test1_total 2.0\n" );
+        }
     }
 
-    @Override
-    public Object getAttribute( String id ) {
-        return httpContext.getAttribute( id );
-    }
-
-    @Override
-    public void setAttribute( String id, Object obj ) {
-        httpContext.setAttribute( id, obj );
-    }
-
-    @Override
-    public Object removeAttribute( String id ) {
-        return httpContext.removeAttribute( id );
-    }
-
-    @Override
-    public void close() throws IOException {
-        connection.close();
-    }
 }
