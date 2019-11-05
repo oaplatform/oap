@@ -24,6 +24,7 @@
 
 package oap.prometheus;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import oap.http.Client;
 import oap.testng.Env;
@@ -37,13 +38,15 @@ import static oap.testng.Asserts.assertString;
  * Created by igor.petrenko on 2019-11-05.
  */
 public class PrometheusExporterTest {
+    private static final Counter TEST_1 = Metrics.counter( "test1" );
+
     @Test
     public void testServer() throws IOException {
         var port = Env.port( "prometheus" );
         try( var exporter = new PrometheusExporter( port ) ) {
             exporter.start();
 
-            Metrics.counter( "test1" ).increment( 2 );
+            TEST_1.increment( 2 );
             var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
             assertString( response ).isEqualTo( "# HELP test1_total  \n" +
                 "# TYPE test1_total counter\n" +
