@@ -23,7 +23,6 @@
  */
 package oap.http;
 
-import io.prometheus.client.Counter;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.cors.CorsPolicy;
 import oap.net.Inet;
@@ -37,8 +36,6 @@ import static oap.http.HttpResponse.NO_CONTENT;
 
 @Slf4j
 class BlockingHandlerAdapter implements HttpRequestHandler {
-    private static final Counter requests = Counter.build().name( "oap_http_requests" ).register();
-
     private final Protocol protocol;
     private final String location;
     private final Handler handler;
@@ -55,8 +52,6 @@ class BlockingHandlerAdapter implements HttpRequestHandler {
     @Override
     public void handle( HttpRequest httpRequest, HttpResponse httpResponse,
                         HttpContext httpContext ) {
-        requests.inc();
-
         if( log.isTraceEnabled() )
             log.trace( "Handling [{}]", httpRequest );
 
