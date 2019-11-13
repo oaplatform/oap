@@ -36,16 +36,18 @@ import static oap.json.testng.JsonAsserts.assertJson;
 import static oap.json.testng.JsonAsserts.objectOfTestJsonResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@SuppressWarnings( "unchecked" )
 public class JsonPatchTest {
 
     @Test
     public void patchSimpleObject() {
         var test = """
-{
-\t\"id\": \"i1\",
-\t\"count\": 10,
-\t\"unknown\": 0.0
-}""";
+        {
+            "id": "i1",
+            "count": 10,
+            "unknown": 0.0
+        }
+        """;
 
         var obj = new TestObj( "i1", 0L, "descr" );
         var immutableMap = JsonPatch.patch( obj, test );
@@ -58,11 +60,12 @@ public class JsonPatchTest {
     @Test( expectedExceptions = JsonException.class )
     public void patchObjectFailIncorrectJson() {
         var test = """
-{
-\t\"id\": \"i1\",
-\t\"count\": 10`
-\t\"unknown\": 0.0
-}""";
+        {
+            "id": "i1",
+            "count": 10`
+            "unknown": 0.0
+        }
+        """;
 
         var obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
 
@@ -73,7 +76,9 @@ public class JsonPatchTest {
     public void patchUpdateInner() {
         var obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
 
-        var patch = "{\"id\": \"i2\", \"description\":\"newdesc\"}";
+        var patch = """
+        {"id": "i2", "description":"newdesc"}
+        """;
 
         var patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> p.get( "id" ).equals( "i2" ) ).orElseGet( Maps::empty ), patch );
         assertJson( patched )
@@ -84,7 +89,9 @@ public class JsonPatchTest {
     public void patchAddInnerToExistingList() {
         var obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
 
-        var patch = "{\"id\": \"i3\", \"description\":\"newdesc\", \"count\": 1 }";
+        var patch = """
+        {"id": "i3", "description":"newdesc", "count": 1 }
+        """;
 
         var patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.get( "list" ), p -> Objects.equals( p.get( "id" ), "i3" ) ).orElseGet( Maps::empty ), patch );
         assertJson( patched )
@@ -95,7 +102,9 @@ public class JsonPatchTest {
     public void patchAddInner() {
         var obj = objectOfTestJsonResource( getClass(), TestObj.class, "source_no_list.json" );
 
-        var patch = "{\"id\": \"i2\", \"description\":\"newdesc\", \"count\": 0 }";
+        var patch = """
+            {"id": "i2", "description":"newdesc", "count": 0 }
+        """;
 
         var patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> Objects.equals( p.get( "id" ), "i2" ) ).orElseGet( Maps::empty ), patch );
         assertJson( patched )

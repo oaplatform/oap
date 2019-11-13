@@ -25,13 +25,13 @@ package oap.http.testng;
 
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
 import oap.http.Cookie;
 import oap.json.testng.JsonAsserts;
 import oap.testng.Env;
 import oap.util.BiStream;
 import oap.util.Pair;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.entity.ContentType;
 
 import java.io.InputStream;
@@ -39,20 +39,18 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static java.net.HttpURLConnection.HTTP_OK;
+import static oap.http.testng.HttpAsserts.HttpAssertion.assertHttpResponse;
 import static oap.json.testng.JsonAsserts.assertJson;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Slf4j
 public class HttpAsserts {
-    private static RequestConfig requestConfig = RequestConfig.custom()
-        .setSocketTimeout( Integer.parseInt( Env.getEnvOrDefault( "TEST_HTTP_SOCKET_TIMEOUT", "30000" ) ) )
-        .setConnectTimeout( Integer.parseInt( Env.getEnvOrDefault( "TEST_HTTP_CONNECTION_TIMEOUT", "30000" ) ) )
-        .setConnectionRequestTimeout( Integer.parseInt( Env.getEnvOrDefault( "TEST_HTTP_CONNECTION_REQUEST_TIMEOUT", "30000" ) ) )
-        .build();
 
     private static Client client = Client.custom()
-        .onError( ( c, e ) -> System.err.println( e.getMessage() ) )
+        .onError( ( c, e ) -> log.error( e.getMessage() ) )
         .build();
 
     @Deprecated
@@ -70,7 +68,7 @@ public class HttpAsserts {
     }
 
     public static String httpUrl( String suffix ) {
-        return "http://localhost:" + Env.port() + ( suffix.startsWith( "/" ) ? suffix : "/" + suffix );
+        return httpPrefix() + ( suffix.startsWith( "/" ) ? suffix : "/" + suffix );
     }
 
     public static void reset() {
@@ -84,19 +82,19 @@ public class HttpAsserts {
     }
 
     public static HttpAssertion assertGet( String uri, Map<String, Object> params, Map<String, Object> headers ) {
-        return new HttpAssertion( client.get( uri, params, headers ) );
+        return assertHttpResponse( client.get( uri, params, headers ) );
     }
 
     public static HttpAssertion assertPost( String uri, String content ) {
-        return assertPost( uri, content, ContentType.APPLICATION_JSON );
+        return assertPost( uri, content, APPLICATION_JSON );
     }
 
     public static HttpAssertion assertPost( String uri, String content, ContentType contentType ) {
-        return new HttpAssertion( client.post( uri, content, contentType ) );
+        return assertHttpResponse( client.post( uri, content, contentType ) );
     }
 
     public static HttpAssertion assertPost( String uri, InputStream content, ContentType contentType ) {
-        return new HttpAssertion( client.post( uri, content, contentType ) );
+        return assertHttpResponse( client.post( uri, content, contentType ) );
     }
 
 //    public static HttpAssertion assertUploadFile( String uri, String prefix, Path path ) {
@@ -104,11 +102,11 @@ public class HttpAsserts {
 //    }
 
     public static HttpAssertion assertPut( String uri, String content, ContentType contentType ) {
-        return new HttpAssertion( client.put( uri, content, contentType ) );
+        return assertHttpResponse( client.put( uri, content, contentType ) );
     }
 
     public static HttpAssertion assertDelete( String uri ) {
-        return new HttpAssertion( client.delete( uri ) );
+        return assertHttpResponse( client.delete( uri ) );
     }
 
     @EqualsAndHashCode
@@ -116,8 +114,12 @@ public class HttpAsserts {
     public static class HttpAssertion {
         private final Client.Response response;
 
-        public HttpAssertion( Client.Response response ) {
+        private HttpAssertion( Client.Response response ) {
             this.response = response;
+        }
+
+        public static HttpAssertion assertHttpResponse( Client.Response response ) {
+            return new HttpAssertion( response );
         }
 
         public HttpAssertion isOk() {
@@ -132,11 +134,21 @@ public class HttpAsserts {
             return this;
         }
 
+        /**
+         * @see JsonHttpAssertion
+         * @see #satisfies(Consumer)
+         */
+        @Deprecated
         public JsonAsserts.JsonAssertion isJson() {
-            hasContentType( ContentType.APPLICATION_JSON );
+            hasContentType( APPLICATION_JSON );
             return assertJson( response.contentString() );
         }
 
+        /**
+         * @see JsonHttpAssertion
+         * @see #satisfies(Consumer)
+         */
+        @Deprecated
         public HttpAssertion isJson( String json ) {
             isJson().isStructurallyEqualTo( json );
             return this;
@@ -187,19 +199,73 @@ public class HttpAsserts {
                 .hasBody( body );
         }
 
+        /**
+         * @see JsonHttpAssertion
+         * @see #satisfies(Consumer)
+         */
+        @Deprecated
         public HttpAssertion respondedJson( int code, String reasonPhrase, String body ) {
             return this.hasCode( code )
                 .hasReason( reasonPhrase )
-                .hasContentType( ContentType.APPLICATION_JSON )
+                .hasContentType( APPLICATION_JSON )
                 .isJson( body );
         }
 
+        /**
+         * @see JsonHttpAssertion
+         * @see #satisfies(Consumer)
+         */
+        @Deprecated
         public HttpAssertion respondedJson( String json ) {
             return this.respondedJson( HTTP_OK, "OK", json );
         }
 
+        /**
+         * @see JsonHttpAssertion
+         * @see #satisfies(Consumer)
+         */
+        @Deprecated
         public HttpAssertion respondedJson( Class<?> contextClass, String resource ) {
             return this.respondedJson( contentOfTestResource( contextClass, resource ) );
+        }
+
+        public HttpAssertion satisfies( Consumer<Client.Response> assertion ) {
+            assertion.accept( response );
+            return this;
+        }
+    }
+
+    public static class JsonHttpAssertion {
+        private Client.Response response;
+
+        private JsonHttpAssertion( Client.Response response ) {
+            this.response = response;
+        }
+
+        public static JsonHttpAssertion assertJsonResponse( Client.Response response ) {
+            assertHttpResponse( response )
+                .hasContentType( APPLICATION_JSON );
+            return new JsonHttpAssertion( response );
+        }
+
+        public JsonHttpAssertion isEqualTo( int code, String reasonPhrase, String body ) {
+            assertHttpResponse( response )
+                .hasCode( code )
+                .hasReason( reasonPhrase );
+            isJson().isStructurallyEqualTo( body );
+            return this;
+        }
+
+        public JsonHttpAssertion isEqualTo( String json ) {
+            return this.isEqualTo( HTTP_OK, "OK", json );
+        }
+
+        public JsonHttpAssertion isEqualTo( Class<?> contextClass, String resource ) {
+            return this.isEqualTo( contentOfTestResource( contextClass, resource ) );
+        }
+
+        public JsonAsserts.JsonAssertion isJson() {
+            return assertJson( response.contentString() );
         }
     }
 }

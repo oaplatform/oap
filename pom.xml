@@ -39,8 +39,6 @@
 
     <modules>
         <module>oap-stdlib</module>
-<!--        @TODO create separate maven for java 8-->
-<!--        <module>oap-stdlib-java8</module>-->
         <module>oap-application-spring</module>
         <module>oap-alert-slack</module>
         <module>oap-zabbix</module>
@@ -62,7 +60,7 @@
     </distributionManagement>
 
     <properties>
-        <revision>6.0.0</revision>
+        <revision>6.0.1</revision>
 
         <maven.compiler.source>13</maven.compiler.source>
         <maven.compiler.target>13</maven.compiler.target>
