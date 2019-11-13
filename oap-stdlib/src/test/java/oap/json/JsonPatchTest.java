@@ -40,14 +40,15 @@ public class JsonPatchTest {
 
     @Test
     public void patchSimpleObject() {
-        String test = "{\n"
-            + "\t\"id\": \"i1\",\n"
-            + "\t\"count\": 10,\n"
-            + "\t\"unknown\": 0.0\n"
-            + "}";
+        var test = """
+{
+\t\"id\": \"i1\",
+\t\"count\": 10,
+\t\"unknown\": 0.0
+}""";
 
-        TestObj obj = new TestObj( "i1", 0L, "descr" );
-        Map<String, Object> immutableMap = JsonPatch.patch( obj, test );
+        var obj = new TestObj( "i1", 0L, "descr" );
+        var immutableMap = JsonPatch.patch( obj, test );
         obj = Binder.json.unmarshal( TestObj.class, immutableMap );
         assertThat( obj.count ).isEqualTo( 10L );
         assertThat( obj.id ).isEqualTo( "i1" );
@@ -56,46 +57,47 @@ public class JsonPatchTest {
 
     @Test( expectedExceptions = JsonException.class )
     public void patchObjectFailIncorrectJson() {
-        String test = "{\n"
-            + "\t\"id\": \"i1\",\n"
-            + "\t\"count\": 10`\n"
-            + "\t\"unknown\": 0.0\n"
-            + "}";
+        var test = """
+{
+\t\"id\": \"i1\",
+\t\"count\": 10`
+\t\"unknown\": 0.0
+}""";
 
-        TestObj obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
+        var obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
 
         JsonPatch.patch( obj, test );
     }
 
     @Test
     public void patchUpdateInner() {
-        TestObj obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
+        var obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
 
-        String patch = "{\"id\": \"i2\", \"description\":\"newdesc\"}";
+        var patch = "{\"id\": \"i2\", \"description\":\"newdesc\"}";
 
-        Map<String, Object> patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> p.get( "id" ).equals( "i2" ) ).orElseGet( Maps::empty ), patch );
+        var patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> p.get( "id" ).equals( "i2" ) ).orElseGet( Maps::empty ), patch );
         assertJson( patched )
             .isStructurallyEqualToResource( getClass(), "patched.json" );
     }
 
     @Test
     public void patchAddInnerToExistingList() {
-        TestObj obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
+        var obj = objectOfTestJsonResource( getClass(), TestObj.class, "source.json" );
 
-        String patch = "{\"id\": \"i3\", \"description\":\"newdesc\", \"count\": 1 }";
+        var patch = "{\"id\": \"i3\", \"description\":\"newdesc\", \"count\": 1 }";
 
-        Map<String, Object> patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.get( "list" ), p -> Objects.equals( p.get( "id" ), "i3" ) ).orElseGet( Maps::empty ), patch );
+        var patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.get( "list" ), p -> Objects.equals( p.get( "id" ), "i3" ) ).orElseGet( Maps::empty ), patch );
         assertJson( patched )
             .isStructurallyEqualToResource( getClass(), "added.json" );
     }
 
     @Test
     public void patchAddInner() {
-        TestObj obj = objectOfTestJsonResource( getClass(), TestObj.class, "source_no_list.json" );
+        var obj = objectOfTestJsonResource( getClass(), TestObj.class, "source_no_list.json" );
 
-        String patch = "{\"id\": \"i2\", \"description\":\"newdesc\", \"count\": 0 }";
+        var patch = "{\"id\": \"i2\", \"description\":\"newdesc\", \"count\": 0 }";
 
-        Map<String, Object> patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> Objects.equals( p.get( "id" ), "i2" ) ).orElseGet( Maps::empty ), patch );
+        var patched = JsonPatch.patch( obj, "list", o -> Lists.find( ( List<Map<String, Object>> ) o.getOrDefault( "list", Lists.empty() ), p -> Objects.equals( p.get( "id" ), "i2" ) ).orElseGet( Maps::empty ), patch );
         assertJson( patched )
             .isStructurallyEqualToResource( getClass(), "added_no_list.json" );
     }

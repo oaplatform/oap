@@ -62,10 +62,10 @@
     </distributionManagement>
 
     <properties>
-        <revision>5.6.0</revision>
+        <revision>6.0.0</revision>
 
-        <maven.compiler.source>12</maven.compiler.source>
-        <maven.compiler.target>12</maven.compiler.target>
+        <maven.compiler.source>13</maven.compiler.source>
+        <maven.compiler.target>13</maven.compiler.target>
 
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
