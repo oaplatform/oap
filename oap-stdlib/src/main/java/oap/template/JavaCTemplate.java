@@ -27,7 +27,7 @@ package oap.template;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.StringBuilderPool;
-import oap.tools.MemoryClassLoaderJava12;
+import oap.tools.MemoryClassLoaderJava13;
 import oap.util.Pair;
 import oap.util.Try;
 import org.apache.commons.lang3.ClassUtils;
@@ -113,7 +113,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
             );
 
             var fullTemplateName = getClass().getPackage().getName() + "." + name;
-            var mcl = new MemoryClassLoaderJava12( fullTemplateName, c.toString(), cacheFile );
+            var mcl = new MemoryClassLoaderJava13( fullTemplateName, c.toString(), cacheFile );
             func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( fullTemplateName ).getDeclaredConstructor().newInstance();
 
         } catch( Exception e ) {
