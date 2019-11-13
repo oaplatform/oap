@@ -23,6 +23,7 @@
  */
 package oap.http;
 
+import lombok.ToString;
 import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Pair;
@@ -57,14 +58,15 @@ import static oap.util.Pair.__;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
-public class HttpResponse {
+@ToString( exclude = "contentEntity" )
+public final class HttpResponse {
     public static final HttpResponse NOT_FOUND = status( HTTP_NOT_FOUND ).response();
     public static final HttpResponse FORBIDDEN = status( HTTP_FORBIDDEN ).response();
     public static final HttpResponse NO_CONTENT = status( HTTP_NO_CONTENT ).response();
     public static final HttpResponse NOT_MODIFIED = status( HTTP_NOT_MODIFIED ).response();
     private static Map<String, Function<Object, String>> producers = Maps.of(
-        __( ContentType.TEXT_PLAIN.getMimeType(), String::valueOf ),
-        __( ContentType.APPLICATION_JSON.getMimeType(), Binder.json::marshal )
+        __( TEXT_PLAIN.getMimeType(), String::valueOf ),
+        __( APPLICATION_JSON.getMimeType(), Binder.json::marshal )
     );
     public final int code;
     public final String reason;
@@ -98,7 +100,7 @@ public class HttpResponse {
 
     public static Builder ok( Object content ) {
         return status( HTTP_OK )
-            .withEntity( new StringEntity( content( false, content, ContentType.APPLICATION_JSON ), ContentType.APPLICATION_JSON ) );
+            .withEntity( new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON ) );
     }
 
     public static Builder ok( byte[] content, ContentType contentType ) {
@@ -148,7 +150,7 @@ public class HttpResponse {
 
     public static Builder status( int code, String reason, Object content ) {
         return status( code, reason )
-            .withEntity( new StringEntity( content( false, content, ContentType.APPLICATION_JSON ), ContentType.APPLICATION_JSON ) );
+            .withEntity( new StringEntity( content( false, content, APPLICATION_JSON ), APPLICATION_JSON ) );
     }
 
     public static Builder status( int code ) {
@@ -174,19 +176,7 @@ public class HttpResponse {
             : HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
     }
 
-    /**
-     * @todo what is it for?
-     */
-    public String getFirstHeader( String name ) {
-        return headers.stream().filter( p -> p._1.equals( name ) ).findFirst().map( p -> p._2 ).orElse( null );
-    }
-
-    @Override
-    public String toString() {
-        return "HttpResponse{" + "reason='" + reason + '\'' + ", headers=" + headers + ", code=" + code + '}';
-    }
-
-    public static class Builder {
+    public static final class Builder {
         public String reason;
         public List<Pair<String, String>> headers = new ArrayList<>();
         public List<Pair<String, String>> cookies = new ArrayList<>();
@@ -226,7 +216,7 @@ public class HttpResponse {
         /**
          * this method is package private not to expose apache http entity outside the framework.
          */
-        Builder withEntity( HttpEntity entity ) {
+        private Builder withEntity( HttpEntity entity ) {
             this.contentEntity = entity;
             return this;
         }
