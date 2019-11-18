@@ -64,7 +64,7 @@
     </distributionManagement>
 
     <properties>
-        <revision>6.0.2</revision>
+        <revision>6.0.3</revision>
 
         <maven.compiler.source>13</maven.compiler.source>
         <maven.compiler.target>13</maven.compiler.target>
@@ -74,7 +74,7 @@
         <project.reporting.outputEncoding>${project.build.sourceEncoding}</project.reporting.outputEncoding>
 
         <testng.version>6.11</testng.version>
-        <assertj.version>3.12.2</assertj.version>
+        <assertj.version>3.14.0</assertj.version>
         <guava.version>27.1-jre</guava.version>
         <logback.version>1.2.3</logback.version>
         <slf4j.version>1.7.21</slf4j.version>
