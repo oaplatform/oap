@@ -40,6 +40,7 @@ import java.util.function.Consumer;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static oap.http.testng.HttpAsserts.HttpAssertion.assertHttpResponse;
+import static oap.http.testng.HttpAsserts.JsonHttpAssertion.assertJsonResponse;
 import static oap.json.testng.JsonAsserts.assertJson;
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.contentOfTestResource;
@@ -134,21 +135,12 @@ public class HttpAsserts {
             return this;
         }
 
-        /**
-         * @see JsonHttpAssertion
-         * @see #satisfies(Consumer)
-         */
         @Deprecated
         public JsonAsserts.JsonAssertion isJson() {
-            hasContentType( APPLICATION_JSON );
+            assertJsonResponse( response );
             return assertJson( response.contentString() );
         }
 
-        /**
-         * @see JsonHttpAssertion
-         * @see #satisfies(Consumer)
-         */
-        @Deprecated
         public HttpAssertion isJson( String json ) {
             isJson().isStructurallyEqualTo( json );
             return this;
@@ -199,32 +191,16 @@ public class HttpAsserts {
                 .hasBody( body );
         }
 
-        /**
-         * @see JsonHttpAssertion
-         * @see #satisfies(Consumer)
-         */
-        @Deprecated
         public HttpAssertion respondedJson( int code, String reasonPhrase, String body ) {
-            return this.hasCode( code )
-                .hasReason( reasonPhrase )
-                .hasContentType( APPLICATION_JSON )
-                .isJson( body );
+            assertJsonResponse( response )
+                .isEqualTo( code, reasonPhrase, body );
+            return this;
         }
 
-        /**
-         * @see JsonHttpAssertion
-         * @see #satisfies(Consumer)
-         */
-        @Deprecated
         public HttpAssertion respondedJson( String json ) {
             return this.respondedJson( HTTP_OK, "OK", json );
         }
 
-        /**
-         * @see JsonHttpAssertion
-         * @see #satisfies(Consumer)
-         */
-        @Deprecated
         public HttpAssertion respondedJson( Class<?> contextClass, String resource ) {
             return this.respondedJson( contentOfTestResource( contextClass, resource ) );
         }
