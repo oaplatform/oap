@@ -31,10 +31,6 @@ import oap.testng.Fixtures;
 import oap.testng.TestDirectory;
 import org.testng.annotations.Test;
 
-import java.net.URL;
-import java.nio.file.Path;
-import java.util.Optional;
-
 import static oap.testng.Asserts.assertString;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,36 +41,37 @@ public class DictionaryParserTest extends Fixtures {
 
     @Test
     public void serialize() {
-        Path path = Env.tmpPath( "test/test.json" );
+        var path = Env.tmpPath( "test/test.json" );
         DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path, true );
 
-        assertString( Files.readString( path ) ).isEqualTo( "{\n"
-            + "  \"name\" : \"test-dictionary\",\n"
-            + "  \"version\" : 1,\n"
-            + "  \"values\" : [ {\n"
-            + "    \"id\" : \"id1\",\n"
-            + "    \"eid\" : 49,\n"
-            + "    \"values\" : [ {\n"
-            + "      \"id\" : \"id11\",\n"
-            + "      \"eid\" : 11,\n"
-            + "      \"title\" : \"title11\"\n"
-            + "    }, {\n"
-            + "      \"id\" : \"id12\",\n"
-            + "      \"eid\" : 12,\n"
-            + "      \"title\" : \"title12\"\n"
-            + "    } ],\n"
-            + "    \"title\" : \"title1\"\n"
-            + "  }, {\n"
-            + "    \"id\" : \"id2\",\n"
-            + "    \"eid\" : 50,\n"
-            + "    \"property1\" : \"val1\",\n"
-            + "    \"title\" : \"title2\"\n"
-            + "  }, {\n"
-            + "    \"id\" : \"id3\",\n"
-            + "    \"eid\" : 51,\n"
-            + "    \"tags\" : [ \"tag1\", \"tag2\" ]\n"
-            + "  } ]\n"
-            + "}" );
+        assertString( Files.readString( path ) ).isEqualTo( """
+        {
+          "name" : "test-dictionary",
+          "version" : 1,
+          "values" : [ {
+            "id" : "id1",
+            "eid" : 49,
+            "values" : [ {
+              "id" : "id11",
+              "eid" : 11,
+              "title" : "title11"
+            }, {
+              "id" : "id12",
+              "eid" : 12,
+              "title" : "title12"
+            } ],
+            "title" : "title1"
+          }, {
+            "id" : "id2",
+            "eid" : 50,
+            "property1" : "val1",
+            "title" : "title2"
+          }, {
+            "id" : "id3",
+            "eid" : 51,
+            "tags" : [ "tag1", "tag2" ]
+          } ]
+        }""".stripIndent() );
     }
 
     @Test(
@@ -82,7 +79,7 @@ public class DictionaryParserTest extends Fixtures {
         expectedExceptionsMessageRegExp = "duplicate eid: path: /id1; eid: 11; one: id11; two: id12, path: /id1/id12; eid: 50; one: id2; two: id3"
     )
     public void invalidEid() {
-        Optional<URL> url = Resources.url( getClass(), getClass().getSimpleName() + "/" + "invalid-eid-dictionary.conf" );
+        var url = Resources.url( getClass(), getClass().getSimpleName() + "/" + "invalid-eid-dictionary.conf" );
 
         assertThat( url ).isPresent();
 
@@ -91,9 +88,9 @@ public class DictionaryParserTest extends Fixtures {
 
     @Test
     public void zeroStringEid() {
-        DictionaryRoot dictionary = Dictionaries.getDictionary( "test-dictionary2" );
-        assertThat( dictionary.getOrDefault( 0, "not found" ) ).isEqualTo( "-" );
-        assertThat( dictionary.getOrDefault( 'I', "not found" ) ).isEqualTo( "IMAGE" );
+        var dictionary = Dictionaries.getDictionary( "test-dictionary2" );
+        assertString( dictionary.getOrDefault( 0, "not found" ) ).isEqualTo( "-" );
+        assertString( dictionary.getOrDefault( 'I', "not found" ) ).isEqualTo( "IMAGE" );
 
     }
 }

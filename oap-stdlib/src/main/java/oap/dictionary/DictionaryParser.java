@@ -178,8 +178,7 @@ public class DictionaryParser {
     }
 
     @SuppressWarnings( "unchecked" )
-    private static void resolveExtends( DictionaryRoot dictionaryRoot, Dictionary parent, AtomicInteger id ) {
-        var values = parent.getValues();
+    private static void resolveExtends( DictionaryRoot dictionaryRoot, List<? extends Dictionary> values, AtomicInteger id ) {
         var iterator = ( ListIterator<Dictionary> ) values.listIterator();
         var lastExtendsId = -1;
         while( iterator.hasNext() ) {
@@ -188,7 +187,10 @@ public class DictionaryParser {
                 iterator.remove();
 
                 var anExtends = ( ( DictionaryExtends ) child ).anExtends;
-                for( var v : getValues( dictionaryRoot, anExtends ) ) {
+                var eValues = getValues( dictionaryRoot, anExtends );
+                resolveExtends( dictionaryRoot, eValues, id );
+                
+                for( var v : eValues ) {
                     if( anExtends.filter.isEmpty() || anExtends.filter.filter( f -> v.getTags().contains( f ) ).isPresent() ) {
                         if( Lists.anyMatch( values, pv -> !( pv instanceof DictionaryExtends ) && pv.getId().equals( v.getId() ) ) ) {
                             if( !anExtends.ignoreDuplicate )
@@ -212,6 +214,13 @@ public class DictionaryParser {
                 resolveExtends( dictionaryRoot, child, id );
             }
         }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private static void resolveExtends( DictionaryRoot dictionaryRoot, Dictionary parent, AtomicInteger id ) {
+        var values = parent.getValues();
+
+        resolveExtends( dictionaryRoot, values, id );
     }
 
     private static List<? extends Dictionary> getValues( DictionaryRoot dictionaryRoot, Extends anExtends ) {

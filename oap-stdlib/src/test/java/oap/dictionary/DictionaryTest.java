@@ -74,6 +74,19 @@ public class DictionaryTest {
     }
 
     @Test
+    public void testChainExtend() {
+        var values = Dictionaries
+            .getDictionary( "test-dictionary-chain-extends", INCREMENTAL_ID_STRATEGY )
+            .getValue( "DICT2" )
+            .getValues();
+
+        assertThat( values ).hasSize( 3 );
+        assertThat( values.get( 0 ).getId() ).isEqualTo( "id1" );
+        assertThat( values.get( 1 ).getId() ).isEqualTo( "id2" );
+        assertThat( values.get( 2 ).getId() ).isEqualTo( "my-id" );
+    }
+
+    @Test
     public void extendDuplicate() {
         assertThatThrownBy( () ->
             Dictionaries
