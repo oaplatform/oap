@@ -24,6 +24,9 @@
 package oap.application.remote;
 
 import com.google.common.base.Preconditions;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client;
 import oap.util.Result;
@@ -41,7 +44,10 @@ import static java.net.HttpURLConnection.HTTP_OK;
 
 @Slf4j
 public final class RemoteInvocationHandler implements InvocationHandler {
-
+    private final Counter timeoutMetrics;
+    private final Counter errorMetrics;
+    private final Counter successMetrics;
+    
     private final URI uri;
     private final FST fst;
     private final int retry;
@@ -61,14 +67,26 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         this.timeout = timeout;
         this.fst = new FST( serialization );
         this.retry = retry;
+
+        timeoutMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "timeout" ) );
+        errorMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "error" ) );
+        successMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "success" ) );
+
+        log.debug( "remote interface for {} at {} wich certs {}", service, uri, certificateLocation );
+
         this.client = Client.custom( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
             .onTimeout( client -> {
                 log.error( "timeout invoking {}", uri );
+                timeoutMetrics.increment();
                 client.reset();
             } )
-            .onError( ( c, e ) -> log.error( "error invoking {}: {}", uri, e ) )
-            .setMaxConnPerRoute( 1 )
-            .setMaxConnTotal( 1 )
+            .onError( ( c, e ) -> {
+                log.error( "error invoking {}: {}", uri, e );
+                errorMetrics.increment();
+            } )
+            .onSuccess( c -> successMetrics.increment() )
+            .setMaxConnPerRoute( 100 )
+            .setMaxConnTotal( 100 )
             .build();
     }
 
@@ -80,7 +98,6 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     private static Object proxy( URI uri, String service, Class<?> clazz,
                                  Path certificateLocation, String certificatePassword,
                                  long timeout, FST.SerializationMethod serialization, int retry ) {
-        log.debug( "remote interface for {} at {} wich certs {}", service, uri, certificateLocation );
         return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[] { clazz },
             new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout, serialization, retry ) );
     }
