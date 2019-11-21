@@ -46,7 +46,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Slf4j
 public class MemoryClassLoaderJava13 extends ClassLoader {
@@ -78,6 +77,16 @@ public class MemoryClassLoaderJava13 extends ClassLoader {
             }
         } else {
             list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
+        }
+
+        if( list.isEmpty() ) {
+            try {
+                findClass( classname );
+            } catch( UnsupportedClassVersionError e ) {
+                log.trace( e.getMessage(), e );
+                list.add( new Source( classname, JavaFileObject.Kind.SOURCE, filecontent ) );
+            } catch( ClassNotFoundException ignored ) {
+            }
         }
 
         if( !list.isEmpty() ) {
