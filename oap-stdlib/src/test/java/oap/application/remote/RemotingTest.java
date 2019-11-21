@@ -51,7 +51,7 @@ public class RemotingTest {
             assertThat( kernel.<RemoteClient>service( "remote-client1" ) ).isPresent().get()
                 .satisfies( remote1 -> {
                     assertThat( remote1.accessible() ).isTrue();
-                    assertString( remote1.toString() ).isEqualTo( "remote:remote-service-impl1@https://localhost:8980/remote/" );
+                    assertString( remote1.toString() ).isEqualTo( "remote:remote-service-impl1@http://localhost:8980/remote/" );
                 } );
 
             assertThat( kernel.<RemoteClient>service( "remote-client2" ) ).isPresent().get()
