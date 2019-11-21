@@ -35,7 +35,6 @@ import oap.application.link.MapLinkReflection;
 import oap.application.remote.RemoteInvocationHandler;
 import oap.application.supervision.Supervisor;
 import oap.json.Binder;
-import oap.metrics.Metrics;
 import oap.reflect.Reflect;
 import oap.reflect.ReflectException;
 import oap.reflect.Reflection;
@@ -435,7 +434,6 @@ public class Kernel implements Closeable {
         log.debug( "stopping application kernel {}...", name );
         supervisor.stop();
         services.clear();
-        Metrics.resetAll();
         Application.unregister( this );
         log.debug( "application kernel stopped" );
     }
