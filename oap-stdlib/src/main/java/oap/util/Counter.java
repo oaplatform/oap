@@ -42,8 +42,6 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
     private Counter() {
     }
 
-    public abstract long currentTick();
-
     protected abstract long getCurrentTick();
 
     public final void inc() {
@@ -95,7 +93,6 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
             this.value = count;
         }
 
-        @Override
         public final long currentTick() {
             return DateTimeUtils.currentTimeMillis() / periodMs;
         }
@@ -111,8 +108,7 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
     public static final class HourlyCounter extends Counter<HourlyCounter> {
         private static final long serialVersionUID = -6350858231677830610L;
 
-        @Override
-        public final long currentTick() {
+        public static long currentTick() {
             return DateTimeUtils.currentTimeMillis() / 1000L / 60L / 60L;
         }
 
@@ -127,8 +123,7 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
     public static final class DailyCounter extends Counter<DailyCounter> {
         private static final long serialVersionUID = -4287987989875991573L;
 
-        @Override
-        public final long currentTick() {
+        public static long currentTick() {
             return DateTimeUtils.currentTimeMillis() / 1000L / 60L / 60L / 24L;
         }
 
@@ -143,8 +138,7 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
     public static final class MonthlyCounter extends Counter<MonthlyCounter> {
         private static final long serialVersionUID = 4419536959429173372L;
 
-        @Override
-        public final long currentTick() {
+        public static long currentTick() {
             return new DateTime( UTC ).getMonthOfYear();
         }
 
