@@ -24,39 +24,41 @@
 
 package oap.id;
 
-import java.util.Optional;
+import oap.util.Strings;
+
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public interface Identifier<T, I> {
-    void set( T object, I id );
+import static java.util.Objects.requireNonNull;
 
-    I getOrInit( T object, Predicate<I> conflict );
+public final class StringIdentifier<T> extends GenericIdentifier<T, String> {
 
-    I get( T object );
+    private final Function<T, String> suggestion;
+    private final Strings.FriendlyIdOption[] options;
+    private final int length;
 
-    static <T> StringIdentifierBuilder<T> forPath( String path ) {
-        return StringIdentifierBuilder.forPath( path );
+    StringIdentifier( Function<T, String> getter, BiConsumer<T, String> setter, Function<T, String> suggestion, Strings.FriendlyIdOption[] options, int length ) {
+        super( getter, setter );
+        this.length = length;
+        this.suggestion = suggestion;
+        this.options = options;
     }
 
-    static <T> StringIdentifierBuilder<T> forAnnotation() {
-        return StringIdentifierBuilder.forAnnotation();
+    @Override
+    public synchronized String getOrInit( T object, Predicate<String> conflict ) {
+        String id = getter.apply( object );
+
+        if( id == null ) {
+            requireNonNull( suggestion, "null id, suggestion required" );
+            requireNonNull( setter, "null id, setter required " );
+
+            id = Strings.toUserFriendlyId( suggestion.apply( object ), length, conflict, options );
+
+            setter.accept( object, id );
+        }
+
+        return id;
     }
 
-    static <T> StringIdentifier<T> forAnnotationFixed() {
-        return StringIdentifierBuilder.<T>forAnnotation().build();
-    }
-
-    static <T> StringIdentifierBuilder<T> forId( final Function<T, String> getter ) {
-        return StringIdentifierBuilder.forId( getter );
-    }
-
-    static <T> StringIdentifierBuilder<T> forId( final Function<T, String> getter, BiConsumer<T, String> setter ) {
-        return StringIdentifierBuilder.forId( getter, setter );
-    }
-
-    static <T, I> Predicate<I> toConflict( Function<I, Optional<T>> f ) {
-        return id -> f.apply( id ).isPresent();
-    }
 }

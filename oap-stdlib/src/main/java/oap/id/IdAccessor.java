@@ -31,14 +31,15 @@ import oap.util.Lists;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class IdAccessor {
-    private static final ConcurrentHashMap<Class, Accessor> ids = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Class, Accessor<?>> ids = new ConcurrentHashMap<>();
 
-    public static String getter( Object value ) {
-        return accessor( value.getClass() ).get( value );
+    public static <I> I get( Object value ) {
+        return IdAccessor.<I>accessor( value.getClass() ).get( value );
     }
 
-    private static Accessor accessor( Class<?> clazz ) {
-        return ids.computeIfAbsent( clazz, c -> {
+    @SuppressWarnings( "unchecked" )
+    private static <I> Accessor<I> accessor( Class<?> clazz ) {
+        return ( Accessor<I> ) ids.computeIfAbsent( clazz, c -> {
             Reflection reflect = Reflect.reflect( c );
 
             var idFields = reflect.annotatedFields( Id.class );
@@ -49,28 +50,27 @@ public class IdAccessor {
             Reflection.Method setter = null;
             Reflection.Method getter = null;
 
-
             for( Reflection.Method m : idMethods )
                 if( m.returnType().assignableTo( String.class ) ) getter = m;
                 else setter = m;
 
             if( setter == null || getter == null ) throw new IllegalArgumentException( "no @Id annotation" );
 
-            return new MethodAccessor( setter, getter );
+            return new MethodAccessor<I>( setter, getter );
         } );
     }
 
-    public static void setter( Object value, String id ) {
+    public static void set( Object value, String id ) {
         accessor( value.getClass() ).set( value, id );
     }
 
-    public interface Accessor {
-        void set( Object object, String id );
+    public interface Accessor<I> {
+        void set( Object object, I id );
 
-        String get( Object object );
+        I get( Object object );
     }
 
-    private static class FieldAccessor implements Accessor {
+    private static class FieldAccessor<I> implements Accessor<I> {
         private final Reflection.Field field;
 
         public FieldAccessor( Reflection.Field field ) {
@@ -78,17 +78,18 @@ public class IdAccessor {
         }
 
         @Override
-        public void set( Object object, String id ) {
+        public void set( Object object, I id ) {
             field.set( object, id );
         }
 
         @Override
-        public String get( Object object ) {
-            return ( String ) field.get( object );
+        @SuppressWarnings( "unchecked" )
+        public I get( Object object ) {
+            return ( I ) field.get( object );
         }
     }
 
-    private static class MethodAccessor implements Accessor {
+    private static class MethodAccessor<I> implements Accessor<I> {
         private final Reflection.Method setter;
         private final Reflection.Method getter;
 
@@ -98,13 +99,14 @@ public class IdAccessor {
         }
 
         @Override
-        public void set( Object object, String id ) {
+        public void set( Object object, I id ) {
             setter.invoke( object, id );
         }
 
         @Override
-        public String get( Object object ) {
-            return ( String ) getter.invoke( object );
+        @SuppressWarnings( "unchecked" )
+        public I get( Object object ) {
+            return ( I ) getter.invoke( object );
         }
     }
 }

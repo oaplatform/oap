@@ -24,39 +24,25 @@
 
 package oap.id;
 
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
-public interface Identifier<T, I> {
-    void set( T object, I id );
-
-    I getOrInit( T object, Predicate<I> conflict );
-
-    I get( T object );
-
-    static <T> StringIdentifierBuilder<T> forPath( String path ) {
-        return StringIdentifierBuilder.forPath( path );
+public class IntIdentifierBuilder<T> extends Builder<T, Integer> {
+    public IntIdentifierBuilder( Function<T, Integer> getter, BiConsumer<T, Integer> setter ) {
+        super( getter, setter );
     }
 
-    static <T> StringIdentifierBuilder<T> forAnnotation() {
-        return StringIdentifierBuilder.forAnnotation();
+    @Override
+    public IntIdentifier<T> build() {
+        return new IntIdentifier<>( getter, setter );
     }
 
-    static <T> StringIdentifier<T> forAnnotationFixed() {
-        return StringIdentifierBuilder.<T>forAnnotation().build();
+    public static <T> IntIdentifierBuilder<T> forId( Function<T, Integer> getter ) {
+        return new IntIdentifierBuilder<>( getter, null );
     }
 
-    static <T> StringIdentifierBuilder<T> forId( final Function<T, String> getter ) {
-        return StringIdentifierBuilder.forId( getter );
+    public static <T> IntIdentifierBuilder<T> forId( Function<T, Integer> getter, BiConsumer<T, Integer> setter ) {
+        return new IntIdentifierBuilder<>( getter, setter );
     }
 
-    static <T> StringIdentifierBuilder<T> forId( final Function<T, String> getter, BiConsumer<T, String> setter ) {
-        return StringIdentifierBuilder.forId( getter, setter );
-    }
-
-    static <T, I> Predicate<I> toConflict( Function<I, Optional<T>> f ) {
-        return id -> f.apply( id ).isPresent();
-    }
 }

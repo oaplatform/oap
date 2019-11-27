@@ -37,7 +37,7 @@ import static oap.util.Strings.FriendlyIdOption.FILL;
 import static oap.util.Strings.FriendlyIdOption.NO_VOWELS;
 
 
-public class DefaultIdentifierTest {
+public class StringIdentifierTest {
 
     @Test
     public void forPath() {
@@ -83,7 +83,7 @@ public class DefaultIdentifierTest {
 
     @Test
     public void conflictResolution() {
-        Identifier<Bean> identifier = Identifier.<Bean>forPath( "id" )
+        var identifier = Identifier.<Bean>forPath( "id" )
             .suggestion( bean -> bean.s )
             .length( 7 )
             .options( NO_VOWELS, FILL )

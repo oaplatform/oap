@@ -24,39 +24,39 @@
 
 package oap.id;
 
-import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public interface Identifier<T, I> {
-    void set( T object, I id );
+public class IntIdentifier<T> extends GenericIdentifier<T, Integer> {
+    public static final int MAX_ATTEMPTS = 10000;
+    public AtomicInteger generator = new AtomicInteger( 0 );
 
-    I getOrInit( T object, Predicate<I> conflict );
-
-    I get( T object );
-
-    static <T> StringIdentifierBuilder<T> forPath( String path ) {
-        return StringIdentifierBuilder.forPath( path );
+    public IntIdentifier( Function<? super T, Integer> getter, BiConsumer<? super T, Integer> setter ) {
+        super( getter, setter );
     }
 
-    static <T> StringIdentifierBuilder<T> forAnnotation() {
-        return StringIdentifierBuilder.forAnnotation();
+    @Override
+    public Integer getOrInit( T object, Predicate<Integer> conflict ) {
+        var id = getter.apply( object );
+        if( id == null ) {
+            for( int i = 0; i < MAX_ATTEMPTS; i++ ) {
+                id = generator.incrementAndGet();
+                if( !conflict.test( id ) ) {
+                    setter.accept( object, id );
+                    return id;
+                }
+            }
+            throw new IllegalStateException( "maximum attemts generating id reached" );
+        } else return id;
     }
 
-    static <T> StringIdentifier<T> forAnnotationFixed() {
-        return StringIdentifierBuilder.<T>forAnnotation().build();
+    public static <T> IntIdentifierBuilder<T> forId( final Function<T, Integer> getter ) {
+        return IntIdentifierBuilder.forId( getter );
     }
 
-    static <T> StringIdentifierBuilder<T> forId( final Function<T, String> getter ) {
-        return StringIdentifierBuilder.forId( getter );
-    }
-
-    static <T> StringIdentifierBuilder<T> forId( final Function<T, String> getter, BiConsumer<T, String> setter ) {
-        return StringIdentifierBuilder.forId( getter, setter );
-    }
-
-    static <T, I> Predicate<I> toConflict( Function<I, Optional<T>> f ) {
-        return id -> f.apply( id ).isPresent();
+    public static <T> IntIdentifierBuilder<T> forId( final Function<T, Integer> getter, BiConsumer<T, Integer> setter ) {
+        return IntIdentifierBuilder.forId( getter, setter );
     }
 }
