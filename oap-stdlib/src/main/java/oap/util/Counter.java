@@ -31,6 +31,8 @@ import org.joda.time.DateTimeUtils;
 
 import java.io.Serializable;
 
+import static org.joda.time.DateTimeZone.UTC;
+
 @EqualsAndHashCode
 @ToString
 public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter<T>>, Serializable {
@@ -39,6 +41,8 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
 
     private Counter() {
     }
+
+    public abstract long currentTick();
 
     protected abstract long getCurrentTick();
 
@@ -77,10 +81,38 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
 
     @ToString( callSuper = true )
     @EqualsAndHashCode( callSuper = true )
+    public static final class CustomCounter extends Counter<HourlyCounter> {
+        private static final long serialVersionUID = 5833832571566146598L;
+        private final long periodMs;
+
+        public CustomCounter( long periodMs ) {
+            this.periodMs = periodMs;
+        }
+
+        public CustomCounter( long periodMs, long startPeriod, long count ) {
+            this.periodMs = periodMs;
+            this.tick = startPeriod / periodMs;
+            this.value = count;
+        }
+
+        @Override
+        public final long currentTick() {
+            return DateTimeUtils.currentTimeMillis() / periodMs;
+        }
+
+        @Override
+        protected final long getCurrentTick() {
+            return currentTick();
+        }
+    }
+
+    @ToString( callSuper = true )
+    @EqualsAndHashCode( callSuper = true )
     public static final class HourlyCounter extends Counter<HourlyCounter> {
         private static final long serialVersionUID = -6350858231677830610L;
 
-        public static long currentTick() {
+        @Override
+        public final long currentTick() {
             return DateTimeUtils.currentTimeMillis() / 1000L / 60L / 60L;
         }
 
@@ -95,7 +127,8 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
     public static final class DailyCounter extends Counter<DailyCounter> {
         private static final long serialVersionUID = -4287987989875991573L;
 
-        public static long currentTick() {
+        @Override
+        public final long currentTick() {
             return DateTimeUtils.currentTimeMillis() / 1000L / 60L / 60L / 24L;
         }
 
@@ -110,8 +143,9 @@ public abstract class Counter<T extends Counter<T>> implements Mergeable<Counter
     public static final class MonthlyCounter extends Counter<MonthlyCounter> {
         private static final long serialVersionUID = 4419536959429173372L;
 
-        public static long currentTick() {
-            return new DateTime().getMonthOfYear();
+        @Override
+        public final long currentTick() {
+            return new DateTime( UTC ).getMonthOfYear();
         }
 
         @Override
