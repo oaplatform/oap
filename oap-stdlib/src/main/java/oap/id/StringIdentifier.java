@@ -62,7 +62,7 @@ public final class StringIdentifier<T> extends GenericIdentifier<T, String> {
     }
 
     @Override
-    public String parse( String id ) {
+    public String fromString( String id ) {
         return id;
     }
 

@@ -53,7 +53,7 @@ public class IntIdentifier<T> extends GenericIdentifier<T, Integer> {
     }
 
     @Override
-    public Integer parse( String id ) {
+    public Integer fromString( String id ) {
         return Integer.parseInt( id );
     }
 

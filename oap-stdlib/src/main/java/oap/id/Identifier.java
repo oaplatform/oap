@@ -36,7 +36,7 @@ public interface Identifier<T, I> {
 
     I get( T object );
 
-    I parse( String id );
+    I fromString( String id );
 
     static <T> StringIdentifierBuilder<T> forPath( String path ) {
         return StringIdentifierBuilder.forPath( path );
