@@ -48,6 +48,7 @@ public class Threads {
         }
     }
 
+    @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )
     @SneakyThrows
     public static void waitFor( Object monitor ) {
         synchronized( monitor ) {
@@ -55,16 +56,25 @@ public class Threads {
         }
     }
 
+    @SuppressWarnings( "SynchronizationOnLocalVariableOrMethodParameter" )
     public static void notifyAllFor( Object monitor ) {
         synchronized( monitor ) {
             monitor.notifyAll();
         }
     }
 
+    public static void synchronizedOn( Object id, Runnable run ) {
+        synchronizedOn( String.valueOf( id ), run );
+    }
+
     public static void synchronizedOn( String id, Runnable run ) {
         synchronized( id.intern() ) {
             run.run();
         }
+    }
+
+    public static <R> R synchronizedOn( Object id, Supplier<R> run ) {
+        return synchronizedOn( String.valueOf( id ), run );
     }
 
     public static <R> R synchronizedOn( String id, Supplier<R> run ) {
