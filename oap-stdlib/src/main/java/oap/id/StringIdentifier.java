@@ -66,4 +66,9 @@ public final class StringIdentifier<T> extends GenericIdentifier<T, String> {
         return id;
     }
 
+    @Override
+    public String toString( String id ) {
+        return id;
+    }
+
 }

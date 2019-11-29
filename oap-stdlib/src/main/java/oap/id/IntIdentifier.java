@@ -57,6 +57,11 @@ public class IntIdentifier<T> extends GenericIdentifier<T, Integer> {
         return Integer.parseInt( id );
     }
 
+    @Override
+    public String toString( Integer id ) {
+        return id.toString();
+    }
+
     public static <T> IntIdentifierBuilder<T> forId( final Function<T, Integer> getter ) {
         return IntIdentifierBuilder.forId( getter );
     }

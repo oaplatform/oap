@@ -38,6 +38,8 @@ public interface Identifier<T, I> {
 
     I fromString( String id );
 
+    String toString( I id );
+
     static <T> StringIdentifierBuilder<T> forPath( String path ) {
         return StringIdentifierBuilder.forPath( path );
     }
