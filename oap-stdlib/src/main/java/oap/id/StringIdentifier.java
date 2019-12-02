@@ -32,7 +32,7 @@ import java.util.function.Predicate;
 
 import static java.util.Objects.requireNonNull;
 
-public final class StringIdentifier<T> extends GenericIdentifier<T, String> {
+public final class StringIdentifier<T> extends GenericIdentifier<String, T> {
 
     private final Function<T, String> suggestion;
     private final Strings.FriendlyIdOption[] options;
@@ -63,6 +63,11 @@ public final class StringIdentifier<T> extends GenericIdentifier<T, String> {
 
     @Override
     public String fromString( String id ) {
+        return id;
+    }
+
+    @Override
+    public String toString( String id ) {
         return id;
     }
 

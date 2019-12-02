@@ -29,7 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class IntIdentifier<T> extends GenericIdentifier<T, Integer> {
+public class IntIdentifier<T> extends GenericIdentifier<Integer, T> {
     public static final int MAX_ATTEMPTS = 10000;
     public AtomicInteger generator = new AtomicInteger( 0 );
 
@@ -55,6 +55,11 @@ public class IntIdentifier<T> extends GenericIdentifier<T, Integer> {
     @Override
     public Integer fromString( String id ) {
         return Integer.parseInt( id );
+    }
+
+    @Override
+    public String toString( Integer id ) {
+        return id.toString();
     }
 
     public static <T> IntIdentifierBuilder<T> forId( final Function<T, Integer> getter ) {

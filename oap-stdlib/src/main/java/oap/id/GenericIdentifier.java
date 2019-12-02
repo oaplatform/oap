@@ -27,7 +27,7 @@ package oap.id;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
-public abstract class GenericIdentifier<T, I> implements Identifier<T, I> {
+public abstract class GenericIdentifier<I, T> implements Identifier<I, T> {
     protected final Function<? super T, I> getter;
     protected final BiConsumer<? super T, I> setter;
 
