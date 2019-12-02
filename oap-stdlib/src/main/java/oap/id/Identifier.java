@@ -29,7 +29,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public interface Identifier<T, I> {
+public interface Identifier<I, T> {
     void set( T object, I id );
 
     I getOrInit( T object, Predicate<I> conflict );

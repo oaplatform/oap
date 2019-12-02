@@ -38,5 +38,5 @@ public abstract class Builder<T, I> {
         this.setter = setter;
     }
 
-    public abstract Identifier<T, I> build();
+    public abstract Identifier<I, T> build();
 }
