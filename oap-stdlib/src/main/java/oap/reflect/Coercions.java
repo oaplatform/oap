@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
@@ -73,35 +74,37 @@ public final class Coercions {
                     ? new String( ( byte[] ) value, UTF_8 )
                     : String.valueOf( value ) );
 
-        BooleanConvertor booleanConvertor = new BooleanConvertor();
+        convertors.put( Optional.class, Optional::ofNullable );
+
+        var booleanConvertor = new BooleanConvertor();
         convertors.put( boolean.class, booleanConvertor );
         convertors.put( Boolean.class, booleanConvertor );
 
-        IntConvertor intConvertor = new IntConvertor();
+        var intConvertor = new IntConvertor();
         convertors.put( int.class, intConvertor );
         convertors.put( Integer.class, intConvertor );
 
-        LongConvertor longFunc = new LongConvertor();
+        var longFunc = new LongConvertor();
         convertors.put( long.class, longFunc );
         convertors.put( Long.class, longFunc );
 
-        DoubleConvertor doubleFunc = new DoubleConvertor();
+        var doubleFunc = new DoubleConvertor();
         convertors.put( double.class, doubleFunc );
         convertors.put( Double.class, doubleFunc );
 
-        CharConvertor charConvertor = new CharConvertor();
+        var charConvertor = new CharConvertor();
         convertors.put( char.class, charConvertor );
         convertors.put( Character.class, charConvertor );
 
-        ShortConvertor shortConvertor = new ShortConvertor();
+        var shortConvertor = new ShortConvertor();
         convertors.put( short.class, shortConvertor );
         convertors.put( Short.class, shortConvertor );
 
-        ByteConvertor byteConvertor = new ByteConvertor();
+        var byteConvertor = new ByteConvertor();
         convertors.put( byte.class, byteConvertor );
         convertors.put( Byte.class, byteConvertor );
 
-        FloatConvertor floatConvertor = new FloatConvertor();
+        var floatConvertor = new FloatConvertor();
         convertors.put( float.class, floatConvertor );
         convertors.put( Float.class, floatConvertor );
 

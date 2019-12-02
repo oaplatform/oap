@@ -30,13 +30,14 @@ import org.testng.annotations.Test;
 import java.lang.annotation.RetentionPolicy;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CoercionsTest {
     @Test
     public void cast() {
-        Coercions coercions = Coercions.basic().withIdentity();
+        var coercions = Coercions.basic().withIdentity();
         assertThat( coercions.cast( Reflect.reflect( int.class ), 1L ) ).isEqualTo( 1 );
         assertThat( coercions.cast( Reflect.reflect( int.class ), "1" ) ).isEqualTo( 1 );
         assertThat( coercions.cast( Reflect.reflect( int.class ), "-1" ) ).isEqualTo( -1 );
@@ -54,6 +55,12 @@ public class CoercionsTest {
         var expected = new BitSet();
         expected.set( 1, 6 );
         assertThat( coercions.cast( Reflect.reflect( BitSet.class ), "1-5" ) ).isEqualTo( expected );
+    }
+
+    @Test
+    public void testCastOptional() {
+        var coercions = Coercions.basic().withIdentity();
+        assertThat( coercions.cast( Reflect.reflect( new TypeRef<Optional<String>>() {} ), "va" ) ).isEqualTo( Optional.of( "va" ) );
     }
 
 }
