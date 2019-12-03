@@ -53,4 +53,11 @@ public class Uri {
     public static URI uri( String uri, Pair<String, Object>... params ) {
         return uri( uri, Maps.of( params ) );
     }
+
+    public static String getProtocol( String url ) {
+        var idx = url.indexOf( ':' );
+        if( idx <= 0 ) return "";
+
+        return url.substring( 0, idx );
+    }
 }
