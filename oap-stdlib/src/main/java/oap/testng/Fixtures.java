@@ -65,7 +65,7 @@ public class Fixtures {
         fixtures.descendingIterator().forEachRemaining( Fixture::afterMethod );
     }
 
-    enum Position {
+    public enum Position {
         FIRST, LAST
     }
 }
