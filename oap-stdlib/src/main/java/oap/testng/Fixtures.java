@@ -29,15 +29,20 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 
-import java.util.Deque;
 import java.util.LinkedList;
 
 public class Fixtures {
-
-    private Deque<Fixture> fixtures = new LinkedList<>();
+    private final LinkedList<Fixture> fixtures = new LinkedList<>();
 
     public void fixture( Fixture fixture ) {
-        fixtures.add( fixture );
+        fixture( Position.LAST, fixture );
+    }
+
+    public void fixture( Position position, Fixture fixture ) {
+        switch( position ) {
+            case FIRST -> fixtures.addFirst( fixture );
+            case LAST -> fixtures.addLast( fixture );
+        }
     }
 
     @BeforeClass
@@ -58,5 +63,9 @@ public class Fixtures {
     @AfterMethod
     public void fixAfterMethod() {
         fixtures.descendingIterator().forEachRemaining( Fixture::afterMethod );
+    }
+
+    enum Position {
+        FIRST, LAST
     }
 }
