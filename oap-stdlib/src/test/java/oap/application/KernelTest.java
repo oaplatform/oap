@@ -34,6 +34,7 @@ import oap.concurrent.Threads;
 import oap.testng.Env;
 import oap.util.Lists;
 import oap.util.Maps;
+import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -266,6 +267,8 @@ public class KernelTest {
     @ToString
     @EqualsAndHashCode
     public static class Service2 {
+        private final Logger log = org.slf4j.LoggerFactory.getLogger( Service2.class );
+
         private final String val;
 
         public Service2( String val ) {

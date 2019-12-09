@@ -283,7 +283,7 @@ public class Kernel implements Closeable {
             var logField = clazz.getDeclaredField( "log" );
             logField.setAccessible( true );
             if( org.slf4j.Logger.class.isAssignableFrom( logField.getType() ) ) {
-                var logger = ( org.slf4j.Logger ) logField.get( null );
+                var logger = ( org.slf4j.Logger ) logField.get( java.lang.reflect.Modifier.isStatic( logField.getModifiers() ) ? null : instance );
                 if( logger instanceof ch.qos.logback.classic.Logger ) {
                     FieldUtils.writeDeclaredField( logger, "name", logger.getName() + "." + name, true );
                 }
