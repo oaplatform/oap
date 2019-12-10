@@ -54,7 +54,7 @@ public class S3FileManagerTest {
     public void setUp() throws Exception {
         var port = Env.port( "s3" );
 
-        api = new S3Mock.Builder().withPort( 9090 ).withInMemoryBackend().build();
+        api = new S3Mock.Builder().withPort( port ).withInMemoryBackend().build();
         api.start();
         var endpoint = new AwsClientBuilder.EndpointConfiguration( "http://localhost:" + port, "us-west-2" );
         var client = AmazonS3ClientBuilder
