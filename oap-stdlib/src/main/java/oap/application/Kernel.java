@@ -240,7 +240,7 @@ public class Kernel implements Closeable {
                 return;
             }
 
-            forEachService( modules, module.services, initializedServices, ( implName, service ) -> {
+            var services = forEachService( modules, module.services, initializedServices, ( implName, service ) -> {
                 if( !service.enabled ) {
                     log.debug( "service {} is disabled.", implName );
                     return;
@@ -271,6 +271,10 @@ public class Kernel implements Closeable {
 
                 initializedServices.add( service.name );
             } );
+
+            if( !services.isEmpty() ) {
+                throw new ApplicationException( "dependencies are not ready " + services.keySet() );
+            }
         } );
 
         return ret;

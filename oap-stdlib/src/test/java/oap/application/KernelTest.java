@@ -50,6 +50,7 @@ import static oap.testng.Asserts.pathOfTestResource;
 import static oap.testng.Asserts.urlOfTestResource;
 import static oap.util.Pair.__;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertTrue;
 
 public class KernelTest {
@@ -210,7 +211,7 @@ public class KernelTest {
 
     @Test
     public void mapEnvToConfig() {
-        List<URL> modules = Lists.of( urlOfTestResource( getClass(), "env/env.conf" ) );
+        var modules = Lists.of( urlOfTestResource( getClass(), "env/env.conf" ) );
 
         Env.putEnv( "CONFIG.services.s1.enabled", "false" );
         Env.putEnv( "CONFIG.services.s2.parameters.val", "\"test$value\"" );
@@ -223,6 +224,20 @@ public class KernelTest {
             assertThat( kernel.<Service2>service( "s2" ) ).isPresent();
             assertThat( kernel.<Service2>service( "s2" ) ).isPresent().get()
                 .satisfies( s2 -> assertThat( s2.val ).isEqualTo( "test$value" ) );
+        } finally {
+            kernel.stop();
+        }
+    }
+
+    @Test
+    public void testReference() {
+        var modules = Lists.of( urlOfTestResource( getClass(), "reference/reference.conf" ) );
+
+        var kernel = new Kernel( modules );
+        try {
+            assertThatCode( kernel::start )
+                .isInstanceOf( ApplicationException.class )
+                .hasMessage( "dependencies are not ready [s1]" );
         } finally {
             kernel.stop();
         }
