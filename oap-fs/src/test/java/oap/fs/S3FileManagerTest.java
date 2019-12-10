@@ -43,17 +43,20 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class S3FileManagerTest {
-    private final static Path TEST_FOLDER = Path.of( "test/testDir" );
-    private final static String TEST_BUCKET = "default";
+    private static final Path TEST_FOLDER = Path.of( "test/testDir" );
+    private static final String TEST_BUCKET = "default";
 
-    private S3Mock api = new S3Mock.Builder().withPort( 9090 ).withInMemoryBackend().build();
+    private S3Mock api;
     private S3FileManager fileManager;
-    private Path tmp = Env.tmpPath( "/tmp/test" );
+    private Path tmp = Env.tmpPath( "s3" );
 
     @BeforeClass
     public void setUp() throws Exception {
+        var port = Env.port( "s3" );
+
+        api = new S3Mock.Builder().withPort( 9090 ).withInMemoryBackend().build();
         api.start();
-        var endpoint = new AwsClientBuilder.EndpointConfiguration( "http://localhost:9090", "us-west-2" );
+        var endpoint = new AwsClientBuilder.EndpointConfiguration( "http://localhost:" + port, "us-west-2" );
         var client = AmazonS3ClientBuilder
             .standard()
             .withPathStyleAccessEnabled( true )
@@ -66,7 +69,7 @@ public class S3FileManagerTest {
     }
 
     @AfterClass
-    public void tearDown() throws Exception {
+    public void tearDown() {
         Files.cleanDirectory( tmp );
         api.stop();
     }
@@ -75,7 +78,7 @@ public class S3FileManagerTest {
     @Test
     public void readWrite() throws Exception {
         var inputBytes = Base64.getDecoder().decode( "dGVzdA==" );
-        var data = new S3Data( "file.txt", new ByteArrayInputStream( inputBytes ), (long) inputBytes.length );
+        var data = new S3Data( "file.txt", new ByteArrayInputStream( inputBytes ), ( long ) inputBytes.length );
         var resultFile = tmp.resolve( "output.txt" ).toFile();
 
         var upload = fileManager.uploadStream( TEST_BUCKET, data ).waitForUploadResult();
