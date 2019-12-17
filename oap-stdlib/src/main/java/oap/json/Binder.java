@@ -435,6 +435,15 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
+    public <T> T unmarshal( TypeRef<T> ref, byte[] bytes ) {
+        try {
+            return ( T ) mapper.readValue( bytes, toTypeReference( ref ) );
+        } catch( Exception e ) {
+            throw new JsonException( e.getMessage(), e );
+        }
+    }
+
+    @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( TypeRef<T> ref, Object fromValue ) {
         try {
             return ( T ) mapper.convertValue( fromValue, toTypeReference( ref ) );

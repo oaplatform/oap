@@ -24,66 +24,38 @@
 
 package oap.message;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
-
-import java.util.ArrayList;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
+import oap.json.Binder;
+import oap.reflect.TypeRef;
 
 /**
  * Created by igor.petrenko on 2019-12-17.
  */
-public class MessageListenerMock implements MessageListener {
-    public static final byte MESSAGE_TYPE = ( byte ) 0xFF;
-    public static final byte MESSAGE_TYPE2 = ( byte ) 0xFE;
-    public final ArrayList<TestMessage> messages = new ArrayList<>();
-    private final String infoPrefix;
+public abstract class MessageListenerJson<T> implements MessageListener {
     private final byte messageType;
-    private int throwUnknownError = 0;
+    private final String info;
+    private final TypeRef<T> typeRef;
 
-    public MessageListenerMock( byte messageType ) {
-        this( "mock-message-listener-", messageType );
-    }
-
-    public MessageListenerMock( String infoPrefix, byte messageType ) {
-        this.infoPrefix = infoPrefix;
+    public MessageListenerJson( byte messageType, String info, TypeRef<T> typeRef ) {
         this.messageType = messageType;
+        this.info = info;
+        this.typeRef = typeRef;
     }
 
     @Override
-    public final byte getId() {
+    public byte getId() {
         return messageType;
     }
 
     @Override
-    public final String getInfo() {
-        return infoPrefix + messageType;
+    public String getInfo() {
+        return info;
     }
 
     @Override
     public void run( int version, String hostName, int size, byte[] data ) {
-        messages.add( new TestMessage( version, new String( data, UTF_8 ) ) );
-
-        if( throwUnknownError > 0 ) {
-            throwUnknownError -= 1;
-            throw new RuntimeException( "unknown error" );
-        }
+        var obj = Binder.json.unmarshal( typeRef, data );
+        run( version, hostName, obj );
     }
 
-    public void throwUnknownError( int count ) {
-        throwUnknownError = count;
-    }
-
-    @ToString
-    @EqualsAndHashCode
-    public static class TestMessage {
-        public final int version;
-        public final String data;
-
-        public TestMessage( int version, String data ) {
-            this.version = version;
-            this.data = data;
-        }
-    }
+    protected abstract void run( int version, String hostName, T data );
 }

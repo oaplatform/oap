@@ -47,8 +47,9 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class MessageServer implements Runnable, Closeable {
-    public final HashMap<Byte, MessageListener> listeners = new HashMap<>();
+    public final HashMap<Byte, MessageListener> map = new HashMap<>();
     public final long hashTtl;
+    private final List<MessageListener> listeners;
     private final int port;
     private final Path controlStatePath;
     private final SynchronizedThread thread = new SynchronizedThread( this );
@@ -67,10 +68,8 @@ public class MessageServer implements Runnable, Closeable {
     public MessageServer( Path controlStatePath, int port, List<MessageListener> listeners, long hashTtl ) {
         this.controlStatePath = controlStatePath;
         this.port = port;
+        this.listeners = listeners;
         this.hashTtl = hashTtl;
-        for( var listener : listeners ) {
-            this.listeners.put( listener.getId(), listener );
-        }
 
         log.info( "port = {}, listeners = {}", port, Lists.map( listeners, MessageListener::getInfo ) );
     }
@@ -84,6 +83,12 @@ public class MessageServer implements Runnable, Closeable {
             if( controlStatePath.toFile().exists() ) hashes.load( controlStatePath );
         } catch( Exception e ) {
             log.warn( e.getMessage() );
+        }
+
+        for( var listener : listeners ) {
+            var d = this.map.put( listener.getId(), listener );
+            if( d != null )
+                throw new IllegalArgumentException( "duplicate [" + listener.getInfo() + ", " + d.getInfo() + "]" );
         }
 
         try {
@@ -106,7 +111,7 @@ public class MessageServer implements Runnable, Closeable {
             while( thread.isRunning() && !serverSocket.isClosed() ) try {
                 var socket = serverSocket.accept();
                 log.debug( "accepted connection {}", socket );
-                executor.execute( new MessageHandler( socket, soTimeout, listeners, hashes, hashTtl ) );
+                executor.execute( new MessageHandler( socket, soTimeout, map, hashes, hashTtl ) );
             } catch( SocketTimeoutException ignore ) {
             } catch( IOException e ) {
                 if( !"Socket closed".equals( e.getMessage() ) )

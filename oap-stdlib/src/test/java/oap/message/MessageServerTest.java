@@ -38,6 +38,7 @@ import java.util.List;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE2;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -52,12 +53,14 @@ public class MessageServerTest extends Fixtures {
 
     @Test
     public void testUniqueMessageTypeListener() throws IOException {
-        var listener1 = new MessageListenerMock( MESSAGE_TYPE );
-        var listener2 = new MessageListenerMock( MESSAGE_TYPE );
+        var listener1 = new MessageListenerMock( "l1-", MESSAGE_TYPE );
+        var listener2 = new MessageListenerMock( "l2-", MESSAGE_TYPE );
 
         try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
             try( var client = new MessageSender( "localhost", server.getPort() ) ) {
-                server.start();
+                assertThatCode( server::start )
+                    .isInstanceOf( IllegalArgumentException.class )
+                    .hasMessage( "duplicate [l2--1, l1--1]" );
             }
         }
     }
@@ -66,8 +69,7 @@ public class MessageServerTest extends Fixtures {
     public void testSendAndReceive() throws IOException {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
-        var port = Env.port( "message" );
-        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), port, List.of( listener1, listener2 ), -1 ) ) {
+        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
             server.start();
 
             try( var client = new MessageSender( "localhost", server.getPort() ) ) {
@@ -79,6 +81,23 @@ public class MessageServerTest extends Fixtures {
 
                 assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
                 assertThat( listener2.messages ).isEqualTo( List.of( new TestMessage( 1, "555" ) ) );
+            }
+        }
+    }
+
+    @Test
+    public void testSendAndReceiveJson() throws IOException {
+        var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
+        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
+            server.start();
+
+            try( var client = new MessageSender( "localhost", server.getPort() ) ) {
+                assertTrue( client.sendJson( MESSAGE_TYPE, "123" ) );
+                assertTrue( client.sendJson( MESSAGE_TYPE, "124" ) );
+                assertTrue( client.sendJson( MESSAGE_TYPE, "124" ) );
+                assertTrue( client.sendJson( MESSAGE_TYPE, "123" ) );
+
+                assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
             }
         }
     }
@@ -136,7 +155,7 @@ public class MessageServerTest extends Fixtures {
         try( var serverSocket = Env.serverSocket();
              var client = new MessageSender( "localhost", serverSocket.getLocalPort() ) ) {
             var port = serverSocket.getLocalPort();
-            
+
             try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), serverSocket, List.of( listener ), hashTtl ) ) {
                 server.soTimeout = 2000;
                 server.start();

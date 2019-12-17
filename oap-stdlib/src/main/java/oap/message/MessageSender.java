@@ -27,10 +27,12 @@ package oap.message;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Closeables;
+import oap.json.Binder;
 import oap.util.Cuid;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.security.MessageDigest;
@@ -76,6 +78,12 @@ public class MessageSender implements Closeable {
             case STATUS_UNKNOWN_MESSAGE_TYPE -> "UNKNOWN_MESSAGE_TYPE";
             default -> "Unknown status: " + status;
         };
+    }
+
+    public boolean sendJson( byte messageType, Object data ) {
+        var baos = new ByteArrayOutputStream();
+        Binder.json.marshal( baos, data );
+        return sendObject( messageType, baos.toByteArray() );
     }
 
     public boolean sendObject( byte messageType, byte[] data ) {

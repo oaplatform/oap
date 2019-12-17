@@ -24,46 +24,28 @@
 
 package oap.message;
 
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import oap.reflect.TypeRef;
 
 import java.util.ArrayList;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Created by igor.petrenko on 2019-12-17.
  */
-public class MessageListenerMock implements MessageListener {
-    public static final byte MESSAGE_TYPE = ( byte ) 0xFF;
-    public static final byte MESSAGE_TYPE2 = ( byte ) 0xFE;
-    public final ArrayList<TestMessage> messages = new ArrayList<>();
-    private final String infoPrefix;
-    private final byte messageType;
+public class MessageListenerJsonMock extends MessageListenerJson<String> {
+    public final ArrayList<MessageListenerMock.TestMessage> messages = new ArrayList<>();
     private int throwUnknownError = 0;
 
-    public MessageListenerMock( byte messageType ) {
-        this( "mock-message-listener-", messageType );
+    public MessageListenerJsonMock( byte messageType ) {
+        this( "mock-message-listener-json-", messageType );
     }
 
-    public MessageListenerMock( String infoPrefix, byte messageType ) {
-        this.infoPrefix = infoPrefix;
-        this.messageType = messageType;
-    }
-
-    @Override
-    public final byte getId() {
-        return messageType;
+    public MessageListenerJsonMock( String infoPrefix, byte messageType ) {
+        super( messageType, infoPrefix + messageType, new TypeRef<>() {} );
     }
 
     @Override
-    public final String getInfo() {
-        return infoPrefix + messageType;
-    }
-
-    @Override
-    public void run( int version, String hostName, int size, byte[] data ) {
-        messages.add( new TestMessage( version, new String( data, UTF_8 ) ) );
+    protected void run( int version, String hostName, String data ) {
+        messages.add( new MessageListenerMock.TestMessage( version, data ) );
 
         if( throwUnknownError > 0 ) {
             throwUnknownError -= 1;
@@ -73,17 +55,5 @@ public class MessageListenerMock implements MessageListener {
 
     public void throwUnknownError( int count ) {
         throwUnknownError = count;
-    }
-
-    @ToString
-    @EqualsAndHashCode
-    public static class TestMessage {
-        public final int version;
-        public final String data;
-
-        public TestMessage( int version, String data ) {
-            this.version = version;
-            this.data = data;
-        }
     }
 }
