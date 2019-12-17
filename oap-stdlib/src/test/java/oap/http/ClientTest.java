@@ -38,7 +38,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -48,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class ClientTest extends Fixtures {
-    private static final int PORT = Env.port( ClientTest.class.toString() );
+    private int port;
     private ClientAndServer mockServer;
     private Client.Response response;
 
@@ -58,7 +57,8 @@ public class ClientTest extends Fixtures {
 
     @BeforeMethod
     public void start() {
-        mockServer = ClientAndServer.startClientAndServer( PORT );
+        mockServer = ClientAndServer.startClientAndServer( 0 );
+        port = mockServer.getLocalPort();
         response = null;
     }
 
@@ -82,9 +82,9 @@ public class ClientTest extends Fixtures {
                     .withBody( "test1" )
             );
 
-        final Path path = Env.tmpPath( "new.file" );
-        AtomicInteger progress = new AtomicInteger();
-        final Optional<Path> download = Client.DEFAULT.download( "http://localhost:" + PORT + "/file",
+        var path = Env.tmpPath( "new.file" );
+        var progress = new AtomicInteger();
+        var download = Client.DEFAULT.download( "http://localhost:" + port + "/file",
             Optional.empty(), Optional.of( path ), progress::set );
 
         assertThat( download ).contains( path );
@@ -108,8 +108,8 @@ public class ClientTest extends Fixtures {
                     .withBody( "test1" )
             );
 
-        AtomicInteger progress = new AtomicInteger();
-        final Optional<Path> download = Client.DEFAULT.download( "http://localhost:" + PORT + "/file.gz",
+        var progress = new AtomicInteger();
+        var download = Client.DEFAULT.download( "http://localhost:" + port + "/file.gz",
             Optional.empty(), Optional.empty(), progress::set );
         assertThat( download ).isPresent();
         assertFile( download.get() ).exists().hasSize( 5 );
@@ -126,7 +126,7 @@ public class ClientTest extends Fixtures {
             Times.once()
         ).respond( HttpResponse.response().withStatusCode( HTTP_OK ).withBody( "ok" ) );
 
-        try( var os = Client.DEFAULT.post( "http://localhost:" + PORT + "/test", ContentType.TEXT_PLAIN ) ) {
+        try( var os = Client.DEFAULT.post( "http://localhost:" + port + "/test", ContentType.TEXT_PLAIN ) ) {
             os.write( "test".getBytes() );
             os.write( '\n' );
             os.write( "test1".getBytes() );
