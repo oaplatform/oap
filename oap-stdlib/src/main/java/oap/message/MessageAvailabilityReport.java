@@ -21,38 +21,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.io;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package oap.message;
 
-import java.io.Closeable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import com.google.common.collect.ImmutableMap;
 
-public class Closeables {
-    private static final Logger logger = LoggerFactory.getLogger( Closeables.class );
+import java.util.Map;
 
-    public static void close( Closeable closeable ) {
-        try {
-            if( closeable != null ) closeable.close();
-        } catch( Exception e ) {
-            logger.error( e.getMessage(), e );
-        }
+/**
+ * Created by igor.petrenko on 2019-12-12.
+ */
+public class MessageAvailabilityReport {
+    public final State state;
+    public final Map<String, State> subsystemStates;
+
+    public MessageAvailabilityReport( State state ) {
+        this( state, ImmutableMap.of() );
     }
 
-    public static void close( ExecutorService service ) {
-        close( service, 60, TimeUnit.SECONDS );
+    public MessageAvailabilityReport( State state, Map<String, State> subsystemStates ) {
+        this.state = state;
+        this.subsystemStates = ImmutableMap.copyOf( subsystemStates );
     }
 
-    public static void close( ExecutorService service, long timeout, TimeUnit unit ) {
-        try {
-            if( service != null ) {
-                service.shutdownNow();
-                service.awaitTermination( timeout, unit );
-            }
-        } catch( Exception e ) {
-            logger.error( e.getMessage() );
-        }
+    public enum State {
+        OPERATIONAL,
+        PARTIALLY_OPERATIONAL,
+        FAILED
     }
 }

@@ -114,7 +114,7 @@ public class Server implements HttpServer {
             DefaultConnectionReuseStrategy.INSTANCE,
             DefaultHttpResponseFactory.INSTANCE,
             mapper );
-
+        
         this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, new SynchronousQueue<>(),
             new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build() );
 

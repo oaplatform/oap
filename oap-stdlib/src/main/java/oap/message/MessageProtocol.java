@@ -21,38 +21,40 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.io;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package oap.message;
 
-import java.io.Closeable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-public class Closeables {
-    private static final Logger logger = LoggerFactory.getLogger( Closeables.class );
+import java.io.Serializable;
 
-    public static void close( Closeable closeable ) {
-        try {
-            if( closeable != null ) closeable.close();
-        } catch( Exception e ) {
-            logger.error( e.getMessage(), e );
-        }
-    }
+/**
+ * Created by igor.petrenko on 2019-12-10.
+ */
+public interface MessageProtocol {
+    short PROTOCOL_VERSION_1 = 1;
+    byte[] RESERVED = new byte[8];
+    int RESERVED_LENGTH = RESERVED.length;
+    int MD5_LENGTH = 16;
 
-    public static void close( ExecutorService service ) {
-        close( service, 60, TimeUnit.SECONDS );
-    }
+    short STATUS_OK = 0;
+    short STATUS_UNKNOWN_ERROR = 1;
 
-    public static void close( ExecutorService service, long timeout, TimeUnit unit ) {
-        try {
-            if( service != null ) {
-                service.shutdownNow();
-                service.awaitTermination( timeout, unit );
-            }
-        } catch( Exception e ) {
-            logger.error( e.getMessage() );
+    short STATUS_UNKNOWN_MESSAGE_TYPE = 100;
+    short STATUS_ALREADY_WRITTEN = 101;
+
+    @EqualsAndHashCode
+    @ToString
+    class ClientId implements Serializable {
+        private static final long serialVersionUID = -6305024925123030053L;
+
+        public final int messageType;
+        public final long clientId;
+
+        public ClientId( int messageType, long clientId ) {
+            this.messageType = messageType;
+            this.clientId = clientId;
         }
     }
 }

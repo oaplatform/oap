@@ -42,8 +42,8 @@ public class FileWalker {
         if( wildcard[position] ) {
             if( !cache.isDirectory( path ) ) return;
 
-            final boolean anyPosition = any[position];
-            final String pathPosition = paths[position];
+            var anyPosition = any[position];
+            var pathPosition = paths[position];
 
             try( DirectoryStream<Path> stream = cache.newDirectoryStream(
                 path,
@@ -59,7 +59,7 @@ public class FileWalker {
                 throw new UncheckedIOException( e );
             }
         } else {
-            final Path resolve = path.resolve( paths[position] );
+            var resolve = path.resolve( paths[position] );
             if( position < wildcard.length - 1 ) {
                 walkFileTree( resolve, position + 1, visitor );
             } else {

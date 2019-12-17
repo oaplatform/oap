@@ -21,38 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.io;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package oap.message;
 
-import java.io.Closeable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+/**
+ * Created by igor.petrenko on 2019-12-10.
+ */
+public interface MessageListener {
+    byte getId();
 
-public class Closeables {
-    private static final Logger logger = LoggerFactory.getLogger( Closeables.class );
+    String getInfo();
 
-    public static void close( Closeable closeable ) {
-        try {
-            if( closeable != null ) closeable.close();
-        } catch( Exception e ) {
-            logger.error( e.getMessage(), e );
-        }
-    }
-
-    public static void close( ExecutorService service ) {
-        close( service, 60, TimeUnit.SECONDS );
-    }
-
-    public static void close( ExecutorService service, long timeout, TimeUnit unit ) {
-        try {
-            if( service != null ) {
-                service.shutdownNow();
-                service.awaitTermination( timeout, unit );
-            }
-        } catch( Exception e ) {
-            logger.error( e.getMessage() );
-        }
-    }
+    void run( int version, String hostName, int size, byte[] data );
 }
