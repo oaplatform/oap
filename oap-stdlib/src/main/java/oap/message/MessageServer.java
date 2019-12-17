@@ -34,7 +34,6 @@ import oap.util.Lists;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 import java.nio.file.Path;
@@ -48,9 +47,9 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class MessageServer implements Runnable, Closeable {
-    public final int port;
     public final HashMap<Byte, MessageListener> listeners = new HashMap<>();
     public final long hashTtl;
+    private final int port;
     private final Path controlStatePath;
     private final SynchronizedThread thread = new SynchronizedThread( this );
     private final ThreadPoolExecutor executor =
@@ -59,6 +58,11 @@ public class MessageServer implements Runnable, Closeable {
     protected int soTimeout = 60000;
     private ServerSocket serverSocket;
     private MessageHashStorage hashes = new MessageHashStorage();
+
+    public MessageServer( Path controlStatePath, ServerSocket serverSocket, List<MessageListener> listeners, long hashTtl ) {
+        this( controlStatePath, 0, listeners, hashTtl );
+        this.serverSocket = serverSocket;
+    }
 
     public MessageServer( Path controlStatePath, int port, List<MessageListener> listeners, long hashTtl ) {
         this.controlStatePath = controlStatePath;
@@ -71,6 +75,10 @@ public class MessageServer implements Runnable, Closeable {
         log.info( "port = {}, listeners = {}", port, Lists.map( listeners, MessageListener::getInfo ) );
     }
 
+    public int getPort() {
+        return serverSocket != null ? serverSocket.getLocalPort() : port;
+    }
+
     public void start() {
         try {
             if( controlStatePath.toFile().exists() ) hashes.load( controlStatePath );
@@ -79,9 +87,10 @@ public class MessageServer implements Runnable, Closeable {
         }
 
         try {
-            serverSocket = new ServerSocket();
+            if( serverSocket == null )
+                serverSocket = new ServerSocket( port );
+
             serverSocket.setReuseAddress( true );
-            serverSocket.bind( new InetSocketAddress( port ) );
             serverSocket.setSoTimeout( 5000 );
             log.debug( "ready to rock " + serverSocket.getLocalSocketAddress() );
             thread.start();

@@ -51,38 +51,51 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
+    public void testUniqueMessageTypeListener() throws IOException {
+        var listener1 = new MessageListenerMock( MESSAGE_TYPE );
+        var listener2 = new MessageListenerMock( MESSAGE_TYPE );
+
+        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
+            try( var client = new MessageSender( "localhost", server.getPort() ) ) {
+                server.start();
+            }
+        }
+    }
+
+    @Test
     public void testSendAndReceive() throws IOException {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
         var port = Env.port( "message" );
-        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), port, List.of( listener1, listener2 ), -1 );
-             var client = new MessageSender( "localhost", port ) ) {
+        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), port, List.of( listener1, listener2 ), -1 ) ) {
             server.start();
 
-            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
-            assertTrue( client.sendObject( MESSAGE_TYPE, "124".getBytes() ) );
-            assertTrue( client.sendObject( MESSAGE_TYPE, "124".getBytes() ) );
-            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
-            assertTrue( client.sendObject( MESSAGE_TYPE2, "555".getBytes() ) );
+            try( var client = new MessageSender( "localhost", server.getPort() ) ) {
+                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+                assertTrue( client.sendObject( MESSAGE_TYPE, "124".getBytes() ) );
+                assertTrue( client.sendObject( MESSAGE_TYPE, "124".getBytes() ) );
+                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+                assertTrue( client.sendObject( MESSAGE_TYPE2, "555".getBytes() ) );
 
-            assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
-            assertThat( listener2.messages ).isEqualTo( List.of( new TestMessage( 1, "555" ) ) );
+                assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
+                assertThat( listener2.messages ).isEqualTo( List.of( new TestMessage( 1, "555" ) ) );
+            }
         }
     }
 
     @Test
     public void testUnknownError() throws IOException {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        var port = Env.port( "message" );
-        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), port, List.of( listener ), -1 );
-             var client = new MessageSender( "localhost", port ) ) {
+        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
 
-            listener.throwUnknownError( 1 );
-            assertFalse( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
-            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+            try( var client = new MessageSender( "localhost", server.getPort() ) ) {
+                listener.throwUnknownError( 1 );
+                assertFalse( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
 
-            assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+            }
         }
     }
 
@@ -93,23 +106,23 @@ public class MessageServerTest extends Fixtures {
         DateTimeUtils.setCurrentMillisFixed( 100 );
 
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        var port = Env.port( "message" );
-        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), port, List.of( listener ), hashTtl );
-             var client = new MessageSender( "localhost", port ) ) {
+        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl ) ) {
             server.start();
 
-            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
-            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
-            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+            try( var client = new MessageSender( "localhost", server.getPort() ) ) {
+                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
 
-            assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
 
-            DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() + hashTtl + 1 );
-            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
-            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
-            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+                DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() + hashTtl + 1 );
+                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
 
-            assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "123" ) ) );
+                assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "123" ) ) );
+            }
         }
     }
 
@@ -120,9 +133,11 @@ public class MessageServerTest extends Fixtures {
         DateTimeUtils.setCurrentMillisFixed( 100 );
 
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        var port = Env.port( "message" );
-        try( var client = new MessageSender( "localhost", port ) ) {
-            try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), port, List.of( listener ), hashTtl ) ) {
+        try( var serverSocket = Env.serverSocket();
+             var client = new MessageSender( "localhost", serverSocket.getLocalPort() ) ) {
+            var port = serverSocket.getLocalPort();
+            
+            try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), serverSocket, List.of( listener ), hashTtl ) ) {
                 server.soTimeout = 2000;
                 server.start();
 

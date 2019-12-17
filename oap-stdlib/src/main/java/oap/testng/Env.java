@@ -102,7 +102,7 @@ public class Env {
 
     public static int port( String key ) {
         return ports.computeIfAbsent( key, k -> {
-            try( ServerSocket socket = new ServerSocket( 0 ) ) {
+            try( var socket = new ServerSocket( 0 ) ) {
                 var localPort = socket.getLocalPort();
                 System.out.println( "ENV::key=" + key + "; port = " + localPort );
                 return localPort;
@@ -110,6 +110,11 @@ public class Env {
                 throw new UncheckedIOException( e );
             }
         } );
+    }
+
+    @SneakyThrows
+    public static ServerSocket serverSocket() {
+        return new ServerSocket( 0 );
     }
 
     public static String getEnvOrDefault( String name, String defaultValue ) {
