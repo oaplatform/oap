@@ -24,6 +24,7 @@
 
 package oap.message;
 
+import oap.io.Closeables;
 import oap.message.MessageListenerMock.TestMessage;
 import oap.testng.Env;
 import oap.testng.Fixtures;
@@ -152,13 +153,26 @@ public class MessageServerTest extends Fixtures {
         DateTimeUtils.setCurrentMillisFixed( 100 );
 
         var listener = new MessageListenerMock( MESSAGE_TYPE );
-        try( var serverSocket = Env.serverSocket();
-             var client = new MessageSender( "localhost", serverSocket.getLocalPort() ) ) {
-            var port = serverSocket.getLocalPort();
 
-            try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), serverSocket, List.of( listener ), hashTtl ) ) {
-                server.soTimeout = 2000;
-                server.start();
+        MessageServer server = null;
+        MessageSender client = null;
+        try {
+            server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener ), hashTtl );
+            server.soTimeout = 2000;
+            server.start();
+
+            client = new MessageSender( "localhost", server.getPort() );
+            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+            assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
+
+            assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+
+            server.close();
+
+            try( var server2 = new MessageServer( Env.tmpPath( "controlStatePath.st" ), server.getPort(), List.of( listener ), hashTtl ) ) {
+                server2.soTimeout = 2000;
+                server2.start();
 
                 assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
                 assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
@@ -166,18 +180,9 @@ public class MessageServerTest extends Fixtures {
 
                 assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
             }
-
-            try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), port, List.of( listener ), hashTtl ) ) {
-                server.soTimeout = 2000;
-                server.start();
-
-                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
-                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
-                assertTrue( client.sendObject( MESSAGE_TYPE, "123".getBytes() ) );
-
-                assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
-            }
+        } finally {
+            Closeables.close( server );
+            Closeables.close( client );
         }
     }
-
 }

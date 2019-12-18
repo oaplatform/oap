@@ -60,11 +60,6 @@ public class MessageServer implements Runnable, Closeable {
     private ServerSocket serverSocket;
     private MessageHashStorage hashes = new MessageHashStorage();
 
-    public MessageServer( Path controlStatePath, ServerSocket serverSocket, List<MessageListener> listeners, long hashTtl ) {
-        this( controlStatePath, 0, listeners, hashTtl );
-        this.serverSocket = serverSocket;
-    }
-
     public MessageServer( Path controlStatePath, int port, List<MessageListener> listeners, long hashTtl ) {
         this.controlStatePath = controlStatePath;
         this.port = port;
@@ -92,8 +87,7 @@ public class MessageServer implements Runnable, Closeable {
         }
 
         try {
-            if( serverSocket == null )
-                serverSocket = new ServerSocket( port );
+            serverSocket = new ServerSocket( port );
 
             serverSocket.setReuseAddress( true );
             serverSocket.setSoTimeout( 5000 );
@@ -126,7 +120,7 @@ public class MessageServer implements Runnable, Closeable {
     @Override
     public void close() throws IOException {
         Closeables.close( serverSocket );
-        thread.stop();
+        if( thread.isRunning() ) thread.stop();
         Closeables.close( executor, 10, TimeUnit.SECONDS );
 
         hashes.store( controlStatePath );
