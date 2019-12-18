@@ -33,7 +33,6 @@ import oap.testng.TestDirectory;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.List;
 
 import static oap.message.MessageListenerMock.MESSAGE_TYPE;
@@ -53,7 +52,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testUniqueMessageTypeListener() throws IOException {
+    public void testUniqueMessageTypeListener() {
         var listener1 = new MessageListenerMock( "l1-", MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( "l2-", MESSAGE_TYPE );
 
@@ -67,7 +66,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testSendAndReceive() throws IOException {
+    public void testSendAndReceive() {
         var listener1 = new MessageListenerMock( MESSAGE_TYPE );
         var listener2 = new MessageListenerMock( MESSAGE_TYPE2 );
         try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
@@ -87,7 +86,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testSendAndReceiveJson() throws IOException {
+    public void testSendAndReceiveJson() {
         var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
         try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
             server.start();
@@ -104,7 +103,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testUnknownError() throws IOException {
+    public void testUnknownError() {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
         try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
@@ -120,7 +119,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testTtl() throws IOException {
+    public void testTtl() {
         var hashTtl = 1000;
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
@@ -147,7 +146,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void testPersistence() throws IOException {
+    public void testPersistence() {
         var hashTtl = 1000;
 
         DateTimeUtils.setCurrentMillisFixed( 100 );
