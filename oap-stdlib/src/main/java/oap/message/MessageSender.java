@@ -61,7 +61,7 @@ public class MessageSender implements Closeable {
     private boolean loggingAvailable = true;
     private boolean closed = false;
 
-    protected MessageSender( String host, int port ) {
+    public MessageSender( String host, int port ) {
         this.host = host;
         this.port = port;
 
