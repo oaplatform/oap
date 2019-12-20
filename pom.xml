@@ -35,7 +35,7 @@
     <packaging>pom</packaging>
     <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>${revision}</version>
+    <version>${project.revision}</version>
 
     <name>oap</name>
 
@@ -50,6 +50,10 @@
 
     <repositories>
         <repository>
+            <id>oap</id>
+            <url>https://mvn.oaplatform.org</url>
+        </repository>
+        <repository>
             <id>jitpack</id>
             <url>https://jitpack.io</url>
         </repository>
@@ -60,7 +64,7 @@
     </repositories>
 
     <properties>
-        <revision>6.3.3</revision>
+        <project.revision>6.3.4</project.revision>
 
         <testng.version>7.0.0</testng.version>
         <assertj.version>3.14.0</assertj.version>

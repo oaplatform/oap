@@ -34,7 +34,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>${revision}</version>
+        <version>${project.revision}</version>
     </parent>
 
     <build>
