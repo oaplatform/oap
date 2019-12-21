@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import oap.io.Sockets;
 import org.apache.commons.codec.binary.Hex;
 
+import java.io.Closeable;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -36,6 +37,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
 
+import static oap.concurrent.Threads.isInterrupted;
 import static oap.message.MessageProtocol.MD5_LENGTH;
 import static oap.message.MessageProtocol.PROTOCOL_VERSION_1;
 import static oap.message.MessageProtocol.STATUS_ALREADY_WRITTEN;
@@ -74,12 +76,13 @@ import static oap.message.MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE;
  * Created by igor.petrenko on 2019-12-10.
  */
 @Slf4j
-public class MessageHandler implements Runnable {
+public class MessageHandler implements Runnable, Closeable {
     private final Socket socket;
     private final int soTimeout;
     private final HashMap<Byte, MessageListener> listeners;
     private final MessageHashStorage control;
     private final long hashTtl;
+    private boolean closed;
 
     public MessageHandler( Socket socket, int soTimeout, HashMap<Byte, MessageListener> listeners,
                            MessageHashStorage control, long hashTtl ) {
@@ -103,7 +106,7 @@ public class MessageHandler implements Runnable {
             socket.setKeepAlive( true );
             socket.setTcpNoDelay( true );
 
-            while( true ) {
+            while( !closed && !isInterrupted() ) {
                 log.trace( "new message from {}", hostName );
                 var messageType = in.readByte();
                 var messageVersion = in.readShort();
@@ -167,5 +170,10 @@ public class MessageHandler implements Runnable {
         out.write( md5 );
         out.write( MessageProtocol.RESERVED, 0, MessageProtocol.RESERVED.length );
         out.writeShort( status );
+    }
+
+    @Override
+    public void close() {
+        this.closed = true;
     }
 }
