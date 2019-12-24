@@ -64,7 +64,7 @@
     </repositories>
 
     <properties>
-        <project.revision>6.3.5</project.revision>
+        <project.revision>6.3.6</project.revision>
 
         <testng.version>7.0.0</testng.version>
         <assertj.version>3.14.0</assertj.version>
@@ -75,7 +75,6 @@
         <apache.commons.text.version>1.8</apache.commons.text.version>
         <compress.version>1.19</compress.version>
         <joda.version>2.10.5</joda.version>
-        <metrics.version>4.1.0</metrics.version>
         <jackson.version>2.10.1</jackson.version>
         <lombok.version>edge-SNAPSHOT</lombok.version>
         <reflections.version>0.9.11</reflections.version>

@@ -47,7 +47,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     private final Counter timeoutMetrics;
     private final Counter errorMetrics;
     private final Counter successMetrics;
-    
+
     private final URI uri;
     private final FST fst;
     private final int retry;
@@ -76,12 +76,12 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
         this.client = Client.custom( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
             .onTimeout( client -> {
-                log.error( "timeout invoking {}", uri );
+                log.error( "timeout invoking {}#{}", service, uri );
                 timeoutMetrics.increment();
                 client.reset();
             } )
             .onError( ( c, e ) -> {
-                log.error( "error invoking {}: {}", uri, e );
+                log.error( "error invoking {}#{}: {}", service, uri, e );
                 errorMetrics.increment();
             } )
             .onSuccess( c -> successMetrics.increment() )
@@ -157,7 +157,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             log.trace( "retrying... remote service uri = {}, service name = {}, method name = {}", uri, service, method.getName() );
         }
 
-        throw retException != null ? retException : new RemoteInvocationException( "invocation failed " + uri );
+        throw retException != null ? retException : new RemoteInvocationException( "invocation failed " + service + "#" + uri );
     }
 
     @Override
