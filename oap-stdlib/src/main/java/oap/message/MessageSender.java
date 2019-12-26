@@ -207,13 +207,15 @@ public class MessageSender implements Closeable, Runnable {
     private void saveMessagesToDirectory( Path directory ) {
         while( !messages.isEmpty() ) {
             messages.values().removeIf( msg -> {
-                var msgPath = directory
+                var parentDirectory = directory
                     .resolve( Long.toHexString( clientId ) )
-                    .resolve( String.valueOf( Byte.toUnsignedInt( msg.messageType ) ) )
-                    .resolve( msg.getHexMd5() + ".bin" );
-                log.debug( "writing unsent message to {}", msgPath );
+                    .resolve( String.valueOf( Byte.toUnsignedInt( msg.messageType ) ) );
+                var tmpMsgPath = parentDirectory.resolve( msg.getHexMd5() + ".bin.tmp" );
+                log.debug( "writing unsent message to {}", tmpMsgPath );
                 try {
-                    Files.write( msgPath, msg.data );
+                    Files.write( tmpMsgPath, msg.data );
+                    var msgPath = parentDirectory.resolve( msg.getHexMd5() + ".bin" );
+                    Files.rename( tmpMsgPath, msgPath );
                 } catch( Exception e ) {
                     log.error( "type: {}, md5: {}, data: {}",
                         msg.messageType, msg.getHexMd5(), msg.getHexData() );
