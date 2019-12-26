@@ -24,6 +24,8 @@
 
 package oap.message;
 
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.Sockets;
 import org.apache.commons.codec.binary.Hex;
@@ -36,6 +38,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static oap.concurrent.Threads.isInterrupted;
 import static oap.message.MessageProtocol.MD5_LENGTH;
@@ -91,6 +94,8 @@ public class MessageHandler implements Runnable, Closeable {
         this.listeners = listeners;
         this.control = control;
         this.hashTtl = hashTtl;
+
+        Metrics.gauge( "messages_hash", Tags.empty(), control, c -> c.map.values().stream().mapToLong( ConcurrentHashMap::size ).sum() );
     }
 
     @Override
@@ -132,6 +137,7 @@ public class MessageHandler implements Runnable, Closeable {
                             var data = in.readNBytes( size );
                             listener.run( messageVersion, hostName, size, data );
                             writeResponse( out, STATUS_OK, clientId, md5 );
+                            Metrics.counter( "messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ) ) ).increment();
                         } catch( Exception e ) {
                             log.error( "[" + hostName + "] " + e.getMessage(), e );
                             writeResponse( out, STATUS_UNKNOWN_ERROR, clientId, md5 );
