@@ -54,6 +54,7 @@ import java.net.URL;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.LinkOption;
@@ -546,6 +547,17 @@ public final class Files {
     public static long getLastModifiedTime( Path path ) {
         try {
             return java.nio.file.Files.getLastModifiedTime( path ).toMillis();
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    public static boolean createFile( Path file ) {
+        try {
+            java.nio.file.Files.createFile( file );
+            return true;
+        } catch( FileAlreadyExistsException e ) {
+            return false;
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }

@@ -26,16 +26,24 @@ package oap.message;
 
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
+import oap.concurrent.Threads;
 import oap.io.Closeables;
+import oap.io.Files;
 import oap.json.Binder;
+import oap.util.ByteSequence;
 import oap.util.Cuid;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
 import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
@@ -50,24 +58,27 @@ import static oap.message.MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE;
  */
 @Slf4j
 @ToString
-public class MessageSender implements Closeable {
+public class MessageSender implements Closeable, Runnable {
     private final String host;
     private final int port;
+    private final Path directory;
     private final long clientId = Cuid.UNIQUE.nextLong();
     private final MessageDigest md5Digest;
-    public int retry = 2;
+    private final ConcurrentHashMap<ByteSequence, Message> messages = new ConcurrentHashMap<>();
+    public long retryAfter = 1000;
     protected long timeout = 5000;
     private MessageSocketConnection connection;
     private boolean loggingAvailable = true;
     private boolean closed = false;
 
-    public MessageSender( String host, int port ) {
+    public MessageSender( String host, int port, Path directory ) {
         this.host = host;
         this.port = port;
+        this.directory = directory;
 
         md5Digest = DigestUtils.getMd5Digest();
 
-        log.info( "message server host = {}, port = {}", host, port );
+        log.info( "message server host = {}, port = {}, storage = {}", host, port, directory );
     }
 
     private static String getServerStatus( short status ) {
@@ -80,48 +91,53 @@ public class MessageSender implements Closeable {
         };
     }
 
-    public boolean sendJson( byte messageType, Object data ) {
+    public CompletableFuture<?> sendJson( byte messageType, Object data ) {
         var baos = new ByteArrayOutputStream();
         Binder.json.marshal( baos, data );
         return sendObject( messageType, baos.toByteArray() );
     }
 
-    public boolean sendObject( byte messageType, byte[] data ) {
-        for( var i = 0; i < retry; i++ ) {
-            try {
-                return _sendObject( messageType, data );
-            } catch( Exception e ) {
-                log.trace( e.getMessage(), e );
-                log.trace( "retrying..." );
-            }
-        }
+    public CompletableFuture<?> sendObject( byte messageType, byte[] data ) {
+        md5Digest.reset();
+        md5Digest.update( data );
+        var md5 = md5Digest.digest();
 
-        return false;
+        var message = new Message( clientId, messageType, ByteSequence.of( md5 ), data );
+        messages.put( message.md5, message );
+
+        return CompletableFuture.runAsync( () -> {
+            while( !closed ) {
+                try {
+                    if( _sendObject( message ) ) return;
+                    Threads.sleepSafely( retryAfter );
+                } catch( Exception e ) {
+                    log.trace( e.getMessage(), e );
+                    log.trace( "retrying..." );
+                }
+            }
+        } );
     }
 
-    private boolean _sendObject( byte messageType, byte[] object ) throws IOException {
+    private boolean _sendObject( Message message ) throws IOException {
         if( !closed ) try {
             loggingAvailable = true;
 
             refreshConnection();
 
-            log.debug( "sending data [type = {}] to server...", messageType );
+            log.debug( "sending data [type = {}] to server...", message.messageType );
 
             var out = connection.out;
             var in = connection.in;
 
-            out.writeByte( messageType );
+            out.writeByte( message.messageType );
             out.writeShort( PROTOCOL_VERSION_1 );
-            out.writeLong( clientId );
+            out.writeLong( message.clientId );
 
-            md5Digest.reset();
-            md5Digest.update( object );
-            var digest = md5Digest.digest();
-            out.write( digest );
+            out.write( message.md5.bytes );
 
             out.write( MessageProtocol.RESERVED, 0, MessageProtocol.RESERVED_LENGTH );
-            out.writeInt( object.length );
-            out.write( object );
+            out.writeInt( message.data.length );
+            out.write( message.data );
 
             var version = in.readByte();
             if( version != PROTOCOL_VERSION_1 ) {
@@ -138,7 +154,7 @@ public class MessageSender implements Closeable {
 
             switch( status ) {
                 case STATUS_ALREADY_WRITTEN:
-                    log.trace( "already written {}", Hex.encodeHexString( digest ) );
+                    log.trace( "already written {}", message.getHexMd5() );
                     return true;
                 case STATUS_OK:
                     return true;
@@ -184,10 +200,94 @@ public class MessageSender implements Closeable {
         closed = true;
 
         Closeables.close( connection );
+
+        saveMessagesToDirectory( directory );
+    }
+
+    private void saveMessagesToDirectory( Path directory ) {
+        while( !messages.isEmpty() ) {
+            messages.values().removeIf( msg -> {
+                var msgPath = directory
+                    .resolve( Long.toHexString( clientId ) )
+                    .resolve( String.valueOf( Byte.toUnsignedInt( msg.messageType ) ) )
+                    .resolve( msg.getHexMd5() + ".bin" );
+                log.debug( "writing unsent message to {}", msgPath );
+                try {
+                    Files.write( msgPath, msg.data );
+                } catch( Exception e ) {
+                    log.error( "type: {}, md5: {}, data: {}",
+                        msg.messageType, msg.getHexMd5(), msg.getHexData() );
+                }
+
+                return true;
+            } );
+        }
     }
 
     public MessageAvailabilityReport availabilityReport() {
         boolean operational = loggingAvailable && !closed;
         return new MessageAvailabilityReport( operational ? OPERATIONAL : FAILED );
+    }
+
+    @Override
+    public void run() {
+        var messageFiles = Files.fastWildcard( directory, "*/*/*.bin" );
+
+        for( var msgFile : messageFiles ) {
+            var lockFile = Paths.get( FilenameUtils.removeExtension( msgFile.toString() ) + ".lock" );
+
+            if( Files.createFile( lockFile ) ) {
+                log.info( "reading unsent message {}", msgFile );
+                try {
+                    var fileName = FilenameUtils.getName( msgFile.toString() );
+                    var md5Hex = FilenameUtils.removeExtension( fileName );
+                    var md5 = ByteSequence.of( Hex.decodeHex( md5Hex.toCharArray() ) );
+                    var typePath = FilenameUtils.getFullPathNoEndSeparator( msgFile.toString() );
+                    var messageTypeStr = FilenameUtils.getName( typePath );
+                    var messageType = ( byte ) Integer.parseInt( messageTypeStr );
+
+                    var clientIdPath = FilenameUtils.getFullPathNoEndSeparator( typePath );
+                    var clientIdStr = FilenameUtils.getName( clientIdPath );
+                    var msgClientId = Long.parseLong( clientIdStr, 16 );
+
+                    var data = Files.read( msgFile );
+
+                    log.trace( "client id = {}, message type = {}, md5 = {}", msgClientId, messageType, md5Hex );
+
+                    var msg = new Message( clientId, messageType, md5, data );
+
+                    if( _sendObject( msg ) ) {
+                        Files.delete( msgFile );
+                        Files.delete( lockFile );
+                    }
+                } catch( Exception e ) {
+                    log.error( msgFile + ": " + e.getMessage(), e );
+                }
+            }
+        }
+
+        Files.deleteEmptyDirectories( directory, false );
+    }
+
+    private static final class Message {
+        public final ByteSequence md5;
+        public final byte messageType;
+        public final long clientId;
+        public final byte[] data;
+
+        public Message( long clientId, byte messageType, ByteSequence md5, byte[] data ) {
+            this.clientId = clientId;
+            this.md5 = md5;
+            this.messageType = messageType;
+            this.data = data;
+        }
+
+        public String getHexMd5() {
+            return Hex.encodeHexString( md5.bytes );
+        }
+
+        public String getHexData() {
+            return Hex.encodeHexString( data );
+        }
     }
 }
