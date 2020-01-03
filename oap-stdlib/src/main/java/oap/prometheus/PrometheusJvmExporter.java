@@ -28,6 +28,7 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
 import io.micrometer.core.instrument.binder.logging.LogbackMetrics;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +43,7 @@ public class PrometheusJvmExporter implements Closeable {
     public boolean enableJvmMemoryMetrics = true;
     public boolean enableJvmGcMetrics = true;
     public boolean enableLogbackMetrics = true;
+    public boolean enableJvmThreadMetrics = true;
 
     private JvmGcMetrics jvmGcMetrics;
     private LogbackMetrics logbackMetrics;
@@ -61,6 +63,8 @@ public class PrometheusJvmExporter implements Closeable {
             logbackMetrics = new LogbackMetrics();
             logbackMetrics.bindTo( Metrics.globalRegistry );
         }
+
+        if( enableJvmThreadMetrics ) new JvmThreadMetrics().bindTo( Metrics.globalRegistry );
     }
 
     @Override

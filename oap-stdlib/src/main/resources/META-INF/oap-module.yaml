@@ -41,5 +41,6 @@ services:
       enableJvmMemoryMetrics: true
       enableJvmGcMetrics: true
       enableLogbackMetrics: true
+      enableJvmThreadMetrics: true
     supervision:
       supervise: true
