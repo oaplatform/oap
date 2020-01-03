@@ -33,3 +33,13 @@ services:
       private_network: false
     supervision:
       thread: true
+
+  prometheus-jvm-exporter:
+    implementation: oap.prometheus.PrometheusJvmExporter
+    parameters:
+      enableClassLoaderMetrics: true
+      enableJvmMemoryMetrics: true
+      enableJvmGcMetrics: true
+      enableLogbackMetrics: true
+    supervision:
+      supervise: true
