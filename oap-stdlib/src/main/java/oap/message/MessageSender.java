@@ -239,7 +239,7 @@ public class MessageSender implements Closeable, Runnable {
             var lockFile = Paths.get( FilenameUtils.removeExtension( msgFile.toString() ) + ".lock" );
 
             if( Files.createFile( lockFile ) ) {
-                log.info( "reading unsent message {}", msgFile );
+                log.debug( "reading unsent message {}", msgFile );
                 try {
                     var fileName = FilenameUtils.getName( msgFile.toString() );
                     var md5Hex = FilenameUtils.removeExtension( fileName );

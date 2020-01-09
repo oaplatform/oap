@@ -469,7 +469,7 @@ public final class Files {
 
         final int fnLength = filename.length();
 
-        char wm;
+        char wm = 0;
 
         while( fnPosition < fnLength && ( ( wm = wildcardMatcher.charAt( wmPosition ) ) != '*' ) ) {
             if( wm != filename.charAt( fnPosition ) && wm != '?' ) {
@@ -482,7 +482,7 @@ public final class Files {
         final int wmLength = wildcardMatcher.length();
 
         while( fnPosition < fnLength ) {
-            if( ( wm = wildcardMatcher.charAt( wmPosition ) ) == '*' ) {
+            if( ( wmPosition < wmLength ) && ( wm = wildcardMatcher.charAt( wmPosition ) ) == '*' ) {
                 if( ++wmPosition >= wmLength ) return true;
 
                 mp = wmPosition;
