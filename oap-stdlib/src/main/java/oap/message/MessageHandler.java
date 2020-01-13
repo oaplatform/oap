@@ -134,10 +134,15 @@ public class MessageHandler implements Runnable, Closeable {
                     } else {
                         try {
                             var data = in.readNBytes( size );
-                            listener.run( messageVersion, hostName, size, data );
-                            writeResponse( out, STATUS_OK, clientId, md5 );
-                            Metrics.counter( "messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ) ) ).increment();
-                            control.add( messageType, clientId, md5 );
+                            var status = listener.run( messageVersion, hostName, size, data );
+                            writeResponse( out, status, clientId, md5 );
+                            if( status == STATUS_OK ) {
+                                Metrics.counter( "messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ) ) ).increment();
+                                control.add( messageType, clientId, md5 );
+                            } else if( log.isTraceEnabled() ) {
+                                log.warn( "[{}}/{}] buffer ({}, " + size + ") status == {}.)",
+                                    hostName, clientId, Hex.encodeHexString( md5 ), MessageProtocol.statusToString( status ) );
+                            }
                         } catch( Exception e ) {
                             log.error( "[" + hostName + "] " + e.getMessage(), e );
                             writeResponse( out, STATUS_UNKNOWN_ERROR, clientId, md5 );

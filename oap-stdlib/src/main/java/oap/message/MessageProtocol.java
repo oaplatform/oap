@@ -44,6 +44,16 @@ public interface MessageProtocol {
     short STATUS_UNKNOWN_MESSAGE_TYPE = 100;
     short STATUS_ALREADY_WRITTEN = 101;
 
+    static String statusToString( short status ) {
+        return switch( status ) {
+            case STATUS_OK -> "OK";
+            case STATUS_ALREADY_WRITTEN -> "ALREADY_WRITTEN";
+            case STATUS_UNKNOWN_ERROR -> "UNKNOWN_ERROR";
+            case STATUS_UNKNOWN_MESSAGE_TYPE -> "UNKNOWN_MESSAGE_TYPE";
+            default -> String.valueOf( status );
+        };
+    }
+
     @EqualsAndHashCode
     @ToString
     class ClientId implements Serializable {

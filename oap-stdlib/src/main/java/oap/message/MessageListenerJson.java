@@ -52,10 +52,10 @@ public abstract class MessageListenerJson<T> implements MessageListener {
     }
 
     @Override
-    public void run( int version, String hostName, int size, byte[] data ) {
+    public short run( int version, String hostName, int size, byte[] data ) {
         var obj = Binder.json.unmarshal( typeRef, data );
-        run( version, hostName, obj );
+        return run( version, hostName, obj );
     }
 
-    protected abstract void run( int version, String hostName, T data );
+    protected abstract short run( int version, String hostName, T data );
 }

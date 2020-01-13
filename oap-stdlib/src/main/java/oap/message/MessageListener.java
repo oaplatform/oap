@@ -32,5 +32,5 @@ public interface MessageListener {
 
     String getInfo();
 
-    void run( int version, String hostName, int size, byte[] data );
+    short run( int version, String hostName, int size, byte[] data );
 }

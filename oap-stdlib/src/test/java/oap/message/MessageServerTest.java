@@ -26,6 +26,7 @@ package oap.message;
 
 import oap.io.Closeables;
 import oap.message.MessageListenerMock.TestMessage;
+import oap.testng.Asserts;
 import oap.testng.Env;
 import oap.testng.Fixtures;
 import oap.testng.ResetSystemTimer;
@@ -80,8 +81,8 @@ public class MessageServerTest extends Fixtures {
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE2, "555".getBytes() ).get( 5, SECONDS );
 
-                assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
-                assertThat( listener2.messages ).isEqualTo( List.of( new TestMessage( 1, "555" ) ) );
+                assertThat( listener1.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
+                assertThat( listener2.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "555" ) ) );
             }
 
             assertThat( dir ).doesNotExist();
@@ -119,12 +120,37 @@ public class MessageServerTest extends Fixtures {
 
                 while( listener.throwUnknownError > 200000000 - 10 )
                     Thread.sleep( 10 );
-                assertThat( listener.messages ).isEmpty();
+                assertThat( listener.getMessages() ).isEmpty();
 
                 listener.throwUnknownError( 2 );
                 while( listener.throwUnknownError > 0 )
                     Thread.sleep( 10 );
-                assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+            }
+        }
+    }
+
+    @Test
+    public void testStatusError() throws Exception {
+        var listener = new MessageListenerMock( MESSAGE_TYPE );
+        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+            server.start();
+
+            try( var client = new MessageSender( "localhost", server.getPort(), Env.tmpPath( "tmp" ) ) ) {
+                client.retryAfter = 1;
+
+                listener.setStatus( 567 );
+                client.sendObject( MESSAGE_TYPE, "123".getBytes() );
+
+                while( listener.accessCount.get() > 4 )
+                    Thread.sleep( 10 );
+
+                assertThat( listener.getMessages() ).isEmpty();
+
+                listener.setStatusOk();
+                Asserts.assertEventually( 10, 100, () -> {
+                    assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                } );
             }
         }
     }
@@ -144,14 +170,14 @@ public class MessageServerTest extends Fixtures {
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
 
-                assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
 
                 DateTimeUtils.setCurrentMillisFixed( DateTimeUtils.currentTimeMillis() + hashTtl + 1 );
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
 
-                assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "123" ) ) );
+                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "123" ) ) );
             }
         }
     }
@@ -177,7 +203,7 @@ public class MessageServerTest extends Fixtures {
             client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
             client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
 
-            assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+            assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
 
             server.close();
 
@@ -189,7 +215,7 @@ public class MessageServerTest extends Fixtures {
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
 
-                assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
             }
         } finally {
             Closeables.close( server );
@@ -212,14 +238,14 @@ public class MessageServerTest extends Fixtures {
                     Thread.sleep( 10 );
             }
 
-            assertThat( listener.messages ).isEmpty();
+            assertThat( listener.getMessages() ).isEmpty();
 
             try( var client = new MessageSender( "localhost", server.getPort(), Env.tmpPath( "tmp" ) ) ) {
-                assertThat( listener.messages ).isEmpty();
+                assertThat( listener.getMessages() ).isEmpty();
 
                 client.run();
 
-                assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
             }
         }
     }

@@ -44,13 +44,15 @@ public class MessageListenerJsonMock extends MessageListenerJson<String> {
     }
 
     @Override
-    protected void run( int version, String hostName, String data ) {
+    protected short run( int version, String hostName, String data ) {
         messages.add( new MessageListenerMock.TestMessage( version, data ) );
 
         if( throwUnknownError > 0 ) {
             throwUnknownError -= 1;
             throw new RuntimeException( "unknown error" );
         }
+
+        return MessageProtocol.STATUS_OK;
     }
 
     public void throwUnknownError( int count ) {

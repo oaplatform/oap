@@ -28,6 +28,8 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -37,10 +39,12 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class MessageListenerMock implements MessageListener {
     public static final byte MESSAGE_TYPE = ( byte ) 0xFF;
     public static final byte MESSAGE_TYPE2 = ( byte ) 0xFE;
-    public final ArrayList<TestMessage> messages = new ArrayList<>();
+    public final AtomicLong accessCount = new AtomicLong();
+    private final ArrayList<TestMessage> messages = new ArrayList<>();
     private final String infoPrefix;
     private final byte messageType;
     public int throwUnknownError = 0;
+    public short status = MessageProtocol.STATUS_OK;
 
     public MessageListenerMock( byte messageType ) {
         this( "mock-message-listener-", messageType );
@@ -62,17 +66,37 @@ public class MessageListenerMock implements MessageListener {
     }
 
     @Override
-    public void run( int version, String hostName, int size, byte[] data ) {
+    public short run( int version, String hostName, int size, byte[] data ) {
+        accessCount.incrementAndGet();
         if( throwUnknownError > 0 ) {
             throwUnknownError -= 1;
             throw new RuntimeException( "unknown error" );
         }
 
-        messages.add( new TestMessage( version, new String( data, UTF_8 ) ) );
+        if( status == MessageProtocol.STATUS_OK )
+            synchronized( messages ) {
+                messages.add( new TestMessage( version, new String( data, UTF_8 ) ) );
+            }
+
+        return status;
+    }
+
+    public List<TestMessage> getMessages() {
+        synchronized( messages ) {
+            return new ArrayList<>( messages );
+        }
     }
 
     public void throwUnknownError( int count ) {
         throwUnknownError = count;
+    }
+
+    public void setStatusOk() {
+        setStatus( MessageProtocol.STATUS_OK );
+    }
+
+    public void setStatus( int status ) {
+        this.status = ( short ) status;
     }
 
     @ToString
