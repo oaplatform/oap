@@ -460,26 +460,26 @@ public final class Files {
         return path.toFile().getUsableSpace();
     }
 
-    public static boolean wildcardMatch( final String filename, final String wildcardMatcher ) {
-        int wmPosition = 0;
-        int fnPosition = 0;
+    public static boolean wildcardMatch( String filename, String wildcardMatcher ) {
+        var wmPosition = 0;
+        var fnPosition = 0;
 
-        int mp = 0;
-        int cp = 0;
+        var mp = 0;
+        var cp = 0;
 
-        final int fnLength = filename.length();
+        var fnLength = filename.length();
+        var wmLength = wildcardMatcher.length();
 
         char wm = 0;
 
-        while( fnPosition < fnLength && ( ( wm = wildcardMatcher.charAt( wmPosition ) ) != '*' ) ) {
-            if( wm != filename.charAt( fnPosition ) && wm != '?' ) {
-                return false;
-            }
+        while( fnPosition < fnLength ) {
+            if( wmPosition >= wmLength ) break;
+            if( ( ( wm = wildcardMatcher.charAt( wmPosition ) ) == '*' ) ) break;
+            if( wm != filename.charAt( fnPosition ) && wm != '?' ) return false;
+
             wmPosition++;
             fnPosition++;
         }
-
-        final int wmLength = wildcardMatcher.length();
 
         while( fnPosition < fnLength ) {
             if( ( wmPosition < wmLength ) && ( wm = wildcardMatcher.charAt( wmPosition ) ) == '*' ) {

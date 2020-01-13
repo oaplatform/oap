@@ -47,6 +47,8 @@ import static oap.testng.Asserts.assertFile;
 import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 
@@ -133,14 +135,15 @@ public class FilesTest extends Fixtures {
 
     @Test
     public void wildcardMatch() {
-        assertThat( Files.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" ) ).isTrue();
-        assertThat( Files.wildcardMatch( "bid", "bid*" ) ).isTrue();
-        assertThat( Files.wildcardMatch( "bid_", "bid?" ) ).isTrue();
-        assertThat( Files.wildcardMatch( "bid_v", "*d_v" ) ).isTrue();
+        assertTrue( Files.wildcardMatch( "bid_v15-2016-07-13-08-02.tsv.lz4", "bid_v*-2016-07-13-08-02.tsv.*" ) );
+        assertTrue( Files.wildcardMatch( "bid", "bid*" ) );
+        assertTrue( Files.wildcardMatch( "bid_", "bid?" ) );
+        assertTrue( Files.wildcardMatch( "bid_v", "*d_v" ) );
 
-        assertThat( Files.wildcardMatch( "bid_v", "bb" ) ).isFalse();
-        assertThat( Files.wildcardMatch( "b", "bb" ) ).isFalse();
+        assertFalse( Files.wildcardMatch( "bid_v", "bb" ) );
+        assertFalse( Files.wildcardMatch( "b", "bb" ) );
 
+        assertFalse( Files.wildcardMatch( "file.txt123", "file.txt" ) );
     }
 
     @DataProvider
