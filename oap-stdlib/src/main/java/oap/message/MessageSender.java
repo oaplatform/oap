@@ -108,7 +108,10 @@ public class MessageSender implements Closeable, Runnable {
         return CompletableFuture.runAsync( () -> {
             while( !closed ) {
                 try {
-                    if( _sendObject( message ) ) return;
+                    if( _sendObject( message ) ) {
+                        messages.remove( message.md5 );
+                        return;
+                    }
                     Threads.sleepSafely( retryAfter );
                 } catch( Exception e ) {
                     log.trace( e.getMessage(), e );

@@ -72,7 +72,8 @@ public class MessageServerTest extends Fixtures {
         try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
             server.start();
 
-            try( var client = new MessageSender( "localhost", server.getPort(), Env.tmpPath( "dir" ) ) ) {
+            var dir = Env.tmpPath( "dir" );
+            try( var client = new MessageSender( "localhost", server.getPort(), dir ) ) {
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "124".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "124".getBytes() ).get( 5, SECONDS );
@@ -82,6 +83,8 @@ public class MessageServerTest extends Fixtures {
                 assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
                 assertThat( listener2.messages ).isEqualTo( List.of( new TestMessage( 1, "555" ) ) );
             }
+
+            assertThat( dir ).doesNotExist();
         }
     }
 
