@@ -126,10 +126,9 @@ public class MessageHandler implements Runnable, Closeable {
                         messageType, messageVersion, clientId, Hex.encodeHexString( md5 ), size );
 
                 if( !control.contains( messageType, clientId, md5 ) ) {
-                    control.add( messageType, clientId, md5 );
-
                     var listener = listeners.get( messageType );
                     if( listener == null ) {
+                        control.add( messageType, clientId, md5 );
                         in.skipNBytes( size );
                         writeResponse( out, STATUS_UNKNOWN_MESSAGE_TYPE, clientId, md5 );
                     } else {
@@ -138,6 +137,7 @@ public class MessageHandler implements Runnable, Closeable {
                             listener.run( messageVersion, hostName, size, data );
                             writeResponse( out, STATUS_OK, clientId, md5 );
                             Metrics.counter( "messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ) ) ).increment();
+                            control.add( messageType, clientId, md5 );
                         } catch( Exception e ) {
                             log.error( "[" + hostName + "] " + e.getMessage(), e );
                             writeResponse( out, STATUS_UNKNOWN_ERROR, clientId, md5 );

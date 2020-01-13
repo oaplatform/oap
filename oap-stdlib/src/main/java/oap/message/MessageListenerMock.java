@@ -40,7 +40,7 @@ public class MessageListenerMock implements MessageListener {
     public final ArrayList<TestMessage> messages = new ArrayList<>();
     private final String infoPrefix;
     private final byte messageType;
-    private int throwUnknownError = 0;
+    public int throwUnknownError = 0;
 
     public MessageListenerMock( byte messageType ) {
         this( "mock-message-listener-", messageType );
@@ -63,12 +63,12 @@ public class MessageListenerMock implements MessageListener {
 
     @Override
     public void run( int version, String hostName, int size, byte[] data ) {
-        messages.add( new TestMessage( version, new String( data, UTF_8 ) ) );
-
         if( throwUnknownError > 0 ) {
             throwUnknownError -= 1;
             throw new RuntimeException( "unknown error" );
         }
+
+        messages.add( new TestMessage( version, new String( data, UTF_8 ) ) );
     }
 
     public void throwUnknownError( int count ) {

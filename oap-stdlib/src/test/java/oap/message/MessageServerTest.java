@@ -111,9 +111,16 @@ public class MessageServerTest extends Fixtures {
             try( var client = new MessageSender( "localhost", server.getPort(), Env.tmpPath( "tmp" ) ) ) {
                 client.retryAfter = 1;
 
-                listener.throwUnknownError( 2 );
-                client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
+                listener.throwUnknownError( 200000000 );
+                client.sendObject( MESSAGE_TYPE, "123".getBytes() );
 
+                while( listener.throwUnknownError > 200000000 - 10 )
+                    Thread.sleep( 10 );
+                assertThat( listener.messages ).isEmpty();
+
+                listener.throwUnknownError( 2 );
+                while( listener.throwUnknownError > 0 )
+                    Thread.sleep( 10 );
                 assertThat( listener.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
             }
         }
@@ -188,7 +195,7 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
-    public void clientPersistence() {
+    public void clientPersistence() throws Exception {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
         try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
             server.start();
@@ -198,6 +205,8 @@ public class MessageServerTest extends Fixtures {
                 client.retryAfter = Dates.h( 1 );
 
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() );
+                while( listener.throwUnknownError > 0 )
+                    Thread.sleep( 10 );
             }
 
             assertThat( listener.messages ).isEmpty();
