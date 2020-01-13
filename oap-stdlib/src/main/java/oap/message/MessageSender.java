@@ -121,67 +121,69 @@ public class MessageSender implements Closeable, Runnable {
         } );
     }
 
-    private boolean _sendObject( Message message ) throws IOException {
-        if( !closed ) try {
-            loggingAvailable = true;
+    private synchronized boolean _sendObject( Message message ) throws IOException {
+        if( !closed ) {
+            try {
+                loggingAvailable = true;
 
-            refreshConnection();
+                refreshConnection();
 
-            log.debug( "sending data [type = {}] to server...", message.messageType );
+                log.debug( "sending data [type = {}] to server...", message.messageType );
 
-            var out = connection.out;
-            var in = connection.in;
+                var out = connection.out;
+                var in = connection.in;
 
-            out.writeByte( message.messageType );
-            out.writeShort( PROTOCOL_VERSION_1 );
-            out.writeLong( message.clientId );
+                out.writeByte( message.messageType );
+                out.writeShort( PROTOCOL_VERSION_1 );
+                out.writeLong( message.clientId );
 
-            out.write( message.md5.bytes );
+                out.write( message.md5.bytes );
 
-            out.write( MessageProtocol.RESERVED, 0, MessageProtocol.RESERVED_LENGTH );
-            out.writeInt( message.data.length );
-            out.write( message.data );
+                out.write( MessageProtocol.RESERVED, 0, MessageProtocol.RESERVED_LENGTH );
+                out.writeInt( message.data.length );
+                out.write( message.data );
 
-            var version = in.readByte();
-            if( version != PROTOCOL_VERSION_1 ) {
-                log.error( "Version mismatch, expected: {}, received: {}", PROTOCOL_VERSION_1, version );
-                throw new MessageException( "Version mismatch" );
+                var version = in.readByte();
+                if( version != PROTOCOL_VERSION_1 ) {
+                    log.error( "Version mismatch, expected: {}, received: {}", PROTOCOL_VERSION_1, version );
+                    Closeables.close( connection );
+                    throw new MessageException( "Version mismatch" );
+                }
+                in.readLong(); // clientId
+                in.skipNBytes( MessageProtocol.MD5_LENGTH ); // digestionId
+                in.skipNBytes( MessageProtocol.RESERVED_LENGTH );
+                var status = in.readShort();
+
+                if( log.isTraceEnabled() )
+                    log.trace( "sending done, server status: {}", getServerStatus( status ) );
+
+                switch( status ) {
+                    case STATUS_ALREADY_WRITTEN:
+                        log.trace( "already written {}", message.getHexMd5() );
+                        return true;
+                    case STATUS_OK:
+                        return true;
+                    case STATUS_UNKNOWN_ERROR:
+                    case STATUS_UNKNOWN_MESSAGE_TYPE:
+                        log.error( "sendObject error: {}", status );
+                        return false;
+                    default:
+                        log.error( "unknown status: {}", status );
+                        return false;
+                }
+            } catch( IOException e ) {
+                loggingAvailable = false;
+
+                Closeables.close( connection );
+
+                throw e;
+            } catch( Exception e ) {
+                loggingAvailable = false;
+
+                log.warn( e.getMessage() );
+                log.trace( e.getMessage(), e );
+                Closeables.close( connection );
             }
-            in.readLong(); // clientId
-            in.skipNBytes( 16 ); // digestionId
-            in.skipNBytes( MessageProtocol.RESERVED_LENGTH );
-            var status = in.readShort();
-
-            if( log.isTraceEnabled() )
-                log.trace( "sending done, server status: {}", getServerStatus( status ) );
-
-            switch( status ) {
-                case STATUS_ALREADY_WRITTEN:
-                    log.trace( "already written {}", message.getHexMd5() );
-                    return true;
-                case STATUS_OK:
-                    return true;
-                case STATUS_UNKNOWN_ERROR:
-                case STATUS_UNKNOWN_MESSAGE_TYPE:
-                    log.error( "sendObject error: {}", status );
-                    return false;
-                default:
-                    log.error( "unknown status: {}", status );
-                    return false;
-            }
-
-        } catch( IOException e ) {
-            loggingAvailable = false;
-
-            Closeables.close( connection );
-
-            throw e;
-        } catch( Exception e ) {
-            loggingAvailable = false;
-
-            log.warn( e.getMessage() );
-            log.trace( e.getMessage(), e );
-            Closeables.close( connection );
         }
 
         if( !loggingAvailable ) log.debug( "logging unavailable" );
