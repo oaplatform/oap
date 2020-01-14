@@ -43,7 +43,7 @@ public class Cookie {
     private DateTime expires;
     private String path;
     private boolean httpOnly;
-    private boolean secure = true;
+    private boolean secure = false;
     private SameSite sameSite = SameSite.None;
     private String name;
     private Object value;
