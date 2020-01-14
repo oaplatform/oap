@@ -67,6 +67,7 @@ public class MessageSender implements Closeable, Runnable {
     private final ConcurrentHashMap<ByteSequence, Message> messages = new ConcurrentHashMap<>();
     public long retryAfter = 1000;
     protected long timeout = 5000;
+    protected long connectionTimeout = 5000;
     private MessageSocketConnection connection;
     private boolean loggingAvailable = true;
     private boolean closed = false;
@@ -195,7 +196,7 @@ public class MessageSender implements Closeable, Runnable {
         if( this.connection == null || !connection.isConnected() ) {
             Closeables.close( connection );
             log.debug( "opening connection..." );
-            this.connection = new MessageSocketConnection( host, port, timeout );
+            this.connection = new MessageSocketConnection( host, port, timeout, connectionTimeout );
             log.debug( "connected!" );
         }
     }
