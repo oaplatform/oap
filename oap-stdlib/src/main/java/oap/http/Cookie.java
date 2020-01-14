@@ -24,6 +24,7 @@
 
 package oap.http;
 
+import oap.util.BiStream;
 import oap.util.Lists;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
@@ -31,48 +32,79 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class Cookie {
     private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss zzz" ).withLocale( Locale.ENGLISH );
     private String domain;
-    private String expires;
+    private DateTime expires;
     private String path;
-    private List<String> values = new ArrayList<>();
+    private boolean httpOnly;
+    private boolean secure = true;
+    private SameSite sameSite = SameSite.None;
+    private String name;
+    private Object value;
+    private Map<String, Object> values = new HashMap<>();
 
-    public Cookie( String name, String value ) {
-        withValue( name, value );
+    public Cookie( String name, Object value ) {
+        this.name = name;
+        this.value = value;
     }
 
     public Cookie withDomain( String domain ) {
-        this.domain = StringUtils.isNotBlank( domain ) ? "domain=" + domain : null;
+        this.domain = domain;
         return this;
     }
 
     public Cookie withExpires( DateTime expires ) {
-        this.expires = expires != null ? "expires=" + FORMATTER.print( expires ) : null;
+        this.expires = expires;
         return this;
     }
 
     public Cookie withPath( String path ) {
-        this.path = StringUtils.isNotBlank( path ) ? "path=" + path : null;
+        this.path = path;
         return this;
     }
 
     public Cookie withValue( String name, String value ) {
-        if( StringUtils.isNoneBlank( name, value ) ) this.values.add( name + "=" + value );
+        if( StringUtils.isNoneBlank( name, value ) ) this.values.put( name, value );
         return this;
     }
 
     public Cookie httpOnly() {
-        this.values.add( "HttpOnly" );
+        return this.httpOnly( true );
+    }
+
+    private Cookie httpOnly( boolean httpOnly ) {
+        this.httpOnly = httpOnly;
         return this;
     }
 
+    public Cookie sameSite( SameSite sameSite ) {
+        this.sameSite = sameSite;
+        return this;
+    }
+
+    public enum SameSite {
+        Strict, Lax, None
+    }
+
+
     public String toString() {
-        return Strings.join( "; ", Lists.of( Strings.join( "; ", values ), domain, expires, path ) );
+        List<String> values = Lists.of(
+            name + "=" + value,
+            StringUtils.isNotBlank( domain ) ? "domain=" + domain : null,
+            expires != null ? "expires=" + FORMATTER.print( expires ) : null,
+            StringUtils.isNotBlank( path ) ? "path=" + path : null,
+            "SameSite=" + sameSite
+        );
+        values.addAll( BiStream.of( this.values ).mapToObj( ( k, v ) -> k + "=" + v ).toList() );
+        if( secure ) values.add( "Secure" );
+        if( httpOnly ) values.add( "HttpOnly" );
+        return Strings.join( "; ", values );
     }
 
 }
