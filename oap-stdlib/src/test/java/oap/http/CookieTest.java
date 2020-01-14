@@ -48,7 +48,7 @@ public class CookieTest extends Fixtures {
             .withExpires( DateTime.now()
                 .plus( new Period( 2, 30, 10, 0 ) )
                 .toDateTime( DateTimeZone.UTC ) );
-        assertString( cookie.toString() ).isEqualTo( "test=test; expires=Mon, 11-Nov-2019 13:41:21 UTC" );
+        assertString( cookie.toString() ).isEqualTo( "test=test; expires=Mon, 11-Nov-2019 13:41:21 UTC; SameSite=None" );
     }
 
 }
