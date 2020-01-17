@@ -37,8 +37,8 @@ public class RequestCors {
     public final String allowMethods;
     public final boolean autoOptions;
 
-    public RequestCors( final String allowOrigin, final String allowHeaders, final boolean allowCredentials,
-                        final boolean autoOptions, final List<String> allowMethods ) {
+    public RequestCors( String allowOrigin, String allowHeaders, boolean allowCredentials,
+                        boolean autoOptions, List<String> allowMethods ) {
         this.allowOrigin = allowOrigin;
         this.allowHeaders = allowHeaders;
         this.allowCredentials = String.valueOf( allowCredentials );

@@ -190,4 +190,16 @@ public class StringsTest {
         assertThat( Strings.join( ";", Lists.of( 1, 2, 3 ) ) ).isEqualTo( "1;2;3" );
         assertThat( Strings.join( ";", true, Lists.of( 1, null, 3 ) ) ).isEqualTo( "1;3" );
     }
+
+    @Test
+    public void toAccessKey() {
+        assertString( Strings.toAccessKey( "j.smith@smith.com" ) ).isEqualTo( "HXMLFVRJTSMS" );
+        assertString( Strings.toAccessKey( "j@smith.com" ) ).isEqualTo( "HUMMFNRJNSQC" );
+        assertString( Strings.toAccessKey( "a" ) ).isEqualTo( "ZIWJXUYTMVKL" );
+        assertString( Strings.toAccessKey( "A" ) ).isEqualTo( "TYQXROSNUPWV" );
+        assertString( Strings.toAccessKey( "b" ) ).isEqualTo( "HMELFCGBIDKJ" );
+        assertString( Strings.toAccessKey( "/" ) ).isEqualTo( "PKYLZWQVOXMN" );
+        assertString( Strings.toAccessKey( "@" ) ).isEqualTo( "SXPWQNRMTOVU" );
+    }
+
 }

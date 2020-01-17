@@ -385,4 +385,28 @@ public final class Strings {
         NO_VOWELS,
         FILL
     }
+
+    //eiminating most used letters in english from source
+    public static String toAccessKey( String email ) {
+        int[] transitions = { 6, 11, 3, 10, 4, 1, 5, 0, 7, 2, 9, 8 };
+        StringBuilder result = new StringBuilder();
+        Function<Character, Boolean> isGoodLetter = c ->
+            ( c > 64 && c < 91 || c > 96 && c < 123 )
+                && c != 'E' && c != 'e'
+                && c != 'T' && c != 't'
+                && c != 'A' && c != 'a'
+                && c != 'O' && c != 'o'
+                && c != 'I' && c != 'i'
+                && c != 'N' && c != 'n';
+        for( int t : transitions ) {
+            if( t >= email.length() || !isGoodLetter.apply( email.charAt( t ) ) ) {
+                var c = email.charAt( t % email.length() );
+                var base = Character.toUpperCase( isGoodLetter.apply( c ) ? c : 'A' + ( c % 26 ) );
+                result.append( ( char ) ( base + t <= 'Z' ? base + t : base - t ) );
+            } else
+                result.append( Character.toUpperCase( email.charAt( t ) ) );
+        }
+        return result.toString();
+    }
+
 }

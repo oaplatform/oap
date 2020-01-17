@@ -40,6 +40,10 @@ import static oap.http.cors.RequestCors.NO_ORIGIN;
 @Slf4j
 public class PatternCorsPolicy implements CorsPolicy {
 
+    /**
+     * use generic cors policy
+     */
+    @Deprecated
     public static final PatternCorsPolicy DEFAULT = new PatternCorsPolicy( "^[^:/]*\\.oaplatform\\.org$",
         "Content-type, Authorization", true, ImmutableList.of( "HEAD", "POST", "GET", "PUT", "DELETE", "OPTIONS" ) );
 
@@ -49,8 +53,7 @@ public class PatternCorsPolicy implements CorsPolicy {
     public boolean autoOptions = true;
     public List<String> allowMethods;
 
-    public PatternCorsPolicy( final String domainRegexp, final String allowHeaders,
-                              final boolean allowCredentials, final List<String> allowMethods ) {
+    public PatternCorsPolicy( String domainRegexp, String allowHeaders, boolean allowCredentials, List<String> allowMethods ) {
         this.domainPattern = Pattern.compile( domainRegexp );
         this.allowHeaders = allowHeaders;
         this.allowCredentials = allowCredentials;
@@ -59,12 +62,12 @@ public class PatternCorsPolicy implements CorsPolicy {
 
     @Override
     public RequestCors getCors( Request request ) {
-        final String origin = request.header( "Origin" ).orElse( NO_ORIGIN );
+        String origin = request.header( "Origin" ).orElse( NO_ORIGIN );
 
-        if( log.isTraceEnabled() )
-            log.trace( "origin = {}, domainPattern = {}, matches = {}", origin, domainPattern, domainPattern.matcher( origin ).matches() );
+        boolean matches = domainPattern.matcher( origin ).matches();
+        log.trace( "origin = {}, domainPattern = {}, matches = {}", origin, domainPattern, matches );
 
-        final String allowedOrigin = domainPattern.matcher( origin ).matches() ? origin : NO_ORIGIN;
+        String allowedOrigin = matches ? origin : NO_ORIGIN;
 
         return new RequestCors( allowedOrigin, allowHeaders, allowCredentials, autoOptions, allowMethods );
     }
