@@ -43,12 +43,12 @@ public class MessageSocketConnection implements Closeable {
     public final DataInputStream in;
     private final Socket socket;
 
-    public MessageSocketConnection( String host, int port, long soTimeout ) {
+    public MessageSocketConnection( String host, int port, long soTimeout, long connectTimeout ) {
         this.socket = new Socket();
         try {
             this.socket.setKeepAlive( true );
             this.socket.setTcpNoDelay( true );
-            this.socket.connect( new InetSocketAddress( host, port ) );
+            this.socket.connect( new InetSocketAddress( host, port ), ( int ) connectTimeout );
             this.socket.setSoTimeout( ( int ) soTimeout );
             this.out = new DataOutputStream( this.socket.getOutputStream() );
             this.in = new DataInputStream( this.socket.getInputStream() );

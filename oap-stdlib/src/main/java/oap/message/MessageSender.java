@@ -32,9 +32,11 @@ import oap.io.Files;
 import oap.json.Binder;
 import oap.util.ByteSequence;
 import oap.util.Cuid;
+import oap.util.Dates;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.joda.time.DateTimeUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -66,7 +68,9 @@ public class MessageSender implements Closeable, Runnable {
     private final MessageDigest md5Digest;
     private final ConcurrentHashMap<ByteSequence, Message> messages = new ConcurrentHashMap<>();
     public long retryAfter = 1000;
+    public long storageLockExpiration = Dates.h( 1 );
     protected long timeout = 5000;
+    protected long connectionTimeout = 5000;
     private MessageSocketConnection connection;
     private boolean loggingAvailable = true;
     private boolean closed = false;
@@ -77,8 +81,6 @@ public class MessageSender implements Closeable, Runnable {
         this.directory = directory;
 
         md5Digest = DigestUtils.getMd5Digest();
-
-        log.info( "message server host = {}, port = {}, storage = {}", host, port, directory );
     }
 
     private static String getServerStatus( short status ) {
@@ -89,6 +91,27 @@ public class MessageSender implements Closeable, Runnable {
             case STATUS_UNKNOWN_MESSAGE_TYPE -> "UNKNOWN_MESSAGE_TYPE";
             default -> "Unknown status: " + status;
         };
+    }
+
+    public static Path lock( Path file, long storageLockExpiration ) {
+        var lockFile = Paths.get( FilenameUtils.removeExtension( file.toString() ) + ".lock" );
+
+        if( Files.createFile( lockFile ) ) return lockFile;
+        if( storageLockExpiration <= 0 ) return null;
+
+        log.trace( "lock found {}, expiration = {}", lockFile, 
+            Dates.durationToString( Files.getLastModifiedTime( lockFile ) + storageLockExpiration - DateTimeUtils.currentTimeMillis() ) );
+
+        return Files.getLastModifiedTime( lockFile ) + storageLockExpiration < DateTimeUtils.currentTimeMillis() ? lockFile : null;
+    }
+
+    public final long getClientId() {
+        return clientId;
+    }
+
+    public void start() {
+        log.info( "message server host = {}, port = {}, storage = {}, storageLockExpiration = {}",
+            host, port, directory, Dates.durationToString( storageLockExpiration ) );
     }
 
     public CompletableFuture<?> sendJson( byte messageType, Object data ) {
@@ -195,7 +218,7 @@ public class MessageSender implements Closeable, Runnable {
         if( this.connection == null || !connection.isConnected() ) {
             Closeables.close( connection );
             log.debug( "opening connection..." );
-            this.connection = new MessageSocketConnection( host, port, timeout );
+            this.connection = new MessageSocketConnection( host, port, timeout, connectionTimeout );
             log.debug( "connected!" );
         }
     }
@@ -241,9 +264,9 @@ public class MessageSender implements Closeable, Runnable {
         var messageFiles = Files.fastWildcard( directory, "*/*/*.bin" );
 
         for( var msgFile : messageFiles ) {
-            var lockFile = Paths.get( FilenameUtils.removeExtension( msgFile.toString() ) + ".lock" );
+            Path lockFile;
 
-            if( Files.createFile( lockFile ) ) {
+            if( ( lockFile = lock( msgFile, storageLockExpiration ) ) != null ) {
                 log.debug( "reading unsent message {}", msgFile );
                 try {
                     var fileName = FilenameUtils.getName( msgFile.toString() );

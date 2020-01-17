@@ -25,6 +25,7 @@
 package oap.message;
 
 import oap.io.Closeables;
+import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
 import oap.testng.Asserts;
 import oap.testng.Env;
@@ -42,6 +43,7 @@ import static oap.message.MessageListenerMock.MESSAGE_TYPE;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE2;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.testng.Assert.assertNotNull;
 
 /**
  * Created by igor.petrenko on 2019-12-17.
@@ -246,6 +248,43 @@ public class MessageServerTest extends Fixtures {
                 client.run();
 
                 assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+            }
+        }
+    }
+
+    @Test
+    public void testClientPersistenceLockExpiration() throws Exception {
+        var listener = new MessageListenerMock( MESSAGE_TYPE );
+        try( var server = new MessageServer( Env.tmpPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+            server.start();
+
+            var msgDirectory = Env.tmpPath( "tmp" );
+            try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
+                listener.throwUnknownError = 2;
+                client.sendObject( MESSAGE_TYPE, "123".getBytes() );
+                client.sendObject( MESSAGE_TYPE, "124".getBytes() );
+
+                while( listener.throwUnknownError > 0 )
+                    Thread.sleep( 1 );
+            }
+            var files = Files.wildcard( msgDirectory, "**/*.bin" );
+            assertThat( files ).hasSize( 2 );
+            // lock
+            assertNotNull( MessageSender.lock( files.get( 0 ), -1 ) );
+
+            // lock expired
+            var lockFile2 = MessageSender.lock( files.get( 1 ), -1 );
+            assertNotNull( lockFile2 );
+            Files.setLastModifiedTime( lockFile2, DateTimeUtils.currentTimeMillis() - ( Dates.m( 5 ) + Dates.m( 1 ) ) );
+
+
+            try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
+                client.storageLockExpiration = Dates.m( 5 );
+                assertThat( listener.getMessages() ).isEmpty();
+
+                client.run();
+
+                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "124" ) ) );
             }
         }
     }
