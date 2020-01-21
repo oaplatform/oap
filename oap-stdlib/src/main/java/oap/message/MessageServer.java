@@ -49,6 +49,7 @@ import java.util.concurrent.TimeUnit;
 public class MessageServer implements Runnable, Closeable {
     public final HashMap<Byte, MessageListener> map = new HashMap<>();
     public final long hashTtl;
+    public final int clientHashCacheSize = 1024;
     private final List<MessageListener> listeners;
     private final int port;
     private final Path controlStatePath;
@@ -58,15 +59,13 @@ public class MessageServer implements Runnable, Closeable {
             new ThreadFactoryBuilder().setNameFormat( "socket-message-worker-%d" ).build() );
     protected int soTimeout = 60000;
     private ServerSocket serverSocket;
-    private MessageHashStorage hashes = new MessageHashStorage();
+    private MessageHashStorage hashes;
 
     public MessageServer( Path controlStatePath, int port, List<MessageListener> listeners, long hashTtl ) {
         this.controlStatePath = controlStatePath;
         this.port = port;
         this.listeners = listeners;
         this.hashTtl = hashTtl;
-
-        log.info( "port = {}, listeners = {}", port, Lists.map( listeners, MessageListener::getInfo ) );
     }
 
     public int getPort() {
@@ -74,6 +73,10 @@ public class MessageServer implements Runnable, Closeable {
     }
 
     public void start() {
+        log.info( "port = {}, clientHashCacheSize = {}, listeners = {}", port, clientHashCacheSize, Lists.map( listeners, MessageListener::getInfo ) );
+
+        hashes = new MessageHashStorage( clientHashCacheSize );
+
         try {
             if( controlStatePath.toFile().exists() ) hashes.load( controlStatePath );
         } catch( Exception e ) {

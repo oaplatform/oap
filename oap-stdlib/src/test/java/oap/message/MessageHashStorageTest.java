@@ -27,16 +27,17 @@ package oap.message;
 import oap.testng.Env;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectory;
-import oap.util.ByteSequence;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static oap.testng.Asserts.assertFile;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Created by igor.petrenko on 2019-12-13.
@@ -52,7 +53,7 @@ public class MessageHashStorageTest extends Fixtures {
         var md5_1 = md5.digest( "test".getBytes() );
         var md5_2 = md5.digest( "test1".getBytes() );
 
-        var mhs = new MessageHashStorage();
+        var mhs = new MessageHashStorage( 1024 );
         DateTimeUtils.setCurrentMillisFixed( 12 );
         mhs.add( 1, 11, md5_1 );
         DateTimeUtils.setCurrentMillisFixed( 456 );
@@ -70,12 +71,12 @@ public class MessageHashStorageTest extends Fixtures {
             098f6bcd4621d373cade4e832627b4f6 - 124
             ---
             1 - 11
-            5a105e8b9d40e1329780d62ea2265d8a - 456
             098f6bcd4621d373cade4e832627b4f6 - 12
+            5a105e8b9d40e1329780d62ea2265d8a - 456
             """.stripIndent() );
 
         var path2 = Env.tmpPath( "test2" );
-        var mhs2 = new MessageHashStorage();
+        var mhs2 = new MessageHashStorage( 1024 );
         mhs2.load( path );
         mhs2.store( path2 );
 
@@ -85,8 +86,26 @@ public class MessageHashStorageTest extends Fixtures {
             098f6bcd4621d373cade4e832627b4f6 - 124
             ---
             1 - 11
-            5a105e8b9d40e1329780d62ea2265d8a - 456
             098f6bcd4621d373cade4e832627b4f6 - 12
+            5a105e8b9d40e1329780d62ea2265d8a - 456
             """.stripIndent() );
+    }
+
+    @Test
+    public void testFifo() {
+        var md5 = DigestUtils.getMd5Digest();
+        var md5_1 = md5.digest( "test".getBytes() );
+        var md5_2 = md5.digest( "test1".getBytes() );
+        var md5_3 = md5.digest( "test3".getBytes() );
+
+        var mhs = new MessageHashStorage( 2 );
+        mhs.add( 1, 1, md5_1 );
+        mhs.add( 1, 1, md5_2 );
+        mhs.add( 1, 1, md5_3 );
+
+        assertThat( mhs.size() ).isEqualTo( 2 );
+        assertFalse( mhs.contains( 1, 1, md5_1 ) );
+        assertTrue( mhs.contains( 1, 1, md5_2 ) );
+        assertTrue( mhs.contains( 1, 1, md5_3 ) );
     }
 }

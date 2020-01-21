@@ -41,6 +41,7 @@ import java.util.List;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE;
 import static oap.message.MessageListenerMock.MESSAGE_TYPE2;
+import static oap.testng.Asserts.assertEventually;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertNotNull;
@@ -127,7 +128,10 @@ public class MessageServerTest extends Fixtures {
                 listener.throwUnknownError( 2 );
                 while( listener.throwUnknownError > 0 )
                     Thread.sleep( 10 );
-                assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                
+                assertEventually( 100, 10, () -> {
+                    assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
+                } );
             }
         }
     }
@@ -150,7 +154,7 @@ public class MessageServerTest extends Fixtures {
                 assertThat( listener.getMessages() ).isEmpty();
 
                 listener.setStatusOk();
-                Asserts.assertEventually( 10, 100, () -> {
+                assertEventually( 10, 100, () -> {
                     assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
                 } );
             }

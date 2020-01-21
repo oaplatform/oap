@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static oap.concurrent.Threads.isInterrupted;
 import static oap.message.MessageProtocol.MD5_LENGTH;
@@ -95,7 +94,7 @@ public class MessageHandler implements Runnable, Closeable {
         this.control = control;
         this.hashTtl = hashTtl;
 
-        Metrics.gauge( "messages_hash", Tags.empty(), control, c -> c.map.values().stream().mapToLong( ConcurrentHashMap::size ).sum() );
+        Metrics.gauge( "messages_hash", Tags.empty(), control, MessageHashStorage::size );
     }
 
     @Override

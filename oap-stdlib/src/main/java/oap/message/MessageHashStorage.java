@@ -24,6 +24,7 @@
 
 package oap.message;
 
+import lombok.ToString;
 import oap.message.MessageProtocol.ClientId;
 import oap.util.ByteSequence;
 import org.apache.commons.codec.DecoderException;
@@ -35,6 +36,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -43,13 +45,18 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * Created by igor.petrenko on 2019-12-13.
  */
 public class MessageHashStorage {
-    final ConcurrentHashMap<ClientId, ConcurrentHashMap<ByteSequence, Long>> map = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<ClientId, ClientInfo> map = new ConcurrentHashMap<>();
+    private final int size;
+
+    public MessageHashStorage( int size ) {
+        this.size = size;
+    }
 
     public void load( Path path ) throws IOException, DecoderException {
         try( var stream = Files.lines( path ) ) {
             var clientId = 0L;
             var messageType = ( byte ) 0;
-            var hmap = new ConcurrentHashMap<ByteSequence, Long>();
+            var hmap = new ClientInfo( size );
 
             var it = stream.iterator();
             while( it.hasNext() ) {
@@ -59,7 +66,7 @@ public class MessageHashStorage {
                 if( line.startsWith( "---" ) ) {
                     if( clientId != 0 ) {
                         map.put( new ClientId( messageType, clientId ), hmap );
-                        hmap = new ConcurrentHashMap<>();
+                        hmap = new ClientInfo( size );
                         clientId = 0;
                         messageType = 0;
                     }
@@ -92,8 +99,10 @@ public class MessageHashStorage {
 
                 sw.write( cid.messageType + " - " + cid.clientId + "\n" );
 
-                for( var hentry : hmap.entrySet() ) {
-                    sw.write( Hex.encodeHexString( hentry.getKey().bytes ) + " - " + hentry.getValue() + "\n" );
+                synchronized( hmap ) {
+                    for( var hentry : hmap.list ) {
+                        sw.write( Hex.encodeHexString( hentry.hash.bytes ) + " - " + hentry.time + "\n" );
+                    }
                 }
             }
 
@@ -107,31 +116,77 @@ public class MessageHashStorage {
     }
 
     public void add( int messageType, long clientId, byte[] md5 ) {
-        var hmap = map.computeIfAbsent( new ClientId( messageType, clientId ), cid -> new ConcurrentHashMap<>() );
+        var hmap = map.computeIfAbsent( new ClientId( messageType, clientId ), cid -> new ClientInfo( size ) );
         hmap.put( ByteSequence.of( md5 ), DateTimeUtils.currentTimeMillis() );
     }
 
     public void update( long ttl ) {
         if( ttl <= 0 ) return;
-        
+
         var now = DateTimeUtils.currentTimeMillis();
 
         map.entrySet().removeIf( entry -> {
             var hmap = entry.getValue();
 
-            hmap.entrySet().removeIf( hentry -> {
-                var time = hentry.getValue();
-                return now - time > ttl;
-            } );
+            synchronized( hmap ) {
+                var it = hmap.list.iterator();
+                while( it.hasNext() ) {
+                    var hashInfo = it.next();
+                    if( now - hashInfo.time > ttl ) {
+                        it.remove();
+                        hmap.map.remove( hashInfo.hash );
+                    }
+                }
+            }
 
             return hmap.isEmpty();
         } );
     }
 
-    public void remove( byte messageType, long clientId, byte[] md5 ) {
-        var hmap = map.get( new ClientId( messageType, clientId ) );
-        if( hmap == null ) return;
+    public long size() {
+        return map.values().stream().mapToLong( MessageHashStorage.ClientInfo::size ).sum();
+    }
 
-        hmap.remove( ByteSequence.of( md5 ) );
+    @ToString
+    private static final class HashInfo {
+        public final ByteSequence hash;
+        public final long time;
+
+        public HashInfo( ByteSequence hash, long time ) {
+            this.hash = hash;
+            this.time = time;
+        }
+    }
+
+    public static final class ClientInfo {
+        public final ConcurrentHashMap<ByteSequence, ByteSequence> map = new ConcurrentHashMap<>();
+        public final LinkedList<HashInfo> list;
+        private final int size;
+
+        public ClientInfo( int size ) {
+            list = new LinkedList<>();
+            this.size = size;
+        }
+
+        public boolean containsKey( ByteSequence key ) {
+            return map.containsKey( key );
+        }
+
+        public boolean isEmpty() {
+            return map.isEmpty();
+        }
+
+        public synchronized void put( ByteSequence hash, long currentTimeMillis ) {
+            if( list.size() == size ) {
+                var rhash = list.removeFirst();
+                map.remove( rhash.hash );
+            }
+            list.addLast( new HashInfo( hash, currentTimeMillis ) );
+            map.put( hash, hash );
+        }
+
+        public int size() {
+            return map.size();
+        }
     }
 }
