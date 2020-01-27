@@ -62,7 +62,7 @@ public class MessageSocketConnection implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         Closeables.close( this.out );
         Closeables.close( this.in );
         Sockets.close( this.socket );

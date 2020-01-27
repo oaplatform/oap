@@ -100,9 +100,8 @@ public class MessageHashStorage {
                 sw.write( cid.messageType + " - " + cid.clientId + "\n" );
 
                 synchronized( hmap ) {
-                    for( var hentry : hmap.list ) {
+                    for( var hentry : hmap.list )
                         sw.write( Hex.encodeHexString( hentry.hash.bytes ) + " - " + hentry.time + "\n" );
-                    }
                 }
             }
 

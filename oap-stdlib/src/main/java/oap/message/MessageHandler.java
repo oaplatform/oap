@@ -139,7 +139,7 @@ public class MessageHandler implements Runnable, Closeable {
                                 Metrics.counter( "messages", Tags.of( "type", String.valueOf( Byte.toUnsignedInt( messageType ) ) ) ).increment();
                                 control.add( messageType, clientId, md5 );
                             } else if( log.isTraceEnabled() ) {
-                                log.warn( "[{}}/{}] buffer ({}, " + size + ") status == {}.)",
+                                log.warn( "[{}/{}] buffer ({}, " + size + ") status == {}.)",
                                     hostName, clientId, Hex.encodeHexString( md5 ), MessageProtocol.statusToString( status ) );
                             }
                         } catch( Exception e ) {
@@ -149,9 +149,7 @@ public class MessageHandler implements Runnable, Closeable {
                         }
                     }
                 } else {
-                    var message = "[" + hostName + "/" + clientId + "] buffer (" + Hex.encodeHexString( md5 )
-                        + ", " + size + ") already written.)";
-                    log.warn( message );
+                    log.warn( "[{}/{}] buffer ({}, {}) already written.)", hostName, clientId, Hex.encodeHexString( md5 ), size );
 
                     in.skipNBytes( size );
 
@@ -161,11 +159,9 @@ public class MessageHandler implements Runnable, Closeable {
                 control.update( hashTtl );
             }
         } catch( EOFException e ) {
-            var msg = "[" + hostName + "] " + socket + " ended, closed";
-            log.debug( msg );
+            log.debug( "[{}] {} ended, closed", hostName, socket );
         } catch( SocketTimeoutException e ) {
-            var msg = "[" + hostName + "] no activity on socket for " + soTimeout + "ms, timeout, closing...";
-            log.info( msg );
+            log.info( "[{}] no activity on socket for {}ms, timeout, closing...", hostName, soTimeout );
             log.trace( "[" + hostName + "] " + e.getMessage(), e );
         } catch( Exception e ) {
             log.error( "[" + hostName + "] " + e.getMessage(), e );

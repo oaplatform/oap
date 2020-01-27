@@ -94,7 +94,7 @@ public class MessageServer implements Runnable, Closeable {
 
             serverSocket.setReuseAddress( true );
             serverSocket.setSoTimeout( 5000 );
-            log.debug( "ready to rock " + serverSocket.getLocalSocketAddress() );
+            log.debug( "ready to rock on {}", serverSocket.getLocalSocketAddress() );
             thread.start();
 
         } catch( IOException e ) {
