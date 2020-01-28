@@ -86,12 +86,20 @@ public class HttpAsserts {
         return assertHttpResponse( client.get( uri, params, headers ) );
     }
 
+    public static HttpAssertion assertPost( String uri, String content, Map<String, Object> headers ) {
+        return assertPost( uri, content, APPLICATION_JSON, headers );
+    }
+
     public static HttpAssertion assertPost( String uri, String content ) {
-        return assertPost( uri, content, APPLICATION_JSON );
+        return assertPost( uri, content, Map.of() );
+    }
+
+    public static HttpAssertion assertPost( String uri, String content, ContentType contentType, Map<String, Object> headers ) {
+        return assertHttpResponse( client.post( uri, content, contentType, headers ) );
     }
 
     public static HttpAssertion assertPost( String uri, String content, ContentType contentType ) {
-        return assertHttpResponse( client.post( uri, content, contentType ) );
+        return assertPost( uri, content, contentType, Map.of() );
     }
 
     public static HttpAssertion assertPost( String uri, InputStream content, ContentType contentType ) {
