@@ -64,7 +64,7 @@
     </repositories>
 
     <properties>
-        <project.revision>6.4.15</project.revision>
+        <project.revision>6.4.16</project.revision>
 
         <testng.version>7.0.0</testng.version>
         <assertj.version>3.14.0</assertj.version>

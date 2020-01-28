@@ -120,7 +120,7 @@ public class MessageSender implements Closeable, Runnable {
         return sendObject( messageType, baos.toByteArray() );
     }
 
-    public CompletableFuture<?> sendObject( byte messageType, byte[] data ) {
+    public synchronized CompletableFuture<?> sendObject( byte messageType, byte[] data ) {
         md5Digest.reset();
         md5Digest.update( data );
         var md5 = md5Digest.digest();
