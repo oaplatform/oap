@@ -42,7 +42,7 @@ public class Cookie {
     private String domain;
     private DateTime expires;
     private String path;
-    private boolean httpOnly;
+    private boolean httpOnly = false;
     private boolean secure = false;
     private SameSite sameSite = SameSite.None;
     private String name;
@@ -78,7 +78,7 @@ public class Cookie {
         return this.httpOnly( true );
     }
 
-    private Cookie httpOnly( boolean httpOnly ) {
+    public Cookie httpOnly( boolean httpOnly ) {
         this.httpOnly = httpOnly;
         return this;
     }
