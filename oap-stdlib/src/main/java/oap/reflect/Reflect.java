@@ -26,6 +26,7 @@ package oap.reflect;
 import com.google.common.reflect.TypeToken;
 import oap.util.Arrays;
 import oap.util.Pair;
+import oap.util.Strings;
 import oap.util.Try;
 import org.apache.commons.lang3.StringUtils;
 
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 public class Reflect {
 
@@ -159,5 +161,12 @@ public class Reflect {
         public Class[] getClassContext() {
             return super.getClassContext();
         }
+    }
+
+    public static Function<String, Object> substitutor( Map<String, Object> bindings ) {
+        return macro -> {
+            Pair<String, String> split = Strings.split( macro, "." );
+            return get( bindings.get( split._1 ), split._2 );
+        };
     }
 }

@@ -83,7 +83,7 @@ public class Reflection extends Annotated<Class<?>> {
 
     private static void trySetAccessible( AccessibleObject ao, boolean flag ) {
         try {
-            ao.setAccessible( flag );
+            ao.trySetAccessible();
         } catch( SecurityException ignored ) {
 
         }
@@ -189,7 +189,7 @@ public class Reflection extends Annotated<Class<?>> {
 
 
     /**
-     * @param name Method name
+     * @param name       Method name
      * @param parameters list
      * @return {@link Method} - method wrapper of {@link java.lang.reflect.Method}
      */

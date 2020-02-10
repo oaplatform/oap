@@ -23,9 +23,11 @@
  */
 package oap.util;
 
+import oap.reflect.Reflect;
 import org.joda.time.DateTimeUtils;
 import org.testng.annotations.Test;
 
+import java.util.Map;
 import java.util.Set;
 
 import static oap.testng.Asserts.assertString;
@@ -56,6 +58,30 @@ public class StringsTest {
     @Test
     public void substringAfter() {
         assertString( Strings.substringAfter( "/bbb/aaa", "/bbb" ) ).isEqualTo( "/aaa" );
+    }
+
+    @Test
+    public void substititute() {
+        assertString( Strings.substitute( "${x.a.s} -> ${y.a.s} -> ${a.b.c} -> ${x.d.e}", Reflect.substitutor( Map.of(
+            "x", new B( new A( "aaa" ) ),
+            "y", new B( new A( "bbb" ) )
+        ) ) ) ).isEqualTo( "aaa -> bbb ->  -> " );
+    }
+
+    public static class A {
+        public String s;
+
+        public A( String s ) {
+            this.s = s;
+        }
+    }
+
+    public static class B {
+        public A a;
+
+        public B( A a ) {
+            this.a = a;
+        }
     }
 
     @Test
