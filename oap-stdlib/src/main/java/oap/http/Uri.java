@@ -25,18 +25,28 @@
 package oap.http;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import oap.util.Maps;
 import oap.util.Pair;
 import org.apache.http.client.utils.URIBuilder;
+import org.yaml.snakeyaml.util.UriEncoder;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Map;
 
+@Slf4j
 public class Uri {
     @SneakyThrows
     public static URI uri( String uri, Map<String, Object> params ) {
-        URIBuilder uriBuilder = new URIBuilder( uri );
+        URIBuilder uriBuilder;
+        try {
+            uriBuilder = new URIBuilder( uri );
+        } catch( URISyntaxException e ) {
+            log.error( "URI wasn't build", e );
+            uriBuilder = new URIBuilder( UriEncoder.encode( uri ) );
+        }
         for( Map.Entry<String, Object> entry : params.entrySet() ) {
             String name = entry.getKey();
             Object value = entry.getValue();
@@ -46,7 +56,6 @@ public class Uri {
             else uriBuilder.addParameter( name, value == null ? "" : value.toString() );
         }
         return uriBuilder.build();
-
     }
 
     @SafeVarargs
