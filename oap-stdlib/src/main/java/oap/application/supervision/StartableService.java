@@ -36,13 +36,19 @@ import java.util.Optional;
 public class StartableService implements Supervised {
     private final Logger logger;
     private final Object supervised;
-    private final String startWith;
+    private final List<String> startWith;
     private final List<String> stopWith;
+    private final List<String> preStartWith;
+    private final List<String> preStopWith;
     private boolean started;
 
-    public StartableService( Object supervised, String startWith, List<String> stopWith ) {
+    public StartableService( Object supervised,
+                             List<String> preStartWith, List<String> startWith,
+                             List<String> preStopWith, List<String> stopWith ) {
         this.supervised = supervised;
+        this.preStartWith = preStartWith;
         this.startWith = startWith;
+        this.preStopWith = preStopWith;
         this.stopWith = stopWith;
         this.logger = LoggerFactory.getLogger( supervised.getClass() );
     }
@@ -51,7 +57,7 @@ public class StartableService implements Supervised {
     @Override
     public void start() {
         try {
-            getControlMethod( startWith ).ifPresent( m -> m.invoke( supervised ) );
+            findMethod( startWith ).ifPresent( m -> m.invoke( supervised ) );
             started = true;
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
@@ -59,15 +65,41 @@ public class StartableService implements Supervised {
         }
     }
 
+    @SneakyThrows
+    @Override
+    public void preStart() {
+        try {
+            findMethod( preStartWith ).ifPresent( m -> m.invoke( supervised ) );
+        } catch( Exception e ) {
+            logger.error( e.getMessage(), e );
+            throw e;
+        }
+    }
+
+    private Optional<Reflection.Method> findMethod( List<String> names ) {
+        return names
+            .stream()
+            .flatMap( m -> Optionals.toStream( getControlMethod( m ) ) )
+            .findFirst();
+    }
+
+    @Override
+    public void preStop() {
+        try {
+            if( started ) {
+                findMethod( preStopWith ).ifPresent( m -> m.invoke( supervised ) );
+            }
+        } catch( Exception e ) {
+            logger.error( e.getMessage(), e );
+        }
+    }
+
     @Override
     public void stop() {
         try {
             if( started ) {
-                stopWith
-                    .stream()
-                    .flatMap( m -> Optionals.toStream( getControlMethod( m ) ) )
-                    .findFirst()
-                    .ifPresent( m -> m.invoke( supervised ) );
+                findMethod( stopWith ).ifPresent( m -> m.invoke( supervised ) );
+                started = false;
             }
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );

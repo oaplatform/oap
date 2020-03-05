@@ -44,13 +44,12 @@ import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
 public class Remote implements Handler {
+    private final FST.SerializationMethod serialization;
     private final ThreadLocal<oap.application.remote.FST> fst = new ThreadLocal<FST>() {
         public FST initialValue() {
             return new FST( serialization );
         }
     };
-
-    private final FST.SerializationMethod serialization;
     private final GenericCorsPolicy cors = GenericCorsPolicy.DEFAULT;
 
     private final HttpServer server;
@@ -66,6 +65,10 @@ public class Remote implements Handler {
 
     public void start() {
         server.bind( context, cors, this, Protocol.HTTPS );
+    }
+
+    public void preStop() {
+        server.unbind( context );
     }
 
     @Override

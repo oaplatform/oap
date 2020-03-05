@@ -218,6 +218,7 @@ public class Kernel implements Closeable {
         linkServices( map );
         startServices( map );
 
+        this.supervisor.preStart();
         this.supervisor.start();
 
         this.modules.add( new Module( Module.DEFAULT ) );
@@ -412,8 +413,11 @@ public class Kernel implements Closeable {
         var instance = si.instance;
         if( service.supervision.supervise ) {
             supervisor.startSupervised( service.name, instance,
+                service.supervision.preStartWith,
                 service.supervision.startWith,
-                service.supervision.stopWith );
+                service.supervision.preStopWith,
+                service.supervision.stopWith
+            );
         }
 
         if( service.supervision.thread )
@@ -436,6 +440,7 @@ public class Kernel implements Closeable {
 
     public void stop() {
         log.debug( "stopping application kernel {}...", name );
+        supervisor.preStop();
         supervisor.stop();
         services.clear();
         Application.unregister( this );

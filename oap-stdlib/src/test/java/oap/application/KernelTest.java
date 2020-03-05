@@ -65,6 +65,24 @@ public class KernelTest {
     }
 
     @Test
+    public void testLifecycle() {
+        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
+        modules.add( urlOfTestResource( getClass(), "modules/lifecycle.yaml" ) );
+
+        TestLifecycle testLifecycle;
+
+        try( var kernel = new Kernel( modules ) ) {
+            kernel.start();
+
+            testLifecycle = kernel.serviceOfClass( TestLifecycle.class ).orElse( null );
+
+        }
+
+        assertThat( testLifecycle ).isNotNull();
+        assertThat( testLifecycle.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
+    }
+
+    @Test
     public void stopCloseable() {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/start_stop.conf" ) );
@@ -288,6 +306,26 @@ public class KernelTest {
 
         public Service2( String val ) {
             this.val = val;
+        }
+    }
+
+    public static class TestLifecycle {
+        public final StringBuilder str = new StringBuilder();
+
+        public void preStart() {
+            str.append( "/preStart" );
+        }
+
+        public void start() {
+            str.append( "/start" );
+        }
+
+        public void preStop() {
+            str.append( "/preStop" );
+        }
+
+        public void stop() {
+            str.append( "/stop" );
         }
     }
 }

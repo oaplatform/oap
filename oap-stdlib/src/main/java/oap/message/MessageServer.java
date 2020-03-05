@@ -120,12 +120,14 @@ public class MessageServer implements Runnable, Closeable {
         }
     }
 
-    @Override
-    public void close() {
+    public void preStop() {
         Closeables.close( serverSocket );
         if( thread.isRunning() ) thread.stop();
         Closeables.close( executor, 10, TimeUnit.SECONDS );
-
+    }
+    
+    @Override
+    public void close() {
         try {
             hashes.store( controlStatePath );
         } catch( IOException e ) {

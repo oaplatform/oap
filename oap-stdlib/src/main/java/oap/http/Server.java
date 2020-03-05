@@ -114,7 +114,7 @@ public class Server implements HttpServer {
             DefaultConnectionReuseStrategy.INSTANCE,
             DefaultHttpResponseFactory.INSTANCE,
             mapper );
-        
+
         this.executor = new ThreadPoolExecutor( 0, workers, 10, TimeUnit.SECONDS, new SynchronousQueue<>(),
             new ThreadFactoryBuilder().setNameFormat( "http-%d" ).build() );
 
@@ -194,12 +194,16 @@ public class Server implements HttpServer {
         }
     }
 
-    public void stop() {
+    public void preStop() {
         connections.forEach( ( key, connection ) -> Closeables.close( connection ) );
 
         Closeables.close( executor );
 
         log.info( "server gone down" );
+    }
+
+    public void stop() {
+        preStop();
     }
 }
 

@@ -1,0 +1,4 @@
+name: lifecycle
+services:
+  test:
+    implementation: "oap.application.KernelTest$TestLifecycle"

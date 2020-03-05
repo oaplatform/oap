@@ -58,14 +58,25 @@ public class ThreadService extends SynchronizedRunnable implements Supervised, S
         }
         if( maxFailures <= 0 ) {
             log.error( supervisee + " constantly crushing. Requesting shutdown..." );
-            new Thread( supervisor::stop ).run();
+            new Thread( () -> {
+                supervisor.preStop();
+                supervisor.stop();
+            } ).run();
         }
     }
 
 
+    @Override
+    public void preStart() {
+    }
+
     public synchronized void start() {
         log.debug( "starting " + thread.getName() );
         thread.start();
+    }
+
+    @Override
+    public void preStop() {
     }
 
     public synchronized void stop() {

@@ -40,7 +40,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
 @EqualsAndHashCode
@@ -65,15 +64,15 @@ public class Module {
     @EqualsAndHashCode
     @ToString
     public static class Service {
-        public String implementation;
         public final LinkedHashMap<String, Object> parameters = new LinkedHashMap<>();
         public final Supervision supervision = new Supervision();
         public final LinkedHashSet<String> dependsOn = new LinkedHashSet<>();
         @JsonAlias( { "profile", "profiles" } )
         public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
-        public String name;
         public final LinkedHashMap<String, String> listen = new LinkedHashMap<>();
         public final LinkedHashMap<String, Object> link = new LinkedHashMap<>(); // String | Reference
+        public String implementation;
+        public String name;
         public RemoteLocation remote;
         public boolean enabled = true;
 
@@ -90,8 +89,10 @@ public class Module {
         public boolean supervise;
         public boolean thread;
         public boolean schedule;
-        public String startWith = "start";
-        public List<String> stopWith = asList( "stop", "close" );
+        public List<String> preStartWith = List.of( "preStart", "pre_start" );
+        public List<String> startWith = List.of( "start" );
+        public List<String> preStopWith = List.of( "preStop", "pre_stop" );
+        public List<String> stopWith = List.of( "stop", "close" );
         public long delay; //ms
         public String cron; // http://www.quartz-scheduler.org/documentation/quartz-2.x/tutorials/crontrigger
     }

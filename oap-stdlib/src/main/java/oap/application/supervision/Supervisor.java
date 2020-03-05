@@ -40,8 +40,10 @@ public class Supervisor {
     private LinkedHashMap<String, Supervised> scheduled = new LinkedHashMap<>();
     private boolean stopped = false;
 
-    public void startSupervised( String name, Object service, String startWith, List<String> stopWith ) {
-        this.supervised.put( name, new StartableService( service, startWith, stopWith ) );
+    public void startSupervised( String name, Object service,
+                                 List<String> preStartWith, List<String> startWith,
+                                 List<String> preStopWith, List<String> stopWith ) {
+        this.supervised.put( name, new StartableService( service, preStartWith, startWith, preStopWith, stopWith ) );
     }
 
     public void startThread( String name, Object instance ) {
@@ -54,6 +56,20 @@ public class Supervisor {
 
     public void scheduleCron( String name, Runnable service, String cron ) {
         this.scheduled.put( name, new CronScheduledService( service, cron ) );
+    }
+
+    public synchronized void preStart() {
+        log.debug( "pre starting..." );
+
+        this.supervised.forEach( ( name, service ) -> {
+            log.debug( "pre starting {}...", name );
+            service.preStart();
+        } );
+
+        this.scheduled.forEach( ( name, service ) -> {
+            log.debug( "pre schedule {}...", name );
+            service.preStart();
+        } );
     }
 
     public synchronized void start() {
@@ -74,6 +90,26 @@ public class Supervisor {
             long end = System.currentTimeMillis();
             log.debug( "schedule {}... Done. ({}ms)", name, end - start );
         } );
+    }
+
+    public synchronized void preStop() {
+        if( !stopped ) {
+            log.debug( "pre stopping..." );
+
+            BiStream.of( this.scheduled )
+                .reversed()
+                .forEach( ( name, service ) -> {
+                    log.debug( "pre stopping {}...", name );
+                    service.preStop();
+                } );
+
+            BiStream.of( this.supervised )
+                .reversed()
+                .forEach( ( name, service ) -> {
+                    log.debug( "pre stopping {}...", name );
+                    service.preStop();
+                } );
+        }
     }
 
     public synchronized void stop() {
@@ -105,6 +141,7 @@ public class Supervisor {
                 .filter( s -> s._1.equals( serviceName ) )
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
+                    service.preStop();
                     service.stop();
                     log.debug( "stopped {}", name );
                 } );
@@ -113,6 +150,7 @@ public class Supervisor {
                 .filter( s -> s._1.equals( serviceName ) )
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
+                    service.preStop();
                     service.stop();
                     log.debug( "stopped {}", name );
                 } );
