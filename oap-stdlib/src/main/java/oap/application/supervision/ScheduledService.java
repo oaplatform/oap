@@ -37,21 +37,11 @@ public abstract class ScheduledService implements Supervised, Runnable {
         this.runnable = runnable;
     }
 
-    @Override
-    public void preStart() {
-        
-    }
-
     public void start() {
         this.scheduled = schedule();
     }
 
     protected abstract Scheduled schedule();
-
-    @Override
-    public void preStop() {
-        
-    }
 
     @Override
     public void stop() {

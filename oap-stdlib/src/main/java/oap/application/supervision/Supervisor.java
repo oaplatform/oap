@@ -36,8 +36,8 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class Supervisor {
 
-    private LinkedHashMap<String, Supervised> supervised = new LinkedHashMap<>();
-    private LinkedHashMap<String, Supervised> scheduled = new LinkedHashMap<>();
+    private LinkedHashMap<String, StartableService> supervised = new LinkedHashMap<>();
+    private LinkedHashMap<String, Supervised> wrappers = new LinkedHashMap<>();
     private boolean stopped = false;
 
     public void startSupervised( String name, Object service,
@@ -47,15 +47,15 @@ public class Supervisor {
     }
 
     public void startThread( String name, Object instance ) {
-        this.supervised.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
+        this.wrappers.put( name, new ThreadService( name, ( Runnable ) instance, this ) );
     }
 
     public void scheduleWithFixedDelay( String name, Runnable service, long delay, TimeUnit unit ) {
-        this.scheduled.put( name, new DelayScheduledService( service, delay, unit ) );
+        this.wrappers.put( name, new DelayScheduledService( service, delay, unit ) );
     }
 
     public void scheduleCron( String name, Runnable service, String cron ) {
-        this.scheduled.put( name, new CronScheduledService( service, cron ) );
+        this.wrappers.put( name, new CronScheduledService( service, cron ) );
     }
 
     public synchronized void preStart() {
@@ -63,11 +63,6 @@ public class Supervisor {
 
         this.supervised.forEach( ( name, service ) -> {
             log.debug( "pre starting {}...", name );
-            service.preStart();
-        } );
-
-        this.scheduled.forEach( ( name, service ) -> {
-            log.debug( "pre schedule {}...", name );
             service.preStart();
         } );
     }
@@ -83,7 +78,7 @@ public class Supervisor {
             log.debug( "starting {}... Done. ({}ms)", name, end - start );
         } );
 
-        this.scheduled.forEach( ( name, service ) -> {
+        this.wrappers.forEach( ( name, service ) -> {
             log.debug( "schedule {}...", name );
             long start = System.currentTimeMillis();
             service.start();
@@ -96,12 +91,13 @@ public class Supervisor {
         if( !stopped ) {
             log.debug( "pre stopping..." );
 
-            BiStream.of( this.scheduled )
+            BiStream.of( this.wrappers )
                 .reversed()
                 .forEach( ( name, service ) -> {
                     log.debug( "pre stopping {}...", name );
-                    service.preStop();
+                    service.stop();
                 } );
+            this.wrappers.clear();
 
             BiStream.of( this.supervised )
                 .reversed()
@@ -116,13 +112,7 @@ public class Supervisor {
         if( !stopped ) {
             log.debug( "stopping..." );
             this.stopped = true;
-            BiStream.of( this.scheduled )
-                .reversed()
-                .forEach( ( name, service ) -> {
-                    log.debug( "stopping {}...", name );
-                    service.stop();
-                } );
-            this.scheduled.clear();
+
             BiStream.of( this.supervised )
                 .reversed()
                 .forEach( ( name, service ) -> {
@@ -137,15 +127,16 @@ public class Supervisor {
         if( !stopped ) {
             log.debug( "stopping..." );
             this.stopped = true;
-            BiStream.of( this.scheduled )
+
+            BiStream.of( this.wrappers )
                 .filter( s -> s._1.equals( serviceName ) )
                 .forEach( ( name, service ) -> {
                     log.debug( "stopping {}...", name );
-                    service.preStop();
                     service.stop();
                     log.debug( "stopped {}", name );
                 } );
-            this.scheduled.clear();
+            this.wrappers.clear();
+
             BiStream.of( this.supervised )
                 .filter( s -> s._1.equals( serviceName ) )
                 .forEach( ( name, service ) -> {

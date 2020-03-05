@@ -66,7 +66,6 @@ public class StartableService implements Supervised {
     }
 
     @SneakyThrows
-    @Override
     public void preStart() {
         try {
             findMethod( preStartWith ).ifPresent( m -> m.invoke( supervised ) );
@@ -76,14 +75,6 @@ public class StartableService implements Supervised {
         }
     }
 
-    private Optional<Reflection.Method> findMethod( List<String> names ) {
-        return names
-            .stream()
-            .flatMap( m -> Optionals.toStream( getControlMethod( m ) ) )
-            .findFirst();
-    }
-
-    @Override
     public void preStop() {
         try {
             if( started ) {
@@ -104,6 +95,13 @@ public class StartableService implements Supervised {
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );
         }
+    }
+
+    private Optional<Reflection.Method> findMethod( List<String> names ) {
+        return names
+            .stream()
+            .flatMap( m -> Optionals.toStream( getControlMethod( m ) ) )
+            .findFirst();
     }
 
     private Optional<Reflection.Method> getControlMethod( String name ) {

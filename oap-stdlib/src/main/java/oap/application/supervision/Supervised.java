@@ -24,12 +24,7 @@
 package oap.application.supervision;
 
 interface Supervised {
-    void preStart();
-
     void start();
 
-    void preStop();
-
     void stop();
-
 }

@@ -69,17 +69,21 @@ public class KernelTest {
         List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( getClass(), "modules/lifecycle.yaml" ) );
 
-        TestLifecycle testLifecycle;
+        TestLifecycle service;
+        TestLifecycle thread;
+        TestLifecycle delayScheduled;
 
         try( var kernel = new Kernel( modules ) ) {
             kernel.start();
 
-            testLifecycle = kernel.serviceOfClass( TestLifecycle.class ).orElse( null );
-
+            service = kernel.<TestLifecycle>service( "service" ).get();
+            thread = kernel.<TestLifecycle>service( "thread" ).get();
+            delayScheduled = kernel.<TestLifecycle>service( "delayScheduled" ).get();
         }
 
-        assertThat( testLifecycle ).isNotNull();
-        assertThat( testLifecycle.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
+        assertThat( service.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
+        assertThat( thread.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
+        assertThat( delayScheduled.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
     }
 
     @Test
@@ -309,7 +313,7 @@ public class KernelTest {
         }
     }
 
-    public static class TestLifecycle {
+    public static class TestLifecycle implements Runnable {
         public final StringBuilder str = new StringBuilder();
 
         public void preStart() {
@@ -320,12 +324,25 @@ public class KernelTest {
             str.append( "/start" );
         }
 
+
         public void preStop() {
             str.append( "/preStop" );
         }
 
         public void stop() {
             str.append( "/stop" );
+        }
+
+        @Override
+        public void run() {
+            var done = false;
+            while( !done ) {
+                try {
+                    Thread.sleep( 1 );
+                } catch( InterruptedException e ) {
+                    done = true;
+                }
+            }
         }
     }
 }

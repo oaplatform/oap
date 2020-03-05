@@ -66,17 +66,9 @@ public class ThreadService extends SynchronizedRunnable implements Supervised, S
     }
 
 
-    @Override
-    public void preStart() {
-    }
-
     public synchronized void start() {
         log.debug( "starting " + thread.getName() );
         thread.start();
-    }
-
-    @Override
-    public void preStop() {
     }
 
     public synchronized void stop() {
@@ -85,5 +77,4 @@ public class ThreadService extends SynchronizedRunnable implements Supervised, S
         if( supervisee instanceof Closeable ) Closeables.close( ( Closeable ) supervisee );
         thread.stop();
     }
-
 }
