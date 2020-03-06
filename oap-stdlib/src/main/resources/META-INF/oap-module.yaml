@@ -44,3 +44,8 @@ services:
       enableJvmThreadMetrics: true
     supervision:
       supervise: true
+
+  prometheus-application-info-exporter:
+    implementation: oap.prometheus.PrometheusApplicationInfoExporter
+    supervision:
+      supervise: true
