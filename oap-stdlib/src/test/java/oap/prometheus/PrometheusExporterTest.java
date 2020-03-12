@@ -39,6 +39,7 @@ import static oap.testng.Asserts.assertString;
  */
 public class PrometheusExporterTest {
     private static final Counter TEST_1 = Metrics.counter( "test1" );
+    private static final Counter TEST_2 = Metrics.counter( "test2" );
 
     @Test
     public void testServer() throws IOException {
@@ -47,10 +48,26 @@ public class PrometheusExporterTest {
             exporter.start();
 
             TEST_1.increment( 2 );
+            TEST_2.increment( 4 );
+
             var response = Client.DEFAULT.get( "http://localhost:" + port + "/metrics" ).contentString();
-            assertString( response ).contains( "# HELP test1_total  \n" +
-                "# TYPE test1_total counter\n" +
-                "test1_total 2.0\n" );
+            assertString( response ).contains( """
+# HELP test1_total\040\040
+# TYPE test1_total counter
+test1_total 2.0
+""" );
+            assertString( response ).contains( """
+# HELP test2_total\040\040
+# TYPE test2_total counter
+test2_total 4.0
+""" );
+
+            var response2 = Client.DEFAULT.get( "http://localhost:" + port + "/metrics?filter=test2_total" ).contentString();
+            assertString( response2 ).isEqualTo( """
+# HELP test2_total\040\040
+# TYPE test2_total counter
+test2_total 4.0
+""" );
         }
     }
 
