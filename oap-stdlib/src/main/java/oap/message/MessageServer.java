@@ -116,16 +116,14 @@ public class MessageServer implements Runnable, Closeable {
             }
         } finally {
             Closeables.close( serverSocket );
-            if( !executor.isShutdown() && !executor.isTerminated() && !executor.isTerminating() )
-                Closeables.close( executor );
+            Closeables.close( executor );
         }
     }
 
     public void preStop() {
         Closeables.close( serverSocket );
         if( thread.isRunning() ) thread.stop();
-        if( !executor.isShutdown() && !executor.isTerminated() && !executor.isTerminating() )
-            Closeables.close( executor, 10, TimeUnit.SECONDS );
+        Closeables.close( executor, 10, TimeUnit.SECONDS );
     }
 
     @Override
