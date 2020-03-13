@@ -43,11 +43,13 @@ public class S3FileManager extends AbstractFileManager  {
 
     private AmazonS3 s3client;
     private TransferManager transferManager;
+    private String region;
 
-    public S3FileManager( Map<String, Path> buckets ) {
+    public S3FileManager( Map<String, Path> buckets, String region ) {
         super( buckets );
+        this.region = region;
         log.info( "Init s3-file-manager" );
-        var s3Client = AmazonS3ClientBuilder.standard().withCredentials( new ProfileCredentialsProvider() ).build();
+        var s3Client = AmazonS3ClientBuilder.standard().withRegion( this.region ).withCredentials( new ProfileCredentialsProvider() ).build();
         if( this.s3client == null ) this.s3client = s3Client;
         transferManager = TransferManagerBuilder.standard().withS3Client( this.s3client ).build();
     }
