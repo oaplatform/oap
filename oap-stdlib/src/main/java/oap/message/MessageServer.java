@@ -125,10 +125,9 @@ public class MessageServer implements Runnable, Closeable {
         if( thread.isRunning() ) thread.stop();
         Closeables.close( executor, 10, TimeUnit.SECONDS );
     }
-
+    
     @Override
     public void close() {
-        preStop();
         try {
             hashes.store( controlStatePath );
         } catch( IOException e ) {

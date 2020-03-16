@@ -28,16 +28,11 @@ import com.sun.net.httpserver.HttpServer;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.prometheus.client.exporter.common.TextFormat;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.client.utils.URLEncodedUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.util.Set;
 
 /**
  * Created by igor.petrenko on 2019-11-05.
@@ -61,29 +56,12 @@ public class PrometheusExporter implements Closeable {
 
         server = HttpServer.create( new InetSocketAddress( port ), 0 );
         server.createContext( path, httpExchange -> {
-            var params = URLEncodedUtils.parse( httpExchange.getRequestURI(), StandardCharsets.UTF_8 );
-
-            var response =
-                params.stream().filter( p -> p.getName().equals( "filter" ) )
-                    .findAny().map( f -> scrape( f.getValue() ) ).orElseGet( prometheusRegistry::scrape );
-
+            var response = prometheusRegistry.scrape();
             httpExchange.sendResponseHeaders( 200, response.getBytes().length );
             try( var os = httpExchange.getResponseBody() ) {
                 os.write( response.getBytes() );
             }
         } );
-    }
-
-    private String scrape( String filter ) {
-        StringWriter writer = new StringWriter();
-
-        try {
-            TextFormat.write004( writer, prometheusRegistry.getPrometheusRegistry().filteredMetricFamilySamples( Set.of( filter ) ) );
-        } catch( IOException var3 ) {
-            throw new RuntimeException( var3 );
-        }
-
-        return writer.toString();
     }
 
     public void start() {
