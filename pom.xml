@@ -33,7 +33,6 @@
     </parent>
 
     <packaging>pom</packaging>
-    <groupId>oap</groupId>
     <artifactId>oap</artifactId>
     <version>${project.revision}</version>
 
