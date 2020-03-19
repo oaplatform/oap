@@ -17,22 +17,12 @@ services:
     profile: remoting
     implementation: oap.application.remote.Remote
     parameters:
-      server: "@service:oap-http-server"
-      context: remote
+      port: 8980
+      context: /remote/
       serialization: DEFAULT
       kernel: "@kernel"
     supervision:
       supervise: true
-
-  remoting-listener:
-    profile: remoting
-    implementation: oap.http.SecureHttpListener
-    parameters:
-      port: 8980
-      server: "@service:oap-http-server"
-      private_network: false
-    supervision:
-      thread: true
 
   prometheus-jvm-exporter:
     implementation: oap.prometheus.PrometheusJvmExporter

@@ -23,27 +23,28 @@
  */
 package oap.application.remote;
 
-import com.google.common.io.ByteStreams;
+import io.undertow.Handlers;
+import io.undertow.Undertow;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.BlockingHandler;
+import io.undertow.util.Headers;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
-import oap.http.Handler;
-import oap.http.HttpResponse;
-import oap.http.HttpServer;
-import oap.http.Protocol;
-import oap.http.Request;
-import oap.http.Response;
 import oap.http.cors.GenericCorsPolicy;
 import oap.util.Result;
-import oap.util.Try;
+import org.apache.http.entity.ContentType;
 
 import java.lang.reflect.InvocationTargetException;
+import java.nio.ByteBuffer;
 import java.util.Optional;
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 
 @Slf4j
-public class Remote implements Handler {
+public class Remote implements HttpHandler {
     private final FST.SerializationMethod serialization;
     private final ThreadLocal<oap.application.remote.FST> fst = new ThreadLocal<FST>() {
         public FST initialValue() {
@@ -52,59 +53,71 @@ public class Remote implements Handler {
     };
     private final GenericCorsPolicy cors = GenericCorsPolicy.DEFAULT;
 
-    private final HttpServer server;
+    private final int port;
     private final String context;
     private final Kernel kernel;
+    private final Undertow undertow;
 
-    public Remote( FST.SerializationMethod serialization, HttpServer server, String context, Kernel kernel ) {
+    public Remote( FST.SerializationMethod serialization, int port, String context, Kernel kernel ) {
         this.serialization = serialization;
-        this.server = server;
+        this.port = port;
         this.context = context;
         this.kernel = kernel;
+
+        undertow = Undertow
+            .builder()
+            .addHttpListener( port, "localhost" )
+            .setHandler( Handlers.pathTemplate().add( context, new BlockingHandler( this ) ) )
+            .build();
     }
 
     public void start() {
-        server.bind( context, cors, this, Protocol.HTTPS );
+        undertow.start();
     }
 
     public void preStop() {
-        server.unbind( context );
+        undertow.stop();
     }
-
-    @Override
-    public void handle( Request request, Response response ) {
-        FST fst = this.fst.get();
-
-        RemoteInvocation invocation = request.body
-            .map( Try.map( bytes -> ( RemoteInvocation ) fst.conf.asObject( ByteStreams.toByteArray( bytes ) ) ) )
-            .orElseThrow( () -> new RemoteInvocationException( "no invocation data" ) );
-
-        log.trace( "invoke {}", invocation );
-
-        Optional<Object> service = kernel.service( invocation.service );
-
-        service.ifPresentOrElse( s -> {
-                Result<Object, Throwable> result;
-                try {
-                    result = Result.success( s.getClass()
-                        .getMethod( invocation.method, invocation.types() )
-                        .invoke( s, invocation.values() ) );
-                } catch( NoSuchMethodException | IllegalAccessException e ) {
-                    result = Result.failure( e );
-                    log.trace( "Method [{}] doesn't exist or access isn't allowed", invocation.method );
-                } catch( InvocationTargetException e ) {
-                    result = Result.failure( e.getCause() );
-                    log.trace( "Exception occurred on call to method [{}]", invocation.method );
-                }
-                response.respond( HttpResponse.bytes( fst.conf.asByteArray( result ), APPLICATION_OCTET_STREAM ).response() );
-            },
-            () -> response.respond( HttpResponse.status( HTTP_NOT_FOUND, invocation.service + " not found" ).response() )
-        );
-    }
-
 
     @Override
     public String toString() {
         return getClass().getName();
+    }
+
+    @Override
+    public void handleRequest( HttpServerExchange exchange ) throws Exception {
+        FST fst = this.fst.get();
+
+        exchange.getRequestReceiver().receiveFullBytes( ( ex, body ) -> {
+            var invocation = ( RemoteInvocation ) fst.conf.asObject( body );
+
+            log.trace( "invoke {}", invocation );
+
+            Optional<Object> service = kernel.service( invocation.service );
+
+            service.ifPresentOrElse( s -> {
+                    Result<Object, Throwable> result;
+                    try {
+                        result = Result.success( s.getClass()
+                            .getMethod( invocation.method, invocation.types() )
+                            .invoke( s, invocation.values() ) );
+                    } catch( NoSuchMethodException | IllegalAccessException e ) {
+                        result = Result.failure( e );
+                        log.trace( "Method [{}] doesn't exist or access isn't allowed", invocation.method );
+                    } catch( InvocationTargetException e ) {
+                        result = Result.failure( e.getCause() );
+                        log.trace( "Exception occurred on call to method [{}]", invocation.method );
+                    }
+                    exchange.setStatusCode( HTTP_OK );
+                    exchange.getResponseSender().send( ByteBuffer.wrap( fst.conf.asByteArray( result ) ) );
+                    exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM.toString() );
+                },
+                () -> {
+                    exchange.setStatusCode( HTTP_NOT_FOUND );
+                    exchange.getResponseSender().send( invocation.service + " not found" );
+                    exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, ContentType.DEFAULT_TEXT.toString() );
+                }
+            );
+        } );
     }
 }
