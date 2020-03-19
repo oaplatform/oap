@@ -165,22 +165,6 @@ public final class Client implements Closeable {
             .toList();
     }
 
-    @SneakyThrows
-    private static SSLContext createSSLContext( Path certificateLocation, String certificatePassword ) {
-        try( var inputStream = IoStreams.in( certificateLocation, PLAIN ) ) {
-            KeyStore keyStore = KeyStore.getInstance( "JKS" );
-            keyStore.load( inputStream, certificatePassword.toCharArray() );
-
-            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-            trustManagerFactory.init( keyStore );
-
-            SSLContext sslContext = SSLContext.getInstance( "TLS" );
-            sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
-
-            return sslContext;
-        }
-    }
-
     public Response get( String uri ) {
         return get( uri, Maps.empty(), Maps.empty() );
     }
@@ -654,7 +638,7 @@ public final class Client implements Closeable {
                         .register( "http", NoopIOSessionStrategy.INSTANCE )
                         .register( "https",
                             new SSLIOSessionStrategy( certificateLocation != null
-                                ? createSSLContext( certificateLocation, certificatePassword )
+                                ? Client2.createSSLContext( certificateLocation, certificatePassword )
                                 : SSLContexts.createDefault(),
                                 split( System.getProperty( "https.protocols" ) ),
                                 split( System.getProperty( "https.cipherSuites" ) ),
@@ -666,7 +650,7 @@ public final class Client implements Closeable {
 
                 return ( certificateLocation != null
                     ? HttpAsyncClients.custom()
-                    .setSSLContext( createSSLContext( certificateLocation, certificatePassword ) )
+                    .setSSLContext( Client2.createSSLContext( certificateLocation, certificatePassword ) )
                     : HttpAsyncClients.custom() )
                     .setMaxConnPerRoute( maxConnPerRoute )
                     .setConnectionManager( connManager )

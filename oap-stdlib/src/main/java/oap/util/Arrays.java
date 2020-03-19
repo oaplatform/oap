@@ -51,6 +51,15 @@ public class Arrays {
         return result;
     }
 
+    public static <E, EO> EO[] map( Class<EO> resultClass, List<E> list, Function<E, EO> func ) {
+        var size = list.size();
+        EO[] result = ( EO[] ) Array.newInstance( resultClass, size );
+
+        for( var i = 0; i < size; i++ ) result[i] = func.apply( list.get( i ) );
+
+        return result;
+    }
+
     @SuppressWarnings( "unchecked" )
     public static <E> E[] of( Class<?> componentType, Collection<E> collection ) {
         return collection.toArray( ( E[] ) Array.newInstance( componentType, collection.size() ) );

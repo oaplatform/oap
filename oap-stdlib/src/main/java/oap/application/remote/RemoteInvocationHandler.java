@@ -28,7 +28,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.extern.slf4j.Slf4j;
-import oap.http.Client;
+import oap.http.Client2;
 import oap.util.Result;
 
 import java.lang.reflect.InvocationHandler;
@@ -36,7 +36,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,7 +57,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     private final FST fst;
     private final int retry;
     private final String service;
-    private final Client client;
+    private final HttpClient client;
     private final long timeout;
 
     private RemoteInvocationHandler( URI uri,
@@ -74,20 +79,27 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
         log.debug( "remote interface for {} at {} wich certs {}", service, uri, certificateLocation );
 
-        this.client = Client.custom( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
-            .onTimeout( client -> {
-                log.error( "timeout invoking {}#{}", service, uri );
-                timeoutMetrics.increment();
-                client.reset();
-            } )
-            .onError( ( c, e ) -> {
-                log.error( "error invoking {}#{}: {}", service, uri, e );
-                errorMetrics.increment();
-            } )
-            .onSuccess( c -> successMetrics.increment() )
-            .setMaxConnPerRoute( 100 )
-            .setMaxConnTotal( 100 )
-            .build();
+        var builder = HttpClient.newBuilder().connectTimeout( Duration.ofMillis( this.timeout ) );
+        if( certificateLocation != null ) {
+            var sslContext = Client2.createSSLContext( certificateLocation, certificatePassword );
+            builder = builder.sslContext( sslContext );
+        }
+        this.client = builder.build();
+
+//        this.client = Client.custom( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
+//            .onTimeout( client -> {
+//                log.error( "timeout invoking {}#{}", service, uri );
+//                timeoutMetrics.increment();
+//                client.reset();
+//            } )
+//            .onError( ( c, e ) -> {
+//                log.error( "error invoking {}#{}: {}", service, uri, e );
+//                errorMetrics.increment();
+//            } )
+//            .onSuccess( c -> successMetrics.increment() )
+//            .setMaxConnPerRoute( 100 )
+//            .setMaxConnTotal( 100 )
+//            .build();
     }
 
     public static Object proxy( RemoteLocation remote, Class<?> clazz ) {
@@ -126,11 +138,12 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             if( retException != null )
                 log.trace( retException.getMessage(), retException );
             try {
-                var response = client.post( uri.toString(), content, timeout ).orElse( null );
-                if( response == null ) continue;
+                var bodyPublisher = HttpRequest.BodyPublishers.ofByteArray( content );
+                var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
+                var response = client.send( request, HttpResponse.BodyHandlers.ofByteArray() );
 
-                if( response.code == HTTP_OK ) {
-                    var b = response.content();
+                if( response.statusCode() == HTTP_OK ) {
+                    var b = response.body();
                     if( b != null ) {
                         var res = ( Result<Object, Throwable> ) fst.conf.asObject( b );
 
@@ -147,10 +160,15 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                     retException = new RemoteInvocationException( "remote service uri = " + uri
                         + ", service name = " + service
                         + ", method name = " + method.getName()
-                        + ": response code = " + response.code
-                        + ", phrase = " + response.reasonPhrase
-                        + "\n content = " + response.contentString() );
+                        + ": response code = " + response.statusCode()
+                        + "\n content = " + new String( response.body() ) );
+            } catch( HttpTimeoutException e ) {
+                log.error( "timeout invoking {}#{}", service, uri );
+                timeoutMetrics.increment();
+                retException = e;
             } catch( Exception e ) {
+                log.error( "error invoking {}#{}: {}", service, uri, e );
+                errorMetrics.increment();
                 retException = e;
             }
 
