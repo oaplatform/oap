@@ -52,19 +52,19 @@ import static java.util.stream.Collectors.joining;
 import static oap.util.Pair.__;
 
 @Slf4j
-public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T, TLine> {
+public class JavaCTemplate<T, L extends Template.Line> implements Template<T, L> {
     private static final String math = "/*+-%";
     private final Map<String, String> overrides;
     private final Map<String, Supplier<String>> mapper;
-    private BiFunction<T, Accumulator, ?> func;
-    private TemplateStrategy<TLine> map;
+    private BiFunction<T, Accumulator<?>, ?> func;
+    private TemplateStrategy<L> map;
 
     @SneakyThrows
     @SuppressWarnings( "unchecked" )
-    JavaCTemplate( String name, Class<T> clazz, List<TLine> pathAndDefault, String delimiter, TemplateStrategy<TLine> map,
+    JavaCTemplate( String name, Class<T> clazz, List<L> pathAndDefault, String delimiter, TemplateStrategy<L> map,
                    Map<String, String> overrides, Map<String, Supplier<String>> mapper,
                    Path cacheFile ) {
-        name = name.replaceAll( "[\\s%\\-;\\\\/:*?\"<>|]", "_" );
+        String nameEscaped = name.replaceAll( "[\\s%\\-;\\\\/:*?\"<>|]", "_" );
         this.map = map;
         this.overrides = overrides;
         this.mapper = mapper;
@@ -85,7 +85,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 + "import java.util.function.BiFunction;\n"
                 + "import com.google.common.base.CharMatcher;\n"
                 + "\n"
-                + "public  class " ).append( name ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
+                + "public  class " ).append( nameEscaped ).append( " implements BiFunction<" ).append( className ).append( ", Accumulator, Object> {\n"
                 + "\n"
                 + "   @Override\n"
                 + "   public Object apply( " ).append( className ).append( " s, Accumulator acc ) {\n"
@@ -100,7 +100,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
 
             c.append( "\n"
-                + "     return acc.build();\n"
+                + "     return acc.get();\n"
                 + "     }\n"
                 + "   }\n"
                 + "}" );
@@ -112,9 +112,9 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
                 .collect( joining( "\n" ) )
             );
 
-            var fullTemplateName = getClass().getPackage().getName() + "." + name;
+            var fullTemplateName = getClass().getPackage().getName() + "." + nameEscaped;
             var mcl = new MemoryClassLoaderJava13( fullTemplateName, c.toString(), cacheFile );
-            func = ( BiFunction<T, Accumulator, ?> ) mcl.loadClass( fullTemplateName ).getDeclaredConstructor().newInstance();
+            func = ( BiFunction<T, Accumulator<?>, ?> ) mcl.loadClass( fullTemplateName ).getDeclaredConstructor().newInstance();
 
         } catch( Exception e ) {
             log.error( c.toString() );
@@ -122,7 +122,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
         }
     }
 
-    private void addPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c,
+    private void addPath( Class<T> clazz, L line, String delimiter, StringBuilder c,
                           AtomicInteger num, FieldStack fields,
                           boolean last ) throws NoSuchMethodException, NoSuchFieldException {
         var tab = new AtomicInteger( 5 );
@@ -144,7 +144,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
         }
     }
 
-    private void buildPath( Class<T> clazz, TLine line, String delimiter, StringBuilder c,
+    private void buildPath( Class<T> clazz, L line, String delimiter, StringBuilder c,
                             AtomicInteger num, FieldStack fields, boolean last, AtomicInteger tab, boolean validation ) throws NoSuchFieldException, NoSuchMethodException {
         var orPath = StringUtils.split( line.path, '|' );
         var orIndex = 0;
@@ -160,7 +160,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
         if( !validation ) map.afterLine( c, line, delimiter );
     }
 
-    private boolean pathExists( Class<T> clazz, TLine line ) throws NoSuchFieldException, NoSuchMethodException {
+    private boolean pathExists( Class<T> clazz, L line ) throws NoSuchFieldException, NoSuchMethodException {
         try {
             buildPath( clazz, line, "", new StringBuilder(), new AtomicInteger(),
                 new FieldStack(), false, new AtomicInteger(), true );
@@ -185,7 +185,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
 
     private void addPathOr( FieldInfo clazz, String delimiter, StringBuilder c, AtomicInteger num,
                             FieldStack fields, boolean last, AtomicInteger tab,
-                            String[] orPath, int orIndex, TLine line ) throws NoSuchFieldException, NoSuchMethodException {
+                            String[] orPath, int orIndex, L line ) throws NoSuchFieldException, NoSuchMethodException {
         var currentPath = orPath[orIndex].trim();
 
         var m = mapper.get( currentPath );
@@ -330,12 +330,9 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
     }
 
     private StringBuilder tab( StringBuilder sb, AtomicInteger tab ) {
-        for( int i = 0; i < tab.get(); i++ ) sb.append( ' ' );
-
-        return sb;
+        return sb.append( " ".repeat( Math.max( 0, tab.get() ) ) );
     }
 
-    @SuppressWarnings( "unchecked" )
     private FieldInfo getDeclaredFieldOrFunctionType( FieldInfo type, String field ) throws NoSuchFieldException, NoSuchMethodException {
         if( type.isParameterizedType() )
             return getDeclaredFieldOrFunctionType( type.getRawType(), field );
@@ -343,7 +340,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
         int mi = StringUtils.indexOfAny( field, math );
         if( mi > 0 ) return getDeclaredFieldOrFunctionType( type, field.substring( 0, mi ) );
 
-        Class type1 = ( Class ) type.type;
+        Class<?> type1 = ( Class<?> ) type.type;
         try {
             int i = field.indexOf( '(' );
             while( i > 0 && field.charAt( i + 1 ) == '(' ) {
@@ -370,7 +367,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
     private void add( StringBuilder c, AtomicInteger num, String newPath, FieldInfo cc, FieldInfo parentType,
                       boolean nullable, AtomicInteger tab,
                       String[] orPath, int orIndex, FieldInfo clazz, String delimiter,
-                      FieldStack fields, boolean last, TLine line, Optional<Join> join ) throws NoSuchFieldException, NoSuchMethodException {
+                      FieldStack fields, boolean last, L line, Optional<Join> join ) throws NoSuchFieldException, NoSuchMethodException {
         String pfield = newPath;
         boolean primitive = cc.isPrimitive();
         if( !primitive ) {
@@ -422,7 +419,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
         }
     }
 
-    private void printDefaultValue( StringBuilder c, Object pfield, TLine line ) {
+    private void printDefaultValue( StringBuilder c, Object pfield, L line ) {
         if( !map.ignoreDefaultValue() ) {
             c.append( "acc.accept( " );
             if( ClassUtils.isPrimitiveOrWrapper( pfield.getClass() ) ) c.append( pfield );
@@ -432,6 +429,7 @@ public class JavaCTemplate<T, TLine extends Template.Line> implements Template<T
     }
 
     @Override
+    @SuppressWarnings( "unchecked" )
     public <R> R render( T source, Accumulator<R> accumulator ) {
         return ( R ) func.apply( source, accumulator );
     }

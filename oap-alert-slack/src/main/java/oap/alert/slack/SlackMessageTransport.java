@@ -31,6 +31,9 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.alert.MessageTransport;
 
+/**
+ * @todo replace with https://github.com/HubSpot/slack-client
+ */
 @Slf4j
 public class SlackMessageTransport implements MessageTransport<Payload> {
 

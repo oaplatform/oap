@@ -90,7 +90,7 @@ public class StringTemplateTest extends Fixtures {
     }
 
     @Test
-    public void processWithoutVariables() throws Exception {
+    public void processWithoutVariables() {
         Path test = ensureDirectory( tmpPath( "test" ) );
         Engine engine = new Engine( test );
         assertThat( engine.getTemplate( "test", Container.class, "d" ) )
@@ -133,8 +133,8 @@ public class StringTemplateTest extends Fixtures {
         InvocationAccumulator invAccumulator = new InvocationAccumulator();
 
         template.render( new Container( test ), invAccumulator );
-        assertThat( invAccumulator.get() ).isEqualTo( 1 );
-        assertThat( invAccumulator.build() ).isEqualTo( "320xx50" );
+        assertThat( invAccumulator.count ).isEqualTo( 1 );
+        assertThat( invAccumulator.get() ).isEqualTo( "320xx50" );
 
     }
 
@@ -273,26 +273,22 @@ public class StringTemplateTest extends Fixtures {
     }
 
     private static class InvocationAccumulator extends StringAccumulator {
-        int invs = 0;
+        public int count = 0;
 
         public InvocationAccumulator() {
             super( new StringBuilder() );
         }
 
         @Override
-        public Accumulator accept( String o ) {
-            invs++;
+        public Accumulator<String> accept( String o ) {
+            count++;
             return super.accept( o );
         }
 
         @Override
-        public Accumulator accept( int o ) {
-            invs++;
+        public Accumulator<String> accept( int o ) {
+            count++;
             return super.accept( o );
-        }
-
-        public int get() {
-            return invs;
         }
     }
 

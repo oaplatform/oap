@@ -30,12 +30,12 @@ import lombok.ToString;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-public interface Template<T, TLine extends Template.Line> {
+public interface Template<T, L extends Template.Line> {
     Template<Object, Line> EMPTY = new Template<>() {
         @Override
         public Object render( Object source, Accumulator accumulator ) {
             accumulator.accept( source );
-            return accumulator.build();
+            return accumulator.get();
         }
 
         @Override
@@ -93,7 +93,7 @@ public interface Template<T, TLine extends Template.Line> {
         }
     }
 
-    @Retention( RetentionPolicy.RUNTIME)
+    @Retention( RetentionPolicy.RUNTIME )
     @interface Nullable {
     }
 }

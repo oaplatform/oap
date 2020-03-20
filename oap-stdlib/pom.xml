@@ -167,6 +167,11 @@
             <version>${oap.deps.fop.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.conversantmedia</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>${oap.deps.disruptor.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <version>${oap.deps.testng.version}</version>
@@ -207,8 +212,13 @@
             <groupId>com.github.rholder</groupId>
             <artifactId>guava-retrying</artifactId>
             <version>${oap.deps.guava-retrying.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>jsr305</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
-
         <dependency>
             <groupId>com.jasonclawson</groupId>
             <artifactId>jackson-dataformat-hocon</artifactId>
@@ -362,12 +372,22 @@
                     <groupId>org.apache.httpcomponents</groupId>
                     <artifactId>httpcore-nio</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpmime</artifactId>
             <version>${oap.deps.apache.httpmime.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>de.ruedigermoeller</groupId>
@@ -395,6 +415,22 @@
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>jsr305</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.xmlunit</groupId>
+                    <artifactId>xmlunit-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.activation</groupId>
+                    <artifactId>activation</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>joda-time</groupId>
+                    <artifactId>joda-time</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

@@ -45,33 +45,33 @@ public class DictionaryParserTest extends Fixtures {
         DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path, true );
 
         assertString( Files.readString( path ) ).isEqualTo( """
-        {
-          "name" : "test-dictionary",
-          "version" : 1,
-          "values" : [ {
-            "id" : "id1",
-            "eid" : 49,
-            "values" : [ {
-              "id" : "id11",
-              "eid" : 11,
-              "title" : "title11"
-            }, {
-              "id" : "id12",
-              "eid" : 12,
-              "title" : "title12"
-            } ],
-            "title" : "title1"
-          }, {
-            "id" : "id2",
-            "eid" : 50,
-            "property1" : "val1",
-            "title" : "title2"
-          }, {
-            "id" : "id3",
-            "eid" : 51,
-            "tags" : [ "tag1", "tag2" ]
-          } ]
-        }""".stripIndent() );
+            {
+              "name" : "test-dictionary",
+              "version" : 1,
+              "values" : [ {
+                "id" : "id1",
+                "eid" : 49,
+                "values" : [ {
+                  "id" : "id11",
+                  "eid" : 11,
+                  "title" : "title11"
+                }, {
+                  "id" : "id12",
+                  "eid" : 12,
+                  "title" : "title12"
+                } ],
+                "title" : "title1"
+              }, {
+                "id" : "id2",
+                "eid" : 50,
+                "property1" : "val1",
+                "title" : "title2"
+              }, {
+                "id" : "id3",
+                "eid" : 51,
+                "tags" : [ "tag1", "tag2" ]
+              } ]
+            }""" );
     }
 
     @Test(

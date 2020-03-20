@@ -24,6 +24,7 @@
 
 package oap.util;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -70,5 +71,11 @@ public class ListsTest {
     @Test
     public void mapToIntArray() {
         assertThat( Lists.mapToIntArray( asList( "1", "2", "3" ), Integer::parseInt ) ).containsExactly( 1, 2, 3 );
+    }
+
+    @Test
+    public void toIntArrayList() {
+        IntArrayList collect = Stream.of( 1, 2, 3 ).collect( Lists.Collectors.toIntArrayList() );
+        assertThat( collect.size() ).isEqualTo( 3 );
     }
 }

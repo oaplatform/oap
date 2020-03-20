@@ -24,6 +24,7 @@
 
 package oap.util;
 
+import javax.annotation.Nonnull;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -85,6 +86,7 @@ public class LinkedHashSetRO<T> implements Set<T>, Externalizable {
     }
 
     @Override
+    @Nonnull
     public Iterator<T> iterator() {
         return list.iterator();
     }
@@ -120,16 +122,18 @@ public class LinkedHashSetRO<T> implements Set<T>, Externalizable {
     }
 
     @Override
-    public boolean containsAll( Collection<?> c ) {
+    public boolean containsAll( @Nonnull Collection<?> c ) {
         return set.containsAll( c );
     }
 
     @Override
+    @Nonnull
     public Object[] toArray() {
         return list.toArray();
     }
 
     @Override
+    @Nonnull
     public <T1> T1[] toArray( T1[] a ) {
         return list.toArray( a );
     }
@@ -174,8 +178,8 @@ public class LinkedHashSetRO<T> implements Set<T>, Externalizable {
     }
 
     @Override
+    @SuppressWarnings( "unchecked" )
     public void readExternal( ObjectInput in ) throws IOException, ClassNotFoundException {
-        var l = ( List<T> ) in.readObject();
-        addAll( l );
+        addAll( ( List<T> ) in.readObject() );
     }
 }

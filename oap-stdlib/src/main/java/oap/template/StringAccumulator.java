@@ -32,66 +32,66 @@ public class StringAccumulator implements Accumulator<String> {
     }
 
     @Override
-    public String build() {
+    public String get() {
         return sb.toString();
     }
 
     @Override
-    public Accumulator accept( Object o ) {
+    public Accumulator<String> accept( Object o ) {
         sb.append( o );
         return this;
     }
 
     @Override
-    public Accumulator accept( String str ) {
+    public Accumulator<String> accept( String str ) {
         sb.append( str );
         return this;
     }
 
     @Override
-    public Accumulator accept( boolean value ) {
+    public Accumulator<String> accept( boolean value ) {
         sb.append( value );
         return this;
     }
 
     @Override
-    public Accumulator accept( char value ) {
+    public Accumulator<String> accept( char value ) {
         sb.append( value );
         return this;
     }
 
     @Override
-    public Accumulator accept( int value ) {
+    public Accumulator<String> accept( int value ) {
         sb.append( value );
         return this;
     }
 
     @Override
-    public Accumulator accept( long value ) {
+    public Accumulator<String> accept( long value ) {
         sb.append( value );
         return this;
     }
 
     @Override
-    public Accumulator accept( float value ) {
+    public Accumulator<String> accept( float value ) {
         sb.append( value );
         return this;
     }
 
     @Override
-    public Accumulator accept( double value ) {
+    public Accumulator<String> accept( double value ) {
         sb.append( value );
         return this;
     }
 
     @Override
-    public Accumulator accept( StringBuffer value ) {
+    public Accumulator<String> accept( StringBuffer value ) {
         sb.append( value );
         return this;
     }
 
     @Override
-    public Accumulator accept( CharSequence value ) {
+    public Accumulator<String> accept( CharSequence value ) {
         sb.append( value );
         return this;
     }

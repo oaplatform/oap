@@ -98,7 +98,7 @@ public class Binder {
     static {
         modules = Resources
             .lines( "META-INF/jackson.modules" )
-            .map( Try.map( clazz -> ( ( Module ) Class.forName( clazz ).newInstance() ) ) )
+            .map( Try.map( clazz -> ( ( Module ) Class.forName( clazz ).getDeclaredConstructor().newInstance() ) ) )
             .toSet();
 
         json = new Binder( initialize( new ObjectMapper(), false, false ) );
@@ -187,12 +187,12 @@ public class Binder {
     }
 
     @SuppressWarnings( "unchecked" )
-    private static <T extends ReadableInstant> JsonDeserializer<T> forType( Class<T> cls ) {
-        return ( JsonDeserializer<T> ) new DateTimeDeserializer( cls, JACKSON_DATE_FORMAT );
+    private static <T extends ReadableInstant> JsonDeserializer<T> forType( Class<T> clazz ) {
+        return ( JsonDeserializer<T> ) new DateTimeDeserializer( clazz, JACKSON_DATE_FORMAT );
     }
 
     private static <T> TypeReference<T> toTypeReference( TypeRef<T> ref ) {
-        return new TypeReference<T>() {
+        return new TypeReference<>() {
             @Override
             public Type getType() {
                 return ref.type();
@@ -309,10 +309,9 @@ public class Binder {
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( TypeRef<T> ref, String string ) {
         try {
-            return ( T ) mapper.readValue( string, toTypeReference( ref ) );
+            return mapper.readValue( string, toTypeReference( ref ) );
         } catch( IOException e ) {
             log.trace( "json: " + string );
             throw new JsonException( "json error: " + e.getMessage(), e );
@@ -332,7 +331,7 @@ public class Binder {
     @Deprecated
     public <T> T unmarshal( TypeReference<T> ref, String string ) {
         try {
-            return ( T ) mapper.readValue( string, ref );
+            return mapper.readValue( string, ref );
         } catch( IOException e ) {
             log.trace( "json: " + string );
             throw new JsonException( "json error: " + e.getMessage(), e );
@@ -395,20 +394,18 @@ public class Binder {
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( TypeRef<T> ref, InputStream is ) {
         try {
-            return ( T ) mapper.readValue( is, toTypeReference( ref ) );
+            return mapper.readValue( is, toTypeReference( ref ) );
         } catch( IOException e ) {
             throw new JsonException( e.getMessage(), e );
         }
     }
 
     @Deprecated
-    @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( TypeReference<T> ref, InputStream is ) {
         try {
-            return ( T ) mapper.readValue( is, ref );
+            return mapper.readValue( is, ref );
         } catch( IOException e ) {
             throw new JsonException( e.getMessage(), e );
         }
@@ -434,19 +431,17 @@ public class Binder {
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( TypeRef<T> ref, byte[] bytes ) {
         try {
-            return ( T ) mapper.readValue( bytes, toTypeReference( ref ) );
+            return mapper.readValue( bytes, toTypeReference( ref ) );
         } catch( Exception e ) {
             throw new JsonException( e.getMessage(), e );
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( TypeRef<T> ref, Object fromValue ) {
         try {
-            return ( T ) mapper.convertValue( fromValue, toTypeReference( ref ) );
+            return mapper.convertValue( fromValue, toTypeReference( ref ) );
         } catch( Exception e ) {
             log.trace( String.valueOf( fromValue ) );
             throw new JsonException( e.getMessage(), e );
@@ -463,10 +458,9 @@ public class Binder {
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( TypeRef<T> ref, Map<String, Object> map ) {
         try {
-            return ( T ) mapper.convertValue( map, toTypeReference( ref ) );
+            return mapper.convertValue( map, toTypeReference( ref ) );
         } catch( Exception e ) {
             log.trace( String.valueOf( map ) );
             throw new JsonException( e.getMessage(), e );
@@ -474,20 +468,18 @@ public class Binder {
     }
 
     @Deprecated
-    @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( TypeReference<T> ref, Map<String, Object> map ) {
         try {
-            return ( T ) mapper.convertValue( map, ref );
+            return mapper.convertValue( map, ref );
         } catch( Exception e ) {
             log.trace( String.valueOf( map ) );
             throw new JsonException( e.getMessage(), e );
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( TypeRef<T> ref, List<Object> list ) {
         try {
-            return ( T ) mapper.convertValue( list, toTypeReference( ref ) );
+            return mapper.convertValue( list, toTypeReference( ref ) );
         } catch( Exception e ) {
             log.trace( String.valueOf( list ) );
             throw new JsonException( e.getMessage(), e );
@@ -513,7 +505,6 @@ public class Binder {
 
     }
 
-    @SuppressWarnings( "unchecked" )
     public <T> T clone( T object ) {
         return unmarshal( object.getClass(), marshal( object ) );
     }

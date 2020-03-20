@@ -24,45 +24,44 @@
 
 package oap.template;
 
-import org.apache.commons.lang3.builder.Builder;
-
-public interface Accumulator<T> extends Builder<T> {
-    default Accumulator accept( String str ) {
+public interface Accumulator<T> {
+    default Accumulator<T> accept( String str ) {
         return accept( ( Object ) str );
     }
 
-    default Accumulator accept( boolean value ) {
+    default Accumulator<T> accept( boolean value ) {
         return accept( ( Object ) value );
     }
 
-    default Accumulator accept( char value ) {
+    default Accumulator<T> accept( char value ) {
         return accept( ( Object ) value );
     }
 
-    default Accumulator accept( int value ) {
+    default Accumulator<T> accept( int value ) {
         return accept( ( Object ) value );
     }
 
-    default Accumulator accept( long value ) {
+    default Accumulator<T> accept( long value ) {
         return accept( ( Object ) value );
     }
 
-    default Accumulator accept( float value ) {
+    default Accumulator<T> accept( float value ) {
         return accept( ( Object ) value );
     }
 
-    default Accumulator accept( double value ) {
+    default Accumulator<T> accept( double value ) {
         return accept( ( Object ) value );
     }
 
-    default Accumulator accept( StringBuffer value ) {
+    default Accumulator<T> accept( StringBuffer value ) {
         return accept( ( Object ) value );
     }
 
-    default Accumulator accept( CharSequence value ) {
+    default Accumulator<T> accept( CharSequence value ) {
         return accept( ( Object ) value );
     }
 
-    Accumulator accept( Object o );
+    Accumulator<T> accept( Object o );
 
+    T get();
 }
