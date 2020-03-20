@@ -33,7 +33,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>${project.revision}</version>
+        <version>${oap.project.version}</version>
     </parent>
 
 
@@ -47,23 +47,25 @@
         <dependency>
             <groupId>com.github.flowctrl</groupId>
             <artifactId>slack-api</artifactId>
-            <version>v1.2.0.RELEASE</version>
+            <version>${oap.deps.slack-api.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-databind</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${oap.deps.slf4j.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
+            <version>${oap.deps.lombok.version}</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

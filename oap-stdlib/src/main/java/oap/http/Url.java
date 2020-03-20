@@ -24,21 +24,26 @@
 
 package oap.http;
 
-import com.google.api.client.util.escape.CharEscapers;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.google.common.escape.Escaper;
+import com.google.common.net.UrlEscapers;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 
+import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.emptyList;
 
 public class Url {
-    public static String decode( String s ) {
-        return CharEscapers.decodeUri( s );
+    public static final Escaper ENCODER = UrlEscapers.urlFormParameterEscaper();
+
+    public static String decode( String value ) {
+        return URLDecoder.decode( value, UTF_8 );
     }
 
     public static void parseQuery( String params, ListMultimap<String, String> map ) {
@@ -72,7 +77,7 @@ public class Url {
     }
 
     public static String encode( String value ) {
-        return CharEscapers.escapeUri( value );
+        return ENCODER.escape( value );
     }
 
     public static List<String> subdomains( String domain ) {

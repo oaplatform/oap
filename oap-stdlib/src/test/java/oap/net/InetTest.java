@@ -27,7 +27,6 @@ package oap.net;
 import oap.util.Strings;
 import org.testng.annotations.Test;
 
-import static oap.benchmark.Benchmark.benchmark;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class InetTest {
@@ -37,8 +36,6 @@ public class InetTest {
         assertThat( Inet.toLong( "10.0.0.11" ) ).isEqualTo( 167772171L );
         assertThat( Inet.toLong( "10.0.0.1" ) ).isEqualTo( 167772161L );
         assertThat( Strings.toHexString( Inet.toLong( "10.0.0.1" ) ) ).isEqualTo( "A000001" );
-        benchmark( "toLong", 10000000, () -> Inet.toLong( "10.0.0.1" ) )
-            .run();
     }
 
 }
