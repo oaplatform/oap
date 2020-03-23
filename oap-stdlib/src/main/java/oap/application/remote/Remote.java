@@ -66,7 +66,7 @@ public class Remote implements HttpHandler {
 
         undertow = Undertow
             .builder()
-            .addHttpListener( port, "localhost" )
+            .addHttpListener( port, "0.0.0.0" )
             .setHandler( Handlers.pathTemplate().add( context, new BlockingHandler( this ) ) )
             .build();
     }
