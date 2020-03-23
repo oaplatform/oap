@@ -28,6 +28,7 @@ import cn.danielw.fop.DisruptorObjectPool;
 import cn.danielw.fop.ObjectFactory;
 import cn.danielw.fop.PoolConfig;
 import cn.danielw.fop.Poolable;
+import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
 import oap.util.FastByteArrayOutputStream;
 import org.apache.commons.configuration2.EnvironmentConfiguration;
@@ -70,6 +71,14 @@ public class FastByteArrayOutputStreamPool {
         };
 
         pool = new DisruptorObjectPool<>( config, factory );
+
+        if( envConfig.getBoolean( "METRICS_FastByteArrayOutputStreamPool", false ) ) {
+            Metrics.gauge( "FastByteArrayOutputStreamPool.partition_size", config, p -> config.getPartitionSize() );
+            Metrics.gauge( "FastByteArrayOutputStreamPool.min_size", config, p -> config.getMinSize() );
+            Metrics.gauge( "FastByteArrayOutputStreamPool.max_size", config, p -> config.getMaxSize() );
+
+            Metrics.gauge( "FastByteArrayOutputStreamPool.size", pool, p -> ( double ) p.getSize() );
+        }
     }
 
     private FastByteArrayOutputStreamPool() {

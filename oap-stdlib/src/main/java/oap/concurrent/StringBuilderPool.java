@@ -28,6 +28,8 @@ import cn.danielw.fop.DisruptorObjectPool;
 import cn.danielw.fop.ObjectFactory;
 import cn.danielw.fop.PoolConfig;
 import cn.danielw.fop.Poolable;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.Metrics;
 import lombok.SneakyThrows;
 import org.apache.commons.configuration2.EnvironmentConfiguration;
 
@@ -69,6 +71,14 @@ public final class StringBuilderPool {
         };
 
         pool = new DisruptorObjectPool<>( config, factory );
+
+        if( envConfig.getBoolean( "METRICS_StringBuilderPool", false ) ) {
+            Metrics.gauge( "StringBuilderPool.partition_size", config, p -> config.getPartitionSize() );
+            Metrics.gauge( "StringBuilderPool.min_size", config, p -> config.getMinSize() );
+            Metrics.gauge( "StringBuilderPool.max_size", config, p -> config.getMaxSize() );
+
+            Metrics.gauge( "StringBuilderPool.size", pool, p -> ( double ) p.getSize() );
+        }
     }
 
     private StringBuilderPool() {

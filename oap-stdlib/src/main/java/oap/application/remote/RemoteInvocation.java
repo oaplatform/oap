@@ -25,6 +25,7 @@
 package oap.application.remote;
 
 import lombok.ToString;
+import oap.util.Arrays;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -48,11 +49,11 @@ public class RemoteInvocation implements Serializable {
     }
 
     public Class<?>[] types() {
-        return arguments.stream().map( v -> v.type ).toArray( Class[]::new );
+        return Arrays.map( Class.class, arguments, v -> v.type );
     }
 
     public Object[] values() {
-        return arguments.stream().map( v -> v.value ).toArray();
+        return Arrays.map( Object.class, arguments, v -> v.value );
     }
 
     @ToString

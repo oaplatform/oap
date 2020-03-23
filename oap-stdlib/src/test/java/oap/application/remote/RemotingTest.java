@@ -41,10 +41,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class RemotingTest {
     @Test
     public void invoke() {
-        List<URL> modules = Module.CONFIGURATION.urlsFromClassPath();
+        var modules = Module.CONFIGURATION.urlsFromClassPath();
         modules.add( urlOfTestResource( RemotingTest.class, "module.conf" ) );
 
-        Kernel kernel = new Kernel( modules );
+        var kernel = new Kernel( modules );
         try {
             kernel.start( pathOfTestResource( getClass(), "application.conf" ) );
 
