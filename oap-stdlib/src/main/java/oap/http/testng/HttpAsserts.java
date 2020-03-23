@@ -32,9 +32,11 @@ import oap.json.testng.JsonAsserts;
 import oap.testng.Env;
 import oap.util.BiStream;
 import oap.util.Pair;
+import oap.util.Stream;
 import org.apache.http.entity.ContentType;
 
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -174,17 +176,29 @@ public class HttpAsserts {
             return this;
         }
 
+        public HttpAssertion containsCookie( String name, Consumer<Cookie> assertion ) {
+            assertThat( Stream.of( cookies() ).filter( c -> c.name.equalsIgnoreCase( name ) ).findAny() )
+                .isNotEmpty()
+                .withFailMessage( "no such cookie: " + name )
+                .get()
+                .satisfies( assertion );
+            return this;
+        }
+
         public HttpAssertion containsCookie( Cookie cookie ) {
-            return containsCookie( cookie.toString() );
+            assertThat( cookies() ).contains( cookie );
+            return this;
         }
 
         public HttpAssertion containsCookie( String cookie ) {
-            var cookies = BiStream.of( response.headers )
-                .filter( ( name, value ) -> "Set-Cookie".equalsIgnoreCase( name ) && value.equalsIgnoreCase( cookie ) )
-                .mapToObj( ( name, value ) -> value )
+            return containsCookie( Cookie.parse( cookie ) );
+        }
+
+        protected List<Cookie> cookies() {
+            return BiStream.of( response.headers )
+                .filter( ( name, value ) -> "Set-Cookie".equalsIgnoreCase( name ) )
+                .mapToObj( ( name, value ) -> Cookie.parse( value ) )
                 .toList();
-            assertThat( cookies ).contains( cookie );
-            return this;
         }
 
         public HttpAssertion is( Consumer<Client.Response> condition ) {
@@ -217,6 +231,68 @@ public class HttpAsserts {
             assertion.accept( response );
             return this;
         }
+    }
+
+    public static class CookieHttpAssertion {
+        private Cookie cookie;
+
+        public CookieHttpAssertion( Cookie cookie ) {
+            this.cookie = cookie;
+        }
+
+        public CookieHttpAssertion hasValue( String value ) {
+            assertString( cookie.value ).isEqualTo( value );
+            return this;
+        }
+
+        public CookieHttpAssertion hasValue( Object value ) {
+            return hasValue( String.valueOf( value ) );
+        }
+
+        public CookieHttpAssertion hasDomain( String domain ) {
+            assertString( cookie.domain ).isEqualTo( domain );
+            return this;
+        }
+
+        public CookieHttpAssertion hasPath( String path ) {
+            assertString( cookie.path ).isEqualTo( path );
+            return this;
+        }
+
+        public CookieHttpAssertion hasNotMaxAge() {
+            return hasMaxAge( Cookie.NO_MAX_AGE );
+        }
+
+        public CookieHttpAssertion hasMaxAge( long maxAge ) {
+            assertThat( cookie.maxAge ).isEqualTo( maxAge );
+            return this;
+        }
+
+        public CookieHttpAssertion hasSameSite( Cookie.SameSite sameSite ) {
+            assertThat( cookie.sameSite ).isEqualTo( sameSite );
+            return this;
+        }
+
+        public CookieHttpAssertion isSecure() {
+            assertThat( cookie.secure ).isTrue();
+            return this;
+        }
+
+        public CookieHttpAssertion isNotSecure() {
+            assertThat( cookie.secure ).isFalse();
+            return this;
+        }
+
+        public CookieHttpAssertion isHttpOnly() {
+            assertThat( cookie.httpOnly ).isTrue();
+            return this;
+        }
+
+        public CookieHttpAssertion isNotHttpOnly() {
+            assertThat( cookie.httpOnly ).isFalse();
+            return this;
+        }
+
     }
 
     public static class JsonHttpAssertion {

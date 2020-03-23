@@ -26,7 +26,6 @@ package oap.application;
 
 import oap.reflect.Reflect;
 import oap.util.Lists;
-import oap.util.Maps;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
@@ -40,10 +39,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class KernelHelperTest {
     @Test
     public void fixLinksForConstructorValueExists() {
-        var parameters = new LinkedHashMap<String, Object>( Maps.of2( "service", "@service:test-service" ) );
+        var parameters = new LinkedHashMap<String, Object>( Map.of( "service", "@service:test-service" ) );
 
         var si = new ServiceInitialization( "test-service", this, new Module( "n1" ), new Module.Service(), Reflect.reflect( getClass() ) );
-        var newParameters = KernelHelper.fixLinksForConstructor( null, Maps.of2( "test-service", si ), parameters );
+        var newParameters = KernelHelper.fixLinksForConstructor( null, Map.of( "test-service", si ), parameters );
 
         assertThat( newParameters ).isNotSameAs( parameters );
         assertThat( newParameters ).containsKeys( "service" );
@@ -52,7 +51,7 @@ public class KernelHelperTest {
 
     @Test
     public void fixLinksForConstructorValue() {
-        var parameters = new LinkedHashMap<String, Object>( Maps.of2( "service", "@service:test-service" ) );
+        var parameters = new LinkedHashMap<String, Object>( Map.of( "service", "@service:test-service" ) );
 
         var newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
 
@@ -62,8 +61,9 @@ public class KernelHelperTest {
     }
 
     @Test
+    @SuppressWarnings( "unchecked" )
     public void fixLinksForConstructorList() {
-        var parameters = new LinkedHashMap<String, Object>( Maps.of2( "services", singletonList( "@service:test-service" ) ) );
+        var parameters = new LinkedHashMap<String, Object>( Map.of( "services", singletonList( "@service:test-service" ) ) );
 
         var newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );
 
@@ -74,9 +74,10 @@ public class KernelHelperTest {
     }
 
     @Test
+    @SuppressWarnings( "unchecked" )
     public void fixLinksForConstructorMap() {
         var parameters = new LinkedHashMap<String, Object>(
-            Maps.of2( "services", Lists.of( Maps.of2( "link", "@service:test-service" ) ) )
+            Map.of( "services", Lists.of( Map.of( "link", "@service:test-service" ) ) )
         );
 
         var newParameters = KernelHelper.fixLinksForConstructor( null, new HashMap<>(), parameters );

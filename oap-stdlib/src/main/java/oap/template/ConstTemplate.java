@@ -35,7 +35,7 @@ public class ConstTemplate<T, TLine extends Template.Line> implements Template<T
     public <R> R render( T source, Accumulator<R> accumulator ) {
         accumulator.accept( value );
 
-        return accumulator.build();
+        return accumulator.get();
     }
 
     @Override

@@ -44,6 +44,7 @@ public class JsonPatch {
         Map<String, Object> patchMap = Binder.json.unmarshal( new TypeRef<Map<String, Object>>() {}, patch );
         Map<String, Object> innerMap = select.apply( objectMap );
         if( innerMap.isEmpty() ) {
+            @SuppressWarnings( "unchecked" )
             List<Map<String, Object>> innerList = ( List<Map<String, Object>> ) objectMap.getOrDefault( key, Lists.empty() );
             innerList.add( patchMap );
             objectMap.put( key, innerList );

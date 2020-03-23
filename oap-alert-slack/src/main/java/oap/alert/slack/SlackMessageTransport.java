@@ -27,9 +27,13 @@ package oap.alert.slack;
 import flowctrl.integration.slack.SlackClientFactory;
 import flowctrl.integration.slack.type.Payload;
 import flowctrl.integration.slack.webhook.SlackWebhookClient;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.alert.MessageTransport;
 
+/**
+ * @todo replace with https://github.com/HubSpot/slack-client
+ */
 @Slf4j
 public class SlackMessageTransport implements MessageTransport<Payload> {
 
@@ -67,12 +71,9 @@ public class SlackMessageTransport implements MessageTransport<Payload> {
     }
 
     @Override
+    @SneakyThrows
     public void send( Payload p ) {
         ensureStarted();
-        try {
-            webhookClient.post( p );
-        } catch( Exception e ) {
-            throw new SlackCommunicationException( e );
-        }
+        webhookClient.post( p );
     }
 }

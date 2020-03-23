@@ -28,6 +28,7 @@ import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 
+import javax.annotation.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
@@ -65,11 +66,11 @@ public class FieldInfo {
 
     public static boolean isPrimitive( Type type ) {
         return type instanceof ParameterizedType ? isPrimitive( ( ( ParameterizedType ) type ).getRawType() )
-            : ( ( Class ) type ).isPrimitive();
+            : ( ( Class<?> ) type ).isPrimitive();
     }
 
     public static boolean isInstance( Class<?> clazz, Type type ) {
-        if( type instanceof Class ) return clazz.isAssignableFrom( ( Class ) type );
+        if( type instanceof Class ) return clazz.isAssignableFrom( ( Class<?> ) type );
         else return isInstance( clazz, ( ( ParameterizedType ) type ).getRawType() );
     }
 
@@ -79,7 +80,10 @@ public class FieldInfo {
     }
 
     public boolean isNullable() {
-        return List.of( annotations ).stream().anyMatch( a -> a.annotationType().equals( Template.Nullable.class ) );
+        return List.of( annotations ).stream().anyMatch( a ->
+            a.annotationType().equals( Template.Nullable.class )
+                || a.annotationType().equals( Nullable.class )
+        );
     }
 
     public FieldInfo getOptionalArgumentType() {
@@ -94,7 +98,7 @@ public class FieldInfo {
         if( type instanceof ParameterizedType )
             return isMap( ( ( ParameterizedType ) type ).getRawType() );
 
-        return ( ( Class ) type ).isAssignableFrom( Map.class );
+        return ( ( Class<?> ) type ).isAssignableFrom( Map.class );
     }
 
     public boolean isMap() {
@@ -107,7 +111,7 @@ public class FieldInfo {
 
     public boolean isPrimitiveOrWrapped() {
         return type instanceof ParameterizedType ? isPrimitive( ( ( ParameterizedType ) type ).getRawType() )
-            : ClassUtils.isPrimitiveOrWrapper( ( Class ) type );
+            : ClassUtils.isPrimitiveOrWrapper( ( Class<?> ) type );
     }
 
     public boolean isInstance( Class<?> clazz ) {

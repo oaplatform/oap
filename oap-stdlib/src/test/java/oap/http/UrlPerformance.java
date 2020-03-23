@@ -23,51 +23,58 @@
  */
 package oap.http;
 
-import com.google.api.client.util.escape.CharEscapers;
+import com.google.common.escape.Escaper;
+import com.google.common.net.UrlEscapers;
 import org.testng.annotations.Test;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static oap.benchmark.Benchmark.benchmark;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class UrlEncoderPerformance {
+public class UrlPerformance {
 
     public static final int SAMPLES = 1000000;
 
     @Test
-    public void encode() throws UnsupportedEncodingException {
+    public void encode() {
         String value = "sdihgjf sdkgh dsfkjgh?&skfjh ?&. \tdkjhgf&amp;";
 
-        assertThat( URLEncoder.encode( value, StandardCharsets.UTF_8.name() ) )
-            .isEqualTo( CharEscapers.escapeUri( value ) );
+
+        Escaper escaper = UrlEscapers.urlFormParameterEscaper();
+        assertThat( URLEncoder.encode( value, UTF_8 ) )
+            .isEqualTo( escaper.escape( value ) );
 
         benchmark( "URLEncoder.encode", SAMPLES,
-            () -> URLEncoder.encode( value, StandardCharsets.UTF_8.name() )
+            () -> URLEncoder.encode( value, UTF_8 )
         ).run();
 
-        benchmark( "CharEscapers.escapeUri", SAMPLES,
-            () -> CharEscapers.escapeUri( value )
+//        benchmark( "CharEscapers.escapeUri", SAMPLES,
+//            () -> CharEscapers.escapeUriConformant( value )
+//        ).run();
+
+        benchmark( "UrlEscaper.escape", SAMPLES,
+            () -> escaper.escape( value )
         ).run();
     }
 
     @Test
     public void decode() throws UnsupportedEncodingException {
-        String value = URLEncoder.encode( "sdihgjf sdkgh dsfkjgh?&skfjh ?&. \tdkjhgf&amp;", StandardCharsets.UTF_8.name() );
+        String value = URLEncoder.encode( "sdihgjf sdkgh dsfkjgh?&skfjh ?&. \tdkjhgf&amp;", UTF_8.name() );
 
-        assertThat( URLDecoder.decode( value, StandardCharsets.UTF_8.name() ) )
-            .isEqualTo( CharEscapers.decodeUri( value ) );
-
+//        assertThat( URLDecoder.decode( value, UTF_8 ) )
+//            .isEqualTo( CharEscapers.decodeUri( value ) );
+//
         benchmark( "URLDecoder.decode", SAMPLES,
-            () -> URLDecoder.decode( value, StandardCharsets.UTF_8.name() )
+            () -> URLDecoder.decode( value, UTF_8 )
         ).run();
 
-        benchmark( "CharEscapers.decodeUri", SAMPLES,
-            () -> CharEscapers.decodeUri( value )
-        ).run();
+//        benchmark( "CharEscapers.decodeUri", SAMPLES,
+//            () -> CharEscapers.decodeUri( value )
+//        ).run();
     }
 
 }

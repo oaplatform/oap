@@ -24,7 +24,6 @@
 package oap.util;
 
 import com.google.common.base.Preconditions;
-import it.unimi.dsi.fastutil.ints.AbstractIntCollection;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 import java.util.ArrayList;
@@ -196,8 +195,9 @@ public class Lists extends oap.util.Collections {
                 oap.util.Collectors.CH_ID );
         }
 
+        @SuppressWarnings( "deprecated" )
         public static Collector<Integer, ?, IntArrayList> toIntArrayList() {
-            return new oap.util.Collectors.CollectorImpl<>( IntArrayList::new, AbstractIntCollection::add,
+            return new oap.util.Collectors.CollectorImpl<>( IntArrayList::new, IntArrayList::add,
                 ( left, right ) -> {
                     left.addAll( right );
                     return left;

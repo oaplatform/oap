@@ -133,6 +133,7 @@ public class Env {
             Class<?> processEnvironmentClass = Class.forName( "java.lang.ProcessEnvironment" );
             Field theEnvironmentField = processEnvironmentClass.getDeclaredField( "theEnvironment" );
             theEnvironmentField.setAccessible( true );
+            @SuppressWarnings( "unchecked" )
             var env = ( Map<Object, Object> ) theEnvironmentField.get( null );
 
             if( SystemUtils.IS_OS_WINDOWS ) {
@@ -159,6 +160,7 @@ public class Env {
 
             Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField( "theCaseInsensitiveEnvironment" );
             theCaseInsensitiveEnvironmentField.setAccessible( true );
+            @SuppressWarnings( "unchecked" )
             Map<String, String> cienv = ( Map<String, String> ) theCaseInsensitiveEnvironmentField.get( null );
 
             if( value == null ) {
@@ -167,13 +169,14 @@ public class Env {
                 cienv.put( name, value );
             }
         } catch( NoSuchFieldException e ) {
-            Class[] classes = Collections.class.getDeclaredClasses();
+            Class<?>[] classes = Collections.class.getDeclaredClasses();
             Map<String, String> env = System.getenv();
-            for( Class cl : classes ) {
+            for( Class<?> cl : classes ) {
                 if( "java.util.Collections$UnmodifiableMap".equals( cl.getName() ) ) {
                     Field field = cl.getDeclaredField( "m" );
                     field.setAccessible( true );
                     Object obj = field.get( env );
+                    @SuppressWarnings( "unchecked" )
                     Map<String, String> map = ( Map<String, String> ) obj;
 
                     if( value == null ) {

@@ -168,6 +168,7 @@ public class KernelHelper {
         return Module.Reference.of( ref ).name;
     }
 
+    @SuppressWarnings( "unchecked" )
     static Object fixLinks( Kernel kernel, Map<String, ServiceInitialization> initialized, Object value ) {
         if( isServiceLink( value ) ) {
             var linkName = referenceName( value );

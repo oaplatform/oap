@@ -27,7 +27,6 @@ package oap.message;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
-import oap.testng.Asserts;
 import oap.testng.Env;
 import oap.testng.Fixtures;
 import oap.testng.ResetSystemTimer;
@@ -128,7 +127,7 @@ public class MessageServerTest extends Fixtures {
                 listener.throwUnknownError( 2 );
                 while( listener.throwUnknownError > 0 )
                     Thread.sleep( 10 );
-                
+
                 assertEventually( 100, 10, () -> {
                     assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ) ) );
                 } );

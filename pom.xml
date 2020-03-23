@@ -29,19 +29,17 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.8</version>
     </parent>
 
     <packaging>pom</packaging>
-    <groupId>oap</groupId>
     <artifactId>oap</artifactId>
-    <version>${project.revision}</version>
+    <version>${oap.project.version}</version>
 
     <name>oap</name>
 
     <modules>
         <module>oap-stdlib</module>
-        <module>oap-application-spring</module>
         <module>oap-alert-slack</module>
         <module>oap-zabbix</module>
         <module>oap-fs</module>
@@ -60,24 +58,51 @@
     </repositories>
 
     <properties>
-        <project.revision>6.6.2</project.revision>
+        <oap.project.version>6.7.1</oap.project.version>
 
-        <testng.version>7.1.0</testng.version>
-        <assertj.version>3.15.0</assertj.version>
-        <guava.version>28.2-jre</guava.version>
-        <logback.version>1.2.3</logback.version>
-        <slf4j.version>1.7.30</slf4j.version>
-        <httpcomponents.version>4.4.13</httpcomponents.version>
-        <apache.commons.text.version>1.8</apache.commons.text.version>
-        <compress.version>1.20</compress.version>
-        <joda.version>2.10.5</joda.version>
-        <jackson.version>2.10.3</jackson.version>
-        <lombok.version>1.18.12</lombok.version>
-        <reflections.version>0.9.12</reflections.version>
-        <jamm.version>0.3.3</jamm.version>
-        <springframework.version>2.1.3.RELEASE</springframework.version>
-        <gson.version>2.8.6</gson.version>
-        <micrometer.version>1.3.6</micrometer.version>
-        <undertow.version>2.0.30.Final</undertow.version>
+        <oap.deps.maven.plugin.build-helper.version>1.10</oap.deps.maven.plugin.build-helper.version>
+
+        <oap.deps.testng.version>7.1.0</oap.deps.testng.version>
+        <oap.deps.assertj.version>3.15.0</oap.deps.assertj.version>
+        <oap.deps.guava.version>28.2-jre</oap.deps.guava.version>
+        <oap.deps.logback.version>1.2.3</oap.deps.logback.version>
+        <oap.deps.slf4j.version>1.7.30</oap.deps.slf4j.version>
+        <oap.deps.apache.httpcomponents.version>4.4.13</oap.deps.apache.httpcomponents.version>
+        <oap.deps.apache.commons.text.version>1.8</oap.deps.apache.commons.text.version>
+        <oap.deps.apache.compress.version>1.20</oap.deps.apache.compress.version>
+        <oap.deps.joda.version>2.10.5</oap.deps.joda.version>
+        <oap.deps.jackson.version>2.10.3</oap.deps.jackson.version>
+        <oap.deps.lombok.version>1.18.12</oap.deps.lombok.version>
+        <oap.deps.reflections.version>0.9.12</oap.deps.reflections.version>
+        <oap.deps.jamm.version>0.3.3</oap.deps.jamm.version>
+        <oap.deps.micrometer.version>1.3.6</oap.deps.micrometer.version>
+        <oap.deps.mockito.version>2.0.2-beta</oap.deps.mockito.version>
+        <oap.deps.apache.lang.version>3.9</oap.deps.apache.lang.version>
+        <oap.deps.fastutil.version>8.3.1</oap.deps.fastutil.version>
+        <oap.deps.quartz.version>2.3.2</oap.deps.quartz.version>
+        <oap.deps.plexus-utils.version>3.3.0</oap.deps.plexus-utils.version>
+        <oap.deps.apache.io.version>2.6</oap.deps.apache.io.version>
+        <oap.deps.apache.configuration.version>2.6</oap.deps.apache.configuration.version>
+        <oap.deps.fop.version>2.1.0</oap.deps.fop.version>
+        <oap.deps.lz4.version>1.7.0</oap.deps.lz4.version>
+        <oap.deps.jackson-dataformat-hocon.version>1.1.0</oap.deps.jackson-dataformat-hocon.version>
+        <oap.deps.typesafe-config.version>1.4.0</oap.deps.typesafe-config.version>
+        <oap.deps.apache.collections.version>4.4</oap.deps.apache.collections.version>
+        <oap.deps.apache.httpasyncclient.version>4.1.4</oap.deps.apache.httpasyncclient.version>
+        <oap.deps.apache.httpmime.version>4.5.11</oap.deps.apache.httpmime.version>
+        <oap.deps.fst.version>2.57</oap.deps.fst.version>
+        <oap.deps.javax.activation.version>1.1.1</oap.deps.javax.activation.version>
+        <oap.deps.guava-retrying.version>2.0.0</oap.deps.guava-retrying.version>
+        <oap.deps.mockserver-netty.version>5.8.0</oap.deps.mockserver-netty.version>
+        <oap.deps.apache.httpclient.version>4.5.12</oap.deps.apache.httpclient.version>
+        <oap.deps.aws-java-sdk.version>1.11.683</oap.deps.aws-java-sdk.version>
+        <oap.deps.s3mock.version>0.2.5</oap.deps.s3mock.version>
+        <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
+        <oap.deps.disruptor.version>1.2.15</oap.deps.disruptor.version>
+        <oap.deps.maven-plugin-api.version>3.6.3</oap.deps.maven-plugin-api.version>
+        <oap.deps.maven-project.version>3.0-alpha-2</oap.deps.maven-project.version>
+        <oap.deps.maven-plugin-annotations.version>3.6.0</oap.deps.maven-plugin-annotations.version>
+        <oap.deps.maven.maven-plugin-plugin.version>3.6.0</oap.deps.maven.maven-plugin-plugin.version>
+        <oap.deps.undertow.version>2.0.30.Final</oap.deps.undertow.version>
     </properties>
 </project>

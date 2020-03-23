@@ -34,27 +34,28 @@ import java.util.List;
 /**
  * Created by igor.petrenko on 26.03.2019.
  */
-public class RemoteSerialization<T> implements InvocationHandler {
-    private final Class<?> _interface;
+public final class RemoteSerialization<T> implements InvocationHandler {
+    private final Class<?> interfaze;
     private final T master;
     private final FST fst;
 
-    private RemoteSerialization( Class<T> clazz, T master, FST.SerializationMethod serialization ) {
-        this._interface = clazz;
+    private RemoteSerialization( Class<T> interfaze, T master, FST.SerializationMethod serialization ) {
+        this.interfaze = interfaze;
         this.master = master;
         this.fst = new FST( serialization );
     }
 
-    private RemoteSerialization( Class<T> clazz, T master ) {
-        this( clazz, master, FST.SerializationMethod.DEFAULT );
+    private RemoteSerialization( Class<T> interfaze, T master ) {
+        this( interfaze, master, FST.SerializationMethod.DEFAULT );
     }
 
-    public static final <P> P Proxy( Class<P> clazz, P master ) {
+    public static <P> P proxy( Class<P> clazz, P master ) {
         return new RemoteSerialization<>( clazz, master ).proxy();
     }
 
+    @SuppressWarnings( "unchecked" )
     private T proxy() {
-        return ( T ) Proxy.newProxyInstance( _interface.getClassLoader(), new Class[] { _interface }, this );
+        return ( T ) Proxy.newProxyInstance( interfaze.getClassLoader(), new Class[] { interfaze }, this );
     }
 
     @Override

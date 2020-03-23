@@ -31,7 +31,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap</artifactId>
-        <version>${project.revision}</version>
+        <version>${oap.project.version}</version>
     </parent>
 
     <artifactId>oap-fs</artifactId>
@@ -40,18 +40,13 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
+            <version>${oap.deps.lombok.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>commons-fileupload</groupId>
-            <artifactId>commons-fileupload</artifactId>
-            <version>1.4</version>
+            <version>${oap.deps.guava.version}</version>
         </dependency>
         <dependency>
             <groupId>${project.parent.groupId}</groupId>
@@ -59,17 +54,96 @@
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${oap.deps.slf4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk</artifactId>
-            <version>1.11.683</version>
+            <version>${oap.deps.aws-java-sdk.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>joda-time</groupId>
+                    <artifactId>joda-time</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.amazonaws</groupId>
+                    <artifactId>aws-java-sdk-simpleworkflow</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+        <!--        convergence error for aws -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-simpleworkflow</artifactId>
+            <version>1.11.683</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!--        // -->
         <dependency>
             <groupId>io.findify</groupId>
             <artifactId>s3mock_2.12</artifactId>
-            <version>0.2.5</version>
+            <version>${oap.deps.s3mock.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.amazonaws</groupId>
+                    <artifactId>aws-java-sdk-s3</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.typesafe</groupId>
+                    <artifactId>config</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+        <!--        resolving dependency convergence for s3mock -->
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-stream_2.12</artifactId>
+            <version>2.5.11</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.scala-lang</groupId>
+                    <artifactId>scala-library</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.typesafe</groupId>
+                    <artifactId>config</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!--        // -->
     </dependencies>
 
-    
+
 </project>

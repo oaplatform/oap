@@ -35,6 +35,7 @@ public abstract class TypeRef<T> {
         return token.getType();
     }
 
+    @SuppressWarnings( "unchecked" )
     public Class<T> clazz() {
         return ( Class<T> ) token.getRawType();
     }

@@ -42,11 +42,12 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 public class MutableObjectModule {
-    public static class MutableObjectSerializer extends StdSerializer<MutableObject> {
+    public static class MutableObjectSerializer extends StdSerializer<MutableObject<?>> {
         public MutableObjectSerializer( JavaType type ) {
             super( type );
         }
@@ -60,7 +61,7 @@ public class MutableObjectModule {
     public static class MutableObjectSerializers extends Serializers.Base {
         @Override
         public JsonSerializer<?> findSerializer( SerializationConfig config, JavaType type, BeanDescription beanDesc ) {
-            final Class<?> raw = type.getRawClass();
+            Class<?> raw = type.getRawClass();
             if( MutableObject.class.isAssignableFrom( raw ) ) {
                 return new MutableObjectSerializer( type );
             }
@@ -69,35 +70,31 @@ public class MutableObjectModule {
         }
     }
 
-    public static class MutableObjectDeserializer extends StdDeserializer<MutableObject> {
-        private final JavaType valueType;
+    public static class MutableObjectDeserializer extends StdDeserializer<MutableObject<?>> {
         private final JavaType refType;
 
         protected MutableObjectDeserializer( JavaType valueType, JavaType refType ) {
             super( valueType );
-            this.valueType = valueType;
             this.refType = refType;
         }
 
         @Override
-        @SuppressWarnings( "unchecked" )
-        public MutableObject deserialize( JsonParser p,
-                                          DeserializationContext ctxt ) throws IOException {
+        public MutableObject<?> deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {
 
             try {
-                final MutableObject vc = ( MutableObject ) _valueClass.newInstance();
+                MutableObject<?> mutableObject = ( MutableObject<?> ) _valueClass.getDeclaredConstructor().newInstance();
 
-                vc.setValue( ctxt.readValue( p, refType ) );
+                mutableObject.setValue( ctxt.readValue( p, refType ) );
 
-                return vc;
-            } catch( InstantiationException | IllegalAccessException e ) {
+                return mutableObject;
+            } catch( InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e ) {
                 throw ctxt.instantiationException( _valueClass, e );
             }
         }
 
         @Override
         @SuppressWarnings( "unchecked" )
-        public MutableObject deserialize( JsonParser p, DeserializationContext ctxt, MutableObject intoValue ) throws IOException {
+        public MutableObject<?> deserialize( JsonParser p, DeserializationContext ctxt, MutableObject intoValue ) throws IOException {
             intoValue.setValue( ctxt.readValue( p, refType ) );
 
             return intoValue;
@@ -108,10 +105,10 @@ public class MutableObjectModule {
         @Override
         public JsonDeserializer<?> findBeanDeserializer( JavaType type, DeserializationConfig config,
                                                          BeanDescription beanDesc ) throws JsonMappingException {
-            final Class<?> raw = type.getRawClass();
+            Class<?> raw = type.getRawClass();
             if( MutableObject.class.isAssignableFrom( raw ) ) {
-                final Type[] actualTypeArguments = ( ( ParameterizedType ) raw.getGenericSuperclass() ).getActualTypeArguments();
-                final JavaType refType = config.constructType( ( Class ) actualTypeArguments[0] );
+                Type[] actualTypeArguments = ( ( ParameterizedType ) raw.getGenericSuperclass() ).getActualTypeArguments();
+                JavaType refType = config.constructType( ( Class<?> ) actualTypeArguments[0] );
                 return new MutableObjectDeserializer( type, refType );
             }
 

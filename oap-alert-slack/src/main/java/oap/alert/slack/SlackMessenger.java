@@ -62,21 +62,21 @@ public class SlackMessenger implements Messenger {
         final Attachment attachment = new Attachment();
 
         switch( alert.state ) {
-            case GREEN:
+            case GREEN -> {
                 payload.setIcon_emoji( ":recycle:" );
                 attachment.setColor( Color.GOOD );
                 attachment.setText( "OK: " + name + "/" + host + ": " + alert.message );
-                break;
-            case YELLOW:
+            }
+            case YELLOW -> {
                 payload.setIcon_emoji( ":warning:" );
                 attachment.setColor( Color.WARNING );
                 attachment.setText( "WARNING: " + name + "/" + host + ": " + alert.message );
-                break;
-            case RED:
+            }
+            case RED -> {
                 payload.setIcon_emoji( ":bangbang:" );
                 attachment.setColor( Color.DANGER );
                 attachment.setText( "CRITICAL: " + name + "/" + host + ": " + alert.message );
-                break;
+            }
         }
 
         payload.addAttachment( attachment );

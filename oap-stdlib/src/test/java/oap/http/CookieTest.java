@@ -40,6 +40,7 @@ public class CookieTest extends Fixtures {
     {
         fixture( ResetSystemTimer.FIXTURE );
     }
+
     @Test
     public void expires() {
         Dates.setTimeFixed( 2019, 11, 11, 11, 11, 11, 11 );
@@ -48,7 +49,12 @@ public class CookieTest extends Fixtures {
             .withExpires( DateTime.now()
                 .plus( new Period( 2, 30, 10, 0 ) )
                 .toDateTime( DateTimeZone.UTC ) );
-        assertString( cookie.toString() ).isEqualTo( "test=test; expires=Mon, 11-Nov-2019 13:41:21 UTC; SameSite=None" );
+        assertString( cookie.toString() ).isEqualTo( "test=test; Expires=Mon, 11-Nov-2019 13:41:21 UTC; SameSite=None" );
     }
 
+    @Test
+    public void parse() {
+        String cookie = "test=test; Expires=Mon, 11-Nov-2019 13:41:21 UTC; Domain=oaplatform.org; Path=/; Secure; HttpOnly; SameSite=Lax";
+        assertString( Cookie.parse( cookie ).toString() ).isEqualTo( cookie );
+    }
 }

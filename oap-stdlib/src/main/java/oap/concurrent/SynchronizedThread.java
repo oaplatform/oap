@@ -72,6 +72,7 @@ public class SynchronizedThread implements Runnable, SynchronizedRunnableReadyLi
         }
     }
 
+    @SuppressWarnings( "deprecated" )
     public synchronized void stop() {
         stopped = true;
         thread.interrupt();

@@ -22,35 +22,17 @@
  * SOFTWARE.
  */
 
-package oap.application.spring;
+package oap.net;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.batch.JobExecutionExitCodeGenerator;
 import org.testng.annotations.Test;
 
-import java.util.Optional;
+import static oap.benchmark.Benchmark.benchmark;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class SpringKernelTest {
+public class InetPerfTest {
     @Test
-    public void boot() {
-        SpringBoot.main( new String[] {
-            "--config=classpath:oap/application/spring/SpringKernelTest/application.conf" } );
-
-        SpringKernel springKernel = SpringBoot.applicationContext.getBean( SpringKernel.class );
-        assertThat( springKernel ).isNotNull();
-        Optional<TestService> service = springKernel.kernel.service( "test" );
-        assertThat( service ).isPresent().get()
-            .satisfies( s -> assertThat( SpringBoot.applicationContext.getBean( "test" ) ).isSameAs( s ) );
-
-        SpringApplication.exit( SpringBoot.applicationContext, new JobExecutionExitCodeGenerator() );
+    public void toLong() {
+        benchmark( "toLong", 10000000, () -> Inet.toLong( "10.0.0.1" ) )
+            .run();
     }
-
-    @SuppressWarnings( "unused" )
-    public static class TestService {
-
-    }
-
 
 }
