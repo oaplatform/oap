@@ -129,6 +129,7 @@ public class MessageServer implements Runnable, Closeable {
     @Override
     public void close() {
         try {
+            preStop();
             hashes.store( controlStatePath );
         } catch( IOException e ) {
             log.error( e.getMessage(), e );
