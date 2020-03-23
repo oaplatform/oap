@@ -29,7 +29,7 @@
     <parent>
         <groupId>oap</groupId>
         <artifactId>oap.maven</artifactId>
-        <version>1.0.6</version>
+        <version>1.0.8</version>
     </parent>
 
     <packaging>pom</packaging>
@@ -58,7 +58,7 @@
     </repositories>
 
     <properties>
-        <oap.project.version>6.5.7</oap.project.version>
+        <oap.project.version>6.6.0</oap.project.version>
 
         <oap.deps.maven.plugin.build-helper.version>1.10</oap.deps.maven.plugin.build-helper.version>
 
@@ -99,5 +99,9 @@
         <oap.deps.s3mock.version>0.2.5</oap.deps.s3mock.version>
         <oap.deps.slack-api.version>v1.2.0.RELEASE</oap.deps.slack-api.version>
         <oap.deps.disruptor.version>1.2.15</oap.deps.disruptor.version>
+        <oap.deps.maven-plugin-api.version>3.6.3</oap.deps.maven-plugin-api.version>
+        <oap.deps.maven-project.version>3.0-alpha-2</oap.deps.maven-project.version>
+        <oap.deps.maven-plugin-annotations.version>3.6.0</oap.deps.maven-plugin-annotations.version>
+        <oap.deps.maven.maven-plugin-plugin.version>3.6.0</oap.deps.maven.maven-plugin-plugin.version>
     </properties>
 </project>
