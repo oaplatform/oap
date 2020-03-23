@@ -29,7 +29,6 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
@@ -49,7 +48,7 @@ public class BinderHoconTest {
 
         var obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, json );
 
-        assertThat( obj.list ).isEqualTo( singletonList( "1a,2a" ) );
+        assertThat( obj.list ).isEqualTo( List.of( "1a,2a" ) );
     }
 
     public static class BeanPattern {
