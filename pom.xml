@@ -103,6 +103,6 @@
         <oap.deps.maven-project.version>3.0-alpha-2</oap.deps.maven-project.version>
         <oap.deps.maven-plugin-annotations.version>3.6.0</oap.deps.maven-plugin-annotations.version>
         <oap.deps.maven.maven-plugin-plugin.version>3.6.0</oap.deps.maven.maven-plugin-plugin.version>
-        <undertow.version>2.0.30.Final</undertow.version>
+        <oap.deps.undertow.version>2.0.30.Final</oap.deps.undertow.version>
     </properties>
 </project>
