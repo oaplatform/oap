@@ -24,23 +24,19 @@
 
 package oap.application;
 
-import oap.util.Lists;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.List;
 
 import static java.util.Arrays.asList;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class KernelProfileTest {
-    @BeforeMethod
-    public void unregister() {
-        Application.unregisterServices();
-    }
 
     @Test
     public void profileName() {
-        try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module.yaml" ) ) ) ) {
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module.yaml" ) ) ) ) {
             startWithProfile( kernel, "profile-name" );
 
             assertThat( kernel.<TestProfile1>service( "profile1" ) ).isPresent();
@@ -51,7 +47,7 @@ public class KernelProfileTest {
 
     @Test
     public void serviceProfiles() {
-        var modules = Lists.of( urlOfTestResource( getClass(), "module-profiles.yaml" ) );
+        var modules = List.of( urlOfTestResource( getClass(), "module-profiles.yaml" ) );
 
         try( var kernel = new Kernel( modules ) ) {
             startWithProfile( kernel, "profile-name1" );
@@ -79,7 +75,7 @@ public class KernelProfileTest {
 
     @Test
     public void profileName2() {
-        try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module.yaml" ) ) ) ) {
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module.yaml" ) ) ) ) {
             startWithProfile( kernel, "profile-name-2" );
 
             assertThat( kernel.<TestProfile1>service( "profile1" ) ).isNotPresent();
@@ -90,7 +86,7 @@ public class KernelProfileTest {
 
     @Test
     public void profile3() {
-        try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module3.yaml" ) ) ) ) {
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module3.yaml" ) ) ) ) {
             startWithProfile( kernel, "profile-name" );
             assertThat( kernel.<TestContainer>service( "container" ) ).isPresent();
         }
@@ -98,22 +94,22 @@ public class KernelProfileTest {
 
     @Test
     public void profile4() {
-        try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module4.yaml" ) ) ) ) {
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module4.yaml" ) ) ) ) {
             startWithProfile( kernel, "run" );
-            assertThat( kernel.<Object>service( "container" ) ).isPresent().get().isInstanceOf( TestContainer2.class );
+            assertThat( kernel.service( "container" ) ).isPresent().get().isInstanceOf( TestContainer2.class );
         }
     }
 
     @Test
     public void moduleProfiles() {
-        try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module-profile.yaml" ) ) ) ) {
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.yaml" ) ) ) ) {
             startWithProfile( kernel, "test1" );
-            assertThat( kernel.<Object>service( "module-profile" ) ).isPresent().get().isInstanceOf( TestProfile1.class );
+            assertThat( kernel.service( "module-profile" ) ).isPresent().get().isInstanceOf( TestProfile1.class );
         }
 
-        try( var kernel = new Kernel( Lists.of( urlOfTestResource( getClass(), "module-profile.yaml" ) ) ) ) {
+        try( var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "module-profile.yaml" ) ) ) ) {
             startWithProfile( kernel );
-            assertThat( kernel.<Object>service( "module-profile" ) ).isNotPresent();
+            assertThat( kernel.service( "module-profile" ) ).isNotPresent();
         }
     }
 

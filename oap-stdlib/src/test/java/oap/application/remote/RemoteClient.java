@@ -26,4 +26,8 @@ package oap.application.remote;
 
 public interface RemoteClient {
     boolean accessible();
+
+    void erroneous();
+
+    void testRetry();
 }

@@ -34,6 +34,7 @@ import oap.util.BiStream;
 import oap.util.Pair;
 import oap.util.Stream;
 import org.apache.http.entity.ContentType;
+import org.joda.time.DateTime;
 
 import java.io.InputStream;
 import java.util.List;
@@ -236,8 +237,12 @@ public class HttpAsserts {
     public static class CookieHttpAssertion {
         private Cookie cookie;
 
-        public CookieHttpAssertion( Cookie cookie ) {
+        private CookieHttpAssertion( Cookie cookie ) {
             this.cookie = cookie;
+        }
+
+        public static CookieHttpAssertion assertCookie( Cookie cookie ) {
+            return new CookieHttpAssertion( cookie );
         }
 
         public CookieHttpAssertion hasValue( String value ) {
@@ -251,6 +256,16 @@ public class HttpAsserts {
 
         public CookieHttpAssertion hasDomain( String domain ) {
             assertString( cookie.domain ).isEqualTo( domain );
+            return this;
+        }
+
+        public CookieHttpAssertion expiresAt( DateTime expiration ) {
+            assertThat( cookie.expires ).isEqualTo( expiration );
+            return this;
+        }
+
+        public CookieHttpAssertion expiresAfter( DateTime expiration ) {
+            assertThat( cookie.expires ).isGreaterThanOrEqualTo( expiration );
             return this;
         }
 

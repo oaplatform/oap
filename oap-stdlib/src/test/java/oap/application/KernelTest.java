@@ -36,7 +36,6 @@ import oap.util.Lists;
 import oap.util.Maps;
 import org.slf4j.Logger;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.Closeable;
@@ -54,10 +53,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.testng.Assert.assertTrue;
 
 public class KernelTest {
-    @BeforeMethod
-    public void unregister() {
-        Application.unregisterServices();
-    }
 
     @AfterMethod
     public void afterMethod() {
@@ -76,9 +71,9 @@ public class KernelTest {
         try( var kernel = new Kernel( modules ) ) {
             kernel.start();
 
-            service = kernel.<TestLifecycle>service( "service" ).get();
-            thread = kernel.<TestLifecycle>service( "thread" ).get();
-            delayScheduled = kernel.<TestLifecycle>service( "delayScheduled" ).get();
+            service = kernel.<TestLifecycle>service( "service" ).orElseThrow();
+            thread = kernel.<TestLifecycle>service( "thread" ).orElseThrow();
+            delayScheduled = kernel.<TestLifecycle>service( "delayScheduled" ).orElseThrow();
         }
 
         assertThat( service.str.toString() ).isEqualTo( "/preStart/start/preStop/stop" );
@@ -93,8 +88,8 @@ public class KernelTest {
 
         Kernel kernel = new Kernel( modules );
         kernel.start();
-        TestCloseable tc = kernel.<TestCloseable>service( "c1" ).get();
-        TestCloseable2 tc2 = kernel.<TestCloseable2>service( "c2" ).get();
+        TestCloseable tc = kernel.<TestCloseable>service( "c1" ).orElseThrow();
+        TestCloseable2 tc2 = kernel.<TestCloseable2>service( "c2" ).orElseThrow();
         kernel.stop();
 
         assertThat( tc.closed ).isTrue();

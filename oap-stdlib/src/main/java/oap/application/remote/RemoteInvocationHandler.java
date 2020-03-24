@@ -23,7 +23,6 @@
  */
 package oap.application.remote;
 
-import com.google.common.base.Preconditions;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
@@ -77,7 +76,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         errorMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "error" ) );
         successMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "success" ) );
 
-        log.debug( "remote interface for {} at {} wich certs {}", service, uri, certificateLocation );
+        log.debug( "initialize {} with certs {}", this, certificateLocation );
 
         var builder = HttpClient.newBuilder().connectTimeout( Duration.ofMillis( this.timeout ) );
         if( certificateLocation != null ) {
@@ -115,71 +114,56 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     }
 
     @Override
-    @SuppressWarnings( "unchecked" )
     public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable {
-        if( method.getDeclaringClass() == Object.class ) {
-            return method.invoke( this, args );
-        }
+        if( uri == null ) throw new RemoteInvocationException( "uri == null, service " + service + "#" + method.getName() );
+
+        if( method.getDeclaringClass() == Object.class ) return method.invoke( this, args );
+
+        Result<Object, Throwable> result = invoke( method, args );
+        if( result.isSuccess() ) return result.successValue;
+        else throw result.failureValue;
+    }
+
+    private Result<Object, Throwable> invoke( Method method, Object[] args ) {
         Parameter[] parameters = method.getParameters();
         List<RemoteInvocation.Argument> arguments = new ArrayList<>();
 
-        for( int i = 0; i < parameters.length; i++ ) {
+        for( int i = 0; i < parameters.length; i++ )
             arguments.add( new RemoteInvocation.Argument( parameters[i].getName(),
                 parameters[i].getType(), args[i] ) );
-        }
 
-        Preconditions.checkNotNull( uri, "uri == null, service name = " + service + ", method name = " + method.getName() );
 
-        final byte[] content = fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) );
-
-        Throwable retException = null;
-
-        for( int i = 0; i < retry; i++ ) {
-            if( retException != null )
-                log.trace( retException.getMessage(), retException );
+        byte[] content = fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) );
+        Exception lastException = null;
+        for( int i = 0; i <= retry; i++ ) {
+            log.trace( "{} {}#{}...", i > 0 ? "retrying" : "invoking", this, method.getName() );
             try {
                 var bodyPublisher = HttpRequest.BodyPublishers.ofByteArray( content );
                 var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
                 var response = client.send( request, HttpResponse.BodyHandlers.ofByteArray() );
-
-                if( response.statusCode() == HTTP_OK ) {
-                    var b = response.body();
-                    if( b != null ) {
-                        var res = ( Result<Object, Throwable> ) fst.conf.asObject( b );
-
-                        if( res.isSuccess() ) return res.successValue;
-
-                        retException = res.failureValue;
-                        continue;
-                    }
-
-                    retException = new RemoteInvocationException( "remote service uri = " + uri
-                        + ", service name = " + service
-                        + ", method name = " + method.getName() + ": no content" );
-                } else
-                    retException = new RemoteInvocationException( "remote service uri = " + uri
-                        + ", service name = " + service
-                        + ", method name = " + method.getName()
-                        + ": response code = " + response.statusCode()
-                        + "\n content = " + new String( response.body() ) );
+                byte[] body;
+                if( response.statusCode() == HTTP_OK && ( body = response.body() ) != null ) {
+                    @SuppressWarnings( "unchecked" )
+                    Result<Object, Throwable> result = ( Result<Object, Throwable> ) fst.conf.asObject( body );
+                    if( !result.isSuccess() && result.failureValue instanceof RemoteInvocationException ) throw ( RemoteInvocationException ) result.failureValue;
+                    return result;
+                } else throw new RemoteInvocationException( "invocation failed " + this + "#" + method.getName() + " code " + response.statusCode() );
             } catch( HttpTimeoutException e ) {
-                log.error( "timeout invoking {}#{}", service, uri );
+                log.error( "timeout invoking {}#{}", method.getName(), this );
                 timeoutMetrics.increment();
-                retException = e;
+                lastException = e;
             } catch( Exception e ) {
-                log.error( "error invoking {}#{}: {}", service, uri, e );
+                log.error( "error invoking {}#{}: {}", this, method.getName(), e );
                 errorMetrics.increment();
-                retException = e;
+                lastException = e;
             }
-
-            log.trace( "retrying... remote service uri = {}, service name = {}, method name = {}", uri, service, method.getName() );
         }
-
-        throw retException != null ? retException : new RemoteInvocationException( "invocation failed " + service + "#" + uri );
+        throw lastException instanceof RemoteInvocationException ? ( RemoteInvocationException ) lastException
+            : new RemoteInvocationException( "invocation failed " + this + "#" + method.getName(), lastException );
     }
 
     @Override
     public String toString() {
-        return "remote:" + service + "@" + uri;
+        return "remote:" + service + "(retry=" + retry + ")@" + uri;
     }
 }

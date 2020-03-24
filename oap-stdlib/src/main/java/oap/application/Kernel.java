@@ -79,17 +79,17 @@ public class Kernel implements Closeable {
     public final ConcurrentMap<String, Object> services = new ConcurrentHashMap<>();
     public final LinkedHashSet<String> profiles = new LinkedHashSet<>();
     final String name;
-    private final List<URL> configurations;
+    private final List<URL> moduleConfigurations;
     private final LinkedHashSet<Module> modules = new LinkedHashSet<>();
     private final Supervisor supervisor = new Supervisor();
 
-    public Kernel( String name, List<URL> configurations ) {
+    public Kernel( String name, List<URL> moduleConfigurations ) {
         this.name = name;
-        this.configurations = configurations;
+        this.moduleConfigurations = moduleConfigurations;
     }
 
-    public Kernel( List<URL> configurations ) {
-        this( DEFAULT, configurations );
+    public Kernel( List<URL> moduleConfigurations ) {
+        this( DEFAULT, moduleConfigurations );
     }
 
     private static void fixDepsParameter( Module module, Module.Service service,
@@ -201,11 +201,10 @@ public class Kernel implements Closeable {
 
     void start( ApplicationConfiguration config ) {
         log.debug( "initializing application kernel..." );
-        Application.register( this );
         log.debug( "application config {}", config );
         this.profiles.addAll( config.profiles );
 
-        this.modules.addAll( Stream.of( configurations )
+        this.modules.addAll( Stream.of( moduleConfigurations )
             .map( module -> Module.CONFIGURATION.fromFile( module, config.services ) )
             .toList() );
         log.debug( "modules = " + Sets.map( this.modules, m -> m.name ) );
@@ -443,7 +442,6 @@ public class Kernel implements Closeable {
         supervisor.preStop();
         supervisor.stop();
         services.clear();
-        Application.unregister( this );
         log.debug( "application kernel stopped" );
     }
 

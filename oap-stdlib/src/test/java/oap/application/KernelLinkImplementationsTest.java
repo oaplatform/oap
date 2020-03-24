@@ -24,29 +24,20 @@
 
 package oap.application;
 
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.List;
 
-import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static oap.testng.Asserts.urlOfTestResource;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class KernelLinkImplementationsTest {
-    @BeforeMethod
-    public void unregister() {
-        Application.unregisterServices();
-    }
-
 
     @Test
     public void fieldReference() {
-        var kernel = new Kernel(
-            singletonList( urlOfTestResource( getClass(), "field-reference.conf" ) )
-        );
+        var kernel = new Kernel( List.of( urlOfTestResource( getClass(), "field-reference.conf" ) ) );
 
         try {
             kernel.start();
@@ -62,7 +53,7 @@ public class KernelLinkImplementationsTest {
     @Test
     public void fieldReferences() {
         var kernel = new Kernel(
-            singletonList( urlOfTestResource( getClass(), "field-references.conf" ) )
+            List.of( urlOfTestResource( getClass(), "field-references.conf" ) )
         );
 
         try {
@@ -80,7 +71,7 @@ public class KernelLinkImplementationsTest {
     @Test
     public void fieldReferenceUnknownInterface() {
         var kernel = new Kernel(
-            singletonList( urlOfTestResource( getClass(), "field-reference-unknown-interface.conf" ) )
+            List.of( urlOfTestResource( getClass(), "field-reference-unknown-interface.conf" ) )
         );
 
         try {
@@ -93,7 +84,7 @@ public class KernelLinkImplementationsTest {
     @Test
     public void fieldReferencesUnknownInterface() {
         var kernel = new Kernel(
-            singletonList( urlOfTestResource( getClass(), "field-references-unknown-interface.conf" ) )
+            List.of( urlOfTestResource( getClass(), "field-references-unknown-interface.conf" ) )
         );
 
         try {
