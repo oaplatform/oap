@@ -33,7 +33,6 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
 import oap.http.cors.GenericCorsPolicy;
 import oap.util.Result;
-import org.apache.http.entity.ContentType;
 
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
@@ -42,26 +41,23 @@ import java.util.Optional;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
+import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 @Slf4j
 public class Remote implements HttpHandler {
     private final FST.SerializationMethod serialization;
-    private final ThreadLocal<oap.application.remote.FST> fst = new ThreadLocal<FST>() {
+    private final ThreadLocal<oap.application.remote.FST> fst = new ThreadLocal<>() {
         public FST initialValue() {
             return new FST( serialization );
         }
     };
     private final GenericCorsPolicy cors = GenericCorsPolicy.DEFAULT;
 
-    private final int port;
-    private final String context;
     private final Kernel kernel;
     private final Undertow undertow;
 
     public Remote( FST.SerializationMethod serialization, int port, String context, Kernel kernel ) {
         this.serialization = serialization;
-        this.port = port;
-        this.context = context;
         this.kernel = kernel;
 
         undertow = Undertow
@@ -85,7 +81,7 @@ public class Remote implements HttpHandler {
     }
 
     @Override
-    public void handleRequest( HttpServerExchange exchange ) throws Exception {
+    public void handleRequest( HttpServerExchange exchange ) {
         FST fst = this.fst.get();
 
         exchange.getRequestReceiver().receiveFullBytes( ( ex, body ) -> {
@@ -97,25 +93,30 @@ public class Remote implements HttpHandler {
 
             service.ifPresentOrElse( s -> {
                     Result<Object, Throwable> result;
+                    int status = HTTP_OK;
                     try {
                         result = Result.success( s.getClass()
                             .getMethod( invocation.method, invocation.types() )
                             .invoke( s, invocation.values() ) );
                     } catch( NoSuchMethodException | IllegalAccessException e ) {
-                        result = Result.failure( e );
-                        log.trace( "Method [{}] doesn't exist or access isn't allowed", invocation.method );
+                        // transport error - illegal setup
+                        // wrapping into RIE to be handled at client's properly
+                        log.error( "method [{}] doesn't exist or access isn't allowed", invocation.method );
+                        status = HTTP_NOT_FOUND;
+                        result = Result.failure( new RemoteInvocationException( e ) );
                     } catch( InvocationTargetException e ) {
+                        // application error
                         result = Result.failure( e.getCause() );
-                        log.trace( "Exception occurred on call to method [{}]", invocation.method );
+                        log.trace( "exception occurred on call to method [{}]", invocation.method );
                     }
-                    exchange.setStatusCode( HTTP_OK );
-                    exchange.getResponseSender().send( ByteBuffer.wrap( fst.conf.asByteArray( result ) ) );
+                    exchange.setStatusCode( status );
                     exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM.toString() );
+                    exchange.getResponseSender().send( ByteBuffer.wrap( fst.conf.asByteArray( result ) ) );
                 },
                 () -> {
                     exchange.setStatusCode( HTTP_NOT_FOUND );
+                    exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, TEXT_PLAIN.toString() );
                     exchange.getResponseSender().send( invocation.service + " not found" );
-                    exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, ContentType.DEFAULT_TEXT.toString() );
                 }
             );
         } );

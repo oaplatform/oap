@@ -24,18 +24,26 @@
 
 package oap.application.remote;
 
-public class RemoteService implements RemoteClient {
-    private final int ok;
-    private int count = 0;
+import lombok.extern.slf4j.Slf4j;
 
-    public RemoteService( int ok ) {
-        this.ok = ok;
-    }
+@Slf4j
+public class RemoteService implements RemoteClient {
+    int transportErrors = 3;
 
     @Override
     public boolean accessible() {
-        count++;
-        if( count >= ok ) return true;
-        throw new IllegalStateException( "count(" + count + ") < ok(" + ok + ")" );
+        return true;
+    }
+
+
+    @Override
+    public void erroneous() {
+        throw new IllegalStateException();
+    }
+
+    @Override
+    public void testRetry() {
+        log.debug( "errors {}", --transportErrors );
+        if( transportErrors > 0 ) throw new RemoteInvocationException( "transport error" );
     }
 }

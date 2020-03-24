@@ -24,11 +24,10 @@
 
 package oap.application.remote;
 
-import oap.application.Kernel;
-import oap.application.Module;
+import oap.application.testng.KernelFixture;
+import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
-import java.net.URL;
 import java.util.List;
 
 import static oap.testng.Asserts.assertString;
@@ -38,32 +37,32 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 
-public class RemotingTest {
-    @Test
-    public void invoke() {
-        var modules = Module.CONFIGURATION.urlsFromClassPath();
-        modules.add( urlOfTestResource( RemotingTest.class, "module.conf" ) );
+public class RemoteTest extends Fixtures {
+    protected KernelFixture kernelFixture;
 
-        var kernel = new Kernel( modules );
-        try {
-            kernel.start( pathOfTestResource( getClass(), "application.conf" ) );
-
-            assertThat( kernel.<RemoteClient>service( "remote-client1" ) ).isPresent().get()
-                .satisfies( remote1 -> {
-                    assertThat( remote1.accessible() ).isTrue();
-                    assertString( remote1.toString() ).isEqualTo( "remote:remote-service-impl1@http://localhost:8980/remote/" );
-                } );
-
-            assertThat( kernel.<RemoteClient>service( "remote-client2" ) ).isPresent().get()
-                .satisfies( s -> assertThat( s.accessible() ).isTrue() );
-
-            assertThat( kernel.<RemoteClient>service( "remote-client3" ) ).isPresent().get()
-                .satisfies( s -> assertThatThrownBy( s::accessible ).isInstanceOf( IllegalStateException.class ) );
-
-        } finally {
-            kernel.stop();
-        }
+    {
+        fixture( kernelFixture = new KernelFixture(
+            pathOfTestResource( RemoteTest.class, "application.conf" ),
+            List.of( urlOfTestResource( RemoteTest.class, "module.conf" ) )
+        ) );
     }
 
+    @Test
+    public void invoke() {
+        assertThat( kernelFixture.<RemoteClient>service( "remote-client" ) )
+            .satisfies( remote -> {
+                assertThat( remote.accessible() ).isTrue();
+                //this tests local methods of Object.class
+                assertString( remote.toString() ).isEqualTo( "remote:remote-service(retry=5)@http://localhost:8980/remote/" );
+            } );
 
+        assertThat( kernelFixture.<RemoteClient>service( "remote-client" ) )
+            .satisfies( remote -> assertThatThrownBy( remote::erroneous ).isInstanceOf( IllegalStateException.class ) );
+
+        assertThat( kernelFixture.<RemoteClient>service( "remote-client" ) )
+            .satisfies( RemoteClient::testRetry );
+
+        assertThat( kernelFixture.<RemoteClient>service( "remote-client-unreachable" ) )
+            .satisfies( remote -> assertThatThrownBy( remote::accessible ).isInstanceOf( RemoteInvocationException.class ) );
+    }
 }

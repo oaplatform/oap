@@ -24,7 +24,6 @@
 
 package oap.application.testng;
 
-import lombok.SneakyThrows;
 import oap.application.Kernel;
 import oap.application.Module;
 import oap.io.Files;
@@ -32,37 +31,55 @@ import oap.io.Resources;
 import oap.testng.Env;
 import oap.testng.Fixture;
 
-import java.io.FileNotFoundException;
+import javax.annotation.Nonnull;
+import java.net.URL;
 import java.nio.file.Path;
+import java.util.List;
 
 import static oap.http.testng.HttpAsserts.httpPrefix;
-import static org.testng.Assert.assertNotNull;
 
 public class KernelFixture implements Fixture {
     private static int kernelN = 0;
     public Kernel kernel;
     private Path conf;
-    private String confCatalog;
+    private String confd;
+    private List<URL> additionalModules;
 
     public KernelFixture( Path conf ) {
         this.conf = conf;
     }
 
-    @SneakyThrows
     public KernelFixture( String conf ) {
-        this.conf = Resources.filePath( getClass(),
-            conf.startsWith( "/" ) ? conf : "/" + conf ).orElseThrow( () -> new FileNotFoundException( conf ) );
+        this( conf, List.of() );
     }
 
-    public KernelFixture( Path conf, String confCatalog ) {
-        this.confCatalog = confCatalog;
+    public KernelFixture( String conf, List<URL> additionalModules ) {
+        this( Resources.filePath( KernelFixture.class, conf )
+            .orElseThrow( () -> new IllegalArgumentException( conf ) ), null, additionalModules );
+    }
+
+    public KernelFixture( Path conf, String confd ) {
+        this( conf, confd, List.of() );
+    }
+
+    public KernelFixture( Path conf, List<URL> additionalModules ) {
+        this( conf, null, additionalModules );
+    }
+
+    public KernelFixture( Path conf, String confd, List<URL> additionalModules ) {
         this.conf = conf;
+        this.confd = confd;
+        this.additionalModules = additionalModules;
     }
 
-    @SneakyThrows
-    public <T> T service( Class<T> klass ) {
-        assertNotNull( klass );
-        return kernel.serviceOfClass( klass ).orElseThrow( () -> new IllegalAccessException( "Unknown service " + klass ) );
+    @Nonnull
+    public <T> T service( @Nonnull Class<T> klass ) {
+        return kernel.serviceOfClass( klass ).orElseThrow( () -> new IllegalArgumentException( "unknown service " + klass ) );
+    }
+
+    @Nonnull
+    public <T> T service( @Nonnull String name ) {
+        return kernel.<T>service( name ).orElseThrow( () -> new IllegalArgumentException( "unknown service " + name ) );
     }
 
     @Override
@@ -70,15 +87,17 @@ public class KernelFixture implements Fixture {
         System.setProperty( "TMP_REMOTE_PORT", String.valueOf( Env.port( "TMP_REMOTE_PORT" ) ) );
         System.setProperty( "HTTP_PORT", String.valueOf( Env.port() ) );
         System.setProperty( "TMP_PATH", Env.tmp( "/" ) );
-        System.setProperty( "RESOURCE_PATH", Resources.path( getClass(), "/" ).get() );
+        System.setProperty( "RESOURCE_PATH", Resources.path( getClass(), "/" ).orElseThrow() );
         System.setProperty( "HTTP_PREFIX", httpPrefix() );
-        this.kernel = new Kernel( "FixtureKernel#" + kernelN++, Module.CONFIGURATION.urlsFromClassPath() );
+        List<URL> moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
+        moduleConfigurations.addAll( additionalModules );
+        this.kernel = new Kernel( "FixtureKernel#" + kernelN++, moduleConfigurations );
 
-        if( confCatalog != null ) {
-            var toConfD = Env.tmpPath( confCatalog );
-            Resources.filePaths( getClass(), confCatalog )
-                .forEach( path -> Files.copyDirectory( path, toConfD ) );
-            this.kernel.start( conf, toConfD );
+        if( confd != null ) {
+            var confdDeployed = Env.tmpPath( confd );
+            Resources.filePaths( getClass(), confd )
+                .forEach( path -> Files.copyDirectory( path, confdDeployed ) );
+            this.kernel.start( conf, confdDeployed );
         } else this.kernel.start( conf );
     }
 
