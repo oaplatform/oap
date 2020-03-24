@@ -43,7 +43,7 @@ public class KernelFixture implements Fixture {
     public Kernel kernel;
     private Path conf;
     private String confd;
-    private List<URL> additionalModules;
+    private List<URL> additionalModules = List.of();
 
     public KernelFixture( Path conf ) {
         this.conf = conf;
