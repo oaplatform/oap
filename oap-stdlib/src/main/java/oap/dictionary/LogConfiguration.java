@@ -96,4 +96,8 @@ public class LogConfiguration extends Configuration {
         return new DictionaryTemplate<>( engine.getTemplate( "Log" + StringUtils.capitalize( type ), clazz, lines,
             getStandardDelimiter(), strategy ), lines );
     }
+
+    public Engine getEngine() {
+        return engine;
+    }
 }
