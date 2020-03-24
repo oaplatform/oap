@@ -45,7 +45,7 @@ public class Cookie {
     public static final long NO_MAX_AGE = -1;
     private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss zzz" ).withLocale( Locale.ENGLISH );
     public String domain;
-    private DateTime expires;
+    public DateTime expires;
     public long maxAge = NO_MAX_AGE;
     public String path;
     public boolean httpOnly = false;
