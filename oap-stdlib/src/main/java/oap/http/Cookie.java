@@ -43,7 +43,9 @@ import static oap.util.Pair.__;
 
 public class Cookie {
     public static final long NO_MAX_AGE = -1;
-    private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss zzz" ).withLocale( Locale.ENGLISH );
+    private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" )
+        .withLocale( Locale.ENGLISH )
+        .withZoneUTC();
     public String domain;
     public DateTime expires;
     public long maxAge = NO_MAX_AGE;
