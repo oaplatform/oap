@@ -466,6 +466,10 @@ public class Kernel implements Closeable {
         return this.ofClass( clazz ).stream().findAny();
     }
 
+    public <T> T serviceOfClass2( Class<T> clazz ) {
+        return this.ofClass( clazz ).stream().findAny().orElseThrow();
+    }
+
     public void unregister( String name ) {
         services.remove( name );
     }
