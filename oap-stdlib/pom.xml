@@ -428,8 +428,6 @@
             <artifactId>undertow-core</artifactId>
             <version>${oap.deps.undertow.version}</version>
         </dependency>
-
-
         <dependency>
             <groupId>org.mock-server</groupId>
             <artifactId>mockserver-netty</artifactId>
