@@ -48,54 +48,30 @@ public class ArrayPerformance {
         benchmark( "class_vs_array->array", samples, () -> {
             final int x = random.nextInt( 4 );
             switch( x ) {
-                case 0:
-                    sum[0] += array[x];
-                    break;
-                case 1:
-                    sum[0] += array[x];
-                    break;
-                case 2:
-                    sum[0] += array[x];
-                    break;
-                case 3:
-                    sum[0] += array[x];
-                    break;
+                case 0 -> sum[0] += array[x];
+                case 1 -> sum[0] += array[x];
+                case 2 -> sum[0] += array[x];
+                case 3 -> sum[0] += array[x];
             }
         } ).experiments( experiments ).period( Period.millis( 10 ) ).run();
 
         benchmark( "class_vs_array->array-2", samples, () -> {
             final int x = random.nextInt( 4 );
             switch( x ) {
-                case 0:
-                    sum[0] += array[x];
-                    break;
-                case 1:
-                    sum[0] += array[x];
-                    break;
-                case 2:
-                    sum[0] += array[x];
-                    break;
-                case 3:
-                    sum[0] += array[x];
-                    break;
+                case 0 -> sum[0] += array[x];
+                case 1 -> sum[0] += array[x];
+                case 2 -> sum[0] += array[x];
+                case 3 -> sum[0] += array[x];
             }
         } ).experiments( experiments ).run();
 
         benchmark( "class_vs_array->class", samples, () -> {
             final int x = random.nextInt( 4 );
             switch( x ) {
-                case 0:
-                    sum[0] += test4.a1;
-                    break;
-                case 1:
-                    sum[0] += test4.a2;
-                    break;
-                case 2:
-                    sum[0] += test4.a3;
-                    break;
-                case 3:
-                    sum[0] += test4.a4;
-                    break;
+                case 0 -> sum[0] += test4.a1;
+                case 1 -> sum[0] += test4.a2;
+                case 2 -> sum[0] += test4.a3;
+                case 3 -> sum[0] += test4.a4;
             }
         } ).experiments( experiments ).run();
 

@@ -24,14 +24,14 @@
 
 package oap.benchmark;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.ToString;
 import oap.testng.Teamcity;
 import oap.util.Try;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinWorkerThread;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
@@ -48,45 +48,56 @@ class MultiThreadRunner extends Runner {
 
     @Override
     public Result run( Benchmark benchmark ) {
-        return Teamcity.progress( benchmark.name + "...", () -> {
+        return Teamcity.progress( benchmark.name + "...", Try.supply( () -> {
             System.out.println( "pool threads = " + threads );
-            ExecutorService pool = oap.concurrent.Executors.newFixedThreadPool( threads, new ThreadFactoryBuilder().setNameFormat( "name-%d" ).build() );
+
+            var factory = new ForkJoinPool.ForkJoinWorkerThreadFactory() {
+                @Override
+                public ForkJoinWorkerThread newThread( ForkJoinPool pool ) {
+                    var worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread( pool );
+                    worker.setName( benchmark.name + "-" + worker.getPoolIndex() );
+                    return worker;
+                }
+            };
+
+            var pool = new ForkJoinPool( threads, factory, null, false );
             if( warming > 0 ) {
                 System.out.println( "warming up..." );
-                IntStream
-                    .range( 0, warming )
-                    .mapToObj( i -> pool.submit( () -> benchmark.code.accept( 0 ) ) )
-                    .collect( toList() )
-                    .forEach( Try.consume( Future::get ) );
+                pool.submit( () -> {
+                    IntStream
+                        .range( 0, warming )
+                        .parallel()
+                        .forEach( i -> pool.submit( () -> benchmark.code.accept( 0 ) ) );
+                } ).get( 1, TimeUnit.HOURS );
             }
             System.out.println( "starting test..." );
 
             List<Result> results = IntStream
                 .range( 0, benchmark.experiments )
-                .mapToObj( x -> Teamcity.progress( benchmark.name + " e=" + x + "...", () -> {
+                .mapToObj( x -> Teamcity.progress( benchmark.name + " e=" + x + "...", Try.supply( () -> {
 
                         benchmark.beforeExperiment.run();
 
                         int samplesPerThread = benchmark.samples / threads;
 
                         long start = System.nanoTime();
-                        IntStream
-                            .range( 0, threads )
-                            .mapToObj( t -> pool.submit( () -> IntStream
-                                .range( t * samplesPerThread, ( t + 1 ) * samplesPerThread )
-                                .forEach( benchmark.code )
+                        pool.submit( () -> {
+                            IntStream
+                                .range( 0, threads )
+                                .parallel()
+                                .forEach( t -> pool.submit( () -> IntStream
+                                    .range( t * samplesPerThread, ( t + 1 ) * samplesPerThread )
+                                    .forEach( benchmark.code )
 
-                            ) )
-                            .collect( toList() )
-                            .forEach( Try.consume( Future::get ) );
-
+                                ) );
+                        } ).get( 5, TimeUnit.HOURS );
                         long total = System.nanoTime() - start;
                         Result result = benchmark.toResult( total );
                         benchmark.printResult( total, result );
                         benchmark.afterExperiment.run();
 
                         return result;
-                    } )
+                    } ) )
                 )
                 .collect( toList() );
 
@@ -96,7 +107,7 @@ class MultiThreadRunner extends Runner {
             Teamcity.performance( benchmark.name, avg.rate );
 
             return avg;
-        } );
+        } ) );
 
     }
 }

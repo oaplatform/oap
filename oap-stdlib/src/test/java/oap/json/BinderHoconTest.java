@@ -24,6 +24,7 @@
 
 package oap.json;
 
+import com.typesafe.config.impl.ConfigImpl;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -45,6 +46,9 @@ public class BinderHoconTest {
     public void envList() {
         var json = "{list = [${?LIST_ENV}]}";
         System.setProperty( "LIST_ENV", "1a,2a" );
+
+        ConfigImpl.reloadEnvVariablesConfig();
+        ConfigImpl.reloadSystemPropertiesConfig();
 
         var obj = Binder.hocon.<BeanPattern>unmarshal( BeanPattern.class, json );
 
