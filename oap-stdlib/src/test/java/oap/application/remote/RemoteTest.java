@@ -65,4 +65,12 @@ public class RemoteTest extends Fixtures {
         assertThat( kernelFixture.<RemoteClient>service( "remote-client-unreachable" ) )
             .satisfies( remote -> assertThatThrownBy( remote::accessible ).isInstanceOf( RemoteInvocationException.class ) );
     }
+
+    @Test
+    public void testStream() {
+        assertThat( kernelFixture.<RemoteClient>service( "remote-client" ).testStream() )
+            .contains( "1", "2", "3" );
+        assertThat( kernelFixture.<RemoteClient>service( "remote-client" ).testStream() )
+            .contains( "1", "2", "3" );
+    }
 }

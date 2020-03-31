@@ -26,10 +26,15 @@ package oap.application.remote;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.http.Client2;
 import oap.util.Result;
+import oap.util.Stream;
+import oap.util.Try;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -42,6 +47,7 @@ import java.net.http.HttpTimeoutException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -140,13 +146,76 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             try {
                 var bodyPublisher = HttpRequest.BodyPublishers.ofByteArray( content );
                 var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
-                var response = client.send( request, HttpResponse.BodyHandlers.ofByteArray() );
-                byte[] body;
+                var response = client.send( request, HttpResponse.BodyHandlers.ofInputStream() );
+                InputStream body;
                 if( response.statusCode() == HTTP_OK && ( body = response.body() ) != null ) {
-                    @SuppressWarnings( "unchecked" )
-                    Result<Object, Throwable> result = ( Result<Object, Throwable> ) fst.conf.asObject( body );
-                    if( !result.isSuccess() && result.failureValue instanceof RemoteInvocationException ) throw ( RemoteInvocationException ) result.failureValue;
-                    return result;
+                    var is = fst.conf.getObjectInput( response.body() );
+
+                    try {
+                        var success = is.readBoolean();
+                        if( !success ) {
+                            try {
+                                var throwable = ( Throwable ) is.readObject( Throwable.class );
+                                if( throwable instanceof RemoteInvocationException )
+                                    throw ( RemoteInvocationException ) throwable;
+
+                                return Result.failure( throwable );
+                            } finally {
+                                is.close();
+                            }
+                        } else {
+                            var stream = is.readBoolean();
+                            if( stream ) {
+                                var it = new Iterator<>() {
+                                    private Object obj = null;
+                                    private boolean end = false;
+
+                                    @SneakyThrows
+                                    @Override
+                                    public boolean hasNext() {
+                                        if( end ) return false;
+
+                                        if( obj != null ) return true;
+
+                                        try {
+                                            obj = is.readObject();
+                                        } catch( IOException e ) {
+                                            if( e.getCause() instanceof NullPointerException ) {
+                                                end = true;
+                                                obj = null;
+                                                is.close();
+                                            } else
+                                                throw e;
+                                        }
+
+                                        return obj != null;
+                                    }
+
+                                    @SneakyThrows
+                                    @Override
+                                    public Object next() {
+                                        var o = obj;
+                                        obj = null;
+                                        hasNext();
+                                        return o;
+                                    }
+                                };
+
+                                return Result.success( Stream.of( it ).onClose( Try.run( is::close ) ) );
+                            } else {
+                                try {
+                                    return Result.success( is.readObject() );
+                                } finally {
+                                    is.close();
+                                }
+                            }
+                        }
+                    } catch( Exception e ) {
+                        is.close();
+                        throw e;
+                    }
+
+
                 } else throw new RemoteInvocationException( "invocation failed " + this + "#" + method.getName() + " code " + response.statusCode() );
             } catch( HttpTimeoutException e ) {
                 log.error( "timeout invoking {}#{}", method.getName(), this );

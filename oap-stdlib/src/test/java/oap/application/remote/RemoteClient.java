@@ -24,10 +24,14 @@
 
 package oap.application.remote;
 
+import java.util.stream.Stream;
+
 public interface RemoteClient {
     boolean accessible();
 
     void erroneous();
 
     void testRetry();
+
+    Stream<String> testStream();
 }

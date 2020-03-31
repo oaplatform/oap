@@ -33,10 +33,12 @@ import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
 import oap.http.cors.GenericCorsPolicy;
 import oap.util.Result;
+import oap.util.Try;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.ByteBuffer;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
@@ -111,7 +113,26 @@ public class Remote implements HttpHandler {
                     }
                     exchange.setStatusCode( status );
                     exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM.toString() );
-                    exchange.getResponseSender().send( ByteBuffer.wrap( fst.conf.asByteArray( result ) ) );
+
+                    try( var os = fst.conf.getObjectOutput( exchange.getOutputStream() ) ) {
+                        os.writeBoolean( result.isSuccess() );
+                        if( !result.isSuccess() )
+                            os.writeObject( result.failureValue );
+                        else {
+                            if( result.successValue instanceof Stream ) {
+                                os.writeBoolean( true );
+                                ( ( Stream ) result.successValue ).forEach( Try.consume( (obj -> {
+                                    os.writeObject( obj );
+                                } ) ) );
+                            } else {
+                                os.writeBoolean( false );
+                                os.writeObject( result.successValue );
+                            }
+                        }
+                        os.flush();
+                    } catch( IOException e ) {
+                        log.error( e.getMessage(), e );
+                    }
                 },
                 () -> {
                     exchange.setStatusCode( HTTP_NOT_FOUND );

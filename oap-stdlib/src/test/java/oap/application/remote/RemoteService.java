@@ -26,6 +26,8 @@ package oap.application.remote;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.stream.Stream;
+
 @Slf4j
 public class RemoteService implements RemoteClient {
     int transportErrors = 3;
@@ -45,5 +47,10 @@ public class RemoteService implements RemoteClient {
     public void testRetry() {
         log.debug( "errors {}", --transportErrors );
         if( transportErrors > 0 ) throw new RemoteInvocationException( "transport error" );
+    }
+
+    @Override
+    public Stream<String> testStream() {
+        return Stream.of( "1", "2", "3" );
     }
 }
