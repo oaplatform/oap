@@ -27,7 +27,6 @@ import lombok.ToString;
 import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Pair;
-import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
@@ -113,12 +112,12 @@ public final class HttpResponse {
             .withEntity( new InputStreamEntity( stream, contentType ) );
     }
 
-    public static Builder stream( Stream<String> stream, ContentType contentType ) {
+    public static Builder stream( java.util.stream.Stream<String> stream, ContentType contentType ) {
         return status( HTTP_OK )
             .withEntity( new HttpStreamEntity( stream, contentType ) );
     }
 
-    public static Builder stream( Stream<?> stream, boolean raw, ContentType contentType ) {
+    public static Builder stream( java.util.stream.Stream<?> stream, boolean raw, ContentType contentType ) {
         return status( HTTP_OK )
             .withEntity( new HttpStreamEntity( stream.map( v -> content( raw, v, contentType ) ), contentType ) );
     }
@@ -157,6 +156,15 @@ public final class HttpResponse {
         return new Builder( code );
     }
 
+    public static void registerProducer( String mimeType, Function<Object, String> producer ) {
+        producers.put( mimeType, producer );
+    }
+
+    private static String content( boolean raw, Object content, ContentType contentType ) {
+        return raw ? ( String ) content
+            : HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
+    }
+
     public Builder modify() {
         Builder builder = status( code, reason )
             .withEntity( contentEntity );
@@ -165,15 +173,6 @@ public final class HttpResponse {
         builder.headers.addAll( headers );
         return builder;
 
-    }
-
-    public static void registerProducer( String mimeType, Function<Object, String> producer ) {
-        producers.put( mimeType, producer );
-    }
-
-    private static String content( boolean raw, Object content, ContentType contentType ) {
-        return raw ? ( String ) content
-            : HttpResponse.producers.getOrDefault( contentType.getMimeType(), String::valueOf ).apply( content );
     }
 
     public static final class Builder {

@@ -24,7 +24,6 @@
 
 package oap.http;
 
-import oap.util.Stream;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
 
@@ -34,9 +33,9 @@ import java.io.OutputStream;
 import java.util.Iterator;
 
 public class HttpStreamEntity extends AbstractHttpEntity {
-    private final Stream<String> stream;
+    private final java.util.stream.Stream<String> stream;
 
-    public HttpStreamEntity( Stream<String> stream, ContentType contentType ) {
+    public HttpStreamEntity( java.util.stream.Stream<String> stream, ContentType contentType ) {
         this.stream = stream;
         if( contentType != null ) {
             setContentType( contentType.toString() );
