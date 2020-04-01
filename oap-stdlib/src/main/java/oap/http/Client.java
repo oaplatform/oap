@@ -23,6 +23,7 @@
  */
 package oap.http;
 
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.google.common.base.Preconditions;
 import com.google.common.io.ByteStreams;
 import lombok.SneakyThrows;
@@ -80,8 +81,6 @@ import org.apache.http.ssl.SSLContexts;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
@@ -94,8 +93,8 @@ import java.io.UncheckedIOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.KeyStore;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -597,6 +596,46 @@ public final class Client implements Closeable {
 
 
             return Optional.of( Binder.json.unmarshal( ref, contentString ) );
+        }
+
+        @SneakyThrows
+        public <T> Stream<T> unmarshalStream( TypeRef<T> ref ) {
+            MappingIterator<Object> objectMappingIterator = null;
+
+            if( inputStream != null ) {
+                synchronized( this ) {
+                    if( inputStream != null ) {
+                        objectMappingIterator = Binder.json.readerFor( ref ).readValues( inputStream );
+                    }
+                }
+            }
+
+            if( objectMappingIterator == null ) {
+                var contentString = contentString();
+                if( contentString == null ) return Stream.empty();
+
+
+                objectMappingIterator = Binder.json.readerFor( ref ).readValues( contentString );
+            }
+
+            var finalObjectMappingIterator = objectMappingIterator;
+
+            var it = new Iterator<T>() {
+                @Override
+                public boolean hasNext() {
+                    return finalObjectMappingIterator.hasNext();
+                }
+
+                @Override
+                @SuppressWarnings( "unchecked" )
+                public T next() {
+                    return ( T ) finalObjectMappingIterator.next();
+                }
+            };
+
+            var stream = Stream.of( it );
+            if( inputStream != null ) stream = stream.onClose( Try.run( () -> inputStream.close() ) );
+            return stream;
         }
 
         @Override
