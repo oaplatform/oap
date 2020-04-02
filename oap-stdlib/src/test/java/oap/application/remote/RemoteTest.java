@@ -68,9 +68,14 @@ public class RemoteTest extends Fixtures {
 
     @Test
     public void testStream() {
-        assertThat( kernelFixture.<RemoteClient>service( "remote-client" ).testStream() )
+        assertThat( kernelFixture.<RemoteClient>service( "remote-client" ).testStream( "1", "2", "3" ) )
             .contains( "1", "2", "3" );
-        assertThat( kernelFixture.<RemoteClient>service( "remote-client" ).testStream() )
+        assertThat( kernelFixture.<RemoteClient>service( "remote-client" ).testStream( "1", "2", "3" ) )
             .contains( "1", "2", "3" );
+    }
+
+    @Test
+    public void testEmptyStream() {
+        assertThat( kernelFixture.<RemoteClient>service( "remote-client" ).testStream() ).isEmpty();
     }
 }
