@@ -34,23 +34,20 @@ import java.io.IOException;
 import java.util.Optional;
 
 public class FST {
-    public FSTConfiguration conf;
+    public FSTConfiguration configuration;
 
     public FST( SerializationMethod serializationMethod ) {
-        conf = serializationMethod.conf();
-        conf.registerClass( RemoteInvocation.class );
-        conf.registerSerializer( Optional.class, new FSTOptionalSerializer(), false );
+        configuration = serializationMethod.configuration();
+        configuration.registerClass( RemoteInvocation.class );
+        configuration.registerSerializer( Optional.class, new FSTOptionalSerializer(), false );
     }
 
-    private class FSTOptionalSerializer extends FSTBasicObjectSerializer {
+    private static class FSTOptionalSerializer extends FSTBasicObjectSerializer {
         @Override
         public void writeObject( FSTObjectOutput out, Object o, FSTClazzInfo fstClazzInfo, FSTClazzInfo.FSTFieldInfo fstFieldInfo, int i ) throws IOException {
-            final Optional opt = ( Optional ) o;
-            if( opt.isPresent() ) {
-                out.writeObject( opt.get() );
-            } else {
-                out.writeObject( null );
-            }
+            Optional<?> opt = ( Optional<?> ) o;
+            if( opt.isPresent() ) out.writeObject( opt.get() );
+            else out.writeObject( null );
         }
 
         @Override
@@ -66,24 +63,24 @@ public class FST {
     public enum SerializationMethod {
         JSON {
             @Override
-            public FSTConfiguration conf() {
+            public FSTConfiguration configuration() {
                 return FSTConfiguration.createJsonConfiguration( false, false );
             }
         },
         BINARY {
             @Override
-            public FSTConfiguration conf() {
+            public FSTConfiguration configuration() {
                 return FSTConfiguration.createUnsafeBinaryConfiguration();
             }
         },
         DEFAULT {
             @Override
-            public FSTConfiguration conf() {
+            public FSTConfiguration configuration() {
                 return FSTConfiguration.createDefaultConfiguration();
             }
         };
 
-        public abstract FSTConfiguration conf();
+        public abstract FSTConfiguration configuration();
 
 
     }

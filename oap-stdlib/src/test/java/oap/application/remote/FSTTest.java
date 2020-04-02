@@ -35,7 +35,7 @@ public class FSTTest {
     public void optional() {
         final FST fst = new FST( FST.SerializationMethod.DEFAULT );
 
-        assertEquals( fst.conf.asObject( fst.conf.asByteArray( Optional.empty() ) ), Optional.empty() );
-        assertEquals( fst.conf.asObject( fst.conf.asByteArray( Optional.of( "1" ) ) ), Optional.of( "1" ) );
+        assertEquals( fst.configuration.asObject( fst.configuration.asByteArray( Optional.empty() ) ), Optional.empty() );
+        assertEquals( fst.configuration.asObject( fst.configuration.asByteArray( Optional.of( "1" ) ) ), Optional.of( "1" ) );
     }
 }

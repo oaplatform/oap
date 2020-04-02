@@ -71,16 +71,16 @@ public final class RemoteSerialization<T> implements InvocationHandler {
                 parameters[i].getType(), args[i] ) );
         }
 
-        final byte[] content = fst.conf.asByteArray( new RemoteInvocation( "service", method.getName(), arguments ) );
-        var ri = ( RemoteInvocation ) fst.conf.asObject( content );
+        final byte[] content = fst.configuration.asByteArray( new RemoteInvocation( "service", method.getName(), arguments ) );
+        var ri = ( RemoteInvocation ) fst.configuration.asObject( content );
 
         var result = master.getClass()
             .getMethod( ri.method, ri.types() )
             .invoke( master, ri.values() );
 
 
-        var resultContent = fst.conf.asByteArray( result );
+        var resultContent = fst.configuration.asByteArray( result );
 
-        return fst.conf.asObject( resultContent );
+        return fst.configuration.asObject( resultContent );
     }
 }

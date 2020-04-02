@@ -122,7 +122,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 parameters[i].getType(), args[i] ) );
 
 
-        byte[] content = fst.conf.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) );
+        byte[] content = fst.configuration.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) );
         Exception lastException = null;
         for( int i = 0; i <= retry; i++ ) {
             log.trace( "{} {}#{}...", i > 0 ? "retrying" : "invoking", this, method.getName() );
@@ -131,21 +131,20 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
                 var response = client.send( request, HttpResponse.BodyHandlers.ofInputStream() );
                 if( response.statusCode() == HTTP_OK && response.body() != null ) {
-                    var is = fst.conf.getObjectInput( response.body() );
-
+                    var is = fst.configuration.getObjectInput( response.body() );
+//todo refactor it to normal flow
                     try {
                         var success = is.readBoolean();
-                        if( !success ) {
-                            try {
-                                var throwable = ( Throwable ) is.readObject( Throwable.class );
-                                if( throwable instanceof RemoteInvocationException )
-                                    throw ( RemoteInvocationException ) throwable;
+                        if( !success ) try {
+                            var throwable = ( Throwable ) is.readObject( Throwable.class );
+                            if( throwable instanceof RemoteInvocationException )
+                                throw ( RemoteInvocationException ) throwable;
 
-                                return Result.failure( throwable );
-                            } finally {
-                                is.close();
-                            }
-                        } else {
+                            return Result.failure( throwable );
+                        } finally {
+                            is.close();
+                        }
+                        else {
                             var stream = is.readBoolean();
                             if( stream ) {
                                 var it = new Iterator<>() {
@@ -182,12 +181,10 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                 };
 
                                 return Result.success( Stream.of( it ).onClose( Try.run( is::close ) ) );
-                            } else {
-                                try {
-                                    return Result.success( is.readObject() );
-                                } finally {
-                                    is.close();
-                                }
+                            } else try {
+                                return Result.success( is.readObject() );
+                            } finally {
+                                is.close();
                             }
                         }
                     } catch( Exception e ) {

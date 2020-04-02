@@ -32,8 +32,6 @@ import io.undertow.util.Headers;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
 import oap.http.cors.GenericCorsPolicy;
-import oap.json.Binder;
-import oap.reflect.TypeRef;
 import oap.util.Result;
 import oap.util.Try;
 
@@ -89,7 +87,7 @@ public class Remote implements HttpHandler {
         FST fst = this.fst.get();
 
         exchange.getRequestReceiver().receiveFullBytes( ( ex, body ) -> {
-            var invocation = ( RemoteInvocation ) fst.conf.asObject( body );
+            var invocation = ( RemoteInvocation ) fst.configuration.asObject( body );
 
             log.trace( "invoke {}", invocation );
 
@@ -116,7 +114,7 @@ public class Remote implements HttpHandler {
                     exchange.setStatusCode( status );
                     exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM.toString() );
 
-                    try( var os = fst.conf.getObjectOutput( exchange.getOutputStream() ) ) {
+                    try( var os = fst.configuration.getObjectOutput( exchange.getOutputStream() ) ) {
                         os.writeBoolean( result.isSuccess() );
                         if( !result.isSuccess() )
                             os.writeObject( result.failureValue );
