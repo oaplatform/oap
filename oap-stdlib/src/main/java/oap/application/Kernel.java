@@ -450,6 +450,11 @@ public class Kernel implements Closeable {
         return Optional.ofNullable( ( T ) services.get( name ) );
     }
 
+    /**
+     * @see #service(String)
+     * @see oap.application.testng.KernelFixture#service(String)
+     */
+    @Deprecated( forRemoval = true )
     public <T> T serviceOrThrow( String name ) {
         return this.<T>service( name ).orElseThrow( () -> new ApplicationException( "service " + name + " is not found" ) );
     }
@@ -466,6 +471,11 @@ public class Kernel implements Closeable {
         return this.ofClass( clazz ).stream().findAny();
     }
 
+    /**
+     * @see oap.application.testng.KernelFixture#service(Class)
+     * @see #serviceOfClass(Class)
+     */
+    @Deprecated( forRemoval = true )
     public <T> T serviceOfClass2( Class<T> clazz ) {
         return this.ofClass( clazz ).stream().findAny().orElseThrow();
     }
@@ -478,7 +488,7 @@ public class Kernel implements Closeable {
         services.clear();
     }
 
-    public void enableProfiles( String profile ) {
+    public void enableProfile( String profile ) {
         this.profiles.add( profile );
     }
 

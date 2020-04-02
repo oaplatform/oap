@@ -23,6 +23,7 @@
  */
 package oap.util;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -118,7 +119,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     static <T> Spliterator<T> takeWhile( Spliterator<T> spliterator, Predicate<? super T> predicate ) {
-        return new Spliterators.AbstractSpliterator<T>( spliterator.estimateSize(), 0 ) {
+        return new Spliterators.AbstractSpliterator<>( spliterator.estimateSize(), 0 ) {
             boolean stillGoing = true;
 
             @Override
@@ -143,7 +144,6 @@ public class Stream<E> implements java.util.stream.Stream<E> {
                                  BiFunction<? super E, ? super B, ? extends C> zipper ) {
         Objects.requireNonNull( zipper );
         Spliterator<E> aSpliterator = underlying.spliterator();
-        @SuppressWarnings( "unchecked" )
         Spliterator<? extends B> bSpliterator = b.spliterator();
 
         // Zipping looses DISTINCT and SORTED characteristics
@@ -154,7 +154,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
             ? Math.min( aSpliterator.getExactSizeIfKnown(), bSpliterator.getExactSizeIfKnown() )
             : -1;
 
-        Iterator<C> it = new Iterator<C>() {
+        Iterator<C> it = new Iterator<>() {
             Iterator<E> aIterator = Spliterators.iterator( aSpliterator );
             Iterator<B> bIterator = Spliterators.iterator( bSpliterator );
 
@@ -348,6 +348,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     @Override
+    @Nonnull
     public Object[] toArray() {
         return underlying.toArray();
     }
@@ -361,6 +362,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     @Override
+    @Nonnull
     public <A> A[] toArray( IntFunction<A[]> generator ) {
         return underlying.toArray( generator );
     }
@@ -371,6 +373,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     @Override
+    @Nonnull
     public Optional<E> reduce( BinaryOperator<E> accumulator ) {
         return underlying.reduce( accumulator );
     }
@@ -398,11 +401,13 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     @Override
+    @Nonnull
     public Optional<E> min( Comparator<? super E> comparator ) {
         return underlying.min( comparator );
     }
 
     @Override
+    @Nonnull
     public Optional<E> max( Comparator<? super E> comparator ) {
         return underlying.max( comparator );
     }
@@ -432,11 +437,13 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     @Override
+    @Nonnull
     public Optional<E> findFirst() {
         return underlying.findFirst();
     }
 
     @Override
+    @Nonnull
     public Optional<E> findAny() {
         return underlying.findAny();
     }
@@ -465,6 +472,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     @Override
+    @Nonnull
     public Iterator<E> iterator() {
         return underlying.iterator();
     }
@@ -474,6 +482,7 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     @Override
+    @Nonnull
     public Spliterator<E> spliterator() {
         return underlying.spliterator();
     }
@@ -484,21 +493,25 @@ public class Stream<E> implements java.util.stream.Stream<E> {
     }
 
     @Override
+    @Nonnull
     public Stream<E> sequential() {
         return of( underlying.sequential() );
     }
 
     @Override
+    @Nonnull
     public Stream<E> parallel() {
         return of( underlying.parallel() );
     }
 
     @Override
+    @Nonnull
     public Stream<E> unordered() {
         return of( underlying.unordered() );
     }
 
     @Override
+    @Nonnull
     public Stream<E> onClose( Runnable closeHandler ) {
 //        todo - multiple handlers do not go - check what's wrong with it
         return of( underlying.onClose( closeHandler ) );
@@ -529,9 +542,10 @@ public class Stream<E> implements java.util.stream.Stream<E> {
 
         @Override
         public boolean tryAdvance( Consumer<? super List<E>> action ) {
-            final List<E> batch = new ArrayList<>( batchSize );
-            for( int i = 0; i < batchSize && base.tryAdvance( batch::add ); i++ )
-                ;
+            List<E> batch = new ArrayList<>( batchSize );
+            int i = 0;
+            while( i < batchSize && base.tryAdvance( batch::add ) ) i++;
+
             if( batch.isEmpty() )
                 return false;
             action.accept( batch );
@@ -542,14 +556,14 @@ public class Stream<E> implements java.util.stream.Stream<E> {
         public Spliterator<List<E>> trySplit() {
             if( base.estimateSize() <= batchSize )
                 return null;
-            final Spliterator<E> splitBase = this.base.trySplit();
+            Spliterator<E> splitBase = this.base.trySplit();
             return splitBase == null ? null
                 : new BatchSpliterator<>( splitBase, batchSize );
         }
 
         @Override
         public long estimateSize() {
-            final double baseSize = base.estimateSize();
+            double baseSize = base.estimateSize();
             return baseSize == 0 ? 0
                 : ( long ) Math.ceil( baseSize / ( double ) batchSize );
         }
