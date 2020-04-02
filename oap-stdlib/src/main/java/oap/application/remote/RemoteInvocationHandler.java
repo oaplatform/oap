@@ -33,8 +33,6 @@ import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Try;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -90,21 +88,6 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             builder = builder.sslContext( sslContext );
         }
         this.client = builder.build();
-
-//        this.client = Client.custom( certificateLocation, certificatePassword, ( int ) this.timeout, ( int ) this.timeout )
-//            .onTimeout( client -> {
-//                log.error( "timeout invoking {}#{}", service, uri );
-//                timeoutMetrics.increment();
-//                client.reset();
-//            } )
-//            .onError( ( c, e ) -> {
-//                log.error( "error invoking {}#{}: {}", service, uri, e );
-//                errorMetrics.increment();
-//            } )
-//            .onSuccess( c -> successMetrics.increment() )
-//            .setMaxConnPerRoute( 100 )
-//            .setMaxConnTotal( 100 )
-//            .build();
     }
 
     public static Object proxy( RemoteLocation remote, Class<?> clazz ) {
@@ -147,8 +130,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 var bodyPublisher = HttpRequest.BodyPublishers.ofByteArray( content );
                 var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
                 var response = client.send( request, HttpResponse.BodyHandlers.ofInputStream() );
-                InputStream body;
-                if( response.statusCode() == HTTP_OK && ( body = response.body() ) != null ) {
+                if( response.statusCode() == HTTP_OK && response.body() != null ) {
                     var is = fst.conf.getObjectInput( response.body() );
 
                     try {
@@ -177,15 +159,13 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
                                         if( obj != null ) return true;
 
-                                        try {
+                                        var next = is.readByte();
+                                        if( next == 1 ) {
                                             obj = is.readObject();
-                                        } catch( IOException e ) {
-                                            if( e.getCause() instanceof NullPointerException ) {
-                                                end = true;
-                                                obj = null;
-                                                is.close();
-                                            } else
-                                                throw e;
+                                        } else {
+                                            end = true;
+                                            obj = null;
+                                            is.close();
                                         }
 
                                         return obj != null;

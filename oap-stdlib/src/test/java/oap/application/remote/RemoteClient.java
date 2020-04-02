@@ -33,5 +33,5 @@ public interface RemoteClient {
 
     void testRetry();
 
-    Stream<String> testStream();
+    Stream<String> testStream( String... values );
 }

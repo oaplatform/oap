@@ -32,6 +32,8 @@ import io.undertow.util.Headers;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
 import oap.http.cors.GenericCorsPolicy;
+import oap.json.Binder;
+import oap.reflect.TypeRef;
 import oap.util.Result;
 import oap.util.Try;
 
@@ -119,11 +121,13 @@ public class Remote implements HttpHandler {
                         if( !result.isSuccess() )
                             os.writeObject( result.failureValue );
                         else {
-                            if( result.successValue instanceof Stream ) {
+                            if( result.successValue instanceof Stream<?> ) {
                                 os.writeBoolean( true );
-                                ( ( Stream ) result.successValue ).forEach( Try.consume( (obj -> {
+                                ( ( Stream ) result.successValue ).forEach( Try.consume( ( obj -> {
+                                    os.writeByte( 1 );
                                     os.writeObject( obj );
                                 } ) ) );
+                                os.writeByte( 0 );
                             } else {
                                 os.writeBoolean( false );
                                 os.writeObject( result.successValue );

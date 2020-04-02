@@ -50,7 +50,7 @@ public class RemoteService implements RemoteClient {
     }
 
     @Override
-    public Stream<String> testStream() {
-        return Stream.of( "1", "2", "3" );
+    public Stream<String> testStream( String... values ) {
+        return Stream.of( values );
     }
 }
