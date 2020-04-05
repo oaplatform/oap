@@ -26,53 +26,36 @@ package oap.alert;
 
 import oap.concurrent.SynchronizedThread;
 import oap.concurrent.Threads;
-import oap.testng.Fixtures;
-import oap.testng.Mockito;
-import org.mockito.Mock;
 import org.testng.annotations.Test;
 
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class BackgroundMessageStreamTest extends Fixtures {
-    {
-        fixture( new Mockito( this ) );
-    }
-
-    @Mock
-    MessageTransport<String> transport;
-
-    @Mock
-    GuaranteedDeliveryTransport guaranteedDeliveryTransport;
+public class BackgroundMessageStreamTest {
 
     @Test
     public void sendDoesntBlock() {
+        TestTransport transport = new TestTransport();
+        BackgroundMessageStream<String> stream = new BackgroundMessageStream<>( transport,
+            new GuaranteedDeliveryTransport( 1 ) );
 
-        BackgroundMessageStream<String> backgroundStream = new BackgroundMessageStream<>( transport,
-            guaranteedDeliveryTransport );
-
-        backgroundStream.send( "Msg1" );
-        verifyZeroInteractions( guaranteedDeliveryTransport );
-        verifyZeroInteractions( transport );
+        stream.send( "Msg1" );
+        assertThat( transport.messages ).isEmpty();
     }
 
     @Test
-    public void sendIsExecutedInSeparateThread() throws InterruptedException {
+    public void sendIsExecutedInSeparateThread() {
+        TestTransport transport = new TestTransport();
+        BackgroundMessageStream<String> stream = new BackgroundMessageStream<>( transport,
+            new GuaranteedDeliveryTransport( 1 ) );
 
-        BackgroundMessageStream<String> backgroundStream = new BackgroundMessageStream<>( transport,
-            guaranteedDeliveryTransport );
+        stream.send( "Msg1" );
+        assertThat( transport.messages ).isEmpty();
 
-        backgroundStream.send( "Msg1" );
-        verifyZeroInteractions( guaranteedDeliveryTransport );
-        verifyZeroInteractions( transport );
-
-        SynchronizedThread thread = new SynchronizedThread( backgroundStream );
+        SynchronizedThread thread = new SynchronizedThread( stream );
         thread.start();
         Threads.sleepSafely( 100 );
         thread.stop();
-        verify( guaranteedDeliveryTransport, times( 1 ) ).send( "Msg1", transport );
+        assertThat( transport.messages ).containsExactly( "Msg1" );
     }
-
 
 }

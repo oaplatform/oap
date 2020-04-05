@@ -21,18 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package oap.testng;
 
-/**
- * @see Fixtures
- */
-@Deprecated
-public abstract class AbstractTest extends Fixtures {
+package oap.alert;
 
-    {
-        fixture( TestDirectory.FIXTURE );
-        fixture( new Mockito( this ) );
-        fixture( ResetSystemTimer.FIXTURE );
+import java.util.ArrayList;
+import java.util.List;
+
+public class TestTransport implements MessageTransport<String> {
+    List<String> messages = new ArrayList<>();
+    public int failures;
+
+    public TestTransport( int failures ) {
+        this.failures = failures;
     }
 
+    public TestTransport() {
+        this( 0 );
+    }
+
+    @Override
+    public void send( String message ) {
+        if( failures > 0 ) {
+            failures--;
+            throw new RuntimeException( "failure #" + failures );
+        }
+        messages.add( message );
+    }
 }

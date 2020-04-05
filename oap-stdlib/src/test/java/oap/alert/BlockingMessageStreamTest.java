@@ -26,20 +26,19 @@ package oap.alert;
 
 import org.testng.annotations.Test;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class BlockingMessageStreamTest {
 
     @Test
-    @SuppressWarnings( "unchecked" )
-    public void sendIsDoneByCallerThread() throws InterruptedException {
-        MessageTransport<String> transport = mock( MessageTransport.class );
-        GuaranteedDeliveryTransport guaranteedDeliveryTransport = mock( GuaranteedDeliveryTransport.class );
+    public void sendIsDoneByCallerThread() {
+        TestTransport transport = new TestTransport();
+        GuaranteedDeliveryTransport guaranteedDeliveryTransport = new GuaranteedDeliveryTransport( 1 );
         BlockingMessageStream<String> stream = new BlockingMessageStream<>( transport, guaranteedDeliveryTransport );
 
         stream.send( "Msg" );
-        verify( guaranteedDeliveryTransport ).send( "Msg", transport );
+
+        assertThat( transport.messages ).containsOnly( "Msg" );
     }
 
 }

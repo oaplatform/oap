@@ -37,29 +37,6 @@
         <version>${oap.project.version}</version>
     </parent>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${oap.deps.maven.plugin.build-helper.version}</version>
-                <executions>
-                    <execution>
-                        <id>add-source</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                        </goals>
-                        <configuration>
-                            <sources>
-                                <source>src/main/java-antlr-generated</source>
-                            </sources>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 
     <dependencies>
         <dependency>
@@ -71,11 +48,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-text</artifactId>
             <version>${oap.deps.apache.commons.text.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>${oap.deps.mockito.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -154,7 +126,7 @@
         <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-utils</artifactId>
-            <version>${oap.deps.plexus-utils.version}</version>
+            <version>${oap.deps.maven.plexus-utils.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -474,6 +446,30 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>${oap.deps.maven.plugin-build-helper.version}</version>
+                <executions>
+                    <execution>
+                        <id>add-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>src/main/java-antlr-generated</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
     <profiles>
         <profile>
             <id>antlr</id>
@@ -482,7 +478,7 @@
                     <plugin>
                         <groupId>org.antlr</groupId>
                         <artifactId>antlr4-maven-plugin</artifactId>
-                        <version>4.5.3</version>
+                        <version>${oap.deps.plugins.antlr4.version}</version>
                         <executions>
                             <execution>
                                 <goals>

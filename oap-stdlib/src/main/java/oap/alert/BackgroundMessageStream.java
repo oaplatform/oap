@@ -49,7 +49,6 @@ public class BackgroundMessageStream<Message> implements MessageStream<Message>,
 
     @Override
     public void run() {
-
         while( true ) {
             try {
                 Message p = messages.take();

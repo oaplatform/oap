@@ -24,6 +24,6 @@
 
 package oap.alert;
 
-public interface MessageTransport<Message> {
-    void send( Message m );
+public interface MessageTransport<M> {
+    void send( M message );
 }

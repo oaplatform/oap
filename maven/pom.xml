@@ -49,7 +49,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>${oap.deps.maven.maven-plugin-plugin.version}</version>
+                <version>${oap.deps.maven.plugin-plugin.version}</version>
                 <configuration>
                     <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
                 </configuration>
@@ -77,7 +77,7 @@
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-plugin-api</artifactId>
-            <version>${oap.deps.maven-plugin-api.version}</version>
+            <version>${oap.deps.maven.plugin-api.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.codehaus.plexus</groupId>
@@ -102,13 +102,13 @@
         <dependency>
             <groupId>org.codehaus.plexus</groupId>
             <artifactId>plexus-utils</artifactId>
-            <version>${oap.deps.plexus-utils.version}</version>
+            <version>${oap.deps.maven.plexus-utils.version}</version>
         </dependency>
         <!--        // -->
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-project</artifactId>
-            <version>${oap.deps.maven-project.version}</version>
+            <version>${oap.deps.maven.project.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.codehaus.plexus</groupId>
@@ -131,7 +131,7 @@
         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>
             <artifactId>maven-plugin-annotations</artifactId>
-            <version>${oap.deps.maven-plugin-annotations.version}</version>
+            <version>${oap.deps.maven.plugin-annotations.version}</version>
             <scope>provided</scope>
             <exclusions>
                 <exclusion>

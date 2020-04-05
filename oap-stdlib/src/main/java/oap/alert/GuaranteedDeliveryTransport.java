@@ -52,7 +52,7 @@ public class GuaranteedDeliveryTransport {
                 public <V> void onRetry( Attempt<V> attempt ) {
                     String errorMessage = attempt.hasException() ? attempt.getExceptionCause().toString() : "no errors";
                     V result = attempt.hasResult() ? attempt.getResult() : null;
-                    log.info( "Attempt: {},  result: {}, error: {}", attempt.getAttemptNumber(), result, errorMessage );
+                    log.warn( "attempt: {},  result: {}, error: {}", attempt.getAttemptNumber(), result, errorMessage );
                 }
             } )
             .retryIfException( e -> !( e instanceof InterruptedException ) )
@@ -69,12 +69,10 @@ public class GuaranteedDeliveryTransport {
                 return true;
             } );
         } catch( ExecutionException e ) {
-            if( e.getCause() instanceof InterruptedException ) {
-                throw ( InterruptedException ) e.getCause();
-            }
-            log.error( "Unexpected execution exception", e );
+            if( e.getCause() instanceof InterruptedException ) throw ( InterruptedException ) e.getCause();
+            log.error( "unexpected execution exception", e );
         } catch( RetryException e ) {
-            log.error( "Cannot exec retry", e );
+            log.error( "cannot exec retry", e );
         }
 
     }

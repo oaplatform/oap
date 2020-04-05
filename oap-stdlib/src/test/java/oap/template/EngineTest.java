@@ -27,8 +27,6 @@ package oap.template;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectory;
 import oap.util.Lists;
-import oap.util.Maps;
-import org.mockito.internal.util.collections.Sets;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -99,7 +97,7 @@ public class EngineTest extends Fixtures {
     @Test
     public void processSet() {
         Test1 source = new Test1( Lists.of( "1", "2" ) );
-        source.set = Sets.newSet( "4", "5" );
+        source.set = Set.of( "4", "5" );
         assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "array", "set", emptyList() ) ), " " )
             .renderString( source ) ).isEqualTo( "[4,5]" );
     }
@@ -150,7 +148,7 @@ public class EngineTest extends Fixtures {
         assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "f", "getTestInt()", 10 ) ), " " )
             .renderString( new Test1( 235 ) ) ).isEqualTo( "235" );
         assertThat( engine.getTemplate( "test", Map.class, Lists.of( line( "f", "getTest()", 10 ) ), " " )
-            .renderString( Maps.of2( "getTest()", 235 ) ) ).isEqualTo( "" );
+            .renderString( Map.of( "getTest()", 235 ) ) ).isEqualTo( "" );
     }
 
     @Test
