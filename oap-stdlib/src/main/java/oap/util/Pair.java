@@ -126,7 +126,7 @@ public class Pair<K, V> implements Serializable {
         }
 
         @SuppressWarnings( "CheckStyle" )
-        public static <K extends Comparable<K>, V extends Comparable<V>> KeyComparablePair<K, V> ___( K k, V v ) {
+        public static <K extends Comparable<K>, V> KeyComparablePair<K, V> ___( K k, V v ) {
             return new KeyComparablePair<>( k, v );
         }
 
