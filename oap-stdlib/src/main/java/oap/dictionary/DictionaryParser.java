@@ -63,8 +63,7 @@ public class DictionaryParser {
     private static final String EXTERNAL_ID = "eid";
     private static final String VALUES = "values";
     private static final Set<String> defaultFields = new HashSet<>();
-    private static final Function<Object, Optional<Integer>> intFunc =
-        ( str ) -> {
+    private static final Function<Object, Optional<Integer>> intFunc = str -> {
             if( str instanceof Long ) return Optional.of( ( ( Long ) str ).intValue() );
             else if( str instanceof Double ) return Optional.of( ( ( Double ) str ).intValue() );
             else if( str instanceof String && ( ( String ) str ).length() == 1 )
@@ -81,27 +80,27 @@ public class DictionaryParser {
     @SuppressWarnings( "unchecked" )
     private static Dictionary parseAsDictionaryValue( Object value, String path, boolean valueAsRoot, IdStrategy idStrategy ) {
         if( value instanceof Map ) {
-            final Map<Object, Object> valueMap = ( Map<Object, Object> ) value;
+            Map<Object, Object> valueMap = ( Map<Object, Object> ) value;
             List<Dictionary> values = emptyList();
 
-            final HashMap<String, Object> properties = new HashMap<>();
-            for( Map.Entry e : valueMap.entrySet() ) {
-                final String propertyName = e.getKey().toString();
+            HashMap<String, Object> properties = new HashMap<>();
+            for( Map.Entry<Object, Object> e : valueMap.entrySet() ) {
+                String propertyName = e.getKey().toString();
                 if( !defaultFields.contains( propertyName ) && ( !valueAsRoot || !NAME.equals( propertyName ) ) ) {
-                    final Object propertyValue = e.getValue();
+                    Object propertyValue = e.getValue();
 
                     if( VALUES.equals( propertyName ) )
-                        values = parseValues( ( List ) propertyValue, path, idStrategy );
+                        values = parseValues( ( List<?> ) propertyValue, path, idStrategy );
                     else
                         properties.put( propertyName, propertyValue );
                 }
             }
 
 
-            final Map<String, Object> p = properties.isEmpty() ? emptyMap() : properties;
+            Map<String, Object> p = properties.isEmpty() ? emptyMap() : properties;
 
             if( valueAsRoot ) {
-                final String name = getString( valueMap, NAME );
+                String name = getString( valueMap, NAME );
 
                 return new DictionaryRoot( name, values, p );
             }
@@ -109,13 +108,13 @@ public class DictionaryParser {
             var anExtends = getExtendsOpt( valueMap ).orElse( null );
             if( anExtends != null ) return new DictionaryExtends( anExtends );
 
-            final String id = getString( valueMap, ID );
-            final boolean enabled = getBooleanOpt( valueMap, ENABLED ).orElse( true );
-            final int externalId = idStrategy.get( valueMap );
+            String id = getString( valueMap, ID );
+            boolean enabled = getBooleanOpt( valueMap, ENABLED ).orElse( true );
+            int externalId = idStrategy.get( valueMap );
 
-            return values.isEmpty() ?
-                new DictionaryLeaf( id, enabled, externalId, p ) :
-                new DictionaryValue( id, enabled, externalId, values, p );
+            return values.isEmpty()
+                ? new DictionaryLeaf( id, enabled, externalId, p )
+                : new DictionaryValue( id, enabled, externalId, values, p );
         } else {
             throw new DictionaryFormatError(
                 "value " + path + " type "
@@ -125,7 +124,7 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( Path resource ) {
-        final Map map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, resource );
+        Map<?, ?> map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, resource );
         return parse( map, PROPERTY_ID_STRATEGY );
     }
 
@@ -134,7 +133,7 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( URL resource, IdStrategy idStrategy ) {
-        final Map map = Binder.getBinder( resource, false ).unmarshal( Map.class, resource );
+        Map<?, ?> map = Binder.Format.of( resource, false ).binder.unmarshal( Map.class, resource );
         return parse( map, idStrategy );
     }
 
@@ -143,18 +142,16 @@ public class DictionaryParser {
     }
 
     public static DictionaryRoot parse( String resource, IdStrategy idStrategy ) {
-        final Map map = Binder.hoconWithoutSystemProperties.unmarshalResource( DictionaryParser.class, Map.class, resource );
-
+        Map<?, ?> map = Binder.hoconWithoutSystemProperties.unmarshalResource( DictionaryParser.class, Map.class, resource );
         return parse( map, idStrategy );
     }
 
     public static DictionaryRoot parseFromString( String dictionary ) {
-        final Map map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, dictionary );
-
+        Map<?, ?> map = Binder.hoconWithoutSystemProperties.unmarshal( Map.class, dictionary );
         return parse( map, PROPERTY_ID_STRATEGY );
     }
 
-    private static DictionaryRoot parse( Map map, IdStrategy idStrategy ) {
+    private static DictionaryRoot parse( Map<?, ?> map, IdStrategy idStrategy ) {
         var dictionaryRoot = ( DictionaryRoot ) parseAsDictionaryValue( map, "", true, idStrategy );
         var invalid = new ArrayList<InvalidEntry>();
 
@@ -165,7 +162,7 @@ public class DictionaryParser {
 
         if( !invalid.isEmpty() ) {
             invalid.sort( Comparator.comparing( l -> l.path ) );
-            final String msg = invalid
+            String msg = invalid
                 .stream()
                 .map( e -> "path: " + e.path + "; eid: " + e.one.getExternalId() + "; one: " + e.one.getId() + "; two: " + e.two.getId() )
                 .collect( Collectors.joining( ", " ) );
@@ -189,7 +186,7 @@ public class DictionaryParser {
                 var anExtends = ( ( DictionaryExtends ) child ).anExtends;
                 var eValues = getValues( dictionaryRoot, anExtends );
                 resolveExtends( dictionaryRoot, eValues, id );
-                
+
                 for( var v : eValues ) {
                     if( anExtends.filter.isEmpty() || anExtends.filter.filter( f -> v.getTags().contains( f ) ).isPresent() ) {
                         if( Lists.anyMatch( values, pv -> !( pv instanceof DictionaryExtends ) && pv.getId().equals( v.getId() ) ) ) {
@@ -216,7 +213,6 @@ public class DictionaryParser {
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     private static void resolveExtends( DictionaryRoot dictionaryRoot, Dictionary parent, AtomicInteger id ) {
         var values = parent.getValues();
 
@@ -237,32 +233,29 @@ public class DictionaryParser {
     }
 
     private static void validate( String path, ArrayList<InvalidEntry> invalid, List<? extends Dictionary> values ) {
-        final HashMap<Integer, Dictionary> eid = new HashMap<>();
+        HashMap<Integer, Dictionary> eid = new HashMap<>();
 
         for( Dictionary dictionary : values ) {
-            final Dictionary found = eid.get( dictionary.getExternalId() );
-            if( found != null ) {
-                invalid.add( new InvalidEntry( found, dictionary, path ) );
-            } else {
-                eid.put( dictionary.getExternalId(), dictionary );
-            }
+            Dictionary found = eid.get( dictionary.getExternalId() );
+            if( found != null ) invalid.add( new InvalidEntry( found, dictionary, path ) );
+            else eid.put( dictionary.getExternalId(), dictionary );
 
             validate( path + "/" + dictionary.getId(), invalid, dictionary );
         }
     }
 
-    private static ArrayList<Dictionary> parseValues( List values, String path, IdStrategy idStrategy ) {
-        final ArrayList<Dictionary> dv = new ArrayList<>();
+    private static ArrayList<Dictionary> parseValues( List<?> values, String path, IdStrategy idStrategy ) {
+        ArrayList<Dictionary> dv = new ArrayList<>();
 
         for( int i = 0; i < values.size(); i++ ) {
-            final Object value = values.get( i );
+            Object value = values.get( i );
             dv.add( parseAsDictionaryValue( value, path + "[" + i + "]", false, idStrategy ) );
         }
 
         return dv;
     }
 
-    private static Optional<Extends> getExtendsOpt( Map map ) {
+    private static Optional<Extends> getExtendsOpt( Map<?, ?> map ) {
         var m = getValueOpt( Map.class, map, "extends", o -> Optional.empty() ).orElse( null );
         if( m == null ) return Optional.empty();
 
@@ -273,38 +266,36 @@ public class DictionaryParser {
         return Optional.of( new Extends( path, filter, ignoreDuplicate ) );
     }
 
-    private static String getString( Map map, String field ) {
+    private static String getString( Map<?, ?> map, String field ) {
         return getValue( String.class, map, field, str -> Optional.empty() );
     }
 
-    private static Optional<String> getStringOpt( Map map, String field ) {
+    private static Optional<String> getStringOpt( Map<?, ?> map, String field ) {
         return getValueOpt( String.class, map, field, str -> Optional.empty() );
     }
 
-    private static int getInt( Map map, String field ) {
+    private static int getInt( Map<?, ?> map, String field ) {
         return getValue( Integer.class, map, field, intFunc );
     }
 
-    private static Optional<Boolean> getBooleanOpt( Map map, String field ) {
+    private static Optional<Boolean> getBooleanOpt( Map<?, ?> map, String field ) {
         return getValueOpt( Boolean.class, map, field, str -> Optional.empty() );
     }
 
-    private static <T> T getValue( Class<T> clazz, Map map, String field, Function<Object, Optional<T>> func ) {
+    private static <T> T getValue( Class<T> clazz, Map<?, ?> map, String field, Function<Object, Optional<T>> func ) {
         return getValueOpt( clazz, map, field, func ).orElseThrow( () -> new DictionaryFormatError( "field '" + field + "' not found" ) );
     }
 
     @SuppressWarnings( "unchecked" )
-    private static <T> Optional<T> getValueOpt( Class<T> clazz, Map map, String field, Function<Object, Optional<T>> func ) {
-        final Object f = map.get( field );
+    private static <T> Optional<T> getValueOpt( Class<T> clazz, Map<?, ?> map, String field, Function<Object, Optional<T>> func ) {
+        Object f = map.get( field );
 
         if( f == null ) return Optional.empty();
 
-        if( clazz.isInstance( f ) ) {
-            return Optional.of( ( T ) f );
-        }
+        if( clazz.isInstance( f ) ) return Optional.of( ( T ) f );
 
-        final Optional<T> apply = func.apply( f );
-        if( apply.isPresent() ) return Optional.of( apply.get() );
+        Optional<T> apply = func.apply( f );
+        if( apply.isPresent() ) return apply;
 
         throw new DictionaryFormatError( "field '" + field + "' type " + f.getClass() + " != " + clazz );
     }
@@ -313,7 +304,7 @@ public class DictionaryParser {
         serialize( dictionary, path, false );
     }
 
-    public static void serialize( DictionaryRoot dictionary, JsonGenerator jsonGenerator, boolean format ) throws IOException {
+    public static void serialize( DictionaryRoot dictionary, JsonGenerator jsonGenerator, boolean xformat ) throws IOException {
         jsonGenerator.writeStartObject();
 
         jsonGenerator.writeStringField( NAME, dictionary.name );
@@ -439,14 +430,12 @@ public class DictionaryParser {
     }
 
     public static class PropertyIdStrategy implements IdStrategy {
-        private static int _getMaxExtendsId( Dictionary root ) {
+        private static int maxExtendsId( Dictionary root ) {
             if( root instanceof DictionaryExtends ) return Integer.MIN_VALUE;
 
             int max = root.getExternalId();
 
-            for( var child : root.getValues() ) {
-                max = max( max, _getMaxExtendsId( child ) );
-            }
+            for( var child : root.getValues() ) max = max( max, maxExtendsId( child ) );
 
             return max;
         }
@@ -458,7 +447,7 @@ public class DictionaryParser {
 
         @Override
         public int getMaxExtendsId( DictionaryRoot root ) {
-            return _getMaxExtendsId( root );
+            return maxExtendsId( root );
         }
     }
 }

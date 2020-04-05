@@ -119,10 +119,18 @@ public class Binder {
         this.mapper = mapper;
     }
 
+    /**
+     * @see Format#of(URL, boolean)
+     */
+    @Deprecated( forRemoval = true )
     public static Binder getBinder( URL url ) {
         return getBinder( url, true );
     }
 
+    /**
+     * @see Format#of(URL, boolean)
+     */
+    @Deprecated( forRemoval = true )
     public static Binder getBinder( URL url, boolean withSystemProperties ) {
         return Format.of( url, withSystemProperties ).binder;
     }
