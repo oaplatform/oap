@@ -228,6 +228,10 @@ public class HttpAsserts {
             return this.respondedJson( contentOfTestResource( contextClass, resource ) );
         }
 
+        public HttpAssertion respondedJson( Class<?> contextClass, String resource, Map<String, Object> substitutions ) {
+            return this.respondedJson( contentOfTestResource( contextClass, resource, substitutions ) );
+        }
+
         public HttpAssertion satisfies( Consumer<Client.Response> assertion ) {
             assertion.accept( response );
             return this;
