@@ -568,13 +568,10 @@ public final class Client implements Closeable {
             return new String( content, contentType.getCharset() == null ? UTF_8 : contentType.getCharset() );
         }
 
-        public <T> Optional<T> unmarshal( Class<?> clazz ) {
-            if( inputStream != null ) {
-                synchronized( this ) {
-                    if( inputStream != null ) {
-                        return Optional.of( Binder.json.unmarshal( clazz, inputStream ) );
-                    }
-                }
+        public <T> Optional<T> unmarshal( Class<T> clazz ) {
+            if( inputStream != null ) synchronized( this ) {
+                if( inputStream != null )
+                    return Optional.of( Binder.json.unmarshal( clazz, inputStream ) );
             }
 
             var contentString = contentString();
@@ -584,12 +581,9 @@ public final class Client implements Closeable {
         }
 
         public <T> Optional<T> unmarshal( TypeRef<T> ref ) {
-            if( inputStream != null ) {
-                synchronized( this ) {
-                    if( inputStream != null ) {
-                        return Optional.of( Binder.json.unmarshal( ref, inputStream ) );
-                    }
-                }
+            if( inputStream != null ) synchronized( this ) {
+                if( inputStream != null )
+                    return Optional.of( Binder.json.unmarshal( ref, inputStream ) );
             }
 
             var contentString = contentString();
