@@ -23,21 +23,16 @@
  */
 package oap.application;
 
-import com.fasterxml.jackson.annotation.JsonSetter;
-import com.fasterxml.jackson.annotation.Nulls;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import lombok.SneakyThrows;
 import oap.io.Resources;
 import oap.json.Binder;
 import oap.util.Stream;
 import oap.util.Strings;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 public class Configuration<T> {
     private Class<T> clazz;
@@ -66,23 +61,18 @@ public class Configuration<T> {
 
     @SneakyThrows
     public T fromUrl( URL url ) {
-        var binder = Binder.getBinder( url );
-        var mapper = binder.getMapper();
-        mapper.enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY );
-        mapper.setDefaultSetterInfo( JsonSetter.Value.forValueNulls( Nulls.SKIP ) );
-        return mapper.readValue( Strings.readString( url ), clazz );
+        return fromString( Strings.readString( url ), Binder.Format.of( url, true ) );
     }
 
     public T fromResource( Class<?> contextClass, String name ) {
-        return Resources.url( contextClass, name )
-            .map( this::fromUrl )
-            .orElseThrow( () -> {
-                String path = Optional.ofNullable( contextClass.getPackage() )
-                    .map( Package::getName )
-                    .orElse( "" )
-                    .replace( ".", "/" ) + "/" + name;
-                return new UncheckedIOException( new IOException( "not found " + path ) );
-            } );
+        return fromUrl( Resources.urlOrThrow( contextClass, name ) );
     }
 
+    public T fromString( String config, Binder.Format format ) {
+        return fromString( config, format, Map.of() );
+    }
+
+    public T fromString( String config, Binder.Format format, Map<String, Object> substitutions ) {
+        return format.binder.unmarshal( clazz, Strings.substitute( config, substitutions ) );
+    }
 }

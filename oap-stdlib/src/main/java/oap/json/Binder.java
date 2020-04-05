@@ -26,7 +26,9 @@ package oap.json;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -124,13 +126,27 @@ public class Binder {
     }
 
     public static Binder getBinder( URL url, boolean withSystemProperties ) {
-        var strUrl = url.toString().toLowerCase();
-        if( strUrl.endsWith( "json" ) ) return Binder.json;
-        else if( strUrl.endsWith( "conf" ) )
-            return withSystemProperties ? Binder.hocon : Binder.hoconWithoutSystemProperties;
-        else if( strUrl.endsWith( "yaml" ) ) return Binder.yaml;
-        else if( strUrl.endsWith( "yml" ) ) return Binder.yaml;
-        else return withSystemProperties ? Binder.hocon : Binder.hoconWithoutSystemProperties;
+        return Format.of( url, withSystemProperties ).binder;
+    }
+
+    public enum Format {
+        JSON( Binder.json ),
+        HOCON( Binder.hocon ),
+        HOCON_WO_SYSTEM_PROPERTIES( Binder.hoconWithoutSystemProperties ),
+        YAML( Binder.yaml );
+
+        public final Binder binder;
+
+        Format( Binder binder ) {
+            this.binder = binder;
+        }
+
+        public static Format of( URL url, boolean withSystemProperties ) {
+            var path = url.toString().toLowerCase();
+            if( path.endsWith( "json" ) ) return JSON;
+            else if( path.endsWith( "yaml" ) || path.endsWith( "yml" ) ) return YAML;
+            return withSystemProperties ? HOCON : HOCON_WO_SYSTEM_PROPERTIES;
+        }
     }
 
     public static Binder hoconWithConfig( List<String> config ) {
@@ -175,6 +191,8 @@ public class Binder {
         mapper.configure( JsonGenerator.Feature.AUTO_CLOSE_TARGET, false );
         mapper.enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
+        mapper.enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY );
+        mapper.setDefaultSetterInfo( JsonSetter.Value.forValueNulls( Nulls.SKIP ) );
 
         if( !nonNullInclusion ) mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
 
@@ -318,10 +336,9 @@ public class Binder {
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     public <T> T unmarshal( Reflection type, String string ) {
         try {
-            return ( T ) mapper.readValue( string, mapper.getTypeFactory().constructType( type.getType() ) );
+            return mapper.readValue( string, mapper.getTypeFactory().constructType( type.getType() ) );
         } catch( IOException e ) {
             log.trace( "json: " + string );
             throw new JsonException( "json error: " + e.getMessage(), e );
@@ -411,20 +428,18 @@ public class Binder {
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( Class<?> clazz, String string ) {
+    public <T> T unmarshal( Class<T> clazz, String string ) {
         try {
-            return ( T ) mapper.readValue( string, clazz );
+            return mapper.readValue( string, clazz );
         } catch( Exception e ) {
             log.trace( string );
             throw new JsonException( e.getMessage(), e );
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( Class<?> clazz, Map<String, Object> map ) {
+    public <T> T unmarshal( Class<T> clazz, Map<String, Object> map ) {
         try {
-            return ( T ) mapper.convertValue( map, clazz );
+            return mapper.convertValue( map, clazz );
         } catch( Exception e ) {
             log.trace( String.valueOf( map ) );
             throw new JsonException( e.getMessage(), e );
@@ -448,10 +463,9 @@ public class Binder {
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( Class<?> clazz, List<Object> map ) {
+    public <T> T unmarshal( Class<T> clazz, List<Object> map ) {
         try {
-            return ( T ) mapper.convertValue( map, clazz );
+            return mapper.convertValue( map, clazz );
         } catch( Exception e ) {
             log.trace( String.valueOf( map ) );
             throw new JsonException( e.getMessage(), e );
@@ -486,10 +500,9 @@ public class Binder {
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    public <T> T unmarshal( Class<?> clazz, InputStream json ) {
+    public <T> T unmarshal( Class<T> clazz, InputStream json ) {
         try {
-            return ( T ) mapper.readValue( json, clazz );
+            return mapper.readValue( json, clazz );
         } catch( IOException e ) {
             throw new JsonException( e.getMessage(), e );
         }
@@ -505,8 +518,9 @@ public class Binder {
 
     }
 
+    @SuppressWarnings( "unchecked" )
     public <T> T clone( T object ) {
-        return unmarshal( object.getClass(), marshal( object ) );
+        return unmarshal( ( Class<T> ) object.getClass(), marshal( object ) );
     }
 
     @SneakyThrows

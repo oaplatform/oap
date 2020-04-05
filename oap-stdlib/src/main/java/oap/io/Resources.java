@@ -80,6 +80,11 @@ public final class Resources {
         return Optional.ofNullable( contextClass.getResource( name ) );
     }
 
+    public static URL urlOrThrow( Class<?> contextClass, String name ) {
+        return url( contextClass, name )
+            .orElseThrow( () -> new IllegalArgumentException( "resource not found " + name + " for context class " + contextClass ) );
+    }
+
     @SneakyThrows
     public static List<URL> urls( Class<?> contextClass, String name ) {
         if( name.startsWith( "/" ) ) name = name.substring( 1 );
