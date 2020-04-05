@@ -27,6 +27,7 @@ package oap.template;
 import oap.testng.Fixtures;
 import oap.testng.TestDirectory;
 import oap.util.Lists;
+import oap.util.Sets;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -97,7 +98,7 @@ public class EngineTest extends Fixtures {
     @Test
     public void processSet() {
         Test1 source = new Test1( Lists.of( "1", "2" ) );
-        source.set = Set.of( "4", "5" );
+        source.set = Sets.of( "4", "5" );
         assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "array", "set", emptyList() ) ), " " )
             .renderString( source ) ).isEqualTo( "[4,5]" );
     }
@@ -174,7 +175,7 @@ public class EngineTest extends Fixtures {
     @Test
     public void nestedNullable() {
         assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "opt", "nullableTest2.testStr", "d" ) ), " " )
-            .renderString( new Test1( ) ) ).isEqualTo( "d" );
+            .renderString( new Test1() ) ).isEqualTo( "d" );
     }
 
     @Test
