@@ -30,6 +30,7 @@ import lombok.SneakyThrows;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.AsyncCallbacks;
+import oap.http.client.HttpClient;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.io.IoStreams;
@@ -677,7 +678,7 @@ public final class Client implements Closeable {
                         .register( "http", NoopIOSessionStrategy.INSTANCE )
                         .register( "https",
                             new SSLIOSessionStrategy( certificateLocation != null
-                                ? Client2.createSSLContext( certificateLocation, certificatePassword )
+                                ? HttpClient.createSSLContext( certificateLocation, certificatePassword )
                                 : SSLContexts.createDefault(),
                                 split( System.getProperty( "https.protocols" ) ),
                                 split( System.getProperty( "https.cipherSuites" ) ),
@@ -689,7 +690,7 @@ public final class Client implements Closeable {
 
                 return ( certificateLocation != null
                     ? HttpAsyncClients.custom()
-                    .setSSLContext( Client2.createSSLContext( certificateLocation, certificatePassword ) )
+                    .setSSLContext( HttpClient.createSSLContext( certificateLocation, certificatePassword ) )
                     : HttpAsyncClients.custom() )
                     .setMaxConnPerRoute( maxConnPerRoute )
                     .setConnectionManager( connManager )

@@ -24,15 +24,22 @@
 
 package oap.http.client;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import oap.io.IoStreams;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
+import java.nio.file.Path;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+
+import static oap.io.IoStreams.Encoding.PLAIN;
 
 @Slf4j
 public class HttpClient {
@@ -67,4 +74,20 @@ public class HttpClient {
             return new X509Certificate[0];
         }
     };
+
+    @SneakyThrows
+    public static SSLContext createSSLContext( Path certificateLocation, String certificatePassword ) {
+        try( var inputStream = IoStreams.in( certificateLocation, PLAIN ) ) {
+            KeyStore keyStore = KeyStore.getInstance( "JKS" );
+            keyStore.load( inputStream, certificatePassword.toCharArray() );
+
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+            trustManagerFactory.init( keyStore );
+
+            SSLContext sslContext = SSLContext.getInstance( "TLS" );
+            sslContext.init( null, trustManagerFactory.getTrustManagers(), null );
+
+            return sslContext;
+        }
+    }
 }

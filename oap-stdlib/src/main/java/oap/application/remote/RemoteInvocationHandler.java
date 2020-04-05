@@ -28,7 +28,6 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import oap.http.Client2;
 import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Try;
@@ -84,7 +83,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
         var builder = HttpClient.newBuilder().connectTimeout( Duration.ofMillis( this.timeout ) );
         if( certificateLocation != null ) {
-            var sslContext = Client2.createSSLContext( certificateLocation, certificatePassword );
+            var sslContext = oap.http.client.HttpClient.createSSLContext( certificateLocation, certificatePassword );
             builder = builder.sslContext( sslContext );
         }
         this.client = builder.build();
