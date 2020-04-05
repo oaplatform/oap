@@ -26,7 +26,9 @@ package oap.json;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -197,6 +199,10 @@ public class Binder {
         mapper.configure( JsonGenerator.Feature.AUTO_CLOSE_TARGET, false );
         mapper.enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
+        mapper.setDefaultSetterInfo( JsonSetter.Value.forValueNulls( Nulls.SKIP ) );
+        //todo remove after kernel cleanup
+        mapper.enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY );
+
 
         if( !nonNullInclusion ) mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
 

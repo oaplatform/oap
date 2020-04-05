@@ -290,7 +290,7 @@ public class BinderTest extends Fixtures {
         var obj = new Bean( "1", 1, null );
         Binder.update( obj, Map.of( "str", "test" ) );
         assertThat( obj.str ).isEqualTo( "test" );
-
+//todo fix it after kernel cleanup
         Binder.update( obj, Maps.of( __( "str", null ) ) );
         assertThat( obj.str ).isNull();
 
