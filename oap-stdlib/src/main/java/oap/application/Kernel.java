@@ -289,6 +289,7 @@ public class Kernel implements Closeable {
             if( org.slf4j.Logger.class.isAssignableFrom( logField.getType() ) ) {
                 var logger = ( org.slf4j.Logger ) logField.get( java.lang.reflect.Modifier.isStatic( logField.getModifiers() ) ? null : instance );
                 if( logger instanceof ch.qos.logback.classic.Logger ) {
+//todo fix multiset for several instances and tests
                     FieldUtils.writeDeclaredField( logger, "name", logger.getName() + "." + name, true );
                 }
             }
