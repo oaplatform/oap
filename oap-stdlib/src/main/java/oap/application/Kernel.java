@@ -45,6 +45,7 @@ import oap.util.Stream;
 import oap.util.Strings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
+import org.slf4j.Logger;
 
 import java.io.Closeable;
 import java.io.File;
@@ -288,7 +289,7 @@ public class Kernel implements Closeable {
             logField.setAccessible( true );
             if( org.slf4j.Logger.class.isAssignableFrom( logField.getType() ) ) {
                 var logger = ( org.slf4j.Logger ) logField.get( java.lang.reflect.Modifier.isStatic( logField.getModifiers() ) ? null : instance );
-                if( logger instanceof ch.qos.logback.classic.Logger ) {
+                if( logger instanceof ch.qos.logback.classic.Logger && !loggerEndsWith( logger, name ) ) {
                     FieldUtils.writeDeclaredField( logger, "name", logger.getName() + "." + name, true );
                 }
             }
@@ -296,6 +297,11 @@ public class Kernel implements Closeable {
         } catch( Exception e ) {
             log.warn( e.getMessage(), e );
         }
+    }
+
+    private boolean loggerEndsWith( Logger logger, String name ) throws IllegalAccessException {
+        var value = FieldUtils.readDeclaredField( logger, name );
+        return value instanceof String && ( ( String ) value ).endsWith( "." + name );
     }
 
     private void registerServices( Map<String, ServiceInitialization> services ) {
