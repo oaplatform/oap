@@ -25,17 +25,35 @@
 package oap.util;
 
 import lombok.SneakyThrows;
+import oap.io.IoStreams;
 
+import javax.annotation.Nonnull;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Path;
 
 public class Properties {
     @SneakyThrows
+    @Nonnull
     public static java.util.Properties read( URL url ) {
         try( InputStream stream = url.openStream() ) {
-            java.util.Properties properties = new java.util.Properties();
-            properties.load( stream );
-            return properties;
+            return read( stream );
         }
+    }
+
+    @SneakyThrows
+    @Nonnull
+    public static java.util.Properties read( Path path ) {
+        try( InputStream stream = IoStreams.in( path ) ) {
+            return read( stream );
+        }
+    }
+
+    @SneakyThrows
+    @Nonnull
+    public static java.util.Properties read( InputStream stream ) {
+        java.util.Properties properties = new java.util.Properties();
+        properties.load( stream );
+        return properties;
     }
 }
