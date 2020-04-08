@@ -25,6 +25,7 @@
 package oap.http;
 
 import com.google.common.base.Preconditions;
+import lombok.EqualsAndHashCode;
 import oap.util.Lists;
 import oap.util.Pair;
 import oap.util.Stream;
@@ -41,6 +42,7 @@ import java.util.function.Function;
 
 import static oap.util.Pair.__;
 
+@EqualsAndHashCode
 public class Cookie {
     public static final long NO_MAX_AGE = -1;
     private static final DateTimeFormatter FORMATTER = DateTimeFormat.forPattern( "EEE, dd-MMM-yyyy HH:mm:ss 'GMT'" )
