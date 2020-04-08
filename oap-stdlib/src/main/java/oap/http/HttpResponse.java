@@ -28,7 +28,6 @@ import oap.json.Binder;
 import oap.util.Maps;
 import oap.util.Pair;
 import oap.util.Strings;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
@@ -36,6 +35,7 @@ import org.apache.http.entity.FileEntity;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 
+import javax.annotation.Nonnull;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
@@ -192,9 +192,13 @@ public final class HttpResponse {
             return this;
         }
 
-        public Builder withCookie( String cookie ) {
-            if( StringUtils.isNotBlank( cookie ) ) cookies.add( __( "Set-Cookie", cookie ) );
+        public Builder withCookie( @Nonnull String cookie ) {
+            cookies.add( __( "Set-Cookie", cookie ) );
             return this;
+        }
+
+        public Builder withCookie( @Nonnull Cookie cookie ) {
+            return withCookie( cookie.toString() );
         }
 
         public Builder withContent( String content, ContentType contentType ) {
