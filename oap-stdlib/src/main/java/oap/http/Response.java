@@ -54,23 +54,26 @@ public class Response {
 
         if( response.reason != null ) underlying.setReasonPhrase( response.reason );
 
-        if( !response.headers.isEmpty() ) for( Pair<String, String> header : response.headers )
+        log.trace( "headers: {}", response.headers );
+
+        for( Pair<String, String> header : response.headers )
             underlying.setHeader( header._1, header._2 );
 
         if( isGzip ) underlying.setHeader( "Content-encoding", "gzip" );
 
-        if( !response.cookies.isEmpty() )
-            for( Pair<String, String> cookie : response.cookies ) underlying.addHeader( cookie._1, cookie._2 );
+        for( Pair<String, String> cookie : response.cookies ) underlying.addHeader( cookie._1, cookie._2 );
+
+        log.trace( "cookies: {}", response.cookies );
 
         if( response.contentEntity != null )
             if( isGzip ) underlying.setEntity( new HttpGzipOutputStreamEntity( out -> {
-            try {
-                response.contentEntity.writeTo( out );
-            } catch( IOException e ) {
-                throw new UncheckedIOException( e );
-            }
-        }, null ) );
-        else underlying.setEntity( response.contentEntity );
+                try {
+                    response.contentEntity.writeTo( out );
+                } catch( IOException e ) {
+                    throw new UncheckedIOException( e );
+                }
+            }, null ) );
+            else underlying.setEntity( response.contentEntity );
     }
 
 }

@@ -17,3 +17,4 @@ inspectionProfiles
 kotlinc.xml
 .attach*
 .flattened-pom.xml
+/.idea/jarRepositories.xml

@@ -51,12 +51,14 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
+@SuppressWarnings( "unused" )
 public class HttpAsserts {
 
-    private static Client client = Client.custom()
+    private static final Client client = Client.custom()
         .onError( ( c, e ) -> log.error( e.getMessage() ) )
         .build();
 
+    @SuppressWarnings( "CheckStyle" )
     @Deprecated
     public static String HTTP_PREFIX() {
         return httpPrefix();
@@ -66,6 +68,7 @@ public class HttpAsserts {
         return "http://localhost:" + Env.port();
     }
 
+    @SuppressWarnings( "CheckStyle" )
     @Deprecated
     public static String HTTP_URL( String suffix ) {
         return httpUrl( suffix );
@@ -123,7 +126,7 @@ public class HttpAsserts {
 
     @EqualsAndHashCode
     @ToString
-    public static class HttpAssertion {
+    public static final class HttpAssertion {
         private final Client.Response response;
 
         private HttpAssertion( Client.Response response ) {
@@ -153,7 +156,9 @@ public class HttpAsserts {
         }
 
         public HttpAssertion isJson( String json ) {
-            isJson().isStructurallyEqualTo( json );
+            assertJsonResponse( response )
+                .isJson()
+                .isStructurallyEqualTo( json );
             return this;
         }
 
@@ -216,7 +221,8 @@ public class HttpAsserts {
 
         public HttpAssertion respondedJson( int code, String reasonPhrase, String body ) {
             assertJsonResponse( response )
-                .isEqualTo( code, reasonPhrase, body );
+                .isEqualTo( code, reasonPhrase, body )
+                .hasJsonContentType();
             return this;
         }
 
@@ -238,8 +244,8 @@ public class HttpAsserts {
         }
     }
 
-    public static class CookieHttpAssertion {
-        private Cookie cookie;
+    public static final class CookieHttpAssertion {
+        private final Cookie cookie;
 
         private CookieHttpAssertion( Cookie cookie ) {
             this.cookie = cookie;
@@ -314,16 +320,14 @@ public class HttpAsserts {
 
     }
 
-    public static class JsonHttpAssertion {
-        private Client.Response response;
+    public static final class JsonHttpAssertion {
+        private final Client.Response response;
 
         private JsonHttpAssertion( Client.Response response ) {
             this.response = response;
         }
 
         public static JsonHttpAssertion assertJsonResponse( Client.Response response ) {
-            assertHttpResponse( response )
-                .hasContentType( APPLICATION_JSON );
             return new JsonHttpAssertion( response );
         }
 
@@ -345,6 +349,11 @@ public class HttpAsserts {
 
         public JsonAsserts.JsonAssertion isJson() {
             return assertJson( response.contentString() );
+        }
+
+        public JsonHttpAssertion hasJsonContentType() {
+            assertHttpResponse( response ).hasContentType( APPLICATION_JSON );
+            return this;
         }
     }
 }
