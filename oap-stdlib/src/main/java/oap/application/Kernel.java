@@ -260,7 +260,7 @@ public class Kernel implements Closeable {
                 if( !service.isRemoteService() ) try {
                     var parametersWithoutLinks = fixLinksForConstructor( this, ret, service.parameters );
                     instance = reflect.newInstance( parametersWithoutLinks );
-                    updateLoggerIfExists( instance, implName );
+//                    updateLoggerIfExists( instance, implName );
                 } catch( ReflectException e ) {
                     log.info( "service name = {}, remote = {}, profiles = {}", implName, service.remote, service.profiles );
                     throw e;
