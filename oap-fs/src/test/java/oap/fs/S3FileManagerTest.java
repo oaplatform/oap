@@ -31,6 +31,7 @@ import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import io.findify.s3mock.S3Mock;
 import oap.io.Files;
 import oap.testng.Env;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -48,7 +49,7 @@ public class S3FileManagerTest {
 
     private S3Mock api;
     private S3FileManager fileManager;
-    private Path tmp = Env.tmpPath( "s3" );
+    private Path tmp = TestDirectoryFixture.testPath( "s3" );
 
     @BeforeClass
     public void setUp() throws Exception {

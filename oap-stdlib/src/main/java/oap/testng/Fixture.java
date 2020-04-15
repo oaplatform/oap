@@ -25,6 +25,10 @@
 package oap.testng;
 
 public interface Fixture {
+    default void beforeSuite() {}
+
+    default void afterSuite() {}
+
     default void beforeClass() {}
 
     default void afterClass() {}
@@ -32,4 +36,5 @@ public interface Fixture {
     default void beforeMethod() {}
 
     default void afterMethod() {}
+
 }

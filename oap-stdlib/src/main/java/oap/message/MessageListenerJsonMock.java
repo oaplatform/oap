@@ -28,9 +28,6 @@ import oap.reflect.TypeRef;
 
 import java.util.ArrayList;
 
-/**
- * Created by igor.petrenko on 2019-12-17.
- */
 public class MessageListenerJsonMock extends MessageListenerJson<String> {
     public final ArrayList<MessageListenerMock.TestMessage> messages = new ArrayList<>();
     private int throwUnknownError = 0;

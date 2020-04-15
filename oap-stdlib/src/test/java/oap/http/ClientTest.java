@@ -25,9 +25,8 @@
 package oap.http;
 
 import lombok.extern.slf4j.Slf4j;
-import oap.testng.Env;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import org.apache.http.entity.ContentType;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -52,7 +51,7 @@ public class ClientTest extends Fixtures {
     private Client.Response response;
 
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @BeforeMethod
@@ -82,7 +81,7 @@ public class ClientTest extends Fixtures {
                     .withBody( "test1" )
             );
 
-        var path = Env.tmpPath( "new.file" );
+        var path = TestDirectoryFixture.testPath( "new.file" );
         var progress = new AtomicInteger();
         var download = Client.DEFAULT.download( "http://localhost:" + port + "/file",
             Optional.empty(), Optional.of( path ), progress::set );

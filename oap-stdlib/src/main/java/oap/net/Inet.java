@@ -24,7 +24,7 @@
 package oap.net;
 
 import lombok.SneakyThrows;
-import oap.testng.Env;
+import oap.system.Env;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -32,10 +32,16 @@ import java.net.SocketException;
 
 public class Inet {
     public static final String HOSTNAME = hostname();
+    public static final String LOCALHOST_NAME = resolveLocalhost();
+
+    @SneakyThrows
+    private static String resolveLocalhost() {
+        return InetAddress.getByName( "127.0.0.1" ).getCanonicalHostName();
+    }
 
     @SneakyThrows
     public static String hostname() {
-        return Env.getEnvOrDefault( "HOSTNAME", InetAddress.getLocalHost().getHostName() );
+        return Env.env( "HOSTNAME", InetAddress.getLocalHost().getHostName() );
     }
 
     public static boolean isLocalAddress( InetAddress addr ) {
@@ -51,18 +57,17 @@ public class Inet {
         }
     }
 
-    public static long toLong( final String ip ) {
-        final StringBuilder stringBuilder = new StringBuilder();
+    public static long toLong( String ip ) {
+        StringBuilder stringBuilder = new StringBuilder();
         long result = 0;
         int i = 3;
 
-        for( char c : ip.toCharArray() ) {
+        for( char c : ip.toCharArray() )
             if( c != '.' ) stringBuilder.append( c );
             else {
                 result |= Long.parseLong( stringBuilder.toString() ) << ( i * 8 );
                 stringBuilder.setLength( 0 );
             }
-        }
 
         result |= Long.parseLong( stringBuilder.toString() );
 

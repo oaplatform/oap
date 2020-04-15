@@ -30,9 +30,6 @@ import lombok.ToString;
 
 import java.io.Serializable;
 
-/**
- * Created by igor.petrenko on 2019-12-13.
- */
 @ToString
 @EqualsAndHashCode
 @Data( staticConstructor = "of" )

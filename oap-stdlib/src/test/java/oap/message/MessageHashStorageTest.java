@@ -24,9 +24,8 @@
 
 package oap.message;
 
-import oap.testng.Env;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.joda.time.DateTimeUtils;
@@ -39,12 +38,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-/**
- * Created by igor.petrenko on 2019-12-13.
- */
 public class MessageHashStorageTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test
@@ -62,7 +58,7 @@ public class MessageHashStorageTest extends Fixtures {
         DateTimeUtils.setCurrentMillisFixed( 124 );
         mhs.add( 2, 12, md5_1 );
 
-        var path = Env.tmpPath( "test" );
+        var path = TestDirectoryFixture.testPath( "test" );
         mhs.store( path );
 
         assertFile( path ).hasContent( """
@@ -75,7 +71,7 @@ public class MessageHashStorageTest extends Fixtures {
             5a105e8b9d40e1329780d62ea2265d8a - 456
             """.stripIndent() );
 
-        var path2 = Env.tmpPath( "test2" );
+        var path2 = TestDirectoryFixture.testPath( "test2" );
         var mhs2 = new MessageHashStorage( 1024 );
         mhs2.load( path );
         mhs2.store( path2 );

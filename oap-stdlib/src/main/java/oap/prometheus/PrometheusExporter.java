@@ -34,9 +34,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-/**
- * Created by igor.petrenko on 2019-11-05.
- */
 @Slf4j
 public class PrometheusExporter implements Closeable {
     public static final PrometheusMeterRegistry prometheusRegistry = new PrometheusMeterRegistry( PrometheusConfig.DEFAULT );

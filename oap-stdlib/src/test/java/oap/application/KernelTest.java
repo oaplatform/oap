@@ -56,7 +56,10 @@ public class KernelTest {
 
     @AfterMethod
     public void afterMethod() {
-        new ArrayList<>( System.getenv().keySet() ).stream().filter( k -> k.startsWith( "CONFIG." ) ).forEach( k -> Env.putEnv( k, null ) );
+        new ArrayList<>( System.getenv().keySet() )
+            .stream()
+            .filter( k -> k.startsWith( "CONFIG." ) )
+            .forEach( k -> Env.putEnv( k, null ) );
     }
 
     @Test
@@ -176,9 +179,9 @@ public class KernelTest {
         Kernel kernel = new Kernel( modules );
         try {
             kernel.start();
-            assertThat( kernel.<ServiceContainer>service( "container" ) ).isPresent().get().satisfies( container ->
-                assertThat( kernel.<ServiceContainee>service( "containee1" ) ).isPresent().get().satisfies( containee1 ->
-                    assertThat( kernel.<ServiceContainee>service( "containee2" ) ).isPresent().get().satisfies( containee2 -> {
+            assertThat( kernel.<ServiceContainer>service( "container" ) ).get().satisfies( container ->
+                assertThat( kernel.<ServiceContainee>service( "containee1" ) ).get().satisfies( containee1 ->
+                    assertThat( kernel.<ServiceContainee>service( "containee2" ) ).get().satisfies( containee2 -> {
                         assertThat( container.containees ).contains( containee1, containee2 );
                         assertThat( container.priorities ).containsExactly( containee2, containee1 );
                     } ) ) );
@@ -331,12 +334,10 @@ public class KernelTest {
         @Override
         public void run() {
             var done = false;
-            while( !done ) {
-                try {
-                    Thread.sleep( 1 );
-                } catch( InterruptedException e ) {
-                    done = true;
-                }
+            while( !done ) try {
+                Thread.sleep( 1 );
+            } catch( InterruptedException e ) {
+                done = true;
             }
         }
     }

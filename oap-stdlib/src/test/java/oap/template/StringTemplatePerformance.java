@@ -25,7 +25,7 @@
 package oap.template;
 
 import oap.io.Files;
-import oap.testng.Env;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.nio.file.Path;
@@ -36,7 +36,7 @@ public class StringTemplatePerformance {
 
     @Test
     public void cache() {
-        Path test = Files.ensureDirectory( Env.tmpPath( "test" ) );
+        Path test = Files.ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
         String clazz = Engine.getName( "test" );
 
 //        benchmark( "template-compile", 10, () -> {

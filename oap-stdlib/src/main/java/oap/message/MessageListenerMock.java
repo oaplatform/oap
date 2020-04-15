@@ -33,9 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-/**
- * Created by igor.petrenko on 2019-12-17.
- */
 public class MessageListenerMock implements MessageListener {
     public static final byte MESSAGE_TYPE = ( byte ) 0xFF;
     public static final byte MESSAGE_TYPE2 = ( byte ) 0xFE;

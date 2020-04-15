@@ -24,9 +24,6 @@
 
 package oap.message;
 
-/**
- * Created by igor.petrenko on 2019-12-10.
- */
 public interface MessageListener {
     byte getId();
 

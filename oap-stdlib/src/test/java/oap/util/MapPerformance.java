@@ -30,9 +30,6 @@ import org.testng.annotations.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 22.05.2019.
- */
 public class MapPerformance {
 
     public static final int SAMPLES = 100000;

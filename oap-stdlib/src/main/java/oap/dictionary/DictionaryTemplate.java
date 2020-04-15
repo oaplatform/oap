@@ -30,9 +30,6 @@ import java.util.ArrayList;
 
 import static java.util.stream.Collectors.joining;
 
-/**
- * Created by igor.petrenko on 13.08.2019.
- */
 public class DictionaryTemplate<T, TLine extends Template.Line> {
     public final Template<T, TLine> template;
     public final ArrayList<Template.Line> lines;

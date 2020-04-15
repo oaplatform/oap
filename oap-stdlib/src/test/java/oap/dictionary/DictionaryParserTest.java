@@ -26,9 +26,8 @@ package oap.dictionary;
 
 import oap.io.Files;
 import oap.io.Resources;
-import oap.testng.Env;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import static oap.testng.Asserts.assertString;
@@ -36,12 +35,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class DictionaryParserTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test
     public void serialize() {
-        var path = Env.tmpPath( "test/test.json" );
+        var path = TestDirectoryFixture.testPath( "test/test.json" );
         DictionaryParser.serialize( Dictionaries.getDictionary( "test-dictionary" ), path, true );
 
         assertString( Files.readString( path ) ).isEqualTo( """

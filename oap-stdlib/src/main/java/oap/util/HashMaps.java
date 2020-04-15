@@ -26,9 +26,6 @@ package oap.util;
 
 import java.util.HashMap;
 
-/**
- * Created by igor.petrenko on 2020-03-30.
- */
 public class HashMaps {
     public static <K, V> HashMap<K, V> of() {
         return new HashMap<K, V>();

@@ -25,9 +25,8 @@
 package oap.io;
 
 import lombok.SneakyThrows;
-import oap.testng.Env;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.nio.file.Paths;
@@ -36,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class FileSystemFileSyncTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test
@@ -44,8 +43,8 @@ public class FileSystemFileSyncTest extends Fixtures {
     public void sync() {
         StringBuilder b = new StringBuilder();
 
-        var remoteFile = Env.tmpPath( "rtest.file" ).toUri();
-        var localFile = Env.tmpPath( "ltest.file" );
+        var remoteFile = TestDirectoryFixture.testPath( "rtest.file" ).toUri();
+        var localFile = TestDirectoryFixture.testPath( "ltest.file" );
 
         Files.writeString( Paths.get( remoteFile ), "test" );
 

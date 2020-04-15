@@ -26,8 +26,10 @@ package oap.testng;
 
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeSuite;
 
 import java.util.LinkedList;
 
@@ -43,6 +45,16 @@ public class Fixtures {
             case FIRST -> fixtures.addFirst( fixture );
             case LAST -> fixtures.addLast( fixture );
         }
+    }
+
+    @BeforeSuite
+    public void fixBeforeSuite() {
+        fixtures.iterator().forEachRemaining( Fixture::beforeSuite );
+    }
+
+    @AfterSuite
+    public void fixAfterSuite() {
+        fixtures.iterator().forEachRemaining( Fixture::afterSuite );
     }
 
     @BeforeClass

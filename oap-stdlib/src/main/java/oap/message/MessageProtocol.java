@@ -29,9 +29,6 @@ import lombok.ToString;
 
 import java.io.Serializable;
 
-/**
- * Created by igor.petrenko on 2019-12-10.
- */
 public interface MessageProtocol {
     short PROTOCOL_VERSION_1 = 1;
     byte[] RESERVED = new byte[8];

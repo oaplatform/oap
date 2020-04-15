@@ -24,62 +24,10 @@
 
 package oap.testng;
 
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import oap.io.Files;
-import oap.util.Dates;
-import org.joda.time.DateTimeUtils;
+/**
+ * @see TestDirectoryFixture
+ */
+@Deprecated
+public class TestDirectory extends TestDirectoryFixture {
 
-import java.io.UncheckedIOException;
-import java.nio.file.Path;
-
-import static org.apache.commons.io.FileUtils.iterateFiles;
-import static org.apache.commons.io.filefilter.FileFilterUtils.trueFileFilter;
-
-@Slf4j
-public class TestDirectory implements Fixture {
-
-    public static TestDirectory FIXTURE = new TestDirectory();
-
-    public static void deleteDirectory( Path path ) {
-        try {
-            Files.delete( path );
-        } catch( UncheckedIOException e ) {
-            var fileIterator = iterateFiles( Env.tmp.toFile(), trueFileFilter(), trueFileFilter() );
-            while( fileIterator.hasNext() ) {
-                var next = fileIterator.next();
-                if( next.isDirectory() ) continue;
-
-                System.err.println( "FILE " + next );
-            }
-
-            throw e;
-        }
-    }
-
-    @Override
-    public void afterClass() {
-        deleteDirectory( Env.tmpRoot );
-        cleanTestDirectories();
-    }
-
-    @Override
-    public void afterMethod() {
-        deleteDirectory( Env.tmpRoot );
-    }
-
-    @SneakyThrows
-    private void cleanTestDirectories() {
-        try( var stream = java.nio.file.Files.list( Env.tmp ) ) {
-            stream
-                .filter( path -> java.nio.file.Files.isDirectory( path ) )
-                .filter( path -> Files.getLastModifiedTime( path ) < DateTimeUtils.currentTimeMillis() - Dates.h( 2 ) )
-                .forEach( path -> {
-                    try {
-                        Files.delete( path );
-                    } catch( Exception ignored ) {
-                    }
-                } );
-        }
-    }
 }

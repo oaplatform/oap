@@ -27,9 +27,6 @@ package oap.concurrent;
 import oap.benchmark.Benchmark;
 import org.testng.annotations.Test;
 
-/**
- * Created by igor.petrenko on 01.05.2019.
- */
 public class StringBuilderPoolPerformance {
     private static final int THREADS = 64;
     private static final int SAMPLES = 100;

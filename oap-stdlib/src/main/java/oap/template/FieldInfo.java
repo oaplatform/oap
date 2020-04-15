@@ -37,9 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Created by igor.petrenko on 2019-09-30.
- */
 @ToString
 @Slf4j
 public class FieldInfo {

@@ -25,7 +25,7 @@
 package oap.http;
 
 import oap.testng.Fixtures;
-import oap.testng.ResetSystemTimer;
+import oap.testng.SystemTimerFixture;
 import oap.util.Dates;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -38,7 +38,7 @@ import static oap.testng.Asserts.assertString;
 
 public class CookieTest extends Fixtures {
     {
-        fixture( ResetSystemTimer.FIXTURE );
+        fixture( SystemTimerFixture.FIXTURE );
     }
 
     @Test

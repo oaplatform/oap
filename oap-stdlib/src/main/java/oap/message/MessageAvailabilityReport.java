@@ -28,9 +28,6 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 
-/**
- * Created by igor.petrenko on 2019-12-12.
- */
 public class MessageAvailabilityReport {
     public final State state;
     public final Map<String, State> subsystemStates;

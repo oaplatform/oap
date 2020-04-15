@@ -31,9 +31,6 @@ import org.apache.http.protocol.HttpContext;
 import java.io.Closeable;
 import java.io.IOException;
 
-/**
- * Created by igor.petrenko on 10.05.2019.
- */
 @ToString
 public class ServerHttpContext implements HttpContext, Closeable {
     public final Protocol protocol;

@@ -35,9 +35,6 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
-/**
- * Created by igor.petrenko on 2019-12-12.
- */
 public class MessageSocketConnection implements Closeable {
     public final DataOutputStream out;
     public final DataInputStream in;

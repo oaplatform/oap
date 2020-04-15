@@ -24,13 +24,7 @@
 
 package oap.testng;
 
-import org.joda.time.DateTimeUtils;
+@Deprecated
+public class ResetSystemTimer extends SystemTimerFixture {
 
-public class ResetSystemTimer implements Fixture {
-    public static ResetSystemTimer FIXTURE = new ResetSystemTimer();
-
-    @Override
-    public void afterMethod() {
-        DateTimeUtils.setCurrentMillisSystem();
-    }
 }

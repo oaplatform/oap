@@ -24,9 +24,8 @@
 
 package oap.fs;
 
-import oap.testng.Env;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -39,11 +38,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class LocalFileManagerTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     private LocalFileManager fileManager;
-    private Path tmp = Env.tmpPath( "/tmp/test" );
+    private Path tmp = TestDirectoryFixture.testPath( "/tmp/test" );
 
     @BeforeClass
     public void setUp() {
@@ -53,7 +52,7 @@ public class LocalFileManagerTest extends Fixtures {
     @Test
     public void readWrite() throws Exception {
         fileManager.write( new Data( "file.txt", "text/plain", "dGVzdA==" ) );
-        var read = fileManager.read( Env.tmpPath( "/tmp/test/file.txt" ).toString() );
+        var read = fileManager.read( TestDirectoryFixture.testPath( "/tmp/test/file.txt" ).toString() );
 
         assertThat( read.isPresent() ).isTrue();
         assertThat( new String( read.get() ) ).isEqualTo( "test" );

@@ -24,7 +24,7 @@
 
 package oap.io;
 
-import oap.testng.Env;
+import oap.testng.TestDirectoryFixture;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -45,9 +45,9 @@ public class FilesPerformance {
     @BeforeMethod
     public void init() throws Exception {
 
-        path = Env.tmpPath( "tt/test" );
-        path2 = Env.tmpPath( "tt/test2/1/2/3/4/5/6/7/8/9/10" );
-        pathNotExists = Env.tmpPath( "tt/test2" );
+        path = TestDirectoryFixture.testPath( "tt/test" );
+        path2 = TestDirectoryFixture.testPath( "tt/test2/1/2/3/4/5/6/7/8/9/10" );
+        pathNotExists = TestDirectoryFixture.testPath( "tt/test2" );
         Files.writeString( path, RandomStringUtils.random( 10 ) );
         Files.writeString( path2, RandomStringUtils.random( 10 ) );
     }

@@ -24,7 +24,7 @@
 
 package oap.io;
 
-import oap.testng.Env;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -47,7 +47,7 @@ public class CompressionPerformance {
 
     @Test( dataProvider = "encodings" )
     public void testC( IoStreams.Encoding encoding ) throws IOException {
-        Path path = Env.tmpPath( "test." + encoding );
+        Path path = TestDirectoryFixture.testPath( "test." + encoding );
 
         benchmark( "compress " + encoding.name(), 2, () -> {
             try( InputStream is = IoStreams.in( Resources.filePath( getClass(), "/file.txt" ).get(), PLAIN );

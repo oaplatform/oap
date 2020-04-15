@@ -22,33 +22,15 @@
  * SOFTWARE.
  */
 
-package oap.io;
+package oap.testng;
 
-import lombok.SneakyThrows;
-import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
-import org.testng.annotations.Test;
+import org.joda.time.DateTimeUtils;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class SystemTimerFixture implements Fixture {
+    public static SystemTimerFixture FIXTURE = new SystemTimerFixture();
 
-public class LazyFileOutputStreamTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
-    }
-
-    @Test
-    @SneakyThrows
-    public void write() {
-        var path = TestDirectoryFixture.testPath( "file1.txt" );
-
-        new LazyFileOutputStream( path ).close();
-
-        assertThat( path ).doesNotExist();
-
-        try( var lfos = new LazyFileOutputStream( path ) ) {
-            lfos.write( '1' );
-        }
-
-        assertThat( path ).hasContent( "1" );
+    @Override
+    public void afterMethod() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
 }

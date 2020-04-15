@@ -41,9 +41,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-/**
- * Created by igor.petrenko on 2019-12-13.
- */
 public class MessageHashStorage {
     final ConcurrentHashMap<ClientId, ClientInfo> map = new ConcurrentHashMap<>();
     private final int size;

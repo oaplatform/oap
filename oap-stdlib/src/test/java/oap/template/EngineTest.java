@@ -25,7 +25,7 @@
 package oap.template;
 
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Sets;
 import org.testng.annotations.Test;
@@ -41,15 +41,14 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static oap.io.Files.ensureDirectory;
 import static oap.template.Template.Line.line;
-import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EngineTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
-    private final Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+    private final Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
     @Test
     public void processString() {
@@ -195,7 +194,7 @@ public class EngineTest extends Fixtures {
 
     @Test
     public void nested2() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
         assertThat( engine.getTemplate( "test", Test1.class, Lists.of( line( "f1", "test2.testStr", "d" ), line( "f2", "test2.test1.testInt", 2 ) ), " " )
             .renderString( new Test1( new Test2( "n2", 2, new Test1( "str", 235 ) ) ) ) ).isEqualTo( "n2 235" );
     }

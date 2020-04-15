@@ -22,33 +22,16 @@
  * SOFTWARE.
  */
 
-package oap.io;
+package oap.system;
 
-import lombok.SneakyThrows;
-import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
-import org.testng.annotations.Test;
+import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class LazyFileOutputStreamTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
+public class Env {
+    public static String env( String name, String defaultValue ) {
+        return env( name ).orElse( defaultValue );
     }
 
-    @Test
-    @SneakyThrows
-    public void write() {
-        var path = TestDirectoryFixture.testPath( "file1.txt" );
-
-        new LazyFileOutputStream( path ).close();
-
-        assertThat( path ).doesNotExist();
-
-        try( var lfos = new LazyFileOutputStream( path ) ) {
-            lfos.write( '1' );
-        }
-
-        assertThat( path ).hasContent( "1" );
+    public static Optional<String> env( String name ) {
+        return Optional.ofNullable( System.getenv( name ) );
     }
 }

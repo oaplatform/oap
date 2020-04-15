@@ -27,6 +27,7 @@ import com.github.rholder.retry.RetryException;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.google.common.hash.Hashing;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.io.IoStreams.Encoding;
 import oap.util.Lists;
@@ -97,6 +98,10 @@ public final class Files {
             .resolve( name );
     }
 
+    /**
+     * it is NOT compatible with {@link #wildcard(Path, String)}
+     * @todo make compatible
+     */
     public static ArrayList<Path> fastWildcard( String basePath, String wildcard ) {
         return fastWildcard( Paths.get( basePath ), wildcard );
     }
@@ -256,73 +261,69 @@ public final class Files {
             .withStopStrategy( StopStrategies.stopAfterAttempt( 3 ) )
             .build();
 
-        if( java.nio.file.Files.exists( path ) ) {
-            try {
-                java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException {
-                        try {
-                            return retryer.call( () -> {
-                                if( java.nio.file.Files.exists( path ) )
-                                    java.nio.file.Files.delete( path );
-                                return FileVisitResult.CONTINUE;
-                            } );
-                        } catch( ExecutionException e ) {
-                            throw new IOException( e.getCause() );
-                        } catch( RetryException e ) {
-                            throw new IOException( e.getLastFailedAttempt().getExceptionCause() );
-                        }
+        if( java.nio.file.Files.exists( path ) ) try {
+            java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException {
+                    try {
+                        return retryer.call( () -> {
+                            if( java.nio.file.Files.exists( path ) )
+                                java.nio.file.Files.delete( path );
+                            return FileVisitResult.CONTINUE;
+                        } );
+                    } catch( ExecutionException e ) {
+                        throw new IOException( e.getCause() );
+                    } catch( RetryException e ) {
+                        throw new IOException( e.getLastFailedAttempt().getExceptionCause() );
                     }
+                }
 
-                    @Override
-                    public FileVisitResult postVisitDirectory( Path path, IOException exc ) throws IOException {
-                        if( java.nio.file.Files.exists( path ) )
-                            java.nio.file.Files.delete( path );
-                        return FileVisitResult.CONTINUE;
-                    }
+                @Override
+                public FileVisitResult postVisitDirectory( Path path, IOException exc ) throws IOException {
+                    if( java.nio.file.Files.exists( path ) )
+                        java.nio.file.Files.delete( path );
+                    return FileVisitResult.CONTINUE;
+                }
 
-                    @Override
-                    public FileVisitResult visitFileFailed( Path file, IOException exc ) throws IOException {
-                        log.error( file.toString(), exc );
+                @Override
+                public FileVisitResult visitFileFailed( Path file, IOException exc ) {
+                    log.error( file.toString(), exc );
 
-                        return FileVisitResult.CONTINUE;
-                    }
-                } );
-            } catch( IOException e ) {
-                throw new UncheckedIOException( e );
-            }
+                    return FileVisitResult.CONTINUE;
+                }
+            } );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
         }
     }
 
     public static void deleteEmptyDirectories( Path path, boolean deleteRoot ) {
-        if( java.nio.file.Files.exists( path ) ) {
-            try {
-                java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<Path>() {
-                    @Override
-                    public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) throws IOException {
-                        return FileVisitResult.CONTINUE;
-                    }
+        if( java.nio.file.Files.exists( path ) ) try {
+            java.nio.file.Files.walkFileTree( path, new SimpleFileVisitor<>() {
+                @Override
+                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs ) {
+                    return FileVisitResult.CONTINUE;
+                }
 
-                    @Override
-                    public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException {
-                        return super.preVisitDirectory( dir, attrs );
-                    }
+                @Override
+                public FileVisitResult preVisitDirectory( Path dir, BasicFileAttributes attrs ) throws IOException {
+                    return super.preVisitDirectory( dir, attrs );
+                }
 
-                    @Override
-                    public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException {
-                        try {
-                            if( !path.equals( dir ) || deleteRoot ) {
-                                java.nio.file.Files.delete( dir );
-                            }
-                        } catch( DirectoryNotEmptyException ignore ) {
+                @Override
+                public FileVisitResult postVisitDirectory( Path dir, IOException exc ) throws IOException {
+                    try {
+                        if( !path.equals( dir ) || deleteRoot ) {
+                            java.nio.file.Files.delete( dir );
                         }
-                        return FileVisitResult.CONTINUE;
+                    } catch( DirectoryNotEmptyException ignore ) {
                     }
+                    return FileVisitResult.CONTINUE;
+                }
 
-                } );
-            } catch( IOException e ) {
-                throw new UncheckedIOException( e );
-            }
+            } );
+        } catch( IOException e ) {
+            throw new UncheckedIOException( e );
         }
     }
 
@@ -364,8 +365,8 @@ public final class Files {
                                     boolean filtering, Function<String, Object> mapper ) {
         DirectoryScanner scanner = new DirectoryScanner();
         scanner.setBasedir( basePath.toFile() );
-        scanner.setIncludes( includes.toArray( new String[includes.size()] ) );
-        scanner.setExcludes( excludes.toArray( new String[excludes.size()] ) );
+        scanner.setIncludes( includes.toArray( new String[0] ) );
+        scanner.setExcludes( excludes.toArray( new String[0] ) );
         scanner.scan();
         for( String included : scanner.getIncludedFiles() ) {
             Path src = basePath.resolve( included );
@@ -399,13 +400,10 @@ public final class Files {
         ensureDirectory( path.getParent() );
     }
 
+    @SneakyThrows
     public static Path ensureDirectory( Path path ) {
-        try {
-            java.nio.file.Files.createDirectories( path );
-            return path;
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
+        java.nio.file.Files.createDirectories( path );
+        return path;
     }
 
     public static void move( Path source, Path target, CopyOption... options ) {

@@ -26,7 +26,7 @@ package oap.io;
 import lombok.SneakyThrows;
 import oap.io.IoStreams.Encoding;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -40,18 +40,17 @@ import static oap.io.IoStreams.Encoding.GZIP;
 import static oap.io.IoStreams.Encoding.LZ4;
 import static oap.io.IoStreams.Encoding.PLAIN;
 import static oap.testng.Asserts.assertFile;
-import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class IoStreamsTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test
     @SneakyThrows
     public void emptyGz() {
-        Path path = tmpPath( "test.gz" );
+        Path path = TestDirectoryFixture.testPath( "test.gz" );
         try( OutputStream out = IoStreams.out( path, GZIP ) ) {
             out.flush();
         }
@@ -71,7 +70,7 @@ public class IoStreamsTest extends Fixtures {
 
     @Test( dataProvider = "encodings" )
     public void append( Encoding encoding ) throws IOException {
-        Path path = encoding.resolve( tmpPath( "test.txt" ) );
+        Path path = encoding.resolve( TestDirectoryFixture.testPath( "test.txt" ) );
         try( OutputStream out = IoStreams.out( path, encoding ) ) {
             out.write( "12345".getBytes() );
             out.flush();
@@ -85,7 +84,7 @@ public class IoStreamsTest extends Fixtures {
 
     @Test
     public void lz4() throws IOException {
-        Path path = tmpPath( "test.lz4" );
+        Path path = TestDirectoryFixture.testPath( "test.lz4" );
 
         try( OutputStream out = IoStreams.out( path, LZ4 ) ) {
             out.write( "12345".getBytes() );

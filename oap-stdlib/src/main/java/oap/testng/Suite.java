@@ -22,10 +22,12 @@
  * SOFTWARE.
  */
 
-package oap.http;
+package oap.testng;
 
-/**
- * Created by igor.petrenko on 12.02.2019.
- */
-public class TestWS {
+public class Suite {
+    private static final String UNIQUE_EXECUTION_ID = Teamcity.buildPrefix() + "_" + System.currentTimeMillis();
+
+    public static String uniqueExecutionId() {
+        return UNIQUE_EXECUTION_ID;
+    }
 }

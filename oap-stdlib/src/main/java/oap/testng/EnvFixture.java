@@ -22,68 +22,56 @@
  * SOFTWARE.
  */
 
-package oap.io;
+package oap.testng;
 
-import java.io.Writer;
 
-public class StringBuilderWriter extends Writer {
-    private final StringBuilder sb;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
+import oap.util.Pair;
+import oap.util.Strings;
 
-    public StringBuilderWriter( StringBuilder sb ) {
-        this.sb = sb;
+import static oap.testng.EnvFixture.Scope.CLASS;
+import static oap.testng.EnvFixture.Scope.METHOD;
+import static oap.testng.EnvFixture.Scope.SUITE;
+import static oap.util.Pair.__;
+
+public class EnvFixture implements Fixture {
+    private final ListMultimap<Scope, Pair<String, Object>> properties = ArrayListMultimap.create();
+
+    public EnvFixture() {
     }
 
-    @Override
-    public void write( char[] cbuf, int off, int len ) {
-        sb.append( cbuf, off, len );
+    public EnvFixture define( String property, Object value ) {
+        return define( METHOD, property, value );
     }
 
-    @Override
-    public void write( int c ) {
-        sb.append( ( char ) c );
-    }
-
-    @Override
-    public void write( char[] cbuf ) {
-        sb.append( cbuf );
-    }
-
-    @Override
-    public void write( String str ) {
-        sb.append( str );
-    }
-
-    @Override
-    public void write( String str, int off, int len ) {
-        sb.append( str, off, len );
-    }
-
-    @Override
-    public Writer append( CharSequence csq ) {
-        sb.append( csq );
+    public EnvFixture define( Scope scope, String property, Object value ) {
+        properties.get( scope ).add( __( property, value ) );
         return this;
     }
 
-    @Override
-    public Writer append( CharSequence csq, int start, int end ) {
-        sb.append( csq, start, end );
-        return this;
+
+    private void init( Scope scope ) {
+        properties.get( scope ).forEach( p -> System.setProperty( p._1, Strings.substitute( String.valueOf( p._2 ),
+            k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) ) ) );
     }
 
     @Override
-    public Writer append( char c ) {
-        sb.append( c );
-
-        return this;
+    public void beforeSuite() {
+        init( SUITE );
     }
 
     @Override
-    public void flush() {
-
+    public void beforeClass() {
+        init( CLASS );
     }
 
     @Override
-    public void close() {
+    public void beforeMethod() {
+        init( METHOD );
+    }
 
+    public enum Scope {
+        METHOD, CLASS, SUITE
     }
 }

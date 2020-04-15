@@ -34,9 +34,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.Closeable;
 
-/**
- * Created by igor.petrenko on 2020-01-03.
- */
 @Slf4j
 public class PrometheusJvmExporter implements Closeable {
     public boolean enableClassLoaderMetrics = true;

@@ -24,49 +24,42 @@
 package oap.testng;
 
 import lombok.SneakyThrows;
-import lombok.extern.java.Log;
-import oap.io.Files;
-import oap.io.Resources;
-import oap.util.Throwables;
+import oap.net.Inet;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
-import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Log
+import static oap.testng.TestDirectoryFixture.testDirectory;
+
+
 public class Env {
-    public static final String LOCALHOST;
-    static final Path tmp = Paths.get( "/tmp/test" );
-    public static final Path tmpRoot = tmp.resolve( "temp" + Teamcity.buildPrefix() + "_" + System.currentTimeMillis() );
+
+    @Deprecated
+    public static final String LOCALHOST = Inet.LOCALHOST_NAME;
+    /**
+     * @see TestDirectoryFixture#testDirectory()
+     */
+    @Deprecated
+    public static final Path tmpRoot = testDirectory();
     private static final ConcurrentHashMap<String, Integer> ports = new ConcurrentHashMap<>();
 
-    static {
-        System.setProperty( "oap.test.tmpdir", Env.tmpRoot.toString() );
-        System.out.println( "initializing test directory " + tmpRoot );
-        try {
-            LOCALHOST = InetAddress.getByName( "127.0.0.1" ).getCanonicalHostName();
-        } catch( UnknownHostException e ) {
-            throw Throwables.propagate( e );
-        }
-    }
 
+    @Deprecated
     public static String tmp( String name ) {
-        return tmpPath( name ).toString();
+        return TestDirectoryFixture.testPath( name ).toString();
     }
 
     public static URI tmpURI( String name ) {
-        return tmpPath( name ).toUri();
+        return TestDirectoryFixture.testPath( name ).toUri();
     }
 
     @SneakyThrows
@@ -74,26 +67,28 @@ public class Env {
         return tmpURI( name ).toURL();
     }
 
+    /**
+     * @see TestDirectoryFixture#testPath(String)
+     */
+    @Deprecated
     public static Path tmpPath( String name ) {
-        Path tmpPath = tmpRoot.resolve(
-            name.startsWith( "/" ) || name.startsWith( "\\" ) ? name.substring( 1 ) : name );
-        try {
-            java.nio.file.Files.createDirectories( tmpPath.getParent() );
-        } catch( IOException e ) {
-            throw new UncheckedIOException( e );
-        }
-        return tmpPath;
+        return TestDirectoryFixture.testPath( name );
     }
 
+    /**
+     * @see TestDirectoryFixture#deployTestData(Class)
+     */
+    @Deprecated
     public static Path deployTestData( Class<?> contextClass ) {
-        return deployTestData( contextClass, "" );
+        return TestDirectoryFixture.deployTestData( contextClass );
     }
 
+    /**
+     * @see TestDirectoryFixture#deployTestData(Class, String)
+     */
+    @Deprecated
     public static Path deployTestData( Class<?> contextClass, String name ) {
-        Path to = tmpPath( name );
-        Resources.filePaths( contextClass, contextClass.getSimpleName() )
-            .forEach( path -> Files.copyDirectory( path, to ) );
-        return to;
+        return TestDirectoryFixture.deployTestData( contextClass, name );
     }
 
     public static int port() {
@@ -113,13 +108,17 @@ public class Env {
     }
 
     @SneakyThrows
+    @Deprecated
     public static ServerSocket serverSocket() {
         return new ServerSocket( 0 );
     }
 
+    /**
+     * @see oap.system.Env#env(String, String)
+     */
+    @Deprecated
     public static String getEnvOrDefault( String name, String defaultValue ) {
-        var res = System.getenv( name );
-        return res != null ? res : defaultValue;
+        return oap.system.Env.env( name, defaultValue );
     }
 
     public static void resetPorts() {
@@ -136,13 +135,10 @@ public class Env {
             @SuppressWarnings( "unchecked" )
             var env = ( Map<Object, Object> ) theEnvironmentField.get( null );
 
-            if( SystemUtils.IS_OS_WINDOWS ) {
-                if( value == null ) {
-                    env.remove( name );
-                } else {
-                    env.put( name, value );
-                }
-            } else {
+            if( SystemUtils.IS_OS_WINDOWS )
+                if( value == null ) env.remove( name );
+                else env.put( name, value );
+            else {
                 var variableClass = Class.forName( "java.lang.ProcessEnvironment$Variable" );
                 var convertToVariable = variableClass.getMethod( "valueOf", String.class );
                 convertToVariable.setAccessible( true );
@@ -151,11 +147,8 @@ public class Env {
                 var convertToValue = valueClass.getMethod( "valueOf", String.class );
                 convertToValue.setAccessible( true );
 
-                if( value == null ) {
-                    env.remove( convertToVariable.invoke( null, name ) );
-                } else {
-                    env.put( convertToVariable.invoke( null, name ), convertToValue.invoke( null, value ) );
-                }
+                if( value == null ) env.remove( convertToVariable.invoke( null, name ) );
+                else env.put( convertToVariable.invoke( null, name ), convertToValue.invoke( null, value ) );
             }
 
             Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField( "theCaseInsensitiveEnvironment" );
@@ -163,30 +156,22 @@ public class Env {
             @SuppressWarnings( "unchecked" )
             Map<String, String> cienv = ( Map<String, String> ) theCaseInsensitiveEnvironmentField.get( null );
 
-            if( value == null ) {
-                cienv.remove( name );
-            } else {
-                cienv.put( name, value );
-            }
+            if( value == null ) cienv.remove( name );
+            else cienv.put( name, value );
         } catch( NoSuchFieldException e ) {
             Class<?>[] classes = Collections.class.getDeclaredClasses();
             Map<String, String> env = System.getenv();
-            for( Class<?> cl : classes ) {
-                if( "java.util.Collections$UnmodifiableMap".equals( cl.getName() ) ) {
-                    Field field = cl.getDeclaredField( "m" );
+            for( Class<?> clazz : classes )
+                if( "java.util.Collections$UnmodifiableMap".equals( clazz.getName() ) ) {
+                    Field field = clazz.getDeclaredField( "m" );
                     field.setAccessible( true );
                     Object obj = field.get( env );
                     @SuppressWarnings( "unchecked" )
                     Map<String, String> map = ( Map<String, String> ) obj;
 
-                    if( value == null ) {
-                        // remove if null
-                        map.remove( name );
-                    } else {
-                        map.put( name, value );
-                    }
+                    if( value == null ) map.remove( name );
+                    else map.put( name, value );
                 }
-            }
         }
     }
 }

@@ -28,9 +28,6 @@ import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 
 import java.io.InputStream;
 
-/**
- * Created by igor.petrenko on 02.05.2019.
- */
 public class FastByteArrayOutputStream extends it.unimi.dsi.fastutil.io.FastByteArrayOutputStream {
     public FastByteArrayOutputStream() {
     }

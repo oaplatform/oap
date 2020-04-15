@@ -22,33 +22,32 @@
  * SOFTWARE.
  */
 
-package oap.io;
+package oap.testng;
 
-import lombok.SneakyThrows;
-import oap.testng.Fixtures;
-import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
+import static oap.testng.EnvFixture.Scope.CLASS;
+import static oap.testng.EnvFixture.Scope.SUITE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class LazyFileOutputStreamTest extends Fixtures {
-    {
-        fixture( TestDirectoryFixture.FIXTURE );
-    }
-
+public class EnvFixtureTest {
     @Test
-    @SneakyThrows
-    public void write() {
-        var path = TestDirectoryFixture.testPath( "file1.txt" );
-
-        new LazyFileOutputStream( path ).close();
-
-        assertThat( path ).doesNotExist();
-
-        try( var lfos = new LazyFileOutputStream( path ) ) {
-            lfos.write( '1' );
-        }
-
-        assertThat( path ).hasContent( "1" );
+    public void substitute() {
+        EnvFixture fixture = new EnvFixture()
+            .define( SUITE, "suite", 1 )
+            .define( CLASS, "class", "class:${suite}" )
+            .define( "method", "method:${class}" )
+            .define( "u", "u=${USER}" );
+        fixture.beforeSuite();
+        assertThat( System.getProperty( "suite" ) ).isEqualTo( "1" );
+        assertThat( System.getProperty( "class" ) ).isNull();
+        assertThat( System.getProperty( "method" ) ).isNull();
+        fixture.beforeClass();
+        assertThat( System.getProperty( "class" ) ).isEqualTo( "class:1" );
+        assertThat( System.getProperty( "method" ) ).isNull();
+        fixture.beforeMethod();
+        assertThat( System.getProperty( "method" ) ).isEqualTo( "method:class:1" );
+        assertThat( System.getProperty( "u" ) ).isEqualTo( "u=" + System.getenv( "USER" ) );
     }
+
 }

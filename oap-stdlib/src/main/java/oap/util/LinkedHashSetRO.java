@@ -41,9 +41,6 @@ import java.util.function.IntFunction;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-/**
- * Created by igor.petrenko on 19.03.2019.
- */
 public class LinkedHashSetRO<T> implements Set<T>, Externalizable {
     private final ArrayList<T> list;
     private final HashSet<T> set;

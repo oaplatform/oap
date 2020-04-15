@@ -42,9 +42,6 @@ import java.util.List;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Created by igor.petrenko on 2019-12-10.
- */
 @Slf4j
 public class MessageServer implements Runnable, Closeable {
     public final HashMap<Byte, MessageListener> map = new HashMap<>();

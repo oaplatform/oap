@@ -31,7 +31,7 @@ import oap.template.StringTemplateTest.Tst.Test2;
 import oap.template.StringTemplateTest.Tst.Test3;
 import oap.template.StringTemplateTest.Tst.Test4;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import oap.util.Lists;
 import oap.util.Maps;
 import org.testng.annotations.Test;
@@ -44,17 +44,16 @@ import java.util.function.Supplier;
 
 import static java.util.Collections.emptyMap;
 import static oap.io.Files.ensureDirectory;
-import static oap.testng.Env.tmpPath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class StringTemplateTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test
     public void ttl() {
-        Path test = ensureDirectory( tmpPath( "test" ) );
+        Path test = ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
         Engine engine = new Engine( test );
         String clazz = Engine.getName( "test" );
         var template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
@@ -76,7 +75,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void loadFromDisk() {
-        Path test = ensureDirectory( tmpPath( "test" ) );
+        Path test = ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
         Engine engine = new Engine( test );
         String clazz = Engine.getName( "test" );
         var template = engine.getTemplate( clazz, EngineTest.Test1.class, "test${tst.test2.i}" );
@@ -91,7 +90,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void processWithoutVariables() {
-        Path test = ensureDirectory( tmpPath( "test" ) );
+        Path test = ensureDirectory( TestDirectoryFixture.testPath( "test" ) );
         Engine engine = new Engine( test );
         assertThat( engine.getTemplate( "test", Container.class, "d" ) )
             .isExactlyInstanceOf( ConstTemplate.class );
@@ -101,7 +100,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void depth() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         Tst test = new Tst();
         Test1 test1 = new Test1( "a i/d" );
@@ -121,7 +120,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void otherJoinStrategy() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         Tst test = new Tst();
         Test4 test4 = new Test4( 320, 50 );
@@ -140,7 +139,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void alternatives() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         Tst test = new Tst();
         Test1 test1 = new Test1( "aid" );
@@ -161,7 +160,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void alternatives2() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         Tst test = new Tst();
         Test1 test1 = new Test1( null );
@@ -172,7 +171,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void override() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         Tst test = new Tst();
         Test1 test1 = new Test1( "id1" );
@@ -188,7 +187,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void mapper() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         Tst test = new Tst();
         Test1 test1 = new Test1( "id1" );
@@ -203,7 +202,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void mapperWithUrlEncode() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         Tst test = new Tst();
         Test1 test1 = new Test1( "id1" );
@@ -218,7 +217,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void doubleValue() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         Tst test = new Tst();
         assertThat( engine.getTemplate( "tmp", Container.class, "id=${tst.test3.dval}" )
@@ -232,7 +231,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void escape() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         Tst test = new Tst();
         Test1 test1 = new Test1( "aid" );
@@ -246,7 +245,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void invalidPath() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         Tst test = new Tst();
         Test1 test1 = new Test1( "aid" );
@@ -264,7 +263,7 @@ public class StringTemplateTest extends Fixtures {
 
     @Test
     public void map() {
-        Engine engine = new Engine( ensureDirectory( tmpPath( "test" ) ) );
+        Engine engine = new Engine( ensureDirectory( TestDirectoryFixture.testPath( "test" ) ) );
 
         var map = Maps.of2( "a", 1, "b", "test", "c (1)", 0.0 );
 

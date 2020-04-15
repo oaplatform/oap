@@ -27,9 +27,6 @@ package oap.prometheus;
 import io.micrometer.core.instrument.Metrics;
 import org.joda.time.DateTimeUtils;
 
-/**
- * Created by igor.petrenko on 2020-03-06.
- */
 public class PrometheusApplicationInfoExporter {
     private long start;
 

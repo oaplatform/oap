@@ -29,24 +29,26 @@ import oap.application.Module;
 import oap.io.Files;
 import oap.io.Resources;
 import oap.testng.Env;
-import oap.testng.Fixture;
+import oap.testng.EnvFixture;
+import oap.testng.TestDirectoryFixture;
 
 import javax.annotation.Nonnull;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import static oap.http.testng.HttpAsserts.httpPrefix;
 
-public class KernelFixture implements Fixture {
+public class KernelFixture extends EnvFixture {
     private static int kernelN = 0;
     public Kernel kernel;
-    private Path conf;
-    private String confd;
-    private List<URL> additionalModules = List.of();
+    private final Path conf;
+    private final String confd;
+    private final List<URL> additionalModules = new ArrayList<>();
 
     public KernelFixture( Path conf ) {
-        this.conf = conf;
+        this( conf, List.of() );
     }
 
     public KernelFixture( String conf ) {
@@ -69,7 +71,33 @@ public class KernelFixture implements Fixture {
     public KernelFixture( Path conf, String confd, List<URL> additionalModules ) {
         this.conf = conf;
         this.confd = confd;
-        this.additionalModules = additionalModules;
+        this.additionalModules.addAll( additionalModules );
+        define( "TEST_REMOTING_PORT", Env.port( "TEST_REMOTING_PORT" ) );
+//        deprecated
+        define( "TMP_REMOTE_PORT", "${TEST_REMOTING_PORT}" );
+        define( "TEST_HTTP_PORT", Env.port() );
+//        depracated
+        define( "HTTP_PORT", "${TEST_HTTP_PORT}" );
+        define( "TEST_DIRECTORY", Env.tmp( "/" ) );
+//        deprecated
+        define( "TMP_PATH", "${TEST_DIRECTORY}" );
+        define( "TEST_RESOURCE_PATH", Resources.path( getClass(), "/" ).orElseThrow() );
+//        deprecated
+        define( "RESOURCE_PATH", "${TEST_RESOURCE_PATH}" );
+        define( "TEST_HTTP_PREFIX", httpPrefix() );
+//        deprecated
+        define( "HTTP_PREFIX", "${TEST_RESOURCE_PATH}" );
+
+    }
+
+    @Override
+    public KernelFixture define( String property, Object value ) {
+        return ( KernelFixture ) super.define( property, value );
+    }
+
+    @Override
+    public KernelFixture define( Scope scope, String property, Object value ) {
+        return ( KernelFixture ) super.define( scope, property, value );
     }
 
     @Nonnull
@@ -84,17 +112,13 @@ public class KernelFixture implements Fixture {
 
     @Override
     public void beforeMethod() {
-        System.setProperty( "TMP_REMOTE_PORT", String.valueOf( Env.port( "TMP_REMOTE_PORT" ) ) );
-        System.setProperty( "HTTP_PORT", String.valueOf( Env.port() ) );
-        System.setProperty( "TMP_PATH", Env.tmp( "/" ) );
-        System.setProperty( "RESOURCE_PATH", Resources.path( getClass(), "/" ).orElseThrow() );
-        System.setProperty( "HTTP_PREFIX", httpPrefix() );
+        super.beforeMethod();
         List<URL> moduleConfigurations = Module.CONFIGURATION.urlsFromClassPath();
         moduleConfigurations.addAll( additionalModules );
         this.kernel = new Kernel( "FixtureKernel#" + kernelN++, moduleConfigurations );
 
         if( confd != null ) {
-            var confdDeployed = Env.tmpPath( confd );
+            var confdDeployed = TestDirectoryFixture.testPath( confd );
             Resources.filePaths( getClass(), confd )
                 .forEach( path -> Files.copyDirectory( path, confdDeployed ) );
             this.kernel.start( conf, confdDeployed );

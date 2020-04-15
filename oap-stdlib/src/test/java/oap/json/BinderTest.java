@@ -33,9 +33,8 @@ import lombok.ToString;
 import oap.concurrent.LongAdder;
 import oap.json.testng.JsonAsserts;
 import oap.reflect.TypeRef;
-import oap.testng.Env;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import oap.util.Dates;
 import oap.util.Lists;
 import oap.util.Maps;
@@ -58,7 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class BinderTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     //todo generic map-list binding
@@ -279,7 +278,7 @@ public class BinderTest extends Fixtures {
 
     @Test
     public void marshalToPath() {
-        Path path = Env.tmpPath( "test.json" );
+        Path path = TestDirectoryFixture.testPath( "test.json" );
         Binder.json.marshal( path, new MapBean( __( "a", 1L ), __( "b", 2L ) ) );
 
         assertThat( path ).hasContent( "{\"map\":{\"a\":1,\"b\":2}}" );

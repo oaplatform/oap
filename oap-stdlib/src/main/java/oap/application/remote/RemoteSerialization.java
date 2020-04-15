@@ -31,9 +31,6 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by igor.petrenko on 26.03.2019.
- */
 public final class RemoteSerialization<T> implements InvocationHandler {
     private final Class<?> interfaze;
     private final T master;

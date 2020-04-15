@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import oap.io.Files;
-import oap.testng.Env;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.net.MalformedURLException;
@@ -42,7 +42,7 @@ public class DynamicConfigTest {
 
     @Test
     public void defaultConfig() throws MalformedURLException {
-        Path update = Env.tmpPath( "update.conf" );
+        Path update = TestDirectoryFixture.testPath( "update.conf" );
 
         DynamicConfig<Cfg> config = new DynamicConfig<>( 10, Cfg.class,
             urlOfTestResource( getClass(), "default.conf" ),

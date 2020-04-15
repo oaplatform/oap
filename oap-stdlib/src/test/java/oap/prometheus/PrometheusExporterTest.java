@@ -34,9 +34,6 @@ import java.io.IOException;
 
 import static oap.testng.Asserts.assertString;
 
-/**
- * Created by igor.petrenko on 2019-11-05.
- */
 public class PrometheusExporterTest {
     private static final Counter TEST_1 = Metrics.counter( "test1" );
 

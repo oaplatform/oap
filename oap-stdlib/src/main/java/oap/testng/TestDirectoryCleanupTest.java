@@ -34,7 +34,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static oap.testng.TestDirectory.deleteDirectory;
+import static oap.testng.TestDirectoryFixture.deleteDirectory;
+import static oap.testng.TestDirectoryFixture.globalTestDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -49,7 +50,7 @@ public class TestDirectoryCleanupTest {
 
     @AfterClass
     public void checkForPollution() throws IOException {
-        long count = Files.list( Env.tmpRoot ).count();
+        long count = Files.list( TestDirectoryFixture.testDirectory() ).count();
         assertThat( count )
             .withFailMessage( "POLLUTION DETECTED, the previous test left test directory with content" )
             .isEqualTo( 0 );
@@ -59,11 +60,11 @@ public class TestDirectoryCleanupTest {
     public void tryGeneralCleanup() {
         final long now = System.currentTimeMillis();
         boolean empty = true;
-        if( !java.nio.file.Files.exists( Env.tmp ) ) return;
+        if( !java.nio.file.Files.exists( globalTestDirectory() ) ) return;
 
-        try( var stream = java.nio.file.Files.newDirectoryStream( Env.tmp ) ) {
+        try( var stream = java.nio.file.Files.newDirectoryStream( globalTestDirectory() ) ) {
             for( Path build : stream ) {
-                boolean self = Env.tmpRoot.equals( build );
+                boolean self = TestDirectoryFixture.testDirectory().equals( build );
                 long lastModified = java.nio.file.Files.getLastModifiedTime( build ).toMillis();
                 long diff = now - lastModified;
                 if( self || diff > TEN_HOURS ) {
@@ -80,6 +81,6 @@ public class TestDirectoryCleanupTest {
             throw new UncheckedIOException( e );
         }
 
-        if( empty ) deleteDirectory( Env.tmp );
+        if( empty ) deleteDirectory( globalTestDirectory() );
     }
 }

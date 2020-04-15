@@ -25,7 +25,7 @@
 package oap.io;
 
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import java.net.URL;
@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ResourcesTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test

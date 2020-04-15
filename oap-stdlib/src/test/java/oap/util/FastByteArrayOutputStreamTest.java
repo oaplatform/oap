@@ -28,9 +28,6 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 02.05.2019.
- */
 public class FastByteArrayOutputStreamTest {
     @Test
     public void test() {

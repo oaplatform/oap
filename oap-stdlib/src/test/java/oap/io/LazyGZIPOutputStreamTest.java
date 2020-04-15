@@ -25,22 +25,21 @@
 package oap.io;
 
 import lombok.SneakyThrows;
-import oap.testng.Env;
 import oap.testng.Fixtures;
-import oap.testng.TestDirectory;
+import oap.testng.TestDirectoryFixture;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class LazyGZIPOutputStreamTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test
     @SneakyThrows
     public void gzip() {
-        var path = Env.tmpPath( "test.gz" );
+        var path = TestDirectoryFixture.testPath( "test.gz" );
         new LazyGZIPOutputStream( new LazyFileOutputStream( path ) ).close();
 
         assertThat( path ).doesNotExist();

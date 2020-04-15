@@ -32,9 +32,6 @@ import com.fasterxml.jackson.databind.node.TextNode;
 
 import java.io.IOException;
 
-/**
- * Created by igor.petrenko on 02.05.2019.
- */
 public class ModuleDependsDeserializer extends JsonDeserializer<Module.Depends> {
     @Override
     public Module.Depends deserialize( JsonParser p, DeserializationContext ctxt ) throws IOException {

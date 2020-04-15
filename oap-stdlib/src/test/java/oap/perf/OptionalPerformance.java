@@ -30,9 +30,6 @@ import java.util.Optional;
 
 import static oap.benchmark.Benchmark.benchmark;
 
-/**
- * Created by igor.petrenko on 05.04.2019.
- */
 public class OptionalPerformance {
     public static final int SAMPLES = 10000000;
     public static final int EXPERIMENTS = 5;

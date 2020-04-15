@@ -27,8 +27,8 @@ package oap.http.file;
 import oap.io.FileSync;
 import oap.testng.Env;
 import oap.testng.Fixtures;
-import oap.testng.ResetSystemTimer;
-import oap.testng.TestDirectory;
+import oap.testng.SystemTimerFixture;
+import oap.testng.TestDirectoryFixture;
 import org.apache.http.client.utils.DateUtils;
 import org.joda.time.DateTimeUtils;
 import org.mockserver.integration.ClientAndServer;
@@ -52,8 +52,8 @@ public class HttpFileSyncTest extends Fixtures {
     private ClientAndServer mockServer;
 
     {
-        fixture( ResetSystemTimer.FIXTURE );
-        fixture( TestDirectory.FIXTURE );
+        fixture( SystemTimerFixture.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @BeforeMethod
@@ -74,7 +74,7 @@ public class HttpFileSyncTest extends Fixtures {
         var date10 = new Date( 10 * 1000 );
         var date20 = new Date( 20 * 1000 );
 
-        var localFile = Env.tmpPath( "ltest.file" );
+        var localFile = TestDirectoryFixture.testPath( "ltest.file" );
 
         var fileSync = FileSync.create( "http://localhost:" + PORT + "/file", localFile );
         fileSync.addListener( path -> b.append( "f" ) );

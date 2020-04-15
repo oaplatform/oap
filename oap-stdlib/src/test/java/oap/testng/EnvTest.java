@@ -28,18 +28,15 @@ import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 28.08.2019.
- */
 public class EnvTest extends Fixtures {
     {
-        fixture( TestDirectory.FIXTURE );
+        fixture( TestDirectoryFixture.FIXTURE );
     }
 
     @Test
     public void testDeployTestData() {
         Env.deployTestData( getClass(), "test" );
 
-        assertThat( Env.tmpPath( "test/test.txt" ) ).hasContent( "1" );
+        assertThat( TestDirectoryFixture.testPath( "test/test.txt" ) ).hasContent( "1" );
     }
 }

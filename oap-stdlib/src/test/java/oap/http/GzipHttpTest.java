@@ -39,13 +39,9 @@ import static oap.http.ContentTypes.TEXT_PLAIN;
 import static oap.io.IoStreams.Encoding.GZIP;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by igor.petrenko on 12.02.2019.
- */
 public class GzipHttpTest {
     private int port;
     private Server server;
-    private PlainHttpListener listener;
     private SynchronizedThread thread;
 
     @BeforeMethod
@@ -53,7 +49,7 @@ public class GzipHttpTest {
         port = Env.port( getClass().getName() );
         server = new Server( 1024, false );
         server.start();
-        listener = new PlainHttpListener( server, port );
+        PlainHttpListener listener = new PlainHttpListener( server, port );
         thread = new SynchronizedThread( listener, 5000 );
         listener.readyListener( thread );
     }

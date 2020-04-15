@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -63,7 +64,7 @@ public final class HttpResponse {
     public static final HttpResponse FORBIDDEN = status( HTTP_FORBIDDEN ).response();
     public static final HttpResponse NO_CONTENT = status( HTTP_NO_CONTENT ).response();
     public static final HttpResponse NOT_MODIFIED = status( HTTP_NOT_MODIFIED ).response();
-    private static Map<String, Function<Object, String>> producers = Maps.of(
+    private static final Map<String, Function<Object, String>> producers = Maps.of(
         __( TEXT_PLAIN.getMimeType(), String::valueOf ),
         __( APPLICATION_JSON.getMimeType(), Binder.json::marshal )
     );
@@ -193,6 +194,7 @@ public final class HttpResponse {
         }
 
         public Builder withCookie( @Nonnull String cookie ) {
+            Objects.requireNonNull( cookie );
             cookies.add( __( "Set-Cookie", cookie ) );
             return this;
         }

@@ -24,9 +24,6 @@
 
 package oap.message;
 
-/**
- * Created by igor.petrenko on 2019-12-10.
- */
 public class MessageException extends RuntimeException {
     public MessageException( String message ) {
         super( message );

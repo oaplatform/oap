@@ -25,14 +25,14 @@
 package oap.util;
 
 import oap.testng.Fixtures;
-import oap.testng.ResetSystemTimer;
+import oap.testng.SystemTimerFixture;
 import org.testng.annotations.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CounterTest extends Fixtures {
     {
-        fixture( ResetSystemTimer.FIXTURE );
+        fixture( SystemTimerFixture.FIXTURE );
     }
 
     @Test

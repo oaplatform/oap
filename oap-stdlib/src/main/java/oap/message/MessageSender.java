@@ -55,9 +55,6 @@ import static oap.message.MessageProtocol.STATUS_OK;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_ERROR;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE;
 
-/**
- * Created by igor.petrenko on 2019-12-11.
- */
 @Slf4j
 @ToString
 public class MessageSender implements Closeable, Runnable {
