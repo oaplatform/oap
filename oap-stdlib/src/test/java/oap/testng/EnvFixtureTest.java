@@ -37,7 +37,7 @@ public class EnvFixtureTest {
             .define( SUITE, "suite", 1 )
             .define( CLASS, "class", "class:${suite}" )
             .define( "method", "method:${class}" )
-            .define( "u", "u=${USER}" );
+            .define( "u", "u=${PWD}" );
         fixture.beforeSuite();
         assertThat( System.getProperty( "suite" ) ).isEqualTo( "1" );
         assertThat( System.getProperty( "class" ) ).isNull();
@@ -47,7 +47,7 @@ public class EnvFixtureTest {
         assertThat( System.getProperty( "method" ) ).isNull();
         fixture.beforeMethod();
         assertThat( System.getProperty( "method" ) ).isEqualTo( "method:class:1" );
-        assertThat( System.getProperty( "u" ) ).isEqualTo( "u=" + System.getenv( "USER" ) );
+        assertThat( System.getProperty( "u" ) ).isEqualTo( "u=" + System.getenv( "PWD" ) );
     }
 
 }
