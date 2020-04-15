@@ -27,6 +27,7 @@ package oap.testng;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import lombok.extern.slf4j.Slf4j;
 import oap.util.Pair;
 import oap.util.Strings;
 
@@ -35,6 +36,7 @@ import static oap.testng.EnvFixture.Scope.METHOD;
 import static oap.testng.EnvFixture.Scope.SUITE;
 import static oap.util.Pair.__;
 
+@Slf4j
 public class EnvFixture implements Fixture {
     private final ListMultimap<Scope, Pair<String, Object>> properties = ArrayListMultimap.create();
 
@@ -52,8 +54,12 @@ public class EnvFixture implements Fixture {
 
 
     private void init( Scope scope ) {
-        properties.get( scope ).forEach( p -> System.setProperty( p._1, Strings.substitute( String.valueOf( p._2 ),
-            k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) ) ) );
+        properties.get( scope ).forEach( p -> {
+            String value = Strings.substitute( String.valueOf( p._2 ),
+                k -> System.getenv( k ) == null ? System.getProperty( k ) : System.getenv( k ) );
+            log.debug( "system property {} = {}", p._1, value );
+            System.setProperty( p._1, value );
+        } );
     }
 
     @Override
