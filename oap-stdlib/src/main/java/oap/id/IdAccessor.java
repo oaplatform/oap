@@ -31,7 +31,7 @@ import oap.util.Lists;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class IdAccessor {
-    private static final ConcurrentHashMap<Class, Accessor<?>> ids = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Class<?>, Accessor<?>> ids = new ConcurrentHashMap<>();
 
     public static <I> I get( Object value ) {
         return IdAccessor.<I>accessor( value.getClass() ).get( value );
@@ -43,7 +43,7 @@ public class IdAccessor {
             Reflection reflect = Reflect.reflect( c );
 
             var idFields = reflect.annotatedFields( Id.class );
-            if( !idFields.isEmpty() ) return new FieldAccessor( Lists.head( idFields ) );
+            if( !idFields.isEmpty() ) return new FieldAccessor<I>( Lists.head( idFields ) );
 
             var idMethods = reflect.annotatedMethods( Id.class );
 

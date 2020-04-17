@@ -52,11 +52,11 @@ public interface Identifier<I, T> {
         return StringIdentifierBuilder.<T>forAnnotation().build();
     }
 
-    static <T> StringIdentifierBuilder<T> forId( final Function<T, String> getter ) {
+    static <T> StringIdentifierBuilder<T> forId( Function<T, String> getter ) {
         return StringIdentifierBuilder.forId( getter );
     }
 
-    static <T> StringIdentifierBuilder<T> forId( final Function<T, String> getter, BiConsumer<T, String> setter ) {
+    static <T> StringIdentifierBuilder<T> forId( Function<T, String> getter, BiConsumer<T, String> setter ) {
         return StringIdentifierBuilder.forId( getter, setter );
     }
 
