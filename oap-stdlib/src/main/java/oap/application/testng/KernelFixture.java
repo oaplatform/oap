@@ -78,7 +78,7 @@ public class KernelFixture extends EnvFixture {
         define( "TEST_HTTP_PORT", Env.port() );
 //        depracated
         define( "HTTP_PORT", "${TEST_HTTP_PORT}" );
-        define( "TEST_DIRECTORY", Env.tmp( "/" ) );
+        define( "TEST_DIRECTORY", TestDirectoryFixture.testDirectory( ) );
 //        deprecated
         define( "TMP_PATH", "${TEST_DIRECTORY}" );
         define( "TEST_RESOURCE_PATH", Resources.path( getClass(), "/" ).orElseThrow() );

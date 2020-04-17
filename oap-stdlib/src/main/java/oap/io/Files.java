@@ -69,6 +69,7 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
@@ -100,6 +101,7 @@ public final class Files {
 
     /**
      * it is NOT compatible with {@link #wildcard(Path, String)}
+     *
      * @todo make compatible
      */
     public static ArrayList<Path> fastWildcard( String basePath, String wildcard ) {
@@ -559,5 +561,13 @@ public final class Files {
         } catch( IOException e ) {
             throw new UncheckedIOException( e );
         }
+    }
+
+    public static Optional<Path> resolve( String... paths ) {
+        for( String path : paths ) {
+            Path result = Path.of( path );
+            if( result.toFile().exists() ) return Optional.of( result );
+        }
+        return Optional.empty();
     }
 }
