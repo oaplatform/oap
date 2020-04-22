@@ -30,6 +30,7 @@ import org.apache.commons.lang3.SystemUtils;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URL;
@@ -97,7 +98,9 @@ public class Env {
 
     public static int port( String key ) {
         return ports.computeIfAbsent( key, k -> {
-            try( var socket = new ServerSocket( 0 ) ) {
+            try( var socket = new ServerSocket( ) ) {
+                socket.setReuseAddress( true );
+                socket.bind( new InetSocketAddress( 0 ) );
                 var localPort = socket.getLocalPort();
                 System.out.println( "ENV::key=" + key + "; port = " + localPort );
                 return localPort;
