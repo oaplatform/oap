@@ -60,7 +60,7 @@ public class BinderTest extends Fixtures {
         fixture( TestDirectoryFixture.FIXTURE );
     }
 
-    //todo generic map-list binding
+//todo generic map-list binding
     private static <T> void assertBind( Class<T> clazz, T source ) {
         System.out.println( "========================================" );
         String json = Binder.json.marshal( source );
@@ -285,7 +285,7 @@ public class BinderTest extends Fixtures {
     }
 
     @Test
-    public void update() {
+    public void testUpdate() {
         var obj = new Bean( "1", 1, null );
         Binder.update( obj, Map.of( "str", "test" ) );
         assertThat( obj.str ).isEqualTo( "test" );

@@ -103,16 +103,16 @@ public class Binder {
             .map( Try.map( clazz -> ( ( Module ) Class.forName( clazz ).getDeclaredConstructor().newInstance() ) ) )
             .toSet();
 
-        json = new Binder( initialize( new ObjectMapper(), false, false ) );
-        jsonWithTyping = new Binder( initialize( new ObjectMapper(), true, false ) );
-        xml = new Binder( initialize( new XmlMapper(), false, false ) );
-        xmlWithTyping = new Binder( initialize( new XmlMapper(), true, false ) );
+        json = new Binder( initialize( new ObjectMapper(), false, false, true ) );
+        jsonWithTyping = new Binder( initialize( new ObjectMapper(), true, false, true ) );
+        xml = new Binder( initialize( new XmlMapper(), false, false, true ) );
+        xmlWithTyping = new Binder( initialize( new XmlMapper(), true, false, true ) );
         hoconWithoutSystemProperties =
-            new Binder( initialize( new ObjectMapper( new HoconFactory() ), false, false ) );
+            new Binder( initialize( new ObjectMapper( new HoconFactory() ), false, false, true ) );
         hocon =
-            new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false, false ) );
+            new Binder( initialize( new ObjectMapper( new HoconFactoryWithSystemProperties( log ) ), false, false, true ) );
 
-        yaml = new Binder( initialize( new ObjectMapper( new YAMLFactory() ), false, false ) );
+        yaml = new Binder( initialize( new ObjectMapper( new YAMLFactory() ), false, false, true ) );
     }
 
     private ObjectMapper mapper;
@@ -137,47 +137,35 @@ public class Binder {
         return Format.of( url, withSystemProperties ).binder;
     }
 
-    public enum Format {
-        JSON( Binder.json ),
-        HOCON( Binder.hocon ),
-        HOCON_WO_SYSTEM_PROPERTIES( Binder.hoconWithoutSystemProperties ),
-        YAML( Binder.yaml );
-
-        public final Binder binder;
-
-        Format( Binder binder ) {
-            this.binder = binder;
-        }
-
-        public static Format of( URL url, boolean withSystemProperties ) {
-            var path = url.toString().toLowerCase();
-            if( path.endsWith( "json" ) ) return JSON;
-            else if( path.endsWith( "yaml" ) || path.endsWith( "yml" ) ) return YAML;
-            return withSystemProperties ? HOCON : HOCON_WO_SYSTEM_PROPERTIES;
-        }
-    }
-
     public static Binder hoconWithConfig( List<String> config ) {
         return hoconWithConfig( true, config );
     }
 
     public static Binder hoconWithConfig( boolean withSystemProperties, List<String> config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( withSystemProperties, log, config ) ), false, false ) );
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( withSystemProperties, log, config ) ), false, false, true ) );
     }
 
     public static Binder hoconWithConfig( Map<String, Object> config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, false ) );
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, false, true ) );
     }
 
     private static Binder hoconWithConfigWithNullInclusion( Map<String, Object> config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, true ) );
+        return hoconWithConfigWithNullInclusion( config, true );
+    }
+
+    private static Binder hoconWithConfigWithNullInclusion( Map<String, Object> config, boolean skipInputNulls ) {
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, true, skipInputNulls ) );
     }
 
     private static Binder hoconWithConfigWithNullInclusion( List<String> config ) {
-        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, true ) );
+        return hoconWithConfigWithNullInclusion( config, true );
     }
 
-    private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping, boolean nonNullInclusion ) {
+    private static Binder hoconWithConfigWithNullInclusion( List<String> config, boolean skipInputNulls ) {
+        return new Binder( initialize( new ObjectMapper( new HoconFactoryWithFallback( true, log, config ) ), false, true, skipInputNulls ) );
+    }
+
+    private static ObjectMapper initialize( ObjectMapper mapper, boolean defaultTyping, boolean nonNullInclusion, boolean skipInputNulls ) {
         if( mapper instanceof XmlMapper ) {
             ( ( XmlMapper ) mapper ).setDefaultUseWrapper( false );
             ( ( XmlMapper ) mapper ).configure( ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true );
@@ -199,11 +187,10 @@ public class Binder {
         mapper.configure( JsonGenerator.Feature.AUTO_CLOSE_TARGET, false );
         mapper.enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES );
         mapper.setVisibility( PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY );
-        mapper.setDefaultSetterInfo( JsonSetter.Value.forValueNulls( Nulls.SKIP ) );
         //todo remove after kernel cleanup
         mapper.enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY );
 
-
+        if( skipInputNulls ) mapper.setDefaultSetterInfo( JsonSetter.Value.forValueNulls( Nulls.SKIP ) );
         if( !nonNullInclusion ) mapper.setSerializationInclusion( JsonInclude.Include.NON_NULL );
 
         modules.forEach( mapper::registerModule );
@@ -230,8 +217,8 @@ public class Binder {
 
     public static void update( Object obj, Map<String, Object> values ) {
         try {
-            String marshal = json.marshal( obj );
-            hoconWithConfigWithNullInclusion( values ).mapper.readerForUpdating( obj ).readValue( marshal );
+            var marshal = json.marshal( obj );
+            hoconWithConfigWithNullInclusion( values, false ).mapper.readerForUpdating( obj ).readValue( marshal );
         } catch( IOException e ) {
             throw new JsonException( e );
         }
@@ -240,7 +227,7 @@ public class Binder {
     public static void update( Object obj, String json ) {
         try {
             String marshal = Binder.json.marshal( obj );
-            hoconWithConfigWithNullInclusion( List.of( json ) ).mapper.readerForUpdating( obj ).readValue( marshal );
+            hoconWithConfigWithNullInclusion( List.of( json ), false ).mapper.readerForUpdating( obj ).readValue( marshal );
         } catch( IOException e ) {
             throw new JsonException( e );
         }
@@ -543,6 +530,26 @@ public class Binder {
                 if( it.hasNext() ) out.write( ITEM_SEP );
             }
             out.write( END_ARRAY );
+        }
+    }
+
+    public enum Format {
+        JSON( Binder.json ),
+        HOCON( Binder.hocon ),
+        HOCON_WO_SYSTEM_PROPERTIES( Binder.hoconWithoutSystemProperties ),
+        YAML( Binder.yaml );
+
+        public final Binder binder;
+
+        Format( Binder binder ) {
+            this.binder = binder;
+        }
+
+        public static Format of( URL url, boolean withSystemProperties ) {
+            var path = url.toString().toLowerCase();
+            if( path.endsWith( "json" ) ) return JSON;
+            else if( path.endsWith( "yaml" ) || path.endsWith( "yml" ) ) return YAML;
+            return withSystemProperties ? HOCON : HOCON_WO_SYSTEM_PROPERTIES;
         }
     }
 
