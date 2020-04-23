@@ -86,9 +86,13 @@ public class Dates {
         return DateTime.now( DateTimeZone.UTC );
     }
 
+    public static DateTime nowUtcDate() {
+        return nowUtc().withTime( 0, 0, 0, 0 );
+    }
+
+    @Deprecated
     public static DateTime nowUtcClean() {
-        var now = Dates.nowUtc();
-        return new DateTime( now.getYear(), now.getMonthOfYear(), now.getDayOfMonth(), 0, 0 );
+        return nowUtcDate();
     }
 
     public static long currentTimeHour() {
