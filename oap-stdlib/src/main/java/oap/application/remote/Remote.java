@@ -132,7 +132,8 @@ public class Remote implements HttpHandler {
                             }
                         }
                         os.flush();
-                    } catch( IOException e ) {
+                    } catch( Throwable e ) {
+                        log.error( "invocation = {}", invocation );
                         log.error( e.getMessage(), e );
                     }
                 },
