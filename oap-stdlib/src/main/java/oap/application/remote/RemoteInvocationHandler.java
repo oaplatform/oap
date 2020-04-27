@@ -33,7 +33,9 @@ import oap.util.Stream;
 import oap.util.Try;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -123,12 +125,13 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 parameters[i].getType(), args[i] ) );
 
 
-        byte[] content = fst.configuration.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) );
+        var invocationB = getInvocation( method, arguments );
+
         Exception lastException = null;
         for( int i = 0; i <= retry; i++ ) {
             log.trace( "{} {}#{}...", i > 0 ? "retrying" : "invoking", this, method.getName() );
             try {
-                var bodyPublisher = HttpRequest.BodyPublishers.ofByteArray( content );
+                var bodyPublisher = HttpRequest.BodyPublishers.ofByteArray( invocationB );
                 var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
                 var response = client.send( request, HttpResponse.BodyHandlers.ofInputStream() );
                 if( response.statusCode() == HTTP_OK && response.body() != null ) {
@@ -209,6 +212,17 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         }
         throw lastException instanceof RemoteInvocationException ? ( RemoteInvocationException ) lastException
             : new RemoteInvocationException( "invocation failed " + this + "#" + method.getName(), lastException );
+    }
+
+    @SneakyThrows
+    private byte[] getInvocation( Method method, List<RemoteInvocation.Argument> arguments ) {
+        var baos = new ByteArrayOutputStream();
+        var dos = new DataOutputStream( baos );
+        dos.writeInt( Remotes.VERSION );
+        fst.writeObjectWithSize( dos, new RemoteInvocation( service, method.getName(), arguments ) );
+        baos.close();
+
+        return baos.toByteArray();
     }
 
     @Override

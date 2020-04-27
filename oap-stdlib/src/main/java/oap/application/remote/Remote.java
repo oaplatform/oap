@@ -29,12 +29,15 @@ import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.util.Headers;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
 import oap.util.Result;
 import oap.util.Try;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.stream.Stream;
@@ -79,8 +82,7 @@ public class Remote implements HttpHandler {
         var fst = new FST( serialization );
 
         exchange.getRequestReceiver().receiveFullBytes( ( ex, body ) -> {
-            var invocation = ( RemoteInvocation ) fst.configuration.asObject( body );
-            log.trace( "invoke {}", invocation );
+            var invocation = getRemoteInvocation( fst, body );
 
             var service = kernel.service( invocation.service );
 
@@ -140,5 +142,15 @@ public class Remote implements HttpHandler {
                 }
             );
         } );
+    }
+
+    @SneakyThrows
+    public RemoteInvocation getRemoteInvocation( FST fst, byte[] body ) {
+        var dis = new DataInputStream( new ByteArrayInputStream( body ) );
+        var version = dis.readInt();
+
+        var invocation = ( RemoteInvocation ) fst.readObjectWithSize( dis );
+        log.trace( "invoke v{} - {}", version, invocation );
+        return invocation;
     }
 }
