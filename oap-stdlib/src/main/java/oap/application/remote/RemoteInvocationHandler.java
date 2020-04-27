@@ -30,13 +30,9 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import oap.util.Result;
 import oap.util.Stream;
-import oap.util.Try;
 
-import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -122,98 +118,112 @@ public final class RemoteInvocationHandler implements InvocationHandler {
             arguments.add( new RemoteInvocation.Argument( parameters[i].getName(),
                 parameters[i].getType(), args[i] ) );
 
+        var kryo = Remotes.kryoPool.obtain();
+        var output = Remotes.outputPool.obtain();
+        var input = Remotes.inputPool.obtain();
+        try {
 
-        var baos = new ByteArrayOutputStream();
-        var oos = new ObjectOutputStream( baos );
-        oos.writeInt( Remotes.VERSION );
-        oos.writeObject( new RemoteInvocation( service, method.getName(), arguments ) );
-        oos.close();
-        var content = baos.toByteArray();
+            var baos = new ByteArrayOutputStream();
+            output.setOutputStream( baos );
+            output.writeInt( Remotes.VERSION );
+            kryo.writeObject( output, new RemoteInvocation( service, method.getName(), arguments ) );
+            output.close();
+            var content = baos.toByteArray();
 
-        Exception lastException = null;
-        for( int i = 0; i <= retry; i++ ) {
-            log.trace( "{} {}#{}...", i > 0 ? "retrying" : "invoking", this, method.getName() );
-            try {
-                var bodyPublisher = HttpRequest.BodyPublishers.ofByteArray( content );
-                var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
-                var response = client.send( request, HttpResponse.BodyHandlers.ofInputStream() );
-                if( response.statusCode() == HTTP_OK && response.body() != null ) {
-                    var bis = new BufferedInputStream( response.body() );
-                    var is = new ObjectInputStream( bis );
+            Exception lastException = null;
+            for( int i = 0; i <= retry; i++ ) {
+                log.trace( "{} {}#{}...", i > 0 ? "retrying" : "invoking", this, method.getName() );
+                try {
+                    var bodyPublisher = HttpRequest.BodyPublishers.ofByteArray( content );
+                    var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
+                    var response = client.send( request, HttpResponse.BodyHandlers.ofInputStream() );
+                    if( response.statusCode() == HTTP_OK && response.body() != null ) {
+                        input.setInputStream( response.body() );
 //todo refactor it to normal flow
-                    try {
-                        var success = is.readBoolean();
-                        if( !success ) try {
-                            var throwable = ( Throwable ) is.readObject();
-                            if( throwable instanceof RemoteInvocationException )
-                                throw ( RemoteInvocationException ) throwable;
+                        try {
+                            var success = input.readBoolean();
+                            if( !success ) {
+                                try {
+                                    var throwable = ( Throwable ) kryo.readClassAndObject( input );
+                                    if( throwable instanceof RemoteInvocationException )
+                                        throw ( RemoteInvocationException ) throwable;
 
-                            return Result.failure( throwable );
-                        } finally {
-                            is.close();
-                        }
-                        else {
-                            var stream = is.readBoolean();
-                            if( stream ) {
-                                var it = new Iterator<>() {
-                                    private Object obj = null;
-                                    private boolean end = false;
+                                    return Result.failure( throwable );
+                                } finally {
+                                    input.close();
+                                }
+                            } else {
+                                var stream = input.readBoolean();
+                                if( stream ) {
+                                    var it = new Iterator<>() {
+                                        private Object obj = null;
+                                        private boolean end = false;
 
-                                    @SneakyThrows
-                                    @Override
-                                    public boolean hasNext() {
-                                        if( end ) return false;
+                                        @SneakyThrows
+                                        @Override
+                                        public boolean hasNext() {
+                                            if( end ) return false;
 
-                                        if( obj != null ) return true;
+                                            if( obj != null ) return true;
 
-                                        var next = is.readByte();
-                                        if( next == 1 ) {
-                                            obj = is.readObject();
-                                        } else {
-                                            end = true;
-                                            obj = null;
-                                            is.close();
+                                            var next = input.readByte();
+                                            if( next == 1 ) {
+                                                obj = kryo.readClassAndObject( input );
+                                            } else {
+                                                end = true;
+                                                obj = null;
+                                                input.close();
+                                                Remotes.inputPool.free( input );
+                                            }
+
+                                            return obj != null;
                                         }
 
-                                        return obj != null;
-                                    }
+                                        @SneakyThrows
+                                        @Override
+                                        public Object next() {
+                                            var o = obj;
+                                            obj = null;
+                                            hasNext();
+                                            return o;
+                                        }
+                                    };
 
-                                    @SneakyThrows
-                                    @Override
-                                    public Object next() {
-                                        var o = obj;
-                                        obj = null;
-                                        hasNext();
-                                        return o;
+                                    return Result.success( Stream.of( it ).onClose( () -> {
+                                        input.close();
+                                        Remotes.inputPool.free( input );
+                                    } ) );
+                                } else {
+                                    try {
+                                        return Result.success( kryo.readClassAndObject( input ) );
+                                    } finally {
+                                        Remotes.inputPool.free( input );
                                     }
-                                };
-
-                                return Result.success( Stream.of( it ).onClose( Try.run( is::close ) ) );
-                            } else try {
-                                return Result.success( is.readObject() );
-                            } finally {
-                                is.close();
+                                }
                             }
+                        } catch( Exception e ) {
+                            input.close();
+                            throw e;
                         }
-                    } catch( Exception e ) {
-                        is.close();
-                        throw e;
-                    }
 
 
-                } else throw new RemoteInvocationException( "invocation failed " + this + "#" + method.getName() + " code " + response.statusCode() );
-            } catch( HttpTimeoutException e ) {
-                log.error( "timeout invoking {}#{}", method.getName(), this );
-                timeoutMetrics.increment();
-                lastException = e;
-            } catch( Exception e ) {
-                log.error( "error invoking {}#{}: {}", this, method.getName(), e );
-                errorMetrics.increment();
-                lastException = e;
+                    } else throw new RemoteInvocationException( "invocation failed " + this + "#" + method.getName() + " code " + response.statusCode() );
+                } catch( HttpTimeoutException e ) {
+                    log.error( "timeout invoking {}#{}", method.getName(), this );
+                    timeoutMetrics.increment();
+                    lastException = e;
+                } catch( Exception e ) {
+                    log.error( "error invoking {}#{}: {}", this, method.getName(), e );
+                    errorMetrics.increment();
+                    lastException = e;
+                }
             }
+            throw lastException instanceof RemoteInvocationException ? ( RemoteInvocationException ) lastException
+                : new RemoteInvocationException( "invocation failed " + this + "#" + method.getName(), lastException );
+        } finally {
+            Remotes.kryoPool.free( kryo );
+            Remotes.outputPool.free( output );
         }
-        throw lastException instanceof RemoteInvocationException ? ( RemoteInvocationException ) lastException
-            : new RemoteInvocationException( "invocation failed " + this + "#" + method.getName(), lastException );
     }
 
     @Override

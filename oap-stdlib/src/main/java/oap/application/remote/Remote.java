@@ -79,10 +79,13 @@ public class Remote implements HttpHandler {
     @Override
     public void handleRequest( HttpServerExchange exchange ) {
         exchange.getRequestReceiver().receiveFullBytes( ( ex, body ) -> {
+            var kryo = Remotes.kryoPool.obtain();
+            var input = Remotes.inputPool.obtain();
+            var output = Remotes.outputPool.obtain();
             try {
-                var dis = new ObjectInputStream( new ByteArrayInputStream( body ) );
-                var version = dis.readInt();
-                var invocation = ( RemoteInvocation ) dis.readObject();
+                input.setBuffer( body );
+                var version = input.readInt();
+                var invocation = ( RemoteInvocation ) kryo.readObject( input, RemoteInvocation.class );
 
                 log.trace( "invoke v{} - {}", version, invocation );
 
@@ -110,27 +113,29 @@ public class Remote implements HttpHandler {
                         exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM.toString() );
 
 
-                        try( var baos = new BufferedOutputStream( exchange.getOutputStream() );
-                             var os = new ObjectOutputStream( baos ) ) {
-                            os.writeBoolean( result.isSuccess() );
+                        output.setOutputStream( exchange.getOutputStream() );
+                        try {
+                            output.writeBoolean( result.isSuccess() );
                             if( !result.isSuccess() ) {
-                                os.writeObject( result.failureValue );
+                                kryo.writeClassAndObject( output, result.failureValue );
                             } else {
                                 if( result.successValue instanceof Stream<?> ) {
-                                    os.writeBoolean( true );
+                                    output.writeBoolean( true );
                                     ( ( Stream ) result.successValue ).forEach( Try.consume( ( obj -> {
-                                        os.writeByte( 1 );
-                                        os.writeObject( obj );
+                                        output.writeByte( 1 );
+                                        kryo.writeClassAndObject( output, obj );
                                     } ) ) );
-                                    os.writeByte( 0 );
+                                    output.writeByte( 0 );
                                 } else {
-                                    os.writeBoolean( false );
-                                    os.writeObject( result.successValue );
+                                    output.writeBoolean( false );
+                                    kryo.writeClassAndObject( output, result.successValue );
                                 }
                             }
                         } catch( Throwable e ) {
                             log.error( "invocation = {}", invocation );
                             log.error( e.getMessage(), e );
+                        } finally {
+                            output.close();
                         }
                     },
                     () -> {
@@ -141,6 +146,10 @@ public class Remote implements HttpHandler {
                 );
             } catch( Exception e ) {
                 throw Throwables.propagate( e );
+            } finally {
+                Remotes.kryoPool.free( kryo );
+                Remotes.inputPool.free( input );
+                Remotes.outputPool.free( output );
             }
         } );
     }

@@ -29,6 +29,7 @@ import oap.testng.Fixtures;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Optional;
 
 import static oap.testng.Asserts.assertString;
 import static oap.testng.Asserts.pathOfTestResource;
@@ -69,9 +70,9 @@ public class RemoteTest extends Fixtures {
     @Test
     public void testStream() {
         assertThat( kernelFixture.<RemoteClient>service( "remote-client" ).testStream( "1", "2", "3" ) )
-            .contains( "1", "2", "3" );
+            .contains( Optional.of( "1" ), Optional.of( "2" ), Optional.of( "3" ) );
         assertThat( kernelFixture.<RemoteClient>service( "remote-client" ).testStream( "1", "2", "3" ) )
-            .contains( "1", "2", "3" );
+            .contains( Optional.of( "1" ), Optional.of( "2" ), Optional.of( "3" ) );
     }
 
     @Test

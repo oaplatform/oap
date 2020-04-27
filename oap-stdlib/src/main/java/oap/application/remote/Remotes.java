@@ -24,9 +24,37 @@
 
 package oap.application.remote;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.Pool;
+
 /**
  * Created by igor.petrenko on 2020-04-27.
  */
 public interface Remotes {
     int VERSION = 2;
+
+    Pool<Kryo> kryoPool = new Pool<>( true, false, 8 ) {
+        protected Kryo create() {
+            var kryo = new Kryo();
+            kryo.setRegistrationRequired( false );
+            kryo.setReferences( true );
+            kryo.register( RemoteInvocation.class );
+            kryo.register( RemoteInvocationException.class );
+            return kryo;
+        }
+    };
+
+    Pool<Output> outputPool = new Pool<>( true, false, 16 ) {
+        protected Output create() {
+            return new Output( 1024, -1 );
+        }
+    };
+
+    Pool<Input> inputPool = new Pool<>( true, false, 16 ) {
+        protected Input create() {
+            return new Input( 1024 );
+        }
+    };
 }

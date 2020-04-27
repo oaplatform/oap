@@ -26,6 +26,7 @@ package oap.application.remote;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -50,7 +51,7 @@ public class RemoteService implements RemoteClient {
     }
 
     @Override
-    public Stream<String> testStream( String... values ) {
-        return Stream.of( values );
+    public Stream<Optional<String>> testStream( String... values ) {
+        return Stream.of( values ).map( Optional::ofNullable );
     }
 }

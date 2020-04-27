@@ -24,6 +24,7 @@
 
 package oap.application.remote;
 
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public interface RemoteClient {
@@ -33,5 +34,5 @@ public interface RemoteClient {
 
     void testRetry();
 
-    Stream<String> testStream( String... values );
+    Stream<Optional<String>> testStream( String... values );
 }
