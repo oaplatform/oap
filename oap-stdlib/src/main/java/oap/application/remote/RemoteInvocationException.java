@@ -24,9 +24,6 @@
 package oap.application.remote;
 
 public class RemoteInvocationException extends RuntimeException {
-    public RemoteInvocationException() {
-    }
-
     public RemoteInvocationException( String message ) {
         super( message );
     }

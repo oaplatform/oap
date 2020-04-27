@@ -27,7 +27,9 @@ package oap.application.remote;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy;
 import com.esotericsoftware.kryo.util.Pool;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
 /**
  * Created by igor.petrenko on 2020-04-27.
@@ -42,6 +44,7 @@ public interface Remotes {
             kryo.setReferences( true );
             kryo.register( RemoteInvocation.class );
             kryo.register( RemoteInvocationException.class );
+            kryo.setInstantiatorStrategy( new DefaultInstantiatorStrategy( new StdInstantiatorStrategy() ) );
             return kryo;
         }
     };
