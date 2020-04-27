@@ -32,6 +32,11 @@ import oap.util.Result;
 import oap.util.Stream;
 import oap.util.Try;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
@@ -56,7 +61,6 @@ public final class RemoteInvocationHandler implements InvocationHandler {
     private final Counter successMetrics;
 
     private final URI uri;
-    private final FST fst;
     private final int retry;
     private final String service;
     private final HttpClient client;
@@ -67,12 +71,10 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                      Path certificateLocation,
                                      String certificatePassword,
                                      long timeout,
-                                     FST.SerializationMethod serialization,
                                      int retry ) {
         this.uri = uri;
         this.service = service;
         this.timeout = timeout;
-        this.fst = new FST( serialization );
         this.retry = retry;
 
         timeoutMetrics = Metrics.counter( "remote_invocation", Tags.of( "service", service, "status", "timeout" ) );
@@ -91,14 +93,14 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
     public static Object proxy( RemoteLocation remote, Class<?> clazz ) {
         return proxy( remote.url, remote.name, clazz, remote.certificateLocation,
-            remote.certificatePassword, remote.timeout, remote.serialization, remote.retry );
+            remote.certificatePassword, remote.timeout, remote.retry );
     }
 
     private static Object proxy( URI uri, String service, Class<?> clazz,
                                  Path certificateLocation, String certificatePassword,
-                                 long timeout, FST.SerializationMethod serialization, int retry ) {
+                                 long timeout, int retry ) {
         return Proxy.newProxyInstance( clazz.getClassLoader(), new Class[] { clazz },
-            new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout, serialization, retry ) );
+            new RemoteInvocationHandler( uri, service, certificateLocation, certificatePassword, timeout, retry ) );
     }
 
     @Override
@@ -112,7 +114,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
         else throw result.failureValue;
     }
 
-    private Result<Object, Throwable> invoke( Method method, Object[] args ) {
+    private Result<Object, Throwable> invoke( Method method, Object[] args ) throws IOException {
         Parameter[] parameters = method.getParameters();
         List<RemoteInvocation.Argument> arguments = new ArrayList<>();
 
@@ -121,7 +123,12 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 parameters[i].getType(), args[i] ) );
 
 
-        byte[] content = fst.configuration.asByteArray( new RemoteInvocation( service, method.getName(), arguments ) );
+        var baos = new ByteArrayOutputStream();
+        var oos = new ObjectOutputStream( baos );
+        oos.writeObject( new RemoteInvocation( service, method.getName(), arguments ) );
+        oos.close();
+        var content = baos.toByteArray();
+
         Exception lastException = null;
         for( int i = 0; i <= retry; i++ ) {
             log.trace( "{} {}#{}...", i > 0 ? "retrying" : "invoking", this, method.getName() );
@@ -130,12 +137,13 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                 var request = HttpRequest.newBuilder( uri ).POST( bodyPublisher ).timeout( Duration.ofMillis( timeout ) ).build();
                 var response = client.send( request, HttpResponse.BodyHandlers.ofInputStream() );
                 if( response.statusCode() == HTTP_OK && response.body() != null ) {
-                    var is = fst.configuration.getObjectInput( response.body() );
+                    var bis = new BufferedInputStream( response.body() );
+                    var is = new ObjectInputStream( bis );
 //todo refactor it to normal flow
                     try {
                         var success = is.readBoolean();
                         if( !success ) try {
-                            var throwable = ( Throwable ) is.readObject( Throwable.class );
+                            var throwable = ( Throwable ) is.readObject();
                             if( throwable instanceof RemoteInvocationException )
                                 throw ( RemoteInvocationException ) throwable;
 

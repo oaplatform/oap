@@ -19,7 +19,6 @@ services:
     parameters:
       port: 8980
       context: /remote/
-      serialization: DEFAULT
       kernel: "@kernel"
     supervision:
       supervise: true

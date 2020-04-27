@@ -31,11 +31,14 @@ import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.util.Headers;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
-import oap.http.cors.GenericCorsPolicy;
 import oap.util.Result;
+import oap.util.Throwables;
 import oap.util.Try;
 
-import java.io.IOException;
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -47,19 +50,10 @@ import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 @Slf4j
 public class Remote implements HttpHandler {
-    private final FST.SerializationMethod serialization;
-    private final ThreadLocal<oap.application.remote.FST> fst = new ThreadLocal<>() {
-        public FST initialValue() {
-            return new FST( serialization );
-        }
-    };
-    private final GenericCorsPolicy cors = GenericCorsPolicy.DEFAULT;
-
     private final Kernel kernel;
     private final Undertow undertow;
 
-    public Remote( FST.SerializationMethod serialization, int port, String context, Kernel kernel ) {
-        this.serialization = serialization;
+    public Remote( int port, String context, Kernel kernel ) {
         this.kernel = kernel;
 
         undertow = Undertow
@@ -84,65 +78,69 @@ public class Remote implements HttpHandler {
 
     @Override
     public void handleRequest( HttpServerExchange exchange ) {
-        FST fst = this.fst.get();
-
         exchange.getRequestReceiver().receiveFullBytes( ( ex, body ) -> {
-            var invocation = ( RemoteInvocation ) fst.configuration.asObject( body );
+            try {
+                var dis = new ObjectInputStream( new ByteArrayInputStream( body ) );
+                var invocation = ( RemoteInvocation ) dis.readObject();
 
-            log.trace( "invoke {}", invocation );
+                log.trace( "invoke {}", invocation );
 
-            Optional<Object> service = kernel.service( invocation.service );
+                Optional<Object> service = kernel.service( invocation.service );
 
-            service.ifPresentOrElse( s -> {
-                    Result<Object, Throwable> result;
-                    int status = HTTP_OK;
-                    try {
-                        result = Result.success( s.getClass()
-                            .getMethod( invocation.method, invocation.types() )
-                            .invoke( s, invocation.values() ) );
-                    } catch( NoSuchMethodException | IllegalAccessException e ) {
-                        // transport error - illegal setup
-                        // wrapping into RIE to be handled at client's properly
-                        log.error( "method [{}] doesn't exist or access isn't allowed", invocation.method );
-                        status = HTTP_NOT_FOUND;
-                        result = Result.failure( new RemoteInvocationException( e ) );
-                    } catch( InvocationTargetException e ) {
-                        // application error
-                        result = Result.failure( e.getCause() );
-                        log.trace( "exception occurred on call to method [{}]", invocation.method );
-                    }
-                    exchange.setStatusCode( status );
-                    exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM.toString() );
-
-                    try( var os = fst.configuration.getObjectOutput( exchange.getOutputStream() ) ) {
-                        os.writeBoolean( result.isSuccess() );
-                        if( !result.isSuccess() )
-                            os.writeObject( result.failureValue );
-                        else {
-                            if( result.successValue instanceof Stream<?> ) {
-                                os.writeBoolean( true );
-                                ( ( Stream ) result.successValue ).forEach( Try.consume( ( obj -> {
-                                    os.writeByte( 1 );
-                                    os.writeObject( obj );
-                                } ) ) );
-                                os.writeByte( 0 );
-                            } else {
-                                os.writeBoolean( false );
-                                os.writeObject( result.successValue );
-                            }
+                service.ifPresentOrElse( s -> {
+                        Result<Object, Throwable> result;
+                        int status = HTTP_OK;
+                        try {
+                            result = Result.success( s.getClass()
+                                .getMethod( invocation.method, invocation.types() )
+                                .invoke( s, invocation.values() ) );
+                        } catch( NoSuchMethodException | IllegalAccessException e ) {
+                            // transport error - illegal setup
+                            // wrapping into RIE to be handled at client's properly
+                            log.error( "method [{}] doesn't exist or access isn't allowed", invocation.method );
+                            status = HTTP_NOT_FOUND;
+                            result = Result.failure( new RemoteInvocationException( e ) );
+                        } catch( InvocationTargetException e ) {
+                            // application error
+                            result = Result.failure( e.getCause() );
+                            log.trace( "exception occurred on call to method [{}]", invocation.method );
                         }
-                        os.flush();
-                    } catch( Throwable e ) {
-                        log.error( "invocation = {}", invocation );
-                        log.error( e.getMessage(), e );
+                        exchange.setStatusCode( status );
+                        exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM.toString() );
+
+
+                        try( var baos = new BufferedOutputStream( exchange.getOutputStream() );
+                             var os = new ObjectOutputStream( baos ) ) {
+                            os.writeBoolean( result.isSuccess() );
+                            if( !result.isSuccess() ) {
+                                os.writeObject( result.failureValue );
+                            } else {
+                                if( result.successValue instanceof Stream<?> ) {
+                                    os.writeBoolean( true );
+                                    ( ( Stream ) result.successValue ).forEach( Try.consume( ( obj -> {
+                                        os.writeByte( 1 );
+                                        os.writeObject( obj );
+                                    } ) ) );
+                                    os.writeByte( 0 );
+                                } else {
+                                    os.writeBoolean( false );
+                                    os.writeObject( result.successValue );
+                                }
+                            }
+                        } catch( Throwable e ) {
+                            log.error( "invocation = {}", invocation );
+                            log.error( e.getMessage(), e );
+                        }
+                    },
+                    () -> {
+                        exchange.setStatusCode( HTTP_NOT_FOUND );
+                        exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, TEXT_PLAIN.toString() );
+                        exchange.getResponseSender().send( invocation.service + " not found" );
                     }
-                },
-                () -> {
-                    exchange.setStatusCode( HTTP_NOT_FOUND );
-                    exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, TEXT_PLAIN.toString() );
-                    exchange.getResponseSender().send( invocation.service + " not found" );
-                }
-            );
+                );
+            } catch( Exception e ) {
+                throw Throwables.propagate( e );
+            }
         } );
     }
 }

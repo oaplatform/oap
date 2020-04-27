@@ -34,20 +34,18 @@ public class RemoteLocation {
     public Path certificateLocation;
     public String certificatePassword;
     public long timeout = DEFAULT_TIMEOUT;
-    public FST.SerializationMethod serialization = FST.SerializationMethod.DEFAULT;
     public int retry = 0;
 
     public RemoteLocation() {
     }
 
     public RemoteLocation( URI url, String name, Path certificateLocation, String certificatePassword,
-                           long timeout, FST.SerializationMethod serialization, int retry ) {
+                           long timeout, int retry ) {
         this.url = url;
         this.name = name;
         this.certificateLocation = certificateLocation;
         this.certificatePassword = certificatePassword;
         this.timeout = timeout;
-        this.serialization = serialization;
         this.retry = retry;
     }
 }
