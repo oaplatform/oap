@@ -32,15 +32,11 @@ import io.undertow.util.Headers;
 import lombok.extern.slf4j.Slf4j;
 import oap.application.Kernel;
 import oap.util.Result;
-import oap.util.Throwables;
 import oap.util.Try;
 
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.DataOutputStream;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
@@ -50,10 +46,12 @@ import static org.apache.http.entity.ContentType.TEXT_PLAIN;
 
 @Slf4j
 public class Remote implements HttpHandler {
+    private final FST.SerializationMethod serialization;
     private final Kernel kernel;
     private final Undertow undertow;
 
-    public Remote( int port, String context, Kernel kernel ) {
+    public Remote( FST.SerializationMethod serialization, int port, String context, Kernel kernel ) {
+        this.serialization = serialization;
         this.kernel = kernel;
 
         undertow = Undertow
@@ -78,24 +76,20 @@ public class Remote implements HttpHandler {
 
     @Override
     public void handleRequest( HttpServerExchange exchange ) {
+        var fst = new FST( serialization );
+
         exchange.getRequestReceiver().receiveFullBytes( ( ex, body ) -> {
-            var kryo = Remotes.kryoPool.obtain();
-            var input = Remotes.inputPool.obtain();
-            var output = Remotes.outputPool.obtain();
-            try {
-                input.setBuffer( body );
-                var version = input.readInt();
-                var invocation = ( RemoteInvocation ) kryo.readObject( input, RemoteInvocation.class );
+            var invocation = ( RemoteInvocation ) fst.configuration.asObject( body );
+            log.trace( "invoke {}", invocation );
 
-                log.trace( "invoke v{} - {}", version, invocation );
+            var service = kernel.service( invocation.service );
 
-                Optional<Object> service = kernel.service( invocation.service );
-
-                service.ifPresentOrElse( s -> {
-                        Result<Object, Throwable> result;
+            service.ifPresentOrElse( s -> {
+                    try {
+                        Result<Object, Throwable> r;
                         int status = HTTP_OK;
                         try {
-                            result = Result.success( s.getClass()
+                            r = Result.success( s.getClass()
                                 .getMethod( invocation.method, invocation.types() )
                                 .invoke( s, invocation.values() ) );
                         } catch( NoSuchMethodException | IllegalAccessException e ) {
@@ -103,54 +97,48 @@ public class Remote implements HttpHandler {
                             // wrapping into RIE to be handled at client's properly
                             log.error( "method [{}] doesn't exist or access isn't allowed", invocation.method );
                             status = HTTP_NOT_FOUND;
-                            result = Result.failure( new RemoteInvocationException( e ) );
+                            r = Result.failure( new RemoteInvocationException( e ) );
                         } catch( InvocationTargetException e ) {
                             // application error
-                            result = Result.failure( e.getCause() );
+                            r = Result.failure( e.getCause() );
                             log.trace( "exception occurred on call to method [{}]", invocation.method );
                         }
                         exchange.setStatusCode( status );
                         exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, APPLICATION_OCTET_STREAM.toString() );
+                        var result = r;
 
+                        try( var outputStream = exchange.getOutputStream();
+                             var bos = new BufferedOutputStream( outputStream );
+                             var dos = new DataOutputStream( bos ) ) {
+                            dos.writeBoolean( result.isSuccess() );
 
-                        output.setOutputStream( exchange.getOutputStream() );
-                        try {
-                            output.writeBoolean( result.isSuccess() );
                             if( !result.isSuccess() ) {
-                                kryo.writeClassAndObject( output, result.failureValue );
+                                fst.writeObjectWithSize( dos, result.failureValue );
                             } else {
                                 if( result.successValue instanceof Stream<?> ) {
-                                    output.writeBoolean( true );
+                                    dos.writeBoolean( true );
+
                                     ( ( Stream ) result.successValue ).forEach( Try.consume( ( obj -> {
-                                        output.writeByte( 1 );
-                                        kryo.writeClassAndObject( output, obj );
+                                        fst.writeObjectWithSize( dos, obj );
                                     } ) ) );
-                                    output.writeByte( 0 );
+                                    dos.writeInt( 0 );
                                 } else {
-                                    output.writeBoolean( false );
-                                    kryo.writeClassAndObject( output, result.successValue );
+                                    dos.writeBoolean( false );
+                                    fst.writeObjectWithSize( dos, result.successValue );
                                 }
                             }
-                        } catch( Throwable e ) {
-                            log.error( "invocation = {}", invocation );
-                            log.error( e.getMessage(), e );
-                        } finally {
-                            output.close();
                         }
-                    },
-                    () -> {
-                        exchange.setStatusCode( HTTP_NOT_FOUND );
-                        exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, TEXT_PLAIN.toString() );
-                        exchange.getResponseSender().send( invocation.service + " not found" );
+                    } catch( Throwable e ) {
+                        log.error( "invocation = {}", invocation );
+                        log.error( e.getMessage(), e );
                     }
-                );
-            } catch( Exception e ) {
-                throw Throwables.propagate( e );
-            } finally {
-                Remotes.kryoPool.free( kryo );
-                Remotes.inputPool.free( input );
-                Remotes.outputPool.free( output );
-            }
+                },
+                () -> {
+                    exchange.setStatusCode( HTTP_NOT_FOUND );
+                    exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, TEXT_PLAIN.toString() );
+                    exchange.getResponseSender().send( invocation.service + " not found" );
+                }
+            );
         } );
     }
 }

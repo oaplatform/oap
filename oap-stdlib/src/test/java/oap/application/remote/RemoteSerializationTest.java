@@ -24,30 +24,26 @@
 
 package oap.application.remote;
 
-import java.net.URI;
-import java.nio.file.Path;
+import org.testng.annotations.Test;
 
-public class RemoteLocation {
-    public static long DEFAULT_TIMEOUT = 5000L;
-    public URI url;
-    public String name;
-    public Path certificateLocation;
-    public String certificatePassword;
-    public long timeout = DEFAULT_TIMEOUT;
-    public FST.SerializationMethod serialization = FST.SerializationMethod.DEFAULT;
-    public int retry = 0;
+import static org.assertj.core.api.Assertions.assertThat;
 
-    public RemoteLocation() {
+public class RemoteSerializationTest {
+    @Test
+    public void proxy() {
+        var proxy = RemoteSerialization.proxy( ITest.class, new CTest() );
+
+        assertThat( proxy.test( 10 ) ).isEqualTo( "10" );
     }
 
-    public RemoteLocation( URI url, String name, Path certificateLocation, String certificatePassword,
-                           long timeout, FST.SerializationMethod serialization, int retry ) {
-        this.url = url;
-        this.name = name;
-        this.certificateLocation = certificateLocation;
-        this.certificatePassword = certificatePassword;
-        this.timeout = timeout;
-        this.serialization = serialization;
-        this.retry = retry;
+    public interface ITest {
+        String test( int i );
+    }
+
+    public static class CTest implements ITest {
+        @Override
+        public String test( int i ) {
+            return String.valueOf( i );
+        }
     }
 }
