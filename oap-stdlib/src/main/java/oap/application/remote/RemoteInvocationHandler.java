@@ -125,6 +125,7 @@ public final class RemoteInvocationHandler implements InvocationHandler {
 
         var baos = new ByteArrayOutputStream();
         var oos = new ObjectOutputStream( baos );
+        oos.writeInt( Remotes.VERSION );
         oos.writeObject( new RemoteInvocation( service, method.getName(), arguments ) );
         oos.close();
         var content = baos.toByteArray();

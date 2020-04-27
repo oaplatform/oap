@@ -81,9 +81,10 @@ public class Remote implements HttpHandler {
         exchange.getRequestReceiver().receiveFullBytes( ( ex, body ) -> {
             try {
                 var dis = new ObjectInputStream( new ByteArrayInputStream( body ) );
+                var version = dis.readInt();
                 var invocation = ( RemoteInvocation ) dis.readObject();
 
-                log.trace( "invoke {}", invocation );
+                log.trace( "invoke v{} - {}", version, invocation );
 
                 Optional<Object> service = kernel.service( invocation.service );
 

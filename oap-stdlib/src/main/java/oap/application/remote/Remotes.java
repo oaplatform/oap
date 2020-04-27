@@ -24,26 +24,9 @@
 
 package oap.application.remote;
 
-import org.testng.annotations.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
-public class RemoteSerializationTest {
-    @Test
-    public void proxy() {
-        var proxy = RemoteSerialization.proxy( ITest.class, new CTest() );
-
-        assertThat( proxy.test( 10 ) ).isEqualTo( "10" );
-    }
-
-    public interface ITest {
-        String test( int i );
-    }
-
-    public static class CTest implements ITest {
-        @Override
-        public String test( int i ) {
-            return String.valueOf( i );
-        }
-    }
+/**
+ * Created by igor.petrenko on 2020-04-27.
+ */
+public interface Remotes {
+    int VERSION = 2;
 }
