@@ -148,7 +148,9 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                 if( throwable instanceof RemoteInvocationException )
                                     throw ( RemoteInvocationException ) throwable;
 
-                                return Result.failure( throwable );
+                                var failure = Result.failure( throwable );
+                                successMetrics.increment();
+                                return failure;
                             } finally {
                                 dis.close();
                             }
@@ -188,11 +190,18 @@ public final class RemoteInvocationHandler implements InvocationHandler {
                                     }
                                 };
 
-                                return Result.success( Stream.of( it ).onClose( Try.run( dis::close ) ) );
-                            } else try {
-                                return Result.success( fst.readObjectWithSize( dis ) );
-                            } finally {
-                                dis.close();
+                                return Result.success( Stream.of( it ).onClose( Try.run( () -> {
+                                    dis.close();
+                                    successMetrics.increment();
+                                } ) ) );
+                            } else {
+                                try {
+                                    var ret = Result.<Object, Throwable>success( fst.readObjectWithSize( dis ) );
+                                    successMetrics.increment();
+                                    return ret;
+                                } finally {
+                                    dis.close();
+                                }
                             }
                         }
                     } catch( Exception e ) {

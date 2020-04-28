@@ -21,6 +21,7 @@ services:
       context: /remote/
       serialization: DEFAULT
       kernel: "@kernel"
+      timeout: 1m
     supervision:
       supervise: true
 

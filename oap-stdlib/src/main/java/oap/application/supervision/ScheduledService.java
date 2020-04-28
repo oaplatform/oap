@@ -23,6 +23,7 @@
  */
 package oap.application.supervision;
 
+import oap.application.remote.RemoteInvocationException;
 import oap.concurrent.scheduler.Scheduled;
 import org.slf4j.Logger;
 
@@ -53,7 +54,11 @@ public abstract class ScheduledService implements Supervised, Runnable {
         try {
             this.runnable.run();
         } catch( Exception e ) {
-            logger.error( e.getMessage(), e );
+            if( e instanceof RemoteInvocationException && e.getCause() instanceof java.net.http.HttpTimeoutException ) {
+                logger.error( e.getMessage() );
+            } else {
+                logger.error( e.getMessage(), e );
+            }
         }
     }
 }

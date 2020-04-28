@@ -23,8 +23,12 @@
  */
 package oap.application.remote;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.Tags;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
+import io.undertow.UndertowOptions;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.BlockingHandler;
@@ -46,22 +50,33 @@ import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.apache.http.entity.ContentType.APPLICATION_OCTET_STREAM;
 import static org.apache.http.entity.ContentType.TEXT_PLAIN;
+import static org.xnio.Options.READ_TIMEOUT;
+import static org.xnio.Options.WRITE_TIMEOUT;
 
 @Slf4j
 public class Remote implements HttpHandler {
+    private final Counter errorMetrics;
+    private final Counter successMetrics;
+
     private final FST.SerializationMethod serialization;
     private final Kernel kernel;
     private final Undertow undertow;
 
-    public Remote( FST.SerializationMethod serialization, int port, String context, Kernel kernel ) {
+    public Remote( FST.SerializationMethod serialization, int port, String context, Kernel kernel, long timeout ) {
         this.serialization = serialization;
         this.kernel = kernel;
 
         undertow = Undertow
             .builder()
             .addHttpListener( port, "0.0.0.0" )
+            .setServerOption( UndertowOptions.ALWAYS_SET_KEEP_ALIVE, true )
+            .setSocketOption( READ_TIMEOUT, ( int ) timeout )
+            .setSocketOption( WRITE_TIMEOUT, ( int ) timeout )
             .setHandler( Handlers.pathTemplate().add( context, new BlockingHandler( this ) ) )
             .build();
+
+        errorMetrics = Metrics.counter( "remote_server", Tags.of( "status", "error" ) );
+        successMetrics = Metrics.counter( "remote_server", Tags.of( "status", "success" ) );
     }
 
     public void start() {
@@ -95,12 +110,14 @@ public class Remote implements HttpHandler {
                                 .getMethod( invocation.method, invocation.types() )
                                 .invoke( s, invocation.values() ) );
                         } catch( NoSuchMethodException | IllegalAccessException e ) {
+                            errorMetrics.increment();
                             // transport error - illegal setup
                             // wrapping into RIE to be handled at client's properly
                             log.error( "method [{}] doesn't exist or access isn't allowed", invocation.method );
                             status = HTTP_NOT_FOUND;
                             r = Result.failure( new RemoteInvocationException( e ) );
                         } catch( InvocationTargetException e ) {
+                            errorMetrics.increment();
                             // application error
                             r = Result.failure( e.getCause() );
                             log.trace( "exception occurred on call to method [{}]", invocation.method );
@@ -130,12 +147,14 @@ public class Remote implements HttpHandler {
                                 }
                             }
                         }
+                        successMetrics.increment();
                     } catch( Throwable e ) {
                         log.error( "invocation = {}", invocation );
                         log.error( e.getMessage(), e );
                     }
                 },
                 () -> {
+                    errorMetrics.increment();
                     exchange.setStatusCode( HTTP_NOT_FOUND );
                     exchange.getResponseHeaders().add( Headers.CONTENT_TYPE, TEXT_PLAIN.toString() );
                     exchange.getResponseSender().send( invocation.service + " not found" );
