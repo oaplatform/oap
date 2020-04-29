@@ -47,6 +47,7 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -70,7 +71,7 @@ public class MessageSender implements Closeable, Runnable {
     private final ConcurrentHashMap<ByteSequence, Message> messages = new ConcurrentHashMap<>();
     public long retryAfter = 1000;
     public long storageLockExpiration = Dates.h( 1 );
-    public int poolSize = Runtime.getRuntime().availableProcessors();
+    public int poolSize = 4;
     protected long timeout = 5000;
     protected long connectionTimeout = 5000;
     private ThreadPoolExecutor pool;
@@ -126,21 +127,25 @@ public class MessageSender implements Closeable, Runnable {
         poolSemaphore = new Semaphore( poolSize, true );
     }
 
-    public CompletableFuture<?> sendJson( byte messageType, Object data ) {
+    public Future<?> sendJson( byte messageType, Object data ) {
         var baos = new ByteArrayOutputStream();
         Binder.json.marshal( baos, data );
         return sendObject( messageType, baos.toByteArray() );
     }
 
-    public synchronized CompletableFuture<?> sendObject( byte messageType, byte[] data ) {
+    public synchronized Future<?> sendObject( byte messageType, byte[] data ) {
         try {
             poolSemaphore.acquire();
 
             var state = findFreeState();
 
-            return CompletableFuture
-                .runAsync( () -> state.sendObject( messageType, data ), pool )
-                .whenComplete( ( r, e ) -> poolSemaphore.release() );
+            return pool.submit( () -> {
+                    try {
+                        state.sendObject( messageType, data );
+                    } finally {
+                        poolSemaphore.release();
+                    }
+                } );
         } catch( InterruptedException e ) {
             poolSemaphore.release();
 
@@ -232,10 +237,14 @@ public class MessageSender implements Closeable, Runnable {
                     poolSemaphore.acquire();
                     try {
                         var state = findFreeState();
+                        try {
 
-                        if( state._sendObject( msg ) ) {
-                            Files.delete( msgFile );
-                            Files.delete( lockFile );
+                            if( state._sendObject( msg ) ) {
+                                Files.delete( msgFile );
+                                Files.delete( lockFile );
+                            }
+                        } finally {
+                            state.free.set( true );
                         }
                     } finally {
                         poolSemaphore.release();

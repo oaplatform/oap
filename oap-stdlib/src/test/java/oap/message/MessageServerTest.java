@@ -111,6 +111,26 @@ public class MessageServerTest extends Fixtures {
     }
 
     @Test
+    public void testSendAndReceiveJson_OneThread() throws Exception {
+        var listener1 = new MessageListenerJsonMock( MESSAGE_TYPE );
+        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1 ), -1 ) ) {
+            server.start();
+
+            try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+                client.poolSize = 1;
+                client.start();
+                
+                client.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
+                client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
+                client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
+                client.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
+
+                assertThat( listener1.messages ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
+            }
+        }
+    }
+
+    @Test
     public void testUnknownError() throws Exception {
         var listener = new MessageListenerMock( MESSAGE_TYPE );
         try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
