@@ -42,14 +42,9 @@ public class Closeables {
     }
 
     public static void close( ExecutorService service ) {
-        close( service, 60, TimeUnit.SECONDS );
-    }
-
-    public static void close( ExecutorService service, long timeout, TimeUnit unit ) {
         try {
             if( service != null ) {
                 service.shutdownNow();
-                service.awaitTermination( timeout, unit );
             }
         } catch( Exception e ) {
             logger.error( e.getMessage(), e );

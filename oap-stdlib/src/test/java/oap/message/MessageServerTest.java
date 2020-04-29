@@ -57,6 +57,8 @@ public class MessageServerTest extends Fixtures {
 
         try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
             try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+                client.start();
+                
                 assertThatCode( server::start )
                     .isInstanceOf( IllegalArgumentException.class )
                     .hasMessage( "duplicate [l2--1, l1--1]" );
@@ -73,6 +75,8 @@ public class MessageServerTest extends Fixtures {
 
             var dir = TestDirectoryFixture.testPath( "dir" );
             try( var client = new MessageSender( "localhost", server.getPort(), dir ) ) {
+                client.start();
+                
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "124".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "124".getBytes() ).get( 5, SECONDS );
@@ -94,6 +98,8 @@ public class MessageServerTest extends Fixtures {
             server.start();
 
             try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+                client.start();
+                
                 client.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
                 client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
                 client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
@@ -112,6 +118,7 @@ public class MessageServerTest extends Fixtures {
 
             try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
                 client.retryAfter = 1;
+                client.start();
 
                 listener.throwUnknownError( 200000000 );
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() );
@@ -139,6 +146,7 @@ public class MessageServerTest extends Fixtures {
 
             try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
                 client.retryAfter = 1;
+                client.start();
 
                 listener.setStatus( 567 );
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() );
@@ -167,6 +175,8 @@ public class MessageServerTest extends Fixtures {
             server.start();
 
             try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+                client.start();
+
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
@@ -199,6 +209,7 @@ public class MessageServerTest extends Fixtures {
             server.start();
 
             client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) );
+            client.start();
 
             client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
             client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
@@ -233,6 +244,7 @@ public class MessageServerTest extends Fixtures {
 
             try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
                 client.retryAfter = Dates.h( 1 );
+                client.start();
 
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() );
                 while( listener.throwUnknownError > 0 )
@@ -242,6 +254,8 @@ public class MessageServerTest extends Fixtures {
             assertThat( listener.getMessages() ).isEmpty();
 
             try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
+                client.start();
+
                 assertThat( listener.getMessages() ).isEmpty();
 
                 client.run();
@@ -259,6 +273,8 @@ public class MessageServerTest extends Fixtures {
 
             var msgDirectory = TestDirectoryFixture.testPath( "tmp" );
             try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
+                client.start();
+
                 listener.throwUnknownError = 2;
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() );
                 client.sendObject( MESSAGE_TYPE, "124".getBytes() );
@@ -279,6 +295,8 @@ public class MessageServerTest extends Fixtures {
 
             try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
                 client.storageLockExpiration = Dates.m( 5 );
+                client.start();
+                
                 assertThat( listener.getMessages() ).isEmpty();
 
                 client.run();

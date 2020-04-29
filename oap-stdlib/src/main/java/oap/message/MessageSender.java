@@ -24,9 +24,10 @@
 
 package oap.message;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import oap.concurrent.Threads;
+import oap.concurrent.ThreadPoolExecutor;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.json.Binder;
@@ -46,6 +47,10 @@ import java.nio.file.Paths;
 import java.security.MessageDigest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
 import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
@@ -62,22 +67,21 @@ public class MessageSender implements Closeable, Runnable {
     private final int port;
     private final Path directory;
     private final long clientId = Cuid.UNIQUE.nextLong();
-    private final MessageDigest md5Digest;
     private final ConcurrentHashMap<ByteSequence, Message> messages = new ConcurrentHashMap<>();
     public long retryAfter = 1000;
     public long storageLockExpiration = Dates.h( 1 );
+    public int poolSize = Runtime.getRuntime().availableProcessors();
     protected long timeout = 5000;
     protected long connectionTimeout = 5000;
-    private MessageSocketConnection connection;
-    private boolean loggingAvailable = true;
+    private ThreadPoolExecutor pool;
+    private ConnectionState[] states;
     private boolean closed = false;
+    private Semaphore poolSemaphore;
 
     public MessageSender( String host, int port, Path directory ) {
         this.host = host;
         this.port = port;
         this.directory = directory;
-
-        md5Digest = DigestUtils.getMd5Digest();
     }
 
     private static String getServerStatus( short status ) {
@@ -96,7 +100,7 @@ public class MessageSender implements Closeable, Runnable {
         if( Files.createFile( lockFile ) ) return lockFile;
         if( storageLockExpiration <= 0 ) return null;
 
-        log.trace( "lock found {}, expiration = {}", lockFile, 
+        log.trace( "lock found {}, expiration = {}", lockFile,
             Dates.durationToString( Files.getLastModifiedTime( lockFile ) + storageLockExpiration - DateTimeUtils.currentTimeMillis() ) );
 
         return Files.getLastModifiedTime( lockFile ) + storageLockExpiration < DateTimeUtils.currentTimeMillis() ? lockFile : null;
@@ -109,6 +113,17 @@ public class MessageSender implements Closeable, Runnable {
     public void start() {
         log.info( "message server host = {}, port = {}, storage = {}, storageLockExpiration = {}",
             host, port, directory, Dates.durationToString( storageLockExpiration ) );
+
+        pool = new ThreadPoolExecutor( poolSize, poolSize,
+            0L, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<>(), new ThreadFactoryBuilder().setNameFormat( "message-sender-%d" ).build(),
+            new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy() );
+
+        states = new ConnectionState[poolSize];
+        for( var i = 0; i < poolSize; i++ ) {
+            states[i] = new ConnectionState();
+        }
+        poolSemaphore = new Semaphore( poolSize, true );
     }
 
     public CompletableFuture<?> sendJson( byte messageType, Object data ) {
@@ -118,113 +133,36 @@ public class MessageSender implements Closeable, Runnable {
     }
 
     public synchronized CompletableFuture<?> sendObject( byte messageType, byte[] data ) {
-        md5Digest.reset();
-        md5Digest.update( data );
-        var md5 = md5Digest.digest();
+        try {
+            poolSemaphore.acquire();
 
-        var message = new Message( clientId, messageType, ByteSequence.of( md5 ), data );
-        messages.put( message.md5, message );
+            var state = findFreeState();
 
-        return CompletableFuture.runAsync( () -> {
-            while( !closed ) {
-                try {
-                    if( _sendObject( message ) ) {
-                        messages.remove( message.md5 );
-                        return;
-                    }
-                    Threads.sleepSafely( retryAfter );
-                } catch( Exception e ) {
-                    log.trace( e.getMessage(), e );
-                    log.trace( "retrying..." );
-                }
-            }
-        } );
+            return CompletableFuture
+                .runAsync( () -> state.sendObject( messageType, data ), pool )
+                .whenComplete( ( r, e ) -> poolSemaphore.release() );
+        } catch( InterruptedException e ) {
+            poolSemaphore.release();
+
+            return ( CompletableFuture<?> ) CompletableFuture.failedStage( e );
+        }
     }
 
-    private synchronized boolean _sendObject( Message message ) throws IOException {
-        if( !closed ) {
-            try {
-                loggingAvailable = true;
-
-                refreshConnection();
-
-                log.debug( "sending data [type = {}] to server...", message.messageType );
-
-                var out = connection.out;
-                var in = connection.in;
-
-                out.writeByte( message.messageType );
-                out.writeShort( PROTOCOL_VERSION_1 );
-                out.writeLong( message.clientId );
-
-                out.write( message.md5.bytes );
-
-                out.write( MessageProtocol.RESERVED, 0, MessageProtocol.RESERVED_LENGTH );
-                out.writeInt( message.data.length );
-                out.write( message.data );
-
-                var version = in.readByte();
-                if( version != PROTOCOL_VERSION_1 ) {
-                    log.error( "Version mismatch, expected: {}, received: {}", PROTOCOL_VERSION_1, version );
-                    Closeables.close( connection );
-                    throw new MessageException( "Version mismatch" );
-                }
-                in.readLong(); // clientId
-                in.skipNBytes( MessageProtocol.MD5_LENGTH ); // digestionId
-                in.skipNBytes( MessageProtocol.RESERVED_LENGTH );
-                var status = in.readShort();
-
-                if( log.isTraceEnabled() )
-                    log.trace( "sending done, server status: {}", getServerStatus( status ) );
-
-                switch( status ) {
-                    case STATUS_ALREADY_WRITTEN:
-                        log.trace( "already written {}", message.getHexMd5() );
-                        return true;
-                    case STATUS_OK:
-                        return true;
-                    case STATUS_UNKNOWN_ERROR:
-                    case STATUS_UNKNOWN_MESSAGE_TYPE:
-                        log.error( "sendObject error: {}", status );
-                        return false;
-                    default:
-                        log.error( "unknown status: {}", status );
-                        return false;
-                }
-            } catch( IOException e ) {
-                loggingAvailable = false;
-
-                Closeables.close( connection );
-
-                throw e;
-            } catch( Exception e ) {
-                loggingAvailable = false;
-
-                log.warn( e.getMessage() );
-                log.trace( e.getMessage(), e );
-                Closeables.close( connection );
-            }
+    private ConnectionState findFreeState() {
+        for( var state : states ) {
+            if( state.free.compareAndExchange( true, false ) ) return state;
         }
-
-        if( !loggingAvailable ) log.debug( "logging unavailable" );
-
-        return false;
-    }
-
-    private void refreshConnection() {
-        if( this.connection == null || !connection.isConnected() ) {
-            Closeables.close( connection );
-            log.debug( "opening connection..." );
-            this.connection = new MessageSocketConnection( host, port, timeout, connectionTimeout );
-            log.debug( "connected!" );
-        }
+        throw new IllegalStateException( "no free states" );
     }
 
     @Override
     public synchronized void close() {
         closed = true;
 
-        Closeables.close( connection );
+        pool.shutdownNow();
+
+        for( var state : states )
+            Closeables.close( state );
 
         saveMessagesToDirectory( directory );
     }
@@ -251,8 +189,16 @@ public class MessageSender implements Closeable, Runnable {
         }
     }
 
+    private boolean loggingAvailable() {
+        for( var state : states ) {
+            if( state.loggingAvailable ) return true;
+        }
+
+        return false;
+    }
+
     public MessageAvailabilityReport availabilityReport() {
-        boolean operational = loggingAvailable && !closed;
+        boolean operational = loggingAvailable() && !closed;
         return new MessageAvailabilityReport( operational ? OPERATIONAL : FAILED );
     }
 
@@ -283,9 +229,16 @@ public class MessageSender implements Closeable, Runnable {
 
                     var msg = new Message( clientId, messageType, md5, data );
 
-                    if( _sendObject( msg ) ) {
-                        Files.delete( msgFile );
-                        Files.delete( lockFile );
+                    poolSemaphore.acquire();
+                    try {
+                        var state = findFreeState();
+
+                        if( state._sendObject( msg ) ) {
+                            Files.delete( msgFile );
+                            Files.delete( lockFile );
+                        }
+                    } finally {
+                        poolSemaphore.release();
                     }
                 } catch( Exception e ) {
                     log.error( msgFile + ": " + e.getMessage(), e );
@@ -315,6 +268,126 @@ public class MessageSender implements Closeable, Runnable {
 
         public String getHexData() {
             return Hex.encodeHexString( data );
+        }
+    }
+
+    private class ConnectionState implements Closeable {
+        public final MessageDigest md5Digest;
+        public MessageSocketConnection connection;
+        public AtomicBoolean free = new AtomicBoolean( true );
+        public boolean loggingAvailable = true;
+
+        public ConnectionState() {
+            md5Digest = DigestUtils.getMd5Digest();
+        }
+
+        private boolean _sendObject( Message message ) throws IOException {
+            if( !closed ) {
+                try {
+                    loggingAvailable = true;
+
+                    refreshConnection();
+
+                    log.debug( "sending data [type = {}] to server...", message.messageType );
+
+                    var out = connection.out;
+                    var in = connection.in;
+
+                    out.writeByte( message.messageType );
+                    out.writeShort( PROTOCOL_VERSION_1 );
+                    out.writeLong( message.clientId );
+
+                    out.write( message.md5.bytes );
+
+                    out.write( MessageProtocol.RESERVED, 0, MessageProtocol.RESERVED_LENGTH );
+                    out.writeInt( message.data.length );
+                    out.write( message.data );
+
+                    var version = in.readByte();
+                    if( version != PROTOCOL_VERSION_1 ) {
+                        log.error( "Version mismatch, expected: {}, received: {}", PROTOCOL_VERSION_1, version );
+                        Closeables.close( connection );
+                        throw new MessageException( "Version mismatch" );
+                    }
+                    in.readLong(); // clientId
+                    in.skipNBytes( MessageProtocol.MD5_LENGTH ); // digestionId
+                    in.skipNBytes( MessageProtocol.RESERVED_LENGTH );
+                    var status = in.readShort();
+
+                    if( log.isTraceEnabled() )
+                        log.trace( "sending done, server status: {}", getServerStatus( status ) );
+
+                    switch( status ) {
+                        case STATUS_ALREADY_WRITTEN:
+                            log.trace( "already written {}", message.getHexMd5() );
+                            return true;
+                        case STATUS_OK:
+                            return true;
+                        case STATUS_UNKNOWN_ERROR:
+                        case STATUS_UNKNOWN_MESSAGE_TYPE:
+                            log.error( "sendObject error: {}", status );
+                            return false;
+                        default:
+                            log.error( "unknown status: {}", status );
+                            return false;
+                    }
+                } catch( IOException e ) {
+                    loggingAvailable = false;
+
+                    Closeables.close( connection );
+
+                    throw e;
+                } catch( Exception e ) {
+                    loggingAvailable = false;
+
+                    log.warn( e.getMessage() );
+                    log.trace( e.getMessage(), e );
+                    Closeables.close( connection );
+                }
+            }
+
+            if( !loggingAvailable ) log.debug( "logging unavailable" );
+
+            return false;
+        }
+
+        public void sendObject( byte messageType, byte[] data ) {
+            md5Digest.reset();
+            md5Digest.update( data );
+            var md5 = md5Digest.digest();
+
+            var message = new Message( clientId, messageType, ByteSequence.of( md5 ), data );
+            messages.put( message.md5, message );
+
+            while( !closed ) {
+                try {
+                    if( _sendObject( message ) ) {
+                        messages.remove( message.md5 );
+                        return;
+                    }
+
+                    Thread.sleep( retryAfter );
+                } catch( InterruptedException e ) {
+                    log.info( e.getMessage() );
+                } catch( Exception e ) {
+                    log.trace( e.getMessage(), e );
+                    log.trace( "retrying..." );
+                }
+            }
+        }
+
+        private void refreshConnection() {
+            if( this.connection == null || !connection.isConnected() ) {
+                Closeables.close( connection );
+                log.debug( "opening connection..." );
+                this.connection = new MessageSocketConnection( host, port, timeout, connectionTimeout );
+                log.debug( "connected!" );
+            }
+        }
+
+        @Override
+        public void close() {
+            Closeables.close( connection );
         }
     }
 }
