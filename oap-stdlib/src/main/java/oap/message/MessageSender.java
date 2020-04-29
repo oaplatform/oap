@@ -140,7 +140,10 @@ public class MessageSender implements Closeable, Runnable {
 
             return CompletableFuture
                 .runAsync( () -> state.sendObject( messageType, data ), pool )
-                .whenComplete( ( r, e ) -> poolSemaphore.release() );
+                .whenComplete( ( r, e ) -> {
+                    state.free.set( true );
+                    poolSemaphore.release();
+                } );
         } catch( InterruptedException e ) {
             poolSemaphore.release();
 
