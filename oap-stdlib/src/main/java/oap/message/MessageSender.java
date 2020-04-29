@@ -140,10 +140,7 @@ public class MessageSender implements Closeable, Runnable {
 
             return CompletableFuture
                 .runAsync( () -> state.sendObject( messageType, data ), pool )
-                .whenComplete( ( r, e ) -> {
-                    state.free.set( true );
-                    poolSemaphore.release();
-                } );
+                .whenComplete( ( r, e ) -> poolSemaphore.release() );
         } catch( InterruptedException e ) {
             poolSemaphore.release();
 
@@ -355,27 +352,31 @@ public class MessageSender implements Closeable, Runnable {
         }
 
         public void sendObject( byte messageType, byte[] data ) {
-            md5Digest.reset();
-            md5Digest.update( data );
-            var md5 = md5Digest.digest();
+            try {
+                md5Digest.reset();
+                md5Digest.update( data );
+                var md5 = md5Digest.digest();
 
-            var message = new Message( clientId, messageType, ByteSequence.of( md5 ), data );
-            messages.put( message.md5, message );
+                var message = new Message( clientId, messageType, ByteSequence.of( md5 ), data );
+                messages.put( message.md5, message );
 
-            while( !closed ) {
-                try {
-                    if( _sendObject( message ) ) {
-                        messages.remove( message.md5 );
-                        return;
+                while( !closed ) {
+                    try {
+                        if( _sendObject( message ) ) {
+                            messages.remove( message.md5 );
+                            return;
+                        }
+
+                        Thread.sleep( retryAfter );
+                    } catch( InterruptedException e ) {
+                        log.info( e.getMessage() );
+                    } catch( Exception e ) {
+                        log.trace( e.getMessage(), e );
+                        log.trace( "retrying..." );
                     }
-
-                    Thread.sleep( retryAfter );
-                } catch( InterruptedException e ) {
-                    log.info( e.getMessage() );
-                } catch( Exception e ) {
-                    log.trace( e.getMessage(), e );
-                    log.trace( "retrying..." );
                 }
+            } finally {
+                free.set( true );
             }
         }
 
