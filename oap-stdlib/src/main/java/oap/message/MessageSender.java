@@ -128,7 +128,7 @@ public class MessageSender implements Closeable, Runnable {
         poolSemaphore = new Semaphore( poolSize, true );
     }
 
-    public Future<?> sendJson( byte messageType, Object data ) {
+    public CompletableFuture<?> sendJson( byte messageType, Object data ) {
         var baos = new ByteArrayOutputStream();
         Binder.json.marshal( baos, data );
         return sendObject( messageType, baos.toByteArray() );
