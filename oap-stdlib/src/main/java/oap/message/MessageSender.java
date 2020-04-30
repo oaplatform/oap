@@ -166,7 +166,6 @@ public class MessageSender implements Closeable, Runnable {
         closed = true;
 
         pool.shutdownNow();
-        System.out.println( "shutdown" );
 
         for( var state : states )
             Closeables.close( state );
@@ -382,7 +381,6 @@ public class MessageSender implements Closeable, Runnable {
 
                 while( !closed ) {
                     try {
-                        System.out.println( "send" );
                         if( _sendObject( message ) ) {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
                             messages.remove( message.md5 );
