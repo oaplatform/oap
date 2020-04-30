@@ -25,6 +25,7 @@
 package oap.message;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.micrometer.core.instrument.Metrics;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import oap.concurrent.ThreadPoolExecutor;
@@ -117,8 +118,8 @@ public class MessageSender implements Closeable, Runnable {
 
         pool = new ThreadPoolExecutor( poolSize, poolSize,
             0L, TimeUnit.MILLISECONDS,
-            new LinkedBlockingQueue<>(), new ThreadFactoryBuilder().setNameFormat( "message-sender-%d" ).build(),
-            new java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy() );
+            new LinkedBlockingQueue<>(), new ThreadFactoryBuilder().setNameFormat( "message-sender-%d" ).build()
+        );
 
         states = new ConnectionState[poolSize];
         for( var i = 0; i < poolSize; i++ ) {
@@ -133,19 +134,19 @@ public class MessageSender implements Closeable, Runnable {
         return sendObject( messageType, baos.toByteArray() );
     }
 
-    public synchronized Future<?> sendObject( byte messageType, byte[] data ) {
+    public synchronized CompletableFuture<?> sendObject( byte messageType, byte[] data ) {
         try {
             poolSemaphore.acquire();
 
             var state = findFreeState();
 
-            return pool.submit( () -> {
-                    try {
-                        state.sendObject( messageType, data );
-                    } finally {
-                        poolSemaphore.release();
-                    }
-                } );
+            return CompletableFuture.runAsync( () -> {
+                try {
+                    state.sendObject( messageType, data );
+                } finally {
+                    poolSemaphore.release();
+                }
+            } );
         } catch( InterruptedException e ) {
             poolSemaphore.release();
 
@@ -165,6 +166,7 @@ public class MessageSender implements Closeable, Runnable {
         closed = true;
 
         pool.shutdownNow();
+        System.out.println( "shutdown" );
 
         for( var state : states )
             Closeables.close( state );
@@ -293,6 +295,8 @@ public class MessageSender implements Closeable, Runnable {
         private boolean _sendObject( Message message ) throws IOException {
             if( !closed ) {
                 try {
+                    Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
+
                     loggingAvailable = true;
 
                     refreshConnection();
@@ -329,14 +333,21 @@ public class MessageSender implements Closeable, Runnable {
                     switch( status ) {
                         case STATUS_ALREADY_WRITTEN:
                             log.trace( "already written {}", message.getHexMd5() );
+                            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "already_written" ).increment();
                             return true;
                         case STATUS_OK:
+                            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "success" ).increment();
                             return true;
                         case STATUS_UNKNOWN_ERROR:
+                            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
+                            log.error( "unknown error" );
+                            return false;
                         case STATUS_UNKNOWN_MESSAGE_TYPE:
-                            log.error( "sendObject error: {}", status );
+                            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_message_type" ).increment();
+                            log.error( "unknown message type: {}", status );
                             return false;
                         default:
+                            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_status" ).increment();
                             log.error( "unknown status: {}", status );
                             return false;
                     }
@@ -371,7 +382,9 @@ public class MessageSender implements Closeable, Runnable {
 
                 while( !closed ) {
                     try {
+                        System.out.println( "send" );
                         if( _sendObject( message ) ) {
+                            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
                             messages.remove( message.md5 );
                             return;
                         }
@@ -379,9 +392,17 @@ public class MessageSender implements Closeable, Runnable {
                         Thread.sleep( retryAfter );
                     } catch( InterruptedException e ) {
                         log.info( e.getMessage() );
+                        break;
                     } catch( Exception e ) {
+                        Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
                         log.trace( e.getMessage(), e );
-                        log.trace( "retrying..." );
+                        try {
+                            Thread.sleep( retryAfter );
+                            log.trace( "retrying..." );
+                        } catch( InterruptedException interruptedException ) {
+                            log.info( e.getMessage() );
+                            break;
+                        }
                     }
                 }
             } finally {

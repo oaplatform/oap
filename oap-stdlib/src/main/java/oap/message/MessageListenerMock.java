@@ -29,6 +29,7 @@ import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -37,7 +38,7 @@ public class MessageListenerMock implements MessageListener {
     public static final byte MESSAGE_TYPE = ( byte ) 0xFF;
     public static final byte MESSAGE_TYPE2 = ( byte ) 0xFE;
     public final AtomicLong accessCount = new AtomicLong();
-    private final ArrayList<TestMessage> messages = new ArrayList<>();
+    private final CopyOnWriteArrayList<TestMessage> messages = new CopyOnWriteArrayList<>();
     private final String infoPrefix;
     private final byte messageType;
     public int throwUnknownError = 0;
@@ -71,17 +72,13 @@ public class MessageListenerMock implements MessageListener {
         }
 
         if( status == MessageProtocol.STATUS_OK )
-            synchronized( messages ) {
-                messages.add( new TestMessage( version, new String( data, UTF_8 ) ) );
-            }
+            messages.add( new TestMessage( version, new String( data, UTF_8 ) ) );
 
         return status;
     }
 
     public List<TestMessage> getMessages() {
-        synchronized( messages ) {
-            return new ArrayList<>( messages );
-        }
+        return messages;
     }
 
     public void throwUnknownError( int count ) {

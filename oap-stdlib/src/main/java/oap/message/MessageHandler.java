@@ -167,6 +167,7 @@ public class MessageHandler implements Runnable, Closeable {
             log.error( "[" + hostName + "] " + e.getMessage(), e );
         } finally {
             Sockets.close( socket );
+            log.debug( "socket closed: {}", socket );
         }
     }
 

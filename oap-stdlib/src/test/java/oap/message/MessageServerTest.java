@@ -293,6 +293,7 @@ public class MessageServerTest extends Fixtures {
 
             var msgDirectory = TestDirectoryFixture.testPath( "tmp" );
             try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
+                client.poolSize = 2;
                 client.start();
 
                 listener.throwUnknownError = 2;
