@@ -45,10 +45,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.security.MessageDigest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -74,7 +72,7 @@ public class MessageSender implements Closeable, Runnable {
     public long storageLockExpiration = Dates.h( 1 );
     public int poolSize = 4;
     protected long timeout = 5000;
-    protected long connectionTimeout = 5000;
+    protected long connectionTimeout = Dates.s( 30 );
     private ThreadPoolExecutor pool;
     private ConnectionState[] states;
     private boolean closed = false;
@@ -135,6 +133,12 @@ public class MessageSender implements Closeable, Runnable {
     }
 
     public synchronized CompletableFuture<?> sendObject( byte messageType, byte[] data ) {
+        assert data != null;
+
+        var md5 = DigestUtils.getMd5Digest().digest( data );
+        var message = new Message( clientId, messageType, ByteSequence.of( md5 ), data );
+        messages.put( message.md5, message );
+
         try {
             poolSemaphore.acquire();
 
@@ -142,7 +146,7 @@ public class MessageSender implements Closeable, Runnable {
 
             return CompletableFuture.runAsync( () -> {
                 try {
-                    state.sendObject( messageType, data );
+                    state.sendMessage( message );
                 } finally {
                     poolSemaphore.release();
                 }
@@ -240,7 +244,7 @@ public class MessageSender implements Closeable, Runnable {
                         var state = findFreeState();
                         try {
 
-                            if( state._sendObject( msg ) ) {
+                            if( state._sendMessage( msg ) ) {
                                 Files.delete( msgFile );
                                 Files.delete( lockFile );
                             }
@@ -282,23 +286,18 @@ public class MessageSender implements Closeable, Runnable {
     }
 
     private class ConnectionState implements Closeable {
-        public final MessageDigest md5Digest;
         public MessageSocketConnection connection;
         public AtomicBoolean free = new AtomicBoolean( true );
         public boolean loggingAvailable = true;
 
-        public ConnectionState() {
-            md5Digest = DigestUtils.getMd5Digest();
-        }
-
-        private boolean _sendObject( Message message ) throws IOException {
+        private boolean _sendMessage( Message message ) throws IOException {
             if( !closed ) {
                 try {
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
 
-                    loggingAvailable = true;
-
                     refreshConnection();
+
+                    loggingAvailable = true;
 
                     log.debug( "sending data [type = {}] to server...", message.messageType );
 
@@ -330,25 +329,30 @@ public class MessageSender implements Closeable, Runnable {
                         log.trace( "sending done, server status: {}", getServerStatus( status ) );
 
                     switch( status ) {
-                        case STATUS_ALREADY_WRITTEN:
+                        case STATUS_ALREADY_WRITTEN -> {
                             log.trace( "already written {}", message.getHexMd5() );
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "already_written" ).increment();
                             return true;
-                        case STATUS_OK:
+                        }
+                        case STATUS_OK -> {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "success" ).increment();
                             return true;
-                        case STATUS_UNKNOWN_ERROR:
+                        }
+                        case STATUS_UNKNOWN_ERROR -> {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
                             log.error( "unknown error" );
                             return false;
-                        case STATUS_UNKNOWN_MESSAGE_TYPE:
+                        }
+                        case STATUS_UNKNOWN_MESSAGE_TYPE -> {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_message_type" ).increment();
                             log.error( "unknown message type: {}", status );
                             return false;
-                        default:
+                        }
+                        default -> {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_status" ).increment();
                             log.error( "unknown status: {}", status );
                             return false;
+                        }
                     }
                 } catch( IOException e ) {
                     loggingAvailable = false;
@@ -370,18 +374,11 @@ public class MessageSender implements Closeable, Runnable {
             return false;
         }
 
-        public void sendObject( byte messageType, byte[] data ) {
+        public void sendMessage( Message message ) {
             try {
-                md5Digest.reset();
-                md5Digest.update( data );
-                var md5 = md5Digest.digest();
-
-                var message = new Message( clientId, messageType, ByteSequence.of( md5 ), data );
-                messages.put( message.md5, message );
-
                 while( !closed ) {
                     try {
-                        if( _sendObject( message ) ) {
+                        if( _sendMessage( message ) ) {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
                             messages.remove( message.md5 );
                             return;

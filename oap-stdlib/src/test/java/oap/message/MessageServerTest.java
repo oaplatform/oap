@@ -27,6 +27,7 @@ package oap.message;
 import oap.io.Closeables;
 import oap.io.Files;
 import oap.message.MessageListenerMock.TestMessage;
+import oap.testng.Env;
 import oap.testng.Fixtures;
 import oap.testng.SystemTimerFixture;
 import oap.testng.TestDirectoryFixture;
@@ -58,7 +59,7 @@ public class MessageServerTest extends Fixtures {
         try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener1, listener2 ), -1 ) ) {
             try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
                 client.start();
-                
+
                 assertThatCode( server::start )
                     .isInstanceOf( IllegalArgumentException.class )
                     .hasMessage( "duplicate [l2--1, l1--1]" );
@@ -76,7 +77,7 @@ public class MessageServerTest extends Fixtures {
             var dir = TestDirectoryFixture.testPath( "dir" );
             try( var client = new MessageSender( "localhost", server.getPort(), dir ) ) {
                 client.start();
-                
+
                 client.sendObject( MESSAGE_TYPE, "123".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "124".getBytes() ).get( 5, SECONDS );
                 client.sendObject( MESSAGE_TYPE, "124".getBytes() ).get( 5, SECONDS );
@@ -99,7 +100,7 @@ public class MessageServerTest extends Fixtures {
 
             try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
                 client.start();
-                
+
                 client.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
                 client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
                 client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
@@ -119,7 +120,7 @@ public class MessageServerTest extends Fixtures {
             try( var client = new MessageSender( "localhost", server.getPort(), TestDirectoryFixture.testPath( "tmp" ) ) ) {
                 client.poolSize = 1;
                 client.start();
-                
+
                 client.sendJson( MESSAGE_TYPE, "123" ).get( 5, SECONDS );
                 client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
                 client.sendJson( MESSAGE_TYPE, "124" ).get( 5, SECONDS );
@@ -317,7 +318,7 @@ public class MessageServerTest extends Fixtures {
             try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
                 client.storageLockExpiration = Dates.m( 5 );
                 client.start();
-                
+
                 assertThat( listener.getMessages() ).isEmpty();
 
                 client.run();
@@ -325,5 +326,33 @@ public class MessageServerTest extends Fixtures {
                 assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "124" ) ) );
             }
         }
+    }
+
+    @Test
+    public void testQueue() {
+        var port = Env.port( "server" );
+        var msgDirectory = TestDirectoryFixture.testPath( "tmp" );
+        try( var client = new MessageSender( "localhost", port, msgDirectory ) ) {
+            client.poolSize = 2;
+            client.start();
+
+            client.sendObject( MESSAGE_TYPE, "123".getBytes() );
+            client.sendObject( MESSAGE_TYPE, "124".getBytes() );
+        }
+
+
+        var listener = new MessageListenerMock( MESSAGE_TYPE );
+        try( var server = new MessageServer( TestDirectoryFixture.testPath( "controlStatePath.st" ), 0, List.of( listener ), -1 ) ) {
+            server.start();
+
+            try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
+                client.poolSize = 2;
+                client.start();
+                
+                client.run();
+            }
+        }
+
+        assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
     }
 }
