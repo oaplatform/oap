@@ -348,11 +348,11 @@ public class MessageServerTest extends Fixtures {
             try( var client = new MessageSender( "localhost", server.getPort(), msgDirectory ) ) {
                 client.poolSize = 2;
                 client.start();
-                
+
                 client.run();
             }
         }
 
-        assertThat( listener.getMessages() ).isEqualTo( List.of( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) ) );
+        assertThat( listener.getMessages() ).containsOnlyOnce( new TestMessage( 1, "123" ), new TestMessage( 1, "124" ) );
     }
 }
