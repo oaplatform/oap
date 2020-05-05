@@ -51,6 +51,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import static oap.message.MessageAvailabilityReport.State.FAILED;
 import static oap.message.MessageAvailabilityReport.State.OPERATIONAL;
@@ -127,12 +128,20 @@ public class MessageSender implements Closeable, Runnable {
     }
 
     public CompletableFuture<?> sendJson( byte messageType, Object data ) {
-        var baos = new ByteArrayOutputStream();
-        Binder.json.marshal( baos, data );
-        return sendObject( messageType, baos.toByteArray() );
+        return sendJson( messageType, data, s -> false );
     }
 
-    public synchronized CompletableFuture<?> sendObject( byte messageType, byte[] data ) {
+    public CompletableFuture<?> sendJson( byte messageType, Object data, Function<Short, Boolean> checkStatus ) {
+        var baos = new ByteArrayOutputStream();
+        Binder.json.marshal( baos, data );
+        return sendObject( messageType, baos.toByteArray(), checkStatus );
+    }
+
+    public CompletableFuture<?> sendObject( byte messageType, byte[] data ) {
+        return sendObject( messageType, data, s -> false );
+    }
+
+    public synchronized CompletableFuture<?> sendObject( byte messageType, byte[] data, Function<Short, Boolean> checkStatus ) {
         assert data != null;
 
         var md5 = DigestUtils.getMd5Digest().digest( data );
@@ -146,7 +155,7 @@ public class MessageSender implements Closeable, Runnable {
 
             return CompletableFuture.runAsync( () -> {
                 try {
-                    state.sendMessage( message );
+                    state.sendMessage( message, checkStatus );
                 } finally {
                     poolSemaphore.release();
                 }
@@ -244,7 +253,7 @@ public class MessageSender implements Closeable, Runnable {
                         var state = findFreeState();
                         try {
 
-                            if( state._sendMessage( msg ) ) {
+                            if( state._sendMessage( msg, s -> false ) ) {
                                 Files.delete( msgFile );
                                 Files.delete( lockFile );
                             }
@@ -290,7 +299,7 @@ public class MessageSender implements Closeable, Runnable {
         public AtomicBoolean free = new AtomicBoolean( true );
         public boolean loggingAvailable = true;
 
-        private boolean _sendMessage( Message message ) throws IOException {
+        private boolean _sendMessage( Message message, Function<Short, Boolean> checkStatus ) throws IOException {
             if( !closed ) {
                 try {
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
@@ -349,9 +358,14 @@ public class MessageSender implements Closeable, Runnable {
                             return false;
                         }
                         default -> {
-                            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_status" ).increment();
-                            log.error( "unknown status: {}", status );
-                            return false;
+                            if( checkStatus.apply( status ) ) {
+                                Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "application_status" ).increment();
+                                return true;
+                            } else {
+                                Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_status" ).increment();
+                                log.error( "unknown status: {}", status );
+                                return false;
+                            }
                         }
                     }
                 } catch( IOException e ) {
@@ -374,11 +388,11 @@ public class MessageSender implements Closeable, Runnable {
             return false;
         }
 
-        public void sendMessage( Message message ) {
+        public void sendMessage( Message message, Function<Short, Boolean> checkStatus ) {
             try {
                 while( !closed ) {
                     try {
-                        if( _sendMessage( message ) ) {
+                        if( _sendMessage( message, checkStatus ) ) {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
                             messages.remove( message.md5 );
                             return;
