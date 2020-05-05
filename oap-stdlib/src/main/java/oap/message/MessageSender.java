@@ -392,7 +392,6 @@ public class MessageSender implements Closeable, Runnable {
                 while( !closed ) {
                     try {
                         if( _sendMessage( message, checkStatus ) ) {
-                            Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
                             messages.remove( message.md5 );
                             return;
                         }

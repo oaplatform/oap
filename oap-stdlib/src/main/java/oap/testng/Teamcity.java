@@ -23,6 +23,8 @@
  */
 package oap.testng;
 
+import com.google.common.base.Preconditions;
+
 import java.util.function.Supplier;
 
 public class Teamcity {
@@ -57,11 +59,30 @@ public class Teamcity {
         return sb.toString();
     }
 
+    public static void message( MessageStatus status, String text, String errorDetails ) {
+        Preconditions.checkArgument( status == MessageStatus.ERROR );
+
+        if( isTeamcity() )
+            System.out.format( "##teamcity[message text='%s' errorDetails='%s' status='%s']\n",
+                escape( text ),
+                escape( errorDetails ),
+                status.name() );
+    }
+
+    public static void message( MessageStatus status, String text ) {
+        Preconditions.checkArgument( status != MessageStatus.ERROR );
+
+        if( isTeamcity() )
+            System.out.format( "##teamcity[message text='%s' status='%s']\n",
+                escape( text ),
+                status.name() );
+    }
+
     public static void statistics( String name, Object value ) {
         if( isTeamcity() )
             System.out.format( "##teamcity[buildStatisticValue key='%s' value='%s']\n",
                 escape( name ),
-                String.valueOf( value ) );
+                value );
     }
 
     public static <T> T progress( String message, Supplier<T> code ) {
@@ -103,5 +124,9 @@ public class Teamcity {
         if( buildNumber != null ) prefix += buildNumber;
 
         return prefix;
+    }
+
+    public enum MessageStatus {
+        NORMAL, WARNING, FAILURE, ERROR
     }
 }
