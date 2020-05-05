@@ -360,12 +360,11 @@ public class MessageSender implements Closeable, Runnable {
                         default -> {
                             if( checkStatus.apply( status ) ) {
                                 Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "application_status" ).increment();
-                                return true;
                             } else {
                                 Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_status" ).increment();
                                 log.error( "unknown status: {}", status );
-                                return false;
                             }
+                            return false;
                         }
                     }
                 } catch( IOException e ) {
