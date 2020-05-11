@@ -24,12 +24,18 @@
 package oap.net;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import oap.system.Env;
+import oap.util.Stream;
+import oap.util.Try;
 
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.Optional;
 
+@Slf4j
 public class Inet {
     public static final String HOSTNAME = hostname();
     public static final String LOCALHOST_NAME = resolveLocalhost();
@@ -72,6 +78,21 @@ public class Inet {
         result |= Long.parseLong( stringBuilder.toString() );
 
         return result;
+    }
+
+    public static Optional<InetAddress> getLocalIp() {
+        try {
+            return Stream.of( NetworkInterface.getNetworkInterfaces() )
+                .filter( Try.filter( i -> !i.isLoopback() && !i.isVirtual() && i.isUp() && !i.isPointToPoint() ) )
+                .findFirst()
+                .flatMap( i -> Stream.of( i.getInetAddresses() )
+                    .filter( a -> a instanceof Inet4Address )
+                    .findFirst()
+                );
+        } catch( SocketException e ) {
+            log.error( e.getMessage(), e );
+            return Optional.empty();
+        }
     }
 
 }

@@ -23,8 +23,8 @@
  */
 package oap.util;
 
-import java.net.Inet4Address;
-import java.net.NetworkInterface;
+import oap.net.Inet;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 import static oap.util.Strings.toHexString;
@@ -47,7 +47,9 @@ public interface Cuid {
 
     class UniqueCuid implements Cuid {
         private static final String UNKNOWN_IP = "UUUUUUUU";
-        private static String suffix = ipSuffix();
+        private static final String suffix = Inet.getLocalIp()
+            .map( a -> toHexString( a.getAddress() ) )
+            .orElse( UNKNOWN_IP );
         private static final IncrementalUniqueValueGenerator generator = new IncrementalUniqueValueGenerator();
 
         @Override
@@ -68,27 +70,11 @@ public interface Cuid {
             return toHexString( value ) + suffix;
         }
 
-        private static String ipSuffix() {
-            try {
-                return Stream.of( NetworkInterface.getNetworkInterfaces() )
-                    .filter( Try.filter( i -> !i.isLoopback() && !i.isVirtual() && i.isUp() && !i.isPointToPoint() ) )
-                    .findFirst()
-                    .flatMap( i -> Stream.of( i.getInetAddresses() )
-                        .filter( a -> a instanceof Inet4Address )
-                        .findFirst()
-                        .map( a -> toHexString( a.getAddress() ) )
-                    )
-                    .orElse( UNKNOWN_IP );
-            } catch( Exception e ) {
-                return UNKNOWN_IP;
-            }
-        }
-
 
     }
 
     class IncrementalCuid implements Cuid {
-        private AtomicLong counter = new AtomicLong();
+        private final AtomicLong counter = new AtomicLong();
 
         public IncrementalCuid( long seed ) {
             this.counter.set( seed );
