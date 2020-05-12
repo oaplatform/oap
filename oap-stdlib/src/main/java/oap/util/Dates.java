@@ -44,6 +44,9 @@ public class Dates {
     public static final DateTimeFormatter FORMAT_SIMPLE_CLEAN = DateTimeFormat
         .forPattern( "yyyy-MM-dd HH:mm:ss" )
         .withZoneUTC();
+    public static final DateTimeFormatter FORMAT_DATE = DateTimeFormat
+        .forPattern( "yyyy-MM-dd" )
+        .withZoneUTC();
 
     private static final DateTimeParser TIMEZONE_PARSER = DateTimeFormat.forPattern( "Z" ).getParser();
 
