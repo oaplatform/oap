@@ -54,7 +54,7 @@ public class MessageServer implements Runnable, Closeable {
     private final ThreadPoolExecutor executor =
         new ThreadPoolExecutor( 0, 1024, 100, TimeUnit.SECONDS, new SynchronousQueue<>(),
             new ThreadFactoryBuilder().setNameFormat( "socket-message-worker-%d" ).build() );
-    public int soTimeout = 60000;
+    public long soTimeout = 60000;
     private ServerSocket serverSocket;
     private MessageHashStorage hashes;
 

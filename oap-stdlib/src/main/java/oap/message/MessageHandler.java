@@ -80,13 +80,13 @@ import static oap.message.MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE;
 @Slf4j
 public class MessageHandler implements Runnable, Closeable {
     private final Socket socket;
-    private final int soTimeout;
+    private final long soTimeout;
     private final HashMap<Byte, MessageListener> listeners;
     private final MessageHashStorage control;
     private final long hashTtl;
     private boolean closed;
 
-    public MessageHandler( Socket socket, int soTimeout, HashMap<Byte, MessageListener> listeners,
+    public MessageHandler( Socket socket, long soTimeout, HashMap<Byte, MessageListener> listeners,
                            MessageHashStorage control, long hashTtl ) {
         this.socket = socket;
         this.soTimeout = soTimeout;
@@ -106,7 +106,7 @@ public class MessageHandler implements Runnable, Closeable {
 
             var out = new DataOutputStream( socket.getOutputStream() );
             var in = new DataInputStream( socket.getInputStream() );
-            socket.setSoTimeout( soTimeout );
+            socket.setSoTimeout( ( int ) soTimeout );
             socket.setKeepAlive( true );
             socket.setTcpNoDelay( true );
 
