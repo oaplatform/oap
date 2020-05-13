@@ -131,20 +131,20 @@ public class MessageSender implements Closeable, Runnable {
     }
 
     public CompletableFuture<MessageStatus> sendJson( byte messageType, Object data ) {
-        return sendJson( messageType, data, s -> false );
+        return sendJson( messageType, data, s -> null );
     }
 
-    public CompletableFuture<MessageStatus> sendJson( byte messageType, Object data, Function<Short, Boolean> checkStatus ) {
+    public CompletableFuture<MessageStatus> sendJson( byte messageType, Object data, Function<Short, String> checkStatus ) {
         var baos = new ByteArrayOutputStream();
         Binder.json.marshal( baos, data );
         return sendObject( messageType, baos.toByteArray(), checkStatus );
     }
 
     public CompletableFuture<MessageStatus> sendObject( byte messageType, byte[] data ) {
-        return sendObject( messageType, data, s -> false );
+        return sendObject( messageType, data, s -> null );
     }
 
-    public synchronized CompletableFuture<MessageStatus> sendObject( byte messageType, byte[] data, Function<Short, Boolean> checkStatus ) {
+    public synchronized CompletableFuture<MessageStatus> sendObject( byte messageType, byte[] data, Function<Short, String> checkStatus ) {
         assert data != null;
 
         var md5 = DigestUtils.getMd5Digest().digest( data );
@@ -256,7 +256,7 @@ public class MessageSender implements Closeable, Runnable {
                         var state = findFreeState();
                         try {
 
-                            if( state._sendMessage( msg, s -> false ) != ERROR ) {
+                            if( state._sendMessage( msg, s -> null ) != ERROR ) {
                                 Files.delete( msgFile );
                                 Files.delete( lockFile );
                             }
@@ -302,7 +302,7 @@ public class MessageSender implements Closeable, Runnable {
         public AtomicBoolean free = new AtomicBoolean( true );
         public boolean loggingAvailable = true;
 
-        private MessageStatus _sendMessage( Message message, Function<Short, Boolean> checkStatus ) throws IOException {
+        private MessageStatus _sendMessage( Message message, Function<Short, String> checkStatus ) throws IOException {
             if( !closed ) {
                 try {
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
@@ -361,8 +361,9 @@ public class MessageSender implements Closeable, Runnable {
                             return ERROR;
                         }
                         default -> {
-                            if( checkStatus.apply( status ) ) {
-                                Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "status_" + status ).increment();
+                            var clientStatus = checkStatus.apply( status );
+                            if( clientStatus != null ) {
+                                Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "status_" + status + "(" + clientStatus + ")" ).increment();
                             } else {
                                 Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_status" ).increment();
                                 log.error( "unknown status: {}", status );
@@ -390,7 +391,7 @@ public class MessageSender implements Closeable, Runnable {
             return ERROR;
         }
 
-        public MessageStatus sendMessage( Message message, Function<Short, Boolean> checkStatus ) {
+        public MessageStatus sendMessage( Message message, Function<Short, String> checkStatus ) {
             try {
                 while( !closed ) {
                     try {

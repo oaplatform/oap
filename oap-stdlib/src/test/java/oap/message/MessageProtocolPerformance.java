@@ -87,7 +87,7 @@ public class MessageProtocolPerformance {
                     var benchmark = benchmark( "msg-t" + threads + "-p" + poolSize, SAMPLES, ( c ) -> {
                         var res = new ArrayList<CompletableFuture<MessageStatus>>();
                         var client = c % 2 == 0 ? client1 : client2;
-                        res.add( client.sendJson( PerfMessageListener.ID, Map.of( "a", 1, "b", counter.incrementAndGet() ), s -> false ) );
+                        res.add( client.sendJson( PerfMessageListener.ID, Map.of( "a", 1, "b", counter.incrementAndGet() ), s -> null ) );
 
                         CompletableFuture.allOf( res.toArray( new CompletableFuture[0] ) ).get( 5, TimeUnit.MINUTES );
 
