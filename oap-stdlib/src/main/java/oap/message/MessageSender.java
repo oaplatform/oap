@@ -413,6 +413,7 @@ public class MessageSender implements Closeable, Runnable {
                         Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
                         log.trace( e.getMessage(), e );
                         try {
+                            log.trace( "sleep {}...", Dates.durationToString( retryAfter ) );
                             Thread.sleep( retryAfter );
                             log.trace( "retrying..." );
                         } catch( InterruptedException interruptedException ) {
