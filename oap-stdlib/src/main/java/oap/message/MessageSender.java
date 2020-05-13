@@ -60,6 +60,9 @@ import static oap.message.MessageProtocol.STATUS_ALREADY_WRITTEN;
 import static oap.message.MessageProtocol.STATUS_OK;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_ERROR;
 import static oap.message.MessageProtocol.STATUS_UNKNOWN_MESSAGE_TYPE;
+import static oap.message.MessageStatus.ALREADY_WRITTEN;
+import static oap.message.MessageStatus.ERROR;
+import static oap.message.MessageStatus.OK;
 
 @Slf4j
 @ToString
@@ -127,21 +130,21 @@ public class MessageSender implements Closeable, Runnable {
         poolSemaphore = new Semaphore( poolSize, true );
     }
 
-    public CompletableFuture<?> sendJson( byte messageType, Object data ) {
+    public CompletableFuture<MessageStatus> sendJson( byte messageType, Object data ) {
         return sendJson( messageType, data, s -> false );
     }
 
-    public CompletableFuture<?> sendJson( byte messageType, Object data, Function<Short, Boolean> checkStatus ) {
+    public CompletableFuture<MessageStatus> sendJson( byte messageType, Object data, Function<Short, Boolean> checkStatus ) {
         var baos = new ByteArrayOutputStream();
         Binder.json.marshal( baos, data );
         return sendObject( messageType, baos.toByteArray(), checkStatus );
     }
 
-    public CompletableFuture<?> sendObject( byte messageType, byte[] data ) {
+    public CompletableFuture<MessageStatus> sendObject( byte messageType, byte[] data ) {
         return sendObject( messageType, data, s -> false );
     }
 
-    public synchronized CompletableFuture<?> sendObject( byte messageType, byte[] data, Function<Short, Boolean> checkStatus ) {
+    public synchronized CompletableFuture<MessageStatus> sendObject( byte messageType, byte[] data, Function<Short, Boolean> checkStatus ) {
         assert data != null;
 
         var md5 = DigestUtils.getMd5Digest().digest( data );
@@ -153,9 +156,9 @@ public class MessageSender implements Closeable, Runnable {
 
             var state = findFreeState();
 
-            return CompletableFuture.runAsync( () -> {
+            return CompletableFuture.supplyAsync( () -> {
                 try {
-                    state.sendMessage( message, checkStatus );
+                    return state.sendMessage( message, checkStatus );
                 } finally {
                     poolSemaphore.release();
                 }
@@ -163,7 +166,7 @@ public class MessageSender implements Closeable, Runnable {
         } catch( InterruptedException e ) {
             poolSemaphore.release();
 
-            return ( CompletableFuture<?> ) CompletableFuture.failedStage( e );
+            return ( CompletableFuture<MessageStatus> ) CompletableFuture.<MessageStatus>failedStage( e );
         }
     }
 
@@ -253,7 +256,7 @@ public class MessageSender implements Closeable, Runnable {
                         var state = findFreeState();
                         try {
 
-                            if( state._sendMessage( msg, s -> false ) ) {
+                            if( state._sendMessage( msg, s -> false ) != ERROR ) {
                                 Files.delete( msgFile );
                                 Files.delete( lockFile );
                             }
@@ -299,7 +302,7 @@ public class MessageSender implements Closeable, Runnable {
         public AtomicBoolean free = new AtomicBoolean( true );
         public boolean loggingAvailable = true;
 
-        private boolean _sendMessage( Message message, Function<Short, Boolean> checkStatus ) throws IOException {
+        private MessageStatus _sendMessage( Message message, Function<Short, Boolean> checkStatus ) throws IOException {
             if( !closed ) {
                 try {
                     Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "trysend" ).increment();
@@ -341,21 +344,21 @@ public class MessageSender implements Closeable, Runnable {
                         case STATUS_ALREADY_WRITTEN -> {
                             log.trace( "already written {}", message.getHexMd5() );
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "already_written" ).increment();
-                            return true;
+                            return ALREADY_WRITTEN;
                         }
                         case STATUS_OK -> {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "success" ).increment();
-                            return true;
+                            return OK;
                         }
                         case STATUS_UNKNOWN_ERROR -> {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "error" ).increment();
                             log.error( "unknown error" );
-                            return false;
+                            return ERROR;
                         }
                         case STATUS_UNKNOWN_MESSAGE_TYPE -> {
                             Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_message_type" ).increment();
                             log.error( "unknown message type: {}", status );
-                            return false;
+                            return ERROR;
                         }
                         default -> {
                             if( checkStatus.apply( status ) ) {
@@ -364,7 +367,7 @@ public class MessageSender implements Closeable, Runnable {
                                 Metrics.counter( "oap.messages", "type", String.valueOf( message.messageType ), "status", "unknown_status" ).increment();
                                 log.error( "unknown status: {}", status );
                             }
-                            return false;
+                            return ERROR;
                         }
                     }
                 } catch( IOException e ) {
@@ -384,16 +387,17 @@ public class MessageSender implements Closeable, Runnable {
 
             if( !loggingAvailable ) log.debug( "logging unavailable" );
 
-            return false;
+            return ERROR;
         }
 
-        public void sendMessage( Message message, Function<Short, Boolean> checkStatus ) {
+        public MessageStatus sendMessage( Message message, Function<Short, Boolean> checkStatus ) {
             try {
                 while( !closed ) {
                     try {
-                        if( _sendMessage( message, checkStatus ) ) {
+                        var status = _sendMessage( message, checkStatus );
+                        if( status != ERROR ) {
                             messages.remove( message.md5 );
-                            return;
+                            return status;
                         }
 
                         Thread.sleep( retryAfter );
@@ -415,6 +419,8 @@ public class MessageSender implements Closeable, Runnable {
             } finally {
                 free.set( true );
             }
+
+            return ERROR;
         }
 
         private void refreshConnection() {
