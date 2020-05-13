@@ -88,13 +88,16 @@ public class MessageSender implements Closeable, Runnable {
         this.directory = directory;
     }
 
-    private static String getServerStatus( short status ) {
+    private static String getServerStatus( short status, Function<Short, String> checkStatus ) {
         return switch( status ) {
             case STATUS_OK -> "OK";
             case STATUS_UNKNOWN_ERROR -> "UNKNOWN_ERROR";
             case STATUS_ALREADY_WRITTEN -> "ALREADY_WRITTEN";
             case STATUS_UNKNOWN_MESSAGE_TYPE -> "UNKNOWN_MESSAGE_TYPE";
-            default -> "Unknown status: " + status;
+            default -> {
+                var str = checkStatus.apply( status );
+                yield str != null ? str : "Unknown status: " + status;
+            }
         };
     }
 
@@ -338,7 +341,7 @@ public class MessageSender implements Closeable, Runnable {
                     var status = in.readShort();
 
                     if( log.isTraceEnabled() )
-                        log.trace( "sending done, server status: {}", getServerStatus( status ) );
+                        log.trace( "sending done, server status: {}", getServerStatus( status, checkStatus ) );
 
                     switch( status ) {
                         case STATUS_ALREADY_WRITTEN -> {
