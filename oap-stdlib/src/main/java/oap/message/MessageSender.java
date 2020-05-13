@@ -405,6 +405,7 @@ public class MessageSender implements Closeable, Runnable {
                         }
 
                         Thread.sleep( retryAfter );
+                        log.trace( "retrying [type = {}]", message.messageType );
                     } catch( InterruptedException e ) {
                         log.info( e.getMessage() );
                         break;
