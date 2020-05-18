@@ -33,6 +33,7 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Path;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -42,24 +43,24 @@ import static oap.io.IoStreams.Encoding.PLAIN;
 
 public class Archiver {
     private static final Function<InputStream, InputStream> gzipInputStreamSupplyer;
-    private static final Function<OutputStream, OutputStream> gzipOutputStreamSupplier;
+    private static final BiFunction<OutputStream, Integer, OutputStream> gzipOutputStreamSupplier;
 
     static {
         CompressorStreamFactory factory = new CompressorStreamFactory( true );
         if( "apache".equals( System.getProperty( "oap.io.gzip", "apache" ) ) ) {
             gzipInputStreamSupplyer = Try.map( is -> factory.createCompressorInputStream( CompressorStreamFactory.GZIP, is ) );
-            gzipOutputStreamSupplier = Try.map( os -> factory.createCompressorOutputStream( CompressorStreamFactory.GZIP, os ) );
+            gzipOutputStreamSupplier = Try.biMap( ( os, bufferSize ) -> factory.createCompressorOutputStream( CompressorStreamFactory.GZIP, os ) );
         } else {
             gzipInputStreamSupplyer = Try.map( GZIPInputStream::new );
-            gzipOutputStreamSupplier = Try.map( GZIPOutputStream::new );
+            gzipOutputStreamSupplier = Try.biMap( GZIPOutputStream::new );
         }
     }
 
-    public static OutputStream ungzip( OutputStream os ) {
-        return gzipOutputStreamSupplier.apply( os );
+    public static OutputStream gzip( OutputStream os, int bufferSize ) {
+        return gzipOutputStreamSupplier.apply( os, bufferSize );
     }
 
-    public static InputStream gzip( InputStream is ) {
+    public static InputStream ungzip( InputStream is ) {
         return gzipInputStreamSupplyer.apply( is );
     }
 

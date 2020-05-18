@@ -183,10 +183,12 @@ public class IoStreams {
         OutputStream outputStream = safe
             ? new SafeFileOutputStream( path, append, encoding )
             : new FileOutputStream( path.toFile(), append );
-        OutputStream fos = bufferSize > 0 ? new BufferedOutputStream( outputStream, bufferSize ) : outputStream;
+        OutputStream fos = bufferSize > 0 && encoding != Encoding.GZIP ? new BufferedOutputStream( outputStream, bufferSize ) : outputStream;
         switch( encoding ) {
             case GZIP:
-                return Archiver.ungzip( fos );
+                var gzout = Archiver.gzip( fos, bufferSize > 0 ? bufferSize : 512 );
+                if( bufferSize > 0 ) gzout = new BufferedOutputStream( gzout, bufferSize );
+                return gzout;
             case ZIP:
                 if( append ) throw new IllegalArgumentException( "cannot append zip file" );
                 var zip = new ZipOutputStream( fos );
@@ -241,7 +243,7 @@ public class IoStreams {
         switch( encoding ) {
             case GZIP:
                 try {
-                    return Archiver.gzip( stream );
+                    return Archiver.ungzip( stream );
                 } catch( Exception e ) {
                     stream.close();
                 }

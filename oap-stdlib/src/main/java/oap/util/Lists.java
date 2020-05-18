@@ -43,7 +43,6 @@ import java.util.stream.Collector;
 import static oap.util.Pair.__;
 
 public class Lists extends oap.util.Collections {
-
     private static Random random = new Random();
 
     @SafeVarargs
@@ -77,8 +76,8 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <T> Pair<List<T>, List<T>> partition( List<T> list, Predicate<T> p ) {
-        ArrayList<T> match = new ArrayList<>();
-        ArrayList<T> nomatch = new ArrayList<>();
+        final var match = new ArrayList<T>();
+        final var nomatch = new ArrayList<T>();
 
         for( T item : list )
             if( p.test( item ) ) match.add( item );
@@ -88,8 +87,17 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E, R> ArrayList<R> map( Collection<? extends E> list, Function<? super E, R> mapper ) {
-        final ArrayList<R> result = new ArrayList<>( list.size() );
+        final var result = new ArrayList<R>( list.size() );
         for( var e : list ) {
+            result.add( mapper.apply( e ) );
+        }
+        return result;
+    }
+
+    public static <E, R> ArrayList<R> filterThanMap( Collection<? extends E> list, Predicate<? super E> predicate, Function<? super E, R> mapper ) {
+        final var result = new ArrayList<R>();
+        for( var e : list ) {
+            if( !predicate.test( e ) ) continue;
             result.add( mapper.apply( e ) );
         }
         return result;
@@ -100,7 +108,7 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E> ArrayList<E> filter( Collection<E> list, Predicate<E> predicate ) {
-        final ArrayList<E> result = new ArrayList<>();
+        final var result = new ArrayList<E>();
 
         for( E e : list ) if( predicate.test( e ) ) result.add( e );
 
@@ -108,7 +116,7 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <E, R> ArrayList<R> map( Enumeration<E> enumeration, Function<? super E, R> mapper ) {
-        final ArrayList<R> result = new ArrayList<>();
+        final var result = new ArrayList<R>();
         while( enumeration.hasMoreElements() ) {
             result.add( mapper.apply( enumeration.nextElement() ) );
         }
@@ -144,19 +152,19 @@ public class Lists extends oap.util.Collections {
 
     @SafeVarargs
     public static <E> ArrayList<E> of( E... array ) {
-        ArrayList<E> list = new ArrayList<>( array.length );
+        final var list = new ArrayList<E>( array.length );
         Collections.addAll( list, array );
         return list;
     }
 
     public static ArrayList<Long> of( long[] array ) {
-        ArrayList<Long> list = new ArrayList<>( array.length );
+        final var list = new ArrayList<Long>( array.length );
         for( long i : array ) list.add( i );
         return list;
     }
 
     public static ArrayList<Integer> of( int[] array ) {
-        ArrayList<Integer> list = new ArrayList<>( array.length );
+        final var list = new ArrayList<Integer>( array.length );
         for( int i : array ) list.add( i );
         return list;
     }
@@ -175,8 +183,8 @@ public class Lists extends oap.util.Collections {
     }
 
     public static <T> int[] mapToIntArray( List<T> list, ToIntFunction<T> func ) {
-        var size = list.size();
-        var array = new int[size];
+        final var size = list.size();
+        final var array = new int[size];
 
         for( int i = 0; i < size; i++ ) {
             array[i] = func.applyAsInt( list.get( i ) );

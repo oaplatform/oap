@@ -28,6 +28,7 @@ import oap.reflect.Reflect;
 import org.slf4j.Logger;
 
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
@@ -62,6 +63,10 @@ public class Try {
     }
 
     public static <T, R> Function<T, R> map( ThrowingFunction<T, R> throwing ) {
+        return throwing.asFunction();
+    }
+
+    public static <T, U, R> BiFunction<T, U, R> biMap( ThrowingBiFunction<T, U, R> throwing ) {
         return throwing.asFunction();
     }
 
@@ -109,6 +114,31 @@ public class Try {
             return t -> {
                 try {
                     return this.apply( t );
+                } catch( Exception e ) {
+                    throw Reflect.newInstance( clazz, e );
+                }
+            };
+        }
+    }
+
+    @FunctionalInterface
+    public interface ThrowingBiFunction<T, U, R> {
+        R apply( T t, U u ) throws Exception;
+
+        default BiFunction<T, U, R> asFunction() {
+            return ( t, u ) -> {
+                try {
+                    return this.apply( t, u );
+                } catch( Exception e ) {
+                    throw Throwables.propagate( e );
+                }
+            };
+        }
+
+        default BiFunction<T, U, R> orElseThrow( Class<? extends RuntimeException> clazz ) {
+            return ( t, u ) -> {
+                try {
+                    return this.apply( t, u );
                 } catch( Exception e ) {
                     throw Reflect.newInstance( clazz, e );
                 }
