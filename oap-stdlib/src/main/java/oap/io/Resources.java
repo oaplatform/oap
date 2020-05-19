@@ -32,11 +32,11 @@ import oap.util.Sets;
 import oap.util.Stream;
 import oap.util.Strings;
 import oap.util.Try;
-import org.reflections.Reflections;
-import org.reflections.scanners.ResourcesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
+import org.reflections8.Reflections;
+import org.reflections8.scanners.ResourcesScanner;
+import org.reflections8.util.ClasspathHelper;
+import org.reflections8.util.ConfigurationBuilder;
+import org.reflections8.util.FilterBuilder;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
